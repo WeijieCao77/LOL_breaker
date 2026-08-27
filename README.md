@@ -8,9 +8,7 @@
 
 ## 在线体验
 
-项目可直接部署到 Railway。部署完成后，将 Railway 生成的公开域名填写在这里：
-
-> 在线地址：待部署
+在线体验：[https://lol-breaker-production.up.railway.app](https://lol-breaker-production.up.railway.app)
 
 ## 主要内容
 
