@@ -462,3 +462,12 @@ td .tlogo{margin-right:5px}
   font-size:11px;padding:3px 9px}
 .rt-x:hover{border-color:var(--gold);color:var(--gold)}
 .rt-note{font-size:11.5px;color:var(--gold)}
+
+/* ---- 事件结果 ---- */
+.evres{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:16px 0 4px}
+.er{font-size:13px;padding:5px 12px;border:1px solid var(--line);
+  background:rgba(6,21,32,.5);color:var(--ink-2)}
+.er b{font-family:"IBM Plex Mono",monospace;margin-left:5px}
+.er.up{border-color:var(--cyan-dim);color:var(--cyan)}
+.er.dn{border-color:#5A2228;color:var(--red)}
+.er.none{color:var(--ink-3);border-style:dashed}

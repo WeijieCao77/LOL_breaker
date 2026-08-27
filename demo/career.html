@@ -467,6 +467,15 @@ td .tlogo{margin-right:5px}
 .rt-x:hover{border-color:var(--gold);color:var(--gold)}
 .rt-note{font-size:11.5px;color:var(--gold)}
 
+/* ---- 事件结果 ---- */
+.evres{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:16px 0 4px}
+.er{font-size:13px;padding:5px 12px;border:1px solid var(--line);
+  background:rgba(6,21,32,.5);color:var(--ink-2)}
+.er b{font-family:"IBM Plex Mono",monospace;margin-left:5px}
+.er.up{border-color:var(--cyan-dim);color:var(--cyan)}
+.er.dn{border-color:#5A2228;color:var(--red)}
+.er.none{color:var(--ink-3);border-style:dashed}
+
 </style>
 
 <div class="wrap">
@@ -729,7 +738,7 @@ function dynastyBonus(players){
 }
 
 /* 战力：指挥是全队乘数 */
-/* 综合实力 = base × 默契 × 战术 × 士气 × 指挥 × 体能
+/* 综合实力 = 基础战力 × 默契 × 战术 × 士气 × 指挥 × 体能
    传战队对象时用它自己的默契/战术；传数组时按中性 50 处理。 */
 function power(teamOrPlayers,fatigue=0,verFav=null){
   const team=(teamOrPlayers&&teamOrPlayers.players)?teamOrPlayers:null;
@@ -890,7 +899,7 @@ function pushEvent(text,tone,tag){
   if(S.events.length>420) S.events.shift();   // 五年十个赛段，160 条会把早期记录挤掉
 }
 function noteForm(team,won){
-  const f=S.form[team]||(S.form[team]=[]);
+  const f=S.teamForm[team]||(S.teamForm[team]=[]);   // 各队近期战绩；玩家状态用 S.form
   f.push(won?1:0); if(f.length>6) f.shift();
   const n=f.length;
   if(n>=5&&f.slice(-5).every(x=>x===1)) return "win4";
@@ -1059,7 +1068,7 @@ function summaryCard(){
   if(B.upkeep) extra.push(`每赛段要往家里寄 ${B.upkeep} 万`);   // 这条是负担，必须告知
   return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left">
     <div class="ru-eyebrow" style="text-align:center">你的起点</div>
-    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:16px">${A.n} · ${o.n} · ${B.n}</div>
+    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:16px">${S.age} 岁 · ${o.n} · ${B.n}</div>
     <div class="attrs">${DIMS.map(d=>`
       <div class="at"><div class="lb">${d}</div>
         <div class="track"><div class="fill" style="width:${clamp(attrs[d],0,100)}%"></div>
@@ -1171,7 +1180,7 @@ function startPre(){
     ageCfg:A,bg:B,preYear:1,si:0,split:0,
     pre:{week:1,ap:PRE_AP,rank:0,scout:0,cityCup:null,streamCup:null,log:[],offers:null},
     seasonAttr0:Object.assign({},attrs),
-    events:[],usedLegends:[],retiredPool:[],form:{},formSeen:{},news:[],log:[]
+    events:[],usedLegends:[],retiredPool:[],teamForm:{},formSeen:{},news:[],log:[]
   });
   S.pre.rank=initialRank();
   initShop(); initAch();
@@ -1222,6 +1231,10 @@ function preAct(k,dim){
       else { l++; P.rank=clamp(P.rank-step*0.82,0,100); }
     }
     addFat(8);
+    // 排位打多了本身就会变强——否则「冲分」和「训练」互抢行动点，
+    // 起始实力又刚好卡在门槛上，玩家会陷入怎么打都不涨分的死循环。
+    S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.16+w*0.06);
+    S.attrs.运营=Math.min(capOf("运营"),S.attrs.运营+0.07+w*0.03);
     const afterT=rankName(P.rank), afterF=rankFull(P.rank);
     addFame(w*0.5);      // 赢下来的分才带来关注
     P.lastQ={w,l,p}; checkAch("rank");
@@ -1293,7 +1306,7 @@ function runStreamCup(){
 
 /* 职业前的时间节点：都有明确门槛和倒计时 */
 const PRE_MILESTONES=[
-  {w:6, name:"城市争霸赛", tag:"赛事", open:true, signup:"city", fee:35, prize:[0,25,70,180,420],
+  {w:8, name:"城市争霸赛", tag:"赛事", open:true, signup:"city", fee:35, prize:[0,25,70,180,420],
    need:()=>S.pre.rank>=RANKS[3].at, needTxt:"大师及以上",
    cur:()=>rankFull(S.pre.rank),
    desc:"市级公开赛，报名要大师。职业队球探常来看台",
@@ -1371,7 +1384,7 @@ function advancePreWeek(){
   if(typeof rollInjury==='function') rollInjury('职业前');
   if(typeof tickBuffs==='function') tickBuffs();
   simWorldPre();
-  if(typeof tryRandomEvent==='function'&&rnd()<0.30) tryRandomEvent();
+  if(typeof tryRandomEvent==='function'&&rnd()<0.15) tryRandomEvent();   // 频率减半，太密会烦
   // 提前预告：还有 3 周 / 1 周时提醒，并说清差多少
   PRE_MILESTONES.forEach(m=>{
     const d=m.w-P.week;
@@ -1531,7 +1544,9 @@ function gain(d){
   const ag=(S.ageCfg&&S.ageCfg.grow)||1;
   const bg=(S.bg&&S.bg.train)||1;
   const cs=(typeof courseTrainMul==="function")?courseTrainMul(d):1;
-  return 1.30*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*ij;
+  // 职业前打排位现在也长属性，进队时的底子比以前厚，
+  // 所以职业后的训练收益要相应压低，否则终局会失衡。
+  return 1.00*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*ij;
 }
 const addFat=n=>{S.fatigue=clamp(S.fatigue+n,0,100)};
 /* 名气有边际递减：从零到小有名气很快，再往上越来越难。
@@ -1577,7 +1592,7 @@ function autoRest(focus){
 
 function viewSeason(){
   const sea=SEASONS[S.si], T=curTab(TABS_SEASON);
-  if(T!=="act") return `${S.locker?lockerCard():""}${S.rndEv?randomCard():""}
+  if(T!=="act") return `${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
     ${tabBar(TABS_SEASON)}
     ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
     ${T==="team"?squadCard()+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():"")+rivalCard()+standingsCard():""}
@@ -1618,7 +1633,7 @@ function viewSeason(){
     <p class="note">本周对手 <b>${oppName}</b>（战力 ${power(opp,0,sea.fav).toFixed(1)}）
       vs 你队 ${power(myRoster(),S.fatigue,sea.fav).toFixed(1)}</p>
   </div>
-  ${S.locker?lockerCard():""}${S.rndEv?randomCard():""}
+  ${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
   ${tabBar(TABS_SEASON)}
   ${T==="act"?(typeof injuryCard==="function"?injuryCard():"")+nextMatchCard()+attrCard():""}
   ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
@@ -1935,7 +1950,7 @@ function nextWeek(){
   if(typeof archiveWeek==="function") archiveWeek();
   if(typeof btkWeekEnd==="function") btkWeekEnd();
   if(typeof tickBuffs==='function') tickBuffs();
-  if(typeof tryRandomEvent==='function'&&rnd()<0.28) tryRandomEvent();
+  if(typeof tryRandomEvent==='function'&&rnd()<0.14) tryRandomEvent();
   render();
 }
 function lplRank(){
@@ -2320,20 +2335,20 @@ function actPanelPre(){
 function viewPre(){
   const P=S.pre, T=curTab(TABS_PRE);
   return `
-  ${S.signup?signupCard():''}${S.rankUp?rankUpCard():''}${S.rndEv?randomCard():''}
+  ${S.signup?signupCard():''}${S.rankUp?rankUpCard():''}${S.rndResult?randomResultCard():''}${S.rndEv?randomCard():''}
   ${tabBar(TABS_PRE)}
   ${T==="act"?(typeof injuryCard==="function"?injuryCard():"")+attrCard():""}
   ${T==="sched"?scheduleCard():""}
   ${T==="squad"?lockedCard("战队实力","签约职业战队后解锁。在那之前，你只有自己。",
       `<p>加入战队后，这里会显示：</p>
        <div class="attrs" style="opacity:.4;pointer-events:none">
-         <div class="at"><div class="lb">base</div><div class="track"><div class="fill" style="width:52%"></div></div><div class="vn mono">五人个人数值</div></div>
+         <div class="at"><div class="lb">基础</div><div class="track"><div class="fill" style="width:52%"></div></div><div class="vn mono">五人个人数值</div></div>
          <div class="at"><div class="lb">默契</div><div class="track"><div class="fill" style="width:44%"></div></div><div class="vn mono">配合得怎么样</div></div>
          <div class="at"><div class="lb">战术</div><div class="track"><div class="fill" style="width:46%"></div></div><div class="vn mono">准备得充不充分</div></div>
          <div class="at"><div class="lb">士气</div><div class="track"><div class="fill" style="width:50%"></div></div><div class="vn mono">更衣室气氛</div></div>
        </div>
-       <p class="note" style="margin-top:14px">综合实力 = base × 默契 × 战术 × 士气 × 指挥 × 体能。<br>
-         你的个人数值只是 base 的一部分——五个人怎么变成一支队，是另一半。</p>`)
+       <p class="note" style="margin-top:14px">综合实力 = 基础战力 × 默契 × 战术 × 士气 × 指挥 × 体能。<br>
+         你的个人数值只是基础战力的一部分——五个人怎么变成一支队，是另一半。</p>`)
     +lockedCard("队友","签约职业战队后解锁。",
       `<p class="note" style="margin:0">每个队友对你有独立的信任度，会因为你的选择涨落，也会影响全队发挥。</p>`):""}
   ${T==="pro"?proCard()+eventsCard():""}
@@ -2351,7 +2366,7 @@ function viewPre(){
 function viewOffer(){
   const P=S.pre;
   return `<div class="card">
-    <h2>试训结束 · 你收到的 offer<em>综合评估 ${P.finalScore}</em></h2>
+    <h2>试训结束 · 你收到的报价<em>综合评估 ${P.finalScore}</em></h2>
     <h3>${rankFull(P.rank)} · ${fameTier()} · 城市赛 ${P.cityCup!==null?P.cityCup+" 轮":"未参赛"} · 主播杯 ${P.streamCup!==null?P.streamCup+" 轮":"未参赛"}</h3>
     <p class="note">这段时间你做的每一件事，都变成了现在桌上的选项。<b>选哪条路，决定你剩下的年份在什么位置起跑。</b></p>
     <div class="grid g2" style="margin-top:16px">
@@ -3715,12 +3730,12 @@ function squadCard(){
   return `<div class="card"><h2>战队实力<em>综合 ${B.total.toFixed(1)}</em></h2>
 
     <div class="formula">
-      <span class="fb">base ${B.base.toFixed(1)}</span>${B.ws.map(w=>
+      <span class="fb">基础战力 ${B.base.toFixed(1)}</span>${B.ws.map(w=>
         `<span class="fx">×</span><span class="fw ${w.mult>=1.008?'up':w.mult<=0.992?'dn':''}">${w.n} ${w.mult.toFixed(3)}</span>`
       ).join("")}<span class="fx">=</span><span class="ft">${B.total.toFixed(1)}</span>
     </div>
 
-    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">base · 五名选手的个人数值</h3>
+    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">基础战力 · 五名选手的个人数值</h3>
     <div class="attrs">${mates.map(p=>{
       const v=(p.r.操作*0.34+p.r.运营*0.28+p.r.心态*0.14+p.r.体质*0.10);
       return `<div class="at"><div class="lb">${POSN[p.pos]}</div>${bar(v)}
@@ -3791,7 +3806,7 @@ const RANDOM_EVENTS=[
 
   {id:"scam", w:2, when:()=>S.money>=60,
    q:()=>`有人私信你，说能内推进某青训营，先交 <b>50 万</b>「考察费」。`,
-   ctx:"对方头像是个战队 logo，但你查不到这个人。",
+   ctx:"对方头像是个战队队标，但你查不到这个人。",
    a:[{t:"交钱试试",e:()=>{ if(rnd()<0.72){ S.money-=50;
           return "对方收了钱就把你拉黑了。这五十万买了个教训。"; }
         S.money-=50; S.pre&&(S.pre.scoutHint=1); addFame(14);
@@ -3907,13 +3922,63 @@ function tryRandomEvent(){
   S.rndEv={id:ev.id,q:ev.q(),ctx:ev.ctx,a:ev.a};
   return true;
 }
+/* 选之前先拍个快照，选完对比出「到底变了什么」——
+   光给一句文字，玩家不知道自己是赚了还是亏了。 */
+function snapshot(){
+  const o={money:S.money,fame:S.fame,fat:S.fatigue};
+  DIMS.forEach(d=>o["a_"+d]=S.attrs[d]);
+  if(S.pre) o.rank=S.pre.rank;
+  if(typeof avgTrust==="function"&&S.trust) o.trust=avgTrust();
+  if(S.squad){ o.syn=S.squad.syn; o.tac=S.squad.tac; }
+  o.buffs=(S.tbuff||[]).map(b=>b.k).join(",");
+  return o;
+}
+function diffOf(a,b){
+  const out=[];
+  const num=(n,x,y,unit,inv)=>{
+    const d=(y||0)-(x||0);
+    if(Math.abs(d)<0.5) return;
+    out.push({n,v:(d>0?"+":"")+d.toFixed(0)+(unit||""),good:inv?d<0:d>0});
+  };
+  num("资金",a.money,b.money," 万");
+  num("名气",a.fame,b.fame);
+  num("体力",-a.fat,-b.fat);                 // 存的是疲劳，显示成体力要取反
+  if(a.rank!==undefined) num("段位分",a.rank,b.rank);
+  if(a.trust!==undefined) num("士气",a.trust,b.trust);
+  if(a.syn!==undefined){ num("默契",a.syn,b.syn); num("战术",a.tac,b.tac); }
+  DIMS.forEach(d=>num(d,a["a_"+d],b["a_"+d]));
+  // 新拿到的临时增益
+  const before=a.buffs.split(",").filter(Boolean);
+  (S.tbuff||[]).forEach(x=>{
+    if(!before.includes(x.k)) out.push({n:x.n,v:x.left+" 周",good:x.v>=1});
+  });
+  return out;
+}
 function resolveRandom(i){
   const ev=S.rndEv; if(!ev) return;
+  const before=snapshot();
   const txt=ev.a[i].e();
+  const after=snapshot();
   S.rndEv=null; S._ev=null;
   if(S.pre&&S.step==="pre") preLog(txt,"info");
   else pushEvent(txt,"info","际遇");
+  // 把结果摊开给玩家看
+  S.rndResult={choice:ev.a[i].t,txt,diff:diffOf(before,after)};
   render();
+}
+function randomResultCard(){
+  const r=S.rndResult; if(!r) return "";
+  const d=r.diff;
+  return `<div class="rankup"><div class="ru-inner" style="max-width:460px">
+    <div class="ru-eyebrow">你选择了</div>
+    <div class="ru-tier" style="font-size:19px">${r.choice}</div>
+    <div class="ru-txt" style="margin-top:10px">${r.txt}</div>
+    ${d.length?`<div class="evres">${d.map(x=>
+      `<span class="er ${x.good?'up':'dn'}">${x.n} <b>${x.v}</b></span>`).join("")}</div>`
+      :`<div class="evres"><span class="er none">这次什么也没发生</span></div>`}
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="rndok">知道了</button></div>
+  </div></div>`;
 }
 function randomCard(){
   const e=S.rndEv; if(!e) return "";
@@ -4742,7 +4807,7 @@ const NODES_MORE=[
 
 /* ================= 侧栏 ================= */
 function formBar(team){
-  const f=S.form[team]||[];
+  const f=S.teamForm[team]||[];
   if(!f.length) return "";
   return `<span class="forms">${f.slice(-5).map(x=>`<i class="${x?'w':'l'}"></i>`).join("")}</span>`;
 }
@@ -4822,9 +4887,6 @@ function hud(){
       <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div></div>
       <div><div class="k">下一节点</div><div class="v">${(()=>{const n=nextMilestone();
         return n?`${n.name} <small>${Math.max(0,n.w-S.pre.week)}周</small>`:"—"})()}</div></div>
-      <div><div class="k">资金</div><div class="v mono">${Math.round(S.money)}<small>万</small></div></div>
-      <div><div class="k">状态</div><div class="v" style="font-size:13px">${
-      typeof formTier==="function"&&S.form!==undefined?formTier(myForm()).n:"—"}</div></div>
     <div><div class="k">资金</div><div class="v mono">${Math.round(S.money)}<small>万</small></div></div>
     <div><div class="k">体能</div><div class="v mono">${100-Math.round(S.fatigue)}<small>/100</small></div></div>`;
     return;
@@ -4838,6 +4900,8 @@ function hud(){
     <div><div class="k">战队</div><div class="v">${S.team}</div></div>
     <div><div class="k">本季</div><div class="v mono">${S.record.w}−${S.record.l}</div></div>
     <div><div class="k">冠军</div><div class="v mono">${S.career.titles.length}</div></div>
+    <div><div class="k">状态</div><div class="v" style="font-size:13px">${
+      typeof formTier==="function"&&S.form!==undefined?formTier(myForm()).n:"—"}</div></div>
     <div><div class="k">资金</div><div class="v mono">${Math.round(S.money)}<small>万</small></div></div>
     <div><div class="k">体能</div><div class="v mono">${100-Math.round(S.fatigue)}<small>/100</small></div></div>`;
 }
@@ -4888,6 +4952,7 @@ function bind(){
   const sg=$("startgo"); if(sg) sg.onclick=()=>{ S.showStart=false; startPre(); };
   st.querySelectorAll("[data-prolg]").forEach(b=>b.onclick=()=>{S.proLg=b.dataset.prolg;render()});
   st.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render()});
+  const _rok=$("rndok"); if(_rok) _rok.onclick=()=>{S.rndResult=null;render()};
   st.querySelectorAll("[data-rnd]").forEach(b=>b.onclick=()=>resolveRandom(+b.dataset.rnd));
   st.querySelectorAll("[data-locker]").forEach(b=>b.onclick=()=>resolveLocker(+b.dataset.locker));
   st.querySelectorAll("[data-spend]").forEach(b=>b.onclick=()=>{

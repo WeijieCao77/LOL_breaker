@@ -42,7 +42,7 @@ const RANDOM_EVENTS=[
 
   {id:"scam", w:2, when:()=>S.money>=60,
    q:()=>`有人私信你，说能内推进某青训营，先交 <b>50 万</b>「考察费」。`,
-   ctx:"对方头像是个战队 logo，但你查不到这个人。",
+   ctx:"对方头像是个战队队标，但你查不到这个人。",
    a:[{t:"交钱试试",e:()=>{ if(rnd()<0.72){ S.money-=50;
           return "对方收了钱就把你拉黑了。这五十万买了个教训。"; }
         S.money-=50; S.pre&&(S.pre.scoutHint=1); addFame(14);
@@ -158,13 +158,63 @@ function tryRandomEvent(){
   S.rndEv={id:ev.id,q:ev.q(),ctx:ev.ctx,a:ev.a};
   return true;
 }
+/* 选之前先拍个快照，选完对比出「到底变了什么」——
+   光给一句文字，玩家不知道自己是赚了还是亏了。 */
+function snapshot(){
+  const o={money:S.money,fame:S.fame,fat:S.fatigue};
+  DIMS.forEach(d=>o["a_"+d]=S.attrs[d]);
+  if(S.pre) o.rank=S.pre.rank;
+  if(typeof avgTrust==="function"&&S.trust) o.trust=avgTrust();
+  if(S.squad){ o.syn=S.squad.syn; o.tac=S.squad.tac; }
+  o.buffs=(S.tbuff||[]).map(b=>b.k).join(",");
+  return o;
+}
+function diffOf(a,b){
+  const out=[];
+  const num=(n,x,y,unit,inv)=>{
+    const d=(y||0)-(x||0);
+    if(Math.abs(d)<0.5) return;
+    out.push({n,v:(d>0?"+":"")+d.toFixed(0)+(unit||""),good:inv?d<0:d>0});
+  };
+  num("资金",a.money,b.money," 万");
+  num("名气",a.fame,b.fame);
+  num("体力",-a.fat,-b.fat);                 // 存的是疲劳，显示成体力要取反
+  if(a.rank!==undefined) num("段位分",a.rank,b.rank);
+  if(a.trust!==undefined) num("士气",a.trust,b.trust);
+  if(a.syn!==undefined){ num("默契",a.syn,b.syn); num("战术",a.tac,b.tac); }
+  DIMS.forEach(d=>num(d,a["a_"+d],b["a_"+d]));
+  // 新拿到的临时增益
+  const before=a.buffs.split(",").filter(Boolean);
+  (S.tbuff||[]).forEach(x=>{
+    if(!before.includes(x.k)) out.push({n:x.n,v:x.left+" 周",good:x.v>=1});
+  });
+  return out;
+}
 function resolveRandom(i){
   const ev=S.rndEv; if(!ev) return;
+  const before=snapshot();
   const txt=ev.a[i].e();
+  const after=snapshot();
   S.rndEv=null; S._ev=null;
   if(S.pre&&S.step==="pre") preLog(txt,"info");
   else pushEvent(txt,"info","际遇");
+  // 把结果摊开给玩家看
+  S.rndResult={choice:ev.a[i].t,txt,diff:diffOf(before,after)};
   render();
+}
+function randomResultCard(){
+  const r=S.rndResult; if(!r) return "";
+  const d=r.diff;
+  return `<div class="rankup"><div class="ru-inner" style="max-width:460px">
+    <div class="ru-eyebrow">你选择了</div>
+    <div class="ru-tier" style="font-size:19px">${r.choice}</div>
+    <div class="ru-txt" style="margin-top:10px">${r.txt}</div>
+    ${d.length?`<div class="evres">${d.map(x=>
+      `<span class="er ${x.good?'up':'dn'}">${x.n} <b>${x.v}</b></span>`).join("")}</div>`
+      :`<div class="evres"><span class="er none">这次什么也没发生</span></div>`}
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="rndok">知道了</button></div>
+  </div></div>`;
 }
 function randomCard(){
   const e=S.rndEv; if(!e) return "";

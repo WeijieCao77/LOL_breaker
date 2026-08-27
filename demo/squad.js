@@ -159,12 +159,12 @@ function squadCard(){
   return `<div class="card"><h2>战队实力<em>综合 ${B.total.toFixed(1)}</em></h2>
 
     <div class="formula">
-      <span class="fb">base ${B.base.toFixed(1)}</span>${B.ws.map(w=>
+      <span class="fb">基础战力 ${B.base.toFixed(1)}</span>${B.ws.map(w=>
         `<span class="fx">×</span><span class="fw ${w.mult>=1.008?'up':w.mult<=0.992?'dn':''}">${w.n} ${w.mult.toFixed(3)}</span>`
       ).join("")}<span class="fx">=</span><span class="ft">${B.total.toFixed(1)}</span>
     </div>
 
-    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">base · 五名选手的个人数值</h3>
+    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">基础战力 · 五名选手的个人数值</h3>
     <div class="attrs">${mates.map(p=>{
       const v=(p.r.操作*0.34+p.r.运营*0.28+p.r.心态*0.14+p.r.体质*0.10);
       return `<div class="at"><div class="lb">${POSN[p.pos]}</div>${bar(v)}
