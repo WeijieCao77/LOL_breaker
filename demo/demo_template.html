@@ -1,0 +1,612 @@
+<title>破局者 2022</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --paper:#F4F6F9; --surface:#FFF; --surface-2:#EAEEF4; --raise:#FFF;
+  --line:#D3DAE4; --line-soft:#E2E7EE;
+  --ink:#16202D; --ink-2:#47566A; --ink-3:#74839A;
+  --gold:#9A7118; --gold-bg:#F5EDD8;
+  --win:#1D6349; --win-bg:#DDEDE5;
+  --loss:#A03D2E; --loss-bg:#F7E2DD;
+  --bar:#3D6EA8;
+  --shadow:0 1px 2px rgba(22,32,45,.05),0 8px 24px -14px rgba(22,32,45,.22);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E141C; --surface:#161E29; --surface-2:#1D2734; --raise:#1D2734;
+    --line:#2C3846; --line-soft:#232E3B;
+    --ink:#E6EBF2; --ink-2:#A3B0C1; --ink-3:#74839A;
+    --gold:#D9AC4E; --gold-bg:#2A2313;
+    --win:#6DC29C; --win-bg:#14291F;
+    --loss:#DE8878; --loss-bg:#2C1A16;
+    --bar:#6E9BD1;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E141C; --surface:#161E29; --surface-2:#1D2734; --raise:#1D2734;
+  --line:#2C3846; --line-soft:#232E3B;
+  --ink:#E6EBF2; --ink-2:#A3B0C1; --ink-3:#74839A;
+  --gold:#D9AC4E; --gold-bg:#2A2313;
+  --win:#6DC29C; --win-bg:#14291F;
+  --loss:#DE8878; --loss-bg:#2C1A16;
+  --bar:#6E9BD1;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:Archivo,"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif;
+  font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+h1,h2,h3{text-wrap:balance}
+
+/* header */
+.top{padding:36px 0 20px;border-bottom:1px solid var(--line);margin-bottom:26px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--gold);margin:0 0 10px}
+h1{font-size:clamp(30px,5vw,44px);margin:0 0 10px;font-weight:700;letter-spacing:-.02em}
+.sub{color:var(--ink-2);margin:0;max-width:60ch}
+
+/* status bar */
+.hud{display:flex;flex-wrap:wrap;gap:1px;background:var(--line);border:1px solid var(--line);
+  border-radius:10px;overflow:hidden;margin-bottom:24px}
+.hud>div{background:var(--surface);padding:11px 16px;flex:1 1 110px}
+.hud .k{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
+  font-family:"IBM Plex Mono",monospace}
+.hud .v{font-size:17px;font-weight:650;margin-top:1px}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:22px;box-shadow:var(--shadow);margin-bottom:18px}
+.card h2{font-size:12px;letter-spacing:.15em;text-transform:uppercase;
+  font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink-3);
+  margin:0 0 16px;padding-bottom:11px;border-bottom:1px solid var(--line-soft)}
+.card h3{font-size:17px;margin:0 0 8px;font-weight:650}
+
+/* choice grid */
+.grid{display:grid;gap:10px}
+.g5{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.opt{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;
+  padding:14px;text-align:left;color:var(--ink);transition:border-color .12s,background .12s}
+.opt:hover{border-color:var(--gold)}
+.opt.on{border-color:var(--gold);background:var(--gold-bg)}
+.opt .t{font-weight:650;font-size:15.5px}
+.opt .d{font-size:12.5px;color:var(--ink-2);margin-top:4px;line-height:1.5}
+
+/* talent allocator */
+.tal{display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--line-soft)}
+.tal:last-child{border-bottom:none}
+.tal .nm{width:56px;font-weight:650;flex:none}
+.tal .desc{flex:1;font-size:12.5px;color:var(--ink-3);line-height:1.45}
+.tal .ctl{display:flex;align-items:center;gap:8px;flex:none}
+.tal button{width:30px;height:30px;border-radius:7px;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--ink);font-size:16px;line-height:1;font-weight:600}
+.tal button:disabled{opacity:.32;cursor:not-allowed}
+.tal .n{width:26px;text-align:center;font-size:17px;font-weight:650}
+.tal .cap{width:74px;text-align:right;font-size:11.5px;color:var(--ink-3)}
+
+/* attr bars */
+.attrs{display:flex;flex-direction:column;gap:9px}
+.at{display:grid;grid-template-columns:52px 1fr 74px;align-items:center;gap:12px}
+.at .lb{font-size:13.5px;font-weight:600}
+.track{height:7px;background:var(--surface-2);border-radius:99px;overflow:hidden;position:relative}
+.fill{height:100%;background:var(--bar);border-radius:99px;transition:width .45s ease}
+.capline{position:absolute;top:-2px;width:2px;height:11px;background:var(--ink-3);opacity:.5}
+.at .vn{font-size:12.5px;color:var(--ink-2);text-align:right}
+.at .vn b{color:var(--ink);font-size:14px}
+
+/* actions */
+.act{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;
+  padding:13px;text-align:left;color:var(--ink)}
+.act:hover{border-color:var(--gold)}
+.act .t{font-weight:650;font-size:14.5px}
+.act .d{font-size:12px;color:var(--ink-3);margin-top:3px}
+
+/* match */
+.vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;margin-bottom:18px}
+.side{text-align:center}
+.side .nm{font-weight:650;font-size:16px}
+.side .pw{font-size:12px;color:var(--ink-3);margin-top:2px}
+.score{font-family:"IBM Plex Mono",monospace;font-size:30px;font-weight:600;
+  letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.log{background:var(--surface-2);border-radius:9px;padding:14px 16px;margin:14px 0;
+  max-height:230px;overflow-y:auto;font-size:13.5px;line-height:1.7}
+.log div{padding:2px 0;border-bottom:1px solid var(--line-soft)}
+.log div:last-child{border-bottom:none}
+.log .w{color:var(--win);font-weight:600}
+.log .l{color:var(--loss);font-weight:600}
+.log .hi{color:var(--gold);font-weight:600}
+
+/* node decision */
+.node{background:var(--gold-bg);border:1px solid var(--gold);border-radius:10px;
+  padding:16px 18px;margin:14px 0}
+.node .q{font-weight:650;margin-bottom:4px}
+.node .ctx{font-size:13px;color:var(--ink-2);margin-bottom:12px}
+
+/* table */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:9px}
+table{width:100%;border-collapse:collapse;background:var(--surface);font-size:13.5px}
+th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;padding:10px 13px;border-bottom:1px solid var(--line);
+  font-family:"IBM Plex Mono",monospace;white-space:nowrap}
+td{padding:9px 13px;border-bottom:1px solid var(--line-soft)}
+tr:last-child td{border-bottom:none}
+td.n{font-family:"IBM Plex Mono",monospace;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.me td{background:var(--gold-bg);font-weight:600}
+
+/* buttons */
+.btn{background:var(--ink);color:var(--paper);border:none;border-radius:9px;
+  padding:12px 26px;font-weight:650;font-size:15px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px}
+input[type=text]{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;
+  padding:11px 14px;color:var(--ink);font-size:15px;width:220px}
+.hide{display:none}
+.note{font-size:12.5px;color:var(--ink-3);margin-top:10px;line-height:1.6}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;
+  background:var(--surface-2);color:var(--ink-2);margin-left:6px}
+.tag.w{background:var(--win-bg);color:var(--win)}
+.tag.l{background:var(--loss-bg);color:var(--loss)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">Demo · 数值验证版 · 2022 LPL 春季赛</p>
+    <h1>破局者 2022</h1>
+    <p class="sub">全部 40 支战队、200 名选手的五维评分，来自 2022 赛季 15 万行真实比赛数据的拟合结果。你打的每一场，对面都是真人的真实实力。</p>
+  </header>
+
+  <div id="hud" class="hud hide"></div>
+  <div id="stage"></div>
+</div>
+
+<script>
+const DATA = __GAME_DATA__;
+
+/* ---------------- 常量 ---------------- */
+const DIMS = ["操作","运营","心态","指挥","体质"];
+const DIM_DESC = {
+  操作:"对线压制与个人输出，决定你能不能单杀",
+  运营:"视野、游走、资源判断，决定团队节奏",
+  心态:"逆风局的稳定性，决定能不能翻盘",
+  指挥:"团队增益，提升全队属性发挥率",
+  体质:"赛季耐久，决定后半程会不会掉状态"
+};
+const POS = [
+  {k:"top",n:"上单",d:"抗压与开团，指挥先验偏低"},
+  {k:"jng",n:"打野",d:"节奏发动机，指挥先验高"},
+  {k:"mid",n:"中单",d:"输出与转线核心，常兼指挥"},
+  {k:"bot",n:"AD",d:"后期输出点，依赖团队保护"},
+  {k:"sup",n:"辅助",d:"视野与开团，指挥先验最高"}
+];
+const ORIGIN = {
+  streamer:{n:"主播出身",d:"人气高、直播收益好；但体质与运营底子薄",
+    base:{操作:54,运营:45,心态:50,指挥:46,体质:43}, fame:62,
+    perk:"流量加持：直播收益 +60%，舆论压力减半"},
+  academy:{n:"青训出身",d:"操作与运营扎实、被寄予厚望；但人气低、压力大",
+    base:{操作:59,运营:55,心态:45,指挥:48,体质:53}, fame:14,
+    perk:"科班底子：训练收益 +20%，但舆论期待更严苛"}
+};
+const TOTAL_TALENT = 20, WEEKS = 9, AP = 3;
+const SPREAD = 8.5;   // 胜负曲线陡峭度，越小越强者恒强
+
+/* ---------------- 状态 ---------------- */
+let S = null;
+const $ = id => document.getElementById(id);
+const rnd = () => Math.random();
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+const addFat = n => { S.fatigue = clamp(S.fatigue + n, 0, 100); };
+
+/* 天赋 -> 成长倍率与瓶颈 */
+const mult = t => 0.40 + t*0.16;          // 天赋1 -> 0.56x, 天赋10 -> 2.0x
+const cap  = t => 40 + t*6;               // 天赋1 -> 46(职业及格线), 天赋10 -> 100
+
+/* 战力: 指挥作为全队乘数 —— 这是 Faker 悖论的机制化 */
+function power(players, fatigue=0){
+  let s=0, wt=0, cmd=0;
+  players.forEach(p=>{
+    const r = p.r || p;
+    const w = p.me ? 2.0 : 1.0;          // 主角权重更高，成长才推得动队伍
+    s += (r.操作*0.34 + r.运营*0.28 + r.心态*0.14 + r.体质*0.10) * w;
+    wt += w;
+    cmd = Math.max(cmd, r.指挥);
+  });
+  s = s/wt;
+  return s * (1 + (cmd-55)/300) * (1 - clamp(fatigue,0,100)*0.0022);
+}
+
+/* ---------------- 捏人 ---------------- */
+function screenCreate(){
+  S = {step:"create", name:"", pos:"mid", origin:"academy",
+       talent:{操作:4,运营:4,心态:4,指挥:4,体质:4}};
+  render();
+}
+
+function talentLeft(){ return TOTAL_TALENT - DIMS.reduce((a,d)=>a+S.talent[d],0); }
+
+function viewCreate(){
+  const left = talentLeft();
+  return `
+  <div class="card">
+    <h2>第一步 · 选手身份</h2>
+    <h3>你的 ID</h3>
+    <input type="text" id="nm" value="${S.name}" placeholder="输入你的选手 ID" maxlength="12">
+    <h3 style="margin-top:22px">位置</h3>
+    <div class="grid g5">
+      ${POS.map(p=>`<button class="opt ${S.pos===p.k?'on':''}" data-pos="${p.k}">
+        <div class="t">${p.n}</div><div class="d">${p.d}</div></button>`).join("")}
+    </div>
+    <h3 style="margin-top:22px">出身</h3>
+    <div class="grid g2">
+      ${Object.entries(ORIGIN).map(([k,o])=>`<button class="opt ${S.origin===k?'on':''}" data-org="${k}">
+        <div class="t">${o.n}</div><div class="d">${o.d}<br><span style="color:var(--gold)">${o.perk}</span></div></button>`).join("")}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>第二步 · 天赋分配 · 剩余 ${left} 点</h2>
+    <p class="note" style="margin:0 0 12px">天赋不是初始属性，而是<b>成长倍率与瓶颈</b>。天赋 10 的维度能练到世界级（上限 100），天赋 1 的练到职业及格线（上限 46）就到顶了。</p>
+    ${DIMS.map(d=>`
+      <div class="tal">
+        <div class="nm">${d}</div>
+        <div class="desc">${DIM_DESC[d]}</div>
+        <div class="ctl">
+          <button data-dec="${d}" ${S.talent[d]<=1?'disabled':''}>−</button>
+          <div class="n mono">${S.talent[d]}</div>
+          <button data-inc="${d}" ${(left<=0||S.talent[d]>=10)?'disabled':''}>+</button>
+        </div>
+        <div class="cap mono">×${mult(S.talent[d]).toFixed(2)} 上限${cap(S.talent[d])}</div>
+      </div>`).join("")}
+    <div class="row">
+      <button class="btn" id="go" ${left!==0?'disabled':''}>${left!==0?`还需分配 ${left} 点`:'签约进入 LPL →'}</button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- 进队 ---------------- */
+function joinTeam(){
+  const o = ORIGIN[S.origin];
+  const attrs = {}; DIMS.forEach(d=>attrs[d] = o.base[d]);
+  const teams = DATA.leagues.LPL.slice();
+  // 天赋总权重越高，signing 的队越好；这里取中下游，留出成长空间
+  const rank = clamp(Math.round(teams.length*0.55 + (rnd()*4-2)), 5, teams.length-2);
+  const team = teams[rank];
+  const replaced = team.players.find(p=>p.pos===S.pos);
+
+  S = {...S, step:"season", attrs, fame:o.fame, money:0, fatigue:0,
+       team:team.name, teamRank:rank, replaced:replaced.id,
+       week:1, ap:AP, log:[],
+       record:{w:0,l:0}, gameRec:{w:0,l:0},
+       schedule:buildSchedule(), standings:initStandings(), worldLog:[]};
+  render();
+}
+
+/* 我的队伍五人（我替换掉原位置选手） */
+function myRoster(){
+  const t = DATA.leagues.LPL.find(x=>x.name===S.team);
+  return t.players.map(p => p.pos===S.pos
+    ? {id:S.name||"你", cn:"", pos:S.pos, r:S.attrs, me:true}
+    : p);
+}
+
+function buildSchedule(){
+  // 打乱后再取，否则会按战力从高到低连续对阵最强的几支队
+  const opp = DATA.leagues.LPL.filter(t=>t.name!==S.team).map(t=>t.name);
+  for(let i=opp.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [opp[i],opp[j]]=[opp[j],opp[i]]; }
+  return opp.slice(0,WEEKS);
+}
+function initStandings(){
+  const st={};
+  ["LPL","LCK","LEC","LCS"].forEach(lg=>{
+    st[lg]={};
+    DATA.leagues[lg].forEach(t=>st[lg][t.name]={w:0,l:0});
+  });
+  return st;
+}
+
+/* ---------------- 赛季回合 ---------------- */
+function viewSeason(){
+  const my = myRoster();
+  const oppName = S.schedule[S.week-1];
+  const opp = DATA.leagues.LPL.find(t=>t.name===oppName);
+  const myP = power(my, S.fatigue), opP = power(opp.players);
+  return `
+  <div class="card">
+    <h2>第 ${S.week} 周 / 共 ${WEEKS} 周 · 剩余行动点 ${S.ap}</h2>
+    <div class="grid g5">
+      ${DIMS.map(d=>{
+        const c = cap(S.talent[d]), cur = S.attrs[d];
+        const done = cur>=c;
+        return `<button class="act" data-train="${d}" ${(S.ap<=0||done)?'disabled style="opacity:.35"':''}>
+          <div class="t">练${d}</div>
+          <div class="d">${done?'已达瓶颈':`+${gain(d).toFixed(1)} · 上限 ${c}`}</div></button>`;
+      }).join("")}
+      <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.35"':''}>
+        <div class="t">直播</div><div class="d">涨人气与收入</div></button>
+      <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.35"':''}>
+        <div class="t">休息</div><div class="d">清疲劳，护状态</div></button>
+    </div>
+    <div class="row">
+      <button class="btn" id="play" ${S.ap>0?'disabled':''}>
+        ${S.ap>0?`还剩 ${S.ap} 个行动点`:`打第 ${S.week} 周比赛 →`}</button>
+      <span class="note" style="margin:0">本周对手 <b>${oppName}</b> · 战力 ${opP.toFixed(1)} vs 你队 ${myP.toFixed(1)}</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>你的属性</h2>
+    <div class="attrs">
+      ${DIMS.map(d=>{
+        const c=cap(S.talent[d]), v=S.attrs[d];
+        return `<div class="at">
+          <div class="lb">${d}</div>
+          <div class="track"><div class="fill" style="width:${clamp(v,0,100)}%"></div>
+            <div class="capline" style="left:${clamp(c,0,100)}%"></div></div>
+          <div class="vn mono"><b>${v.toFixed(1)}</b> /${c}</div></div>`;
+      }).join("")}
+    </div>
+    <p class="note">竖线是天赋瓶颈。人气 ${Math.round(S.fame)} · 收入 ${Math.round(S.money)} 万 · 疲劳 ${Math.round(S.fatigue)}/100（满疲劳战力 −22%）</p>
+  </div>
+
+  ${S.log.length?`<div class="card"><h2>赛季日志</h2><div class="log">${S.log.slice(-14).reverse().join("")}</div></div>`:""}
+  ${standingsCard()}`;
+}
+
+function gain(d){
+  const t=S.talent[d], c=cap(t), cur=S.attrs[d];
+  const room = clamp(1-(cur/c), 0, 1);
+  const bonus = S.origin==="academy" ? 1.2 : 1.0;
+  return 3.2 * mult(t) * (0.25+0.75*room) * bonus;
+}
+
+function doTrain(d){
+  if(S.ap<=0) return;
+  const c=cap(S.talent[d]);
+  if(S.attrs[d]>=c) return;
+  const g=gain(d);
+  S.attrs[d]=Math.min(c, S.attrs[d]+g);
+  addFat(9); S.ap--;
+  render();
+}
+function doAction(k){
+  if(S.ap<=0) return;
+  if(k==="stream"){
+    const m = S.origin==="streamer"?1.6:1.0;
+    S.fame+=4.5*m; S.money+=6*m; addFat(5);
+  } else {
+    addFat(-30);
+    S.attrs.心态=Math.min(cap(S.talent.心态), S.attrs.心态+0.6);
+  }
+  S.ap--; render();
+}
+
+/* ---------------- 比赛 (BO3 + 节点决策) ---------------- */
+function startMatch(){
+  const oppName=S.schedule[S.week-1];
+  const opp=DATA.leagues.LPL.find(t=>t.name===oppName);
+  S.match={opp, oppName, sc:[0,0], game:1, lines:[], node:null, swing:0, done:false};
+  S.step="match";
+  nextGame();
+}
+
+const NODES = [
+  {q:"20 分钟，对面在打大龙，打野问你抢不抢。", ctx:"抢下能直接翻盘，失败会被打崩。",
+   a:[{t:"抢！",dim:"操作",risk:1.0},{t:"不抢，换线上资源",dim:"运营",risk:0.45}]},
+  {q:"你落后 2000 经济，中路对面越塔。", ctx:"稳发育还是反打？",
+   a:[{t:"反打，赌一个",dim:"心态",risk:1.0},{t:"让塔，稳住发育",dim:"运营",risk:0.4}]},
+  {q:"决胜局 BP，教练问要不要拿你的绝活。", ctx:"版本不吃这个英雄，但你最熟。",
+   a:[{t:"拿绝活",dim:"操作",risk:0.85},{t:"跟版本走",dim:"指挥",risk:0.5}]},
+  {q:"团战前，队友想开，你看到对面辅助不在。", ctx:"你的判断会被采纳。",
+   a:[{t:"喊撤",dim:"运营",risk:0.5},{t:"直接开",dim:"指挥",risk:0.95}]}
+];
+
+function nextGame(){
+  const m=S.match;
+  if(m.sc[0]===2||m.sc[1]===2){ endMatch(); return; }
+  // 每局插一个节点决策
+  m.node = NODES[Math.floor(rnd()*NODES.length)];
+  render();
+}
+
+function resolveNode(ai){
+  const m=S.match, opt=m.node.a[ai];
+  const v=S.attrs[opt.dim], c=cap(S.talent[opt.dim]);
+  // 属性越接近瓶颈，成功率越高；风险高的选项方差大
+  const p = clamp(0.30 + (v/100)*0.55, 0.15, 0.9);
+  const ok = rnd()<p;
+  const delta = (ok?1:-1) * opt.risk * 6.0;
+  m.swing += delta;
+  m.lines.push(`<div><span class="hi">第${m.game}局</span> ${opt.t} — ${ok
+    ? `<span class="w">成了</span>（${opt.dim} ${v.toFixed(0)}，成功率 ${(p*100).toFixed(0)}%）`
+    : `<span class="l">没成</span>（${opt.dim} ${v.toFixed(0)}，成功率 ${(p*100).toFixed(0)}%）`}</div>`);
+  m.node=null;
+  playGame();
+}
+
+function playGame(){
+  const m=S.match;
+  const my=power(myRoster(), S.fatigue)+m.swing;
+  const op=power(m.opp.players);
+  const p=1/(1+Math.exp(-(my-op)/SPREAD));
+  const win=rnd()<p;
+  if(win){m.sc[0]++;S.gameRec.w++}else{m.sc[1]++;S.gameRec.l++}
+  m.lines.push(`<div>第${m.game}局 ${win?'<span class="w">胜</span>':'<span class="l">负</span>'} — 战力 ${my.toFixed(1)} vs ${op.toFixed(1)}，胜率 ${(p*100).toFixed(0)}%</div>`);
+  m.game++; m.swing*=0.4;
+  nextGame();
+}
+
+function endMatch(){
+  const m=S.match, won=m.sc[0]>m.sc[1];
+  if(won)S.record.w++;else S.record.l++;
+  S.standings.LPL[S.team][won?"w":"l"]++;
+  S.standings.LPL[m.oppName][won?"l":"w"]++;
+  S.fame += won?7:-2.5;
+  S.money += won?9:4;
+  addFat(13);
+  S.attrs.心态 = Math.min(cap(S.talent.心态), S.attrs.心态 + (won?0.5:1.1)); // 输球也长心态
+  S.log.push(`<div>第 ${S.week} 周 vs ${m.oppName} <b>${m.sc[0]}:${m.sc[1]}</b> ${won?'<span class="w">胜</span>':'<span class="l">负</span>'}</div>`);
+  simWorld();
+  m.done=true;
+  render();
+}
+
+/* 活世界: 其他赛区与 LPL 其他队同步跑 */
+function simWorld(){
+  ["LPL","LCK","LEC","LCS"].forEach(lg=>{
+    const ts=DATA.leagues[lg].filter(t=>!(lg==="LPL"&&(t.name===S.team||t.name===S.match.oppName)));
+    for(let i=0;i<ts.length-1;i+=2){
+      const a=ts[i],b=ts[i+1];
+      const p=1/(1+Math.exp(-(power(a.players)-power(b.players))/SPREAD));
+      const aw=rnd()<p;
+      S.standings[lg][a.name][aw?"w":"l"]++;
+      S.standings[lg][b.name][aw?"l":"w"]++;
+    }
+  });
+}
+
+function viewMatch(){
+  const m=S.match;
+  const my=power(myRoster(),S.fatigue), op=power(m.opp.players);
+  return `
+  <div class="card">
+    <h2>第 ${S.week} 周 · BO3</h2>
+    <div class="vs">
+      <div class="side"><div class="nm">${S.team}</div><div class="pw mono">战力 ${my.toFixed(1)}</div></div>
+      <div class="score">${m.sc[0]} : ${m.sc[1]}</div>
+      <div class="side"><div class="nm">${m.oppName}</div><div class="pw mono">战力 ${op.toFixed(1)}</div></div>
+    </div>
+    ${m.node?`<div class="node">
+      <div class="q">${m.node.q}</div>
+      <div class="ctx">${m.node.ctx}</div>
+      <div class="grid g2">
+        ${m.node.a.map((a,i)=>`<button class="opt" data-node="${i}">
+          <div class="t">${a.t}</div>
+          <div class="d">看 <b>${a.dim}</b>（当前 ${S.attrs[a.dim].toFixed(0)}）· ${a.risk>0.8?'高风险高回报':'稳健'}</div>
+        </button>`).join("")}
+      </div></div>`:""}
+    ${m.lines.length?`<div class="log">${m.lines.slice().reverse().join("")}</div>`:""}
+    ${m.done?`<div class="row"><button class="btn" id="next">
+      ${S.week>=WEEKS?'查看赛季结算 →':'进入第 '+(S.week+1)+' 周 →'}</button></div>`:""}
+  </div>
+  ${standingsCard()}`;
+}
+
+function standingsCard(){
+  const rows = Object.entries(S.standings.LPL)
+    .map(([n,r])=>({n,...r,p:r.w+r.l?r.w/(r.w+r.l):0}))
+    .sort((a,b)=>b.p-a.p||b.w-a.w);
+  const other = ["LCK","LEC","LCS"].map(lg=>{
+    const top=Object.entries(S.standings[lg]).map(([n,r])=>({n,...r,p:r.w+r.l?r.w/(r.w+r.l):0}))
+      .sort((a,b)=>b.p-a.p)[0];
+    return `<tr><td>${lg}</td><td>${top?top.n:"—"}</td><td class="n">${top?top.w+"−"+top.l:"—"}</td></tr>`;
+  }).join("");
+  return `
+  <div class="card">
+    <h2>LPL 积分榜 · 第 ${S.week} 周</h2>
+    <div class="tw"><table><thead><tr><th>#</th><th>战队</th><th>战绩</th><th>胜率</th></tr></thead><tbody>
+      ${rows.map((r,i)=>`<tr class="${r.n===S.team?'me':''}">
+        <td class="n">${i+1}</td><td>${r.n}${r.n===S.team?'<span class="tag">你</span>':''}</td>
+        <td class="n">${r.w}−${r.l}</td><td class="n">${(r.p*100).toFixed(0)}%</td></tr>`).join("")}
+    </tbody></table></div>
+    <h3 style="margin-top:20px;font-size:13px;color:var(--ink-3);font-family:'IBM Plex Mono',monospace;letter-spacing:.1em">其他赛区同步进行中</h3>
+    <div class="tw"><table><thead><tr><th>赛区</th><th>当前第一</th><th>战绩</th></tr></thead><tbody>${other}</tbody></table></div>
+  </div>`;
+}
+
+function nextWeek(){
+  if(S.week>=WEEKS){ S.step="end"; render(); return; }
+  S.week++; S.ap=AP; S.step="season"; S.match=null;
+  addFat(-10);
+  render();
+}
+
+/* ---------------- 结算 ---------------- */
+function viewEnd(){
+  const rows=Object.entries(S.standings.LPL)
+    .map(([n,r])=>({n,...r,p:r.w+r.l?r.w/(r.w+r.l):0})).sort((a,b)=>b.p-a.p);
+  const rank=rows.findIndex(r=>r.n===S.team)+1;
+  const o=ORIGIN[S.origin];
+  const grow=DIMS.map(d=>({d,g:S.attrs[d]-o.base[d]})).sort((a,b)=>b.g-a.g);
+  const champs=["LCK","LEC","LCS"].map(lg=>{
+    const t=Object.entries(S.standings[lg]).map(([n,r])=>({n,...r,p:r.w+r.l?r.w/(r.w+r.l):0}))
+      .sort((a,b)=>b.p-a.p)[0];
+    return `<tr><td>${lg}</td><td>${t.n}</td><td class="n">${t.w}−${t.l}</td></tr>`;
+  }).join("");
+  return `
+  <div class="card">
+    <h2>2022 春季赛结算</h2>
+    <h3>${S.team} 常规赛第 ${rank} 名 · 你的战绩 ${S.record.w}胜 ${S.record.l}负（小分 ${S.gameRec.w}−${S.gameRec.l}）</h3>
+    <p class="note">${rank<=4?'进入季后赛四强区 —— 下个版本会接上 BO5 冒泡与 MSI。'
+      :rank<=8?'挤进季后赛。你在中游站稳了，但离冠军还远。'
+      :'无缘季后赛。这一年就是至暗时刻的一部分，但你的巅峰期还剩三年。'}</p>
+    <div class="attrs" style="margin-top:18px">
+      ${DIMS.map(d=>{
+        const c=cap(S.talent[d]),v=S.attrs[d],g=v-o.base[d];
+        return `<div class="at"><div class="lb">${d}</div>
+          <div class="track"><div class="fill" style="width:${clamp(v,0,100)}%"></div>
+          <div class="capline" style="left:${clamp(c,0,100)}%"></div></div>
+          <div class="vn mono"><b>${v.toFixed(1)}</b> +${g.toFixed(1)}</div></div>`;
+      }).join("")}
+    </div>
+    <p class="note">成长最多的是 <b>${grow[0].d}</b>（+${grow[0].g.toFixed(1)}），最少的是 <b>${grow[grow.length-1].d}</b>（+${grow[grow.length-1].g.toFixed(1)}）——
+    这就是天赋分配的长期后果：高天赋维度练得又快又高，低天赋维度早早撞上瓶颈。</p>
+  </div>
+  <div class="card">
+    <h2>这一年的世界</h2>
+    <div class="tw"><table><thead><tr><th>赛区</th><th>常规赛第一</th><th>战绩</th></tr></thead><tbody>${champs}</tbody></table></div>
+    <p class="note">这些结果不是写死的剧本，是用真实评分跑出来的模拟。换一局会不一样。</p>
+    <div class="row"><button class="btn" id="again">再开一局</button></div>
+  </div>`;
+}
+
+/* ---------------- 渲染 ---------------- */
+function hud(){
+  if(!S||S.step==="create") return $("hud").classList.add("hide");
+  $("hud").classList.remove("hide");
+  const posN=POS.find(p=>p.k===S.pos).n;
+  $("hud").innerHTML=`
+    <div><div class="k">选手</div><div class="v">${S.name||"你"} · ${posN}</div></div>
+    <div><div class="k">战队</div><div class="v">${S.team}</div></div>
+    <div><div class="k">周次</div><div class="v mono">${S.week}/${WEEKS}</div></div>
+    <div><div class="k">战绩</div><div class="v mono">${S.record.w}−${S.record.l}</div></div>
+    <div><div class="k">人气</div><div class="v mono">${Math.round(S.fame)}</div></div>
+    <div><div class="k">疲劳</div><div class="v mono">${Math.round(S.fatigue)}/100</div></div>`;
+}
+
+function render(){
+  hud();
+  const st=$("stage");
+  st.innerHTML = S.step==="create"?viewCreate()
+              : S.step==="season"?viewSeason()
+              : S.step==="match"?viewMatch()
+              : viewEnd();
+  bind();
+}
+
+function bind(){
+  const st=$("stage");
+  st.querySelectorAll("[data-pos]").forEach(b=>b.onclick=()=>{S.pos=b.dataset.pos;render()});
+  st.querySelectorAll("[data-org]").forEach(b=>b.onclick=()=>{S.origin=b.dataset.org;render()});
+  st.querySelectorAll("[data-inc]").forEach(b=>b.onclick=()=>{
+    const d=b.dataset.inc; if(talentLeft()>0&&S.talent[d]<10){S.talent[d]++;render()}});
+  st.querySelectorAll("[data-dec]").forEach(b=>b.onclick=()=>{
+    const d=b.dataset.dec; if(S.talent[d]>1){S.talent[d]--;render()}});
+  const nm=$("nm"); if(nm) nm.oninput=e=>{S.name=e.target.value};
+  const go=$("go"); if(go) go.onclick=()=>{S.name=(nm&&nm.value.trim())||"无名";joinTeam()};
+  st.querySelectorAll("[data-train]").forEach(b=>b.onclick=()=>doTrain(b.dataset.train));
+  st.querySelectorAll("[data-do]").forEach(b=>b.onclick=()=>doAction(b.dataset.do));
+  const pl=$("play"); if(pl) pl.onclick=startMatch;
+  st.querySelectorAll("[data-node]").forEach(b=>b.onclick=()=>resolveNode(+b.dataset.node));
+  const nx=$("next"); if(nx) nx.onclick=nextWeek;
+  const ag=$("again"); if(ag) ag.onclick=screenCreate;
+}
+
+screenCreate();
+</script>

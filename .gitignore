@@ -1,0 +1,20 @@
+# 原始比赛数据：176MB，超过 GitHub 限制，靠脚本重新下载
+data/oracleselixir/*.csv
+data/raw/*.gz
+data/raw/*.json
+
+# 中间产物：体积大且可由脚本再生成
+data/csv/rosters_by_season.csv
+data/csv/rosters_academy.csv
+data/csv/rosters_major.csv
+data/csv/players_all.csv
+data/csv/players_master.csv
+data/csv/teams_all.csv
+
+# 杂项
+node_modules/
+*.log
+oe.html
+oe.js
+drive.html
+leagues_lp.json

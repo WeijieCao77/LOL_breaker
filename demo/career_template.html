@@ -1,0 +1,2262 @@
+<title>破局者 S12-S16</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --paper:#F4F6F9;--surface:#FFF;--surface-2:#EAEEF4;
+  --line:#D3DAE4;--line-soft:#E2E7EE;
+  --ink:#16202D;--ink-2:#47566A;--ink-3:#74839A;
+  --gold:#9A7118;--gold-bg:#F5EDD8;
+  --win:#1D6349;--win-bg:#DDEDE5;
+  --loss:#A03D2E;--loss-bg:#F7E2DD;
+  --bar:#3D6EA8;--bar-2:#8FA9C9;
+  --shadow:0 1px 2px rgba(22,32,45,.05),0 8px 24px -14px rgba(22,32,45,.22);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0E141C;--surface:#161E29;--surface-2:#1D2734;
+  --line:#2C3846;--line-soft:#232E3B;
+  --ink:#E6EBF2;--ink-2:#A3B0C1;--ink-3:#74839A;
+  --gold:#D9AC4E;--gold-bg:#2A2313;
+  --win:#6DC29C;--win-bg:#14291F;
+  --loss:#DE8878;--loss-bg:#2C1A16;
+  --bar:#6E9BD1;--bar-2:#3E5A7D;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -14px rgba(0,0,0,.7);
+}}
+:root[data-theme="dark"]{
+  --paper:#0E141C;--surface:#161E29;--surface-2:#1D2734;
+  --line:#2C3846;--line-soft:#232E3B;
+  --ink:#E6EBF2;--ink-2:#A3B0C1;--ink-3:#74839A;
+  --gold:#D9AC4E;--gold-bg:#2A2313;
+  --win:#6DC29C;--win-bg:#14291F;
+  --loss:#DE8878;--loss-bg:#2C1A16;
+  --bar:#6E9BD1;--bar-2:#3E5A7D;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:Archivo,"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif;
+  font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px 80px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+h1,h2,h3{text-wrap:balance}
+
+.top{padding:34px 0 18px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--gold);margin:0 0 9px}
+h1{font-size:clamp(28px,5vw,42px);margin:0 0 9px;font-weight:700;letter-spacing:-.02em}
+.sub{color:var(--ink-2);margin:0;max-width:62ch;font-size:15px}
+
+.hud{display:flex;flex-wrap:wrap;gap:1px;background:var(--line);border:1px solid var(--line);
+  border-radius:10px;overflow:hidden;margin-bottom:20px}
+.hud>div{background:var(--surface);padding:10px 15px;flex:1 1 96px}
+.hud .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
+  font-family:"IBM Plex Mono",monospace}
+.hud .v{font-size:16px;font-weight:650;margin-top:1px}
+.hud .v small{font-size:11px;color:var(--ink-3);font-weight:400}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:20px;box-shadow:var(--shadow);margin-bottom:16px}
+.card h2{font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;
+  font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink-3);
+  margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line-soft);
+  display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.card h2 em{font-style:normal;color:var(--gold);text-transform:none;letter-spacing:.02em}
+.card h3{font-size:16.5px;margin:0 0 7px;font-weight:650}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:820px){.two{grid-template-columns:1fr}}
+
+.grid{display:grid;gap:9px}
+.g5{grid-template-columns:repeat(auto-fit,minmax(118px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.opt{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;
+  padding:13px;text-align:left;color:var(--ink);transition:border-color .12s,background .12s}
+.opt:hover{border-color:var(--gold)}
+.opt.on{border-color:var(--gold);background:var(--gold-bg)}
+.opt .t{font-weight:650;font-size:15px}
+.opt .d{font-size:12.5px;color:var(--ink-2);margin-top:3px;line-height:1.5}
+
+.tal{display:flex;align-items:center;gap:13px;padding:10px 0;border-bottom:1px solid var(--line-soft)}
+.tal:last-child{border-bottom:none}
+.tal .nm{width:54px;font-weight:650;flex:none}
+.tal .desc{flex:1;font-size:12.5px;color:var(--ink-3);line-height:1.45}
+.tal .ctl{display:flex;align-items:center;gap:7px;flex:none}
+.tal button{width:29px;height:29px;border-radius:7px;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--ink);font-size:16px;line-height:1;font-weight:600}
+.tal button:disabled{opacity:.3;cursor:not-allowed}
+.tal .n{width:24px;text-align:center;font-size:17px;font-weight:650}
+.tal .cap{width:70px;text-align:right;font-size:11px;color:var(--ink-3)}
+
+.attrs{display:flex;flex-direction:column;gap:8px}
+.at{display:grid;grid-template-columns:50px 1fr 78px;align-items:center;gap:11px}
+.at .lb{font-size:13px;font-weight:600}
+.track{height:7px;background:var(--surface-2);border-radius:99px;position:relative;overflow:visible}
+.fill{height:7px;background:var(--bar);border-radius:99px;transition:width .4s ease}
+.capline{position:absolute;top:-2px;width:2px;height:11px;background:var(--ink-3);opacity:.55}
+.at .vn{font-size:12px;color:var(--ink-2);text-align:right}
+.at .vn b{color:var(--ink);font-size:13.5px}
+.at .vn .up{color:var(--win)} .at .vn .dn{color:var(--loss)}
+
+.act{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;
+  padding:12px;text-align:left;color:var(--ink)}
+.act:hover{border-color:var(--gold)}
+.act .t{font-weight:650;font-size:14px}
+.act .d{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+
+.vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;margin-bottom:14px}
+.side{text-align:center}
+.side .nm{font-weight:650;font-size:15.5px}
+.side .pw{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.score{font-family:"IBM Plex Mono",monospace;font-size:29px;font-weight:600;letter-spacing:.04em}
+.log{background:var(--surface-2);border-radius:9px;padding:13px 15px;margin:12px 0;
+  max-height:250px;overflow-y:auto;font-size:13px;line-height:1.65}
+.log div{padding:2px 0;border-bottom:1px solid var(--line-soft)}
+.log div:last-child{border-bottom:none}
+.log .w{color:var(--win);font-weight:600}
+.log .l{color:var(--loss);font-weight:600}
+.log .hi{color:var(--gold);font-weight:600}
+
+.node{background:var(--gold-bg);border:1px solid var(--gold);border-radius:10px;
+  padding:15px 17px;margin:12px 0}
+.node .q{font-weight:650;margin-bottom:3px}
+.node .ctx{font-size:12.5px;color:var(--ink-2);margin-bottom:11px}
+
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:9px}
+table{width:100%;border-collapse:collapse;background:var(--surface);font-size:13px}
+th{text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line);
+  font-family:"IBM Plex Mono",monospace;white-space:nowrap}
+td{padding:8px 12px;border-bottom:1px solid var(--line-soft)}
+tr:last-child td{border-bottom:none}
+td.n{font-family:"IBM Plex Mono",monospace;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.me td{background:var(--gold-bg);font-weight:600}
+tr.cut td{border-bottom:2px solid var(--ink-3)}
+
+.btn{background:var(--ink);color:var(--paper);border:none;border-radius:9px;
+  padding:11px 24px;font-weight:650;font-size:15px}
+.btn:disabled{opacity:.32;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.sm{padding:8px 15px;font-size:13.5px}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:14px}
+input[type=text]{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;
+  padding:10px 13px;color:var(--ink);font-size:15px;width:210px}
+.hide{display:none}
+.note{font-size:12.5px;color:var(--ink-3);margin-top:9px;line-height:1.6}
+.tag{display:inline-block;font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:99px;
+  background:var(--surface-2);color:var(--ink-2);margin-left:5px}
+.tag.w{background:var(--win-bg);color:var(--win)}
+.tag.l{background:var(--loss-bg);color:var(--loss)}
+.tag.g{background:var(--gold-bg);color:var(--gold)}
+.ver{background:var(--surface-2);border-left:3px solid var(--gold);border-radius:8px;
+  padding:12px 15px;margin:12px 0;font-size:13.5px}
+.ver b{color:var(--gold)}
+/* 下一场 */
+.next{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;
+  background:var(--surface-2);border-radius:10px;padding:16px 18px;margin-bottom:12px}
+.next .sd{text-align:center}
+.next .sd .nm{font-weight:650;font-size:16px}
+.next .sd .pw{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-3);margin-top:2px}
+.next .mid{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--gold);
+  letter-spacing:.1em;text-align:center}
+.oppinfo{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.chipx{font-size:11.5px;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:99px;padding:3px 10px;color:var(--ink-2)}
+.chipx b{color:var(--ink)}
+.forms{display:inline-flex;gap:3px;margin-left:4px;vertical-align:middle}
+.forms i{width:7px;height:7px;border-radius:2px;background:var(--ink-3);display:inline-block;font-style:normal}
+.forms i.w{background:var(--win)} .forms i.l{background:var(--loss)}
+
+/* 大事记 */
+.feed{display:flex;flex-direction:column;gap:0;max-height:420px;overflow-y:auto}
+.ev{display:grid;grid-template-columns:auto 1fr;gap:11px;padding:11px 2px;
+  border-bottom:1px solid var(--line-soft);align-items:start}
+.ev:last-child{border-bottom:none}
+.ev .tg{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.08em;
+  padding:3px 7px;border-radius:5px;background:var(--surface-2);color:var(--ink-3);
+  white-space:nowrap;margin-top:2px}
+.ev.big .tg{background:var(--gold-bg);color:var(--gold)}
+.ev.good .tg{background:var(--win-bg);color:var(--win)}
+.ev.bad .tg{background:var(--loss-bg);color:var(--loss)}
+.ev .tx{font-size:13.5px;line-height:1.6;color:var(--ink-2)}
+.ev.big .tx{color:var(--ink);font-weight:500}
+.ev .tm{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--ink-3);margin-left:6px}
+.filt{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.filt button{font-size:11.5px;padding:4px 11px;border-radius:99px;border:1px solid var(--line);
+  background:transparent;color:var(--ink-2)}
+.filt button.on{background:var(--gold-bg);border-color:var(--gold);color:var(--gold);font-weight:600}
+.big{font-size:34px;font-weight:700;letter-spacing:-.02em;margin:8px 0}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">跨赛季版 · S12–S15 · 四年生涯</p>
+    <h1>破局者 S12–S15</h1>
+    <p class="sub">四十支战队、两百名选手的评分来自 2022 赛季真实比赛数据。四年里他们会变老、会下滑、会退役，新人会顶上来。你也一样。</p>
+  </header>
+  <div id="hud" class="hud hide"></div>
+  <div id="stage"></div>
+</div>
+
+<script>
+const DATA = __GAME_DATA__;
+
+/* ================= 常量 ================= */
+const DIMS=["操作","运营","心态","指挥","体质"];
+const DIM_HINT={操作:"对线与输出",运营:"视野与节奏",心态:"抗压与翻盘",指挥:"全队增益",体质:"耐久与状态"};
+const DIM_DESC={
+  操作:"对线压制与个人输出，25 岁后掉得最快",
+  运营:"视野、游走、资源判断，随经验缓慢增长",
+  心态:"逆风稳定性，决定能不能翻盘",
+  指挥:"全队乘数，提升队友发挥率；越老越强",
+  体质:"赛季耐久，25 岁后明显下滑"
+};
+const POS=[{k:"top",n:"上单"},{k:"jng",n:"打野"},{k:"mid",n:"中单"},{k:"bot",n:"AD"},{k:"sup",n:"辅助"}];
+const POSN={top:"上单",jng:"打野",mid:"中单",bot:"AD",sup:"辅助"};
+const ORIGIN={
+  streamer:{n:"主播出身",d:"人气高、直播收益好；体质与运营底子薄",
+    base:{操作:54,运营:45,心态:50,指挥:46,体质:43},fame:62,
+    perk:"流量加持：直播收益 +60%"},
+  academy:{n:"青训出身",d:"操作与运营扎实；人气低、期待压力大",
+    base:{操作:59,运营:55,心态:45,指挥:48,体质:53},fame:14,
+    perk:"科班底子：训练收益 +20%"}
+};
+/* 出道年龄：小的起点低但成长窗口长，大的起点高但更早撞上衰退。
+   本作只跑到 2026——17 岁出道那年结束时 22 岁仍在涨，20 岁出道结束时 25 岁已开始掉。 */
+const AGES=[
+  {a:17,n:"17 岁",d:"手最快的年纪，也最沉不住气",
+   mod:{操作:+3,运营:-3,心态:-3,指挥:-4,体质:+2}, grow:1.10, note:"成长最快，收尾时正当打"},
+  {a:18,n:"18 岁",d:"最常见的出道年龄", mod:{}, grow:1.00, note:"没有偏科"},
+  {a:19,n:"19 岁",d:"多打了一年，脑子清楚一些",
+   mod:{操作:-2,运营:+2,心态:+2,指挥:+3,体质:-1}, grow:0.95, note:"起点更高，成长稍慢"},
+  {a:20,n:"20 岁",d:"起步晚，但想得明白",
+   mod:{操作:-4,运营:+4,心态:+4,指挥:+6,体质:-2}, grow:0.88, note:"开局最强，收尾时已在下滑"}
+];
+const TOTAL_TALENT=20, WEEKS=7;   // 一个赛段 7 周 x 2 赛段 x 5 赛季 = 70 周
+/* 节点模板扩到 34 个之后，加长赛季不会变重复——
+   之前 5 周是因为 8 个模板反复出现，现在瓶颈解除了。 */
+/* 胜率对实力差的敏感度：刻意压低。
+   真实电竞里最强的队面对全联盟也只能拿下六成上下，不是碾压——
+   数值只决定每局胜率，不保证结果。SPREAD 越大越接近这个事实。 */
+const SPREAD=13.5;   // 赛程加长后，单场的确定性要再降一点，否则优势会滚起来
+/* 行动力按「实际有多少事可做」给，不是固定值：
+   赛季中要打比赛、体能吃紧，能安排的事其实少；
+   职业前和休赛期窗口全开，能做的事多得多。
+   受伤时也给少一点——你本来就动不了。 */
+/* 赛段从 5 周拉到 7 周，每周点数就要相应下调——
+   否则总行动点从 20 涨到 28，成长速度凭空多了四成。
+   目标是「比赛更多、成长不变」：内容变长，强度不变。 */
+const AP_SEASON=3, AP_PRE=6, AP_OFF=6, AP_HURT=2;
+function apFor(phase){
+  if(S.injury) return AP_HURT;
+  if(phase==="pre") return AP_PRE;
+  if(phase==="off") return AP_OFF;
+  return AP_SEASON;
+}
+const AP=AP_SEASON;   // 兼容旧引用
+const SPLITS=["春季赛","夏季赛"];
+const SEASONS=[
+  {y:2022,tag:"S12",ver:"射手与龙魂",fav:["bot","sup"],dim:"操作",
+   story:"LCK 卷土重来。你刚进联赛，没人认识你。",
+   msi:{mode:"groups"},                                  // 小组赛 → 淘汰赛
+   worlds:{playin:{teams:12,take:4,bo:2},main:"groups"}}, // 入围12取4 → 小组赛16
+  {y:2023,tag:"S13",ver:"打野节奏",fav:["jng"],dim:"运营",
+   story:"版本变了。上个赛季管用的东西，这个赛季不一定管用。",
+   msi:{mode:"double",playin:{teams:4,take:2,bo:3}},
+   worlds:{playin:{teams:8,take:2,bo:2},main:"swiss"}},   // 瑞士轮元年
+  {y:2024,tag:"S14",ver:"上路单带",fav:["top"],dim:"心态",
+   story:"LCK 已经连冠两年。舆论开始说这个赛区不行了。",
+   msi:{mode:"double"},                                   // 8 队双败，无入围
+   worlds:{playin:{teams:8,take:4,bo:2},main:"swiss"}},
+  {y:2025,tag:"S15",ver:"无畏征召",fav:["mid","jng"],dim:"指挥",fearless:true,
+   story:"无畏征召元年——同一个英雄一个系列赛只能用一次。英雄池深的人笑了。",
+   msi:{mode:"double",playin:{teams:4,take:2,bo:3}},
+   worlds:{playin:{teams:8,take:2,bo:3},main:"swiss"}},
+  {y:2026,tag:"S16",ver:"中野联动",fav:["mid","jng"],dim:"运营",fearless:true,
+   story:"最后一年。再拿不下，至暗时刻就写进历史了。",
+   msi:{mode:"double",playin:{teams:4,take:1,bo:3}},      // 2026 入围只取 1
+   worlds:{playin:{teams:4,take:1,bo:3},main:"swiss"}}    // 2026 入围 4 队取 1
+];
+
+/* ================= 工具 ================= */
+const $=id=>document.getElementById(id);
+const rnd=()=>Math.random();
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+const mult=t=>0.40+t*0.16;
+const cap=t=>38+t*5;   // 天赋1->43(职业及格线)  天赋10->88(历史级)
+const CAP_MAX_BONUS=6;    // 经历最多能把天花板顶高这么多——天赋依然是主导
+
+/* 实际瓶颈 = 天赋上限 + 经历顶开的部分 */
+function capOf(d){
+  return cap(S.talent[d])+((S.capBonus&&S.capBonus[d])||0);
+}
+function initCapBonus(){ S.capBonus={}; DIMS.forEach(d=>S.capBonus[d]=0); }
+/* 顶开瓶颈：同一个来源只算一次 */
+function breakthrough(d,n,reason,key){
+  if(!S.capBonus) initCapBonus();
+  if(key){ S.capSeen=S.capSeen||{}; if(S.capSeen[key]) return; S.capSeen[key]=1; }
+  const before=S.capBonus[d];
+  // 递减：已经顶开越多，再往上越难。否则可重复的机械路径会把上限刷满。
+  const room=clamp(1-before/CAP_MAX_BONUS,0.12,1);
+  S.capBonus[d]=clamp(before+n*room,0,CAP_MAX_BONUS);
+  const got=(S.capBonus[d]-before).toFixed(1);
+  if(+got<=0) return;
+  pushEvent(`<b>瓶颈松动</b>　${reason}<br>
+    <span style="color:var(--cyan)">${d}上限 ${cap(S.talent[d])+before} → ${cap(S.talent[d])+S.capBonus[d]}</span>`,
+    "big","突破");
+  checkAch("break"); if(key===undefined) checkAch("breakauto");
+}
+/* ---------- 突破路径 ----------
+   每一维都有明确的破法。前三条是机械的：肯这么练就一定拿得到。
+   后两条要靠经历——但也写在明面上，不藏着。 */
+const BREAK_PATHS={
+  操作:{ how:"连续 3 周把至少 3 个行动点全投在操作上",
+        auto:true, gain:2.0,
+        prog:()=>`${clamp(S.btk&&S.btk.opStreak||0,0,3)}/3 周`,
+        done:()=>(S.btk&&S.btk.opStreak||0)>=3 },
+  运营:{ how:"一个赛段里做满 6 次战术复盘",
+        auto:true, gain:2.0,
+        prog:()=>`${clamp(S.btk&&S.btk.vod||0,0,6)}/6 次`,
+        done:()=>(S.btk&&S.btk.vod||0)>=6 },
+  体质:{ how:"一个赛段里休息满 6 次，并且这个赛段一场不缺",
+        auto:true, gain:1.6,
+        prog:()=>`${clamp(S.btk&&S.btk.rest||0,0,6)}/6 次`,
+        done:()=>(S.btk&&S.btk.rest||0)>=6 },
+  心态:{ how:"在落后的局面里赢下 3 场，或者拿一次冠军",
+        auto:false, gain:0,
+        prog:()=>`翻盘 ${clamp(S.comebacks||0,0,3)}/3`,
+        done:()=>false },
+  指挥:{ how:"和 27 岁以上的老将同队、待在强队，或者打进国际赛",
+        auto:false, gain:0,
+        prog:()=>{ const v=myRoster&&S.team?myRoster().find(x=>!x.me&&x.age>=27):null;
+                   return v?`队里有 ${v.id}`:"队里没有老将"; },
+        done:()=>false }
+};
+/* 机械条件的计数器 */
+function initBtk(){ S.btk={opStreak:0,opThisWeek:0,vod:0,rest:0}; }
+function btkNote(d,n){ S.btk=S.btk||{opStreak:0,opThisWeek:0,vod:0,rest:0};
+  if(d==="op") S.btk.opThisWeek+=n;
+  else S.btk[d]=(S.btk[d]||0)+n; }
+/* 每周结算：操作的连续周数要在周末判定 */
+function btkWeekEnd(){
+  S.btk=S.btk||{opStreak:0,opThisWeek:0,vod:0,rest:0};
+  if(S.btk.opThisWeek>=3) S.btk.opStreak++;
+  else S.btk.opStreak=0;
+  S.btk.opThisWeek=0;
+  const P=BREAK_PATHS.操作;
+  if(P.done()){ breakthrough("操作",P.gain,"连着两周只练操作，手感磨出来了。");
+    S.btk.opStreak=0; }
+}
+/* 每赛段结算：运营与体质 */
+function btkSplitEnd(){
+  S.btk=S.btk||{opStreak:0,opThisWeek:0,vod:0,rest:0};
+  if(BREAK_PATHS.运营.done()) breakthrough("运营",BREAK_PATHS.运营.gain,"整个赛段泡在录像里，你看比赛的方式变了。");
+  if(BREAK_PATHS.体质.done()&&S.record.w+S.record.l>=WEEKS)
+    breakthrough("体质",BREAK_PATHS.体质.gain,"这个赛段你把作息守住了，身体给了回报。");
+  S.btk.vod=0; S.btk.rest=0;
+}
+
+/* 每个赛段检查一次「环境带来的成长」 */
+function checkBreakthrough(){
+  if(!S.team) return;
+  const mates=myRoster().filter(x=>!x.me);
+  const teamPw=power(myRoster(),0);
+  // 待在强队：耳濡目染，指挥与运营的天花板会松
+  // 环境类只算一次，否则十个赛段会把天花板顶穿
+  if(teamPw>=60){ breakthrough("指挥",2.2,`在 <b>${S.team}</b> 这样的队里待着，你看事情的方式变了。`,"strongteam");
+                  breakthrough("运营",1.8,`高强度的训练赛把你的判断磨快了。`,"strongteam2"); }
+  // 队里有老将：有人手把手教
+  const vet=mates.find(x=>x.age>=27);
+  if(vet) breakthrough("指挥",2.4,`<b>${vet.id}</b> 在复盘里把他这些年的东西讲给了你。`,"vet"+vet.id);
+  // 更衣室氛围好：心态托底
+  if(typeof avgTrust==="function"&&avgTrust()>=68)
+    breakthrough("心态",1.8,`这支队伍让你打得很放松。`,"goodroom");
+  // 打满一个赛段不缺阵
+  if(S.record.w+S.record.l>=WEEKS) breakthrough("体质",1.6,`一个赛段打满，身体扛住了。`,"fullsplit");
+}
+
+/* 年龄曲线：操作/体质掉得快，运营/指挥掉得慢甚至涨 */
+function ageCurve(age){
+  if(age<=21) return 3.6;
+  if(age<=24) return 0.6;
+  if(age<=26) return -1.6;
+  if(age<=28) return -3.6;
+  return -6.2;
+}
+const DECAY_W={操作:1.35,运营:0.35,心态:0.30,指挥:-0.30,体质:1.25};
+
+/* 玩家适应力：天赋越专精越低 —— 专精 build 换版本时更痛 */
+function adaptOf(){
+  const t=DIMS.map(d=>S.talent[d]);
+  const m=avg(t), sd=Math.sqrt(avg(t.map(x=>(x-m)**2)));
+  return clamp(52+(S.attrs.运营-50)*0.32-(sd-1.8)*7.5, 18, 96);
+}
+
+/* 版本相性：本赛季强调的维度是不是你的强项 */
+function versionFit(){
+  const sea=SEASONS[S.si], d=sea.dim;
+  const rel=(S.attrs[d]-55)/12;                 // 你在该维度的相对水平
+  const posBonus=sea.fav.includes(S.pos)?1.6:0;
+  const cushion=adaptOf()/100;                  // 适应力缓冲逆版本
+  return (rel*2.2+posBonus+(rel<0?rel*-1*cushion*1.4:0))*2.0;
+}
+
+/* LCK 的统治力逐年变化——S12 起步、S14 顶峰、S16 才松动。
+   这不是随便配的难度旋钮，它就是「至暗四年」这个设定本身。 */
+const LCK_DYNASTY=[2.2,3.4,4.2,3.0,0.8];
+function dynastyBonus(players){
+  const p=players&&players[0];
+  if(!p||p.me||p.lg!=="LCK") return 0;
+  return LCK_DYNASTY[S.si]||0;
+}
+
+/* 战力：指挥是全队乘数 */
+/* 综合实力 = base × 默契 × 战术 × 士气 × 指挥 × 体能
+   传战队对象时用它自己的默契/战术；传数组时按中性 50 处理。 */
+function power(teamOrPlayers,fatigue=0,verFav=null){
+  const team=(teamOrPlayers&&teamOrPlayers.players)?teamOrPlayers:null;
+  const players=team?team.players:teamOrPlayers;
+  return powerCore(players,fatigue,verFav,team);
+}
+function powerCore(players,fatigue=0,verFav=null,team=null){
+  let s=0,wt=0,cmd=0;
+  players.forEach(p=>{
+    const r=p.r||p;
+    const w=p.me?(S.offerKind==="core"?1.45:1.18):1.0;
+    let v=r.操作*0.34+r.运营*0.28+r.心态*0.14+r.体质*0.10;
+    if(p.me&&typeof injuryHit==="function"){
+      v+=injuryHit("操作")*0.34+injuryHit("运营")*0.28+injuryHit("心态")*0.14+injuryHit("体质")*0.10;
+    }
+    if(p.me&&typeof gearBonus==="function"){
+      v+=gearBonus("操作")*0.34+gearBonus("运营")*0.28+gearBonus("体质")*0.10+langBonus();
+    }
+    if(verFav&&verFav.includes(p.pos)) v+=1.5;
+    // 能力 × 状态：同一个人，今年打成什么样是另一回事
+    const fm=(typeof formMul==="function")?(p.me?myFormMul():formMul(p)):1;
+    s+=v*fm*w; wt+=w; cmd=Math.max(cmd,r.指挥);
+  });
+  const mine=players.some(x=>x.me);
+  const tm=(mine&&typeof trustMod==="function"&&S.trust)?trustMod():1;
+  // 默契与战术：自己的队看 S.squad，别人的队看它自己的（真实战绩反推）
+  const syn=mine?(typeof squadOf==="function"?squadOf("syn"):50):(team&&team.syn!==undefined?team.syn:50);
+  const tac=mine?(typeof squadOf==="function"?squadOf("tac"):50):(team&&team.tac!==undefined?team.tac:50);
+  const rm=(mine&&typeof relMod==='function')?relMod():1;
+  const sq=(1+(syn-50)/950)*(1+(tac-50)/1100)*rm;
+  return (s/wt+dynastyBonus(players))*(1+(cmd-55)/520)*(1-clamp(fatigue,0,100)*0.0022)*tm*sq;
+}
+
+/* ================= 世界 ================= */
+function leagueBaseline(w){
+  const b={};
+  Object.keys(w).forEach(lg=>{
+    b[lg]=avg(w[lg].flatMap(t=>t.players.map(p=>avg(DIMS.map(d=>p.r[d])))));
+  });
+  return b;
+}
+function cloneWorld(){
+  const w={};
+  Object.keys(DATA.leagues).forEach(lg=>{
+    w[lg]=DATA.leagues[lg].map(t=>({
+      name:t.name,
+      syn:t.syn===undefined?50:t.syn,     // 从真实战绩反推，见 export_game.py
+      tac:t.tac===undefined?50:t.tac, logo:t.logo,
+      players:t.players.map(p=>({
+        id:p.id,cn:p.cn,pos:p.pos,age:p.age||22,
+        form:(p.form===undefined||p.form===null)?52:p.form,lg:lg,
+        r:Object.assign({},p.r),retired:false
+      }))
+    }));
+  });
+  return w;
+}
+
+const ROOKIE_CN=["林","王","张","李","陈","刘","杨","黄","赵","周"];
+let rookieN=0;
+function makeRookie(pos,level){
+  rookieN++;
+  const r={};
+  DIMS.forEach(d=>r[d]=clamp(Math.round(level+(rnd()*16-8)),28,72));
+  return {id:"新秀"+ROOKIE_CN[rookieN%10]+rookieN,cn:"",pos,age:18,r,rookie:true};
+}
+
+/* 职业前的世界推进：你没在打，但联赛在打。 */
+function simWorldPre(){
+  if(!S.world||!S.standings) return;
+  Object.keys(S.world).forEach(lg=>{
+    const ts=S.world[lg].slice();
+    for(let i=ts.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[ts[i],ts[j]]=[ts[j],ts[i]];}
+    for(let i=0;i+1<ts.length;i+=2){
+      const a=ts[i],b=ts[i+1];
+      const p=1/(1+Math.exp(-(power(a)-power(b))/SPREAD));
+      const aw=rnd()<p;
+      S.standings[lg][a.name][aw?"w":"l"]++;
+      S.standings[lg][b.name][aw?"l":"w"]++;
+      if(lg==="LPL"&&rnd()<0.06){
+        pushEvent(`<b>${aw?a.name:b.name}</b> 击败 ${aw?b.name:a.name}。`,"info","联赛");
+      }
+    }
+  });
+  // 偶尔来一条职业圈新闻，让世界有存在感
+  if(rnd()<0.22) proNews();
+}
+function proNews(){
+  const lg=["LPL","LCK","LEC","LCS"][Math.floor(rnd()*4)];
+  const rk=Object.entries(S.standings[lg]||{})
+    .map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0})).sort((a,b)=>b.p-a.p);
+  if(!rk.length) return;
+  const top=rk[0], bot=rk[rk.length-1];
+  const pool=[
+    ()=>`<b>${top.n}</b> 以 ${top.w}−${top.l} 领跑 ${lg}。`,
+    ()=>`<b>${bot.n}</b> 跌到 ${lg} 垫底，传出换人消息。`,
+    ()=>{const t=S.world[lg][Math.floor(rnd()*S.world[lg].length)];
+         const q=t.players[Math.floor(rnd()*t.players.length)];
+         return `${lg} 周最佳：<b>${q.id}</b>${q.cn?`（${q.cn}）`:""}（${t.name}）。`},
+    ()=>`${lg} 官方公布下赛季赛制调整，讨论度不低。`,
+    ()=>{const t=S.world[lg][Math.floor(rnd()*S.world[lg].length)];
+         return `<b>${t.name}</b> 宣布启用青训选手，位置暂时保密。`}
+  ];
+  pushEvent(pool[Math.floor(rnd()*pool.length)](),"info","职业圈");
+}
+/* 职业前跨年：结算各赛区冠军，然后清空积分榜 */
+function proSeasonWrap(){
+  if(!S.standings) return;
+  ["LPL","LCK","LEC","LCS"].forEach(lg=>{
+    const rk=Object.entries(S.standings[lg]||{})
+      .map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0})).sort((a,b)=>b.p-a.p);
+    if(rk.length) pushEvent(`${SEASONS[Math.max(0,S.si-1)].tag} <b>${lg}</b> 年度第一：<b>${rk[0].n}</b>（${rk[0].w}−${rk[0].l}）。`,
+      lg==="LCK"?"bad":"info","赛季");
+  });
+  Object.keys(S.world).forEach(lg=>{
+    S.world[lg].forEach(t=>S.standings[lg][t.name]={w:0,l:0});
+  });
+}
+
+/* ---------- 现在是什么时候 ----------
+   一个地方定义，HUD、事件戳、日志都用它。
+   玩家任何时候都该知道：哪个赛季、哪个阶段、还剩多久。 */
+function nowPhase(){
+  const sea=SEASONS[S.si]||SEASONS[0];
+  if(S.step==="pre"||S.step==="offer")
+    return {tag:sea.tag,phase:"职业前",detail:`第 ${S.pre?S.pre.week:1}/${PRE_YEAR} 周`,
+            urgent:S.pre&&S.pre.week>PRE_YEAR-4};
+  if(S.intl){
+    const n=S.intl.type==="msi"?"MSI":"世界赛";
+    const st=S.intl.stage==="playin"?"入围赛":S.intl.stage==="groups"?"小组赛":
+             S.intl.stage==="swiss"?"瑞士轮":
+             (S.intl.knockRound>=3?"决赛":S.intl.knockRound===2?"半决赛":"八强");
+    return {tag:sea.tag,phase:n,detail:st,urgent:true};
+  }
+  if(S.playoff) return {tag:sea.tag,phase:SPLITS[S.split||0]+"季后赛",
+                        detail:`第 ${S.playoff.round} 轮`,urgent:true};
+  if(S.step==="offseason") return {tag:sea.tag,phase:"休赛期",detail:"转会与备战",urgent:false};
+  if(S.step==="end") return {tag:sea.tag,phase:"生涯结束",detail:"",urgent:false};
+  return {tag:sea.tag,phase:SPLITS[S.split||0],detail:`第 ${S.week}/${WEEKS} 周`,
+          urgent:S.week>=WEEKS-1};
+}
+function nowLabel(){ const n=nowPhase(); return `${n.tag} ${n.phase}${n.detail?" "+n.detail:""}`; }
+/* 事件戳：短一点，够定位就行 */
+function nowStamp(){
+  const n=nowPhase();
+  if(n.phase==="职业前") return `${n.tag} 职前W${S.pre?S.pre.week:1}`;
+  if(n.phase==="MSI"||n.phase==="世界赛") return `${n.tag} ${n.phase}`;
+  if(n.phase==="休赛期") return `${n.tag} 休赛期`;
+  if(n.phase.includes("季后赛")) return `${n.tag} ${n.phase}`;
+  return `${n.tag} ${n.phase[0]}${S.week||1}`;
+}
+
+/* ---------- 事件系统 ---------- */
+function ovrOf(p){ return avg(DIMS.map(d=>p.r[d])); }
+function pushEvent(text,tone,tag){
+  S.events.push({s:(typeof nowStamp==="function")?nowStamp():SEASONS[S.si].tag,
+                 w:S.week,text,tone:tone||"info",tag:tag||"联赛"});
+  if(S.events.length>420) S.events.shift();   // 五年十个赛段，160 条会把早期记录挤掉
+}
+function noteForm(team,won){
+  const f=S.form[team]||(S.form[team]=[]);
+  f.push(won?1:0); if(f.length>6) f.shift();
+  const n=f.length;
+  if(n>=5&&f.slice(-5).every(x=>x===1)) return "win4";
+  if(n>=5&&f.slice(-5).every(x=>x===0)) return "lose4";
+  return null;
+}
+
+/* 休赛期：全世界老一岁 */
+function ageWorld(){
+  const news=[];
+  Object.keys(S.world).forEach(lg=>{
+    S.world[lg].forEach(team=>{
+      team.players.forEach((p,i)=>{
+        if(p.me) return;           // 主角的年龄曲线由 doOffseason 处理，且受天赋瓶颈约束
+        p.age++;
+        const base=ageCurve(p.age);
+        DIMS.forEach(d=>{
+          const delta=base*(base>0?(1.4-DECAY_W[d]*0.5):DECAY_W[d]);
+          p.r[d]=clamp(p.r[d]+delta,20,99);
+        });
+        // 退役
+        const ovr=ovrOf(p);
+        if(p.age>=30||(p.age>=27&&ovr<42)){
+          // 新秀水平锚定「赛区开局基准」：真实联赛靠新血维持水位，
+          // 若按当前均值生成，会随老将衰退形成死亡螺旋。
+          const base=(S.baseline&&S.baseline[lg])||avg(S.world[lg].map(t=>avg(t.players.map(q=>ovrOf(q)))));
+          const nr=makeRookie(p.pos,base-6);
+          S.retiredPool.push({p:Object.assign({},p),peak:ovr,year:SEASONS[S.si].y,lg});
+          if(lg==="LPL"||ovr>58){
+            const honor = ovr>62?"一代人的记忆就此谢幕":ovr>52?"结束了自己的职业生涯":"低调退役";
+            pushEvent(`<b>${p.id}</b>${p.cn?`（${p.cn}）`:""} ${p.age} 岁宣布退役，${honor}。${team.name} 提拔新秀 <b>${nr.id}</b> 接班。`,
+              ovr>58?"big":"info","退役");
+          }
+          team.players[i]=nr;
+          S.retireSeen=(S.retireSeen||0)+1; checkAch("retire");
+          team.syn=clamp((team.syn===undefined?50:team.syn)-7,20,90);   // 换人要重新磨
+        }
+      });
+    });
+  });
+
+  // 阵容没动的队，默契自然回升——稳定本身就是一种实力。
+  // 强队还会像玩家一样主动经营（他们也有教练组），所以水位更高：
+  // 不给这条，只有玩家能把默契练到 68，NPC 永远卡在 50，等于白送优势。
+  Object.keys(S.world).forEach(lg=>{
+    const rk=(S.standings&&S.standings[lg])
+      ? Object.entries(S.standings[lg]).map(([n,r])=>({n,p:(r.w+r.l)?r.w/(r.w+r.l):0}))
+          .sort((a,b)=>b.p-a.p).slice(0,3).map(x=>x.n)
+      : [];
+    S.world[lg].forEach(t=>{
+      if(t.syn===undefined) t.syn=50;
+      if(t.tac===undefined) t.tac=50;
+      const elite=rk.includes(t.name)||power(t)>=58;
+      const ceil=elite?72:58;                 // 强队经营得好，水位更高
+      const rate=elite?4.5:2.2;
+      t.syn=clamp(t.syn+(t.syn<ceil?rate:0.5),20,90);
+      t.tac=clamp(t.tac+(t.tac<ceil?rate*0.8:0.4),20,90);
+    });
+  });
+
+  // —— 复出：传奇池 + 本局内退役的选手 ——
+  const legendCands=(DATA.legends||[]).filter(L=>!S.usedLegends.includes(L.id));
+  const inGame=S.retiredPool.filter(r=>r.peak>54&&SEASONS[S.si].y-r.year<=2&&!r.back)
+                  .map(r=>({id:r.p.id,cn:r.p.cn,pos:r.p.pos,age:r.p.age,r:r.p.r,_ref:r}));
+  // 30 岁是强制退役线，复出也不能越线
+  const cands=legendCands.concat(inGame)
+    .filter(c=>c.age+Math.max(1,SEASONS[S.si].y-2022)<=30);
+  if(cands.length&&rnd()<0.7){
+    const c=cands[Math.floor(rnd()*cands.length)];
+    if(c._ref) c._ref.back=true; else S.usedLegends.push(c.id);
+    const team=S.world.LPL[Math.floor(rnd()*S.world.LPL.length)];
+    const idx=team.players.findIndex(q=>q.pos===c.pos&&!q.me);
+    if(idx>=0){
+      const yearsOut=Math.max(1,SEASONS[S.si].y-2022);
+      const back={id:c.id,cn:c.cn,pos:c.pos,age:c.age+yearsOut,comeback:true,
+                  r:Object.assign({},c.r)};
+      // 复出有代价：手生了，脑子还在
+      back.r.操作=clamp(back.r.操作-6-yearsOut*1.5,20,99);
+      back.r.体质=clamp(back.r.体质-8-yearsOut*1.5,20,99);
+      back.r.指挥=clamp(back.r.指挥+5,20,99);
+      back.r.运营=clamp(back.r.运营+2,20,99);
+      const old=team.players[idx];
+      team.players[idx]=back;
+      pushEvent(`<b>${back.id}</b>${back.cn?`（${back.cn}）`:""} 宣布复出，${back.age} 岁加盟 <b>${team.name}</b>，顶替 ${old.id}。手还在不在，要打了才知道。`,"big","复出");
+    }
+  }
+
+  // —— 新秀爆发 ——
+  const rooks=Object.values(S.world).flat().flatMap(t=>t.players.filter(q=>q.rookie&&!q.hyped).map(q=>({q,t})));
+  rooks.filter(x=>ovrOf(x.q)>56).slice(0,2).forEach(x=>{
+    x.q.hyped=true;
+    pushEvent(`新秀 <b>${x.q.id}</b> 在 ${x.t.name} 的季前训练赛里数据炸裂，被媒体称为「下一个天才${POSN[x.q.pos]}」。`,"good","新秀");
+  });
+
+  // —— 阵容补强：上赛季打得好的队，休赛期能签到更好的人 ——
+  //    没有这条，队伍五年只会随年龄衰退，玩家一个人抬不动，冠军永远够不着。
+  (function reinforce(){
+    const rk=lplRank(), myRank=rk.findIndex(r=>r.n===S.team)+1;
+    // 名次越高补强越猛，但对玩家自己的队要克制——
+    // 否则「赢→补强→更容易赢」会滚成一条无法追赶的雪球。
+    const tiers=[[1,1.5],[4,1.1],[8,0.7]];
+    Object.keys(S.world).forEach(lg=>{
+      S.world[lg].forEach(team=>{
+        const isMine=team.name===S.team;
+        let gain;
+        if(isMine){
+          const t=tiers.find(([k])=>myRank<=k);
+          gain=t?t[1]:0.4;
+        } else {
+          // NPC 强队也会补强，保证世界不是只有你在变强
+          // NPC 强队补强要跟得上，否则玩家很快就一骑绝尘
+          const p=power(team);
+          gain=p>62?3.4:p>56?2.4:1.2;
+        }
+        if(gain<=0) return;
+        // 补最弱的一个非玩家位置
+        const cand=team.players.filter(q=>!q.me);
+        if(!cand.length) return;
+        const weak=cand.reduce((a,b)=>ovrOf(a)<=ovrOf(b)?a:b);
+        DIMS.forEach(d=>weak.r[d]=clamp(weak.r[d]+gain*(0.6+rnd()*0.8),20,99));
+        if(isMine&&gain>=2.2)
+          pushEvent(`战绩带来了议价权：<b>${S.team}</b> 签下补强，<b>${weak.id}</b> 的位置被顶了上来。`,"good","补强");
+      });
+    });
+  })();
+
+  // —— 转会：两支队互换一名同位置选手 ——
+  const lpl=S.world.LPL.filter(t=>t.name!==S.team);
+  if(lpl.length>=2&&rnd()<0.75){
+    const a=lpl[Math.floor(rnd()*lpl.length)];
+    const b=lpl[Math.floor(rnd()*lpl.length)];
+    if(a!==b){
+      const pos=["top","jng","mid","bot","sup"][Math.floor(rnd()*5)];
+      const ia=a.players.findIndex(q=>q.pos===pos&&!q.me);
+      const ib=b.players.findIndex(q=>q.pos===pos&&!q.me);
+      if(ia>=0&&ib>=0){
+        const pa=a.players[ia],pb=b.players[ib];
+        a.players[ia]=pb; b.players[ib]=pa;
+        a.syn=clamp((a.syn===undefined?50:a.syn)-8,20,90);
+        b.syn=clamp((b.syn===undefined?50:b.syn)-8,20,90);
+        if(Math.max(ovrOf(pa),ovrOf(pb))>52)
+          pushEvent(`转会：<b>${pa.id}</b> 加盟 ${b.name}，<b>${pb.id}</b> 转投 ${a.name}。`,"info","转会");
+      }
+    }
+  }
+  return news;
+}
+
+/* ================= 捏人 ================= */
+function screenCreate(){
+  S={step:"create", name:"", pos:"mid", origin:"academy", ageIdx:1,
+       bgPick:null, bgOffer:drawBackgrounds(),
+       talent:{操作:4,运营:4,心态:4,指挥:4,体质:4}};
+  render();
+}
+const talentLeft=()=>TOTAL_TALENT-DIMS.reduce((a,d)=>a+S.talent[d],0);
+
+/* 三项都选完之后，才把最终的起点摊开给玩家看一次 */
+function summaryCard(){
+  const o=ORIGIN[S.origin], A=AGES[S.ageIdx], B=bgOf(S.bgPick);
+  const attrs={};
+  DIMS.forEach(d=>attrs[d]=Math.min(o.base[d]-9+(A.mod[d]||0)+((B.mod&&B.mod[d])||0),capOf(d)));
+  const money=B.money||0, fame=Math.max(0,o.fame+(B.fame||0));
+  // 背景带来的增益不写在脸上——照常生效，让玩家自己在打的过程中体会
+  const extra=[];
+  if(B.upkeep) extra.push(`每赛段要往家里寄 ${B.upkeep} 万`);   // 这条是负担，必须告知
+  return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left">
+    <div class="ru-eyebrow" style="text-align:center">你的起点</div>
+    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:16px">${A.n} · ${o.n} · ${B.n}</div>
+    <div class="attrs">${DIMS.map(d=>`
+      <div class="at"><div class="lb">${d}</div>
+        <div class="track"><div class="fill" style="width:${clamp(attrs[d],0,100)}%"></div>
+          <div class="capline" style="left:${clamp(capOf(d),0,100)}%"></div></div>
+        <div class="vn mono"><b>${attrs[d].toFixed(0)}</b> /${capOf(d)}</div></div>`).join("")}
+    </div>
+    <p class="note">起始资金 <b>${money} 万</b>　·　名气 <b>${fameTier(fame)}</b>${
+      extra.length?`<br>${extra.join("　·　")}`:""}</p>
+    <p class="note" style="color:var(--ink-3)">竖线是天赋瓶颈。剩下的，靠你自己打出来。</p>
+    <div class="row" style="justify-content:center;margin-top:18px">
+      <button class="btn" id="startgo">开始职业前之路 →</button>
+    </div>
+  </div></div>`;
+}
+function viewCreate(){
+  if(S.showStart) return summaryCard();
+  if(S.showStart) return startCard();
+  const left=talentLeft();
+  const t=DIMS.map(d=>S.talent[d]); const m=avg(t);
+  const sd=Math.sqrt(avg(t.map(x=>(x-m)**2)));
+  const ad=clamp(52-(sd-1.8)*7.5,18,96);
+  return `
+  <div class="card">
+    <h2>第一步 · 选手身份</h2>
+    <h3>你的 ID<span class="tag">比赛服上的名字</span></h3>
+    <input type="text" id="nm" value="${S.name}" placeholder="例如 Uzi、TheShy" maxlength="12">
+    <h3 style="margin-top:20px">位置</h3>
+    <div class="grid g5">${POS.map(p=>`<button class="opt ${S.pos===p.k?'on':''}" data-pos="${p.k}">
+      <div class="t">${p.n}</div></button>`).join("")}</div>
+    <h3 style="margin-top:20px">出道年龄</h3>
+    <div class="grid g5">${AGES.map((x,i)=>`<button class="opt ${S.ageIdx===i?'on':''}" data-age="${i}">
+      <div class="t">${x.n}</div><div class="d">${x.d}</div>
+      </button>`).join("")}</div>
+    <h3 style="margin-top:20px">出身
+      <button class="btn ghost sm" id="reroll" style="margin-left:10px">换一批</button></h3>
+    <div class="grid g2">${S.bgOffer.map(b=>`
+      <button class="opt ${S.bgPick===b.k?'on':''}" data-bg="${b.k}">
+        <div class="t">${b.n}<span class="tag">${ORIGIN[b.origin].n}</span></div>
+        <div class="d">${b.d}</div>
+      </button>`).join("")}</div>
+    <p class="note">你现在 ${AGES[S.ageIdx].a-1} 岁，还没有战队。先用半年时间打上分、攒人气、被人看见——然后才谈签约。
+      18–21 岁是成长期，22–24 岁巅峰，25 岁后开始下滑。</p>
+  </div>
+
+  <div class="card">
+    <h2>第二步 · 天赋分配<em>剩余 ${left} 点</em></h2>
+    <p class="note" style="margin:0 0 10px">天赋是<b>成长倍率与瓶颈</b>，不是初始属性。另外：天赋越专精，<b>适应力越低</b>——版本一变你就难受。</p>
+    ${DIMS.map(d=>`<div class="tal">
+      <div class="nm">${d}</div><div class="desc">${DIM_DESC[d]}</div>
+      <div class="ctl">
+        <button data-dec="${d}" ${S.talent[d]<=1?'disabled':''}>−</button>
+        <div class="n mono">${S.talent[d]}</div>
+        <button data-inc="${d}" ${(left<=0||S.talent[d]>=10)?'disabled':''}>+</button>
+      </div>
+      <div class="cap mono">×${mult(S.talent[d]).toFixed(2)} 上限${capOf(d)}</div>
+    </div>`).join("")}
+    <div class="ver">当前 build 的<b>适应力约 ${Math.round(ad)}</b>：${
+      ad>62?"很均衡，版本怎么变你都能跟上，但没有一招鲜。":
+      ad>45?"有侧重也有兜底，逆版本时会难受一阵但缓得过来。":
+      "高度专精。顺版本能炸，逆版本会被针对到怀疑人生。"}</div>
+    <div class="row"><button class="btn" id="go" ${(left!==0||!S.bgPick)?'disabled':''}>
+      ${left!==0?`还需分配 ${left} 点`:(S.bgPick?'确认，看看我的起点 →':'先选一个出身')}</button></div>
+  </div>`;
+}
+
+
+/* ================= 职业前：从路人到被发掘 ================= */
+const RANKS=[{n:"黄金",at:0},{n:"铂金",at:12},{n:"钻石",at:26},{n:"大师",at:44},
+             {n:"宗师",at:60},{n:"王者",at:74},{n:"国服前 100",at:86},{n:"国服前 10",at:95}];
+/* 没有死线：一年一个转会窗口，这次没签就接着打，等明年。
+   代价是你又老了一岁——巅峰期是有限的，而这个世界只跑到 2026。 */
+const PRE_YEAR=20;
+const PRE_AP=AP_PRE;       // 一个「职业前年度」20 周，年末是转会窗口
+const PRE_INVITE=118;               // 综合评估到这个水平，才有俱乐部来谈
+const PRE_EARLIEST=13;             // 主播杯打完之前，没人会下判断
+const PRE_WEEKS=PRE_YEAR;
+
+/* 起始段位不是所有人都从黄金爬：
+   青训是被选进去的，底子摆在那；主播靠人气，段位一般没那么高。 */
+/* 起始段位由「排位实力」反推：你现在的水平配得上哪个分段，就在哪个分段。
+   否则会出现开局钻石但实力只够铂金、一上来就掉分的怪事。 */
+function initialRank(){
+  const sk=soloSkill();
+  const fit=(sk-40)/0.38;                       // 实力对应的分数位置
+  const bonus=S.origin==="academy"?3:-2;        // 青训有人带，主播时间被直播分走
+  return clamp(fit+bonus+rnd()*7-3.5,4,52);
+}
+function rankName(v){ let r=RANKS[0]; RANKS.forEach(x=>{if(v>=x.at)r=x}); return r.n; }
+/* 细分到小段：打一把排位要看得见变化，不能永远只显示「黄金」 */
+const DIV=["","一","二","三","四"];
+function rankFull(v){
+  let i=0; RANKS.forEach((x,k)=>{ if(v>=x.at) i=k; });
+  const cur=RANKS[i], next=RANKS[i+1];
+  if(!next) return cur.n;
+  if(i>=3){                                   // 大师及以上按点数
+    return cur.n+" "+Math.round((v-cur.at)*22)+" 点";
+  }
+  const span=next.at-cur.at;
+  const d=clamp(4-Math.floor((v-cur.at)/span*4),1,4);
+  return cur.n+DIV[d];
+}
+function startPre(){
+  const o=ORIGIN[S.origin], A=AGES[S.ageIdx], B=bgOf(S.bgPick);
+  const attrs={};
+  DIMS.forEach(d=>attrs[d]=Math.min(
+    o.base[d]-9+(A.mod[d]||0)+((B.mod&&B.mod[d])||0), capOf(d)));
+  S=Object.assign({},S,{
+    step:"pre",attrs,age:A.a-1,fame:Math.max(0,o.fame+(B.fame||0)),money:B.money||0,fatigue:0,
+    ageCfg:A,bg:B,preYear:1,si:0,split:0,
+    pre:{week:1,ap:PRE_AP,rank:0,scout:0,cityCup:null,streamCup:null,log:[],offers:null},
+    seasonAttr0:Object.assign({},attrs),
+    events:[],usedLegends:[],retiredPool:[],form:{},formSeen:{},news:[],log:[]
+  });
+  S.pre.rank=initialRank();
+  initShop(); initAch();
+  // 世界从现在就开始转——你打排位的每一周，职业赛都在打
+  S.world=cloneWorld();
+  S.baseline=leagueBaseline(S.world);
+  S.standings={};
+  Object.keys(S.world).forEach(lg=>{
+    S.standings[lg]={};
+    S.world[lg].forEach(t=>S.standings[lg][t.name]={w:0,l:0});
+  });
+  if(B.course) S.courses[B.course]=1;
+  preLog(`<b>${B.n}</b>。${B.d}`,"big");
+  preLog(`你 ${S.age} 岁，${ORIGIN[S.origin].n}，当前 ${rankBadge(S.pre.rank,22)}。没有战队，没有人认识你。`,"info");
+  render();
+}
+function preLog(t,tone){ S.pre.log.push({t,tone:tone||"info",w:S.pre.week,
+    stamp:(typeof nowStamp==="function")?nowStamp():""}); if(S.pre.log.length>60)S.pre.log.shift(); }
+
+/* 排位实力：单排能不能赢，主要看操作和运营，心态决定逆风局。 */
+function soloSkill(){
+  return S.attrs.操作*0.50+S.attrs.运营*0.30+S.attrs.心态*0.20
+       + (typeof gearBonus==="function"?(gearBonus("操作")*0.5+gearBonus("运营")*0.3):0);
+}
+/* 当前分数位置对应的实力门槛。
+   这条曲线必须和「实际能练到的排位实力」在同一量纲上：
+   均衡 build 练满约 58 -> 大师；极限 build 约 77 -> 国服前十。
+   之前用的 33+v*0.63 太陡，均衡 build 连大师都摸不到，
+   最强 build 也上不了王者——整条段位天梯有一半是死的。 */
+function rankReq(v){ return 40+clamp(v,0,100)*0.38; }
+/* 打一把的胜率：实力压过门槛就赢多输少，差得远就基本打不动 */
+function soloWinP(){
+  const md=(typeof buffVal==="function")?(buffVal("mood")-1)*8:0;
+  const d=soloSkill()-rankReq(S.pre.rank)+md;
+  return clamp(1/(1+Math.exp(-d/5.2)),0.06,0.94);
+}
+/* 一次「打排位」= 3 把，赢了涨输了掉 */
+function rankStep(){ return clamp(2.6-S.pre.rank*0.012,1.1,2.6); }
+function preAct(k,dim){
+  const P=S.pre; if(P.ap<=0) return;
+  if(typeof noteAct==="function") noteAct(k==="train"?"train":"pre",k==="train"?dim:k);
+  if(k==="rank"){
+    const beforeT=rankName(P.rank), beforeF=rankFull(P.rank);
+    const p=soloWinP(), step=rankStep();
+    let w=0,l=0;
+    for(let i=0;i<3;i++){
+      if(rnd()<p){ w++; P.rank=clamp(P.rank+step,0,100); }
+      else { l++; P.rank=clamp(P.rank-step*0.82,0,100); }
+    }
+    addFat(8);
+    const afterT=rankName(P.rank), afterF=rankFull(P.rank);
+    addFame(w*0.5);      // 赢下来的分才带来关注
+    P.lastQ={w,l,p}; checkAch("rank");
+    const up=RANKS.findIndex(r=>r.n===afterT)>RANKS.findIndex(r=>r.n===beforeT);
+    if(afterT!==beforeT&&up){
+      preLog(`${w} 胜 ${l} 负，<b>打上 ${afterF}</b>。`,"good");
+      // 只有第一次摸到这个段位才弹窗——不然在门槛上来回跳会刷屏
+      P.seenTier=P.seenTier||{};
+      if(!P.seenTier[afterT]){ P.seenTier[afterT]=1; S.rankUp={from:beforeT,to:afterT,v:P.rank}; }
+    } else if(afterT!==beforeT){
+      preLog(`${w} 胜 ${l} 负，<b>掉回 ${afterF}</b>。`,"bad");
+    } else if(afterF!==beforeF){
+      preLog(`${w} 胜 ${l} 负，${beforeF} → <b>${afterF}</b>。`,w>l?"good":w<l?"bad":"info");
+    } else {
+      preLog(`${w} 胜 ${l} 负，还在 ${afterF} 原地踏步。`,"info");
+    }
+    checkAch("rank");
+    if(P.rank>=95&&!P.top10){P.top10=true;preLog(`你冲进<b>国服前 10</b>。这个位置上的人，职业队不会看不见。`,"big");}
+  } else if(k==="stream"){
+    const m=S.origin==="streamer"?1.7:1.0;
+    const pop=4+S.pre.rank*0.07;
+    const gift=streamIncome();
+    addFame(pop*m); S.money+=gift; addFat(4); checkAch("stream");
+    if(gift>=50&&!P.bigGift){P.bigGift=true;
+      preLog(`直播间刷起了礼物，这一场进账 <b>${Math.round(gift)} 万</b>。`,"good");}
+    if(S.fame>=120&&!P.famous){P.famous=true;preLog(`直播间人数破万。<b>你在圈子里有名气了</b>，虽然还没打过一场正赛。`,"good");}
+  } else if(k==="train"){
+    const c=capOf(dim); if(S.attrs[dim]>=c) return;
+    S.attrs[dim]=Math.min(c,S.attrs[dim]+gain(dim)*0.85); addFat(9);
+  } else { addFat(-32); S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.5); }
+  P.ap--; render();
+}
+
+/* 业余赛：随段位生成对手强度 */
+function amateurRun(name,rounds,base){
+  let win=0,lines=[];
+  const me=S.attrs.操作*0.42+S.attrs.运营*0.28+S.attrs.心态*0.18+S.attrs.体质*0.12
+           +(S.attrs.指挥-50)*0.12;
+  for(let i=0;i<rounds;i++){
+    const opp=base+i*3.2+rnd()*5;
+    const p=1/(1+Math.exp(-(me-opp)/5.5));
+    const w=rnd()<p; if(w)win++;
+    lines.push(`${name} 第 ${i+1} 轮 ${w?'<span class="w">胜</span>':'<span class="l">负</span>'}（对手强度 ${opp.toFixed(0)}）`);
+    if(!w) break;
+  }
+  return {win,rounds,lines};
+}
+function runCityCup(){
+  const r=amateurRun("城市争霸赛",4,S.attrs.操作*0.5+6);
+  S.pre.cityCup=r.win;
+  addFame(r.win*13);
+  const M=PRE_MILESTONES.find(x=>x.signup==="city");
+  const prize=(M.prize||[])[r.win]||0;
+  if(prize){ S.money+=prize; preLog(`奖金到账 <b>${prize} 万</b>。`,"good"); }
+  checkAch("cup",{kind:"city",win:r.win});
+  preLog(`<b>城市争霸赛</b>：${r.win===4?"一路碾压，拿下冠军。有战队经理在观众席。":r.win>=2?`打到第 ${r.win+1} 轮，被淘汰。但你的数据被记下来了。`:"首轮出局。这条路比想象中难。"}`,r.win>=3?"big":r.win>=2?"good":"bad");
+  r.lines.forEach(l=>preLog(l,"info"));
+}
+function runStreamCup(){
+  const r=amateurRun("主播杯",3,S.attrs.操作*0.46+10);
+  S.pre.streamCup=r.win;
+  addFame(r.win*17);
+  const M=PRE_MILESTONES.find(x=>x.signup==="stream");
+  const prize=(M.prize||[])[r.win]||0;
+  if(prize){ S.money+=prize; preLog(`奖金到账 <b>${prize} 万</b>。`,"good"); }
+  checkAch("cup",{kind:"stream",win:r.win});
+  preLog(`<b>主播杯</b>：${r.win===3?"夺冠。这场直播的切片传遍了全网。":r.win>=1?`赢了 ${r.win} 轮。至少证明了你不是只会打排位。`:"被大主播队打爆，弹幕不太好看。"}`,r.win>=2?"big":r.win>=1?"good":"bad");
+}
+
+/* 职业前的时间节点：都有明确门槛和倒计时 */
+const PRE_MILESTONES=[
+  {w:6, name:"城市争霸赛", tag:"赛事", open:true, signup:"city", fee:35, prize:[0,25,70,180,420],
+   need:()=>S.pre.rank>=RANKS[3].at, needTxt:"大师及以上",
+   cur:()=>rankFull(S.pre.rank),
+   desc:"市级公开赛，报名要大师。职业队球探常来看台",
+   run:()=>runCityCup(),
+   fail:()=>preLog("城市争霸赛报名截止了——<b>段位不够，你连报名资格都没有</b>。","bad")},
+  {w:9, name:"青训教练私信", tag:"人脉", open:false,
+   need:()=>preScore()>=34, needTxt:"—",
+   cur:()=>"—",
+   desc:"有人开始注意到你了",
+   run:()=>preLog("有个自称 <b>战队青训教练</b> 的人加了你好友，问你有没有想过打职业。","good"),
+   fail:()=>{}},
+  {w:12, name:"主播杯", tag:"赛事", open:true, vague:true, signup:"stream", fee:60, prize:[0,60,180,520],
+   need:()=>S.fame>=60, needTxt:"邀请制 · 看人气",
+   cur:()=>fameTier(),
+   desc:"邀请制，名气不够连门都进不去",
+   run:()=>runStreamCup(),
+   fail:()=>preLog("主播杯是邀请制。<b>你的人气还不够，没收到邀请</b>。","bad")},
+  {w:15, name:"球探到场", tag:"人脉", open:false,
+   need:()=>preScore()>=62, needTxt:"—",
+   cur:()=>"—",
+   desc:"俱乐部开始正式评估你",
+   run:()=>preLog("两家俱乐部的球探同时出现在你的直播间。<b>试训邀请快来了。</b>","big"),
+   fail:()=>{}},
+  {w:PRE_YEAR, name:"转会窗口", tag:"机会", open:true, dateOnly:true,
+   need:()=>true, needTxt:"年度机会",
+   cur:()=>"—",
+   desc:"年末各队定人。这次没签也不要紧，明年还有——只是你又老了一岁",
+   run:()=>{}, fail:()=>{}}
+];
+/* 隐性指标只给感觉，不给数字——不然玩游戏就变成刷数值 */
+/* 俱乐部怎么看你——由段位、名气与赛事成绩共同决定，不再是单独一条数值 */
+function scoutTier(){
+  const r=preScore()/PRE_INVITE;
+  return r<0.2?"没人知道你是谁":r<0.4?"偶尔有人提起":r<0.6?"圈子里有你的名字"
+       :r<0.82?"有俱乐部在打听":r<1?"已经有人在联系你了":"随时可以谈签约";
+}
+/* 人气用人话说，别甩数字——没人知道「人气 137」是什么概念 */
+const FAME_TIERS=[
+  [0,"无人问津"],[25,"直播间几十个人"],[55,"小主播"],[95,"普通大主播"],
+  [160,"平台头部"],[260,"虎牙一哥"],[400,"全网顶流"],[600,"出圈到路人都认识"],[850,"这个项目的门面"]
+];
+function fameTier(v){
+  v=(v===undefined)?S.fame:v;
+  let n=FAME_TIERS[0][1];
+  FAME_TIERS.forEach(([at,nm])=>{ if(v>=at) n=nm; });
+  return n;
+}
+function nextMilestone(){ return PRE_MILESTONES.find(m=>m.open&&m.w>=S.pre.week); }
+
+function preNextWeek(){
+  const P=S.pre;
+  const hit=PRE_MILESTONES.find(m=>m.w===P.week);
+  if(hit&&hit.signup){
+    if(!hit.need()){ hit.fail(); }
+    else { S.signup=hit; render(); return; }     // 交给玩家决定报不报
+  } else if(hit){ hit.need()?hit.run():hit.fail(); }
+  // 够格就随时有人来谈；不够就打到年末的转会窗口再看
+  if(P.week>=PRE_EARLIEST&&preScore()>=PRE_INVITE){
+    preLog(`俱乐部发来<b>正式试训邀请</b>。`,"big");
+    makeOffers(); return;
+  }
+  advancePreWeek(); return;
+}
+/* 报名弹窗处理完之后，继续把这一周走完 */
+function advancePreWeek(){
+  const P=S.pre;
+  if(P.week>=PRE_YEAR){
+    if(preScore()>=PRE_INVITE*0.82){ preLog(`转会窗口开了，有队伍愿意和你谈。`,"good"); makeOffers(); return; }
+    preLog(`转会窗口关了，<b>没有一家找你</b>。明年再来。`,"bad");
+    preNextYear(); return;
+  }
+  if(typeof archiveWeek==='function') archiveWeek();
+  P.week++; P.ap=apFor('pre'); addFat(-9);
+  if(typeof injuryTick==='function') injuryTick();
+  if(typeof rollInjury==='function') rollInjury('职业前');
+  if(typeof tickBuffs==='function') tickBuffs();
+  simWorldPre();
+  if(typeof tryRandomEvent==='function'&&rnd()<0.30) tryRandomEvent();
+  // 提前预告：还有 3 周 / 1 周时提醒，并说清差多少
+  PRE_MILESTONES.forEach(m=>{
+    const d=m.w-P.week;
+    if((d===3||d===1)&&m.open){
+      const ok=m.need();
+      if(m.dateOnly){
+        preLog(`<b>${m.name}</b> ${d===1?"下周":"三周后"}。这半年做的每件事都会在那天结算。`,"big");
+      } else if(m.vague){
+        preLog(`<b>${m.name}</b> ${d===1?"下周":"三周后"}开始，${m.needTxt}。你现在的名气：${m.cur()}。`,"info");
+      } else {
+        preLog(`<b>${m.name}</b> ${d===1?"下周":"三周后"}开始。门槛 ${m.needTxt}，你现在 ${m.cur()}——${
+          ok?'<span style="color:var(--cyan)">已达标</span>':'<span style="color:var(--red)">还不够</span>'}。`,
+          ok?"good":"bad");
+      }
+    }
+  });
+  render();
+}
+
+/* 只有一个「外界评价」维度：段位 + 名气 + 赛事成绩。
+   原来还有个「星探关注度」，但它和名气靠同样的行为增长，玩家分不清区别——已合并。 */
+function preScore(){
+  const P=S.pre;
+  return P.rank*0.92+Math.min(S.fame,300)*0.22+(P.cityCup||0)*8+(P.streamCup||0)*8;
+}
+/* 这一年没签成：世界往前走一年，你也老一岁。没有死线，只有代价。 */
+function preNextYear(){
+  const P=S.pre;
+  if(S.si>=SEASONS.length-1){ S.step="end"; S.neverSigned=true; render(); return; }
+  S.si++; S.age++; P.preYear=(P.preYear||1)+1;
+  P.week=1; P.ap=apFor('pre'); P.cityCup=null; P.streamCup=null;
+  S.fatigue=0; S.buff={};
+  P.rank=Math.max(0,P.rank-4);          // 一年下来手会生一点
+  proSeasonWrap();
+  pushEvent(`<b>${SEASONS[S.si].tag} ${SEASONS[S.si].y}</b>：你还没打上职业。${SEASONS[S.si].story}`,"bad","赛季");
+  preLog(`<b>${SEASONS[S.si].tag} ${SEASONS[S.si].y} 赛季开始</b>，你 ${S.age} 岁了。
+    上一年没能签约，这一年从头再来——但世界已经往前走了一年。`,"hi");
+  render();
+}
+function makeOffers(forced){
+  const P=S.pre, score=preScore();
+  P.finalScore=Math.round(score);
+  P.forced=!!forced;
+  const world=cloneWorld();
+  const rk=world.LPL.map(t=>({t,p:power(t)})).sort((a,b)=>b.p-a.p);
+  const offers=[];
+  if(score>=70) offers.push({k:"sub",team:rk[Math.floor(rnd()*3)].t.name,
+     t:"强队替补",d:"顶级豪门，但首发位上坐着一位强力老将。你得练到压过他，否则可能整年不上场。",
+     note:"天花板最高，也真的可能坐穿板凳"});
+  if(score>=32) offers.push({k:"start",team:rk[6+Math.floor(rnd()*4)].t.name,
+     t:"中游首发",d:"稳定首发位置，队伍中规中矩。最普通的一条路。",note:"稳，但很难摸到冠军"});
+  offers.push({k:"core",team:rk[rk.length-1-Math.floor(rnd()*4)].t.name,
+     t:"弱队核心",d:"全队资源向你倾斜，但队友确实弱。赢球要靠你自己。",
+     note:"成长最快，战绩最难看"});
+  if(score>=92){
+    const foreign=(rnd()<0.5?world.LCK:world.LEC);
+    const ft=foreign[Math.floor(rnd()*Math.min(4,foreign.length))];
+    offers.push({k:"foreign",team:ft.name,league:foreign===world.LCK?"LCK":"LEC",
+      t:"外赛区首发",d:`${foreign===world.LCK?"LCK":"LEC"} 的 ${ft.name} 向你发来试训邀请。语言不通，环境陌生。`,
+      note:"最难的路，也最能证明你"});
+  }
+  P.offers=offers; P.world=world; P.baseline=leagueBaseline(world); S.step="offer"; render();
+}
+
+function acceptOffer(i){
+  const P=S.pre, of=P.offers[i];
+  S.proLg=null;
+  const lgKey=of.league||"LPL";
+  const world=P.world;
+  const team=world[lgKey].find(t=>t.name===of.team);
+  const incumbent=team.players.find(q=>q.pos===S.pos);
+  if(of.k!=="sub"){
+    team.players=team.players.map(q=>q.pos===S.pos
+      ? {id:S.name||"你",cn:"",pos:S.pos,age:S.age+1,r:S.attrs,me:true} : q);
+  }
+  S=Object.assign({},S,{
+    step:"season",age:S.age+1,world,baseline:P.baseline,team:of.team,homeLeague:lgKey,offerKind:of.k,
+    understudy:of.k==="sub"?incumbent:null, promoted:of.k!=="sub",
+    si:0,week:1,ap:AP,record:{w:0,l:0},gameRec:{w:0,l:0},
+    career:{w:0,l:0,titles:[],best:99},seasonAttr0:Object.assign({},S.attrs),
+    buff:{},contract:{years:2,left:2},rivals:{},lockerSeen:[]
+  });
+  initTrust(); initSquad(); initCapBonus(); initBtk();
+  initStaff(); initRelations();
+  S.winStreak=0; S.sweepStreak=0; S.lckBeaten=[]; S.retireSeen=0;
+  S.benchedSplits=0; S.everCut=false; S.cameFromPlayin=false;
+  S.career.msiYears=[]; S.career.worldsYears=[]; S.career.lgYears=[]; S.career.lgStreak=0;
+  S.form=52; S.injury=null; S.listCooldown=0; S.signCooldown=0;
+  S.rosterSig=myRoster().map(x=>x.id).sort().join("|");
+  // 你自己就是那个「强援」：base 上去了，但五个人要重新磨
+  disruptSynergy(1,`<b>${S.name||"你"}</b> 加盟`);
+  pushEvent(`<b>${S.name||"你"}</b> 正式签约 <b>${of.team}</b>（${of.t}）。职业生涯从这里开始。`,"big","签约");
+  checkAch("sign");
+  startSeason(true);
+}
+
+/* ================= 进队 ================= */
+function joinTeam(){
+  const o=ORIGIN[S.origin], attrs={};
+  // 天赋是硬瓶颈——连出身给的底子也不例外
+  DIMS.forEach(d=>attrs[d]=Math.min(o.base[d],capOf(d)));
+  const world=cloneWorld();
+  S.baseline=leagueBaseline(world);
+  const ranked=world.LPL.map(t=>({t,p:power(t)})).sort((a,b)=>b.p-a.p);
+  const idx=clamp(Math.round(ranked.length*0.55+(rnd()*4-2)),5,ranked.length-2);
+  const team=ranked[idx].t;
+  team.players=team.players.map(p=>p.pos===S.pos
+    ? {id:S.name||"你",cn:"",pos:S.pos,age:18,r:attrs,me:true} : p);
+
+  S=Object.assign({},S,{
+    step:"season",attrs,age:18,fame:o.fame,money:0,fatigue:0,
+    si:0,week:1,ap:AP,world,team:team.name,
+    record:{w:0,l:0},gameRec:{w:0,l:0},career:{w:0,l:0,titles:[],best:99},
+    log:[],news:[],events:[],retiredPool:[],usedLegends:[],form:{},formSeen:{},
+    schedule:[],standings:null,seasonAttr0:Object.assign({},attrs)
+  });
+  startSeason(true);
+}
+
+function myTeam(){ return S.world[S.homeLeague||"LPL"].find(t=>t.name===S.team); }
+function myRoster(){ return myTeam().players; }
+
+function startSeason(first,split){
+  S.split=(split===undefined)?0:split;
+  const HL=S.homeLeague||"LPL";
+  const opp=S.world[HL].filter(t=>t.name!==S.team).map(t=>t.name);
+  for(let i=opp.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[opp[i],opp[j]]=[opp[j],opp[i]];}
+  S.schedule=opp.slice(0,WEEKS);
+  S.standings={};
+  Object.keys(S.world).forEach(lg=>{
+    S.standings[lg]={};
+    S.world[lg].forEach(t=>S.standings[lg][t.name]={w:0,l:0});
+  });
+  S.week=1; S.ap=apFor('season'); S.record={w:0,l:0}; S.step="season"; S.tab="act";
+  if(S.benchedThisSplit){ S.benchedSplits=(S.benchedSplits||0)+1; S.benchedThisSplit=false; }
+  if(S.split===0) S.seasonAttr0=Object.assign({},S.attrs);
+  S.buff={};                       // 私教/理疗等按赛段生效，每赛段重新买
+  if(S.split===1){
+    pushEvent(`<b>${SEASONS[S.si].tag} 夏季赛开赛</b>。世界赛名额就看这个赛段。`,"big","赛段");
+  }
+  if(!first&&S.split===0){
+    S.log.push(`<div class="hi">— ${SEASONS[S.si].tag} 赛季开始（版本：${SEASONS[S.si].ver}）—</div>`);
+    const sea=SEASONS[S.si];
+    pushEvent(`<b>${sea.tag} 开赛</b>，版本主题「${sea.ver}」。本赛季 ${sea.fav.map(x=>POSN[x]).join("、")} 是红利位，<b>${sea.dim}</b>的权重上升。`,"big","版本");
+  }
+  render();
+}
+
+/* ================= 赛季回合 ================= */
+function gain(d){
+  const t=S.talent[d],c=cap(t),room=clamp(1-(S.attrs[d]/c),0,1);
+  const ageM=S.age<=21?1.15:S.age<=24?1.0:0.6;
+  const bonus=S.origin==="academy"?1.2:1.0;
+  const coach=(S.buff&&S.buff.coach)?1.22:1;
+  const tb=(typeof buffVal==='function')?buffVal('train')*buffVal('mood'):1;
+  const ij=(typeof injuryTrainMul==='function')?injuryTrainMul():1;
+  const ag=(S.ageCfg&&S.ageCfg.grow)||1;
+  const bg=(S.bg&&S.bg.train)||1;
+  const cs=(typeof courseTrainMul==="function")?courseTrainMul(d):1;
+  return 1.30*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*ij;
+}
+const addFat=n=>{S.fatigue=clamp(S.fatigue+n,0,100)};
+/* 名气有边际递减：从零到小有名气很快，再往上越来越难。
+   没有这条，打赏收入和签约评分都会随时间无限膨胀。 */
+function addFame(n){
+  if(!n) return;
+  if(n<0){ S.fame=Math.max(0,S.fame+n); return; }
+  const damp=1/(1+Math.max(0,S.fame)/240);
+  S.fame=Math.max(0,S.fame+n*damp);
+}
+
+function doTrain(d){
+  if(S.ap<=0||S.attrs[d]>=capOf(d))return;
+  if(d==="操作"&&typeof btkNote==="function") btkNote("op",1);
+  S.attrs[d]=Math.min(capOf(d),S.attrs[d]+gain(d));
+  if(typeof noteAct==='function') noteAct('train',d);
+  checkAch("train");
+  addFat(9); S.ap--; checkAch("train"); render();
+}
+function doAction(k){
+  if(S.ap<=0)return;
+  if(typeof noteAct==="function") noteAct("do",k);
+  if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
+    addFame(4.5*m);S.money+=streamIncome();addFat(5);}
+  else{ if(typeof btkNote==="function") btkNote("rest",1);
+    addFat(((S.buff&&S.buff.physio)?-42:-30)*((S.bg&&S.bg.rest)||1));S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.6);}
+  S.ap--;render();
+}
+/* 自动推进本赛季剩余周（回合粒度变粗） */
+function autoRest(focus){
+  let guard=0;
+  while(S.step==="season"&&guard++<200){
+    while(S.ap>0){
+      const av=DIMS.filter(d=>S.attrs[d]<capOf(d));
+      if(S.fatigue>70) doAction("rest");
+      else if(av.length) doTrain(av.includes(focus)?focus:av[0]);
+      else doAction("stream");
+    }
+    startMatch(); autoMatch();
+  }
+  render();
+}
+
+function viewSeason(){
+  const sea=SEASONS[S.si], T=curTab(TABS_SEASON);
+  if(T!=="act") return `${S.locker?lockerCard():""}${S.rndEv?randomCard():""}
+    ${tabBar(TABS_SEASON)}
+    ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
+    ${T==="team"?squadCard()+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():"")+rivalCard()+standingsCard():""}
+    ${T==="shop"?shopCard():""}
+    ${T==="news"?eventsCard()+newsCard():""}
+    ${T==="ach"?achCard():""}`;
+  const oppName=S.schedule[S.week-1];
+  const opp=S.world[S.homeLeague||"LPL"].find(t=>t.name===oppName);
+  const fit=versionFit();
+  const benched=isBenched();
+  return `
+  <div class="card">
+    <h2>${sea.tag} ${SPLITS[S.split||0]} · 第 ${S.week}/${WEEKS} 周<em>剩余行动点 ${S.ap}</em></h2>
+    <div class="ver">版本 <b>${sea.ver}</b> — 本赛季强调 <b>${sea.dim}</b>${
+      sea.fav.includes(S.pos)?`，且<b>${POSN[S.pos]}是版本红利位</b>`:""}。
+      你的版本相性：<b>${fit>=1.5?"顺风":fit>=-0.5?"中性":"逆版本"}</b>。</div>
+    ${fatigueBar()}
+    ${typeof riskHint==="function"?riskHint():""}
+    ${typeof routineBar==="function"?routineBar():""}
+    ${S.injury?`<p class="note" style="color:var(--red);margin-top:0">受伤期间行动力只有 ${AP_HURT} 点。</p>`:""}
+    <div class="grid g5">
+      ${DIMS.map(d=>{const c=capOf(d),done=S.attrs[d]>=c;
+        return `<button class="act" data-train="${d}" ${(S.ap<=0||done)?'disabled style="opacity:.34"':''}>
+        <div class="t">练${d}</div><div class="d">${done?'已达瓶颈':DIM_HINT[d]}</div></button>`}).join("")}
+      <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">直播</div><div class="d">涨人气与收入</div></button>
+      <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">休息</div><div class="d">清疲劳，护状态</div></button>
+    </div>
+    ${squadActs()}
+    <div class="row">
+      <button class="btn" id="play" ${S.ap>0?'disabled':''}>
+        ${S.ap>0?`还剩 ${S.ap} 个行动点`:(benched?`替补席观战第 ${S.week} 周 →`:`打第 ${S.week} 周 · vs ${oppName} →`)}</button>
+      <button class="btn ghost sm" id="auto">自动推完本赛季</button>
+    </div>
+    ${benched?`<p class="note" style="color:var(--loss)">你还在替补席。首发是 <b>${S.understudy.id}</b>（综合 ${avg(DIMS.map(d=>S.understudy.r[d])).toFixed(0)}，你 ${avg(DIMS.map(d=>S.attrs[d])).toFixed(0)}）。
+      <b>练到压过他，才轮得到你上场。</b></p>`:""}
+    <p class="note">本周对手 <b>${oppName}</b>（战力 ${power(opp,0,sea.fav).toFixed(1)}）
+      vs 你队 ${power(myRoster(),S.fatigue,sea.fav).toFixed(1)}</p>
+  </div>
+  ${S.locker?lockerCard():""}${S.rndEv?randomCard():""}
+  ${tabBar(TABS_SEASON)}
+  ${T==="act"?(typeof injuryCard==="function"?injuryCard():"")+nextMatchCard()+attrCard():""}
+  ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
+  ${T==="team"?squadCard()+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():"")+rivalCard()+standingsCard():""}
+  ${T==="shop"?shopCard():""}
+  ${T==="news"?eventsCard()+newsCard():""}
+  ${T==="ach"?achCard():""}`;
+}
+
+function lockerCard(){
+  const {ev,target}=S.locker;
+  return `<div class="card"><h2>更衣室</h2>
+    <div class="node"><div class="q">${ev.q(target)}</div><div class="ctx">${ev.ctx}</div>
+    <div class="grid g2">${ev.a.map((a,i)=>`<button class="opt" data-locker="${i}">
+      <div class="t">${a.t}</div></button>`).join("")}</div></div></div>`;
+}
+function teamCard(){
+  const mates=myRoster().filter(p=>!p.me);
+  return `<div class="card"><h2>队友<em>平均信任 ${Math.round(avgTrust())}</em></h2>
+    <div class="attrs">${mates.map(p=>{
+      const t=trustOf(p.id);
+      return `<div class="at"><div class="lb">${POSN[p.pos]}</div>
+        <div class="track"><div class="fill" style="width:${t}%;background:${
+          t>=60?"linear-gradient(90deg,var(--cyan-dim),var(--cyan))":
+          t>=35?"linear-gradient(90deg,#6B5A2A,var(--gold))":
+                "linear-gradient(90deg,#5A2228,var(--red))"}"></div></div>
+        <div class="vn mono">${p.id.slice(0,9)}${p.rookie?'<span class="tag">新</span>':""}${p.comeback?'<span class="tag g">复出</span>':""}</div>
+      </div>`}).join("")}</div>
+    <p class="note">信任影响全队发挥。<b>${
+      avgTrust()>=62?"更衣室很稳，五个人像一个人。":
+      avgTrust()>=40?"关系正常，没什么额外加成。":
+      "更衣室出问题了——打不出五个人该有的东西。"}</b></p></div>`;
+}
+function moneyCard(){
+  return `<div class="card"><h2>合同与开销<em>${Math.round(S.money)} 万 · 合同剩 ${(S.contract||{}).left||0} 赛段</em></h2>
+    <div class="grid g2">${SPEND.map((x,i)=>{
+      const has=S.buff&&S.buff[x.k];
+      const afford=S.money>=x.cost;
+      return `<button class="act" data-spend="${i}" ${(!afford||has)?'disabled style="opacity:.35"':''}>
+        <div class="t">${x.n} <span class="tag">${x.cost} 万</span></div>
+        <div class="d">${has?"本赛段已生效":x.d}</div></button>`}).join("")}</div>
+    <p class="note">薪资按人气与荣誉计算，每个赛段结算一次。当前预计 <b>${salaryOf()} 万</b>。</p></div>`;
+}
+function fatigueBar(){
+  const f=Math.round(S.fatigue);
+  const tier=f>=75?"bad":f>=45?"warn":"ok";
+  const txt=f>=75?"透支——状态明显下滑":f>=45?"有点累了":"状态在线";
+  return `<div class="energy">
+    <div class="elabel">体能 <b>${100-f}</b><small>/100</small></div>
+    <div class="ebar ${tier}"><div class="efill" style="width:${100-f}%"></div>
+      <div class="emark" style="left:25%"></div><div class="emark" style="left:55%"></div></div>
+    <div class="enote ${tier}">${txt}</div></div>`;
+}
+function attrCard(){
+  return `<div class="card"><h2>你的属性<em>${S.age} 岁 · ${POSN[S.pos]}</em></h2>
+    <div class="attrs">${DIMS.map(d=>{
+      const c=capOf(d),v=S.attrs[d],d0=(S.seasonAttr0||{})[d]??v,g=v-d0;
+      const cb=(S.capBonus&&S.capBonus[d])||0;
+      return `<div class="at"><div class="lb">${d}</div>
+        <div class="track"><div class="fill" style="width:${clamp(v,0,100)}%"></div>
+        <div class="capline" style="left:${clamp(c,0,100)}%"></div></div>
+        <div class="vn mono"><b>${v.toFixed(1)}</b><span style="color:var(--ink-3)">/${c.toFixed(0)}</span>${
+          cb>=0.1?`<span style="color:var(--gold)" title="经历顶开的天花板">↑${cb.toFixed(0)}</span>`:""}${
+          Math.abs(g)>=0.05?` <span class="${g>0?'up':'dn'}">${g>0?'+':''}${g.toFixed(1)}</span>`:""}</div>
+      </div>`}).join("")}</div>
+    ${(()=>{
+      const hit=DIMS.filter(d=>S.attrs[d]>=capOf(d)-0.05);
+      if(!hit.length||typeof BREAK_PATHS==="undefined") return "";
+      return `<div class="breaks"><div class="bh">已经撞到瓶颈的维度 · 怎么破</div>${
+        hit.map(d=>{const P=BREAK_PATHS[d];
+          const full=((S.capBonus&&S.capBonus[d])||0)>=CAP_MAX_BONUS;
+          return `<div class="brk ${full?'maxed':P.auto?'auto':'situ'}">
+            <span class="bd">${d}</span>
+            <span class="bw">${full?"这一维已经推到极限了，天赋决定的终点就在这里。":P.how}</span>
+            <span class="bp mono">${full?"MAX":P.prog()}</span></div>`}).join("")}
+        <div class="bn">带 <b>·</b> 的是机械条件——肯这么练就一定拿得到，不看运气。</div></div>`;
+    })()}
+    ${typeof buffChips==="function"?buffChips():""}
+    <p class="note">竖线是当前瓶颈，<b style="color:var(--gold)">↑</b> 是被经历顶开的部分（夺冠、进强队、跟老将同队都会让它松动）。绿数字是本赛季成长。适应力 ${Math.round(adaptOf())}（由天赋均衡度决定）·
+      人气 ${Math.round(S.fame)} · 疲劳 ${Math.round(S.fatigue)}/100</p></div>`;
+}
+
+/* ================= 比赛 ================= */
+const NODES=[
+ {q:"20 分钟，对面在打大龙，打野问你抢不抢。",ctx:"抢下能直接翻盘，失败会被打崩。",when:()=>true,
+  a:[{t:"抢！",dim:"操作",risk:1.0},{t:"不抢，换线上资源",dim:"运营",risk:0.45}]},
+ {q:"你落后 2000 经济，对面中路越塔。",ctx:"稳发育还是赌一把反打？",when:()=>true,
+  a:[{t:"反打",dim:"心态",risk:1.0},{t:"让塔稳发育",dim:"运营",risk:0.4}]},
+ {q:"团战前，队友想开，你看到对面辅助不在视野。",ctx:"你的判断会被采纳。",when:()=>true,
+  a:[{t:"喊撤",dim:"运营",risk:0.5},{t:"直接开",dim:"指挥",risk:0.95}]},
+ {q:"对面在逼你交闪现，队友让你别浪。",ctx:"你觉得能反杀。",when:()=>true,
+  a:[{t:"反杀",dim:"操作",risk:1.0},{t:"稳住不接",dim:"心态",risk:0.4}]},
+ /* 以下节点只在特定局势出现 */
+ {q:"决胜局 BP，教练问要不要拿你的绝活。",ctx:"版本不吃这个英雄，但你最熟。",
+  when:m=>m.sc[0]===m.need-1&&m.sc[1]===m.need-1,
+  a:[{t:"拿绝活",dim:"操作",risk:0.85},{t:"跟版本走",dim:"指挥",risk:0.5}]},
+ {q:"对面拿到赛点，再输一局就结束了。",ctx:"更衣室很安静，所有人都在看你。",
+  when:m=>m.sc[1]===m.need-1&&m.sc[0]<m.need-1,
+  a:[{t:"我来扛，把资源给我",dim:"心态",risk:1.0},{t:"稳住运营，别再送",dim:"运营",risk:0.45}]},
+ {q:"你手握赛点，教练问要不要换个稳一点的阵容。",ctx:"再赢一局就拿下了。",
+  when:m=>m.sc[0]===m.need-1&&m.sc[1]<m.need-1,
+  a:[{t:"按老套路收掉",dim:"运营",risk:0.4},{t:"直接打死他们",dim:"操作",risk:0.9}]},
+ {q:"开局 BP，对面 ban 光了你的常用池。",ctx:"这是冲着你来的。",
+  when:m=>m.game===1,
+  a:[{t:"拿个没练过的应对",dim:"运营",risk:0.8},{t:"硬拿剩下的本命",dim:"操作",risk:0.7}]}
+];
+
+function startMatch(bo,oppName){
+  const on=oppName||S.schedule[S.week-1];
+  const opp=findTeam(on);
+  const need=(typeof bo==="number")?bo:(bo?3:2);   // 1=BO1 2=BO3 3=BO5
+  S.match={opp,oppName:on,sc:[0,0],game:1,lines:[],node:null,swing:0,done:false,
+           need,bo5:need>=3};
+  S.step="match"; nextGame();
+}
+function nextGame(){
+  const m=S.match;
+  if(m.sc[0]>=m.need||m.sc[1]>=m.need){endMatch();return;}
+  // 扩充池并入；给条件函数补上局势信息
+  const ALL=(typeof NODES_MORE!=="undefined")?NODES.concat(NODES_MORE):NODES;
+  const ctx=Object.assign({},m,{lead:m.sc[0]-m.sc[1]});
+  let pool=ALL.filter(n=>{try{return n.when(ctx);}catch(e){return false;}});
+  // 同一场里尽量不重复
+  m.seenNodes=m.seenNodes||[];
+  const fresh=pool.filter(n=>!m.seenNodes.includes(n.q));
+  if(fresh.length) pool=fresh;
+  m.node=pool[Math.floor(rnd()*pool.length)];
+  if(m.node) m.seenNodes.push(m.node.q);
+  render();
+}
+function resolveNode(ai){
+  const m=S.match,opt=m.node.a[ai],v=S.attrs[opt.dim];
+  const p=clamp(0.30+(v/100)*0.55,0.15,0.9);
+  const ok=rnd()<p;
+  m.swing+=(ok?1:-1)*opt.risk*6.0;
+  if(typeof addStaff==='function') addStaff('coach',ok?0.3:-0.6);
+  if(!ok) m.nodeFails=(m.nodeFails||0)+1;
+  m.lines.push(`<div><span class="hi">第${m.game}局</span> ${opt.t} — ${ok
+    ?`<span class="w">成了</span>`:`<span class="l">没成</span>`}</div>`);
+  m.node=null; playGame();
+}
+function playGame(){
+  const m=S.match,sea=SEASONS[S.si];
+  const my=power(myRoster(),S.fatigue,sea.fav)+m.swing+versionFit()+rivalBoost(m.oppName);
+  const op=power(m.opp.players,0,sea.fav);
+  let p=1/(1+Math.exp(-(my-op)/SPREAD));
+  p=clampWinProb(p, power(myRoster(),S.fatigue,sea.fav)+versionFit()-op);
+  const win=rnd()<p;
+  if(win){m.sc[0]++;S.gameRec.w++;S.career.w++}else{m.sc[1]++;S.gameRec.l++;S.career.l++}
+  m.lines.push(`<div>第${m.game}局 ${win?'<span class="w">胜</span>':'<span class="l">负</span>'}</div>`);
+  if(m.game===2&&m.sc[1]===2) m.firstTwoLost=true;
+  m.game++; m.swing*=0.4; nextGame();
+}
+function autoMatch(){
+  let g=0;
+  while(S.step==="match"&&!S.match.done&&g++<40){
+    if(S.match.node) resolveNode(rnd()<0.5?0:1); else playGame();
+  }
+  if(S.step==="match"&&S.match.done) nextWeek();
+}
+function endMatch(){
+  const m=S.match,won=m.sc[0]>m.sc[1];
+  if(!S.playoff&&!S.intl){
+    if(won)S.record.w++;else S.record.l++;
+    const HL=S.homeLeague||"LPL";
+    const st=S.standings[HL];
+    if(st&&st[S.team]) st[S.team][won?"w":"l"]++;
+    if(st&&st[m.oppName]) st[m.oppName][won?"l":"w"]++;
+  }
+  addFame(won?7:-2.5); S.money+=won?9:4; addFat(13);
+  S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+(won?0.5:1.1));
+  S.log.push(`<div>${SEASONS[S.si].tag} 第${S.week}周 vs ${m.oppName} <b>${m.sc[0]}:${m.sc[1]}</b> ${won?'<span class="w">胜</span>':'<span class="l">负</span>'}</div>`);
+
+  // ---- 成就追踪 ----
+  S.winStreak=won?(S.winStreak||0)+1:0;
+  const swept=won&&m.sc[1]===0;
+  S.sweepStreak=swept?(S.sweepStreak||0)+1:0;
+  const metLegend=(m.opp.players||[]).some(q=>q.comeback);
+  if(won&&S.intl&&typeof leagueOf==="function"&&leagueOf(m.oppName)==="LCK"){
+    S.lckBeaten=S.lckBeaten||[];
+    if(!S.lckBeaten.includes(m.oppName)) S.lckBeaten.push(m.oppName);
+  }
+  checkAch("match",{won,metLegend});
+  if(won) checkAch("win",{won,metLegend});
+
+  // 你自己的大事
+  const me=S.name||"你", star=m.opp.players.filter(q=>q.pos===S.pos)[0];
+  const myPw=power(myRoster(),S.fatigue,SEASONS[S.si].fav), opPw=power(m.opp.players,0,SEASONS[S.si].fav);
+  if(won&&myPw-opPw<-2){ S.comebacks=(S.comebacks||0)+1;   // 逆风翻盘计数
+    if(S.comebacks===3) breakthrough("心态",3.0,"你已经在落后的局面里赢过三次。队友开始相信你不会崩。","cb3"); }
+  if(won&&opPw-myPw>4)
+    pushEvent(`<b>${me}</b> 带队爆冷掀翻 ${m.oppName}，赛后热搜第一。`,"big","高光");
+  else if(won&&star&&ovrOf(star)>62)
+    pushEvent(`<b>${me}</b> 对位压制 <b>${star.id}</b>${star.cn?`（${star.cn}）`:""}，${m.oppName} 被 ${m.sc[0]}:${m.sc[1]} 拿下。`,"good","高光");
+  else if(!won&&myPw-opPw>4)
+    pushEvent(`<b>${me}</b> 所在的 ${S.team} 被 ${m.oppName} 冷门击败，赛后被喷上热搜。`,"bad","低谷");
+  const f=noteForm(S.team,won);
+  if(f==="win4") pushEvent(`<b>${S.team}</b> 五连胜，${me} 的名字开始被反复提起。`,"good","战况");
+  if(f==="lose4") pushEvent(`<b>${S.team}</b> 五连败，有声音说该换人了。`,"bad","战况");
+
+  // 队友信任随胜负与你的表现变化
+  addTrustAll(won?1.6:-3.2);
+  if(won) noteRevenge(m.oppName);
+  if(!won&&myPw-opPw>4) addTrustAll(-3);      // 该赢没赢，更衣室有意见
+  syncTrust();
+  // 成就上下文
+  const ctx={won, bo5:m.need>=3, myScore:m.sc[0], oppScore:m.sc[1],
+    gap:+(myPw-opPw).toFixed(2), intl:!!S.intl,
+    oppLeague:(typeof leagueOf==="function")?leagueOf(m.oppName):"LPL",
+    laneWon:!!(star&&avg(DIMS.map(d=>S.attrs[d]))>=ovrOf(star)),
+    nodeFails:m.nodeFails||0,
+    lostFirstTwo:m.need>=3&&m.firstTwoLost};
+  checkAch("match",ctx);
+  if(won) checkAch("win",ctx);
+  if(won&&ctx.intl&&ctx.oppLeague==="LCK") checkAch("beatlck",ctx);
+  // 赛后归因：用判定胜负的那套数，现场算一次存下来
+  if(typeof attribute==='function'){
+    try{ m.attr=attribute(myRoster(),m.opp,S.fatigue,SEASONS[S.si].fav); }catch(e){}
+  }
+  if(typeof rollInjury==='function'&&S.fatigue>55) rollInjury('赛后');
+  simWorld(); m.done=true;
+  if(!won) tryLockerEvent();
+  render();
+}
+function simWorld(){
+  Object.keys(S.world).forEach(lg=>{
+    const sea=SEASONS[S.si];
+    const ts=S.world[lg].filter(t=>!(lg==="LPL"&&(t.name===S.team||(S.match&&t.name===S.match.oppName))));
+    for(let i=0;i<ts.length-1;i+=2){
+      const a=ts[i],b=ts[i+1];
+      const p=1/(1+Math.exp(-(power(a,0,sea.fav)-power(b,0,sea.fav))/SPREAD));
+      const aw=rnd()<p;
+      S.standings[lg][a.name][aw?"w":"l"]++;
+      S.standings[lg][b.name][aw?"l":"w"]++;
+      if(lg==="LPL"){
+        const f1=noteForm(a.name,aw), f2=noteForm(b.name,!aw);
+        const rk=lplRank(), notable=new Set(
+          rk.slice(0,4).map(r=>r.n).concat(rk.slice(-3).map(r=>r.n)).concat([S.team]));
+        [[a.name,f1],[b.name,f2]].forEach(([tn,f])=>{
+          if(!f||!notable.has(tn)) return;   // 只播榜首四强 / 垫底三名 / 你自己
+          const key=SEASONS[S.si].tag+tn+f;
+          if(S.formSeen[key]) return;          // 每队每赛季同类只播一次，避免刷屏
+          S.formSeen[key]=1;
+          pushEvent(f==="win4"?`<b>${tn}</b> 已经五连胜，状态正热。`
+                              :`<b>${tn}</b> 遭遇五连败，更衣室传出不和传闻。`,
+                    f==="win4"?"good":"bad","战况");
+        });
+        if((aw&&p<0.25)||(!aw&&p>0.75))
+          pushEvent(`冷门：<b>${aw?a.name:b.name}</b> 爆冷击败 <b>${aw?b.name:a.name}</b>，赛前几乎无人看好。`,"big","冷门");
+      }
+    }
+  });
+}
+function viewMatch(){
+  const m=S.match,sea=SEASONS[S.si];
+  const my=power(myRoster(),S.fatigue,sea.fav)+versionFit(),op=power(m.opp.players,0,sea.fav);
+  return `<div class="card">
+    <h2>${sea.tag} ${S.intl?intlStageName():S.playoff?"季后赛":"第 "+S.week+" 周"}<em>${
+      m.need===1?"单局定胜负":m.need===2?"三局两胜":"五局三胜"}</em></h2>
+    <div class="vs">
+      <div class="side"><div class="nm">${teamLogo(S.team,34)}<br>${S.team}</div><div class="pw mono">战力 ${my.toFixed(1)}</div></div>
+      <div class="score">${m.sc[0]} : ${m.sc[1]}</div>
+      <div class="side"><div class="nm">${teamLogo(m.oppName,34)}<br>${m.oppName}</div><div class="pw mono">战力 ${op.toFixed(1)}</div></div>
+    </div>
+    ${m.node?`<div class="node"><div class="q">${m.node.q}</div><div class="ctx">${m.node.ctx}</div>
+      <div class="grid g2">${m.node.a.map((a,i)=>`<button class="opt" data-node="${i}">
+        <div class="t">${a.t}</div><div class="d">吃 <b>${a.dim}</b> · ${a.risk>0.8?'高风险高回报':'稳健'}</div>
+      </button>`).join("")}</div></div>`:""}
+    ${m.lines.length?`<div class="log">${m.lines.slice().reverse().join("")}</div>`:""}
+    ${m.done?`<div class="row"><button class="btn" id="next">继续 →</button></div>`:""}
+  </div>
+  ${m.done&&typeof postMatchCard==="function"?postMatchCard():""}`;
+}
+
+/* 替补：不是等几周，而是要自己抢下首发位 */
+function isBenched(){
+  if(S.promoted) return false;
+  const inc=S.understudy; if(!inc) { S.promoted=true; return false; }
+  const me=avg(DIMS.map(d=>S.attrs[d])), him=avg(DIMS.map(d=>inc.r[d]));
+  if(me>=him-2){
+    S.promoted=true;
+    const t=myTeam();
+    t.players=t.players.map(q=>q===inc
+      ? {id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true} : q);
+    pushEvent(`训练赛数据压过 <b>${inc.id}</b>，教练组决定让你首发。<b>你终于上场了。</b>`,"big","转正");
+    checkAch("promote");
+    return false;
+  }
+  return true;
+}
+
+/* 替补席：队伍照打，你不上场也不计个人战绩 */
+function benchWeek(){
+  S.benchedThisSplit=true;
+  const on=S.schedule[S.week-1], sea=SEASONS[S.si];
+  const opp=S.world[S.homeLeague||"LPL"].find(t=>t.name===on);
+  const p=1/(1+Math.exp(-(power(myRoster(),0,sea.fav)-power(opp,0,sea.fav))/SPREAD));
+  const w1=rnd()<p, w2=rnd()<p, won=(w1&&w2)||((w1||w2)&&rnd()<p);
+  S.standings[S.homeLeague||"LPL"][S.team][won?"w":"l"]++;
+  S.standings[S.homeLeague||"LPL"][on][won?"l":"w"]++;
+  addFame(-1.5);      // 不上场，热度在掉
+  pushEvent(`${S.team} ${won?"击败":"负于"} ${on}。<b>你在替补席上看完了整场</b>，没人提你的名字。`,won?"info":"bad","替补");
+  S.match=null; nextWeek();
+}
+
+/* ================= 周 / 赛季推进 ================= */
+function nextWeek(){
+  if(S.intl){ intlAdvance(); return; }
+  if(S.playoff){ playoffAdvance(); return; }
+  if(S.week>=WEEKS){ startPlayoff(); return; }
+  S.week++; S.ap=apFor('season'); S.step="season"; S.match=null; addFat(-10);
+  if(typeof injuryTick==="function") injuryTick();
+  if(typeof rollInjury==="function") rollInjury("赛季中");
+  if(typeof archiveWeek==="function") archiveWeek();
+  if(typeof btkWeekEnd==="function") btkWeekEnd();
+  if(typeof tickBuffs==='function') tickBuffs();
+  if(typeof tryRandomEvent==='function'&&rnd()<0.28) tryRandomEvent();
+  render();
+}
+function lplRank(){
+  return Object.entries(S.standings[S.homeLeague||"LPL"])
+    .map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0}))
+    .sort((a,b)=>b.p-a.p||b.w-a.w);
+}
+/* 正经种子对阵：越往后对手越强，决赛必碰常规赛第一 */
+function startPlayoff(){
+  const rk=lplRank(), seed=rk.findIndex(r=>r.n===S.team)+1;
+  S.career.best=Math.min(S.career.best,seed);
+  S.playoffSeed=seed;
+  if(seed>6){ S.playoff=null; endSeason(null,seed); return; }
+  S.playoffSeed=seed;
+  checkAch("playoff");
+  S.playoff={round:1,seed,alive:true,beaten:[S.team]};
+  S.step="match";
+  startMatch(true, playoffOpp(1));
+}
+/* 第1轮打 5/6 号种子，第2轮打 2/3 号，决赛打 1 号 */
+function playoffOpp(round){
+  const rk=lplRank().filter(r=>!S.playoff.beaten.includes(r.n));
+  const want = round===1 ? 4 : round===2 ? 1 : 0;   // 索引：5-6号 / 2-3号 / 榜首
+  return (rk[Math.min(want, rk.length-1)]||rk[0]).n;
+}
+function playoffAdvance(){
+  const won=S.match.sc[0]>S.match.sc[1];
+  if(!won){ noteGrudge(S.match.oppName,S.playoff.round>=3?4:2,
+      `季后赛第 ${S.playoff.round} 轮被淘汰`);
+    S.playoff.alive=false; endSeason(S.playoff.round,S.playoff.seed); return; }
+  S.playoff.beaten.push(S.match.oppName);
+  S.playoff.round++;
+  if(S.playoff.round>3){ endSeason("champion",S.playoff.seed); return; }
+  S.step="match";
+  startMatch(true, playoffOpp(S.playoff.round));
+}
+
+function endSeason(result,seed){
+  payday();
+  const up=(S.bg&&S.bg.upkeep)||0;
+  if(up){ S.money=Math.max(0,S.money-up);
+    pushEvent(`往家里寄了 <b>${up} 万</b>。`,"info","家用"); }
+  trustDecay(); squadDecay(); checkBreakthrough();
+  if(typeof cloutTick==='function') cloutTick();
+  if(typeof rollForm==='function') rollForm();
+  if(typeof rollWorldForm==='function'){ rollWorldForm(); formNews(); }
+  if(typeof btkSplitEnd==='function') btkSplitEnd();
+  const cut=contractCheck();
+  if(cut) S.gotCut=true;
+  S.lastSeason={result,seed,rec:Object.assign({},S.record),
+    grow:DIMS.map(d=>({d,g:S.attrs[d]-S.seasonAttr0[d]}))};
+  if(result==="champion"){
+    const sp=SPLITS[S.split||0];
+    S.career.titles.push(`${SEASONS[S.si].tag} ${S.homeLeague||"LPL"}${sp}`);
+    S.career.leagueTitles=(S.career.leagueTitles||0)+1;
+    S.career.lgYears=(S.career.lgYears||[]).concat([S.si]);
+    S.career.lgStreak=(S.career.lgStreak||0)+1;
+    checkAch("lgtitle");
+    breakthrough("心态",3.2,"捧过一次奖杯之后，大场面对你来说不一样了。","lgtitle");
+    pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${sp}冠军。</b>${
+      S.split===0?"下一站 MSI。":"世界赛资格到手。"}`,"big","联赛冠军");
+  }
+  if(result!=="champion") S.career.lgStreak=0;
+  checkAch("splitend");
+  checkAch("money");
+  S.playoff=null;
+  if(S.split===0){
+    // 春季赛结束 -> 冠军去 MSI -> 然后开夏季赛
+    S.afterIntlGo="summer";
+    if(result==="champion"&&startIntl("msi",result)) return;
+    S.afterIntlGo=null; startSeason(false,1); return;
+  }
+  // 夏季赛结束 -> 世界赛 -> 休赛期
+  S.afterIntlGo="offseason";
+  S.pendingWorlds=result;
+  const pr=S.pendingWorlds; S.pendingWorlds=null;
+  if(startIntl("worlds",pr)) return;
+  S.afterIntlGo=null; S.step="offseason"; render();
+}
+
+function viewOffseason(){
+  const ls=S.lastSeason,sea=SEASONS[S.si];
+  const label=ls.result==="champion"?`<span class="tag g">LPL 冠军</span>`
+    :ls.result===null?`常规赛第 ${ls.seed} 名 · 无缘季后赛`
+    :`季后赛第 ${ls.result} 轮出局（常规赛第 ${ls.seed}）`;
+  const last=S.si>=SEASONS.length-1;
+  return `<div class="card">
+    <h2>${sea.tag} ${sea.y} 赛季结算</h2>
+    <h3>${S.team} — ${label}</h3>
+    <p class="note">你的战绩 ${ls.rec.w}胜 ${ls.rec.l}负 · 生涯小分 ${S.career.w}−${S.career.l}
+      ${S.career.titles.length?` · 已夺冠 ${S.career.titles.join("、")}`:""}</p>
+    <div class="attrs" style="margin-top:16px">
+      ${ls.grow.map(({d,g})=>{const c=capOf(d),v=S.attrs[d];
+        return `<div class="at"><div class="lb">${d}</div>
+        <div class="track"><div class="fill" style="width:${clamp(v,0,100)}%"></div>
+        <div class="capline" style="left:${clamp(c,0,100)}%"></div></div>
+        <div class="vn mono"><b>${v.toFixed(1)}</b>${Math.abs(g)>=0.05?` <span class="${g>0?'up':'dn'}">${g>0?'+':''}${g.toFixed(1)}</span>`:""}</div></div>`}).join("")}
+    </div>
+    <div class="row">
+      <button class="btn" id="off">${last?"生涯总结 →":`进入休赛期 · ${SEASONS[S.si+1].tag} 备战 →`}</button>
+    </div>
+  </div>
+  ${eventsCard()}`;
+}
+
+function doOffseason(){
+  if(S.si>=SEASONS.length-1){ S.step="end"; render(); return; }
+  S.si++; S.age++;
+  const news=ageWorld();
+  // 玩家自己的年龄曲线
+  const base=ageCurve(S.age);
+  DIMS.forEach(d=>{
+    const delta=base*(base>0?0:DECAY_W[d]);
+    if(delta<0) S.attrs[d]=clamp(S.attrs[d]+delta,20,capOf(d));
+  });
+  news.unshift(`<div class="hi">— ${SEASONS[S.si].tag} ${SEASONS[S.si].y}：版本「${SEASONS[S.si].ver}」· ${SEASONS[S.si].story} —</div>`);
+  S.news=S.news.concat(news);
+  S.fatigue=0; S.buff={};
+  if(S.gotCut){
+    S.gotCut=false;
+    const rk=lplRank(), weak=rk[rk.length-1-Math.floor(rnd()*3)];
+    const old=S.team;
+    S.team=weak.n; S.promoted=true; S.understudy=null; S.offerKind="core";
+    const t=myTeam();
+    t.players=t.players.map(q=>q.pos===S.pos?{id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true}:q);
+    S.trust={}; initTrust();
+    S.everCut=true;
+    pushEvent(`<b>${old}</b> 没有和你续约。你最后签到了 <b>${S.team}</b>——从头再来。`,"bad","合同");
+  }
+  syncTrust();
+  startSeason(false,0);
+}
+
+/* ================= 结局 ================= */
+function ending(){
+  if(S.neverSigned) return {n:"没能上岸",
+    d:`到 2026 年，你始终没能签下第一份职业合同。排位打到过 ${rankFull(S.pre?S.pre.rank:0)}，直播间也有过人，但那扇门没有为你开。`};
+  if(!S.career) return {n:"没能上岸",
+    d:`到最后你也没能签下第一份职业合同。排位打到过 ${rankFull(S.pre?S.pre.rank:0)}，但那扇门没有为你开。`};
+  const played=S.career.w+S.career.l, best=S.career.best;
+  const msi=S.career.msi||0, worlds=S.career.worlds||0, lg=S.career.leagueTitles||0;
+  if(played<18){
+    if(msi+worlds+lg>=1) return {n:"板凳冠军",d:"四年里你大部分时间坐在替补席上。队伍捧起了奖杯，合影里有你，但那不是你打下来的。"};
+    return {n:"泯然众人",d:"四年过去，你始终没能拿到稳定的首发位。这条路本来就不是所有人都能走通。"};
+  }
+  if(msi>=1&&worlds>=1) return {n:"破局者",
+    d:"MSI 与世界赛，你都拿到了。至暗五年结束在你手上——这个赛区终于有人做到了。"};
+  if(worlds>=2) return {n:"王朝",d:"两座世界冠军奖杯。人们开始用你的名字来划分时代。"};
+  if(worlds===1) return {n:"世界冠军",
+    d:"你捧起了那座奖杯。MSI 还差一座，但没人会因此少记你一分。"};
+  if(msi>=1) return {n:"半程加冕",
+    d:"MSI 冠军。你证明了 LPL 能赢，只是最重的那一座还没到手。"};
+  const depth=S.career.bestIntl||0;
+  if(depth>=4) return {n:"无冕之王",
+    d:"你站上过世界赛决赛的舞台，然后输掉了它。所有人都知道你有多强，只是没有奖杯。"};
+  if(depth>=3) return {n:"四强遗恨",
+    d:"两次三次杀进四强，每次都差一口气。LPL 的观众记得你的名字，也记得那些没能翻过去的比赛。"};
+  if(depth>=2) return {n:"八强常客",
+    d:"你带队年年打进世界赛淘汰赛，然后年年被挡在门外。稳定，但不够。"};
+  if(depth>=1) return {n:"赛区功勋",
+    d:"你带队打进过世界赛正赛。没能走远，但这五年 LPL 没有塌，有你一份。"};
+  if(lg>=1) return {n:"内战之王",d:"你拿过联赛冠军，却始终没能在国际赛场证明什么。五年里，最重的那一步始终没迈出去。"};
+  if(best<=4) return {n:"常青树",d:"四强常客。你在联赛里站稳了，不是所有人都能做到这件事。"};
+  return {n:"至暗未破",d:"S12 到 S16，五年。你打过、拼过、被记住过，但那座墙始终没有倒。<b>至暗时刻，最终写进了历史。</b>"};
+}
+function viewEnd(){
+  const e=ending();
+  if(!S.career){                       // 从未签约：没有战队也没有战绩可展示
+    return `<div class="card">
+      <h2>生涯总结 · S12–S16</h2>
+      <div class="big">${e.n}</div>
+      <p>${e.d}</p>
+      <p class="note">${S.name||"你"} · ${POSN[S.pos]} · ${S.age} 岁 · 最高 ${rankFull(S.pre?S.pre.rank:0)} · ${fameTier()}</p>
+      <div class="row"><button class="btn" id="again">再开一局</button></div>
+    </div>${achCard()}`;
+  }
+  const champs=Object.keys(S.world).map(lg=>{
+    const r=Object.entries(S.standings[lg]).map(([n,x])=>({n,...x,p:(x.w+x.l)?x.w/(x.w+x.l):0}))
+      .sort((a,b)=>b.p-a.p)[0];
+    return `<tr><td>${lg}</td><td>${r.n}</td><td class="n">${r.w}−${r.l}</td></tr>`;
+  }).join("");
+  const vets=S.world.LPL.flatMap(t=>t.players.filter(p=>p.age>=26).map(p=>({...p,t:t.name})))
+    .sort((a,b)=>b.age-a.age).slice(0,5);
+  return `<div class="card">
+    <h2>生涯总结 · S12–S16</h2>
+    <div class="big">${e.n}</div>
+    <p>${e.d}</p>
+    <p class="note">${S.name||"你"} · ${POSN[S.pos]} · ${S.age} 岁 · 生涯小分 ${S.career.w}−${S.career.l}${
+      (S.career.w+S.career.l)<18?'<span class="tag l">出场极少</span>':''} ·
+      最佳常规赛排名 第 ${S.career.best===99?"—":S.career.best} 名${S.career.titles.length?` · 冠军 ${S.career.titles.join("、")}`:""}</p>
+    <div class="attrs" style="margin-top:16px">${DIMS.map(d=>{
+      const c=capOf(d),v=S.attrs[d],b=ORIGIN[S.origin].base[d];
+      return `<div class="at"><div class="lb">${d}</div>
+        <div class="track"><div class="fill" style="width:${clamp(v,0,100)}%"></div>
+        <div class="capline" style="left:${clamp(c,0,100)}%"></div></div>
+        <div class="vn mono"><b>${v.toFixed(0)}</b> <span class="up">+${(v-b).toFixed(0)}</span></div></div>`}).join("")}</div>
+    <p class="note">五年成长的形状由你开局那 20 点决定：高天赋维度练到了瓶颈，低天赋维度早早封顶。</p>
+  </div>
+  ${achCard()}
+  <div class="card"><h2>五年后的世界</h2>
+    <div class="tw"><table><thead><tr><th>赛区</th><th>末季第一</th><th>战绩</th></tr></thead><tbody>${champs}</tbody></table></div>
+    ${vets.length?`<h3 style="margin-top:18px;font-size:14px">仍在坚持的老将</h3>
+    <div class="tw"><table><thead><tr><th>选手</th><th>战队</th><th class="n">年龄</th><th class="n">操作</th><th class="n">指挥</th></tr></thead>
+    <tbody>${vets.map(p=>`<tr><td>${p.id}${p.cn?`<span class="tag">${p.cn}</span>`:""}</td><td>${p.t}</td>
+      <td class="n">${p.age}</td><td class="n">${p.r.操作.toFixed(0)}</td><td class="n">${p.r.指挥.toFixed(0)}</td></tr>`).join("")}</tbody></table></div>`:""}
+    <p class="note">老将的操作在掉、指挥在涨——这是年龄曲线跑出来的，不是写死的。</p>
+    <div class="row"><button class="btn" id="again">再开一局</button></div>
+  </div>`;
+}
+
+
+/* 职业前的联赛面板：你打不上，但你能看着。 */
+/* 锁着的功能也要摆出来——看得见的目标才是目标 */
+function lockedAct(name,desc,how){
+  return `<button class="act locked" disabled title="${how}">
+    <div class="t">🔒 ${name}</div><div class="d">${desc}</div>
+    <div class="lockhint">${how}</div></button>`;
+}
+function lockedCard(title,how,body){
+  return `<div class="card locked-card"><h2>${title}<em>未解锁</em></h2>
+    <div class="lockbody">${body}</div>
+    <p class="note lockhow">🔒 ${how}</p></div>`;
+}
+function proCard(){
+  const lgs=["LPL","LCK","LEC","LCS"];
+  const cur=lgs.includes(S.proLg)?S.proLg:"LPL";
+  const rk=Object.entries((S.standings||{})[cur]||{})
+    .map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0}))
+    .sort((a,b)=>b.p-a.p||b.w-a.w);
+  return `<div class="card"><h2>职业联赛<em>${SEASONS[S.si].tag} ${SEASONS[S.si].y} · 第 ${S.pre.week} 周</em></h2>
+    <div class="filt">${lgs.map(l=>
+      `<button data-prolg="${l}" class="${l===cur?'on':''}">${l}</button>`).join("")}</div>
+    <div class="tw"><table><thead><tr><th>#</th><th>战队</th><th class="n">战绩</th><th class="n">胜率</th></tr></thead>
+    <tbody>${rk.map((r,i)=>`<tr class="${i===0?'me':''}">
+      <td class="n">${i+1}</td><td>${teamLogo(r.n,18)}${r.n}</td>
+      <td class="n">${r.w}−${r.l}</td><td class="n">${(r.p*100).toFixed(0)}%</td></tr>`).join("")}
+    </tbody></table></div>
+    <p class="note">你还在打排位，但这些队每周都在打。<b>总有一天你要坐到那张桌子上。</b></p></div>`;
+}
+function scheduleCard(){
+  const P=S.pre;
+  const rows=PRE_MILESTONES.filter(m=>m.open).map(m=>{
+    const d=m.w-P.week, past=d<0, ok=m.need();
+    const st=past?"已过去":d===0?"就是本周":`还有 ${d} 周`;
+    return `<tr class="${d===0?'me':''}" style="${past?'opacity:.42':''}">
+      <td><b>${m.name}</b><span class="tag">${m.tag}</span><br>
+        <span style="font-size:11.5px;color:var(--ink-3)">${m.desc}</span></td>
+      <td class="n">${st}</td>
+      <td class="n">${m.needTxt}${m.fee?`<br><span style="color:var(--gold);font-size:11px">报名费 ${m.fee} 万</span>`:""}</td>
+      <td class="n">${past?"—":`<span style="color:${
+        m.dateOnly?'var(--ink-3)':m.vague?'var(--ink-2)':(ok?'var(--cyan)':'var(--red)')}">${m.cur()}</span>`}</td>
+    </tr>`;
+  }).join("");
+  const nx=nextMilestone();
+  return `<div class="card"><h2>赛程预告<em>${nx?`下一个节点：${nx.name}（${Math.max(0,nx.w-P.week)} 周后）`:"—"}</em></h2>
+    <div class="tw"><table><thead><tr><th>节点</th><th class="n">时间</th><th class="n">门槛</th><th class="n">你现在</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <p class="note">这些是写在明面上的日程，<b>不达标就直接错过</b>。
+      至于有没有人在暗处盯着你——那种事不会有人提前通知。</p>
+    <div class="ver" style="margin-top:12px">外界对你的关注：<b>${scoutTier()}</b> · 名气：<b>${fameTier()}</b></div>
+    </div>`;
+}
+
+/* 大段位晋级：给一个有仪式感的弹窗，而不是日志里一行字 */
+const RANKUP_TXT={
+  "铂金":"你不再是那个随便谁都能打的路人了。",
+  "钻石":"这个分段开始有认真打的人。你也得认真了。",
+  "大师":"到这里，对面每一个都是奔着职业去的。",
+  "宗师":"排行榜上开始出现你见过的名字。",
+  "王者":"你站到了这个服务器的顶端。剩下的问题是——有没有人愿意给你一个位置。",
+  "国服前 100":"每一把都有人在录你的视频。",
+  "国服前 10":"职业队的球探不可能看不见你了。"
+};
+/* 赛事报名：要花钱，也可能白花。 */
+function signupCard(){
+  const m=S.signup; if(!m) return "";
+  const afford=S.money>=m.fee;
+  return `<div class="rankup"><div class="ru-inner" style="max-width:460px">
+    <div class="ru-eyebrow">报名</div>
+    <div class="ru-tier" style="font-size:22px"><b>${m.name}</b></div>
+    <div class="ru-txt">${m.desc}<br><br>
+      报名费 <b style="color:var(--gold)">${m.fee} 万</b>，你现在有 ${Math.round(S.money)} 万。<br>
+      奖金按名次发，走得越远拿得越多；打得好还能涨名气。<br>
+      <span style="color:var(--ink-3)">不报也可以——省下钱和体力，但这一年就没这个机会了。</span></div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="signyes" ${afford?"":"disabled"}>${afford?"交钱，报名":"钱不够"}</button>
+      <button class="btn ghost" id="signno">这次算了</button>
+    </div></div></div>`;
+}
+function rankUpCard(){
+  const u=S.rankUp; if(!u) return "";
+  return `<div class="rankup">
+    <div class="ru-inner">
+      <div class="ru-icon">${rankIcon(u.v,120)}</div>
+      <div class="ru-eyebrow">段位提升</div>
+      <div class="ru-tier">${u.from} → <b>${u.to}</b></div>
+      <div class="ru-txt">${RANKUP_TXT[u.to]||"你又往上走了一步。"}</div>
+      <button class="btn" id="rankupok">继续</button>
+    </div></div>`;
+}
+/* ---------- 分栏 ---------- */
+const TABS_PRE=[
+  {k:"act",  n:"本周"},
+  {k:"sched",n:"赛程"},
+  {k:"squad",n:"战队"},
+  {k:"pro",  n:"联赛"},
+  {k:"shop", n:"商城"},
+  {k:"ach",  n:"成就"},
+  {k:"log",  n:"日志"}
+];
+const TABS_SEASON=[
+  {k:"act",  n:"本周"},
+  {k:"me",   n:"我的"},
+  {k:"team", n:"队伍"},
+  {k:"shop", n:"商城"},
+  {k:"news", n:"动态"},
+  {k:"ach",  n:"成就"}
+];
+function tabBar(list){
+  const cur=curTab(list);
+  return `<div class="tabs">${list.map(t=>
+    `<button class="tab ${t.k===cur?'on':''}" data-tab="${t.k}">${t.n}${
+      t.k==="ach"?`<span class="tcount">${ACHIEVEMENTS.filter(a=>hasAch(a.id)).length}</span>`:""}</button>`
+  ).join("")}</div>`;
+}
+function curTab(list){
+  const has=list.some(t=>t.k===S.tab);
+  return has?S.tab:list[0].k;
+}
+
+function actPanelPre(){
+  const P=S.pre;
+  const nextR=RANKS.find(r=>r.at>P.rank);
+  return `
+  <div class="card">
+    <h2>职业前 · 第 ${P.week} 周<em>剩余行动点 ${P.ap}</em></h2>
+    <div class="ver">${(()=>{const sc=preScore();
+      const near=sc/PRE_INVITE;
+      return P.week<PRE_EARLIEST
+        ? `还太早——城市赛和主播杯都还没打，没人会现在就下判断。`
+        : near>=1 ? `<b style="color:var(--cyan)">你已经够格了，试训邀请随时会来。</b>`
+        : near>=0.8 ? `<b>就差一点</b>，再稳一稳就有人找你了。`
+        : near>=0.55 ? `有人注意到你了，但还不足以让俱乐部下决心。`
+        : `目前的履历，还进不了任何一家的名单。`})()}
+      <br>距离转会窗口还有 <b>${Math.max(0,PRE_YEAR-P.week)}</b> 周。</div>
+    <div class="ver">
+      ${rankBadge(P.rank,40)}${nextR?`　→　下一档 ${nextR.n}`:`　→　已经到顶`}<br>
+      排位实力 <b>${soloSkill().toFixed(0)}</b>　·　当前分段门槛 <b>${rankReq(P.rank).toFixed(0)}</b>${
+        nextR?`　·　${nextR.n}门槛 <b>${rankReq(nextR.at).toFixed(0)}</b>`:""}<br>
+      <span style="color:${soloWinP()>=0.5?'var(--cyan)':'var(--red)'}">${
+        soloSkill()>=rankReq(P.rank)+6?"这个分段对你没什么难度，往上冲。":
+        soloSkill()>=rankReq(P.rank)-2?"卡在门槛附近，有涨有掉——再练一点就稳了。":
+        "实力还撑不住这个分段，硬打会掉分。先去练。"}</span><br>
+      名气 <b>${fameTier()}</b>　·　俱乐部评价 <b>${scoutTier()}</b><br>
+      <span style="color:var(--ink-3)">世界不会因为你没比赛就临时生成一场。耐得住性子，机会才会出现。</span></div>
+    ${fatigueBar()}
+    <div class="grid g5">
+      <button class="act" data-pre="rank" ${P.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">打排位</div><div class="d">${(()=>{const p=soloWinP();
+          return p>=0.66?"这个分段你打得动":p>=0.5?"五五开，能上但不稳":
+                 p>=0.34?"打得挺吃力，容易掉":"实力不够，硬打只会掉分"})()}</div></button>
+      <button class="act" data-pre="stream" ${P.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">直播</div><div class="d">涨人气与收入</div></button>
+      ${DIMS.map(d=>{const c=capOf(d),done=S.attrs[d]>=c;
+        return `<button class="act" data-pretrain="${d}" ${(P.ap<=0||done)?'disabled style="opacity:.34"':''}>
+        <div class="t">练${d}</div><div class="d">${done?'已达瓶颈':DIM_HINT[d]}</div></button>`}).join("")}
+      <button class="act" data-pre="rest" ${P.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">休息</div><div class="d">清疲劳</div></button>
+    </div>
+    ${typeof routineBar==="function"?routineBar():""}
+    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队<span class="tag">未解锁</span></h3>
+    <div class="grid g5">
+      ${lockedAct("训练赛","和别的队打，最接近实战","签约职业战队后解锁")}
+      ${lockedAct("战术复盘","逐帧过录像，把问题挖出来","签约职业战队后解锁")}
+      ${lockedAct("战队合练","专项练配合，团战执行会顺很多","签约职业战队后解锁")}
+      ${lockedAct("队友双排","排位里带一带，练默契也拉近关系","签约职业战队后解锁")}
+    </div>
+    <div class="row"><button class="btn" id="prenext" ${P.ap>0?'disabled':''}>
+      ${P.ap>0?`还剩 ${P.ap} 个行动点`:`进入第 ${P.week+1} 周 →`}</button></div>
+  </div>`;
+}
+function viewPre(){
+  const P=S.pre, T=curTab(TABS_PRE);
+  return `
+  ${S.signup?signupCard():''}${S.rankUp?rankUpCard():''}${S.rndEv?randomCard():''}
+  ${tabBar(TABS_PRE)}
+  ${T==="act"?(typeof injuryCard==="function"?injuryCard():"")+attrCard():""}
+  ${T==="sched"?scheduleCard():""}
+  ${T==="squad"?lockedCard("战队实力","签约职业战队后解锁。在那之前，你只有自己。",
+      `<p>加入战队后，这里会显示：</p>
+       <div class="attrs" style="opacity:.4;pointer-events:none">
+         <div class="at"><div class="lb">base</div><div class="track"><div class="fill" style="width:52%"></div></div><div class="vn mono">五人个人数值</div></div>
+         <div class="at"><div class="lb">默契</div><div class="track"><div class="fill" style="width:44%"></div></div><div class="vn mono">配合得怎么样</div></div>
+         <div class="at"><div class="lb">战术</div><div class="track"><div class="fill" style="width:46%"></div></div><div class="vn mono">准备得充不充分</div></div>
+         <div class="at"><div class="lb">士气</div><div class="track"><div class="fill" style="width:50%"></div></div><div class="vn mono">更衣室气氛</div></div>
+       </div>
+       <p class="note" style="margin-top:14px">综合实力 = base × 默契 × 战术 × 士气 × 指挥 × 体能。<br>
+         你的个人数值只是 base 的一部分——五个人怎么变成一支队，是另一半。</p>`)
+    +lockedCard("队友","签约职业战队后解锁。",
+      `<p class="note" style="margin:0">每个队友对你有独立的信任度，会因为你的选择涨落，也会影响全队发挥。</p>`):""}
+  ${T==="pro"?proCard()+eventsCard():""}
+  ${T==="shop"?gearCard()+shopCard()
+      +lockedCard("俱乐部资源","签约职业战队后解锁。",
+        `<p class="note" style="margin:0">私教、理疗师、团队建设、舆论公关——
+          进队之后才用得上，也才付得起。</p>`):""}
+  ${T==="ach"?achCard():""}
+  ${T!=="log"?"":`<div class="card"><h2>生涯日志<em>${nowLabel()}</em></h2>
+    <div class="feed">${P.log.slice(-40).reverse().map(l=>`<div class="ev ${l.tone}">
+      <span class="tg">${l.stamp||("W"+l.w)}</span><span class="tx">${l.t}</span></div>`).join("")}</div></div>`}
+  ${T==="act"?actPanelPre():""}`;
+}
+
+function viewOffer(){
+  const P=S.pre;
+  return `<div class="card">
+    <h2>试训结束 · 你收到的 offer<em>综合评估 ${P.finalScore}</em></h2>
+    <h3>${rankFull(P.rank)} · ${fameTier()} · 城市赛 ${P.cityCup!==null?P.cityCup+" 轮":"未参赛"} · 主播杯 ${P.streamCup!==null?P.streamCup+" 轮":"未参赛"}</h3>
+    <p class="note">这段时间你做的每一件事，都变成了现在桌上的选项。<b>选哪条路，决定你剩下的年份在什么位置起跑。</b></p>
+    <div class="grid g2" style="margin-top:16px">
+      ${P.offers.map((of,i)=>`<button class="opt" data-offer="${i}">
+        <div class="t">${of.t}<span class="tag g">${of.league||"LPL"}</span></div>
+        <div class="d">${teamLogo(of.team,20)}<b>${of.team}</b><br>${of.d}<br><span style="color:var(--gold)">${of.note}</span></div>
+      </button>`).join("")}
+    </div>
+    <div class="row"><button class="btn ghost" id="decline">都不签，再练一年 →</button></div>
+    <p class="note">拒绝不会有惩罚，但你会老一岁——而这个世界只走到 2026。</p>
+  </div>`;
+}
+
+/* __INTL_MODULE__ */
+
+/* __TEAM_MODULE__ */
+
+/* __RIVALS_MODULE__ */
+
+/* __RANKICON_MODULE__ */
+
+/* __SHOP_MODULE__ */
+
+/* __ORIGINS_MODULE__ */
+
+/* __ACHIEVE_MODULE__ */
+
+/* __SQUAD_MODULE__ */
+
+/* __RANDOM_MODULE__ */
+
+/* __FORM_MODULE__ */
+
+/* __POSTMATCH_MODULE__ */
+
+/* __INJURY_MODULE__ */
+
+/* __CLOUT_MODULE__ */
+
+/* __ROUTINE_MODULE__ */
+
+/* __NODES_MODULE__ */
+
+/* ================= 侧栏 ================= */
+function formBar(team){
+  const f=S.form[team]||[];
+  if(!f.length) return "";
+  return `<span class="forms">${f.slice(-5).map(x=>`<i class="${x?'w':'l'}"></i>`).join("")}</span>`;
+}
+function nextMatchCard(){
+  const sea=SEASONS[S.si], on=S.schedule[S.week-1];
+  const opp=S.world[S.homeLeague||"LPL"].find(t=>t.name===on);
+  if(!opp) return "";
+  const myPw=myPower(), opPw=teamPowerOf(on);
+  const star=opp.players.slice().sort((a,b)=>ovrOf(b)-ovrOf(a))[0];
+  const rival=opp.players.find(q=>q.pos===S.pos);
+  const st=(S.standings[S.homeLeague||"LPL"]||{})[on]||{w:0,l:0};
+  const diff=myPw-opPw;
+  const V=gapVerdict(diff);
+  return `<div class="card"><h2>下一场<em>${sea.tag} 第 ${S.week} 周 · BO3</em></h2>
+    <div class="next">
+      <div class="sd"><div class="nm">${teamLogo(S.team,28)}${S.team}${formBar(S.team)}</div>
+        <div class="pw">综合实力 <b>${myPw.toFixed(1)}</b></div></div>
+      <div class="mid">VS</div>
+      <div class="sd"><div class="nm">${teamLogo(on,28)}${on}${formBar(on)}</div>
+        <div class="pw">综合实力 <b>${opPw.toFixed(1)}</b></div></div>
+    </div>
+    <div class="oppinfo">
+      <span class="chipx">对面战绩 <b>${st.w}−${st.l}</b></span>
+      <span class="chipx">核心 <b>${star.id}</b>${star.cn?`（${star.cn}）`:""} ${POSN[star.pos]} ${ovrOf(star).toFixed(0)}${star.comeback?' · 复出':''}${star.rookie?' · 新秀':''}</span>
+      ${rival?`<span class="chipx">你的对位 <b>${rival.id}</b> ${ovrOf(rival).toFixed(0)}${rival.rookie?' · 新秀':''}</span>`:""}
+    </div>
+    <div class="gapbar ${V.k}">
+      <div class="gv">${V.t}<span class="gd mono">${diff>=0?"+":""}${diff.toFixed(1)}</span></div>
+      <div class="gt">${V.d}</div>
+    </div></div>`;
+}
+function eventsCard(){
+  if(!S.events.length) return `<div class="card"><h2>大事记</h2>
+    <p class="note" style="margin:0">赛季刚开始，还没什么值得记下的事。</p></div>`;
+  const tags=["全部",...Array.from(new Set(S.events.map(e=>e.tag)))];
+  const cur=S.evFilter||"全部";
+  const list=S.events.filter(e=>cur==="全部"||e.tag===cur).slice(-40).reverse();
+  return `<div class="card"><h2>大事记<em>${nowLabel()} · 共 ${S.events.length} 条</em></h2>
+    <div class="filt">${tags.map(t=>`<button data-ef="${t}" class="${t===cur?'on':''}">${t}</button>`).join("")}</div>
+    <div class="feed">${list.map(e=>`<div class="ev ${e.tone}">
+      <span class="tg">${e.tag}</span>
+      <span class="tx">${e.text}<span class="tm">${e.s}</span></span></div>`).join("")}</div></div>`;
+}
+function standingsCard(){
+  const rows=lplRank();
+  return `<div class="card"><h2>${S.homeLeague||"LPL"} 积分榜<em>第 ${S.week} 周</em></h2>
+    <div class="tw"><table><thead><tr><th>#</th><th>战队</th><th>战绩</th></tr></thead><tbody>
+    ${rows.map((r,i)=>`<tr class="${r.n===S.team?'me':''} ${i===5?'cut':''}">
+      <td class="n">${i+1}</td><td>${teamLogo(r.n,18)}${r.n}${r.n===S.team?'<span class="tag">你</span>':''}</td>
+      <td class="n">${r.w}−${r.l}</td></tr>`).join("")}</tbody></table></div>
+    <p class="note">粗线以上进季后赛。</p></div>`;
+}
+function newsCard(){
+  const other=Object.keys(S.world).filter(l=>l!=="LPL").map(lg=>{
+    const t=Object.entries(S.standings[lg]).map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0}))
+      .sort((a,b)=>b.p-a.p)[0];
+    return `<tr><td>${lg}</td><td>${t?t.n:"—"}</td><td class="n">${t?t.w+"−"+t.l:"—"}</td></tr>`;
+  }).join("");
+  return `<div class="card"><h2>其他赛区</h2>
+    <div class="tw"><table><thead><tr><th>赛区</th><th>当前第一</th><th>战绩</th></tr></thead><tbody>${other}</tbody></table></div>
+    ${S.news.length?`<div class="log" style="max-height:150px;margin-top:12px">${S.news.slice(-6).reverse().join("")}</div>`:""}
+    ${S.log.length?`<div class="log" style="max-height:140px">${S.log.slice(-6).reverse().join("")}</div>`:""}</div>`;
+}
+
+/* ================= 渲染 ================= */
+function hud(){
+  const h=$("hud");
+  if(!S||S.step==="create"){h.classList.add("hide");return;}
+  h.classList.remove("hide");
+  if(S.step==="pre"||S.step==="offer"||(!S.career&&S.pre)){
+    h.innerHTML=`
+      <div><div class="k">选手</div><div class="v">${S.name||"你"} <small>${POSN[S.pos]}</small></div></div>
+      <div><div class="k">年龄</div><div class="v mono">${S.age}</div></div>
+      <div class="hud-now ${nowPhase().urgent?'urgent':''}"><div class="k">现在</div>
+        <div class="v">${nowPhase().tag} 职业前 <small>${nowPhase().detail} · 窗口剩 ${Math.max(0,PRE_YEAR-S.pre.week)} 周</small></div></div>
+      <div><div class="k">段位</div><div class="v">${rankBadge(S.pre.rank,26)}</div></div>
+      <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div></div>
+      <div><div class="k">下一节点</div><div class="v">${(()=>{const n=nextMilestone();
+        return n?`${n.name} <small>${Math.max(0,n.w-S.pre.week)}周</small>`:"—"})()}</div></div>
+      <div><div class="k">资金</div><div class="v mono">${Math.round(S.money)}<small>万</small></div></div>
+      <div><div class="k">状态</div><div class="v" style="font-size:13px">${
+      typeof formTier==="function"&&S.form!==undefined?formTier(myForm()).n:"—"}</div></div>
+    <div><div class="k">资金</div><div class="v mono">${Math.round(S.money)}<small>万</small></div></div>
+    <div><div class="k">体能</div><div class="v mono">${100-Math.round(S.fatigue)}<small>/100</small></div></div>`;
+    return;
+  }
+  const sea=SEASONS[S.si];
+  h.innerHTML=`
+    <div><div class="k">选手</div><div class="v">${S.name||"你"} <small>${POSN[S.pos]}</small></div></div>
+    <div><div class="k">年龄</div><div class="v mono">${S.age}</div></div>
+    <div class="hud-now ${nowPhase().urgent?'urgent':''}"><div class="k">现在</div>
+      <div class="v">${nowPhase().tag} ${nowPhase().phase} <small>${nowPhase().detail}</small></div></div>
+    <div><div class="k">战队</div><div class="v">${S.team}</div></div>
+    <div><div class="k">本季</div><div class="v mono">${S.record.w}−${S.record.l}</div></div>
+    <div><div class="k">冠军</div><div class="v mono">${S.career.titles.length}</div></div>
+    <div><div class="k">资金</div><div class="v mono">${Math.round(S.money)}<small>万</small></div></div>
+    <div><div class="k">体能</div><div class="v mono">${100-Math.round(S.fatigue)}<small>/100</small></div></div>`;
+}
+function render(){
+  if(typeof watchRoster==="function") watchRoster();
+  hud();
+  $("stage").innerHTML = S.step==="create"?viewCreate()
+    : S.step==="pre"?viewPre()
+    : S.step==="offer"?viewOffer()
+    : S.step==="season"?viewSeason()
+    : S.step==="match"?viewMatch()
+    : S.step==="offseason"?viewOffseason() : viewEnd();
+  bind();
+}
+function bind(){
+  const st=$("stage");
+  st.querySelectorAll("[data-age]").forEach(b=>b.onclick=()=>{S.ageIdx=+b.dataset.age;render()});
+  st.querySelectorAll("[data-bg]").forEach(b=>b.onclick=()=>{
+    S.bgPick=b.dataset.bg;
+    const bb=bgOf(S.bgPick); if(bb&&bb.origin) S.origin=bb.origin;   // 出身随背景走
+    render()});
+  const rr=$("reroll"); if(rr) rr.onclick=()=>{S.bgOffer=drawBackgrounds();S.bgPick=null;render()};
+  const ru=$("rankupok"); if(ru) ru.onclick=()=>{S.rankUp=null;render()};
+  const sy=$("signyes"); if(sy) sy.onclick=()=>{
+    const m=S.signup; S.signup=null;
+    S.money-=m.fee; preLog(`交了 <b>${m.fee} 万</b>报名费，${m.name}走起。`,"info");
+    m.run(); advancePreWeek();
+  };
+  const sn=$("signno"); if(sn) sn.onclick=()=>{
+    const m=S.signup; S.signup=null;
+    preLog(`没报 ${m.name}。省下的钱和体力，用在别处。`,"info");
+    advancePreWeek();
+  };
+  st.querySelectorAll("[data-gear]").forEach(b=>b.onclick=()=>{
+    const a=b.dataset.gear.split(":");buyGear(a[0],+a[1]);});
+  st.querySelectorAll("[data-course]").forEach(b=>b.onclick=()=>buyCourse(b.dataset.course));
+  st.querySelectorAll("[data-relax]").forEach(b=>b.onclick=()=>buyRelax(b.dataset.relax));
+  const dc=$("decline"); if(dc) dc.onclick=()=>{S.step="pre";preNextYear();};
+  st.querySelectorAll("[data-pos]").forEach(b=>b.onclick=()=>{S.pos=b.dataset.pos;render()});
+  st.querySelectorAll("[data-org]").forEach(b=>b.onclick=()=>{S.origin=b.dataset.org;render()});
+  st.querySelectorAll("[data-inc]").forEach(b=>b.onclick=()=>{
+    const d=b.dataset.inc;if(talentLeft()>0&&S.talent[d]<10){S.talent[d]++;render()}});
+  st.querySelectorAll("[data-dec]").forEach(b=>b.onclick=()=>{
+    const d=b.dataset.dec;if(S.talent[d]>1){S.talent[d]--;render()}});
+  const nm=$("nm"); if(nm) nm.oninput=e=>{S.name=e.target.value};
+  const go=$("go"); if(go) go.onclick=()=>{
+    S.name=(nm&&nm.value.trim())||"无名"; S.showStart=true; render(); };
+  const sg=$("startgo"); if(sg) sg.onclick=()=>{ S.showStart=false; startPre(); };
+  st.querySelectorAll("[data-prolg]").forEach(b=>b.onclick=()=>{S.proLg=b.dataset.prolg;render()});
+  st.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render()});
+  st.querySelectorAll("[data-rnd]").forEach(b=>b.onclick=()=>resolveRandom(+b.dataset.rnd));
+  st.querySelectorAll("[data-locker]").forEach(b=>b.onclick=()=>resolveLocker(+b.dataset.locker));
+  st.querySelectorAll("[data-spend]").forEach(b=>b.onclick=()=>{
+    const x=SPEND[+b.dataset.spend];
+    if(S.money>=x.cost&&!(S.buff&&S.buff[x.k])){S.money-=x.cost;x.run();
+      pushEvent(`花 ${x.cost} 万：${x.n}。`,"info","开销");render();}
+  });
+  st.querySelectorAll("[data-pre]").forEach(b=>b.onclick=()=>preAct(b.dataset.pre));
+  st.querySelectorAll("[data-pretrain]").forEach(b=>b.onclick=()=>preAct("train",b.dataset.pretrain));
+  const pn=$("prenext"); if(pn&&!S.rndEv) pn.onclick=preNextWeek;
+  st.querySelectorAll("[data-offer]").forEach(b=>b.onclick=()=>acceptOffer(+b.dataset.offer));
+  st.querySelectorAll("[data-train]").forEach(b=>b.onclick=()=>doTrain(b.dataset.train));
+  const _rtA=$("rtRepeat"); if(_rtA) _rtA.onclick=repeatLast;
+  const _rtB=$("rtPlan");   if(_rtB) _rtB.onclick=runPlan;
+  const _rtC=$("rtSave");   if(_rtC) _rtC.onclick=savePlan;
+  const _rtD=$("rtSave2");  if(_rtD) _rtD.onclick=savePlan;
+  const _rtE=$("rtClear");  if(_rtE) _rtE.onclick=clearPlan;
+  st.querySelectorAll("[data-list]").forEach(b=>b.onclick=()=>doList(b.dataset.list));
+  st.querySelectorAll("[data-sign]").forEach(b=>b.onclick=()=>doSign(b.dataset.sign));
+  st.querySelectorAll("[data-squad]").forEach(b=>b.onclick=()=>doSquad(b.dataset.squad));
+  st.querySelectorAll("[data-do]").forEach(b=>b.onclick=()=>doAction(b.dataset.do));
+  const p=$("play"); if(p&&!S.locker) p.onclick=()=>{isBenched()?benchWeek():startMatch(false)};
+  const au=$("auto"); if(au) au.onclick=()=>autoRest(DIMS.reduce((a,b)=>S.talent[a]>=S.talent[b]?a:b));
+  st.querySelectorAll("[data-node]").forEach(b=>b.onclick=()=>resolveNode(+b.dataset.node));
+  const nx=$("next"); if(nx) nx.onclick=nextWeek;
+  const of=$("off"); if(of) of.onclick=doOffseason;
+  st.querySelectorAll("[data-ef]").forEach(b=>b.onclick=()=>{S.evFilter=b.dataset.ef;render()});
+  const ag=$("again"); if(ag) ag.onclick=screenCreate;
+}
+
+let S=null;
+screenCreate();
+</script>

@@ -1,0 +1,415 @@
+﻿team_id,code,name,slug,league,region_zh,region_en,tier,status,player_count,logo
+100205573001435494,PGM,PENTAGRAM,pentagram,LJL,日本赛区,JAPAN,major,active,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/pentagram-5udx4g7f.png
+100205573495116443,GEN,Gen.G Esports,geng,LCK,韩国赛区,KOREA,major,active,11,http://static.lolesports.com/teams/1773829250929_GENGLOGO_GOLD.png
+100205573496804586,HLE,Hanwha Life Esports,hanwha-life-esports,LCK,韩国赛区,KOREA,major,active,11,http://static.lolesports.com/teams/1631819564399_hle-2021-worlds.png
+100205576307813373,FLA,Flamengo ,flamengo-esports,CBLOL,巴西赛区,BRAZIL,major,archived,3,http://static.lolesports.com/teams/1642953977323_Monograma_Branco-Vermelho.png
+100205576309502431,FUR,FURIA,furia,CBLOL,巴西赛区,BRAZIL,major,active,6,http://static.lolesports.com/teams/FURIA---black.png
+100205576949530558,BURA,Bursaspor Esports,bursaspor-esports,TCL,EMEA赛区,EMEA,major,archived,3,https://lolstatic-a.akamaihd.net/esports-assets/production/team/bursaspor-esports-fhdw3a5q.png
+100285330168091787,DFM,DetonatioN FocusMe,detonation-focusme,LCP,太平洋,PACIFIC,major,active,5,http://static.lolesports.com/teams/1673415140442_dfm.png
+100285330169036485,USG,Unsold Stuff Gaming,unsold-stuff-gaming,LJL,日本赛区,JAPAN,major,active,2,https://lolstatic-a.akamaihd.net/esports-assets/production/team/unsold-stuff-gaming-zrbxiqt.png
+100289931264192378,TSPT,Team Spirit,team-spirit,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,archived,0,http://static.lolesports.com/teams/1643720491696_Whitelogo.png
+100289931264934834,TJ,Team Just,team-just,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,archived,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-just-dyp9k92d.png
+100289931265914728,VK1,Vikings Gaming,vikings-gaming,VCS,越南赛区,VIETNAM,major,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/vikings-gaming-ayhe47n0.png
+100725845018863243,DK,Dplus KIA,dwg-kia,LCK,韩国赛区,KOREA,major,active,11,http://static.lolesports.com/teams/1673260049703_DPlusKIALOGO11.png
+100725845022060229,BFX,BNK FEARX,fearx,LCK,韩国赛区,KOREA,major,active,12,http://static.lolesports.com/teams/1734691810721_BFXfullcolorfordarkbg.png
+100783238110621058,DBL,Dashing Buffalo,dashing-buffalo,VCS,越南赛区,VIETNAM,major,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/phong-vu-buffalo-qwr4rud.png
+101383792559569368,AK,All Knights,all-knights,LLA,拉美赛区,LATIN AMERICA,major,active,0,http://static.lolesports.com/teams/AK-Black-BG.png
+101383792887446028,MEC,MAMMOTH,mammoth,LCO,大洋洲赛区,OCEANIA,major,active,10,http://static.lolesports.com/teams/1643079304055_RedMammothIcon.png
+101383792891050518,GRV,Gravitas,gravitas,LCO,大洋洲赛区,OCEANIA,major,active,10,http://static.lolesports.com/teams/gravitas-logo.png
+101383793567806688,SK,SK Gaming,sk-gaming,LEC,EMEA赛区,EMEA,major,active,6,http://static.lolesports.com/teams/1643979272144_SK_Monochrome.png
+101383793569248484,AST,Astralis,astralis,LEC,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/AST-FullonDark.png
+101383793572656373,GX,GIANTX,giantx-lec,LEC,EMEA赛区,EMEA,major,active,7,http://static.lolesports.com/teams/1765897105091_GIANTX-logotype-white.png
+101383793574360315,RGE,Rogue,rogue,LEC,EMEA赛区,EMEA,major,archived,0,http://static.lolesports.com/teams/1705054928404_RGE.png
+101388912911039804,TT,THUNDER TALK GAMING,thunder-talk-gaming,LPL,中国大陆赛区,CHINA,major,active,5,http://static.lolesports.com/teams/TT-FullonDark.png
+101388912914513220,NIP,Shenzhen NINJAS IN PYJAMAS,shenzen-ninjas-in-pyjamas,LPL,中国大陆赛区,CHINA,major,active,5,http://static.lolesports.com/teams/1673425724696_NIP-Symbol-RGB-NeonYellow1.png
+101422616509070746,GS,Galatasaray Espor,galatasaray-espor,TCL,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/1631820533570_galatasaray-2021-worlds.png
+101428372598668846,BCT,Burning Core Toyama,burning-core,LJL,日本赛区,JAPAN,major,active,6,http://static.lolesports.com/teams/1713338557123_LJL_BCT_Color.png
+101428372600307248,RJ,Rascal Jester,rascal-jester,LJL,日本赛区,JAPAN,major,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/rascal-jester-e0g6cud0.png
+101428372602011186,V3,V3 Esports,v3-esports,LJL,日本赛区,JAPAN,major,active,7,http://static.lolesports.com/teams/v3_500x500.png
+101428372603715124,CGA,Crest Gaming Act,crest-gaming-act,LJL,日本赛区,JAPAN,major,active,0,http://static.lolesports.com/teams/1673413705064_cga.png
+101428372605353526,QTD,QT DIG,sengoku-gaming,LJL,日本赛区,JAPAN,major,active,0,http://static.lolesports.com/teams/1744180899175_qtd_white.png
+101428372607057464,AXC,Axiz Crest,axiz,LJL,日本赛区,JAPAN,major,active,0,http://static.lolesports.com/teams/1705738214022_AXIZLOGO-white03.png
+101428372830010965,ALF,Alpha Esports,alpha-esports,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,5,http://static.lolesports.com/teams/1592588479686_AlphaEsportsALF-01-FullonDark.png
+101909007470353718,VSG,VSG,vsg,LCK,韩国赛区,KOREA,major,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/vsg-7knwodft.png
+101909007472450882,ESS,ES Sharks,es-sharks,LCK,韩国赛区,KOREA,major,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/es-sharks-isj26vcq.png
+101978171843206569,VEG,Vega Squadron,vega-squadron,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,8,http://static.lolesports.com/teams/vega.png
+102235771678061291,IW,DenizBank İstanbul Wildcats,fastpay-wildcats,TCL,EMEA赛区,EMEA,major,active,1,http://static.lolesports.com/teams/1654773501062_DenizBankIstanbulWildcatsWhite1.png
+102747101562758215,SP11,SeolHaeOne Prince,apk-prince,LCK,韩国赛区,KOREA,major,archived,0,http://static.lolesports.com/teams/1596306977161_APKPrinceAPK-01-FullonDark.png
+102747101565183056,NS,NONGSHIM RED FORCE,nongshim-redforce,LCK,韩国赛区,KOREA,major,active,11,http://static.lolesports.com/teams/NSFullonDark.png
+102804906460506452,LK,Lowkey Esports,lowkey-esports,VCS,越南赛区,VIETNAM,major,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/lowkey-esports-cjb5dppb.png
+102825747701670848,UCH,Azules Esports,azules-esports,LLA,拉美赛区,LATIN AMERICA,major,active,3,https://lolstatic-a.akamaihd.net/esports-assets/production/team/azules-esports-ak2khbqa.png
+103461966951059521,EG,Evil Geniuses LG,evil-geniuses,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1592590374862_EvilGeniusesEG-01-FullonDark.png
+103461966965149786,MKOI,Movistar KOI,mad-lions,LEC,EMEA赛区,EMEA,major,active,6,http://static.lolesports.com/teams/1734012609283_MKOI_FullColor_Blue.png
+103461966986776720,UP,Ultra Prime,ultra-prime,LPL,中国大陆赛区,CHINA,major,active,2,http://static.lolesports.com/teams/ultraprime.png
+103495716836203404,5R,5 Ronin,5-ronin,TCL,EMEA赛区,EMEA,major,archived,4,http://static.lolesports.com/teams/5R_LOGO.png
+103495716886587312,BJK,Beşiktaş Esports,besiktas,TCL,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/1737386333567_BeiktaEsports.png
+103535282119620510,SHG,Fukuoka SoftBank HAWKS gaming,fukuoka-softbank-hawks-gaming,LCP,太平洋,PACIFIC,major,active,5,http://static.lolesports.com/teams/1725885083108_SHG_White_Main.png
+103535282124208038,PGG,Pentanet.GG,pentanetgg,LCO,大洋洲赛区,OCEANIA,major,active,8,https://lolstatic-a.akamaihd.net/esports-assets/production/team/pentanetgg-3vnqnv03.png
+103743103374986730,HLBR,Havan Liberty,havan-liberty,CBLOL,巴西赛区,BRAZIL,major,archived,1,http://static.lolesports.com/teams/1582994128849_HL%20Logo.png
+103743162394217975,SAN,Santos HotForex,santos-hotforex,CBLOL,巴西赛区,BRAZIL,major,archived,1,http://static.lolesports.com/teams/1591044344020_LogoSantosHotForex.png
+103963647433204351,M19,M19,m19,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,4,http://static.lolesports.com/teams/1586359360406_M19logo_square.png
+103963715924353674,DARM,Dragon Army,dragon-army,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,9,http://static.lolesports.com/teams/1586360405423_440px-Dragon_Armylogo_square.png
+103963753080578719,CC,CrowCrowd Moscow,crowcrowd-moscow,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,2,http://static.lolesports.com/teams/Logo_CC.png
+103963768923385902,EPG,Elements Pro Gaming,elements-pro-gaming,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,5,http://static.lolesports.com/teams/1586361213717_440px-Elements_Pro_Gaminglogo_square.png
+104016416551172375,SRB,Seorabeol Gaming,seorabeol-gaming,LCK,韩国赛区,KOREA,major,archived,1,http://static.lolesports.com/teams/1587164557209_seorabeol.png
+104202382255290736,RNS,RENSGA,rensga,CBLOL,巴西赛区,BRAZIL,major,archived,0,http://static.lolesports.com/teams/LogoRensgaEsports.png
+104270958001747936,OBG,One Breath Gaming,one-breath-gaming,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,6,http://static.lolesports.com/teams/1643705997409_12.png
+104367068120825486,PSG,PSG Talon,psg-talon,LCP,太平洋,PACIFIC,major,active,0,http://static.lolesports.com/teams/1752559016251_PSG_TALON_COLOR.png
+104367072827489994,BJD,Berjaya Dragons,berjaya-dragons,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,2,http://static.lolesports.com/teams/1592588696027_BerjayaDragonsBJD-01-FullonDark.png
+104367077419533265,RSG,Resurgence,resurgence,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,6,http://static.lolesports.com/teams/1600107133106_ResurgenceRSG-01-FullonDark.png
+104367082616536883,NOV,Nova Esports,nova-esports,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,6,http://static.lolesports.com/teams/1592588738660_NovaEsportsNOV-01-FullonDark.png
+104367099322647716,LYB,Liyab Esports,liyab-esports,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,6,http://static.lolesports.com/teams/1592588789533_LiyabEsportsLYB-01-FullonDark.png
+105397399468432537,NMG,Miners,netshoes-miners,CBLOL,巴西赛区,BRAZIL,major,archived,0,http://static.lolesports.com/teams/1653399163957_miners_logo.png
+105397404796640412,LOUD,LOUD,loud,CBLOL,巴西赛区,BRAZIL,major,active,6,http://static.lolesports.com/teams/Logo-LOUD-Esports_Original.png
+105505619546859895,BRO,HANJIN BRION,fredit-brion,LCK,韩国赛区,KOREA,major,active,11,http://static.lolesports.com/teams/1716454325887_Nowyprojekt.png
+105515219038427019,KCB,Karmine Corp Blue,karmine-corp-blue,LEC,EMEA赛区,EMEA,major,active,5,http://static.lolesports.com/teams/1765897112519_WHITE.png
+105536643047197642,NASR,NASR Esports,nasr-esports,TCL,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/red.png
+105663527959374033,CPT,CTRL PLAY Team,ctrl-play-team,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,7,http://static.lolesports.com/teams/CPT.png
+105709099258505657,PCE,PEACE,peace,LCO,大洋洲赛区,OCEANIA,major,active,0,http://static.lolesports.com/teams/1631820668117_peace-2021-worlds.png
+106269804045322803,BYG,Beyond Gaming,mega-bank-beyond-gaming,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,0,http://static.lolesports.com/teams/1686826371701_beyondGaming_logo_W.png
+106269818143576465,BME,BOOM Esports,boom-esports,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,3,http://static.lolesports.com/teams/boom-color.png
+106269859169658575,IMP,Impunity Esports,impunity-esports,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,8,http://static.lolesports.com/teams/impunity.png
+106421708401759879,BSGG,Black Star Gaming,black-star-gaming,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,6,http://static.lolesports.com/teams/blackstar-gaming-2021-notext.png
+106806773698472633,AZE,Team Aze,team-aze,LLA,拉美赛区,LATIN AMERICA,major,active,0,http://static.lolesports.com/teams/1643739781349_AzeBlanco1.png
+106806779752531762,GET,Globant Emerald Team,globant-emerald-team,LLA,拉美赛区,LATIN AMERICA,major,archived,0,http://static.lolesports.com/teams/1629742118863_GET-Black-BG.png
+106827766465356396,DFM,to be deleted,tbd-tbd,LJL,日本赛区,JAPAN,major,archived,1,http://static.lolesports.com/teams/1630063718385_dfm_512px.png
+106972751203500705,TIP,Team Impulse,team-impulse,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1632274641864_tip.jpg
+106972778172351142,NRG,NRG Kia,nrg-esports,LCS,北美赛区,NORTH AMERICA,major,archived,0,http://static.lolesports.com/teams/1705723539817_NRGKiaWhite1.png
+106972784308566040,REN2,Renegades,renegades,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1632275147625_ren.png
+107044951062646444,GV,Gravity,gravity,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1633376327102_Gravity_North_American_Teamlogo_square.png
+107044955612300225,T8,Team 8,team-8,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1633376396291_t8.png
+107044965163896500,CST,Team Coast,team-coast,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1633376542614_COAST.png
+107044968545881783,WFX,Winterfox,winterfox,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1633376593408_Winterfox_Logo_Update.png
+107135349592625778,AZF,Azubu Frost,azubu-frost,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669820647966_Azubu_Frostlogo_square.png
+107135747935244917,NBSW,NaJin Black Sword,najin-black-sword,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669838305409_NaJin_Black_Swordlogo_square.png
+107251231972989211,SBTE,SBTC ESPORTS,sbtc-esports,VCS,越南赛区,VIETNAM,major,active,6,http://static.lolesports.com/teams/1656693279140_LOGOFINALKHNGCH-13.png
+107251245690956393,MVK,MVK Esports,saigon-buffalo-esports,LCP,太平洋,PACIFIC,major,active,6,http://static.lolesports.com/teams/1767089709161_White_Logo.png
+107251307514079872,LX,LXE ESPORTS,lxe-esports,VCS,越南赛区,VIETNAM,major,active,8,http://static.lolesports.com/teams/1636525075589_Luxury_Esports_2020_Logo.png
+107251374793416561,CES,CERBERUS ESPORTS,cerberus-esports,VCS,越南赛区,VIETNAM,major,active,8,http://static.lolesports.com/teams/1636526090059_900px-CERBERUS_Esports.png
+107251941920386009,SKY,BTS ESPORTS,bts-esports,VCS,越南赛区,VIETNAM,major,active,6,http://static.lolesports.com/teams/1636534755855_900px-Burst_the_Sky.png
+107258254469504696,TF,TP.HCM Team Flash,team-flash,VCS,越南赛区,VIETNAM,major,active,0,http://static.lolesports.com/teams/1737109056884_logoteamflash.png
+107380494843637223,SSB,Samsung Blue,samsung-blue,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1638496318179_Samsung_Bluelogo_profile.png
+107385211290331909,SSW,Samsung White,samsung-white,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1638568285937_Samsung_Whitelogo_profile.png
+107385421206530828,LMQ,LMQ,lmq,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1638571489257_LMQ_Logo.png
+107385500799806223,NWS,NaJin White Shield,najin-white-shield,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669838207962_NaJin_White_Shieldlogo_square.png
+107385769105341437,SHR,Star Horn Royal Club,star-horn-royal-club,LPL,中国大陆赛区,CHINA,major,active,1,http://static.lolesports.com/teams/1638576797331_SHRoyal_Clublogo_profile.png
+107437032053655867,KNG,Kanga Esports,kanga-esports,LCO,大洋洲赛区,OCEANIA,major,active,11,http://static.lolesports.com/teams/1643079892147_Dark_BG_Logo_Icon.png
+107444707109325651,SPB,St.Petersburg Polytechnic University,stpetersburg-polytechnic-university,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,7,http://static.lolesports.com/teams/1639476118377_logo.png
+107444893599379878,MAI,Moscow Aviation Institute,moscow-aviation-institute,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,7,http://static.lolesports.com/teams/1639478962323_1200px-Emblem_of_Moscow_Aviation_Institute.svg.png
+107563714667537640,SHFT,Shifters,team-bds,LEC,EMEA赛区,EMEA,major,active,8,http://static.lolesports.com/teams/1765897071435_600px-Shifters_allmode.png
+107568522662440666,VNU,Vanung University,vanung-university,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,archived,0,http://static.lolesports.com/teams/1641365393356_LSCPlaceholder.png
+107568527232696441,HKFF,Hungkuang University Falcon,hungkuang-university-falcon,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,archived,1,http://static.lolesports.com/teams/1641365463856_LSCPlaceholder.png
+107568538258435804,LITS,Lee-Ming Institute of Technology,lee-ming-institute-of-technology,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,archived,7,http://static.lolesports.com/teams/1641365633145_LSCPlaceholder.png
+107568542043504763,LCVS,Li-Chih Valuable School,li-chih-valuable-school,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,archived,6,http://static.lolesports.com/teams/1641365690121_LSCPlaceholder.png
+107581284487120142,6K,Six Karma,six-karma,LLA,拉美赛区,LATIN AMERICA,major,active,4,http://static.lolesports.com/teams/1705347064525_logo6k1-1.png
+107581287168722290,TK,The Kings,the-kings,LLA,拉美赛区,LATIN AMERICA,major,archived,1,http://static.lolesports.com/teams/1641751989165_THE-KINGS-ColorDark.png
+107598699275015260,LEV,LEVIATÁN,leviatan-esports,CBLOL,巴西赛区,BRAZIL,major,active,5,http://static.lolesports.com/teams/1643795049372_LEV-CLAROWhite.png
+107598700335356591,LEV,Leviatán Esports,leviatan-esports-archived,LLA,拉美赛区,LATIN AMERICA,major,archived,1,http://static.lolesports.com/teams/1641825864496_LOLESPORTSICON.png
+107598767299089535,KRU,KRÜ Esports,kru-esports,LLA,拉美赛区,LATIN AMERICA,major,archived,0,http://static.lolesports.com/teams/1641826885231_LOLESPORTSICON.png
+107598773733776091,KRU,KRÜ Esports,kru-esports,LLA,拉美赛区,LATIN AMERICA,major,archived,0,http://static.lolesports.com/teams/1641826982881_LOLESPORTSICON.png
+107598840547235130,MVG,Malvinas Gaming,malvinas-gaming,LLA,拉美赛区,LATIN AMERICA,major,archived,6,http://static.lolesports.com/teams/1641828001883_LOLESPORTSICON.png
+107620501172253183,COML,compLexity Gaming,complexity-gaming,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1642158524706_CompLexity_Gaminglogo_square.png
+107620528199430150,CRS,Team Curse,team-curse,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1642158936579_Curse_Gaminglogo_square.png
+107620545270312969,GGU,Good Game University,good-game-university,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1642159564129_108398_1501415_95156_image.png
+107620551944630284,VUL,Team Vulcan,team-vulcan,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1642159298375_Team_Vulcunlogo_square.png
+107620556662174211,MRN,Team MRN,team-mrn,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1642159371126_Team_MRNlogo_square.png
+107635420167535818,S9,SEM9,sem9,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,7,http://static.lolesports.com/teams/1642386168294_SEM9logo_profile.png
+107656578247822628,VELS,Team Velocity,team-velocity,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1642709017012_Velocity_eSportslogo_square.png
+107697365721420298,XDG,XDG Gaming,xdg-gaming,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1643331384434_XDGG.jpg
+107700199633958891,CFO,CTBC Flying Oyster,ctbc-flying-oyster,LCP,太平洋,PACIFIC,major,active,5,http://static.lolesports.com/teams/1656307849320_CFO_Logo.png
+107700204561086446,DCG,Relove Deep Cross Gaming,deep-cross-gaming,LCP,太平洋,PACIFIC,major,active,6,http://static.lolesports.com/teams/1785400397160_LCP_DCG_Full_W1.png
+107700208463820785,HG,Hurricane Gaming,hurricane-gaming,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,archived,0,http://static.lolesports.com/teams/1644502507541_HG_W.png
+107700211633200412,MFT,Meta Falcon Team,meta-falcon-team,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,7,http://static.lolesports.com/teams/1643374804717_MFT.png
+107741445382388194,TTDK,Team Dragon Knights,team-dragon-knights,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1644003986855_Team_Dragon_Knightslogo_square.png
+107741452694443325,NME,Enemy,enemy,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1644004098099_Enemylogo_square.png
+107744562540959455,APEX,Apex Gaming,apex-gaming,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1644051551362_Apex_Gaminglogo_square.png
+107744589978851042,PH1,Phoenix1,phoenix1,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1644051967729_Phoenix1logo_square.png
+107744602693162725,ENV,Team EnVyUs,team-envyus,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1644052162733_Team_EnVyUslogo_square.png
+107760667929003738,FAK,Frank Esports,frank-esports,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,5,http://static.lolesports.com/teams/1656308269827_220621_FRANK_Final_Logo_W.png
+107786478894645827,TS,Team Secret,team-secret,VCS,越南赛区,VIETNAM,major,archived,0,http://static.lolesports.com/teams/1644691144448_NewProject1.png
+107801257572759482,WCXX,Wolf Club Gaming ARCH,wolf-club-gaming-arch,LLA,拉美赛区,LATIN AMERICA,major,active,1,http://static.lolesports.com/teams/1644916646869_wolf-White.png
+108242938631480253,ASES,AS Esports,as-esports,VCS,越南赛区,VIETNAM,major,active,6,http://static.lolesports.com/teams/1656693933077_ASESPORTS-01.png
+108242948392742955,ASET,AS Esports,as-esports,VCS,越南赛区,VIETNAM,major,archived,1,http://static.lolesports.com/teams/1651656315006_LOLESPORTSICON.png
+108242953144452436,GETS,Genius Esports,genius-esports,VCS,越南赛区,VIETNAM,major,archived,0,http://static.lolesports.com/teams/1656694097789_LogoiTuyn.png
+108316290233025831,TF,Team Flash,team-flash,VCS,越南赛区,VIETNAM,major,archived,1,http://static.lolesports.com/teams/1652775422145_wre-tf.png
+108517492697602721,DWT,Dewish Team,dewish-team,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,5,http://static.lolesports.com/teams/1656308173484_DWT_Logo_W.png
+108573042084687884,TW,TEAM WHALES,team-whales,LCP,太平洋,PACIFIC,major,active,0,http://static.lolesports.com/teams/1674646643550_TEAMWHALE_LOGO_VERSIONS_W_fullwhite-06-svg.png
+108939770223501012,XXXZ,xzxzxz,urban-beauties,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,archived,1,http://static.lolesports.com/teams/1662288971313_valorantteamgamechangers.png
+109029965480133519,7H,7th heaven,7th-heaven,LJL,日本赛区,JAPAN,major,active,0,http://static.lolesports.com/teams/1663665242269_7th_heavenlogo_square.webp
+109030008014439723,SZ,SCARZ,scarz,LJL,日本赛区,JAPAN,major,active,0,http://static.lolesports.com/teams/1663665891493_SCARZlogo_square.webp
+109030015106787069,TBE,Team BlackEye,team-blackeye,LJL,日本赛区,JAPAN,major,active,0,http://static.lolesports.com/teams/1663665999858_Team_BlackEyelogo_square.webp
+109030035355009939,CJ,CJ Entus,cj-entus,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1663666308485_CJ_Entuslogo_square.webp
+109030055392969629,SSO,SBENU Sonicboom,sbenu-sonicboom,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1663666614873_SBENU_Sonicboomlogo_square.webp
+109188677810100248,MM,Mysterious Monkeys,mysterious-monkeys,LEC,EMEA赛区,EMEA,major,active,1,http://static.lolesports.com/teams/1666087000322_Mysterious_Monkeys_allmode1.png
+109188792936195366,ELEM,Elements,elements,LEC,EMEA赛区,EMEA,major,active,1,http://static.lolesports.com/teams/1666088755448_Elements_allmode1.png
+109189810022067784,TTQ,Team Turquality,team-turquality,TCL,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/1666104276809_Team_Turqualitylogo_square.webp
+109189837857144242,NR1,NumberOne Esports,numberone-esports,TCL,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/1666104701463_NumberOne_Esportslogo_square.webp
+109189853066139852,BJK,Beşiktaş OH,beikta-oh,TCL,EMEA赛区,EMEA,major,archived,0,http://static.lolesports.com/teams/1666104933436_Be_3Fikta_3F_Esportslogo_square.webp
+109212667884169625,GMBT,Gambit Gaming,gambit-gaming,LEC,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/1666453058520_gmbsquare.png
+109212671407960104,CWO,Copenhagen Wolves,copenhagen-wolves,LEC,EMEA赛区,EMEA,major,active,1,http://static.lolesports.com/teams/1666453113649_Copenhagen_Wolves_2012_allmode.png
+109212677386887023,MYMM,MeetYourMakers,meetyourmakers,LEC,EMEA赛区,EMEA,major,active,1,http://static.lolesports.com/teams/1666453204458_mymsquare.png
+109218860895411017,MIL,Millenium,millenium,LEC,EMEA赛区,EMEA,major,active,1,http://static.lolesports.com/teams/1666548514993_Millenium_2017_darkmode.png
+109218864048681791,SHC,SUPA HOT CREW,supa-hot-crew,LEC,EMEA赛区,EMEA,major,active,1,http://static.lolesports.com/teams/1666547604460_SUPA_HOT_CREW_allmode.png
+109218868077642103,DBZZ,DragonBorns,dragonborns,LEC,EMEA赛区,EMEA,major,archived,1,http://static.lolesports.com/teams/1666548211630_DragonBornssquare.png
+109218871531830908,EG,Evil Geniuses EU,evil-geniuses-eu,LEC,EMEA赛区,EMEA,major,active,1,http://static.lolesports.com/teams/1666548171478_egsquare.png
+109218874512408191,LD,Lemondogs,lemondogs,LEC,EMEA赛区,EMEA,major,active,1,http://static.lolesports.com/teams/1666548145845_Lemondogssquare.png
+109218896516493579,ATN,ALTERNATE aTTaX,alternate-attax,LEC,EMEA赛区,EMEA,major,active,1,http://static.lolesports.com/teams/1666548100178_atnsquare.png
+109365370086329781,ORIG,Origen,origen,LEC,EMEA赛区,EMEA,major,active,1,http://static.lolesports.com/teams/1668783110728_Origenlogo_squarew.png
+109381384571686551,ANX,Albus NoX Luna,albus-nox-luna,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,1,http://static.lolesports.com/teams/1669027470580_Albus_NoXlogo_square.png
+109381393171241522,IMAY,I May,i-may,LPL,中国大陆赛区,CHINA,major,active,0,http://static.lolesports.com/teams/1669027590458_I_Maylogo_square.png
+109381396974476144,SSSG,Samsung Galaxy,samsung-galaxy,LCK,韩国赛区,KOREA,major,archived,0,http://static.lolesports.com/teams/1669027660167_Samsung_Galaxylogo_square.png
+109381398291418066,SGSG,Samsung Galaxy,samsung-galaxy,LCK,韩国赛区,KOREA,major,archived,0,http://static.lolesports.com/teams/1669027660167_Samsung_Galaxylogo_square.png
+109385640148536577,FTV,FTV Esports,ftv-esports,VCS,越南赛区,VIETNAM,major,active,0,http://static.lolesports.com/teams/1669092406945_ftv.PNG
+109385642338383648,FTE,FTV Esports,ftv-esports,VCS,越南赛区,VIETNAM,major,archived,0,http://static.lolesports.com/teams/1669092441241_ftv.PNG
+109385652440357851,FTVE,FTV Esports,ftv-esports,VCS,越南赛区,VIETNAM,major,archived,0,http://static.lolesports.com/teams/1669092595239_ftv.PNG
+109385662204369886,FT,FTV Esports,ftv-esports,VCS,越南赛区,VIETNAM,major,archived,0,http://static.lolesports.com/teams/1669092744339_ftv.PNG
+109433247162778237,AZB,Azubu Blaze,azubu-blaze,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669818831088_Azubu_Blazelogo_square.png
+109433254544556672,GJR,GJR,gjr,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669818944194_GJRlogo_square.png
+109433263921960499,ROMG,RoMg,romg,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669819076531_RoMglogo_square.png
+109433268912612144,STRR,StarTale,startale,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669819152428_StarTalelogo_square.png
+109433273905559121,XEN,Xenics Storm,xenics-storm,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669819229023_Xenics_Stormlogo_square.png
+109433285884058927,CJE2,CJ Entus,cj-entus,LCK,韩国赛区,KOREA,major,archived,0,http://static.lolesports.com/teams/1669819411958_CJ_Entuslogo_square.png
+109433291821310771,IMI,Incredible Miracle,incredible-miracle,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669819513266_Incredible_Miraclelogo_square.png
+109433298088959282,MVPB,MVP Blue,mvp-blue,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669819597769_MVPlogo_square.png
+109433560521007990,KTRA,KT Rolster A,kt-rolster-a,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669823602410_KT_Rolster_Arrowslogo_square.png
+109433561746989945,KTRA,KT Rolster A,kt-rolster-a,LCK,韩国赛区,KOREA,major,archived,0,http://static.lolesports.com/teams/1669823631957_KT_Rolster_Arrowslogo_square.png
+109433564373436062,KTRB,KT Rolster B,kt-rolster-b,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669823671770_KT_Rolster_Bulletslogo_square.png
+109433567769813884,MVPW,MVP White,mvp-white,LCK,韩国赛区,KOREA,major,archived,0,http://static.lolesports.com/teams/1669823723700_MVPlogo_square.png
+109433572697185762,OPKR,Team OP,team-op,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669823799596_Team_OPlogo_square.png
+109433585762223807,GSG,GSG,gsg,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669823987395_Logo_square.png
+109433598304001524,MVPO,MVP Ozone,mvp-ozone,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669824189405_MVPlogo_square.png
+109433601930868405,CJEB,CJ Entus Blaze,cj-entus-blaze,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669824234360_CJ_Entus_Blazelogo_square.png
+109433603949467259,CJEF,CJ Entus Frost,cj-entus-frost,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669824275700_CJ_Entus_Frostlogo_square.png
+109433604634494658,CJEF,CJ Entus Frost,cj-entus-frost,LCK,韩国赛区,KOREA,major,archived,0,http://static.lolesports.com/teams/1669824286330_CJ_Entus_Frostlogo_square.png
+109433612400465534,SKTK,SK Telecom T1 K,sk-telecom-t1-k,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669925879855_SK_Telecom_T1_Klogo_square.png
+109433614661392001,SKTS,SK Telecom T1 S,sk-telecom-t1-s,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669925625507_SK_Telecom_T1_Slogo_square.png
+109433621123982220,AHQK,ahq e-Sports Club Korea,ahq-esports-club-korea,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669824538091_Ahq_e-Sports_Club_Korealogo_square.png
+109434431268593370,JAGF,Jin Air Green Wings Falcons,jin-air-green-wings-falcons,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669836899652_Jin_Air_Green_Wings_Falconslogo_square.png
+109434439982718685,JAGS,Jin Air Green Wings Stealths,jin-air-green-wings-stealths,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669837021841_Jin_Air_Green_Wings_Stealthslogo_square.png
+109434445764151073,IM1,Incredible Miracle 1,incredible-miracle-1,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669837109915_Incredible_Miracle_1logo_square.png
+109434447987220192,IM2,Incredible Miracle 2,incredible-miracle-2,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669837154810_Incredible_Miracle_2logo_square.png
+109434452753434404,CTU,Chunnam Techno University,chunnam-techno-university,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669837216506_Chunnam_Techno_Universitylogo_square.png
+109434457468051171,MIGB,MiG Blitz,mig-blitz,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669837288890_Maximum_impact_Gaminglogo_square.png
+109434460601435943,XENB,Xenics Blast,xenics-blast,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669837347348_Xenics_Blastlogo_square.png
+109440268842976196,TNB,Team NB,team-nb,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669925975468_Team_NBlogo_square.png
+109440274044773601,AWAR,Alienware Arena,alienware-arena,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669926053041_Alienware_Arenalogo_square.png
+109440276250313671,DARK,Team Dark,team-dark,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669926087806_Team_Darklogo_square.png
+109440604998801334,FIO,Midas FIO,midas-fio,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669931103498_Midas_FIOlogo_square.png
+109440615984318649,PROP,Prime Optimus,prime-optimus,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669931260540_Prime_Clanlogo_square.png
+109441042514622507,BFM,Bigfile Miracle,bigfile-miracle,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669937769267_Bigfile_Miraclelogo_square.png
+109441048021768300,MKZ,MKZ,mkz,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669937853608_MKZlogo_square.png
+109444843754177827,NJF,NaJin e-mFire,najin-emfire,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669995781823_NaJin_e-mFirelogo_square.png
+109445517809295862,RANC,Rebels Anarchy,rebels-anarchy,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1670006056703_Rebels_Anarchylogo_square.png
+109446037338146283,ESCX,ESC Ever,esc-ever,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1670013984509_Everlogo_square.png
+109474050293083908,DAN,DAN Gaming,dan-gaming,LPL,中国大陆赛区,CHINA,major,active,1,http://static.lolesports.com/teams/1670441439611_DAN_Gaminglogo_square.webp
+109474070669389095,NBE,Newbee,newbee,LPL,中国大陆赛区,CHINA,major,active,0,http://static.lolesports.com/teams/1670441750179_Newbeelogo_square.png
+109474110193954090,SSES,Snake Esports,snake-esports,LPL,中国大陆赛区,CHINA,major,active,0,http://static.lolesports.com/teams/1670442352258_Snake_eSportslogo_square.png
+109474127173168902,SUN,Suning ,suning-,LPL,中国大陆赛区,CHINA,major,active,0,http://static.lolesports.com/teams/1670442612419_Suninglogo_square.png
+109479004896756745,LIHI,Little Hippo,little-hippo,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1670517040275_Logo_square.png
+109479012466141929,DDOL,DDoL,ddol,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1670517155242_Logo_square.png
+109479017796600844,NEL,NeL,nel,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1670517237306_NeLlogo_square.png
+109479028479733850,TEXD,Team XD,team-xd,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1670517389691_Team_XDlogo_square.png
+109479033122852537,SUST,SuperStar,superstar,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1670517460472_SuperStarlogo_square.png
+109479035816734347,NEB,NEB,neb,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1670517512429_NEBlogo_square.png
+109479039613317213,HUNT,Team Hunters,team-hunters,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1670517559431_Team_Hunterslogo_square.png
+109479053430169940,MIGF,MiG Frost,mig-frost,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1670517780937_Maximum_impact_Gaminglogo_square.png
+109479207820750520,MIBL,MiG Blaze,mig-blaze,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1670520125916_Maximum_impact_Gaminglogo_square.png
+109480056092207899,FX,Fluxo W7M,fluxo,CBLOL,巴西赛区,BRAZIL,major,active,8,http://static.lolesports.com/teams/1766161431111_LogoColorida.png
+109480204628225868,LOS,LOS,los,CBLOL,巴西赛区,BRAZIL,major,active,5,http://static.lolesports.com/teams/1784013312149_LOS-OLaranja.png
+109480205202104756,FLW,Fla Los Grandes,fla-los,CBLOL,巴西赛区,BRAZIL,major,archived,0,http://static.lolesports.com/teams/1671213565739_Cpiadelogo_0001_Forma-1.png
+109480209114770206,FLO,Fla,fla-lo,CBLOL,巴西赛区,BRAZIL,major,archived,0,http://static.lolesports.com/teams/1670535415295_triunfo_colorido.png
+109546405520674816,RED,RED Canids,red-canids,CBLOL,巴西赛区,BRAZIL,major,archived,0,http://static.lolesports.com/teams/1671545496840_RED_Canidslogo_square.webp
+109546440407259617,NMR,Netshoes Miners,netshoes-miners,CBLOL,巴西赛区,BRAZIL,major,active,0,http://static.lolesports.com/teams/1671546025979_Netshoes_Minerslogo_square.webp
+109546454744373732,RNS,Rensga eSports,rensga-esports,CBLOL,巴西赛区,BRAZIL,major,active,0,http://static.lolesports.com/teams/1671546244001_index.jpg
+109546467641441355,FLA,Flamengo Esports,flamengo-esports,CBLOL,巴西赛区,BRAZIL,major,active,0,http://static.lolesports.com/teams/1671546441165_index.png
+109616997617643584,CNBE,CNB eSports Club,cnb-esports-club,CBLOL,巴西赛区,BRAZIL,major,archived,0,http://static.lolesports.com/teams/1672622642052_CNB_e-Sports_Clublogo_square.webp
+109617035464178634,OPK,Operation Kino Esports,operation-kino-esports,CBLOL,巴西赛区,BRAZIL,major,active,0,http://static.lolesports.com/teams/1672623219362_Operation_Kino_e-Sportslogo_square.webp
+109617071162331486,REM8,Brave eSports,brave-esports,CBLOL,巴西赛区,BRAZIL,major,active,0,http://static.lolesports.com/teams/1672623763879_Brave_e-Sportslogo_square.webp
+109631541326560210,RVN,Reven Esports,reven-esports,LLA,拉美赛区,LATIN AMERICA,major,active,0,http://static.lolesports.com/teams/1676650253276_REVEN-4.png
+109637391361582335,KOI,KOI,koi,LEC,EMEA赛区,EMEA,major,archived,1,http://static.lolesports.com/teams/1672933825498_KOI_29logo_square.webp
+109637393694097670,TH,Team Heretics,team-heretics-lec,LEC,EMEA赛区,EMEA,major,active,6,http://static.lolesports.com/teams/1672933861879_Heretics-Full-Color.png
+109668849651338559,FL,FENNEL,fennel,LJL,日本赛区,JAPAN,major,active,5,http://static.lolesports.com/teams/1673413831349_fl.png
+109669678317817381,FUT,FUT Esports,fut-team,TCL,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/1673957996955_FUT.png
+109671201259007744,TLF,Team Liquid Honda First,team-liquid-honda-first,LCS,北美赛区,NORTH AMERICA,major,archived,0,http://static.lolesports.com/teams/1673449715066_TL_logo_wht.png
+109675484017801229,TB,Team Bliss,team-bliss,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,6,http://static.lolesports.com/teams/1673594389871_TeamBlissUpdated.png
+109675490370327425,GZ,Ground Zero Gaming,ground-zero,LCP,太平洋,PACIFIC,major,active,5,http://static.lolesports.com/teams/1766395585595_LCP_TEAMLogo_GZ_Full_B.png
+109692071893352727,HPS,HELLPIGS,hell-pigs,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,5,http://static.lolesports.com/teams/1674036338265_HPS_W.png
+109692074894483834,WP,West Point Esports,sem9-wpe,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,0,http://static.lolesports.com/teams/1686826980767_WPE_Full.png
+109749655929501779,CNJ,CNJ Esports,cnj-esports,VCS,越南赛区,VIETNAM,major,active,0,http://static.lolesports.com/teams/1674646843876_CNJ-symbol_basic1.png
+109828279319224248,MBE,MGN Blue Esports,mgn-box-esports,VCS,越南赛区,VIETNAM,major,active,8,http://static.lolesports.com/teams/1704187570236_Iconwhite.png
+110383487456480967,VTX,Vertex ESC,vertex-esc,LCO,大洋洲赛区,OCEANIA,major,active,12,http://static.lolesports.com/teams/1684318344978_Logo2.png
+110412316010062713,ROXR,RoX,rox,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,0,http://static.lolesports.com/teams/1684758243765_RoX_2014_CIS_Teamlogo_square.webp
+110428362822825796,DSG,Disguised,disguised,LCS,北美赛区,NORTH AMERICA,major,active,5,http://static.lolesports.com/teams/1731496922454_Disguised-Wordmark-Yellow-Main.png
+110435475019544378,TJU,Team Just,team-just,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,0,http://static.lolesports.com/teams/1685111617101_Team_Justlogo_square.webp
+110435487890002446,VVS,Vaevictis eSports,vaevictis-esports,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,0,http://static.lolesports.com/teams/1685111813067_Vaevictis_eSportslogo_square.webp
+110446808118533773,VPR,Virtus.pro,virtuspro,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,0,http://static.lolesports.com/teams/1685284546132_Virtus.prologo_square.webp
+110452965971447921,HR,Hard Random,hard-random,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,0,http://static.lolesports.com/teams/1685378506131_Hard_Random.webp
+110452976214860409,DF,Team Differential,team-differential,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,0,http://static.lolesports.com/teams/1685378663753_Differentialsquare.webp
+110452986430628502,TEM,Team Empire,team-empire,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,0,http://static.lolesports.com/teams/1685378819832_Empiresquare.webp
+110492173877838150,EF,Eternal Fire,eternal-fire,TCL,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/1737385957158_EternalFire.png
+111504538396430510,SR,Shopify Rebellion,shopify-rebellion,LCS,北美赛区,NORTH AMERICA,major,active,5,http://static.lolesports.com/teams/1701424227458_Teams204_Shopify_1632869404072.png
+111562101208125812,K7E,K7 Esports,k7-esports,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,0,http://static.lolesports.com/teams/1702302563048_LOLESPORTSICON.png
+111624100955490493,MISA,MISA Esports,misa-esports,TCL,EMEA赛区,EMEA,major,archived,0,http://static.lolesports.com/teams/1737386153294_MisaEsports.png
+111652794702250799,BGT,BoostGate Esports,boostgate-esport,TCL,EMEA赛区,EMEA,major,active,5,http://static.lolesports.com/teams/1737386212434_BoostGate.png
+111685648867207955,RW,Rainbow Warriors,rainbow-warriors,VCS,越南赛区,VIETNAM,major,active,3,http://static.lolesports.com/teams/1704187753784_Logo7.png
+111685666092027882,VKEX,Vikings Esports (archived),vikings-esports,VCS,越南赛区,VIETNAM,major,archived,0,http://static.lolesports.com/teams/1704188015427_1280X1280color.png
+111691745473532520,FRY,Fury,fury,LCO,大洋洲赛区,OCEANIA,major,active,8,http://static.lolesports.com/teams/1704969274789_FURY_Globallogo_squarecopy.png
+111691747754390318,ANCX,Antic Esports,antic-esports,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,8,http://static.lolesports.com/teams/1704949076455_AnticIcon1.png
+111691749922904280,ION,ION Global Esports,ion-global-esports,LCO,大洋洲赛区,OCEANIA,major,active,0,http://static.lolesports.com/teams/1706578984342_ION.png
+111692115552193858,GXXX,GIANTX (archived),giantx,LEC,EMEA赛区,EMEA,major,archived,1,http://static.lolesports.com/teams/1704714883065_GX.png
+111692118851466302,KC,Karmine Corp,karmine-corp,LEC,EMEA赛区,EMEA,major,active,5,http://static.lolesports.com/teams/1704714951336_KC.png
+111692126143270221,RGEX,Rogue (archived),roguearch,LEC,EMEA赛区,EMEA,major,archived,1,http://static.lolesports.com/teams/1704714924764_RGE.png
+111730807014578357,PCF,PCIFIC Esports,celestial-cats,TCL,EMEA赛区,EMEA,major,active,5,http://static.lolesports.com/teams/1767800848871_PcificLogo2.png
+111730815566180425,FXF,FoxFire,kim-esports,TCL,EMEA赛区,EMEA,major,active,5,http://static.lolesports.com/teams/1715671973432_KATANA.png
+111730820797905151,BABU,Baby Buffaloes,ascendance,TCL,EMEA赛区,EMEA,major,active,9,http://static.lolesports.com/teams/1715671859413_BABYBUFFALOES.png
+111730827185438020,NON,NONAME,noname,TCL,EMEA赛区,EMEA,major,active,11,http://static.lolesports.com/teams/1704877121188_Noname.png
+111730829966589255,PHX,Team Phoenix,phoenix-esports,TCL,EMEA赛区,EMEA,major,active,5,http://static.lolesports.com/teams/1767800770056_Crest-Red.png
+111730832808374350,OHA,Only Heroes Academia,altay-espor,TCL,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/1715671916333_ONLYHEROESACADEMIA.png
+111730836284004536,HLC,Hallow Crows,hallow-crows,TCL,EMEA赛区,EMEA,major,active,8,http://static.lolesports.com/teams/1704877260097_HallowCrows.png
+111730839833499835,LY,Lynch Esports,lynch-esports,TCL,EMEA赛区,EMEA,major,active,6,http://static.lolesports.com/teams/1704877315145_LynchWhite.png
+111730844349643010,CHG,Comanchero Gaming,comanchero-gaming,TCL,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/1704877383298_CG.png
+111730847687203006,VENS,Venus,venus,TCL,EMEA赛区,EMEA,major,active,8,http://static.lolesports.com/teams/1704877434687_Venus.png
+111878249592959971,AG,ALL GAMERS,all-gamers,LPL,中国大陆赛区,CHINA,major,active,1,http://static.lolesports.com/teams/1707126602472_AG.png
+113606449173273162,ISG,Isurus,isurus-estral,LTA South,美洲,AMERICAS,major,active,0,http://static.lolesports.com/teams/1758021026981_LogoColor.png
+113661839307879869,TSW,Team Secret Whales,team-secret-whales,LCP,太平洋,PACIFIC,major,active,5,http://static.lolesports.com/teams/1774598000328_White_EyeText_600p.png
+113770064260414203,LR,Los Ratones,los-ratones,LEC,EMEA赛区,EMEA,major,active,5,http://static.lolesports.com/teams/1736206905390_LR1.png
+113786022271737365,BW,Bushido Wildcats,bushido-wildcats,TCL,EMEA赛区,EMEA,major,active,5,http://static.lolesports.com/teams/1767799893163_BW-KEDI-SARI-2.png
+113786603780153490,DP,Dark Passage,bbl-dark-passage,TCL,EMEA赛区,EMEA,major,active,6,http://static.lolesports.com/teams/1767801004393_DarkPassage_Logo_Dark_BeyazDolgu.png
+113810628865782422,ULF,ULF ESPORTS,ulf-esports,TCL,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/1748868374823_ULF_ESPORTS_OFFICIAL_LOGO_WHITE.png
+113843157385138436,HVE,Saigon Hyper Vortex Esports,saigon-hyper-vortex-esports,VCS,越南赛区,VIETNAM,major,active,6,http://static.lolesports.com/teams/1737114615996_HyperVortex_Logo.png
+113843163628949793,DINO,Saigon 1TAP DINO,saigon-dino,VCS,越南赛区,VIETNAM,major,active,8,http://static.lolesports.com/teams/1737108816278_SaigonDino-DINOLogo2025.png
+113865938133432572,KCH,Kareha Children,kareha-children,LJL,日本赛区,JAPAN,major,active,7,http://static.lolesports.com/teams/1743585605520_kch_white.png
+113865942346215507,RC,REJECT,reject,LJL,日本赛区,JAPAN,major,active,0,http://static.lolesports.com/teams/1737456395672_REJECT_2020_lightmode.png
+113865946379833177,YYG,Yang Yang Gaming,yang-yang-gaming,LJL,日本赛区,JAPAN,major,active,7,http://static.lolesports.com/teams/1771324867617_yyg_full_color_onB.png
+113865949879534620,WIN,We Can Win,we-can-win,LJL,日本赛区,JAPAN,major,active,4,http://static.lolesports.com/teams/1739961936847_win_white.svg
+113865964356221234,VEL,VeLocitY,velocity,LJL,日本赛区,JAPAN,major,active,5,http://static.lolesports.com/teams/1737456731417_LOLESPORTSICON.png
+113865967866130562,BVL,BraVeLY,bravely,LJL,日本赛区,JAPAN,major,active,6,http://static.lolesports.com/teams/1744180688438_bvl_white.png
+113865973598828902,VK,VelbeliKaizokudan,velbelikaizokudan,LJL,日本赛区,JAPAN,major,active,12,http://static.lolesports.com/teams/1747898770244_vk_full_color_onW.png
+113865982224218480,BKD,Black dog,black-dog,LJL,日本赛区,JAPAN,major,active,7,http://static.lolesports.com/teams/1737457004297_LOLESPORTSICON.png
+113866177179996309,SQG,Spirit Quartz Gaming,spirit-quartz-gaming,LJL,日本赛区,JAPAN,major,active,5,http://static.lolesports.com/teams/1744180796910_sqg_white.png
+113866183798490434,RCK,RAYN Clocks,clocks,LJL,日本赛区,JAPAN,major,active,7,http://static.lolesports.com/teams/1776849368514_A_RAYN_logo_FULL2_W.png
+113866187580029543,NCP,Night Cap,night-cap,LJL,日本赛区,JAPAN,major,active,3,http://static.lolesports.com/teams/1738334730247_ncp_full_color_onB.png
+113866194724239987,HNS,hands,hands,LJL,日本赛区,JAPAN,major,active,7,http://static.lolesports.com/teams/1738334762820_hns_full_color_onB.png
+113951585305913420,HKUF,Hungkuang Falcon,hungkuang-falcon,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,archived,0,http://static.lolesports.com/teams/1738763195874_t88487.png
+114029502022567838,SCBC,TP.HCM SN CyberCore Esports,saigon-cybercore-esports,VCS,越南赛区,VIETNAM,major,active,6,http://static.lolesports.com/teams/1739952109504_image11.png
+114029525770802081,HRK,Hanoi Rookies Esports,hanoi-rookies-esports,VCS,越南赛区,VIETNAM,major,active,0,http://static.lolesports.com/teams/1739952476212_gdgd.png
+114029549329467306,NGU,Vungtau Never Give Up,vungtau-never-give-up,VCS,越南赛区,VIETNAM,major,active,0,http://static.lolesports.com/teams/1739952836188_sdsd.png
+114029558696285101,SSE,Saigon Silent Storm Esports,saigon-silent-storm-esports,VCS,越南赛区,VIETNAM,major,active,0,http://static.lolesports.com/teams/1739952979628_ssd.png
+114182873126910017,BLSS,Bloomstorm,bloomstorm,LJL,日本赛区,JAPAN,major,archived,0,http://static.lolesports.com/teams/1742292370373_LOLESPORTSICON.png
+114256489341689300,WTG,WangTing,wangting,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,archived,0,http://static.lolesports.com/teams/1743677704612_logotemplatka321.png
+114261349813352435,DM,Dream in 24,dream-in-24,LJL,日本赛区,JAPAN,major,active,7,http://static.lolesports.com/teams/1743586000812_dm_white.png
+114261353222878460,DG,DeltanGaming,deltangaming,LJL,日本赛区,JAPAN,major,active,8,http://static.lolesports.com/teams/1743585930177_dg_white.png
+114533112685561797,BOO,Bamboo Juice,bamboo-juice,LJL,日本赛区,JAPAN,major,active,6,http://static.lolesports.com/teams/1747636800327_boo_white.png
+114533119626189693,VT,Vortex,vortex,LJL,日本赛区,JAPAN,major,active,6,http://static.lolesports.com/teams/1747636710162_vt_white.png
+114533683041896787,MG,TP.HCM Mila Gaming,tphcm-mila-gaming,VCS,越南赛区,VIETNAM,major,active,0,http://static.lolesports.com/teams/1747645308500_TPHCM_Mila_Gaming-removebg-preview.png
+114533696081960143,GENZ,Hanoi Genz Gaming,hanoi-genz-gaming,VCS,越南赛区,VIETNAM,major,active,0,http://static.lolesports.com/teams/1747645507867_HanoiGenZGaming.png
+114534038095366924,SCBA,TP.HCM SN CyberCore Esports,tphcm-sn-cybercore-esports,VCS,越南赛区,VIETNAM,major,archived,0,http://static.lolesports.com/teams/1747650721275_LOLESPORTSICON.png
+114856625791123419,TFF,The Forbidden Five,the-forbidden-five,TCL,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/1752573031423_TFF-FullColorforD.png
+114868016111590239,NAVI,Natus Vincere,natus-vincere,LEC,EMEA赛区,EMEA,major,active,6,http://static.lolesports.com/teams/1752746833620_NAVI_FullColor.png
+115688562107799886,SEN,Sentinels,sentinels,LCS,北美赛区,NORTH AMERICA,major,active,5,http://static.lolesports.com/teams/1767769784669_Sentinels_2020_Icon.png
+115854602297673935,SU,Avella SU Esports,avella-su-esports,TCL,EMEA赛区,EMEA,major,active,7,http://static.lolesports.com/teams/1767800932248_suprema-logo-3.png
+115854615034962245,S2G,S2G Esports,s2g-esports,TCL,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/1767801126101_IMG_75671.png
+116046708240122828,F8,Fast8,fast8,LJL,日本赛区,JAPAN,major,active,6,http://static.lolesports.com/teams/1771324480291_f8_full_color_onW.png
+116046710457205789,IDT,Inferno Drive Tokyo,inferno-drive-tokyo,LJL,日本赛区,JAPAN,major,active,5,http://static.lolesports.com/teams/1771324601096_idt_full_color_onB.png
+116046715496396520,LGG,L Guide Gaming,l-guide-gaming,LJL,日本赛区,JAPAN,major,active,10,http://static.lolesports.com/teams/1771324562336_lgg_full_color_onW.png
+116046718236927391,NM,New Meta,new-meta,LJL,日本赛区,JAPAN,major,active,14,http://static.lolesports.com/teams/1771324815499_nm_full_color_onW.png
+116046728291055775,NX,NOVEX,novex,LJL,日本赛区,JAPAN,major,active,5,http://static.lolesports.com/teams/1771324794243_nvx_full_color_onB.png
+116046738539653197,UWS,UWinks,uwinks,LJL,日本赛区,JAPAN,major,active,11,http://static.lolesports.com/teams/1771324707957_uw_full_color_onW.png
+116079377418978691,9G,Saigon 9Gaming Esports,saigon-9gaming,VCS,越南赛区,VIETNAM,major,active,6,http://static.lolesports.com/teams/1771230747972_9Gaming_Ngang_Vng_en.png
+116079381929778641,NHE,Hanoi Ngua Hi Esport,hanoi-ngua-hi-esport,VCS,越南赛区,VIETNAM,major,active,0,http://static.lolesports.com/teams/1771230820204_logo_nga_h_trng-removebg-preview.png
+116079385545526730,SGW,Saigon Warrior,saigon-warrior,VCS,越南赛区,VIETNAM,major,active,8,http://static.lolesports.com/teams/1771230875226_logo_SW-removebg-preview.png
+116329168921192536,DIA,DIA Ozarox Esports,ozarox-esports,TCL,EMEA赛区,EMEA,major,active,6,http://static.lolesports.com/teams/1775042249976_OzarOXLogo_white.png
+116432032495413501,SSG,SillySilly Gaming,sillysilly-gaming,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,5,http://static.lolesports.com/teams/1776611820872_PCS2026_TeamLogo_SSG.png
+116432064592330299,EQX,Equinox Core,equinox-core,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,archived,0,http://static.lolesports.com/teams/1776612306804_PCS2026_TeamLogo_EQX.png
+116432073387911532,XJB,Xu Ji Basalt,xu-ji-basalt,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,archived,0,http://static.lolesports.com/teams/1776612442639_PCS2026_TeamLogo_XJB.png
+116432088814299535,VNR,Viper Night Raider,viper-night-raider,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,archived,0,http://static.lolesports.com/teams/1776612679723_PCS2026_TeamLogo_VNR.png
+116432093988994040,ORS,One Round Specialists,one-round-specialists,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,archived,0,http://static.lolesports.com/teams/1776612758480_PCS2026_TeamLogo_ORS.png
+116432101286886414,SHKP,Shadow Keepers Esports,shadow-keepers-esports,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,archived,0,http://static.lolesports.com/teams/1776612870437_PCS2026_TeamLogo_SHKP.png
+116435864316749917,ARB,Arneb,arneb,LJL,日本赛区,JAPAN,major,active,5,http://static.lolesports.com/teams/1784111170695__-arthur1.png
+116520427289188052,ZEN,Saigon Zen Esport,saigon-zen-esport,VCS,越南赛区,VIETNAM,major,active,7,http://static.lolesports.com/teams/1777960619021_saigon_zen_logo_export-removebg-preview.png
+116957493666701418,SA,Shark Attack,shark-attack,TCL,EMEA赛区,EMEA,major,active,6,http://static.lolesports.com/teams/1784629718506_SharkAttackWhiteLogo1.png
+116988203842306891,EWH,Embrace Whatever Happens,embrace-whatever-happens,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,7,http://static.lolesports.com/teams/1785098318980_ewh-Photoroom.png
+116988207170900793,RSM,RogerSaMa,rogersama,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,5,http://static.lolesports.com/teams/1785098374028_rsm-Photoroom.png
+116988210286068561,SG7,Sponge Gaming,sponge-gaming,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,7,http://static.lolesports.com/teams/1785098422022_spg.png
+116988213569765510,RNF,Reignfall,reignfall,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,7,http://static.lolesports.com/teams/1785307397756_PCS2026_TeamLogo_RNF1.png
+98767991846127102,AHQ,ahq eSports Club,ahq-esports-club,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,7,http://static.lolesports.com/teams/1592588445575_ahqeSportsClubAHQ-01-FullonDark.png
+98767991853197861,T1,T1,t1,LCK,韩国赛区,KOREA,major,active,14,http://static.lolesports.com/teams/1726801573959_539px-T1_2019_full_allmode.png
+98767991860392497,TSM,TSM,tsm,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1672824696002_White-Logo-Mark.png
+98767991866488695,FNC,Fnatic,fnatic,LEC,EMEA赛区,EMEA,major,active,6,http://static.lolesports.com/teams/1631819669150_fnc-2021-worlds.png
+98767991871709842,GMBT,Gambit Esports,gambit-esports,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,0,http://static.lolesports.com/teams/GMB.png
+98767991877340524,C9,Cloud9 Kia,cloud9,LCS,北美赛区,NORTH AMERICA,major,active,7,http://static.lolesports.com/teams/1736924120254_C9Kia_IconBlue_Transparent_2000x2000.png
+98767991882270868,EDG,EDWARD GAMING,edward-gaming,LPL,中国大陆赛区,CHINA,major,active,6,http://static.lolesports.com/teams/1631819297476_edg-2021-worlds.png
+98767991887166787,WE,Xi'an Team WE,team-we,LPL,中国大陆赛区,CHINA,major,active,6,http://static.lolesports.com/teams/1634763008788_220px-Team_WE_logo.png
+98767991892579754,RNG,Royal Never Give Up,royal-never-give-up,LPL,中国大陆赛区,CHINA,major,active,2,http://static.lolesports.com/teams/1631819360134_rng-2021-worlds.png
+98767991897792379,HKA,Hong Kong Attitude,hong-kong-attitude,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,9,http://static.lolesports.com/teams/1592588513875_HongKongAttitudeHKA-01-FullonDark.png
+98767991907201334,LZ,Longzhu Gaming,longzhu-gaming,LCK,韩国赛区,KOREA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/longzhu-incredible-miracle-2xpijv2d.png
+98767991911590912,SSGG,Samsung Galaxy,samsung-galaxy,LCK,韩国赛区,KOREA,major,active,0,http://static.lolesports.com/teams/1669027895369_Samsung_Galaxylogo_square.png
+98767991916844003,KLG,Kaos Latin Gamers,kaos-latin-gamers,LLA,拉美赛区,LATIN AMERICA,major,archived,1,http://static.lolesports.com/teams/KLG-Black-BG.png
+98767991921462763,DW,Dire Wolves,dire-wolves,LCO,大洋洲赛区,OCEANIA,major,active,11,http://static.lolesports.com/teams/direwolves.png
+98767991926151025,G2,G2 Esports,g2-esports,LEC,EMEA赛区,EMEA,major,active,6,http://static.lolesports.com/teams/G2-FullonDark.png
+98767991930907107,IMT,Immortals Progressive,immortals-progressive,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/imt-new-color.png
+98767991935149427,R7,Movistar R7,rainbow7,LLA,拉美赛区,LATIN AMERICA,major,active,2,http://static.lolesports.com/teams/1673451007201_IMG_3488.png
+98767991940181526,MSF,Misfits Gaming,misfits-gaming,LEC,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/1592591419157_MisfitsMSF-01-FullonDark.png
+98767991944987030,RPG,Rampage,rampage,LJL,日本赛区,JAPAN,major,active,3,https://lolstatic-a.akamaihd.net/esports-assets/production/team/rampage-4caqgbq7.png
+98767991949608898,FB,Fenerbahçe Espor,fenerbahce-espor,TCL,EMEA赛区,EMEA,major,active,4,http://static.lolesports.com/teams/1642679970078_BANPICK_FB.png
+98767991954244555,GAM,GAM Esports,gam-esports,LCP,太平洋,PACIFIC,major,active,5,http://static.lolesports.com/teams/1643263093448_GAMyellow.png
+98926509883054987,DIG,Dignitas,dignitas,LCS,北美赛区,NORTH AMERICA,major,active,7,http://static.lolesports.com/teams/DIG-FullonDark.png
+98926509884398584,CLG,CLG,clg,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1592590248482_CounterLogicGamingCLG-01-FullonDark.png
+98926509885559666,TLAW,Team Liquid Alienware,team-liquid,LCS,北美赛区,NORTH AMERICA,major,active,5,http://static.lolesports.com/teams/1769357207762_TLAlienware_Minimal_Bug-White.png
+98926509887041994,FOX2,Echo Fox,echo-fox,LCS,北美赛区,NORTH AMERICA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/echo-fox-f3anfude.png
+98926509888999625,TNV,Team Envy,team-envy,LCS,北美赛区,NORTH AMERICA,major,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-envy-1tyrikdl.png
+98926509890832659,P1,Phoenix1,phoenix1,LCS,北美赛区,NORTH AMERICA,major,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/phoenix1-fw17w8yu.png
+98926509892121852,FLY,FlyQuest,flyquest,LCS,北美赛区,NORTH AMERICA,major,active,5,http://static.lolesports.com/teams/flyquest-new-on-dark.png
+99294153824386385,GG,Golden Guardians,golden-guardians,LCS,北美赛区,NORTH AMERICA,major,active,0,http://static.lolesports.com/teams/1592590586919_GoldenGuardiansGGS-01-FullonDark.png
+99294153826603341,CLU,Clutch Gaming,clutch-gaming,LCS,北美赛区,NORTH AMERICA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/clutch-gaming-83a00582.png
+99294153828264740,100T,100 Thieves,100-thieves,LTA North,美洲,AMERICAS,major,archived,0,http://static.lolesports.com/teams/1631819887423_100t-2021-worlds.png
+99294153830557090,OPT,OpTic Gaming,optic-gaming,LCS,北美赛区,NORTH AMERICA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/optic-gaming-2hm8y6fl.png
+99322214681521780,ROC,ROCCAT,roccat,LEC,EMEA赛区,EMEA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/roccat-bi4f8bs0.png
+99322214683186795,H2K,H2K,h2k,LEC,EMEA赛区,EMEA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/h2k-6mbalx6s.png
+99322214684939974,UOL,Unicorns of Love,unicorns-of-love,LCL,独联体赛区,COMMONWEALTH OF INDEPENDENT STATES,major,active,4,http://static.lolesports.com/teams/1643705940342_UOL_pink.png
+99322214687749536,GIA,Giants Gaming,giants-gaming,LEC,EMEA赛区,EMEA,major,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/giants-gaming-23kvglp0.png
+99322214691747156,SPY,Splyce,splyce,LEC,EMEA赛区,EMEA,major,active,2,https://lolstatic-a.akamaihd.net/esports-assets/production/team/splyce-alf6br1o.png
+99322214695067838,VIT,Team Vitality,team-vitality,LEC,EMEA赛区,EMEA,major,active,7,http://static.lolesports.com/teams/1675865863968_Vitality_FullColor.png
+99566404577237650,KDM1,Kongdoo Monster,kongdoo-monster,LCK,韩国赛区,KOREA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/najin-e-mfire-3zqwbtbv.png
+99566404578577099,JAG,Jin Air Green Wings,jin-air-green-wings,LCK,韩国赛区,KOREA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/jin-air-green-wings-hc0ywme6.png
+99566404579461230,KT,kt Rolster,kt-rolster,LCK,韩国赛区,KOREA,major,active,11,http://static.lolesports.com/teams/kt_darkbackground.png
+99566404580578753,ROX,ROX Tigers,rox-tigers,LCK,韩国赛区,KOREA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/koo-tigers-5xgsd4td.png
+99566404581868574,DNS,DN SOOPers,kwangdong-freecs,LCK,韩国赛区,KOREA,major,active,12,http://static.lolesports.com/teams/1767340467921_DN_SOOPerslogo_profile.webp
+99566404582851682,MVP,MVP,mvp,LCK,韩国赛区,KOREA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/mvp-crin95t3.png
+99566404583626913,BBQ,bbq Olivers,bbq-olivers,LCK,韩国赛区,KOREA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/bbq-olivers-h2f79ggm.png
+99566404584489570,KSV,KSV,ksv-esports,LCK,韩国赛区,KOREA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/ksv-esports-552dh895.png
+99566404585387054,KRX,KIWOOM DRX,drx,LCK,韩国赛区,KOREA,major,active,11,http://static.lolesports.com/teams/1774247803537_horizontal_EN_Wh.png
+99566404845279652,OMG,Oh My God,oh-my-god,LPL,中国大陆赛区,CHINA,major,active,2,http://static.lolesports.com/teams/1686821355861_OMG_2023_logo-01.png
+99566404846951820,LGD,LGD GAMING,lgd-gaming,LPL,中国大陆赛区,CHINA,major,active,5,http://static.lolesports.com/teams/LGD-FullonDark-1.png
+99566404847770461,RA,RARE ATOM,rare-atom,LPL,中国大陆赛区,CHINA,major,active,0,http://static.lolesports.com/teams/RA-FullonDark.png
+99566404848691211,IG,Invictus Gaming,invictus-gaming,LPL,中国大陆赛区,CHINA,major,active,6,http://static.lolesports.com/teams/1634762917340_300px-Invictus_Gaming_logo.png
+99566404850008779,LNG,Suzhou LNG Esports,lng-esports,LPL,中国大陆赛区,CHINA,major,active,7,http://static.lolesports.com/teams/1717487697003_LNGlogo.png
+99566404852189289,JDG,Beijing JDG Esports,jd-gaming,LPL,中国大陆赛区,CHINA,major,active,6,http://static.lolesports.com/teams/1627457924722_29.png
+99566404853058754,WBG,WeiboGaming,weibo-gaming,LPL,中国大陆赛区,CHINA,major,active,6,http://static.lolesports.com/teams/1641202879910_3.png
+99566404853854212,BLG,BILIBILI GAMING,bilibili-gaming,LPL,中国大陆赛区,CHINA,major,active,7,http://static.lolesports.com/teams/1682322954525_Bilibili_Gaming_logo_20211.png
+99566404854685458,TES,TOP ESPORTS,top-esports,LPL,中国大陆赛区,CHINA,major,active,6,http://static.lolesports.com/teams/1592592064571_TopEsportsTES-01-FullonDark.png
+99566404855553726,FPX,FunPlus Phoenix,funplus-phoenix,LPL,中国大陆赛区,CHINA,major,active,0,http://static.lolesports.com/teams/1627457887494_7_720.png
+99566404856367466,AL,Anyone's Legend,anyones-legend,LPL,中国大陆赛区,CHINA,major,active,5,http://static.lolesports.com/teams/1641199582689_.png
+99566405688134373,BJKK,Besiktasarchive,besiktasarchive,TCL,EMEA赛区,EMEA,major,archived,4,https://lolstatic-a.akamaihd.net/esports-assets/production/team/besiktas-e67u3ffs.png
+99566405941863385,LYON,LYON,lyon-gaming,LCS,北美赛区,NORTH AMERICA,major,active,6,http://static.lolesports.com/teams/1743717443673_isotypelyon-03.png
+99566405944694628,PIXE,Pixel Esports Club,pixel-esports-club,LLA,拉美赛区,LATIN AMERICA,major,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/pixel-esports-club-bkwbovq7.png
+99566406064558732,SUP,Papara SuperMassive ,papara-supermassive,TCL,EMEA赛区,EMEA,major,active,0,http://static.lolesports.com/teams/1737386438072_PaparaSupermassive.png
+99566406065437842,DP,Dark Passage,dark-passage,TCL,EMEA赛区,EMEA,major,archived,0,http://static.lolesports.com/teams/1674742208196_DP1x1.png
+99566406066182955,GAL,Galakticos,galakticos,TCL,EMEA赛区,EMEA,major,active,7,http://static.lolesports.com/teams/1673958056128_GAL.png
+99566406068904329,HWA,HWA GAMING,hwa-gaming,TCL,EMEA赛区,EMEA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/hwa-gaming-hpzupz27.png
+99566406069969565,AUR,Info Yatırım Aurora,info-yatrm-aurora,TCL,EMEA赛区,EMEA,major,active,4,http://static.lolesports.com/teams/1642680124253_aurora.png
+99566406332987990,CHF,The Chiefs Esports Club,the-chiefs,LCP,太平洋,PACIFIC,major,active,0,http://static.lolesports.com/teams/1733833766423_ChiefsEsportsClub-CHF-Color1.png
+99566406334639907,LGC,Legacy Esports,legacy-esports,LCO,大洋洲赛区,OCEANIA,major,active,1,http://static.lolesports.com/teams/LegacyEsportsLGC-01-FullonDark.png
+99566406338282437,ORD,ORDER,order,LCO,大洋洲赛区,OCEANIA,major,active,2,http://static.lolesports.com/teams/1642465715084_ORDER_LOGO_2021_ICON.png
+99566406490127625,JT,J Team,taipei-j-team,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,8,http://static.lolesports.com/teams/1592588569647_JTeamJT-01-FullonDark.png
+99566406493155041,MCX,Machi Esports,machi-esports,PCS,台港澳赛区,"HONG KONG, MACAU, TAIWAN",major,active,5,http://static.lolesports.com/teams/1592588618196_MachiMCX-01-FullonDark.png
+99566408217955692,PAIN,paiN Gaming,pain-gaming,CBLOL,巴西赛区,BRAZIL,major,active,7,http://static.lolesports.com/teams/1674657011011_pain_logo_white.png
+99566408219409348,VKS,Vivo Keyd Stars,vivo-keyd,CBLOL,巴西赛区,BRAZIL,major,active,10,http://static.lolesports.com/teams/1670542079678_vks.png
+99566408220213759,CNB,CNB e-Sports Club,cnb-e-sports-club,CBLOL,巴西赛区,BRAZIL,major,archived,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/cnb-e-sports-club-18yvbgr0.png
+99566408221114231,KBM,KaBuM!,kabum,CBLOL,巴西赛区,BRAZIL,major,archived,0,http://static.lolesports.com/teams/1671197541491_LOGO-KABUM-ESPORTS-2023-NEGATIVO-FUNDOPRETO.png
+99566408221961358,RED,RED Kalunga,red-kalunga,CBLOL,巴西赛区,BRAZIL,major,active,10,http://static.lolesports.com/teams/1631820575924_red-2021-worlds.png
+99566408222831088,LBR,Liberty,liberty,CBLOL,巴西赛区,BRAZIL,major,active,6,http://static.lolesports.com/teams/1643305707691_RXfNcFMU.png
+99566408358330419,ISGG,Isurus,isurus,LLA,拉美赛区,LATIN AMERICA,major,archived,0,http://static.lolesports.com/teams/ISG.png
+99566408561605102,XTN,XTEN Esports,xten-esports,LLA,拉美赛区,LATIN AMERICA,major,active,3,http://static.lolesports.com/teams/XTN-Black-BG.png
+99871276355364687,EEW,Ever8 Winners,ever8-winners,LCK,韩国赛区,KOREA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/ever8-winners-a46dpv3k.png
+99871276356460471,GFF,Griffin,griffin,LCK,韩国赛区,KOREA,major,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/griffin-bizfs7k2.png

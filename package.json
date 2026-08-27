@@ -1,0 +1,14 @@
+{
+  "name": "pojuzhe",
+  "version": "1.0.0",
+  "description": "破局者 · LOL 电竞生涯模拟",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node demo/test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

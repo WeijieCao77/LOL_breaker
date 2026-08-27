@@ -1,0 +1,685 @@
+﻿team_id,code,name,slug,league,region_zh,region_en,tier,status,player_count,logo
+100205573002983994,EVS,EVOS Esports,evos-esports,,,,unaffiliated,archived,8,https://lolstatic-a.akamaihd.net/esports-assets/production/team/evos-esports-ilhnmu72.png
+100205573004554238,ASC1,Ascension Gaming,ascension-gaming,,,,unaffiliated,archived,3,https://lolstatic-a.akamaihd.net/esports-assets/production/team/ascension-gaming-cykgrymz.png
+100285330164581167,MSK,Team Mineski,team-mineski,,,,unaffiliated,archived,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-mineski-fsth85vl.png
+100285330170285888,KLH,Kuala Lumpur Hunters,kuala-lumpur-hunters,,,,unaffiliated,archived,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/kuala-lumpur-hunters-6me4z521.png
+100325358060092847,BR,CBLoL,cblol-rift-rivals,,,,unaffiliated,archived,10,https://lolstatic-a.akamaihd.net/esports-assets/production/team/cblol-rift-rivals-bkwpbjju.png
+100325358063181170,LAS,CLS,cls-rift-rivals,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/cls-rift-rivals-gspsog5k.png
+100325358065202841,LAN,LLN,lln-rift-rivals,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/lln-rift-rivals-bv1r463r.png
+100633870260870484,PRS1,Pars eSpor Kulübü,pars-espor-kulubu,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/pars-espor-kulubu-hkinzuzs.png
+101157821332338403,VN1,QTZ,qtz,,,,unaffiliated,archived,2,https://lolstatic-a.akamaihd.net/esports-assets/production/team/qtz-2z2wtzee.png
+101157821333452517,TR1,dumbletoru,dumbletoru,,,,unaffiliated,archived,2,https://lolstatic-a.akamaihd.net/esports-assets/production/team/dumbletoru-91ft3run.png
+101157821334501095,JP1,CeroStanmi,cerostanmi,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/cerostanmi-fuo4hnpa.png
+101157821336139497,CIS1,Diamondflash,diamondflash,,,,unaffiliated,archived,2,https://lolstatic-a.akamaihd.net/esports-assets/production/team/diamondflash-hkyt9ulr.png
+101157821337188075,LPL1,Guanzi,guanzi,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/guanzi-dztf5tvt.png
+101157821338236653,NA1,Doubleboy,doubleboy,,,,unaffiliated,archived,2,https://lolstatic-a.akamaihd.net/esports-assets/production/team/doubleboy-62ibyzp2.png
+101157821339285231,LAN1,Seiyamaster,seiyamaster,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/seiyamaster-gfcbqr5k.png
+101157821340399345,LPL2,RookXi Luo,rookxi-luo,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/rookxi-luo-bp466wdd.png
+101157821341382387,LAS1,Capriwulf,capriwulf,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/capriwulf-f9ow2ax2.png
+101157821342365429,NA2,Shiporice,shiporice,,,,unaffiliated,archived,2,https://lolstatic-a.akamaihd.net/esports-assets/production/team/shiporice-a9shusfb.png
+101157821343545079,EVS1,East 1,east-1,,,,unaffiliated,archived,3,https://lolstatic-a.akamaihd.net/esports-assets/production/team/east-1-5pxs62pv.png
+101157821344593657,EVS2,East 2,east-2,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/east-2-s41rm2l.png
+101157821345642235,EVS3,East 3,east-3,,,,unaffiliated,archived,3,https://lolstatic-a.akamaihd.net/esports-assets/production/team/east-3-78gen7as.png
+101157821346559741,WVS1,West 1,west-1,,,,unaffiliated,archived,3,https://lolstatic-a.akamaihd.net/esports-assets/production/team/west-1-5542o982.png
+101157821347608319,WVS2,West 2,west-2,,,,unaffiliated,archived,4,https://lolstatic-a.akamaihd.net/esports-assets/production/team/west-2-2dkqa1tt.png
+101157821348656897,WVS3,West 3,west-3,,,,unaffiliated,archived,2,https://lolstatic-a.akamaihd.net/esports-assets/production/team/west-3-98tuzfb4.png
+101157821349705475,CNWI,CN with Influencers,cn-with-influencers,,,,unaffiliated,archived,5,https://lolstatic-a.akamaihd.net/esports-assets/production/team/cn-with-influencers-3jnpo379.png
+101157821352457994,KRWI,KR with Influencers,kr-with-influencers,,,,unaffiliated,archived,5,https://lolstatic-a.akamaihd.net/esports-assets/production/team/kr-with-influencers-6zfof56z.png
+101157821382267957,NA2,Sneaky,sneaky,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/sneaky-bekd4pdq.png
+101157821384037431,NA2,Doublelift,doublelift,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/doublelift-egkdw2el.png
+101157821385741369,NA3,Licorice,licorice,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/licorice-osowfge.png
+101157821387445307,EU1,Caps,caps,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/caps-iv6opqa0.png
+101157821389149245,EU2,Broxah,broxah,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/broxah-1pvcgamx.png
+101157821390787647,EU3,Jiizuke,jiizuke,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/jiizuke-5juqqu6o.png
+101157821392491585,LPL1,mlxg,mlxg,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/mlxg-ahr7v7tg.png
+101157821394195523,LPL2,Rookie,rookie,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/rookie-du4i0tmm.png
+101157821395833925,CN3,Uzi,uzi,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/uzi-f8vk0g1s.png
+101157821397865543,KR1,Faker,faker,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/faker-2fbnzfc8.png
+101157821399635017,NA1,Bang,bang,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/bang-asaba3dk.png
+101157821401338955,KR3,Peanut,peanut,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/peanut-ce1i1yla.png
+101157821403042893,LMS1,Maple,maple,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/maple-387a72ow.png
+101157821404812367,LMS2,Westdoor,westdoor,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/westdoor-6nl0nz49.png
+101157821406581841,TR1,BrokenBlade,brokenblade,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/brokenblade-7jowrbb9.png
+101157821408285779,TR2,Dumbledoge,dumbledoge,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/dumbledoge-27v29vjz.png
+101157821410055253,BR1,BrTT,brtt,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/brtt-3uy12t0t.png
+101157821411759191,BR2,Rakin,rakin,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/rakin-9gkvzv6l.png
+101157821413528665,CIS1,Kira,kira,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/kira-iwbu5ymq.png
+101157821415363675,CIS2,Diamondprox,diamondprox,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/diamondprox-enfg252a.png
+101157821417067613,LST2,G4,g4,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/g4-2uumxvol.png
+101157821418837087,SEA2,Rockky,rockky,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/rockky-1wl4upe.png
+101157821420541025,VN1,Artifact,artifact,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/artifact-8hv79f49.png
+101157821422244963,VN2,Zeros,zeros,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/zeros-1vqh9nbv.png
+101157821423948901,LAS1,Tierwulf,tierwulf,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/tierwulf-9gcnxzxr.png
+101157821425652839,LLA1,Plugo,plugo,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/plugo-ddfpfznp.png
+101157821427356777,LLA2,Seiya,seiya,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/seiya-1v1ni2gp.png
+101157821429060715,LAN2,Arce,arce,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/arce-5xf4sd13.png
+101157821430895725,JP1,Evi,evi,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/evi-8arae00y.png
+101157821432665199,JP2,Ceros,ceros,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/ceros-dmokiwui.png
+101157821434369137,OCE2,Pabu,pabu,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/pabu-bpmiqn1i.png
+101157821436073075,OCE2,Triple,triple,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/triple-7mbji4tg.png
+101157821437777013,NAWI,NA with Influencers,na-with-influencers,,,,unaffiliated,archived,4,https://lolstatic-a.akamaihd.net/esports-assets/production/team/na-with-influencers-hur5at5x.png
+101157821440857212,EUWI,EU with Influencers,eu-with-influencers,,,,unaffiliated,archived,4,https://lolstatic-a.akamaihd.net/esports-assets/production/team/eu-with-influencers-eqi1f1pg.png
+101157821444002947,NXB,Nexus Blitz Blue,nexus-blitz-pro-a,,,,unaffiliated,active,2,https://lolstatic-a.akamaihd.net/esports-assets/production/team/nexus-blitz-pro-a-esrcx58b.png
+101157821447017610,NXRB,Nexus Blitz Red,nexus-blitz-pro-b,,,,unaffiliated,active,4,https://lolstatic-a.akamaihd.net/esports-assets/production/team/nexus-blitz-pro-b-j6s80wmi.png
+101157821450163345,NBIA,Nexus Blitz Influencers A,nexus-blitz-influencers-a,,,,unaffiliated,archived,2,https://lolstatic-a.akamaihd.net/esports-assets/production/team/nexus-blitz-influencers-a-eo4u5jls.png
+101157821453178008,NBIB,Nexus Blitz Influencers B,nexus-blitz-influencers-b,,,,unaffiliated,archived,3,https://lolstatic-a.akamaihd.net/esports-assets/production/team/nexus-blitz-influencers-b-dkvjz98n.png
+101157821456258207,TMA,Tandem Mode A,tandem-mode-a,,,,unaffiliated,archived,9,https://lolstatic-a.akamaihd.net/esports-assets/production/team/tandem-mode-pro-a-fzvstfic.png
+101157821458027681,TMB,Tandem Mode B,tandem-mode-b,,,,unaffiliated,archived,8,https://lolstatic-a.akamaihd.net/esports-assets/production/team/tandem-mode-pro-b-ho32i31x.png
+101157821459731619,TMC,Tandem Mode C,tandem-mode-c,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/tandem-mode-influencers-a-invqf2n4.png
+101157821461435557,TMD,Tandem Mode D,tandem-mode-d,,,,unaffiliated,archived,8,https://lolstatic-a.akamaihd.net/esports-assets/production/team/tandem-mode-influencers-b-g03tp7s7.png
+101157821463139495,UFA,Team URF A,team-urf-a,,,,unaffiliated,archived,5,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-urf-a-b6ux5wjz.png
+101157821464777897,UFB,Team URF B,team-urf-b,,,,unaffiliated,archived,5,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-urf-b-71vpjool.png
+101157821466547371,EU1,AlexelCapso,alexelcapso,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/alexelcapso-j2ed4irb.png
+101157821468185773,OCE1,Triplebeast,triplebeast,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/triplebeast-2ym5u04m.png
+101157821469955247,KR1,Captain Faker,captain-faker,,,,unaffiliated,archived,2,https://lolstatic-a.akamaihd.net/esports-assets/production/team/captain-faker-4arw3clt.png
+101157821471724721,BR1,RX O TRAB,rx-o-trab,,,,unaffiliated,archived,2,https://lolstatic-a.akamaihd.net/esports-assets/production/team/rx-o-trab-bkplchir.png
+101157821473428659,SEA1,R4,r4,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/r4-12p8sxjs.png
+101157821475132597,LMS1,NapLe,naple,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/naple-fnomtsnw.png
+101383793195758800,RDP,Redemption Porto Alegre,redemption-esports,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/redemption-esports-balmzmyh.png
+101428372826668622,DGS,Dragon Gate Team,dragon-gate-team,,,,unaffiliated,archived,5,https://lolstatic-a.akamaihd.net/esports-assets/production/team/dragon-gate-team-fgeuoeeu.png
+101971954462809506,SE1,SuperEsports,superesports,,,,unaffiliated,archived,5,https://lolstatic-a.akamaihd.net/esports-assets/production/team/superesports-gxr4uerb.png
+101978171845303729,MEGA,MEGA Esports,mega-esports,,,,unaffiliated,archived,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/mega-j3rslben.png
+102141671181705193,MSU,Michigan State University,michigan-state-university,,,,unaffiliated,active,11,http://static.lolesports.com/teams/1650399174629_michigan-state-logo-RyanFelten.png
+102141671182557163,UI,Redbird Esports,redbird-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650390431780_noteamlogo-lolesports1.png
+102141671184261103,CCL,Columbia College,columbia-college,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/columbia-college-44kgjsa7.png
+102141671185047537,UCI,UCI Esports,uci-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1641604280633_UCI.png
+102141671185899507,UWO,University of Western Ontario,university-of-western-ontario,,,,unaffiliated,active,11,http://static.lolesports.com/teams/1653639625186_Western-Mustangs-PMS268C1.png
+102141671186685941,UWOO,University of Waterloo,university-of-waterloo,,,,unaffiliated,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/university-of-waterloo-2wuni11l.png
+102141671187668983,NCSU,NC State University,nc-state-university,,,,unaffiliated,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/nc-state-university-it42b898.png
+102787200123059082,LDLX,Team LDLC,team-ldlc,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/melty-esport-club-gxs0kmwu.png
+102787200126663579,GIA,Giants,giants,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1641412992057_escudowhite.png
+102787200141016030,REC1,Rogue Esports Club,rogue-esports-club,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/rogue-esports-club-39uyzwi6.png
+102787200145472495,DKI,Defusekids,defusekids,,,,unaffiliated,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/defusekids-finmimok.png
+102787200153467923,BCN,BCN Squad,bcn-squad,,,,unaffiliated,active,4,http://static.lolesports.com/teams/SL_BCN-Logo_White.png
+102825747707503563,MADC,MAD Lions E.C. Colombia,mad-lions-ec-colombia,,,,unaffiliated,archived,7,https://lolstatic-a.akamaihd.net/esports-assets/production/team/mad-lions-ec-colombia-9663q8bz.png
+103240746393642312,ASB,All-Stars Blue,pro-showdown-a,,,,unaffiliated,archived,5,https://lolstatic-a.akamaihd.net/esports-assets/production/team/pro-showdown-a-689ax378.png
+103240746396067146,ASR,All-Stars Red,pro-showdown-b,,,,unaffiliated,archived,5,https://lolstatic-a.akamaihd.net/esports-assets/production/team/pro-showdown-b-16dt4o9s.png
+103240746410916459,TLI1,TFT Littles 1,tft-littles-1,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/tft-littles-4q0fjyyz.png
+103240746412948077,TLI2,TFT Littles 2,tft-littles-2,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/tft-littles-ds30nl9k.png
+103240746414193263,TLE1,TFT Legends 1,tft-legends-1,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/tft-legends-gvv3xb2.png
+103240746415438449,TLE2,TFT Legends 2,tft-legends-2,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/tft-legends-6or0eppt.png
+103240746416552563,UFC,Team URF C,team-urf-c,,,,unaffiliated,archived,3,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-urf-c-b4j0ivui.png
+103240746417732213,UFD,Team Urf D,team-urf-d,,,,unaffiliated,archived,4,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-urf-d-9on8x07z.png
+103240746418846327,TAA,Team Assassin A,team-assassin-a,,,,unaffiliated,archived,5,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-assassin-a-3pnn4ps.png
+103240746419960441,TAB,Team Assassin B,team-assassin-b,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-assassin-b-77so0jnc.png
+103240746421271163,OCE1,Chippys,chippys,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/chippys-5p434z57.png
+103240746422450813,TCL2,Closer,closer,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/closer-bvlpqdio.png
+103240746423564927,LCL1,Nomanz,nomanz,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/nomanz-i9bgpz59.png
+103240746424613505,BR2,Goku,goku,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/goku-b1noag8w.png
+103240746425727619,VCS2,Levi,levi,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/levi-xyr8owj.png
+103240746426776197,BR1,Shrimp,shrimp,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/shrimp-2ck86504.png
+103240746427890311,CN4,Tian,tian,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/tian-5ovwonaw.png
+103240746429004425,EU2,Jankos,jankos,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/jankos-j1fwri2j.png
+103240746430053003,CN1,TheShy,theshy,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/theshy-fa37rd70.png
+103240746431167117,LST1,Exosen,exosen,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/exosen-70awi21t.png
+103240746432281231,LMS2,Ziv,ziv,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/ziv-c1o3ab6j.png
+103240746433395345,KR2,Clid,clid,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/clid-91pvsok1.png
+103240746434574995,LCL2,AHaHaCiK,ahahacik,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/ahahacik-a5omvp5a.png
+103240746435623573,NA3,CoreJJ,corejj,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/corejj-gg4n8dex.png
+103240746436737687,EU3,Mikyx,mikyx,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/mikyx-etmkr8sg.png
+103240746437786265,EU4,Bwipo,bwipo,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/bwipo-5nj6g99s.png
+103240746438900379,TCL1,Bolulu,bolulu,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/bolulu-1s5r62ma.png
+103240746440080029,CN2,Doinb,doinb,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/doinb-5q8hbroh.png
+103240746441194143,LMS1,Fofo,fofo,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/fofo-gesnmfm3.png
+103240746442308257,VCS1,Optimus,optimus,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/optimus-fqkrco8h.png
+103535282113853330,5R,5 Ronin Akademi,5-ronin-akademi,,,,unaffiliated,archived,7,http://static.lolesports.com/teams/5R_LOGO.png
+103535282135552642,SMB,Papara SuperMassive Blaze Akademi,papara-supermassive-blaze-akademi,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1628521896643_SMBA_WHITE.png
+103535282138043022,FB,Fenerbahçe Espor Akademi,fenerbahce-espor-akademi,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1642680283028_BANPICK_FB.png
+103535282140533402,BJK,Beşiktaş Akademi,besiktas-akademi,,,,unaffiliated,active,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/besiktas-akademi-6dlbk21d.png
+103535282143744679,DP,Dark Passage Akademi,dark-passage-akademi,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/dark-passage-akademi-9ehs6q0l.png
+103535282146169523,AUR,Info Yatırım Aurora Akademi,info-yatrm-aurora-akademi,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1642680351930_BANPICK_AUR.png
+103535282148790975,GAL,GALAKTICOS Akademi,galakticos-akademi,,,,unaffiliated,active,8,https://lolstatic-a.akamaihd.net/esports-assets/production/team/galakticos-akademi-4x1ww2pc.png
+103535282158162659,IW,DenizBank İstanbul Wildcats Akademi,fastpay-wildcats-akademi,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1654773553363_DenizBankIstanbulWildcatsWhite1.png
+103743100364537565,FKL,Falkol,falkol,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1582994083390_Logo%20Falkol.png
+103743106731085292,ITX,Intergalaxy Tigers,intergalaxy-tigers,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1582994180864_LogoTigers.png
+103877625775457850,MRS,Movistar Riders,movistar-riders,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1585046777741_220px-Movistar_Riderslogo_square.png
+103877756742242918,RCN,Racoon,racoon,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1585048776551_220px-Racoon_(Italian_Team)logo_square.png
+103877774634323825,YDN,YDN Gamers,ydn-gamers,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1587638409857_LOGO_YDN_-trasp.png
+103877879209300619,VIPX,Vipers Inc,vipers-inc,,,,unaffiliated,archived,4,http://static.lolesports.com/teams/1585050644953_220px-Vipers_Inclogo_square.png
+103877908090914662,KEN,Kenty,kenty,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1585051086000_220px-Kentylogo_square.png
+103877925817094140,PIG,PIGSPORTS,pigsports,,,,unaffiliated,active,7,http://static.lolesports.com/teams/PIGSPORTS_PIG-Logo1.png
+103877976717529187,IF,Intrepid Fox Gaming,intrepid-fox-gaming,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1585052132267_220px-Intrepid_Fox_Gaminglogo_square.png
+103878020539746273,EGN,EGN Esports,egn-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1684952015639_EGN.png
+103935421249833954,MADM,MAD Lions Madrid,mad-lions-madrid,,,,unaffiliated,active,0,http://static.lolesports.com/teams/SL_MADM-Logo_white.png
+103935523328473675,K1,K1CK Neosurf,k1ck-neosurf,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1585930223604_K1ck_Neosurflogo_square.png
+103935530333072898,RGO,AGO Rogue,ago-rogue,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1585930330127_AGO_ROGUElogo_square.png
+103935642731826448,S1,Sector One,sector-one,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1641288621852_1024x1024_sector_one_nameless_white.png
+104211666442891296,OGA,O'Gaming,ogaming,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1590143833802_Ays7Gjmu_400x400.jpg
+104211677548295324,DCTI,Double Crunch Team Italy,double-crunch-team-italy-pg-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1590507541178_DoubleCrunchTeamItaly1.png
+104212455500985426,RITO,LEC Kings,lec-team,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1590486652282_ezgif.png
+104212474149188693,OLE,Altokekw Españita,lvp,,,,unaffiliated,active,11,http://static.lolesports.com/teams/1590582163378_Logo-Altokekw-Espaita.png
+104228817622043824,FZO,The French Zoo,the-french-zoo,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1590410996052_frenchzoo.png
+104234144258996303,POL,POLSKA GUROM,polska-gurom,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1590833406972_Puki_Style.jpg
+104234362586443283,PNGU,German Pingus,team-frenzy,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1590573988690_DACH.png
+104251016988118464,GS,Galatasaray Espor Akademi,galatasaray-espor-akademi,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1590744274730_GS.png
+104710316579222193,G2AR,G2 Arctic,g2-arctic,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1597752630042_G2Arctic.png
+104710343016706538,PT7,7more7 Pompa Team,7more7-pompa-team,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1597753033536_1500_PT7_COLOR.png
+104710359142494900,SMS,Samsung Morning Stars,samsung-morning-stars,,,,unaffiliated,active,6,http://static.lolesports.com/teams/PGNATS_SMS-logo.png
+104710383210356454,LLLS,LowLandLions,lowlandlions,,,,unaffiliated,active,4,http://static.lolesports.com/teams/DL_LLL-Logo.png
+104710419905376957,SAM,SAMCLAN Esports,samclan-esports,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1715885824017_SAM_1000x1000.png
+104710429139492585,5K,Five Kings,five-kings,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1597754347761_5Kingslogo.png
+104710682193583854,WOLF,Iron Wolves,topo-centras-iron-wolves,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1683618986784_z9VyIKc.png
+104843437139220481,UBK,Undead BK,undead-bk,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1643795782111_UNDEAD-White.png
+105193385417106233,LLA,LLA All-Stars,llaallstars,,,,unaffiliated,active,0,http://static.lolesports.com/teams/LLA-03-FullonLight.png
+105193481874236222,LCL,LCL-All-Stars,lcl-all-stars,,,,unaffiliated,active,4,http://static.lolesports.com/teams/LCL-01-FullonDark.png
+105193554293818475,LJL,LJL All-Stars,ljlallstars,,,,unaffiliated,active,5,http://static.lolesports.com/teams/LJL-01-FullonDark.png
+105193571520283762,OPLO,OPL All-Stars,opl-all-stars,,,,unaffiliated,active,5,http://static.lolesports.com/teams/opl-white.png
+105272738560738425,QKR,Queue Kings Red,queuekingsred,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/ASERed.png
+105272741199545468,QKB,Queue Kings Blue,queuekingsblue,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/ASEBlue.png
+105272752575218816,LGR,Legends Red,legendsred,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/ASERed.png
+105272756377879683,LGB,Legends Blue,legendsblue,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/ASEBlue.png
+105301755072677196,LCKQ,LCK Queue Kings,lckqueuekings,,,,unaffiliated,active,5,http://static.lolesports.com/teams/LCK.png
+105301773561628001,LCKL,LCK Legends,lcklegends,,,,unaffiliated,active,4,http://static.lolesports.com/teams/LCK.png
+105301786369976273,LECL,LEC Legends,leclegends,,,,unaffiliated,active,0,http://static.lolesports.com/teams/LEC-01-FullonDark.png
+105301791701328923,LECQ,LEC Queue Kings,lecqueuekings,,,,unaffiliated,active,5,http://static.lolesports.com/teams/LEC-01-FullonDark.png
+105301877841257613,VCS,VCS All Stars,vcs-all-stars,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/VCS-01-FullonDark.png
+105351724613755142,LPLQ,LPL Queue Kings,lpl-queue-kings,,,,unaffiliated,active,5,http://static.lolesports.com/teams/LPL-01-FullonDark.png
+105351737774956843,LPLL,LPL Legends,lpl-legends,,,,unaffiliated,active,5,http://static.lolesports.com/teams/LPL-01-FullonDark.png
+105351757244721361,XXX,All-Stars,allstars,,,,unaffiliated,archived,18,http://static.lolesports.com/teams/ase-fullcolor.png
+105351835580819729,LCSQ,LCS Queue Kings,lcs-queue-kings,,,,unaffiliated,active,5,http://static.lolesports.com/teams/LCS-05-FullonDark.png
+105352091319919029,LCSL,LCS Legends,lcs-legends,,,,unaffiliated,active,5,http://static.lolesports.com/teams/LCS-05-FullonDark.png
+105357803054359120,BWI,Bwipo Dream Team,bwipo-dream-team,,,,unaffiliated,active,0,http://static.lolesports.com/teams/team-bwipo.png
+105357804699574324,CJJ,CoreJJ Dream Team,corejj-dream-team,,,,unaffiliated,active,5,http://static.lolesports.com/teams/team-corejj.png
+105515109012592449,IZI,IZIDREAM,izidream,,,,unaffiliated,active,0,http://static.lolesports.com/teams/LFL-IZI-logo.png
+105515266817621145,MCES,Team MCES,team-mces,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/LFL-MCES-logo.png
+105520781900097659,4E,4 Elements,4-elements,,,,unaffiliated,active,3,http://static.lolesports.com/teams/4Elements_Esportslogo_square.png
+105520784254806142,ION1,ION SQUAD,ion-squad,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1641288089992_IONSQUAD.png
+105520786527322647,GENK,KRC Genk Esports,krc-genk-esports,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1671442731956_KRCGenkEsports.png
+105520788833075738,KVM,KV Mechelen Esports,kv-mechelen-esports,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1641905895072_LightMode.png
+105520796734358045,OWE,One Way Esports,team-7am,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1706862212751_LOLESPORTSICON.png
+105520819263036609,AGC,The Agency,echo-zulu,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1653997148080_DarkBG-Square.png
+105520824521753126,PSV,PSV Esports,psv-esports,,,,unaffiliated,active,3,http://static.lolesports.com/teams/PSV_Esportslogo_square.png
+105520826536746180,TRL,Team THRLL,team-thrll,,,,unaffiliated,active,1,http://static.lolesports.com/teams/Team_THRLLlogo_square.png
+105521201981545679,SPN,The Spawn Esports,the-spawn-esports,,,,unaffiliated,active,8,http://static.lolesports.com/teams/TheSpawn.png
+105521402545275594,GGM,Gentlemen's Gaming,gentlemens-gaming,,,,unaffiliated,active,5,http://static.lolesports.com/teams/Gentlemen27s_Gaminglogo_square.png
+105521408363571548,IHG,Illuminar Gaming,illuminar-gaming,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1671447356949_Qaj7cc8.png
+105521412995449549,ESCA,Team ESCA Gaming,team-esca-gaming,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1671446791990_7GZyEuO.png
+105521419784127190,KNF,Komil&Friends,komilfriends,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1671449320276_LjgDGg2.png
+105532840001188717,S2V,S2V Esports,s2v-esports,,,,unaffiliated,active,8,http://static.lolesports.com/teams/SL_S2V-Logo_white.png
+105536738266035235,CGG,Cyberground Gaming,cyberground-gaming,,,,unaffiliated,active,0,http://static.lolesports.com/teams/LOGOUFFICIALE.png
+105536773074826367,GGE,GGEsports,ggesports,,,,unaffiliated,active,3,http://static.lolesports.com/teams/PGNATS_GGE-logo.png
+105536980594429116,RML,Romulea eSport,romulea-esport,,,,unaffiliated,active,1,http://static.lolesports.com/teams/Romulea_Off.png
+105537149834356301,ANC,aNc Legends,anc-outplayed,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1743088399990_logo-anc-legends-sq-y25-AlessandroSesani.png
+105537408539332006,EMZ,eMonkeyz SDH,emonkeyz-sdh,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1641298122921_61bccb45ba7a1390766437.png
+105537444152141556,BTS,Herbalife Real Betis,herbalife-real-betis,,,,unaffiliated,active,11,http://static.lolesports.com/teams/1641299180901_61c1e1c884243532687770.png
+105537621677160078,TQ,Team Queso,team-queso,,,,unaffiliated,active,4,http://static.lolesports.com/teams/SL_TQ-Logo.png
+105537947396116202,NSR,NASR ESPORTS Akademi,nasr-esports-akademi,,,,unaffiliated,active,1,http://static.lolesports.com/teams/red.png
+105543843212923183,GSK,Goskilla,goskilla,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1671448192430_lzVmumu.png
+105547976546505145,IFM,Team Infamous,team-infamous,,,,unaffiliated,active,9,http://static.lolesports.com/teams/TeamInfamous_INF-white1.png
+105548000936710641,M2XX,Method2Madness,method2madness,,,,unaffiliated,archived,10,http://static.lolesports.com/teams/Method2Madness_M2-logo.png
+105548019132871601,MDVL,Medieval Riga,medieval-riga,,,,unaffiliated,active,0,http://static.lolesports.com/teams/Medieval_Riga_MDLV-white1.png
+105593278887024877,INAE,Inaequalis,inaequalis,,,,unaffiliated,active,9,http://static.lolesports.com/teams/INAE-LOGO-white.png
+105594101461473671,KRM,Karma Clan Esports,karma-clan-esports,,,,unaffiliated,active,4,http://static.lolesports.com/teams/LPLOL_KRM-Logo1.png
+105594116005157262,OFF7,OFFSET Esports,offset-esports,,,,unaffiliated,active,3,http://static.lolesports.com/teams/LPLOL_OFF7-Logo1.png
+105594163014588871,BFC,Boavista F.C,boavista-fc,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1705720825651_bfc_1.png
+105594176887807460,E5,EFIVE Esports,efive-esports,,,,unaffiliated,active,10,http://static.lolesports.com/teams/LPLOL_E5-Logo2.png
+105647890918693540,GTK,Gaming Team Kravaře,gaming-team-kravae,,,,unaffiliated,active,1,http://static.lolesports.com/teams/Gaming_Team_Krava3Felogo_square.png
+105913111502565010,ZOOS,Zoos Gaming,zoos-gaming,,,,unaffiliated,archived,3,http://static.lolesports.com/teams/zoos-color.png
+105913221137618666,NOR,No Org,no-org,,,,unaffiliated,archived,6,http://static.lolesports.com/teams/no-org-white.png
+105913228076297879,SF,SolaFide Esports,solafide-esports,,,,unaffiliated,active,1,http://static.lolesports.com/teams/solafide.png
+105913232697120493,EG,EG Prodigies,eg-prodigies,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1641603800336_EGP.png
+105913238372341488,WCAR,Wildcard,wildcard-gaming,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1641961179748_Wildcard_Gaming_Logo-CollinRoe.png
+105957578868644876,DIG,Dignitas Mirage,dignitas-mirage,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/dig-mirage.png
+105957603362200620,DIGM,Dignitas Mirage,dignitas-mirage,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/dig-mirage.png
+105957640798249312,BRRG,Barrage.NA,barragena,,,,unaffiliated,archived,1,http://static.lolesports.com/teams/barrage.png
+106250732506012141,UDGG,Umbra Divinus Gaming,umbra-divinus-gaming,,,,unaffiliated,active,2,http://static.lolesports.com/teams/UDG_Logo.png
+106295024192678387,GAIA,Gaia Esports,gaia-esports,,,,unaffiliated,active,5,http://static.lolesports.com/teams/PGNATS_GE-logo.png
+106300533256999014,SGC,Starlan Gaming Club,starlan-gaming-club,,,,unaffiliated,active,10,http://static.lolesports.com/teams/BL_SGC-Logo_white.png
+106301891501674861,PDW,PDW,pdw,,,,unaffiliated,archived,1,http://static.lolesports.com/teams/ULTRALIGA_PDW-Logo1.png
+106334794714373670,GOEX,Goexanimo,goexanimo,,,,unaffiliated,active,7,http://static.lolesports.com/teams/Goexanimo_GOEX-dark.png
+106334802515490809,WTX,Wortex,wortex,,,,unaffiliated,active,8,http://static.lolesports.com/teams/Wortex_WTX-logo.png
+106857724782292541,C9AM,C9 Amateur,c9-amateur,,,,unaffiliated,archived,1,http://static.lolesports.com/teams/1630519480451_Cloud9C9-01-FullonDark.png
+106857734387052095,AOEE,AOE,aoe-esports,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1653465991163_rZ2wRdo.png
+106857739520697600,100X,100 Next,100-next,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1647477401624_1631819887423_100t-2021-worlds.png
+106857755268998406,RSV,Resolve,resolve,,,,unaffiliated,archived,1,http://static.lolesports.com/teams/1630519946289_resolve-esports-2021.png
+106911054856646129,KOR,Korea ECEA,korea-ecea,,,,unaffiliated,archived,1,http://static.lolesports.com/teams/1631333229670_ecealogo.png
+107067113573319473,KEC,Kroivance Esport Club,kroivance-esport-club,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1633714500021_images.png
+107067121074686667,KCE,Kroivance Esport Club,kroivance-esport-club,,,,unaffiliated,active,10,http://static.lolesports.com/teams/1633714613283_images.png
+107067134300703472,TPC,Team Phantasma Community,team-phantasma-community,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1633714815021_TPC.png
+107067134707406206,TPC,Team Phantasma Community,team-phantasma-community,,,,unaffiliated,archived,8,http://static.lolesports.com/teams/1633714822399_TPC.png
+107067191804545854,ARMY,To Army,to-army,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1633715693037_lolesports.png
+107067201935311790,VPE,VisualPerception Esports,visualperception-esports,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1634676600908_VP.png
+107067211908580301,PM,Pentagon Maze Esports,pentagon-maze-esports,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1633715999126_lolesports.png
+107098989477038445,AFF,Austrian Force,austrian-force,,,,unaffiliated,archived,4,http://static.lolesports.com/teams/1642145552733_AustrianForce.png
+107110686951738484,EEL,Esports Empire,esports-empire,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1634379374001_Esport_Empirelogo_square.png
+107110691234159963,EEM,Esports Empire (Archived),esports-empire-archived,,,,unaffiliated,archived,4,http://static.lolesports.com/teams/1634379439728_Esport_Empirelogo_square.png
+107110712778558598,BAE,Baecon,baecon,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1634379767847_Baecon_Gaming_Group_2020_allmode.png
+107127848667881875,FAA,Falleo's Angels,falleos-angels,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1634641243030_FA-Logo_Dark.png
+107135288413116276,TPAA,Taipei Assassins,taipei-assassins,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1634754762339_Taipei_Assassinslogo_square.png
+107135395445135226,M5,Moscow Five,moscow-five,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1634756398783_Moscow_Fivelogo_square.png
+107135463802591101,M5,Moscow Five,moscow-five,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1634757441088_Moscow_Fivelogo_square.png
+107135737190326977,CLG EU,Counter Logic Gaming Europe,counter-logic-gaming-europe,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1634761612113_CLG_Europelogo_square.png
+107135771760187266,SAJ,Saigon Jokers,saigon-jokers,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1634762139902_Saigon_Jokerslogo_square.png
+107135794822161092,SAJ,Saigon Jokers,saigon-jokers,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1634762492701_Saigon_Jokerslogo_square.png
+107156481620157383,ELO,elo turyści,elo-turysci,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1635078144826_1500_ELO_COLOR.png
+107156487727850442,ARR,piratesports,piratesports,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1635078238971_1500_ARR_COLOR-2.png
+107156490138461133,PET,Dragon Enjoyers,dragon-enjoyers,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1635078276792_1500_PET_COLOR.png
+107156493180314576,KO,Kopnięcie,kopniecie,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1635078322846_1500_KO_COLOR.png
+107156495266994335,RNFR,Ricardo and Friends,ricardo-and-friends,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1635078354956_1500_RNF_COLOR.png
+107157617353546290,STW,Stopwatch,stopwatch,,,,unaffiliated,archived,2,http://static.lolesports.com/teams/1675063743305_SW_transp.png
+107179740624168899,HEET,HEET,heet,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1671442691640_HEET1.png
+107179754925448343,RLS,Rulers Esports,rulers-esports,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1635433267868_wjp_lMxM.png
+107282025084137801,FYN,Flayn eSports,flayn-esports,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1636993789136_Flayn.png
+107385265228921843,ALL,Alliance,alliance,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1638569108275_Alliancelogo_square.png
+107385407461075721,ALL,Alliance,alliance,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1638571276630_Alliancelogo_square.png
+107401536028406391,FCNT,FC NANTES,fc-nantes,,,,unaffiliated,archived,8,http://static.lolesports.com/teams/1638832875594_fcn_logo_jaune_rvb.png
+107445024926157963,BGN,beGenius,begenius,,,,unaffiliated,archived,7,http://static.lolesports.com/teams/1671466011512_CopyofLogobeGenius.png
+107456327744799091,ATLE,Atletec,atletec,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1671465951770_CopyofVectorial_ATLETEC_LOGO_WhiteRed.png
+107456332942301016,XXAT,Atletec,atletec,,,,unaffiliated,archived,4,http://static.lolesports.com/teams/1639653518187_Atleteclogo_square.png
+107456343586920318,CWG,Cowana Gaming,cowana-gaming,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1639653677981_CowanaGaming.png
+107456346573789064,MYI,mYinsanity,myinsanity,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1642145477770_mYinsanity.png
+107456355516438414,SGE,Eintracht Frankfurt,eintracht-frankfurt,,,,unaffiliated,active,13,http://static.lolesports.com/teams/1674832854605_SGE.png
+107456359624562577,SPT,Sprout,sprout,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1639653922732_Sprout.png
+107456365241352597,BSC,Hertha BSC,hertha-bsc,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1639654007415_HerthaBSC.png
+107456367793297300,TTW,TT willhaben ,tt-willhaben,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1642145861694_TTwilhaben.png
+107456370312266136,WES,WeSports,wesports,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1639654085395_WeSports.png
+107456372775999383,404,404 Multigaming,404-multigaming,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1639654122869_404Multigaming.png
+107456994699991548,ATE,Atleta Esport,atleta-esport,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1639663611907_Atleta.png
+107467794614674479,FNTQ,FnaticTQ,fnatictq,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1639828406200_61bcc19126090227265597.png
+107467827374313054,FNK,Finetwork KOI,finetwork-koi,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1639828904190_61b740d5e05ac236934201.png
+107467834753797729,BSO,Bisons,bisons-eclub,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1639829017451_618bec7c49c31172742131.png
+107564120359954189,FAL,Falcons,falcons,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1641298200728_618bed0ba3a91541975487.png
+107564128430684482,CASE,Case Esports,case-esports,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1701682479864_654cac03a4384838025159.png
+107564135791716115,GSNS,Guasones,guasones,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1701682424353_guasones-team-logo-white.png
+107564159457290005,ZTA,ZETA Gaming,zeta,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1641298812556_61d4224ec29e7694061589.png
+107564167676290839,RBLS,Rebels Gaming,rebels-gaming,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1671467127897_61b86da4283b5904699323.png
+107564209545247072,WIZ,Wizards,wizards,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1641299578297_61b86dcc46bbc885635223.png
+107564214109305186,AYM,AYM Esports,aym-esports,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1641299646991_61d42287217e1061324184.png
+107565415488781840,AAB,AaB esport,aab-esport,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1641317981451_AaBesport.png
+107565456309714452,FLG,Flong Esports,flong-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1641318604227_FlongEsports22.png
+107565460652260886,LCT,Lucent,lucent,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1641318671555_Lucent.png
+107565467039661592,LDNU,LDN UTD,ldn-utd,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1641318768602_LDNUTD1.png
+107565484436220952,MRGG,Munster Rugby Gaming,munster-rugby-gaming,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1641319033456_MunsterRugbyGaming.png
+107565493716773932,NTZZ,Nativz,nativz,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1715988495159_NativzNTZ.png
+107580444745581889,IMA,Immortals AOE,immortals-aoe,,,,unaffiliated,archived,3,http://static.lolesports.com/teams/1647477021350_immortals_aoe.png
+107580455322240324,NOT,No Team,no-team,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1641604777609_NoTeam.png
+107580464493872335,RADI,Radiance Dignitas,radiance-dignitas,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1641547611287_LOLESPORTSICON.png
+107580470307112265,BAY,Bay State College Maroon,bay-state-college-maroon,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1641603909157_BayState.png
+107580475800733004,3P,Third Party,third-party,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1641604040961_3Plogo.png
+107580478675338454,DNHA,Dinka NeverHomelessAgain,dinka-neverhomelessagain,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1641604179752_LOLESPORTSICON.png
+107580481273119961,TGGG,Taco Gaming,taco-gaming,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1647477259074_taco_gaming.png
+107580486722307295,NR,Nameless Randoms,nameless-randoms,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1641547950134_LOLESPORTSICON.png
+107580497041999074,TA,Team Ambition,team-ambition,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1675235626712_TeamAmbition.png
+107580499570181349,WCA,Wildcard Aces,wildcard-aces,,,,unaffiliated,archived,3,http://static.lolesports.com/teams/1641604386605_Wildcard_Gaming_Logo-CollinRoe.png
+107580502173795560,GLV,Glaive Esports Prime,glaive-esports-prime,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1641548186132_LOLESPORTSICON.png
+107580504339335849,DARE,Dare Red,dare-red,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1641604465183_DARE.png
+107580506699777259,ISU,ISU Redbirds,redbird-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1675158027629_RedbirdEsports.png
+107580510079272174,GVU,Grand View University,grand-view-university,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1650738414569_GrandView.png
+107580513901038254,MOGG,Mount Olympus,mount-olympus,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1641604533869_MOGG.png
+107580516171991729,GOOS,Goose Gaming,goose-gaming,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1641604589009_GooseGaming.png
+107580518665143537,SNDM,Supernova Dark Matter,supernova-dark-matter,,,,unaffiliated,archived,5,http://static.lolesports.com/teams/1641548437277_LOLESPORTSICON.png
+107580522397025524,MICH,Michigan Esports,michigan-esports,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1641604643736_UMich.png
+107580529604871415,NACE,No Ace,no-ace,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1641604694300_NoAce_Logo.png
+107580532321207546,UOTB,UofT Blue,uoft-blue,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1641548646245_LOLESPORTSICON.png
+107580538776700241,VERS,Verity Esports,verity-esports,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1641604740706_VE.png
+107580542409426260,ZDC,Zodiac eSports,zodiac-esports,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1641548799921_LOLESPORTSICON.png
+107580544674612567,MCE,Meme City Esports,meme-city-esports,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1641548834544_LOLESPORTSICON.png
+107581178720470377,ARC,Arctic Gaming,arctic-gaming,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1641752273349_ARCTIC-ColorLight.png
+107581206998502078,ATH,Atheris Esports,atheris-esports,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1641751879611_ATHERIS-ColorDark.png
+107581209070519555,MC2,Atomic Esports,atomic-esports,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1641751954441_ATOMIC-ColorDark.png
+107581296208168309,TMR,Tomorrow Esports,tomorrow-esports,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1684477219994_2morrocolor_white.png
+107581300297680248,ZLT,Zylant Esports,zylant-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1641752351089_ZYLANT-ColorDark.png
+107581689894520368,BAND,Bandits Gaming,bandits,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1760942250567_LOLESPORTSICON.png
+107581733744920199,GOT,Goat Esports,goat-esports,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1642594200821_GOAT-ESPORTS-ColorLight.png
+107581738783262346,GVE,Gravity Elite,gravity-elite,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1642594233575_GRAVITY-ColorLight.png
+107581750701049485,JNS,Janus Panter,janus-esports,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1711010192896_Panter_white.png
+107581755241449104,RRR,Red Rooster,red-rooster,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1642594296518_RED-ROSTER-ColorDark.png
+107581759470356115,SAP,Saprissa Esports,saprissa-esports,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1642594331651_SAPRISA-ColorLight.png
+107581761958954646,VAN,Vandals Esports,vandals-esports,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1642594369878_VANDALS-ColorLight.png
+107582150625414483,ACS,AceS GaminG,aces-gaming,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1643106711669_ACES-GAMING-ColorDark.png
+107582169874155554,GDP,God's Plan,gods-plan,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1643106743740_GODS-PLAN-ColorDark.png
+107582173169864040,GSE,GeekSide Esports,geekside-esports,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1643106755632_GEEKSIDE-ESPORTS-ColorLight.png
+107582176093752697,HK,Hooked Esports,hooked-esports,,,,unaffiliated,active,10,http://static.lolesports.com/teams/1643106766805_HOOKED-ESPORTS-ColorLight.png
+107582178455767077,PD,Pirate Dream,pirate-dream,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1673859566656_PIRATE-DREAM.png
+107582181197106556,SKC,Skull Cracker Clan,skull-cracker-clan,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1643106792367_SKULL-CRACKER-ColorLight.png
+107582184905264520,WS,Waia Snikt,waia-snikt,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1643106805734_WAIA-ColorLight.png
+107582591908138922,CCC,Cienciano,cienciano,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1642595295545_CIENCIANO-White.png
+107582598621022934,CDM,Club Deportivo Municipal,club-deportivo-municipal,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1642595396011_CLUB-DEPORTIVO-MUNICIPAL-White.png
+107582609836036013,DD,Diamond Doves,diamond-doves,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1642595485741_DIAMOND-DOVES-White.png
+107582613263241138,DVE,Deliverance Esports,deliverance-esports,,,,unaffiliated,active,13,http://static.lolesports.com/teams/1642595447584_DELIVERANCE-ESPORTS-White.png
+107582615829368757,FSY,Fantasy Gaming,fantasy-gaming,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1642595525515_FANTASY-White.png
+107582618156093368,INC,Incubus,incubus,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1642595563820_INCUBUS-White.png
+107582638341246907,INSS,Instinct Gaming,instinct-gaming,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1642595602197_INSTINCT-GAMING-White.png
+107582641798795198,SB,Spectacled Bears,spectacled-bears,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1642595649122_SPECTACLED-BEARS-White.png
+107598479562953190,TTNC,Trance's Tyrants,trances-tyrants,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1641822494937_LOLESPORTSICON.png
+107598482698361413,TTSA,Trance's Tyrants,trances-tyrants,,,,unaffiliated,archived,5,http://static.lolesports.com/teams/1641822543779_LOLESPORTSICON.png
+107598484715166290,TTSS,Trance's Tyrants,trances-tyrants,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1641822574469_LOLESPORTSICON.png
+107598704067400262,STM,Stone Movistar,stone-movistar,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1643795613214_STONE-White.png
+107598712583969458,EBG,EBRO,ebro-gaming,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1643794863955_EBRO-White.png
+107598764318774383,KRU,KRÜ Esports,kru-esports,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1643794976184_KRU-CLAROLight.png
+107598780504331406,EVLV,Maycam Evolve,maycam-evolve,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1643795494261_MAYCAM-White.png
+107598785733448849,RIV,River Plate Gaming,river-plate-gaming,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1643795558880_RIVER-White.png
+107598788926820994,PAM,Macro Pampas,pampas,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1643795725786_UALAPAMPAS-White.png
+107598976046488689,M2,Method2Madness,method2madness,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1641830075852_Logo-Png-2000x2000.png
+107598982142057588,UC,Cruzados Esports,cruzados-esports,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1643036732682_cruzados-White.png
+107598984777421827,UC,Cruzados Esports,cruzados-esports,,,,unaffiliated,archived,6,http://static.lolesports.com/teams/1641830202857_LOLESPORTSICON.png
+107599040773840060,META,Meta Gaming,meta-gaming,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1643036774764_meta-White.png
+107599061926073885,N5R,Newstar,newstar,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1654197796362_Newstar-White.png
+107599089191671351,SW,Santiago Wanderers,santiago-wanderers,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1643036795942_santiagowanderers-ColorLight.png
+107599112065439311,DHX,Dark Horse,dark-horse,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1643036807909_darkhorse-White.png
+107599156601411192,MOPT,Movistar Optix,movistar-optix,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1643036831020_movistaroptix-White.png
+107599174108436104,RBTX,Rebirth Esports,rebirth-esports,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1643036841496_rebirth-ColorLight.png
+107599188771591359,WCE,Wolf Club Gaming,wolf-club-gaming,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1645117284888_1644916646869_wolf-White.png
+107599248594359606,ETC,Et cetera,et-cetera,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1641834234545_etclogo.png
+107599285006554929,GR1,GR1ND,gr1nd,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1641834790431_GR1ND.jpg
+107599485973747723,GRP,GRP Esport,grypciocraft-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1671448791753_DqtYZgB.png
+107599535519488096,WK,Internaziomale,internaziomale,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1641838612176_ANTENANIEBIESKA.png
+107599593771458304,MAR,Maroon Bells,maroon-bells,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1641839501088_maroon.png
+107599655638425387,NRAX,NRAX ESPORTS,nrax-esports,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1641840446683_222.png
+107599701268158635,ARRR,piratesports,piratesports,,,,unaffiliated,archived,5,http://static.lolesports.com/teams/1641841142779_LOLESPORTSICON.png
+107599749389342475,TFH,Thunderflash,thunderflash,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1641841876413_3bezta.png
+107603544245460197,AWK,Ramo Awake Gaming,awake-gaming,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1642445663945_AWAKE-ColorDark.png
+107603551467692884,ELR,ELR Gaming,elr-gaming,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1642445740208_ELR-ColorLight.png
+107603554304287575,KOG,King of Goats,king-of-goats,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1642445862260_KINGS-OF-GOATS-C.png
+107603566520687175,MYN,Team Mayan eSports,team-mayan-esports,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1642445971179_MAYAN-C.png
+107603586980602718,NOC,NOCTA,nocta,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1642445894747_NOCTA-B.png
+107603596915629288,STSS,Spirituals,spirituals,,,,unaffiliated,active,12,http://static.lolesports.com/teams/1642445935210_SPIRITUALS-C.png
+107616186610872018,COW,Cowana Gaming,cowana-gaming,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1642092688849_CowanaGaming.png
+107616365141325353,SPSS,Spinebusters,ern-roar,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1704286519980_Spinebusters.png
+107634018485795670,3DR,3D Revolution Esports,3d-revolution-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1642364781083_3DR_Logo_1500x1500.png
+107634062383415421,ERG,Emperor Gaming,emperor-gaming,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1642365450870_EmperorGaming.png
+107634109042326398,PJS,Project Sinners,project-sinners,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1642366150587_sinners_coloring_final.png
+107648151416997278,BATS,Angry Bats,angry-bats,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1642580432560_angrybats_bat_blue.png
+107648165621924493,BP,Black Panthers eSports,black-panthers-esports,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1642580649136_logonuovo9-AlfredoMoscarino.png
+107648168744912288,DREN,DREN Esports,dren-esports,,,,unaffiliated,active,13,http://static.lolesports.com/teams/1642580697061_logocolor-SimoneZorzo.png
+107648178878874255,ERGG,Earth Revolution Gaming,earth-revolution-gaming,,,,unaffiliated,active,11,http://static.lolesports.com/teams/1642580851886_ERGAMING__logofficial-LeonardoCosta.png
+107649192576323016,ORGG,Team Orgless,team-orgless,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1642596320388_LOLESPORTSICON.png
+107649197653855691,RATE,RATE Gaming,rate-gaming,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1642596397662_LOLESPORTSICON.png
+107655539755387391,VAE,Varona Esports,varona-esports,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1673860956111_LPLOL-VAE.png
+107655544289037162,GCE,GeekCase eSports,geekcase-esports,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1642693237425_Camada-6.png
+107655677419653655,C7O,Chip7 Odivelas,chip7-odivelas,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1642695269937_wer234.png
+107655690672015909,DWN,New Dawn eSports,new-dawn-esports,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1642695471726_ertre4.png
+107655701748910968,SLS,Sailors Esports,sailors-esports,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1642695641953_ery34.png
+107655707737983528,OGG,ORO Gaming Group,oro-gg,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1654648455449_ORO-LOGO_notext-RicardoBarros.png
+107693836459380354,SMP,SAMPI,sampi,,,,unaffiliated,archived,3,http://static.lolesports.com/teams/1643277531060__FdHNNmY.png
+107693908343328411,ERKO,ERKO Esports,erko-esports,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1643278626628_DuT33qpY.png
+107693920221377070,EKV,eKoVy,ekovy,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1643278806951_F33vY2Kw.png
+107829548315015409,YU,York Lions,york-lions,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1650399072207_yuesportsw.png
+107829558090277757,BOG,Bogged,bogged,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1645348478881_LOLESPORTSICON.png
+107829578102541959,GTC,Ginger Tumeric,ginger-tumeric,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1645348783081_LOLESPORTSICON.png
+107953988302037900,MU,Maryville Saints,maryville-saints,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1647541962687_200x200_MU_Logo.png
+108018634175049561,RX,RX Esports,rx-esports,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1648233552846_noteamlogo-lolesports.png
+108018637503819612,P42,PRO42 Esports,pro42-esports,,,,unaffiliated,active,11,http://static.lolesports.com/teams/1652820752315_PRO42-White.png
+108078422885368642,PAO,Panathinaikos Esports,panathinaikos-esports,,,,unaffiliated,archived,2,http://static.lolesports.com/teams/1673904956249_PAO.png
+108121039511688388,UCA,Dragones Carolina,dragones-carolina,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1649796133841_noteamlogo-lolesports1.png
+108121041773335751,COC,El Cocas UC,el-cocas-uc,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1649796168994_noteamlogo-lolesports1.png
+108121045029738014,VTR,Vatra Gaming,vatra-gaming,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1649796218094_noteamlogo-lolesports1.png
+108121047955658273,AU,Aurelius Esports,aurelius-esports,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1652811350625_Aurelius-ColorLight.png
+108121050151523530,CVE,CosVer Esports,cosver-esports,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1649796292771_noteamlogo-lolesports1.png
+108121051709036068,PLSQ,Polar Squad,polar-squad,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1673471548789_POLAR-B.png
+108121054112418574,TAC,Tactical Esports,tactical-esports,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1649796357188_noteamlogo-lolesports1.png
+108126873538910736,CCS,Cidade Curiosa,cidade-curiosa,,,,unaffiliated,active,10,http://static.lolesports.com/teams/1654648378899_CC_21.png
+108131947881519523,EFL,Eternal Flame,eternal-flame,,,,unaffiliated,archived,5,http://static.lolesports.com/teams/1649962582472_noteamlogo-lolesports1.png
+108131951488445104,AGD,AGD Esports,agd-esports,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1649962637968_noteamlogo-lolesports1.png
+108131965235538611,ANTA,Antares Esports,antares-esports,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1655796379986_ANTARES-700X700.png
+108131968787700134,DIL,Dia Libre,dia-libre,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1649962901439_noteamlogo-lolesports1.png
+108159809840323235,AQ,Aquinas Esports,aquinas-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650398523620_aqlogo-RileyLong.png
+108159818787172051,ASU,Arizona State University,arizona-state-university,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650398559252_ASULOL-MissyAscencion.png
+108159827490151079,MC,Marist Red Foxes,marist-red-foxes,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650737706561_Marist.png
+108159838146173610,NAU,NAU LumberJax,nau-lumberjax,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650388154558_noteamlogo-lolesports1.png
+108159845095742125,SLU,Saint Louis University,saint-louis-university,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650398653325_SLUEsportsNoOutline1-NicholasChiu.png
+108159857058492118,HU,HU Storm,hu-storm,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650399309107_hustorm.png
+108159885652963033,SHU,Seton Hall University,seton-hall-university,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650399348229_Seton_Hall_Pirates_logo.svg-JacobPatrick.png
+108159890692353756,SCC,St. Clair College,st-clair-college,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1650399201573_SCS_Logo_COLOUR-yBlazin.png
+108159895060191922,UBES,UBuffalo Esports,ubuffalo-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650737677766_Buffalo.png
+108159906656575497,CU,CU Boulder,cu-boulder,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650398803901_CULOGO-CUEsports.png
+108159909915499189,UD,University of Delaware,university-of-delaware,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650398845219_UDEsports-JennyLuo.png
+108159913250086924,UM,Michigan Esports,michigan-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650737989244_Michigan.png
+108159917648031455,USTE,UST Esports,ust-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650398911265_UST2-JustinPelt.png
+108159921977465528,UT,Longhorn Gaming,longhorn-gaming,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650389433745_noteamlogo-lolesports1.png
+108159926619909858,UTB,UofT Blue,uoft-blue,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650737843554_UofTBlue.png
+108159931194715877,VSP,VESPA,vespa,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650737630077_VESPA.png
+108159940380634858,WU,Winthrop Eagles,winthrop-eagles,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1650399231228_1200px-Winthrop_Eagles_logo.svg-JoshuaSides.png
+108159958519099117,BAY,Bay State College,bay-state-college,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1650737745061_BayState.png
+108159964760727567,BLE,Bethany Esports,bethany-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650398589978_BethanyEsportsPrimaryLogo_TransparentBackground-LucasFricke.png
+108159968741268165,CVU,Converse University,converse-university,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1650738024088_Converse.png
+108159996371573462,MU,Maryville University,maryville-university,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1650398622565_200x200_MU_Logo-ThomasLaMarca.png
+108159999493642969,MLC,Molloy College Esports,molloy-college-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650737599891_Molloy.png
+108160009014193908,SJS,Spartan Esports,spartan-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650398680144_spartanesportslogo-CoelHorsfall.png
+108160026618060825,UCI,UCI Esports,uci-esports,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1650398730046_AnteaterMedallion-DavidTu.png
+108160044440853213,UCSD,UC San Diego,uc-san-diego,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650737537182_USCD.png
+108160048461159136,UNA,UofNA Dragons,uofna-dragons,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650738308979_UoNA.png
+108160054279576291,UOT,University of Toronto,university-of-toronto,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650738133918_Toronto.png
+108160427796377354,YU,York Lions,york-lions,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650399118901_yuesportsw.png
+108160450260086541,GVU,Grand View University,grand-view-university,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1650738367887_GrandView.png
+108203154514683518,T1,T1 Rookies,t1-rookies,,,,unaffiliated,archived,5,http://static.lolesports.com/teams/1651078718919_download99.png
+108319257932089006,OSK,Osaka,osaka,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1652820707039_OSAKA-C.png
+108319669531442279,AD,Aguilas Doradas,aguilas-doradas,,,,unaffiliated,active,11,http://static.lolesports.com/teams/1652826987911_AGUILAS-DORADAS-White.png
+108352305932141947,DSY,DSYRE,dsyre,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1705526248146_LOGOMARK-DSYRE-REBRAND-white-NicoloMureddu.png
+108353580990051422,EL,Elementalist,elementalist,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1653344435530_1641935515834_lolesports_icon_white-01.png
+108361537886099513,300,300,300,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1653465844323_ds1K709.png
+108361545122797332,AGT,AOE Ginger Turmeric,aoe-ginger-turmeric,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1653465954636_yecotoQ.png
+108361550364038935,AOER,AOE Randoms,aoe-randoms,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1653466035681_9Buwzwl.png
+108361552741927561,FEAR,Cincinnati Fear,cincinnati-fear,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1653466071326_J57Mp0y.png
+108361563004344389,LAST,The Last Dance,the-last-dance,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1681281407829_LOLESPORTSICON.png
+108361565719424734,DKC,DK Crew,dk-crew,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1653466269306_Tedk2CV.png
+108361570687544399,JK,Jake's Kittens,jakes-kittens,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1653466345608_1x7WUDb.png
+108361575122450254,TACO,Team Fish Taco,team-fish-taco,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1653466413643_yjei5Hy.png
+108361578564310810,TBA,Team Pending,team-pending,,,,unaffiliated,active,1,http://static.lolesports.com/teams/1653982511575_unknown.png
+108396312583824081,NRS,NecroRaisers,necroraisers,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1653996463703_LOLESPORTSICON.png
+108401627438015774,TZR,Team Zhonyas Revolution,silent-revolution-gaming,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1685199549638_LOLESPORTSICON.png
+108401629249651895,INE,Ionikos Nikaias Esports,ionikos-nikaias-esports,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1715653265902_INEIonikosNikaiasEsports.png
+108401920350296031,KSC,KIT SC SmartWe,kit-sc-smartwe,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1654082035322_LOLESPORTSICON.png
+108401923588757474,A41G,All for One Gaming,all-for-one-gaming,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1702284945457_a41glogo.png
+108403523079161354,GUA,Guarp Gaming,guarp-gaming,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1654106488556_LOLESPORTSICON.png
+108403525076412007,ORLL,Orgless,rising-dawn-esport,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1654106518873_LOLESPORTSICON.png
+108403526900459473,UNIQ,UniQ Esports,uniq,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1673014736863_UniQLogoWhite1.png
+108448919775963376,LGN,Login Esports,login-esports,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1654799190185_1_Fb_Instagram_Pinterest_profile_pic-LeonardoCosta.png
+108448995754333242,WBD,webidoo Gaming,webidoo-gaming,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1654800349371_webidoo_gaming-03-NicolaGaglianoMedium.png
+108449790840493290,IKQ,IKISEQ,ikiseq,,,,unaffiliated,archived,4,http://static.lolesports.com/teams/1654812481405_noteamlogo-lolesports.png
+108449792884304363,CRX,Corax,corax,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1654812512693_noteamlogo-lolesports.png
+108565997404381643,TPG,Tempest Gaming,tempest-gaming,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1656585648124_K1NKucy.png
+108566004579728490,LRG,LARGE,large,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1656585757704_4LLHTKt.png
+108696103340295905,1235,KONEeee,kone,,,,unaffiliated,archived,1,http://static.lolesports.com/teams/1658570910291_nologo-team-valorant.png
+108877578925874443,QLS,QLASH,qlash,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1705525427278_logoQlashbianco.png
+108901102112066596,ARK,ArkAngel,arkangel,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661698940339_ArkAngellogo_square.webp
+108901108857574270,TATX,Team Anything,team-anything,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661699046984_Team_Anythinglogo_square.webp
+108901117887406731,BGE,Bigetron E-Sports,bigetron-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661699184451_Bigetron_E-Sportslogo_square.webp
+108901132092574910,APRJ,Armored Project,armored-project,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661709907399_Armored_Projectlogo_square.png
+108901141250184065,AXIE,Axis Empire,axis-empire,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661699540774_Team_Empire_29logo_square.webp
+108901144368028690,XSW,SteelWolves Gaia,steelwolves-gaia,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661699588437_SteelWolves_Gaialogo_square.webp
+108901180665461951,ISR,Insurgent,insurgent,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661700141742_Insurgentlogo_square.webp
+108901185023495213,WINN,WIN Esports,win-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661700208442_WIN_Esportslogo_square.webp
+108901193638640834,DOR,Dream or Reality,dream-or-reality,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661700340296_Dream_or_Realitylogo_square.webp
+108901197080788165,MSE,Midnight Sun Esports,midnight-sun-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661700392936_Midnight_Sun_Esportslogo_square.webp
+108901200561070736,NGUX,Never Give Up,never-give-up,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661700446359_Never_Give_Uplogo_square.webp
+108901206116164243,LGS,Logitech G Snipers,logitech-g-snipers,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661700530515_Logitech_G_Sniperslogo_square.webp
+108901213335260361,AS,Assassin Sniper,assassin-sniper,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661700641024_Assassin_Sniperlogo_square.webp
+108901224352566323,FBL,Fireball,fireball,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661700807972_Fireballlogo_square.webp
+108901230710586570,CGE,Cougar E-Sport,cougar-esport,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661700905665_COUGAR_E-Sportlogo_square.webp
+108901241204100150,WYS,Wayi Spider,wayi-spider,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661701064228_Wayi_Spiderlogo_square.webp
+108901256235633721,XG,XGamers,xgamers,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661701294602_EXtreme_Gamerslogo_square.webp
+108901808401775822,DTN,DeToNator,detonator,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1661709721057_DeToNator_29logo_square.webp
+109198834600243789,KT,toberemoved,kt-rolster-academy,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1666242006305_kt.png
+109365359101282936,BKT,Bangkok Titans,bangkok-titans,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1668782931622_Bangkok_Titanslogo_square.png
+109433282249406036,NATU,nav to be removed,natus-vincere,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1669819367116_Natus_Vincerelogo_square.png
+109461235499082445,VIV,VIV Esport,viv-esport,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1670250037511_Logo512blanc_transparent1.png
+109500887042564775,TDS,Team du Sud,team-du-sud,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1704733612693_TDS.png
+109505831857517235,KOFF,Season 2023 Kickoff,season-2023-kickoff,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1670926370111_Nowyprojekt.png
+109505832873895013,KOFF,Season 2023 Kickoff,season-2023-kickoff,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1670926407651_Nowyprojekt.png
+109516793793852866,AKR,AKROMA,akroma,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1671465878514_Risorsa10a.png
+109517021237048444,KE,Klanik Esport,klanik-esport,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1671466206834_klanik_white.png
+109539675734129088,NLE,Northern Lions Esports,northern-lions-esports,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1671442801708_NorthernLionsEsports1.png
+109539776003058530,AB,Alior Bank Team,alior-bank-team,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1672414472041_TtChFUe.png
+109539873500788632,EXD,EXEED,exeed,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1671445824041_8gXMrAS.png
+109625133369667957,DKB,DKB Diamonds,dkb-diamonds,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1672746775721_DKB.png
+109625314113862010,ED,EPIC DUDES,epic-dudes,,,,unaffiliated,active,11,http://static.lolesports.com/teams/1672749539009_ED.png
+109631317393940774,TMRR,Tomorrow Esports,tomorrow-esportsss,,,,unaffiliated,archived,5,http://static.lolesports.com/teams/1672841139734_LOLESPORTSICON.png
+109631326144414089,19,19 Esports,19-esports,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1676650219088_19-Esports-1.png
+109631610813971977,MZS,Mezexis Esports,mezexis-esports,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1676652274797_MEZEXIS-B.png
+109631614501223948,WLE,War Legion Esports,war-legion-esports,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1676652310209_WAR-LEGION-B.png
+109659605433134424,DCT,Domino Computer,domino-computer,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1673272782034_LOLESPORTSICON.png
+109659607628197211,LTG,Lotus Gaming,lotus-gaming,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1673272815751_LOLESPORTSICON.png
+109659653201120243,ELE,Elementalist,elementalist,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1673273510741_LOLESPORTSICON.png
+109659655426775224,AH2,AH2,ak2,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1673273544967_LOLESPORTSICON.png
+109669701792576313,LUD,Levante UD,levante-ud,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1673426845642_LOLESPORTSICON.png
+109669720938106428,XOL,Xoldiers,lex,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1685613645958_image12.png
+109669758384788335,ZEST,Zest,zest,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1673427709072_63a17c9b83525632894802.png
+109669789077876164,RBT,Ramboot Club,ramboot,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1673428176599_63bc3159a0c7e407353311.png
+109671193729027761,FLYF,FLY FAM,fly-fam,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1673449598399_2021_FQ_logo-Green_Icon1.png
+109672446077514083,TKM,The Kings Moon,the-kings-moon,,,,unaffiliated,archived,10,http://static.lolesports.com/teams/1673468704806_The_Kingslogo_square.webp
+109672618694070633,AET,Aethernum Esports,aethernum-esports,,,,unaffiliated,active,12,http://static.lolesports.com/teams/1673471338495_AETHERNUM-B.png
+109674808371974726,NOB,Newell's Esports,newells-esports,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1673504763556_2000x2000-NEWELLS.png
+109674814051390025,PMT,Primate,primate,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1673504851897_2000x2000-PRIMAT.png
+109676337359108345,EGGC,Eclipse Gaming,eclipse-gaming,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1711011116897_Eclipse-Gaming_White.png
+109698026697016325,BBG,Barcelona BG,barcelona-bg,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1673859047332_BLOOD-GAMINGC.png
+109698030312834058,GNGG,Genbu Gaming,genbu-gaming,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1673859102435_GENBU-B.png
+109698757443650056,MKE,Mad Kings,mad-kings,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1673870201139_MAD-KINGS-B-700X700.png
+109698855806033734,UE,Universitario Esports,universitario-esports,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1678371425024_UNIVERSITARIO-C-700X700.png
+109699038581250169,RDY,Red Eyes Esports,red-eyes-esports,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1673874483065_RED-BLANCO.png
+109699042809864069,VIPS,Vipers,vipers,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1673874548541_VIPERS-B-700X700.png
+109704625422425316,BLXX,Benelux United,benelux-united,,,,unaffiliated,archived,6,http://static.lolesports.com/teams/1674282750487_BeneluxUnitedV2.png
+109704890728013158,DKE,DOOMED KINGS,doomed-kings,,,,unaffiliated,archived,8,http://static.lolesports.com/teams/1673963786490_LOLESPORTSICON.png
+109704954158795780,IN5,Team Insidious,team-insidious,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1715653079704_INSTeamInsidious12.png
+109709696183651863,NRC,NARCIS,narcis,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1674037108336_LOLESPORTSICON.png
+109709699891831060,FLY5,Fly5,fly5,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1674037164724_LOLESPORTSICON.png
+109710933813972992,SEC,Senshi Esports Club,senshi-esports-club,,,,unaffiliated,active,11,http://static.lolesports.com/teams/1705720730249_SEC_new_logo24.png
+109711125979505604,SGL,Spicy Gorillas Esports,spicy-gorillas-esports,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1674058930922_LOLESPORTSICON.png
+109711158608667512,PTH,PANTHERS Esports Club,panthers-esports-club,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1674059428797_LOLESPORTSICON.png
+109749282155661504,APO,Apocalypse eSports,apocalypse-esports,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1674647372880_logobianco1-apocalypseesports.png
+109749376267590495,AFN,Away From Normal,away-from-normal,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1674646709785_IMG_20221124_123505_510-Damiano1.png
+109749417497882686,DLTL,DELTALAND,deltaland,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1674647261879_logorosso_trasparente-Marcello.png
+109749493607708438,NM3,ENEMI3S,enemi3s,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1685606200715_PNGLOGOWHITE-SergioFederico.png
+109749613387843867,YTR,Yutoru,yutoru,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1674646203541_LogoYutoru-DarioRizzo.jpeg
+109776954991078721,CHIL,Chilli Esports,chilli-esports,,,,unaffiliated,archived,3,http://static.lolesports.com/teams/1675063396524_Chilli_color.png
+109782787975510889,N8V,Native Gaming,native-gaming,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1675235281254_NativeGaming-Light.png
+109782867012820172,HZG,Horizon Gaming,horizon-gaming,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1675235558142_HorizonGaming.png
+109783023470714128,TONY,Team Tony Top,douyin-tony-top,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1681281613157_TTTLogo1.png
+109783124183318312,UST,University of St. Trevor,university-of-st-trevor,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1675157533662_UniversityofStTrevor.jpg
+109783130654973406,GODL,Godel Gamers,godel-gamers,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1675157632677_GodelGamers.png
+109783136441695429,MRGE,Mirage,mirage,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1675414539915_Mirage-White.png
+109783149221216052,LIT,LiT Esports,lit-esports,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1675157915608_LiTEsports.png
+109783160511364305,CB,CB Gaming,cb-gaming,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1675235588922_CBGaming.png
+109783164711873455,ZENI,Zenigma,zenigma,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1675158152899_Zenigma.png
+109981644490281844,ROCK,Rock Bottom Esports,rock-bottom-esports,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1678194151963_RockBottomEsports.png
+109981650516317055,MA,Mirage Alliance,mirage-alliance,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1706471003432_MirageAlliance.png
+109981655738221109,CATT,Team Plink,team-plink,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1678194248387_TeamPlink.png
+109981678167856017,MRC,Miracle,miracle,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1678194293160_Miracle.png
+110378432506262947,MHSC,MHSC Esport,mhsc-esport,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1684241216728_LOLESPORTSICON.png
+110412516591868840,ENS,E-nsane Gaming,ensane-gaming,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1704376854804_E-nsaneGaminglogo1.png
+110444835830185823,STU,ESTUBA,estuba,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1685254449174_LOLESPORTSICON.png
+110490520396763771,F0X,Fox E-Sports,fox-esports,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1685951547414_angry-1294363_960_720-Marmottino.png
+110490523275799270,NOVO,NOVO Esports,novo-esports,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1705526308584_LogoNovoesportsbianco1.png
+110494661652994183,UNIT,Team UNiTY,team-unity,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1705411358898_HM_UNIT.png
+110524984501592318,GGF,GGF Esports,ggf-esports,,,,unaffiliated,active,10,http://static.lolesports.com/teams/1686477426041_ggfwhitetrasparent-GGFTWITCH.png
+110534700622694005,APR,Aporia,aporia,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1686625674103_Aporia.png
+110534714934488523,CBG,CB Gaming,cb-gaming,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1686625892099_CBGaming.png
+110534724851488577,FROG,Froggy Five,froggy-five,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1686626042666_FroggyFive.png
+110534728305628996,OLD,Kelyx's Grandpa Gamers,kelyxs-grandpa-gamers,,,,unaffiliated,active,10,http://static.lolesports.com/teams/1686626096392_KelyxsGrandpaGamers.png
+110534732558665825,KMD,Komodo,komodo,,,,unaffiliated,active,13,http://static.lolesports.com/teams/1686626161172_Komodo.png
+110534741480867943,TRV,Teamless Revenge,teamless-revenge,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1686708812691_TeamlessRevenge.png
+110534749775658790,NPC1,The Cheese Chasers,the-cheese-chasers,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1686708852706_TheCheeseChasers.png
+110534751905120040,YB,Young Buffalos,young-buffalos,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1686626457004_YoungBuffalos.png
+110733864366329081,TET,Team E Turner,team-e-turner,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1689664807064_TeamETurner.png
+110733870612047344,CFY,Team Coachify,team-coachify,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1689664767106_TeamCoachify.png
+110733877357854829,GHG,Gentle Hearts Gaming,gentle-hearts-gaming,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1689664866295_GentleHeartsGaming.png
+110733881542862348,COLD,Cold Hearted,cold-hearted,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1689664933618_ColdHearted.png
+110733889090164854,ROTM,Return of the Middlesticks,return-of-the-middlesticks,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1689665047701_ReturnoftheMiddlesticks1.png
+111658336490177499,PTY,Principality,principality,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1703771002929_620a801ed7160238175408.png
+111658363397548445,DNG,Dango,dango,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1703771413016_658d74785d25b041238551.png
+111658367669709230,O2K,Oxygen Kumiho,oxygen-kumiho,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1703771478550_658434edb717c844234367.png
+111658373143793352,STB,Stormbringers,stormbringers,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1703771562156_658436042bf62714825035.png
+111658381485148909,HC,Heracles Gaming,heracles-gaming,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1703771689564_658435c2a0dba267672944.png
+111658384838823659,ECP,Ecorp,ecorp,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1703771740684_6584359cdbf78514208890.png
+111691861566232979,PMK,Packmicko,packmicko,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1704282552913_Packimickologo.png
+111691981466507697,MSV,Maestro V Esports,maestro-v-esports,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1704284380934_maestrologo.png
+111692126920592720,ECOO,eSports Cologne,esports-cologne,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1704286602836_ECO_Icon_Red.png
+111698034734473132,R3V,R3VOLT,r3volt,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1704376748233_RevoltLogo.png
+111698046551007151,YL,Yalla Esports,yalla-esports,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1704376927512_Yalla1.png
+111698050950642051,AVA,Pixel Penny,avatrade-pixel-penny,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1704376995033_AvaTradePixelPenny.png
+111698057333193094,VIP,EESTI RASTIKUD,eesti-rastikud,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1704377092998_Eesti_R3Fstikudlogo_square.png
+111719673745318281,SNZ,SNOOZE esports,snooze-esports,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1705325554891_LogoIconWhite.png
+111721015213895592,SRGA,Silent Revolution Gaming,silent-revolution-gaming,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1715653556864_SRGSilentRevolutionGaming.png
+111721017301215799,QSY,QMistry,qmistry,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1704727428350_LOLESPORTSICON.png
+111721019635675051,ERA,New ERA,new-era,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1704727463910_LOLESPORTSICON.png
+111721027050287022,S7N,Sins Esports,sins,,,,unaffiliated,active,8,http://static.lolesports.com/teams/1715653500926_S7NSINS.png
+111721727942484792,UGT,Ukrainian Glory Team,ukrainian-glory-team,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1704738275223_UGL_light.png
+111726972624713134,ZER,Zerance,zerance,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1704818329452_ZerLogo.png
+111730709791259784,MVX,Maverix,maverix,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1704875328563_LOLESPORTSICON.png
+111730714429832331,TML,Team Meliora,team-meliora,,,,unaffiliated,active,3,http://static.lolesports.com/teams/1737532149665_TML_Black.png
+111730716342828174,DSYN,Delta Syndicate,delta-syndicate,,,,unaffiliated,active,10,http://static.lolesports.com/teams/1739089825741_DS_Color.png
+111730719815331642,H3RT,H3ARTS,h3arts,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1704875481614_LOLESPORTSICON.png
+111730722796353567,RVT,Revital Blacktrains,revital-blacktrains,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1704875527472_LOLESPORTSICON.png
+111742030469743549,SAW,SAW,saw,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1705048069253_SAW_Icon_White.png
+112131640223349368,IDV,Pirate IDV,pirate-idv,,,,unaffiliated,active,4,http://static.lolesports.com/teams/1710993037436_PD_white.png
+112437044212590639,PAI,Paranormal Invaders,paranormal-invaders,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1715653135125_PAINParanormalInvaders.png
+112437048437410558,R5,Rookies5,lucy,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1727246213389_LOLESPORTSICON.png
+112437054356359940,G4,Gamers404,gamers404,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1715653290354_G4Gamers404.png
+112440363579839068,IMPT,IMProve Team,improve-team,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1715703781717_JIZrLj9.png
+112444709995780783,O2G,Oxygen Gaming,oxygen-gaming,,,,unaffiliated,active,9,http://static.lolesports.com/teams/1715770098699_662b826a96958132948176.png
+112444714469595828,VVV,Veni Vidi Vici,vinividivinci,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1736500243640_677fd12b34f73704474019.png
+112489369404743617,IDL,IDL Esports,idl-esports,,,,unaffiliated,active,6,http://static.lolesports.com/teams/1716451549109_ILHA-DAS-LENDAS-ESPORTS-BRANCO.png
+112489380005535618,TRZ,Tropa Raizen,tropa-raizen,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1716451713850_CopyofLogocoloridaTRZ.PNG
+112512226843541474,BALL,Juicy Ballers,juicy-ballers,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1716800328186_undefined-Imgur.png
+112512571773617134,PRK,Parakeet Gaming,parakeet-gaming,,,,unaffiliated,archived,0,http://static.lolesports.com/teams/1716805588189_HM_PRK.png
+112528900868788946,DSTL,Dragonsteel,dragonsteel,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1717054755988_DS_RGB_Stacked_RedMark.png
+112551389497449257,FXS,Fear x Starforge,fear-x-starforge,,,,unaffiliated,active,2,http://static.lolesports.com/teams/1717397900441_Main_Logo_Full-Color.png
+115218777319048503,SVO,Saving OCE,saving-oce,,,,unaffiliated,active,5,http://static.lolesports.com/teams/1758702009987_PnR_SVO_Full_B.png
+115218778929402335,IE,Inferno Esports,inferno-esports,,,,unaffiliated,active,7,http://static.lolesports.com/teams/1758702382053_PnR_IE_Full_B.png
+115535915753640195,GODB,GODALIONS BLOSSOM GC,godalions-blossom-gc,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1762938194470_LOLESPORTSICON.png
+115535917962738126,BMH,Bienen mit Humor,bienen-mit-humor,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1762938232221_LOLESPORTSICON.png
+115535919095462352,GWNG,Gwen.G,gweng,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1762938249397_LOLESPORTSICON.png
+115535923537682496,AUR,Aurora Esports,aurora-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1762938317095_LOLESPORTSICON.png
+115535926346223877,MR,Mental Rush,mental-rush,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1762938359873_LOLESPORTSICON.png
+115535927517093969,ZERB,Zerance Bloom,zerance-bloom,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1762938377793_LOLESPORTSICON.png
+115535929615814920,SLYA,Solary Académie,solary-acadmie,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1762938409870_LOLESPORTSICON.png
+115535933333479510,AOE,Almeno GC,almeno-gc,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1762938466258_LOLESPORTSICON.png
+115535938392144342,ETR,Eterna,eterna,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1762938543675_LOLESPORTSICON.png
+115535987729021474,G2H,G2 Hel,g2-hel,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1762939291464_LOLESPORTSICON.png
+115547304639666149,SKA,SK Avarosa,sk-avarosa,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1763111976613_LOLESPORTSICON.png
+115547311706019815,92I,92I esport,92i-esport,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1763112088160_LOLESPORTSICON.png
+115547315425300939,GHSS,Game'Her Souls,gameher-souls,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1763112145072_LOLESPORTSICON.png
+115547326752589648,NYX,Neptunia Nyx,neptunia-nyx,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1763112318238_LOLESPORTSICON.png
+115547339243541980,BRE,Breasts Esport,breasts-esport,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1763112504890_LOLESPORTSICON.png
+115547342891045348,FEM,Femmes Fantasticas,femmes-fantasticas,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1763112564143_LOLESPORTSICON.png
+115547344460862944,L3,Lycoris 3,lycoris-3,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1763112587714_LOLESPORTSICON.png
+115745375839238567,ELS,Lausanne Esports,lausanne-esports,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1766134280083_LausanneEsports.png
+98767991902391669,FWS,Flash Wolves,flash-wolves,,,,unaffiliated,archived,5,https://lolstatic-a.akamaihd.net/esports-assets/production/team/flash-wolves-esb6k29j.png
+98767991959203254,ONEE,Team oNe e-Sports,team-one-e-sports,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-one-e-sports-a9i4akkk.png
+98767991963909522,YG,Young Generation,young-generation,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/young-generation-5nnaqdcs.png
+98926509893248042,EUN,eUnited,eunited,,,,unaffiliated,archived,3,https://lolstatic-a.akamaihd.net/esports-assets/production/team/eunited-bqjs59ch.png
+98926509894333434,GCU,Gold Coin United,gold-coin-united,,,,unaffiliated,archived,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/gold-coin-united-iwq6t55n.png
+98966373167983673,EWP,Esports Watch Platform,watch-platform,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-solomid-cg2byxoe.png
+98966373171152718,ESPM,Esports Mobile,esports-mobile,,,,unaffiliated,archived,1,https://lolstatic-a.akamaihd.net/esports-assets/production/team/cloud9-gnd9b0gn.png
+99101098231517640,IFL,Team Infernal Drake,team-infernal-drake,,,,unaffiliated,archived,3,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-infernal-drake-60egs7mn.png
+99101098235663845,MTN,Team Mountain Drake,team-mountain-drake,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-mountain-drake-3x0zlweu.png
+99101098238810996,OCN,Team Ocean Drake,team-ocean-drake,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-ocean-drake-3dq5he.png
+99101098241729932,CLD,Team Cloud Drake,team-cloud-drake,,,,unaffiliated,archived,5,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-cloud-drake-7gq2fyxx.png
+99124844353216570,LCK,LCK All-Stars,lck-allstars,,,,unaffiliated,active,14,http://static.lolesports.com/teams/LCK.png
+99124844354766222,PCS1,PCS All-Stars,pcs-all-stars,,,,unaffiliated,active,5,http://static.lolesports.com/teams/PCS-01-FullonDark.png
+99124844355850858,LCSS,LCS All-Stars,lcs-all-stars,,,,unaffiliated,active,9,http://static.lolesports.com/teams/lcs-light.png
+99124844356912967,LPL,LPL All-Stars,lpl-allstars,,,,unaffiliated,active,15,http://static.lolesports.com/teams/LPL-01-FullonDark.png
+99124844358677975,LEC,LEC All-Stars,eu-lcs-allstars,,,,unaffiliated,active,10,http://static.lolesports.com/teams/LEC-01-FullonDark.png
+99124844360136487,SEA,Southeast Asia All-Stars,all-stars-sea,,,,unaffiliated,active,4,https://lolstatic-a.akamaihd.net/esports-assets/production/team/all-stars-sea-5wz0pf32.png
+99124844361058275,BR,CBLOL All-Stars,all-stars-cblol,,,,unaffiliated,active,5,http://static.lolesports.com/teams/cblol-1.png
+99124844362174905,TCL,TCL All-Stars,all-stars-tur,,,,unaffiliated,active,5,http://static.lolesports.com/teams/tcl-white.png
+99566405685700956,OHM,OYUNH?ZMETLER? E-SPOR KULÜBÜ,oyunhizmetleri-e-spor-kulubu,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/oyunhizmetleri-e-spor-kulubu-bq8nsyn0.png
+99566405686518376,CLKK,Çilekler,cilekler,,,,unaffiliated,active,4,https://lolstatic-a.akamaihd.net/esports-assets/production/team/cilekler-f238u6mx.png
+99566405687354702,P3P,P3P eSports,p3p-esports,,,,unaffiliated,archived,4,https://lolstatic-a.akamaihd.net/esports-assets/production/team/p3p-esports-iljw943r.png
+99566405688922507,CAPI,Team Cappadocia,team-cappadocia,,,,unaffiliated,archived,3,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-cappadocia-14nv1svx.png
+99566405689737643,MCM,Macro Maniacs Esports Club,macro-maniacs-esports-club,,,,unaffiliated,archived,4,https://lolstatic-a.akamaihd.net/esports-assets/production/team/macro-maniacs-esports-club-hsb5be79.png
+99566405940157300,EWS,Elite Wolves,elite-wolves,,,,unaffiliated,archived,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/elite-wolves-9tl45mxg.png
+99566405941035284,FGO,Fuego,fuego-old,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/fuego-grwi7sx4.png
+99566405942747662,OE,Ordo Equitum,ordo-equitum,,,,unaffiliated,archived,8,https://lolstatic-a.akamaihd.net/esports-assets/production/team/ordo-equitum-8bbcrnn4.png
+99566405943935018,PEX,PEX Team,pex-team,,,,unaffiliated,archived,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/pex-team-dfjlr40n.png
+99566406332122275,AV,Avant Gaming,avant-garde,,,,unaffiliated,active,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/avant-garde-7gkwxw1y.png
+99566406335427532,SINX,Sin Gaming,sin-gaming,,,,unaffiliated,archived,3,https://lolstatic-a.akamaihd.net/esports-assets/production/team/sin-gaming-bexu3lca.png
+99566406336293850,BMR,Bombers,bombers,,,,unaffiliated,archived,4,https://lolstatic-a.akamaihd.net/esports-assets/production/team/bombers-arf62z7w.png
+99566406337433739,TTC,Tectonic,tectonic,,,,unaffiliated,archived,4,https://lolstatic-a.akamaihd.net/esports-assets/production/team/tectonic-2c1ac1mi.png
+99566406494784730,MADD,MAD Team,mad-team,,,,unaffiliated,archived,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/mad-team-94v76ik7.png
+99566406495581481,GRX,G-Rex,g-rex,,,,unaffiliated,archived,8,https://lolstatic-a.akamaihd.net/esports-assets/production/team/g-rex-2m6hxphx.png
+99566406496467116,AFR,Team Afro,team-afro,,,,unaffiliated,archived,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/team-afro-hxe48f2a.png
+99566408356697119,FG,Furious Gaming,furious-gaming,,,,unaffiliated,active,0,http://static.lolesports.com/teams/1643036760739_furious-ColorLight.png
+99566408357507320,RBXX,Rebirth eSports,rebirth-esports,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/rebirth-esports-f51t9iiy.png
+99566408360270013,HAF,Hafnet E-Sports,hafnet-e-sports,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/hafnet-e-sports-g118cqk9.png
+99566408361184145,DH,Dark Horse,dark-horse,,,,unaffiliated,archived,7,https://lolstatic-a.akamaihd.net/esports-assets/production/team/dark-horse-1zqjlh43.png
+99566408361971893,LGT,Legatum,legatum,,,,unaffiliated,archived,7,https://lolstatic-a.akamaihd.net/esports-assets/production/team/legatum-1ij9p8fc.png
+99566408362840964,UC,Universidad Católica Esports,universidad-catolica-esports,,,,unaffiliated,archived,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/universidad-catolica-esports-581nwijb.png
+99566408559973077,GG,Gaming Gaming,galactic-gaming,,,,unaffiliated,archived,4,https://lolstatic-a.akamaihd.net/esports-assets/production/team/galactic-gaming-ehdtgq6c.png
+99566408560779438,D9,Dash9 Gaming,dash9-gaming,,,,unaffiliated,archived,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/dash9-gaming-ahp39dmc.png
+99566408563253864,ZTG,Zaga Talent Gaming,zaga-talent-gaming,,,,unaffiliated,archived,6,https://lolstatic-a.akamaihd.net/esports-assets/production/team/zaga-talent-gaming-4f3qdy0g.png
+99566408564026255,6SN,6Sense,6sense,,,,unaffiliated,archived,7,https://lolstatic-a.akamaihd.net/esports-assets/production/team/6sense-cvt9oihi.png
+99842624900371653,AFB,Afro Beast,afro-beast,,,,unaffiliated,archived,7,https://lolstatic-a.akamaihd.net/esports-assets/production/team/afro-beast-hu3tjk5k.png
+99875464344041493,CA,Coscu Army,coscu-army,,,,unaffiliated,archived,5,https://lolstatic-a.akamaihd.net/esports-assets/production/team/coscu-army-akkbqfp.png
+99875464344729125,MK,Mad Kings,mad-kings,,,,unaffiliated,archived,4,https://lolstatic-a.akamaihd.net/esports-assets/production/team/mad-kings-4zxm7ce3.png
+99875464345375304,EVV,Evilvice Esports,evilvice-esports,,,,unaffiliated,archived,0,https://lolstatic-a.akamaihd.net/esports-assets/production/team/evilvice-esports-ipc37xhu.png

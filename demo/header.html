@@ -1,0 +1,41 @@
+  <header class="top">
+    <div class="brand">
+      <svg width="66" height="66" viewBox="0 0 100 100" aria-hidden="true">
+        <defs>
+          <linearGradient id="crackG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#F0E6D2"/>
+            <stop offset="55%" stop-color="#C9A961"/>
+            <stop offset="100%" stop-color="#8A7440"/>
+          </linearGradient>
+          <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="2.6" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <!-- 外菱形 -->
+        <path d="M50 5 L95 50 L50 95 L5 50 Z" fill="none" stroke="#2F6E8C" stroke-width="1.6"/>
+        <!-- 内菱形 -->
+        <path d="M50 22 L78 50 L50 78 L22 50 Z" fill="none" stroke="#1E4A63" stroke-width="1.2"/>
+        <!-- 顶点节点 -->
+        <circle cx="50" cy="5" r="2.4" fill="#4FBEDA"/>
+        <circle cx="95" cy="50" r="2.4" fill="#2F6E8C"/>
+        <circle cx="50" cy="95" r="2.4" fill="#2F6E8C"/>
+        <circle cx="5" cy="50" r="2.4" fill="#2F6E8C"/>
+        <!-- 金色裂缝：把菱形劈开 -->
+        <path d="M50 2 L56 24 L44 40 L55 56 L45 74 L51 98"
+              fill="none" stroke="url(#crackG)" stroke-width="3.4"
+              stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+        <!-- 迸溅的碎片 -->
+        <path d="M30 34 L37 32 L33 41 Z" fill="#C9A961" opacity=".85"/>
+        <path d="M68 44 L75 42 L70 51 Z" fill="#C9A961" opacity=".7"/>
+        <path d="M33 62 L40 60 L36 69 Z" fill="#C9A961" opacity=".6"/>
+      </svg>
+      <div class="title-block">
+        <p class="game-kicker">LOL 人生模拟器</p>
+        <h1 class="game-title">破局者</h1>
+        <p class="game-en">The Breaker</p>
+      </div>
+    </div>
+    <p class="tagline">S12 到 S16，五年。一段有限的职业生涯，去终结那个王朝。</p>
+    <p class="pillars">自建选手 · 世界自运转 · 版本更迭 · 新老换血</p>
+  </header>
