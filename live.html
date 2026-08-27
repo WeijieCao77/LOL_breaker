@@ -1068,7 +1068,7 @@ function summaryCard(){
   if(B.upkeep) extra.push(`每赛段要往家里寄 ${B.upkeep} 万`);   // 这条是负担，必须告知
   return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left">
     <div class="ru-eyebrow" style="text-align:center">你的起点</div>
-    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:16px">${A.a-1} 岁 · ${o.n} · ${B.n}</div>
+    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:16px">${S.age} 岁 · ${o.n} · ${B.n}</div>
     <div class="attrs">${DIMS.map(d=>`
       <div class="at"><div class="lb">${d}</div>
         <div class="track"><div class="fill" style="width:${clamp(attrs[d],0,100)}%"></div>
@@ -1307,7 +1307,7 @@ function runStreamCup(){
 /* 职业前的时间节点：都有明确门槛和倒计时 */
 const PRE_MILESTONES=[
   {w:8, name:"城市争霸赛", tag:"赛事", open:true, signup:"city", fee:35, prize:[0,25,70,180,420],
-   need:()=>S.pre.rank>=RANKS[2].at, needTxt:"钻石及以上",
+   need:()=>S.pre.rank>=RANKS[3].at, needTxt:"大师及以上",
    cur:()=>rankFull(S.pre.rank),
    desc:"市级公开赛，报名要大师。职业队球探常来看台",
    run:()=>runCityCup(),
