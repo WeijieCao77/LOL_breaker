@@ -39,16 +39,40 @@ function actListText(list){
 }
 
 /* 执行一串行动，直到行动点用完或列表走完。
-   已经撞瓶颈的训练会自动跳过——不浪费点数。 */
-function runActs(list){
+   已经撞瓶颈的训练会自动跳过——不浪费点数。
+
+   中途会有事打断：际遇、更衣室谈话、报名、上分。
+   打断的位置必须记下来。否则处理完弹窗再点一次「执行计划」，
+   会从第一项重新跑一遍——排位打两次、休息被跳过、疲劳莫名其妙地高。 */
+function weekKey(){
+  return S.step === "pre" ? "pre" + (S.pre ? S.pre.week : 0)
+                          : "s" + S.si + "w" + S.week;
+}
+/* 本周还有没有没跑完的计划？（换周之后自动失效） */
+function pendingActs(){
+  const e = S.exec;
+  if(!e || e.wk !== weekKey() || !e.list) return null;
+  return (e.list.length - e.i) > 0 ? e : null;
+}
+function runActs(list, fromCursor){
+  if(fromCursor){
+    const e = pendingActs();
+    if(e){ list = e.list; }
+  }
   if(!list || !list.length) return 0;
   let done = 0, guard = 0;
   const inPre = () => S.step === "pre";
   const apNow = () => inPre() ? (S.pre ? S.pre.ap : 0) : S.ap;
-  for(const a of list){
+  let i = (fromCursor && pendingActs()) ? pendingActs().i : 0;
+  for(; i < list.length; i++){
+    const a = list[i];
     if(guard++ > 40) break;
     if(apNow() <= 0) break;
-    if(S.rndEv || S.locker || S.signup || S.rankUp) break;   // 有事发生就停下，交回给玩家
+    // 有事发生就停下，交回给玩家——但记住停在第几项
+    if(S.rndEv || S.locker || S.signup || S.rankUp){
+      S.exec = { wk: weekKey(), list: list.slice(), i: i };
+      return done;
+    }
     const before = apNow();
 
     if(a.k === "train"){
@@ -86,16 +110,20 @@ function runActs(list){
     if(apNow() === before) break;   // 这一步没消耗点数，说明卡住了，别死循环
     done++;
   }
+  S.exec = null;   // 走完了，或者这周点数没了——两种情况都不用再接着走
   return done;
 }
-/* 把当前这周剩下的点数按计划填满 */
+/* 把当前这周剩下的点数按计划填满。
+   有断点就先把断点接上，不要重头再来。 */
 function runPlan(){
+  if(pendingActs()){ runActs(null, true); render(); return; }
   const plan = S.plan && S.plan.length ? S.plan : S.lastWeek;
   if(!plan) return;
   runActs(plan);
   render();
 }
 function repeatLast(){
+  if(pendingActs()){ runActs(null, true); render(); return; }
   if(!S.lastWeek) return;
   runActs(S.lastWeek);
   render();
@@ -115,8 +143,18 @@ function routineBar(){
   const blocked = S.rndEv || S.locker || S.signup || S.rankUp;
   const hasLast = S.lastWeek && S.lastWeek.length;
   const hasPlan = S.plan && S.plan.length;
-  if(!hasLast && !hasPlan && !(S.thisWeek && S.thisWeek.length)) return "";
+  const pend = (typeof pendingActs === "function") ? pendingActs() : null;
+  if(!hasLast && !hasPlan && !pend && !(S.thisWeek && S.thisWeek.length)) return "";
+  // 上次执行被打断了——先把断点摆在最显眼的位置
+  const resume = pend ? `<div class="rt-row rt-resume">
+      <button class="btn sm" id="rtResume" ${(ap <= 0 || blocked) ? "disabled" : ""}>
+        接着执行</button>
+      <span class="rt-txt">还剩 <b>${pend.list.length - pend.i}</b> 项：${
+        actListText(pend.list.slice(pend.i))}</span>
+      <button class="rt-x" id="rtDrop" title="不接了，这周自己安排">放弃</button>
+    </div>` : "";
   return `<div class="routine">
+    ${resume}
     <div class="rt-row">
       <button class="btn ghost sm" id="rtRepeat" ${(!hasLast || ap <= 0 || blocked) ? "disabled" : ""}>
         重复上回合</button>

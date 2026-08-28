@@ -90,8 +90,8 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .tal .nm{width:54px;font-weight:650;flex:none;color:var(--gold-hi)}
 .tal .desc{flex:1;font-size:12.5px;color:var(--ink-3);line-height:1.45}
 .tal .ctl{display:flex;align-items:center;gap:7px;flex:none}
-.tal button{width:29px;height:29px;border:1px solid var(--line);background:var(--panel-2);
-  color:var(--gold);font-size:16px;line-height:1;font-weight:600;
+.tal button{width:38px;height:38px;border:1px solid var(--line);background:var(--panel-2);
+  color:var(--gold);font-size:18px;line-height:1;font-weight:600;
   clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
 .tal button:hover:not(:disabled){border-color:var(--gold);background:rgba(201,169,97,.16)}
 .tal button:disabled{opacity:.28;cursor:not-allowed}
@@ -462,6 +462,27 @@ td .tlogo{margin-right:5px}
   font-size:11px;padding:3px 9px}
 .rt-x:hover{border-color:var(--gold);color:var(--gold)}
 .rt-note{font-size:11.5px;color:var(--gold)}
+/* 计划被打断后的续跑行——比其他两行显眼一点 */
+.rt-resume{padding:7px 9px;border:1px solid rgba(201,169,97,.42);
+  background:rgba(201,169,97,.09)}
+.rt-resume .rt-txt{color:var(--ink-1)}
+
+/* ---- 存档 ---- */
+.savebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin:18px 0 4px;padding:9px 12px;border:1px solid var(--line);
+  background:var(--panel-2);opacity:.72}
+.savebar:hover{opacity:1}
+.sb-t{font-size:11.5px;color:var(--ink-3);margin-right:auto;
+  font-family:"IBM Plex Mono",monospace}
+.savecont{border-color:rgba(201,169,97,.5)}
+.savecont h3{color:var(--gold-hi);font-size:15px;margin:2px 0 12px}
+.savebad{border-color:rgba(190,90,80,.5)}
+
+@media (max-width:640px){
+  .tal button{width:44px;height:44px;font-size:20px}
+  .tal .n{width:30px}
+  .savebar{opacity:1}
+}
 
 /* ---- 事件结果 ---- */
 .evres{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:16px 0 4px}

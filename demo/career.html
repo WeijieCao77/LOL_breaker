@@ -94,8 +94,8 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .tal .nm{width:54px;font-weight:650;flex:none;color:var(--gold-hi)}
 .tal .desc{flex:1;font-size:12.5px;color:var(--ink-3);line-height:1.45}
 .tal .ctl{display:flex;align-items:center;gap:7px;flex:none}
-.tal button{width:29px;height:29px;border:1px solid var(--line);background:var(--panel-2);
-  color:var(--gold);font-size:16px;line-height:1;font-weight:600;
+.tal button{width:38px;height:38px;border:1px solid var(--line);background:var(--panel-2);
+  color:var(--gold);font-size:18px;line-height:1;font-weight:600;
   clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
 .tal button:hover:not(:disabled){border-color:var(--gold);background:rgba(201,169,97,.16)}
 .tal button:disabled{opacity:.28;cursor:not-allowed}
@@ -466,6 +466,27 @@ td .tlogo{margin-right:5px}
   font-size:11px;padding:3px 9px}
 .rt-x:hover{border-color:var(--gold);color:var(--gold)}
 .rt-note{font-size:11.5px;color:var(--gold)}
+/* 计划被打断后的续跑行——比其他两行显眼一点 */
+.rt-resume{padding:7px 9px;border:1px solid rgba(201,169,97,.42);
+  background:rgba(201,169,97,.09)}
+.rt-resume .rt-txt{color:var(--ink-1)}
+
+/* ---- 存档 ---- */
+.savebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin:18px 0 4px;padding:9px 12px;border:1px solid var(--line);
+  background:var(--panel-2);opacity:.72}
+.savebar:hover{opacity:1}
+.sb-t{font-size:11.5px;color:var(--ink-3);margin-right:auto;
+  font-family:"IBM Plex Mono",monospace}
+.savecont{border-color:rgba(201,169,97,.5)}
+.savecont h3{color:var(--gold-hi);font-size:15px;margin:2px 0 12px}
+.savebad{border-color:rgba(190,90,80,.5)}
+
+@media (max-width:640px){
+  .tal button{width:44px;height:44px;font-size:20px}
+  .tal .n{width:30px}
+  .savebar{opacity:1}
+}
 
 /* ---- 事件结果 ---- */
 .evres{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:16px 0 4px}
@@ -1073,7 +1094,9 @@ function summaryCard(){
   if(B.upkeep) extra.push(`每赛段要往家里寄 ${B.upkeep} 万`);   // 这条是负担，必须告知
   return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left">
     <div class="ru-eyebrow" style="text-align:center">你的起点</div>
-    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:16px">${A.a-1} 岁 · ${o.n} · ${B.n}</div>
+    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:4px">${A.a-1} 岁 · ${o.n} · ${B.n}</div>
+    <p class="note" style="text-align:center;margin:0 0 16px">
+      你选的是 <b>${A.n}出道</b>——职业前这一年你 ${A.a-1} 岁，签约之后才满 ${A.a} 岁。</p>
     <div class="attrs">${DIMS.map(d=>`
       <div class="at"><div class="lb">${d}</div>
         <div class="track"><div class="fill" style="width:${clamp(attrs[d],0,100)}%"></div>
@@ -1090,16 +1113,16 @@ function summaryCard(){
 }
 function viewCreate(){
   if(S.showStart) return summaryCard();
-  if(S.showStart) return startCard();
+  const cont=(typeof continueCard==="function")?continueCard():"";
   const left=talentLeft();
   const t=DIMS.map(d=>S.talent[d]); const m=avg(t);
   const sd=Math.sqrt(avg(t.map(x=>(x-m)**2)));
   const ad=clamp(52-(sd-1.8)*7.5,18,96);
-  return `
+  return `${cont}
   <div class="card">
     <h2>第一步 · 选手身份</h2>
     <h3>你的 ID<span class="tag">比赛服上的名字</span></h3>
-    <input type="text" id="nm" value="${S.name}" placeholder="例如 Uzi、TheShy" maxlength="12">
+    <input type="text" id="nm" value="${escapeHtml(S.name)}" placeholder="例如 Uzi、TheShy" maxlength="12">
     <h3 style="margin-top:20px">位置</h3>
     <div class="grid g5">${POS.map(p=>`<button class="opt ${S.pos===p.k?'on':''}" data-pos="${p.k}">
       <div class="t">${p.n}</div></button>`).join("")}</div>
@@ -1273,49 +1296,17 @@ function preAct(k,dim){
   P.ap--; render();
 }
 
-/* 业余赛：随段位生成对手强度 */
-function amateurRun(name,rounds,base){
-  let win=0,lines=[];
-  const me=S.attrs.操作*0.42+S.attrs.运营*0.28+S.attrs.心态*0.18+S.attrs.体质*0.12
-           +(S.attrs.指挥-50)*0.12;
-  for(let i=0;i<rounds;i++){
-    const opp=base+i*3.2+rnd()*5;
-    const p=1/(1+Math.exp(-(me-opp)/5.5));
-    const w=rnd()<p; if(w)win++;
-    lines.push(`${name} 第 ${i+1} 轮 ${w?'<span class="w">胜</span>':'<span class="l">负</span>'}（对手强度 ${opp.toFixed(0)}）`);
-    if(!w) break;
-  }
-  return {win,rounds,lines};
-}
-function runCityCup(){
-  const r=amateurRun("城市争霸赛",4,S.attrs.操作*0.5+6);
-  S.pre.cityCup=r.win;
-  addFame(r.win*13);
-  const M=PRE_MILESTONES.find(x=>x.signup==="city");
-  const prize=(M.prize||[])[r.win]||0;
-  if(prize){ S.money+=prize; preLog(`奖金到账 <b>${prize} 万</b>。`,"good"); }
-  checkAch("cup",{kind:"city",win:r.win});
-  preLog(`<b>城市争霸赛</b>：${r.win===4?"一路碾压，拿下冠军。有战队经理在观众席。":r.win>=2?`打到第 ${r.win+1} 轮，被淘汰。但你的数据被记下来了。`:"首轮出局。这条路比想象中难。"}`,r.win>=3?"big":r.win>=2?"good":"bad");
-  r.lines.forEach(l=>preLog(l,"info"));
-}
-function runStreamCup(){
-  const r=amateurRun("主播杯",3,S.attrs.操作*0.46+10);
-  S.pre.streamCup=r.win;
-  addFame(r.win*17);
-  const M=PRE_MILESTONES.find(x=>x.signup==="stream");
-  const prize=(M.prize||[])[r.win]||0;
-  if(prize){ S.money+=prize; preLog(`奖金到账 <b>${prize} 万</b>。`,"good"); }
-  checkAch("cup",{kind:"stream",win:r.win});
-  preLog(`<b>主播杯</b>：${r.win===3?"夺冠。这场直播的切片传遍了全网。":r.win>=1?`赢了 ${r.win} 轮。至少证明了你不是只会打排位。`:"被大主播队打爆，弹幕不太好看。"}`,r.win>=2?"big":r.win>=1?"good":"bad");
-}
+/* 业余赛的老实现（报名即出结果）已经删掉——
+   现在走 cup.js 里的多周赛程：报名建赛程，每轮单独打。
+   留着两套并行的判定，迟早会漂移成两种结果。 */
 
 /* 职业前的时间节点：都有明确门槛和倒计时 */
 const PRE_MILESTONES=[
   {w:8, name:"城市争霸赛", tag:"赛事", open:true, signup:"city", fee:35, prize:[0,25,70,180,420],
    need:()=>S.pre.rank>=RANKS[2].at, needTxt:"钻石及以上",
    cur:()=>rankFull(S.pre.rank),
-   desc:"市级公开赛，报名要大师。职业队球探常来看台",
-   run:()=>runCityCup(),
+   desc:"市级公开赛，报名要钻石。职业队球探常来看台",
+   run:()=>enterCup("city"),
    fail:()=>preLog("城市争霸赛报名截止了——<b>段位不够，你连报名资格都没有</b>。","bad")},
   {w:9, name:"青训教练私信", tag:"人脉", open:false,
    need:()=>preScore()>=34, needTxt:"—",
@@ -1327,7 +1318,7 @@ const PRE_MILESTONES=[
    need:()=>S.fame>=60, needTxt:"邀请制 · 看人气",
    cur:()=>fameTier(),
    desc:"邀请制，名气不够连门都进不去",
-   run:()=>runStreamCup(),
+   run:()=>enterCup("stream"),
    fail:()=>preLog("主播杯是邀请制。<b>你的人气还不够，没收到邀请</b>。","bad")},
   {w:15, name:"球探到场", tag:"人脉", open:false,
    need:()=>preScore()>=62, needTxt:"—",
@@ -1401,6 +1392,7 @@ function advancePreWeek(){
   if(typeof tickBuffs==='function') tickBuffs();
   simWorldPre();
   if(typeof tryRandomEvent==='function'&&rnd()<0.15) tryRandomEvent();   // 频率减半，太密会烦
+  if(typeof saveGame==='function') saveGame('第'+P.week+'周');
   // 提前预告：还有 3 周 / 1 周时提醒，并说清差多少
   PRE_MILESTONES.forEach(m=>{
     const d=m.w-P.week;
@@ -1491,8 +1483,8 @@ function acceptOffer(i){
   S.form=52; S.injury=null; S.listCooldown=0; S.signCooldown=0;
   S.rosterSig=myRoster().map(x=>x.id).sort().join("|");
   // 你自己就是那个「强援」：base 上去了，但五个人要重新磨
-  disruptSynergy(1,`<b>${S.name||"你"}</b> 加盟`);
-  pushEvent(`<b>${S.name||"你"}</b> 正式签约 <b>${of.team}</b>（${of.t}）。职业生涯从这里开始。`,"big","签约");
+  disruptSynergy(1,`<b>${meName()}</b> 加盟`);
+  pushEvent(`<b>${meName()}</b> 正式签约 <b>${of.team}</b>（${of.t}）。职业生涯从这里开始。`,"big","签约");
   checkAch("sign");
   startSeason(true);
 }
@@ -1535,6 +1527,7 @@ function startSeason(first,split){
     S.world[lg].forEach(t=>S.standings[lg][t.name]={w:0,l:0});
   });
   S.week=1; S.ap=apFor('season'); S.record={w:0,l:0}; S.step="season"; S.tab="act";
+  if(typeof saveGame==='function') saveGame('赛季开始');
   if(S.benchedThisSplit){ S.benchedSplits=(S.benchedSplits||0)+1; S.benchedThisSplit=false; }
   if(S.split===0) S.seasonAttr0=Object.assign({},S.attrs);
   S.buff={};                       // 私教/理疗等按赛段生效，每赛段重新买
@@ -1591,17 +1584,45 @@ function doAction(k){
     addFat(((S.buff&&S.buff.physio)?-42:-30)*((S.bg&&S.bg.rest)||1));S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.6);}
   S.ap--;render();
 }
-/* 自动推进本赛季剩余周（回合粒度变粗） */
-function autoRest(focus){
-  let guard=0;
-  while(S.step==="season"&&guard++<200){
+/* 自动推进 —— 推到「下一件需要你拿主意的事」就停。
+
+   原来这里是「自动推完本赛季」：一路 while 到底，中间的际遇、
+   更衣室谈话、突破提示全被无声地压过去。等你回过神，一个赛季没了，
+   而且你根本不知道中间发生过什么——那些本该是你做的选择，
+   被一个按钮替你做了（而且是随机做的）。
+
+   现在它只替你跳过「没得选的周」，一旦有事立刻交回给你。       */
+const AUTO_MAX=6;   // 一次最多推 6 周，按一下丢掉半个赛季是不合理的
+
+/* 需要玩家决定的事——任何一个亮着，自动推进就必须停 */
+function autoStop(){
+  return !!(S.rndEv||S.rndResult||S.locker||S.signup||S.rankUp
+           ||S.cupResult||S.cupMatch||S.confirm);
+}
+function autoRest(focus,weeks){
+  const lim=weeks||AUTO_MAX;
+  const w0=S.week, s0=S.step;
+  let w=0;
+  while(S.step==="season"&&w<lim){
+    if(autoStop()) break;
     while(S.ap>0){
+      if(autoStop()) break;
       const av=DIMS.filter(d=>S.attrs[d]<capOf(d));
       if(S.fatigue>70) doAction("rest");
       else if(av.length) doTrain(av.includes(focus)?focus:av[0]);
       else doAction("stream");
     }
+    if(autoStop()||S.ap>0) break;      // 有事，或者一个点都没推动
     startMatch(); autoMatch();
+    w++;
+    if(typeof saveGame==="function") saveGame("自动推进");
+  }
+  // 说清楚停在哪、为什么停——不然玩家不知道刚才那几周发生了什么
+  if(w>0){
+    const why=autoStop()?"有事情需要你处理。"
+             :S.step!==s0?"赛季阶段变了。"
+             :w>=lim?"到了自动推进的上限（一次最多 6 周）。":"";
+    pushEvent(`自动推进了 <b>${w} 周</b>（第 ${w0}–${S.week>w0?S.week-1:w0} 周），停下了：${why}`,"info","推进");
   }
   render();
 }
@@ -1642,7 +1663,7 @@ function viewSeason(){
     <div class="row">
       <button class="btn" id="play" ${S.ap>0?'disabled':''}>
         ${S.ap>0?`还剩 ${S.ap} 个行动点`:(benched?`替补席观战第 ${S.week} 周 →`:`打第 ${S.week} 周 · vs ${oppName} →`)}</button>
-      <button class="btn ghost sm" id="auto">自动推完本赛季</button>
+      <button class="btn ghost sm" id="auto">自动推进到下一件事</button>
     </div>
     ${benched?`<p class="note" style="color:var(--loss)">你还在替补席。首发是 <b>${S.understudy.id}</b>（综合 ${avg(DIMS.map(d=>S.understudy.r[d])).toFixed(0)}，你 ${avg(DIMS.map(d=>S.attrs[d])).toFixed(0)}）。
       <b>练到压过他，才轮得到你上场。</b></p>`:""}
@@ -1967,6 +1988,7 @@ function nextWeek(){
   if(typeof btkWeekEnd==="function") btkWeekEnd();
   if(typeof tickBuffs==='function') tickBuffs();
   if(typeof tryRandomEvent==='function'&&rnd()<0.14) tryRandomEvent();
+  if(typeof saveGame==='function') saveGame('S'+S.si+' 第'+S.week+'周');
   render();
 }
 function lplRank(){
@@ -2044,7 +2066,9 @@ function endSeason(result,seed){
   S.pendingWorlds=result;
   const pr=S.pendingWorlds; S.pendingWorlds=null;
   if(startIntl("worlds",pr)) return;
-  S.afterIntlGo=null; S.step="offseason"; render();
+  S.afterIntlGo=null; S.step="offseason";
+  if(typeof saveGame==='function') saveGame('休赛期');
+  render();
 }
 
 function viewOffseason(){
@@ -2139,7 +2163,7 @@ function viewEnd(){
       <h2>生涯总结 · S12–S16</h2>
       <div class="big">${e.n}</div>
       <p>${e.d}</p>
-      <p class="note">${S.name||"你"} · ${POSN[S.pos]} · ${S.age} 岁 · 最高 ${rankFull(S.pre?S.pre.rank:0)} · ${fameTier()}</p>
+      <p class="note">${meName()} · ${POSN[S.pos]} · ${S.age} 岁 · 最高 ${rankFull(S.pre?S.pre.rank:0)} · ${fameTier()}</p>
       <div class="row"><button class="btn" id="again">再开一局</button></div>
     </div>${achCard()}`;
   }
@@ -2154,7 +2178,7 @@ function viewEnd(){
     <h2>生涯总结 · S12–S16</h2>
     <div class="big">${e.n}</div>
     <p>${e.d}</p>
-    <p class="note">${S.name||"你"} · ${POSN[S.pos]} · ${S.age} 岁 · 生涯小分 ${S.career.w}−${S.career.l}${
+    <p class="note">${meName()} · ${POSN[S.pos]} · ${S.age} 岁 · 生涯小分 ${S.career.w}−${S.career.l}${
       (S.career.w+S.career.l)<18?'<span class="tag l">出场极少</span>':''} ·
       最佳常规赛排名 第 ${S.career.best===99?"—":S.career.best} 名${S.career.titles.length?` · 冠军 ${S.career.titles.join("、")}`:""}</p>
     <div class="attrs" style="margin-top:16px">${DIMS.map(d=>{
@@ -2305,8 +2329,18 @@ function actPanelPre(){
     <h2>职业前 · 第 ${P.week} 周<em>剩余行动点 ${P.ap}</em></h2>
     <div class="ver">${(()=>{const sc=preScore();
       const near=sc/PRE_INVITE;
+      // 说清楚「还早」是早在哪——两个赛事各自打没打，状态是分开的
+      const cupTxt=(()=>{
+        const c=P.cityCup!==undefined, st=P.streamCup!==undefined;
+        const live=(typeof activeCups==="function")?activeCups().length:0;
+        if(live) return "你正在打的比赛还没出结果，评价要等打完。";
+        if(!c&&!st) return "城市赛和主播杯都还没打，没人会现在就下判断。";
+        if(c&&!st)  return "城市赛打完了，但主播杯还没有——履历只有一半。";
+        if(!c&&st)  return "主播杯打完了，但城市赛那一栏还是空的。";
+        return "两个比赛都打完了，接下来就看转会窗口。";
+      })();
       return P.week<PRE_EARLIEST
-        ? `还太早——城市赛和主播杯都还没打，没人会现在就下判断。`
+        ? `还太早——${cupTxt}`
         : near>=1 ? `<b style="color:var(--cyan)">你已经够格了，试训邀请随时会来。</b>`
         : near>=0.8 ? `<b>就差一点</b>，再稳一稳就有人找你了。`
         : near>=0.55 ? `有人注意到你了，但还不足以让俱乐部下决心。`
@@ -4643,16 +4677,40 @@ function actListText(list){
 }
 
 /* 执行一串行动，直到行动点用完或列表走完。
-   已经撞瓶颈的训练会自动跳过——不浪费点数。 */
-function runActs(list){
+   已经撞瓶颈的训练会自动跳过——不浪费点数。
+
+   中途会有事打断：际遇、更衣室谈话、报名、上分。
+   打断的位置必须记下来。否则处理完弹窗再点一次「执行计划」，
+   会从第一项重新跑一遍——排位打两次、休息被跳过、疲劳莫名其妙地高。 */
+function weekKey(){
+  return S.step === "pre" ? "pre" + (S.pre ? S.pre.week : 0)
+                          : "s" + S.si + "w" + S.week;
+}
+/* 本周还有没有没跑完的计划？（换周之后自动失效） */
+function pendingActs(){
+  const e = S.exec;
+  if(!e || e.wk !== weekKey() || !e.list) return null;
+  return (e.list.length - e.i) > 0 ? e : null;
+}
+function runActs(list, fromCursor){
+  if(fromCursor){
+    const e = pendingActs();
+    if(e){ list = e.list; }
+  }
   if(!list || !list.length) return 0;
   let done = 0, guard = 0;
   const inPre = () => S.step === "pre";
   const apNow = () => inPre() ? (S.pre ? S.pre.ap : 0) : S.ap;
-  for(const a of list){
+  let i = (fromCursor && pendingActs()) ? pendingActs().i : 0;
+  for(; i < list.length; i++){
+    const a = list[i];
     if(guard++ > 40) break;
     if(apNow() <= 0) break;
-    if(S.rndEv || S.locker || S.signup || S.rankUp) break;   // 有事发生就停下，交回给玩家
+    // 有事发生就停下，交回给玩家——但记住停在第几项
+    if(S.rndEv || S.locker || S.signup || S.rankUp){
+      S.exec = { wk: weekKey(), list: list.slice(), i: i };
+      return done;
+    }
     const before = apNow();
 
     if(a.k === "train"){
@@ -4690,16 +4748,20 @@ function runActs(list){
     if(apNow() === before) break;   // 这一步没消耗点数，说明卡住了，别死循环
     done++;
   }
+  S.exec = null;   // 走完了，或者这周点数没了——两种情况都不用再接着走
   return done;
 }
-/* 把当前这周剩下的点数按计划填满 */
+/* 把当前这周剩下的点数按计划填满。
+   有断点就先把断点接上，不要重头再来。 */
 function runPlan(){
+  if(pendingActs()){ runActs(null, true); render(); return; }
   const plan = S.plan && S.plan.length ? S.plan : S.lastWeek;
   if(!plan) return;
   runActs(plan);
   render();
 }
 function repeatLast(){
+  if(pendingActs()){ runActs(null, true); render(); return; }
   if(!S.lastWeek) return;
   runActs(S.lastWeek);
   render();
@@ -4719,8 +4781,18 @@ function routineBar(){
   const blocked = S.rndEv || S.locker || S.signup || S.rankUp;
   const hasLast = S.lastWeek && S.lastWeek.length;
   const hasPlan = S.plan && S.plan.length;
-  if(!hasLast && !hasPlan && !(S.thisWeek && S.thisWeek.length)) return "";
+  const pend = (typeof pendingActs === "function") ? pendingActs() : null;
+  if(!hasLast && !hasPlan && !pend && !(S.thisWeek && S.thisWeek.length)) return "";
+  // 上次执行被打断了——先把断点摆在最显眼的位置
+  const resume = pend ? `<div class="rt-row rt-resume">
+      <button class="btn sm" id="rtResume" ${(ap <= 0 || blocked) ? "disabled" : ""}>
+        接着执行</button>
+      <span class="rt-txt">还剩 <b>${pend.list.length - pend.i}</b> 项：${
+        actListText(pend.list.slice(pend.i))}</span>
+      <button class="rt-x" id="rtDrop" title="不接了，这周自己安排">放弃</button>
+    </div>` : "";
   return `<div class="routine">
+    ${resume}
     <div class="rt-row">
       <button class="btn ghost sm" id="rtRepeat" ${(!hasLast || ap <= 0 || blocked) ? "disabled" : ""}>
         重复上回合</button>
@@ -4834,11 +4906,24 @@ const NODES_MORE=[
 
    奖金按走到第几轮发，输了当场淘汰。                                */
 
+/* 对手强度怎么定？
+
+   一开始写的是固定值（城市赛 34 起步，每轮 +4.2）。问题是玩家在
+   第 10 周就已经有 53 的战力了——首轮胜率 98%，决赛还有 86%，
+   整个赛程夺冠率 77%，而且首轮最无聊：领先 17.8 分，毫无悬念。
+
+   现在改成「报名那一刻锚定你自己的水平」，再按轮次往上爬：
+     lead0  首轮你领先多少（正数=你占优）
+     step   每轮对手涨多少
+   数值是按 BO3 反推的：三局两胜会把单局优势放大，
+   单局 73% 到了 BO3 就是 85%，所以 lead0 要压得比直觉低。
+   于是首轮是场稳的，越往后越紧，最后一轮要靠备战和临场决策去搏。
+   floor 是绝对下限，防止水平太低的人报名后面对一群更弱的对手。   */
 const CUPS={
-  city:{ name:"城市争霸赛", rounds:4, gap:2, base:34, step:4.2,
+  city:{ name:"城市争霸赛", rounds:4, gap:2, lead0:2.6, step:2.3, floor:34,
          prize:[0,25,70,180,420],
          opps:["网吧联队","本地车队","大学生战队","青训预备组","市队"] },
-  stream:{ name:"主播杯", rounds:3, gap:2, base:40, step:5.0,
+  stream:{ name:"主播杯", rounds:3, gap:2, lead0:0.5, step:2.6, floor:40,
          prize:[0,60,180,520],
          opps:["百万粉丝队","退役选手队","平台官方队","冠军主播队"] }
 };
@@ -4848,16 +4933,22 @@ function enterCup(kind){
   const C=CUPS[kind]; if(!C) return;
   S.cups=S.cups||{};
   S.cups[kind]={ kind, name:C.name, round:1, rounds:C.rounds,
-                 nextWeek:S.pre.week+C.gap, alive:true, wins:0, prep:0 };
+                 nextWeek:S.pre.week+C.gap, alive:true, wins:0, prep:0,
+                 anchor:cupMyPower(null),      // 报名时的你，就是这届赛事的标尺
+                 oppRoll:rollOpp() };
   preLog(`报名成功。<b>${C.name}</b> 第一轮在 <b>第 ${S.cups[kind].nextWeek} 周</b>——
     中间这两周你可以练，也可以专门备战。`,"good");
 }
 /* 对手强度随轮次递增 */
 function cupOf(k){ return (S.cups||{})[k]; }
 function activeCups(){ return Object.values(S.cups||{}).filter(c=>c.alive); }
+function rollOpp(){ return (rnd()-0.5)*3.0; }   // 每轮抽一次，签运
 function cupOppPower(k){
   const c=cupOf(k), C=CUPS[k];
-  return C.base+(c.round-1)*C.step+((c.oppRoll!==undefined)?c.oppRoll:1.5);
+  if(!c||!C) return 0;
+  const anchor=(c.anchor!==undefined)?c.anchor:C.floor+C.lead0;
+  const v=anchor-C.lead0+(c.round-1)*C.step;
+  return Math.max(C.floor+(c.round-1)*C.step, v)+((c.oppRoll!==undefined)?c.oppRoll:0);
 }
 function cupOppName(k){
   const c=cupOf(k), C=CUPS[k];
@@ -4881,6 +4972,17 @@ function cupPrep(k){
   preLog(`针对 <b>${cupOppName(k)}</b> 看了他们的录像，找到了几个能打的点。`,"info");
   if(typeof noteAct==="function") noteAct("pre","prep");
   render();
+}
+
+/* 每周推进时叫一次：到点的比赛要提醒，不然玩家会错过 */
+function cupTick(){
+  activeCups().forEach(c=>{
+    const wait=c.nextWeek-S.pre.week;
+    if(wait===1) preLog(`<b>${c.name}</b> 第 ${c.round} 轮下周开打，对手 ${cupOppName(c.kind)}。`,"info");
+    else if(wait<=0&&!c.due){ c.due=true;
+      preLog(`<b>${c.name}</b> 第 ${c.round} 轮就是本周——随时可以上场。`,"good"); }
+    if(wait>0) c.due=false;
+  });
 }
 
 /* ---------- 开打 ---------- */
@@ -4934,7 +5036,7 @@ function endCupMatch(){
     if(c.round>=C.rounds){
       c.alive=false; cupPayout(k,true);
     } else {
-      c.round++; c.prep=0;
+      c.round++; c.prep=0; c.oppRoll=rollOpp();
       c.nextWeek=S.pre.week+C.gap;
       preLog(`下一轮对手是 <b>${cupOppName(k)}</b>，<b>第 ${c.nextWeek} 周</b>开打。`,"info");
     }
@@ -4955,8 +5057,18 @@ function cupPayout(k,champion){
   else S.pre.streamCup=reached;
   if(typeof checkAch==="function") checkAch("cup",{kind:k,win:reached});
   if(champion) preLog(`<b>${C.name} 冠军。</b>这个名字开始有人记住了。`,"big");
-  S.cupResult={name:C.name,reached,rounds:C.rounds,prize,champion};
+  // 结算先挂在这场比赛上，等玩家看完比分点「继续」再弹总结。
+  // 之前这里直接 S.cupMatch=null，被淘汰那一场的比分和过程会凭空消失——
+  // 玩家只看到一个「止步第几轮」的框，不知道最后那局是怎么输的。
+  if(S.cupMatch) S.cupMatch.result={name:C.name,reached,rounds:C.rounds,prize,champion};
+  else S.cupResult={name:C.name,reached,rounds:C.rounds,prize,champion};
+}
+/* 看完比分，收起比赛卡；该弹总结的时候再弹 */
+function cupDismissMatch(){
+  const m=S.cupMatch;
+  if(m&&m.result) S.cupResult=m.result;
   S.cupMatch=null;
+  render();
 }
 
 /* ---------- 界面 ---------- */
@@ -4971,7 +5083,7 @@ function cupCard(){
     const d=my-op;
     return `<div class="card cup"><h2>${C.name}<em>第 ${c.round}/${C.rounds} 轮</em></h2>
       <div class="next">
-        <div class="sd"><div class="nm">${S.name||"你"}</div><div class="pw">状态 ${my.toFixed(0)}</div></div>
+        <div class="sd"><div class="nm">${meName()}</div><div class="pw">状态 ${my.toFixed(0)}</div></div>
         <div class="mid">VS</div>
         <div class="sd"><div class="nm">${cupOppName(k)}</div><div class="pw">强度 ${op.toFixed(0)}</div></div>
       </div>
@@ -4993,7 +5105,7 @@ function cupMatchCard(){
   const c=cupOf(m.kind);
   return `<div class="card"><h2>${C.name}<em>第 ${c?c.round:1} 轮 · 三局两胜</em></h2>
     <div class="vs">
-      <div class="side"><div class="nm">${S.name||"你"}</div></div>
+      <div class="side"><div class="nm">${meName()}</div></div>
       <div class="score">${m.sc[0]} : ${m.sc[1]}</div>
       <div class="side"><div class="nm">${m.opp}</div></div>
     </div>
@@ -5019,6 +5131,197 @@ function cupResultCard(){
     <div class="row" style="justify-content:center">
       <button class="btn" id="cupresok">知道了</button></div>
   </div></div>`;
+}
+
+/* ================= 存档 =================
+
+   一局 80–140 分钟，刷新一下就没了是不可接受的。
+
+   几个要点：
+   · 带版本号。改了存档结构就换号，旧档不会把新代码搞崩，而是提示重开
+   · 待处理的弹窗（际遇 / 更衣室 / 报名）里挂着函数，序列化不了——
+     存档时剔除，读档后回到「本周」界面，那次弹窗算跳过
+   · 存档失败（隐私模式、容量满）不能影响游戏，一律 try/catch 吞掉
+   · 提供手动导出/导入，方便测试者把坏档发回来                        */
+
+const SAVE_KEY = "pojuzhe_save_v1";
+const SAVE_VER = 3;                 // 存档结构版本；改结构就 +1
+
+/* 这些字段挂着函数或临时 UI 状态，不进存档 */
+const SAVE_SKIP = ["locker", "rndEv", "signup", "rankUp", "rndResult",
+                   "cupResult", "cupMatch", "showStart", "match", "confirm"];
+
+function saveGame(reason) {
+  try {
+    if (!S || S.step === "create") return false;
+    const data = {};
+    Object.keys(S).forEach(k => { if (!SAVE_SKIP.includes(k)) data[k] = S[k]; });
+    const blob = { ver: SAVE_VER, at: Date.now(), reason: reason || "", S: data };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
+    return true;
+  } catch (e) {
+    // 隐私模式 / 容量满 / 循环引用——都不该影响正在进行的这局
+    return false;
+  }
+}
+function readSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const blob = JSON.parse(raw);
+    if (!blob || typeof blob !== "object" || !blob.S) return { bad: "格式不对" };
+    if (blob.ver !== SAVE_VER) return { bad: "版本不符（存档 v" + blob.ver + "，当前 v" + SAVE_VER + "）" };
+    if (!blob.S.step || !blob.S.attrs) return { bad: "内容缺失" };
+    return blob;
+  } catch (e) {
+    return { bad: "读取失败" };
+  }
+}
+function hasSave() { const b = readSave(); return !!(b && !b.bad); }
+function dropSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+
+function loadGame() {
+  const blob = readSave();
+  if (!blob || blob.bad) return false;
+  try {
+    S = blob.S;
+    // 存档时被剔除的弹窗字段补回空值，避免到处 undefined
+    SAVE_SKIP.forEach(k => { if (S[k] === undefined) S[k] = null; });
+    S.tab = "act";
+    // 读档落在比赛中途会尴尬——回到本周界面
+    if (S.step === "match") S.step = S.pre && !S.career ? "pre" : "season";
+    render();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/* 存档时间的人话 */
+function saveAgeText(at) {
+  const m = Math.round((Date.now() - at) / 60000);
+  if (m < 1) return "刚刚";
+  if (m < 60) return m + " 分钟前";
+  const h = Math.round(m / 60);
+  if (h < 24) return h + " 小时前";
+  return Math.round(h / 24) + " 天前";
+}
+/* 存档里的进度摘要，让玩家确认是不是自己那一局 */
+function saveSummary(s) {
+  try {
+    const sea = (typeof SEASONS !== "undefined" && SEASONS[s.si]) ? SEASONS[s.si].tag : "S12";
+    const who = (s.name || "无名") + " · " + (POSN[s.pos] || "");
+    if (!s.career) return `${who} · ${sea} 职业前 第 ${s.pre ? s.pre.week : 1} 周`;
+    const t = (s.career.titles || []).length;
+    return `${who} · ${sea} · ${s.team || "无队"}${t ? " · 冠军 " + t : ""}`;
+  } catch (e) { return "存档"; }
+}
+
+/* ---------- 界面 ---------- */
+/* 捏人页顶部：有档就先问要不要继续 */
+function continueCard() {
+  const blob = readSave();
+  if (!blob) return "";
+  if (blob.bad) {
+    return `<div class="card savebad"><h2>发现一个读不了的存档</h2>
+      <p class="note" style="margin:0">${blob.bad}。可能是游戏更新过，或者存档损坏了。<br>
+      重新开一局就好——旧档不会影响新的一局。</p>
+      <div class="row"><button class="btn ghost sm" id="savedrop">清掉它</button></div></div>`;
+  }
+  return `<div class="card savecont"><h2>上次的存档<em>${saveAgeText(blob.at)}</em></h2>
+    <h3>${saveSummary(blob.S)}</h3>
+    <div class="row">
+      <button class="btn" id="savecont">继续上次</button>
+      <button class="btn ghost" id="savenew">重新开一局</button>
+    </div>
+    <p class="note">重新开局会覆盖上面这个存档。</p></div>`;
+}
+/* 设置类操作：手动存、导出、导入 */
+function saveBar() {
+  if (!S || S.step === "create") return "";
+  const b = readSave();
+  return `<div class="savebar">
+    <span class="sb-t">存档 ${b && !b.bad ? saveAgeText(b.at) : "尚未保存"}</span>
+    <button class="rt-x" id="savenow">立即保存</button>
+    <button class="rt-x" id="saveexp">导出</button>
+    <button class="rt-x" id="saveimp">导入</button>
+    <button class="rt-x" id="saverst">重开</button>
+  </div>`;
+}
+function exportSave() {
+  saveGame("手动导出");
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([raw], { type: "application/json" }));
+    a.download = "破局者存档.json";
+    document.body.appendChild(a); a.click(); a.remove();
+  } catch (e) {}
+}
+function importSave() {
+  try {
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.accept = ".json,application/json";
+    inp.onchange = () => {
+      const f = inp.files && inp.files[0];
+      if (!f) return;
+      const rd = new FileReader();
+      rd.onload = () => {
+        try {
+          const blob = JSON.parse(rd.result);
+          if (!blob || !blob.S) { alert("这个文件不像是存档。"); return; }
+          if (blob.ver !== SAVE_VER) { alert("存档版本不符，读不了。"); return; }
+          localStorage.setItem(SAVE_KEY, rd.result);
+          loadGame();
+        } catch (e) { alert("读取失败。"); }
+      };
+      rd.readAsText(f);
+    };
+    inp.click();
+  } catch (e) {}
+}
+
+
+/* ================= 两个到处都要用的小东西 ================= */
+
+/* 玩家名字是唯一一处玩家能写进 innerHTML 的文本。
+   自己玩当然无所谓，但存档能导出导入、以后还可能有分享——
+   一个叫 <img onerror=...> 的选手不该能执行代码。 */
+function escapeHtml(v){
+  if(v === null || v === undefined) return "";
+  return String(v).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[c]);
+}
+/* 玩家名字的统一出口：空名字有兜底，且一定转义 */
+function meName(){ return escapeHtml(S && S.name ? S.name : "你"); }
+/* 名字会被存进队伍名单、再被十几个地方拼进 innerHTML。
+   与其追着每个显示点转义，不如在唯一的入口就把危险字符挡掉——
+   这是比赛服 ID，本来也不该有尖括号。 */
+function safeName(v){
+  // 白名单比黑名单省心：ID 本来就只该是字母、数字、汉字和几个连接符
+  return String(v == null ? "" : v)
+    .replace(/[^\w一-龥぀-ヿ .\-]/g, "")
+    .trim().slice(0, 12);
+}
+
+/* 通用确认框。用在那些「按下去就回不来」的操作上：
+   自动推进、重开档、覆盖存档。 */
+function askConfirm(title, body, okText, fn){
+  S.confirm = { title, body, ok: okText || "确定", fn };
+  render();
+}
+function confirmCard(){
+  const c = S.confirm; if(!c) return "";
+  return `<div class="rankup"><div class="ru-inner" style="max-width:430px">
+    <div class="ru-eyebrow">请确认</div>
+    <div class="ru-tier" style="font-size:23px">${c.title}</div>
+    <div class="ru-txt">${c.body}</div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="cfmOk">${c.ok}</button>
+      <button class="btn ghost" id="cfmNo">取消</button>
+    </div></div></div>`;
 }
 
 
@@ -5096,7 +5399,7 @@ function hud(){
   h.classList.remove("hide");
   if(S.step==="pre"||S.step==="offer"||(!S.career&&S.pre)){
     h.innerHTML=`
-      <div><div class="k">选手</div><div class="v">${S.name||"你"} <small>${POSN[S.pos]}</small></div></div>
+      <div><div class="k">选手</div><div class="v">${meName()} <small>${POSN[S.pos]}</small></div></div>
       <div><div class="k">年龄</div><div class="v mono">${S.age}</div></div>
       <div class="hud-now ${nowPhase().urgent?'urgent':''}"><div class="k">现在</div>
         <div class="v">${nowPhase().tag} ${nowPhase().phase} <small>${nowPhase().detail} · 窗口剩 ${Math.max(0,PRE_YEAR-S.pre.week)} 周</small></div></div>
@@ -5110,7 +5413,7 @@ function hud(){
   }
   const sea=SEASONS[S.si];
   h.innerHTML=`
-    <div><div class="k">选手</div><div class="v">${S.name||"你"} <small>${POSN[S.pos]}</small></div></div>
+    <div><div class="k">选手</div><div class="v">${meName()} <small>${POSN[S.pos]}</small></div></div>
     <div><div class="k">年龄</div><div class="v mono">${S.age}</div></div>
     <div class="hud-now ${nowPhase().urgent?'urgent':''}"><div class="k">现在</div>
       <div class="v">${nowPhase().tag} ${nowPhase().phase} <small>${nowPhase().detail}</small></div></div>
@@ -5125,12 +5428,15 @@ function hud(){
 function render(){
   if(typeof watchRoster==="function") watchRoster();
   hud();
-  $("stage").innerHTML = S.step==="create"?viewCreate()
+  const body = S.step==="create"?viewCreate()
     : S.step==="pre"?viewPre()
     : S.step==="offer"?viewOffer()
     : S.step==="season"?viewSeason()
     : S.step==="match"?viewMatch()
     : S.step==="offseason"?viewOffseason() : viewEnd();
+  $("stage").innerHTML = body
+    + (typeof saveBar==="function"?saveBar():"")
+    + (typeof confirmCard==="function"?confirmCard():"");
   bind();
 }
 function bind(){
@@ -5164,9 +5470,9 @@ function bind(){
     const d=b.dataset.inc;if(talentLeft()>0&&S.talent[d]<10){S.talent[d]++;render()}});
   st.querySelectorAll("[data-dec]").forEach(b=>b.onclick=()=>{
     const d=b.dataset.dec;if(S.talent[d]>1){S.talent[d]--;render()}});
-  const nm=$("nm"); if(nm) nm.oninput=e=>{S.name=e.target.value};
+  const nm=$("nm"); if(nm) nm.oninput=e=>{S.name=safeName(e.target.value)};
   const go=$("go"); if(go) go.onclick=()=>{
-    S.name=(nm&&nm.value.trim())||"无名"; S.showStart=true; render(); };
+    S.name=(nm&&safeName(nm.value))||"无名"; S.showStart=true; render(); };
   const sg=$("startgo"); if(sg) sg.onclick=()=>{ S.showStart=false; startPre(); };
   st.querySelectorAll("[data-prolg]").forEach(b=>b.onclick=()=>{S.proLg=b.dataset.prolg;render()});
   st.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render()});
@@ -5186,10 +5492,28 @@ function bind(){
   st.querySelectorAll("[data-cupprep]").forEach(b=>b.onclick=()=>cupPrep(b.dataset.cupprep));
   st.querySelectorAll("[data-cupgo]").forEach(b=>b.onclick=()=>startCupMatch(b.dataset.cupgo));
   st.querySelectorAll("[data-cupnode]").forEach(b=>b.onclick=()=>resolveCupNode(+b.dataset.cupnode));
-  const _cd=$("cupdone"); if(_cd) _cd.onclick=()=>{S.cupMatch=null;render()};
+  const _cd=$("cupdone"); if(_cd) _cd.onclick=cupDismissMatch;
   const _cr=$("cupresok"); if(_cr) _cr.onclick=()=>{S.cupResult=null;render()};
   const _rtA=$("rtRepeat"); if(_rtA) _rtA.onclick=repeatLast;
   const _rtB=$("rtPlan");   if(_rtB) _rtB.onclick=runPlan;
+  const _rtR=$("rtResume"); if(_rtR) _rtR.onclick=()=>{runActs(null,true);render();};
+  const _rtX=$("rtDrop");   if(_rtX) _rtX.onclick=()=>{S.exec=null;render();};
+
+  /* ---- 存档 ---- */
+  const _sc=$("savecont"); if(_sc) _sc.onclick=()=>{ if(!loadGame()) alert("这个存档读不了，只能重开一局。"); };
+  const _sn=$("savenew");  if(_sn) _sn.onclick=()=>askConfirm("重新开一局",
+      "上次那个存档会被覆盖，回不来了。","确定重开",()=>{dropSave();S.confirm=null;render();});
+  const _sd=$("savedrop"); if(_sd) _sd.onclick=()=>{dropSave();render();};
+  const _s1=$("savenow");  if(_s1) _s1.onclick=()=>{ saveGame("手动"); render(); };
+  const _s2=$("saveexp");  if(_s2) _s2.onclick=exportSave;
+  const _s3=$("saveimp");  if(_s3) _s3.onclick=importSave;
+  const _s4=$("saverst");  if(_s4) _s4.onclick=()=>askConfirm("放弃这一局",
+      "当前进度会被清掉，从捏人重新开始。<br><span class=\"note\">想留着的话，先「导出」。</span>",
+      "放弃并重开",()=>{ dropSave(); location.reload(); });
+
+  /* ---- 通用确认框 ---- */
+  const _ck=$("cfmOk"); if(_ck) _ck.onclick=()=>{ const f=S.confirm&&S.confirm.fn; S.confirm=null; if(f) f(); else render(); };
+  const _cn=$("cfmNo"); if(_cn) _cn.onclick=()=>{ S.confirm=null; render(); };
   const _rtC=$("rtSave");   if(_rtC) _rtC.onclick=savePlan;
   const _rtD=$("rtSave2");  if(_rtD) _rtD.onclick=savePlan;
   const _rtE=$("rtClear");  if(_rtE) _rtE.onclick=clearPlan;
@@ -5198,7 +5522,14 @@ function bind(){
   st.querySelectorAll("[data-squad]").forEach(b=>b.onclick=()=>doSquad(b.dataset.squad));
   st.querySelectorAll("[data-do]").forEach(b=>b.onclick=()=>doAction(b.dataset.do));
   const p=$("play"); if(p&&!S.locker) p.onclick=()=>{isBenched()?benchWeek():startMatch(false)};
-  const au=$("auto"); if(au) au.onclick=()=>autoRest(DIMS.reduce((a,b)=>S.talent[a]>=S.talent[b]?a:b));
+  const au=$("auto"); if(au) au.onclick=()=>{
+    const f=DIMS.reduce((a,b)=>S.talent[a]>=S.talent[b]?a:b);
+    askConfirm("自动推进",
+      `接下来最多 <b>6 周</b>由系统替你安排：疲劳高就休息，否则练 <b>${f}</b>，然后打完比赛。<br>
+       一旦有事情需要你决定，会立刻停下来交回给你。<br>
+       <span class="note">这几周的训练和临场决策都不是你做的。</span>`,
+      "开始推进", ()=>autoRest(f));
+  };
   st.querySelectorAll("[data-node]").forEach(b=>b.onclick=()=>resolveNode(+b.dataset.node));
   const nx=$("next"); if(nx) nx.onclick=nextWeek;
   const of=$("off"); if(of) of.onclick=doOffseason;

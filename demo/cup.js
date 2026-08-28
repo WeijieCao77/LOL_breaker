@@ -9,11 +9,24 @@
 
    奖金按走到第几轮发，输了当场淘汰。                                */
 
+/* 对手强度怎么定？
+
+   一开始写的是固定值（城市赛 34 起步，每轮 +4.2）。问题是玩家在
+   第 10 周就已经有 53 的战力了——首轮胜率 98%，决赛还有 86%，
+   整个赛程夺冠率 77%，而且首轮最无聊：领先 17.8 分，毫无悬念。
+
+   现在改成「报名那一刻锚定你自己的水平」，再按轮次往上爬：
+     lead0  首轮你领先多少（正数=你占优）
+     step   每轮对手涨多少
+   数值是按 BO3 反推的：三局两胜会把单局优势放大，
+   单局 73% 到了 BO3 就是 85%，所以 lead0 要压得比直觉低。
+   于是首轮是场稳的，越往后越紧，最后一轮要靠备战和临场决策去搏。
+   floor 是绝对下限，防止水平太低的人报名后面对一群更弱的对手。   */
 const CUPS={
-  city:{ name:"城市争霸赛", rounds:4, gap:2, base:34, step:4.2,
+  city:{ name:"城市争霸赛", rounds:4, gap:2, lead0:2.6, step:2.3, floor:34,
          prize:[0,25,70,180,420],
          opps:["网吧联队","本地车队","大学生战队","青训预备组","市队"] },
-  stream:{ name:"主播杯", rounds:3, gap:2, base:40, step:5.0,
+  stream:{ name:"主播杯", rounds:3, gap:2, lead0:0.5, step:2.6, floor:40,
          prize:[0,60,180,520],
          opps:["百万粉丝队","退役选手队","平台官方队","冠军主播队"] }
 };
@@ -23,16 +36,22 @@ function enterCup(kind){
   const C=CUPS[kind]; if(!C) return;
   S.cups=S.cups||{};
   S.cups[kind]={ kind, name:C.name, round:1, rounds:C.rounds,
-                 nextWeek:S.pre.week+C.gap, alive:true, wins:0, prep:0 };
+                 nextWeek:S.pre.week+C.gap, alive:true, wins:0, prep:0,
+                 anchor:cupMyPower(null),      // 报名时的你，就是这届赛事的标尺
+                 oppRoll:rollOpp() };
   preLog(`报名成功。<b>${C.name}</b> 第一轮在 <b>第 ${S.cups[kind].nextWeek} 周</b>——
     中间这两周你可以练，也可以专门备战。`,"good");
 }
 /* 对手强度随轮次递增 */
 function cupOf(k){ return (S.cups||{})[k]; }
 function activeCups(){ return Object.values(S.cups||{}).filter(c=>c.alive); }
+function rollOpp(){ return (rnd()-0.5)*3.0; }   // 每轮抽一次，签运
 function cupOppPower(k){
   const c=cupOf(k), C=CUPS[k];
-  return C.base+(c.round-1)*C.step+((c.oppRoll!==undefined)?c.oppRoll:1.5);
+  if(!c||!C) return 0;
+  const anchor=(c.anchor!==undefined)?c.anchor:C.floor+C.lead0;
+  const v=anchor-C.lead0+(c.round-1)*C.step;
+  return Math.max(C.floor+(c.round-1)*C.step, v)+((c.oppRoll!==undefined)?c.oppRoll:0);
 }
 function cupOppName(k){
   const c=cupOf(k), C=CUPS[k];
@@ -56,6 +75,17 @@ function cupPrep(k){
   preLog(`针对 <b>${cupOppName(k)}</b> 看了他们的录像，找到了几个能打的点。`,"info");
   if(typeof noteAct==="function") noteAct("pre","prep");
   render();
+}
+
+/* 每周推进时叫一次：到点的比赛要提醒，不然玩家会错过 */
+function cupTick(){
+  activeCups().forEach(c=>{
+    const wait=c.nextWeek-S.pre.week;
+    if(wait===1) preLog(`<b>${c.name}</b> 第 ${c.round} 轮下周开打，对手 ${cupOppName(c.kind)}。`,"info");
+    else if(wait<=0&&!c.due){ c.due=true;
+      preLog(`<b>${c.name}</b> 第 ${c.round} 轮就是本周——随时可以上场。`,"good"); }
+    if(wait>0) c.due=false;
+  });
 }
 
 /* ---------- 开打 ---------- */
@@ -109,7 +139,7 @@ function endCupMatch(){
     if(c.round>=C.rounds){
       c.alive=false; cupPayout(k,true);
     } else {
-      c.round++; c.prep=0;
+      c.round++; c.prep=0; c.oppRoll=rollOpp();
       c.nextWeek=S.pre.week+C.gap;
       preLog(`下一轮对手是 <b>${cupOppName(k)}</b>，<b>第 ${c.nextWeek} 周</b>开打。`,"info");
     }
@@ -130,8 +160,18 @@ function cupPayout(k,champion){
   else S.pre.streamCup=reached;
   if(typeof checkAch==="function") checkAch("cup",{kind:k,win:reached});
   if(champion) preLog(`<b>${C.name} 冠军。</b>这个名字开始有人记住了。`,"big");
-  S.cupResult={name:C.name,reached,rounds:C.rounds,prize,champion};
+  // 结算先挂在这场比赛上，等玩家看完比分点「继续」再弹总结。
+  // 之前这里直接 S.cupMatch=null，被淘汰那一场的比分和过程会凭空消失——
+  // 玩家只看到一个「止步第几轮」的框，不知道最后那局是怎么输的。
+  if(S.cupMatch) S.cupMatch.result={name:C.name,reached,rounds:C.rounds,prize,champion};
+  else S.cupResult={name:C.name,reached,rounds:C.rounds,prize,champion};
+}
+/* 看完比分，收起比赛卡；该弹总结的时候再弹 */
+function cupDismissMatch(){
+  const m=S.cupMatch;
+  if(m&&m.result) S.cupResult=m.result;
   S.cupMatch=null;
+  render();
 }
 
 /* ---------- 界面 ---------- */
@@ -146,7 +186,7 @@ function cupCard(){
     const d=my-op;
     return `<div class="card cup"><h2>${C.name}<em>第 ${c.round}/${C.rounds} 轮</em></h2>
       <div class="next">
-        <div class="sd"><div class="nm">${S.name||"你"}</div><div class="pw">状态 ${my.toFixed(0)}</div></div>
+        <div class="sd"><div class="nm">${meName()}</div><div class="pw">状态 ${my.toFixed(0)}</div></div>
         <div class="mid">VS</div>
         <div class="sd"><div class="nm">${cupOppName(k)}</div><div class="pw">强度 ${op.toFixed(0)}</div></div>
       </div>
@@ -168,7 +208,7 @@ function cupMatchCard(){
   const c=cupOf(m.kind);
   return `<div class="card"><h2>${C.name}<em>第 ${c?c.round:1} 轮 · 三局两胜</em></h2>
     <div class="vs">
-      <div class="side"><div class="nm">${S.name||"你"}</div></div>
+      <div class="side"><div class="nm">${meName()}</div></div>
       <div class="score">${m.sc[0]} : ${m.sc[1]}</div>
       <div class="side"><div class="nm">${m.opp}</div></div>
     </div>

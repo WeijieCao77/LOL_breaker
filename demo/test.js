@@ -28,6 +28,15 @@ global.document = {
   createElement() { return makeEl(); }
 };
 global.window = global;
+/* localStorage 桩——存档模块全程被 try/catch 包着，
+   没有桩的话它会静默失败，等于没测。 */
+const _ls = {};
+global.localStorage = {
+  getItem(k){ return k in _ls ? _ls[k] : null; },
+  setItem(k, v){ _ls[k] = String(v); },
+  removeItem(k){ delete _ls[k]; }
+};
+global.alert = () => {};
 
 const code = m[1];
 try {
@@ -37,7 +46,7 @@ try {
     + "resolveLocker,ending,cap,rankFull,rankIcon,fameTier,scoutTier,preScore,hasAch,"
     + "buyGear,buyCourse,buyRelax,gearBonus,streamIncome,drawBackgrounds,advancePreWeek,capOf,"
     + "soloSkill,soloWinP,rankReq,doSquad,SQUAD_ACTS,squadOf,PRE_MILESTONES,"
-    + "resolveRandom,btkNote,BREAK_PATHS,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,setS:(v)=>{S=v}};")();
+    + "resolveRandom,btkNote,BREAK_PATHS,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,setS:(v)=>{S=v}};")();
 } catch (e) {
   console.error("脚本解析失败:", e.message);
   process.exit(1);
@@ -58,19 +67,34 @@ function playOne(opts) {
   S = A.S();
 
   let guard = 0, preYears = 0, rankUps = 0, lockers = 0;
+  let signups = 0, cupMatches = 0, preps = 0, cupPick = 0;
+  const cupRuns = [];
   while (A.S().step !== "end" && guard++ < 40000) {
     S = A.S();
     if (S.rankUp) { rankUps++; S.rankUp = null; continue; }
     if (S.rndEv) { A.resolveRandom(0); continue; }
     if (S.signup) {                       // 报名弹窗：钱够就报
       const mm = S.signup; S.signup = null;
-      if (S.money >= mm.fee) { S.money -= mm.fee; mm.run(); }
+      if (S.money >= mm.fee) { S.money -= mm.fee; A.enterCup(mm.signup); signups++; }
       A.advancePreWeek(); continue;
+    }
+    if (S.cupResult) { cupRuns.push(S.cupResult); S.cupResult = null; continue; }
+    if (S.cupMatch) {                     // 一轮杯赛：节点决策 + 三局两胜
+      const cm = S.cupMatch;
+      if (cm.node) { A.resolveCupNode(cupPick++ % cm.node.a.length); }
+      else if (cm.done) { A.cupDismissMatch(); }
+      else { throw new Error("杯赛卡住：既没有节点也没结束"); }
+      continue;
     }
     if (S.locker) { lockers++; A.resolveLocker(0); continue; }
     if (S.step === "pre") {
+      // 本周有到点的杯赛就先打——这是新赛程流程的主路径
+      const due = A.activeCups().find(c => c.nextWeek <= S.pre.week);
+      if (due) { cupMatches++; A.startCupMatch(due.kind); continue; }
       if (S.pre.ap > 0) {
-        if (S.fatigue > 75) A.preAct("rest");
+        const soon = A.activeCups().find(c => c.nextWeek - S.pre.week <= 2 && c.prep < 2);
+        if (soon && S.fatigue < 70) { preps++; A.cupPrep(soon.kind); }
+        else if (S.fatigue > 75) A.preAct("rest");
         else A.preAct(S.pre.week % 4 === 0 ? "stream" : "rank");
       } else { const w = S.pre.week; A.preNextWeek(); if (A.S().pre && A.S().pre.week < w) preYears++; }
     } else if (S.step === "offer") {
@@ -92,6 +116,8 @@ function playOne(opts) {
   S = A.S();
   return {
     ok: S.step === "end", steps: guard, preYears, rankUps, lockers,
+    signups, cupMatches, preps, cupRuns,
+    saved: A.hasSave(),
     team: S.team || "未签约", age: S.age,
     ach: A.ACHIEVEMENTS.filter(a => A.hasAch(a.id)).map(a => a.n),
     ending: A.ending().n,
