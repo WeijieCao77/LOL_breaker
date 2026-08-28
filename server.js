@@ -22,7 +22,9 @@ const TYPES = {
 function send(res, code, body, type) {
   res.writeHead(code, {
     "content-type": type || "text/plain; charset=utf-8",
-    "cache-control": code === 200 ? "public, max-age=300" : "no-store",
+    // 测试期一律不缓存——改了东西刷新就能看到，不用硬刷新
+    "cache-control": "no-store, no-cache, must-revalidate",
+    "pragma": "no-cache",
   });
   res.end(body);
 }

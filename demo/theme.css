@@ -471,3 +471,7 @@ td .tlogo{margin-right:5px}
 .er.up{border-color:var(--cyan-dim);color:var(--cyan)}
 .er.dn{border-color:#5A2228;color:var(--red)}
 .er.none{color:var(--ink-3);border-style:dashed}
+
+/* ---- 业余赛事 ---- */
+.card.cup{border-color:var(--gold-dim)}
+.card.cup h2{color:var(--gold)}
