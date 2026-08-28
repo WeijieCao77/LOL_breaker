@@ -50,6 +50,33 @@ for ph, mod in (("/* __TEAM_MODULE__ */", team), ("/* __RIVALS_MODULE__ */", riv
 assert "__GAME_DATA__" in out, "data placeholder missing"
 out = out.replace("__GAME_DATA__", data)
 
+# 5) 包成一份完整的 HTML 文档
+#
+#    在这之前产出的是个片段：没有 doctype、没有 charset、没有 viewport。
+#    本地看不出问题，是因为我们自己的 server.js 在响应头里补了 charset，
+#    而桌面浏览器对缺失的结构很宽容。但要交给第三方静态托管（比如 B 站 Toy），
+#    这三样都必须自带：
+#      · 没有 doctype  -> 怪异模式，盒模型和一堆布局行为都不一样
+#      · 没有 charset  -> CDN 不带 charset 时中文直接乱码
+#      · 没有 viewport -> 手机按 980px 排版再整体缩小，字小到看不清
+m = re.search(r"<title>(.*?)</title>", out, flags=re.S)
+page_title = m.group(1).strip() if m else "破局者"
+out = re.sub(r"<title>.*?</title>[ \t]*\n?", "", out, count=1, flags=re.S)
+
+HEAD = (
+    "<!doctype html>\n"
+    '<html lang="zh-CN">\n'
+    "<head>\n"
+    '<meta charset="utf-8">\n'
+    '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
+    '<meta name="theme-color" content="#0B1220">\n'
+    '<meta name="color-scheme" content="dark">\n'
+    "<title>" + page_title + "</title>\n"
+)
+BODY_OPEN = '</head>\n<body>\n<div class="wrap">'
+assert '<div class="wrap">' in out, "wrap div not found"
+out = HEAD + out.replace('<div class="wrap">', BODY_OPEN, 1) + "\n</body>\n</html>\n"
+
 path = os.path.join(BASE, "career.html")
 io.open(path, "w", encoding="utf-8").write(out)
 print("built", path, os.path.getsize(path), "bytes")

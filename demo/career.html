@@ -1,5 +1,13 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0B1220">
+<meta name="color-scheme" content="dark">
 <title>破局者 S12-S16</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<!-- 不引任何外部资源：B站 Toy 审核明确禁止用外链资源规避审核，
+     且 fonts.googleapis.com 在国内基本加载不出来。字体全部走系统栈。 -->
 
 <style>
 /* ===== 破局者 · Hextech 视觉体系 =====
@@ -21,7 +29,8 @@ body{
     radial-gradient(1200px 700px at 50% -8%, #14425C 0%, transparent 60%),
     linear-gradient(180deg,#0A2033 0%,#061520 62%,#04101A 100%);
   background-color:var(--void);
-  font-family:Archivo,"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif;
+  font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","HarmonyOS Sans SC",
+    "Microsoft YaHei","Noto Sans SC",sans-serif;
   font-size:15px; line-height:1.65; -webkit-font-smoothing:antialiased;
 }
 body::before{
@@ -29,7 +38,7 @@ body::before{
   background:repeating-linear-gradient(180deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px);
 }
 .wrap{max-width:1000px;margin:0 auto;padding:0 20px 80px;position:relative;z-index:1}
-.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.mono{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"Liberation Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
 button{font-family:inherit;font-size:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:1px solid var(--gold);outline-offset:2px}
 h1,h2,h3{text-wrap:balance}
@@ -40,7 +49,7 @@ h1,h2,h3{text-wrap:balance}
   background:linear-gradient(90deg,var(--gold) 0%,var(--line-hot) 38%,transparent 100%)}
 .brand{display:flex;align-items:center;gap:16px;margin-bottom:10px}
 .brand svg{flex:none;filter:drop-shadow(0 0 12px rgba(201,169,97,.35))}
-.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.28em;
+.eyebrow{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:10.5px;letter-spacing:.28em;
   text-transform:uppercase;color:var(--gold);margin:0 0 6px}
 h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06em;
   color:var(--gold-hi);text-shadow:0 0 26px rgba(201,169,97,.28)}
@@ -52,7 +61,7 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
   clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px)}
 .hud>div{background:linear-gradient(180deg,var(--panel-2),var(--panel));padding:10px 15px;flex:1 1 96px}
 .hud .k{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
-  font-family:"IBM Plex Mono",monospace}
+  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
 .hud .v{font-size:16px;font-weight:650;margin-top:1px;color:var(--gold-hi)}
 .hud .v small{font-size:11px;color:var(--ink-3);font-weight:400}
 
@@ -63,7 +72,7 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .card::before{content:"";position:absolute;left:0;top:13px;width:1px;height:26px;background:var(--gold)}
 .card::after{content:"";position:absolute;right:13px;bottom:0;width:26px;height:1px;background:var(--gold)}
 .card h2{font-size:11px;letter-spacing:.2em;text-transform:uppercase;
-  font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--gold);
+  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-weight:600;color:var(--gold);
   margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line);
   display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .card h2 em{font-style:normal;color:var(--ink-2);text-transform:none;letter-spacing:.04em}
@@ -100,9 +109,9 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .tal button:hover:not(:disabled){border-color:var(--gold);background:rgba(201,169,97,.16)}
 .tal button:disabled{opacity:.28;cursor:not-allowed}
 .tal .n{width:24px;text-align:center;font-size:17px;font-weight:650;color:var(--gold-hi);
-  font-family:"IBM Plex Mono",monospace}
+  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
 .tal .cap{width:70px;text-align:right;font-size:11px;color:var(--ink-3);
-  font-family:"IBM Plex Mono",monospace}
+  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
 
 /* ---- 属性条 ---- */
 .attrs{display:flex;flex-direction:column;gap:9px}
@@ -113,7 +122,7 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
   box-shadow:0 0 10px -1px var(--cyan);transition:width .45s ease}
 .capline{position:absolute;top:-3px;width:2px;height:12px;background:var(--gold);opacity:.85;
   box-shadow:0 0 6px var(--gold)}
-.at .vn{font-size:12px;color:var(--ink-2);text-align:right;font-family:"IBM Plex Mono",monospace}
+.at .vn{font-size:12px;color:var(--ink-2);text-align:right;font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
 .at .vn b{color:var(--gold-hi);font-size:13.5px}
 .at .vn .up{color:var(--cyan)}
 .at .vn .dn{color:var(--red)}
@@ -122,16 +131,16 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;margin-bottom:14px}
 .side{text-align:center}
 .side .nm{font-weight:650;font-size:15.5px;color:var(--gold-hi)}
-.side .pw{font-size:11.5px;color:var(--ink-3);margin-top:2px;font-family:"IBM Plex Mono",monospace}
-.score{font-family:"IBM Plex Mono",monospace;font-size:30px;font-weight:600;letter-spacing:.06em;
+.side .pw{font-size:11.5px;color:var(--ink-3);margin-top:2px;font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
+.score{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:30px;font-weight:600;letter-spacing:.06em;
   color:var(--gold);text-shadow:0 0 20px rgba(201,169,97,.4)}
 .next{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;
   background:rgba(6,21,32,.5);border:1px solid var(--line);padding:16px 18px;margin-bottom:12px;
   clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
 .next .sd{text-align:center}
 .next .sd .nm{font-weight:650;font-size:16px;color:var(--gold-hi)}
-.next .sd .pw{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-3);margin-top:2px}
-.next .mid{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--gold);letter-spacing:.24em}
+.next .sd .pw{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:12px;color:var(--ink-3);margin-top:2px}
+.next .mid{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:11px;color:var(--gold);letter-spacing:.24em}
 .oppinfo{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
 .chipx{font-size:11.5px;background:rgba(30,74,99,.5);border:1px solid var(--line);
   padding:3px 10px;color:var(--ink-2)}
@@ -154,7 +163,7 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .ev{display:grid;grid-template-columns:auto 1fr;gap:11px;padding:11px 2px;
   border-bottom:1px solid rgba(30,74,99,.55);align-items:start}
 .ev:last-child{border-bottom:none}
-.ev .tg{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.12em;
+.ev .tg{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:9px;letter-spacing:.12em;
   padding:3px 7px;background:rgba(30,74,99,.6);color:var(--ink-3);white-space:nowrap;margin-top:2px}
 .ev.big .tg{background:rgba(201,169,97,.18);color:var(--gold)}
 .ev.good .tg{background:rgba(79,190,218,.14);color:var(--cyan)}
@@ -162,7 +171,7 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .ev .tx{font-size:13.5px;line-height:1.6;color:var(--ink-2)}
 .ev.big .tx{color:var(--ink)}
 .ev .tx b{color:var(--gold-hi)}
-.ev .tm{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--ink-3);margin-left:6px}
+.ev .tm{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:10px;color:var(--ink-3);margin-left:6px}
 .filt{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .filt button{font-size:11.5px;padding:4px 12px;border:1px solid var(--line);
   background:transparent;color:var(--ink-3);
@@ -182,10 +191,10 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 table{width:100%;border-collapse:collapse;background:rgba(6,21,32,.4);font-size:13px}
 th{text-align:left;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dim);
   font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line);
-  font-family:"IBM Plex Mono",monospace;white-space:nowrap;background:rgba(14,42,62,.7)}
+  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;white-space:nowrap;background:rgba(14,42,62,.7)}
 td{padding:8px 12px;border-bottom:1px solid rgba(30,74,99,.45);color:var(--ink-2)}
 tr:last-child td{border-bottom:none}
-td.n{font-family:"IBM Plex Mono",monospace;text-align:right;font-variant-numeric:tabular-nums;
+td.n{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;text-align:right;font-variant-numeric:tabular-nums;
   white-space:nowrap;color:var(--ink)}
 tr.me td{background:rgba(201,169,97,.12);color:var(--gold-hi);font-weight:600}
 tr.cut td{border-bottom:2px solid var(--gold-dim)}
@@ -237,7 +246,7 @@ input[type=text]::placeholder{color:var(--ink-3)}
 .game-kicker{font-size:14px;letter-spacing:.24em;color:var(--ink-2);margin:0 0 2px}
 .game-title{font-size:clamp(30px,5.4vw,46px);font-weight:800;letter-spacing:.14em;margin:0;
   color:var(--gold-hi);text-shadow:0 0 34px rgba(201,169,97,.45)}
-.game-en{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.42em;
+.game-en{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:11px;letter-spacing:.42em;
   color:var(--gold);margin:4px 0 0;text-transform:uppercase}
 .tagline{color:var(--ink-2);font-size:14.5px;margin:12px 0 0;letter-spacing:.02em}
 .pillars{font-size:12px;color:var(--ink-3);margin:6px 0 0;letter-spacing:.06em}
@@ -254,7 +263,7 @@ input[type=text]::placeholder{color:var(--ink-3)}
   background:rgba(6,21,32,.55);border:1px solid var(--line);padding:11px 15px;margin-bottom:12px;
   clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
 .elabel{font-size:12px;color:var(--ink-3);white-space:nowrap}
-.elabel b{font-family:"IBM Plex Mono",monospace;font-size:19px;color:var(--gold-hi)}
+.elabel b{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:19px;color:var(--gold-hi)}
 .elabel small{color:var(--ink-3);font-size:11px}
 .ebar{position:relative;height:14px;background:rgba(4,10,18,.9);border:1px solid var(--line);overflow:hidden}
 .efill{height:100%;transition:width .4s ease}
@@ -281,7 +290,7 @@ td .tlogo{margin-right:5px}
 .gslot{font-size:12px;color:var(--ink-3);letter-spacing:.08em}
 .gname{font-size:13.5px;color:var(--ink-2);min-width:0}
 .gname b{color:var(--gold-hi);font-size:14px}
-.gplus{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--cyan);margin-left:8px}
+.gplus{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:11.5px;color:var(--cyan);margin-left:8px}
 .gplus.none{color:var(--ink-3)}
 .gnext{font-size:11.5px;color:var(--ink-3);padding:0 0 8px 76px}
 
@@ -308,7 +317,7 @@ td .tlogo{margin-right:5px}
 .ru-icon{margin-bottom:14px;animation:ruPop .45s cubic-bezier(.2,1.4,.4,1)}
 @keyframes ruPop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
 .ru-icon .rankicon{filter:drop-shadow(0 0 26px rgba(201,169,97,.7))}
-.ru-eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.32em;
+.ru-eyebrow{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:11px;letter-spacing:.32em;
   color:var(--gold);text-transform:uppercase;margin-bottom:8px}
 .ru-tier{font-size:26px;font-weight:700;color:var(--ink-2);letter-spacing:.06em}
 .ru-tier b{color:var(--gold-hi);text-shadow:0 0 24px rgba(201,169,97,.6)}
@@ -326,7 +335,7 @@ td .tlogo{margin-right:5px}
 .tab.on{color:var(--gold-hi);background:linear-gradient(180deg,rgba(201,169,97,.2),rgba(14,42,62,.95))}
 .tab.on::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
   background:var(--gold);box-shadow:0 0 10px var(--gold)}
-.tcount{font-family:"IBM Plex Mono",monospace;font-size:10px;margin-left:6px;
+.tcount{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:10px;margin-left:6px;
   padding:1px 6px;background:rgba(6,21,32,.7);color:var(--gold);border-radius:99px}
 @media(max-width:560px){.tab{padding:10px 12px;font-size:13px;min-width:62px}}
 
@@ -345,7 +354,7 @@ td .tlogo{margin-right:5px}
 /* ---- 战力公式条 ---- */
 .formula{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:12px 14px;
   background:rgba(6,21,32,.55);border:1px solid var(--line);
-  font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.9}
+  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:12.5px;line-height:1.9}
 .formula .fb{color:var(--gold-hi);font-weight:600;font-size:14px}
 .formula .fx{color:var(--ink-3);margin:0 1px}
 .formula .fw{color:var(--ink-2)}
@@ -372,13 +381,13 @@ td .tlogo{margin-right:5px}
 .buffs{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .buff{font-size:11.5px;padding:3px 10px;border:1px solid var(--line);
   display:inline-flex;align-items:center;gap:7px}
-.buff i{font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:10px;opacity:.75}
+.buff i{font-style:normal;font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:10px;opacity:.75}
 .buff.good{border-color:var(--cyan-dim);color:var(--cyan);background:rgba(79,190,218,.09)}
 .buff.bad{border-color:#5A2228;color:var(--red);background:rgba(196,83,95,.09)}
 
 /* ---- 瓶颈突破提示 ---- */
 .breaks{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
-.breaks .bh{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.14em;
+.breaks .bh{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:10.5px;letter-spacing:.14em;
   color:var(--gold);margin-bottom:9px}
 .brk{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;
   padding:7px 10px;margin-bottom:5px;background:rgba(6,21,32,.5);
@@ -416,8 +425,8 @@ td .tlogo{margin-right:5px}
 .pm-head{display:flex;justify-content:space-between;align-items:baseline;
   padding:10px 13px;background:rgba(6,21,32,.55);border:1px solid var(--line);
   font-size:13.5px;color:var(--ink-2);margin-bottom:12px}
-.pm-head b{color:var(--gold-hi);font-family:"IBM Plex Mono",monospace}
-.pm-diff{font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:16px}
+.pm-head b{color:var(--gold-hi);font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
+.pm-diff{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-weight:700;font-size:16px}
 .pm-diff.up{color:var(--cyan)} .pm-diff.dn{color:var(--red)}
 .pm-upset{border-left:3px solid var(--gold);background:rgba(201,169,97,.1);
   padding:11px 14px;margin-bottom:12px;font-size:13px;color:var(--gold-hi);line-height:1.6}
@@ -477,7 +486,7 @@ td .tlogo{margin-right:5px}
   background:var(--panel-2);opacity:.72}
 .savebar:hover{opacity:1}
 .sb-t{font-size:11.5px;color:var(--ink-3);margin-right:auto;
-  font-family:"IBM Plex Mono",monospace}
+  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
 .savecont{border-color:rgba(201,169,97,.5)}
 .savecont h3{color:var(--gold-hi);font-size:15px;margin:2px 0 12px}
 .savebad{border-color:rgba(190,90,80,.5)}
@@ -492,7 +501,7 @@ td .tlogo{margin-right:5px}
 .evres{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:16px 0 4px}
 .er{font-size:13px;padding:5px 12px;border:1px solid var(--line);
   background:rgba(6,21,32,.5);color:var(--ink-2)}
-.er b{font-family:"IBM Plex Mono",monospace;margin-left:5px}
+.er b{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;margin-left:5px}
 .er.up{border-color:var(--cyan-dim);color:var(--cyan)}
 .er.dn{border-color:#5A2228;color:var(--red)}
 .er.none{color:var(--ink-3);border-style:dashed}
@@ -503,6 +512,8 @@ td .tlogo{margin-right:5px}
 
 </style>
 
+</head>
+<body>
 <div class="wrap">
   <header class="top">
     <div class="brand">
@@ -6027,3 +6038,6 @@ function bind(){
 let S=null;
 screenCreate();
 </script>
+
+</body>
+</html>
