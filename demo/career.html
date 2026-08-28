@@ -1495,6 +1495,10 @@ function acceptOffer(i){
   S.form=52; S.injury=null; S.listCooldown=0; S.signCooldown=0;
   S.rosterSig=myRoster().map(x=>x.id).sort().join("|");
   S.pendingContract=null;
+  // P.world 和 S.world 本来就是同一个对象。签完约之后 P.world 再没人读，
+  // 但 JSON.stringify 会把它当成第二份完整世界写进存档——76KB 的纯冗余，
+  // 每次自动存档都写一遍。用完就断开。
+  S.pre.world=null; S.pre.offers=null; S.pre.baseline=null;
   // 你自己就是那个「强援」：base 上去了，但五个人要重新磨
   disruptSynergy(1,`<b>${meName()}</b> 加盟`);
   pushEvent(`<b>${meName()}</b> 正式签约 <b>${of.team}</b>（${of.t}）。职业生涯从这里开始。`,"big","签约");
