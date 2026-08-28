@@ -28,6 +28,7 @@ routine = io.open(os.path.join(BASE, "routine.js"), encoding="utf-8").read()
 nodes = io.open(os.path.join(BASE, "nodes.js"), encoding="utf-8").read()
 cup = io.open(os.path.join(BASE, "cup.js"), encoding="utf-8").read()
 save = io.open(os.path.join(BASE, "save.js"), encoding="utf-8").read()
+tryout = io.open(os.path.join(BASE, "tryout.js"), encoding="utf-8").read()
 data = io.open(os.path.join(ROOT, "data", "csv", "game_data_2022.json"), encoding="utf-8").read()
 
 # 1) 样式
@@ -41,7 +42,7 @@ assert n == 1, "header block not found"
 # 3) 国际赛模块
 assert "/* __INTL_MODULE__ */" in out, "intl placeholder missing"
 out = out.replace("/* __INTL_MODULE__ */", intl)
-for ph, mod in (("/* __TEAM_MODULE__ */", team), ("/* __RIVALS_MODULE__ */", rivals), ("/* __RANKICON_MODULE__ */", rankicon), ("/* __SHOP_MODULE__ */", shop), ("/* __ORIGINS_MODULE__ */", origins), ("/* __ACHIEVE_MODULE__ */", achieve), ("/* __SQUAD_MODULE__ */", squad), ("/* __RANDOM_MODULE__ */", random_), ("/* __FORM_MODULE__ */", form), ("/* __POSTMATCH_MODULE__ */", postm), ("/* __INJURY_MODULE__ */", injury), ("/* __CLOUT_MODULE__ */", clout), ("/* __ROUTINE_MODULE__ */", routine), ("/* __NODES_MODULE__ */", nodes), ("/* __CUP_MODULE__ */", cup), ("/* __SAVE_MODULE__ */", save)):
+for ph, mod in (("/* __TEAM_MODULE__ */", team), ("/* __RIVALS_MODULE__ */", rivals), ("/* __RANKICON_MODULE__ */", rankicon), ("/* __SHOP_MODULE__ */", shop), ("/* __ORIGINS_MODULE__ */", origins), ("/* __ACHIEVE_MODULE__ */", achieve), ("/* __SQUAD_MODULE__ */", squad), ("/* __RANDOM_MODULE__ */", random_), ("/* __FORM_MODULE__ */", form), ("/* __POSTMATCH_MODULE__ */", postm), ("/* __INJURY_MODULE__ */", injury), ("/* __CLOUT_MODULE__ */", clout), ("/* __ROUTINE_MODULE__ */", routine), ("/* __NODES_MODULE__ */", nodes), ("/* __CUP_MODULE__ */", cup), ("/* __SAVE_MODULE__ */", save), ("/* __TRYOUT_MODULE__ */", tryout)):
     assert ph in out, ph
     out = out.replace(ph, mod)
 

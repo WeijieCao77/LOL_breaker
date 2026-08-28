@@ -119,11 +119,16 @@ const SPEND=[
   {k:"pr",n:"舆论公关",cost:70,d:"压下负面，人气回升",
    run:()=>{S.fame+=14;}}
 ];
+/* 薪资 = 谈出来的年薪 + 人气与荣誉带来的浮动。
+   合同里那个数字必须真的算数，否则谈判就是假的。 */
 function salaryOf(){
-  const base=26+Math.round(S.fame*0.20)+ (S.career.leagueTitles||0)*14
+  const c=S.contract||{};
+  const bonus=Math.round(S.fame*0.20)+(S.career.leagueTitles||0)*14
     +((S.career.msi||0)+(S.career.worlds||0))*36;
+  if(c.salary!==undefined) return Math.round(c.salary+bonus);
+  // 老存档或没走谈判流程的情况，退回旧算法
   const kindMul={sub:1.25,start:1.0,core:0.85,foreign:1.15}[S.offerKind]||1;
-  return Math.round(base*kindMul);
+  return Math.round((26+bonus)*kindMul);
 }
 function payday(){
   const pay=salaryOf();
@@ -138,10 +143,22 @@ function contractCheck(){
   const ovr=avg(DIMS.map(d=>S.attrs[d]));
   const teamAvg=avg(myRoster().filter(p=>!p.me).map(p=>avg(DIMS.map(d=>p.r[d]))));
   const keep = ovr>=teamAvg-6 && avgTrust()>=35;
-  S.contract={years:2,left:2};
   if(keep){
-    pushEvent(`<b>${S.team}</b> 与你续约两年，薪资涨到 <b>${salaryOf()} 万</b>。`,"good","合同");
+    // 续约不是重签一份一样的合同：打得好，年薪和违约金都往上走
+    const raise=clamp(1.15+(ovr-teamAvg)*0.02,1.05,1.7);
+    const old=S.contract.salary;
+    S.contract={
+      years:2, left:2,
+      salary: old!==undefined?Math.round(old*raise):undefined,
+      sign: 0,
+      buyout: S.contract.buyout!==undefined?Math.round(S.contract.buyout*raise):undefined,
+      team:S.team, tier:S.contract.tier, grade:S.contract.grade,
+      clubTier:S.contract.clubTier
+    };
+    pushEvent(`<b>${S.team}</b> 与你续约两个赛段，薪资涨到 <b>${salaryOf()} 万</b>${
+      S.contract.buyout?`，违约金提到 <b>${S.contract.buyout} 万</b>`:""}。`,"good","合同");
     return null;
   }
+  S.contract={years:2,left:2};
   return "cut";
 }

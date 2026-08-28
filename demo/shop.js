@@ -141,7 +141,8 @@ function gearCard(){
     }).join("")}</div></div>`;
 }
 function shopCard(){
-  return `<div class="card"><h2>商城<em>余额 ${Math.round(S.money)} 万</em></h2>
+  return `${(typeof contractTerms==="function")?contractTerms():""}
+    <div class="card"><h2>商城<em>余额 ${Math.round(S.money)} 万</em></h2>
     <h3 style="font-size:14px">放松 · 花钱换体力，不占行动点</h3>
     <div class="grid g2">${RELAX.map(x=>`
       <button class="act" data-relax="${x.k}" ${S.money<x.cost?'disabled style="opacity:.35"':''}>

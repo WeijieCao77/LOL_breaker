@@ -181,6 +181,8 @@ function cupPayout(k,champion){
   if(k==="city") S.pre.cityCup=reached;
   else S.pre.streamCup=reached;
   if(typeof checkAch==="function") checkAch("cup",{kind:k,win:reached});
+  // 关键：不用夺冠。走得远，数据被记下来，就有人来问。
+  if(typeof checkTryoutInvite==="function") checkTryoutInvite(k,reached,champion);
   if(champion) preLog(`<b>${C.name} 冠军。</b>这个名字开始有人记住了。`,"big");
   // 结算先挂在这场比赛上，等玩家看完比分点「继续」再弹总结。
   // 之前这里直接 S.cupMatch=null，被淘汰那一场的比分和过程会凭空消失——

@@ -46,7 +46,7 @@ try {
     + "resolveLocker,ending,cap,rankFull,rankIcon,fameTier,scoutTier,preScore,hasAch,"
     + "buyGear,buyCourse,buyRelax,gearBonus,streamIncome,drawBackgrounds,advancePreWeek,capOf,"
     + "soloSkill,soloWinP,rankReq,doSquad,SQUAD_ACTS,squadOf,PRE_MILESTONES,"
-    + "resolveRandom,btkNote,BREAK_PATHS,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,setS:(v)=>{S=v}};")();
+    + "resolveRandom,btkNote,BREAK_PATHS,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,tryoutSkill,checkTryoutInvite,checkRankInvite,addInvite,startTryout,resolveTryoutDay,tryoutGrade,endTryout,makeDeal,askDeal,signDeal,dropDeal,afterTryout,dealLeverage,CLUB_TIERS,DEAL_TIERS,TRYOUT_DAYS,DEAL_ASKS,salaryOf,contractCheck,consumeOffer,preNextYear,setS:(v)=>{S=v}};")();
 } catch (e) {
   console.error("脚本解析失败:", e.message);
   process.exit(1);
@@ -68,7 +68,8 @@ function playOne(opts) {
 
   let guard = 0, preYears = 0, rankUps = 0, lockers = 0;
   let signups = 0, cupMatches = 0, preps = 0, cupPick = 0;
-  const cupRuns = [];
+  let invites = 0, tryPick = 0, dealPick = 0;
+  const cupRuns = [], grades = [], deals = [];
   while (A.S().step !== "end" && guard++ < 40000) {
     S = A.S();
     if (S.rankUp) { rankUps++; S.rankUp = null; continue; }
@@ -87,6 +88,28 @@ function playOne(opts) {
       continue;
     }
     if (S.locker) { lockers++; A.resolveLocker(0); continue; }
+    // ---- 试训链路：邀请 → 四天评估 → 谈判 → 签字 ----
+    if (S.pre && S.pre.invite && S.pre.invite.pending) {
+      const iv = S.pre.invite; iv.pending = false;
+      invites++;
+      A.startTryout(iv.tier, iv.team, iv.expect);   // 来了就去，测试要覆盖到
+      continue;
+    }
+    if (S.tryout) {
+      const t = S.tryout;
+      if (t.done) { grades.push(t.result.g); A.afterTryout(); }
+      else A.resolveTryoutDay(tryPick++ % 3);       // 轮着选，覆盖三种选项
+      continue;
+    }
+    if (S.deal) {
+      const d = S.deal;
+      if (d.dead) { A.dropDeal(); continue; }
+      // 还一次价再签——要测到谈判分支
+      if (d.asks < 1) { A.askDeal(A.DEAL_ASKS[dealPick++ % A.DEAL_ASKS.length].k); continue; }
+      deals.push({ salary:d.salary, sign:d.sign, years:d.years, buyout:d.buyout, grade:d.grade });
+      A.signDeal();
+      continue;
+    }
     if (S.step === "pre") {
       // 本周有到点的杯赛就先打——这是新赛程流程的主路径
       const due = A.activeCups().find(c => c.nextWeek <= S.pre.week);
@@ -98,7 +121,12 @@ function playOne(opts) {
         else A.preAct(S.pre.week % 4 === 0 ? "stream" : "rank");
       } else { const w = S.pre.week; A.preNextWeek(); if (A.S().pre && A.S().pre.week < w) preYears++; }
     } else if (S.step === "offer") {
-      A.acceptOffer(0);
+      // 年末报价现在也只是试训机会
+      const idx = S.pre.offers.findIndex(o => !o.used);
+      if (idx < 0) { S.step = "pre"; A.preNextYear(); continue; }   // 都试过了，再练一年
+      const of = S.pre.offers[idx];
+      const tier = { sub:"top", foreign:"top", start:"mid", core:"low" }[of.k] || "mid";
+      A.startTryout(tier, of.team, A.CLUB_TIERS[tier].expect);
     } else if (S.step === "season") {
       for (const x of A.SPEND) if (S.money >= x.cost && !(S.buff && S.buff[x.k])) { S.money -= x.cost; x.run(); break; }
       if (S.ap > 0) {
@@ -117,6 +145,8 @@ function playOne(opts) {
   return {
     ok: S.step === "end", steps: guard, preYears, rankUps, lockers,
     signups, cupMatches, preps, cupRuns,
+    invites, grades, deals,
+    contract: S.contract && S.contract.salary !== undefined ? S.contract : null,
     saved: A.hasSave(),
     team: S.team || "未签约", age: S.age,
     ach: A.ACHIEVEMENTS.filter(a => A.hasAch(a.id)).map(a => a.n),
