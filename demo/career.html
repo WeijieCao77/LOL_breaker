@@ -863,8 +863,9 @@ function proSeasonWrap(){
    玩家任何时候都该知道：哪个赛季、哪个阶段、还剩多久。 */
 function nowPhase(){
   const sea=SEASONS[S.si]||SEASONS[0];
+  // 「现在」是个时钟，只报时间。职业前是你的处境，不是赛季的阶段
   if(S.step==="pre"||S.step==="offer")
-    return {tag:sea.tag,phase:"职业前",detail:`第 ${S.pre?S.pre.week:1}/${PRE_YEAR} 周`,
+    return {tag:sea.tag,phase:String(sea.y),detail:`第 ${S.pre?S.pre.week:1}/${PRE_YEAR} 周`,
             urgent:S.pre&&S.pre.week>PRE_YEAR-4};
   if(S.intl){
     const n=S.intl.type==="msi"?"MSI":"世界赛";
@@ -884,7 +885,7 @@ function nowLabel(){ const n=nowPhase(); return `${n.tag} ${n.phase}${n.detail?"
 /* 事件戳：短一点，够定位就行 */
 function nowStamp(){
   const n=nowPhase();
-  if(n.phase==="职业前") return `${n.tag} 职前W${S.pre?S.pre.week:1}`;
+  if(S.step==="pre"||S.step==="offer") return `${n.tag} W${S.pre?S.pre.week:1}`;
   if(n.phase==="MSI"||n.phase==="世界赛") return `${n.tag} ${n.phase}`;
   if(n.phase==="休赛期") return `${n.tag} 休赛期`;
   if(n.phase.includes("季后赛")) return `${n.tag} ${n.phase}`;
@@ -4882,7 +4883,7 @@ function hud(){
       <div><div class="k">选手</div><div class="v">${S.name||"你"} <small>${POSN[S.pos]}</small></div></div>
       <div><div class="k">年龄</div><div class="v mono">${S.age}</div></div>
       <div class="hud-now ${nowPhase().urgent?'urgent':''}"><div class="k">现在</div>
-        <div class="v">${nowPhase().tag} 职业前 <small>${nowPhase().detail} · 窗口剩 ${Math.max(0,PRE_YEAR-S.pre.week)} 周</small></div></div>
+        <div class="v">${nowPhase().tag} ${nowPhase().phase} <small>${nowPhase().detail} · 窗口剩 ${Math.max(0,PRE_YEAR-S.pre.week)} 周</small></div></div>
       <div><div class="k">段位</div><div class="v">${rankBadge(S.pre.rank,26)}</div></div>
       <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div></div>
       <div><div class="k">下一节点</div><div class="v">${(()=>{const n=nextMilestone();
