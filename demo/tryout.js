@@ -321,11 +321,27 @@ function dealCard(){
         <div class="d">${a.d}<br><span style="color:var(--ink-3)">${a.hint}</span></div></button>`;
     }).join("")}</div>
     ${d.log.length?`<div class="log">${d.log.slice().reverse().join("")}</div>`:""}
-    <div class="row"><button class="btn" id="dealsign">就这么签 →</button></div>
-    <p class="note">签字费当场到账，年薪每个赛段结算一次。违约金越高，以后别队越难把你买走。</p>
+    <div class="row">
+      <button class="btn" id="dealsign">就这么签 →</button>
+      <button class="btn ghost" id="dealno">不签，再练一年</button>
+    </div>
+    <p class="note">签字费当场到账，年薪每个赛段结算一次。违约金越高，以后别队越难把你买走。<br>
+      <b>不签也是一条路</b>——青训合同签下去就是两个赛段的板凳，
+      再练一年换一家更好的队未必更亏。但这家今年不会再来了。</p>
   </div>`;
 }
 
+
+/* 主动拒签。评级过了不等于必须签——给的是青训合同的话，
+   再练一年换一家更好的队是完全合理的打法，不该被系统堵死。
+   代价由 dropDeal 里的 consumeOffer 承担：这家今年就没了。 */
+function declineDeal(){
+  const d = S.deal; if(!d) return;
+  const D = DEAL_TIERS[d.dealTier];
+  preLog(`拒绝了 <b>${d.team}</b> 的${D.n}（年薪 ${d.salary} 万）。
+    你觉得自己值更多——那就得在剩下的时间里证明它。`, "info");
+  dropDeal();
+}
 
 /* ---------- 四、签字 ---------- */
 /* 谈完了才真正进队。签字费当场到账，其余条款写进合同，

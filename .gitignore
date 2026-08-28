@@ -22,3 +22,7 @@ live.html
 
 # Claude Code 本地配置
 .claude/
+
+# 小红书小工具构建产物（由 build_xhs.py 生成）
+demo/xhs/
+demo/*.zip

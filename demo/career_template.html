@@ -2334,6 +2334,11 @@ function bind(){
   st.querySelectorAll("[data-ask]").forEach(b=>b.onclick=()=>askDeal(b.dataset.ask));
   const _ds=$("dealsign"); if(_ds) _ds.onclick=signDeal;
   const _de=$("dealend");  if(_de) _de.onclick=dropDeal;
+  const _dn=$("dealno");   if(_dn) _dn.onclick=()=>askConfirm("拒绝这份合同",
+    `<b>${S.deal.team}</b> 给的是 <b>${DEAL_TIERS[S.deal.dealTier].n}</b>，年薪 ${S.deal.salary} 万。<br>
+     拒了就没了——这家今年不会再来第二次。<br>
+     <span class="note">剩下的时间你得练出更好的成绩，才会有更好的队来找你。</span>`,
+    "拒绝", declineDeal);
   st.querySelectorAll("[data-train]").forEach(b=>b.onclick=()=>doTrain(b.dataset.train));
   st.querySelectorAll("[data-cupprep]").forEach(b=>b.onclick=()=>cupPrep(b.dataset.cupprep));
   st.querySelectorAll("[data-cupgo]").forEach(b=>b.onclick=()=>startCupMatch(b.dataset.cupgo));

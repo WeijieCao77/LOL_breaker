@@ -46,7 +46,7 @@ try {
     + "resolveLocker,ending,cap,rankFull,rankIcon,fameTier,scoutTier,preScore,hasAch,"
     + "buyGear,buyCourse,buyRelax,gearBonus,streamIncome,drawBackgrounds,advancePreWeek,capOf,"
     + "soloSkill,soloWinP,rankReq,doSquad,SQUAD_ACTS,squadOf,PRE_MILESTONES,"
-    + "resolveRandom,btkNote,BREAK_PATHS,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,tryoutSkill,checkTryoutInvite,checkRankInvite,addInvite,startTryout,resolveTryoutDay,tryoutGrade,endTryout,makeDeal,askDeal,signDeal,dropDeal,afterTryout,dealLeverage,CLUB_TIERS,DEAL_TIERS,TRYOUT_DAYS,DEAL_ASKS,salaryOf,contractCheck,consumeOffer,preNextYear,setS:(v)=>{S=v}};")();
+    + "resolveRandom,btkNote,BREAK_PATHS,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,tryoutSkill,checkTryoutInvite,checkRankInvite,addInvite,startTryout,resolveTryoutDay,tryoutGrade,endTryout,makeDeal,askDeal,signDeal,dropDeal,declineDeal,afterTryout,dealLeverage,CLUB_TIERS,DEAL_TIERS,TRYOUT_DAYS,DEAL_ASKS,salaryOf,contractCheck,consumeOffer,preNextYear,setS:(v)=>{S=v}};")();
 } catch (e) {
   console.error("脚本解析失败:", e.message);
   process.exit(1);
