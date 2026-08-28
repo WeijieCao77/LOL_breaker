@@ -3796,7 +3796,7 @@ function buffChips(){
 const RANDOM_EVENTS=[
   {id:"edgLose", w:3, when:()=>true,
    q:()=>{ const t=["EDG","RNG","JDG","BLG","TES","LNG"][Math.floor(rnd()*6)];
-           S._ev={t}; return `你从小看的 <b>${S._ev.t}</b> today 又输了，还是那种该赢的局。`; },
+           S._ev={t}; return `你从小看的 <b>${S._ev.t}</b> 今天又输了，还是那种该赢的局。`; },
    ctx:"你盯着结算界面看了很久。",
    a:[{t:"憋着一股劲，加练",e:()=>{addBuff("train",1.5,2,"憋着劲");addFat(6);
         return "接下来两周你练得比谁都狠。"}},
