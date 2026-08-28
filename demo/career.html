@@ -4908,24 +4908,39 @@ const NODES_MORE=[
 
 /* 对手强度怎么定？
 
-   一开始写的是固定值（城市赛 34 起步，每轮 +4.2）。问题是玩家在
-   第 10 周就已经有 53 的战力了——首轮胜率 98%，决赛还有 86%，
-   整个赛程夺冠率 77%，而且首轮最无聊：领先 17.8 分，毫无悬念。
+   两条约束，缺一不可：
 
-   现在改成「报名那一刻锚定你自己的水平」，再按轮次往上爬：
-     lead0  首轮你领先多少（正数=你占优）
-     step   每轮对手涨多少
-   数值是按 BO3 反推的：三局两胜会把单局优势放大，
-   单局 73% 到了 BO3 就是 85%，所以 lead0 要压得比直觉低。
-   于是首轮是场稳的，越往后越紧，最后一轮要靠备战和临场决策去搏。
-   floor 是绝对下限，防止水平太低的人报名后面对一群更弱的对手。   */
+   一、绝对强度，不跟着玩家走。
+       国服第一去打城市争霸赛就该碾压，这是常识；
+       一个大师去打，打得艰难才是对的。
+       （之前试过按报名时的水平锚定，等于把「变强」这件事抵消掉了，
+         练到国服第一还是一样难——不合理。）
+
+   二、必须明显比职业赛容易。
+       市级公开赛不该比 LPL 难。实测过一版带宽定高了的：
+       业余杯赛胜率 55%，职业赛 65%——杯赛反而更难，荒谬。
+       原因是职业赛有队友、默契、战术、士气一起抬，
+       而这里几乎是纯个人，所以对手带必须压得更低。
+
+   带宽按玩家在这个阶段的真实水平定标：
+   第 10 周报名时玩家约 54，第 16 周决赛时约 57。
+
+     城市争霸赛  46 → 56
+       首轮明显打得过（网吧联队），决赛才追平你当时的水平（市队）。
+       名单长度要和轮数一致，否则最后一支永远轮不到——决赛得是最强的那支。
+     主播杯      50 → 59
+       邀请制，门槛更高，整体上浮一档；决赛的冠军主播队要强过你。
+
+   注意：这里的数字和职业选手评分不是一把尺子——
+   职业评分是在同位置同层级内做 z 标准化的（见 export_game.py），
+   50 分意思是「该层级的平均水平」，不能跨系统直接比大小。      */
 const CUPS={
-  city:{ name:"城市争霸赛", rounds:4, gap:2, lead0:2.6, step:2.3, floor:34,
+  city:{ name:"城市争霸赛", rounds:4, gap:2, band:[46,56],
          prize:[0,25,70,180,420],
-         opps:["网吧联队","本地车队","大学生战队","青训预备组","市队"] },
-  stream:{ name:"主播杯", rounds:3, gap:2, lead0:0.5, step:2.6, floor:40,
+         opps:["网吧联队","本地车队","大学生战队","市队"] },
+  stream:{ name:"主播杯", rounds:3, gap:2, band:[50,59],
          prize:[0,60,180,520],
-         opps:["百万粉丝队","退役选手队","平台官方队","冠军主播队"] }
+         opps:["百万粉丝队","退役选手队","冠军主播队"] }
 };
 
 /* ---------- 报名之后：建赛程，而不是直接出结果 ---------- */
@@ -4934,7 +4949,6 @@ function enterCup(kind){
   S.cups=S.cups||{};
   S.cups[kind]={ kind, name:C.name, round:1, rounds:C.rounds,
                  nextWeek:S.pre.week+C.gap, alive:true, wins:0, prep:0,
-                 anchor:cupMyPower(null),      // 报名时的你，就是这届赛事的标尺
                  oppRoll:rollOpp() };
   preLog(`报名成功。<b>${C.name}</b> 第一轮在 <b>第 ${S.cups[kind].nextWeek} 周</b>——
     中间这两周你可以练，也可以专门备战。`,"good");
@@ -4946,9 +4960,17 @@ function rollOpp(){ return (rnd()-0.5)*3.0; }   // 每轮抽一次，签运
 function cupOppPower(k){
   const c=cupOf(k), C=CUPS[k];
   if(!c||!C) return 0;
-  const anchor=(c.anchor!==undefined)?c.anchor:C.floor+C.lead0;
-  const v=anchor-C.lead0+(c.round-1)*C.step;
-  return Math.max(C.floor+(c.round-1)*C.step, v)+((c.oppRoll!==undefined)?c.oppRoll:0);
+  const [lo,hi]=C.band;
+  const t=(C.rounds>1)?(c.round-1)/(C.rounds-1):0;
+  return lo+(hi-lo)*t+((c.oppRoll!==undefined)?c.oppRoll:0);
+}
+/* 把强度翻回段位，界面上直说「这一轮对手大概什么水平」。
+   玩家对段位有直觉，对 56.9 这个数字没有。 */
+function powerRank(p){
+  const v=clamp((p-40)/0.38,0,100);
+  let n=RANKS[0].n;
+  RANKS.forEach(r=>{ if(v>=r.at) n=r.n; });
+  return n;
 }
 function cupOppName(k){
   const c=cupOf(k), C=CUPS[k];
@@ -5083,15 +5105,21 @@ function cupCard(){
     const d=my-op;
     return `<div class="card cup"><h2>${C.name}<em>第 ${c.round}/${C.rounds} 轮</em></h2>
       <div class="next">
-        <div class="sd"><div class="nm">${meName()}</div><div class="pw">状态 ${my.toFixed(0)}</div></div>
+        <div class="sd"><div class="nm">${meName()}</div>
+          <div class="pw">${powerRank(my)}水平 · ${my.toFixed(0)}</div></div>
         <div class="mid">VS</div>
-        <div class="sd"><div class="nm">${cupOppName(k)}</div><div class="pw">强度 ${op.toFixed(0)}</div></div>
+        <div class="sd"><div class="nm">${cupOppName(k)}</div>
+          <div class="pw">${powerRank(op)}水平 · ${op.toFixed(0)}</div></div>
       </div>
       <p class="note" style="margin-top:10px">${wait>0
         ? `还有 <b>${wait} 周</b>开打。这几周可以正常训练，也可以专门备战。`
         : `<b style="color:var(--gold)">就是本周。</b>`}
         ${c.prep>0?`　已备战 ${c.prep} 次。`:""}
-        <br>${d>4?"这一轮对手不算强。":d>-2?"势均力敌，就看临场那几个决定。":"对手比你强，得靠决策赌一把。"}</p>
+        <br>${d>8?"这个级别的对手你已经打过太多了，稳住就行。"
+             :d>3?"你占优，但别浪。"
+             :d>-2?"势均力敌，就看临场那几个决定。"
+             :d>-7?"对手比你强，得靠备战和决策去搏。"
+             :"实力差得有点多——赢面很小，除非临场赌对。"}</p>
       <div class="row">
         <button class="act" data-cupprep="${k}" style="flex:1" ${S.pre.ap<=0?'disabled':''}>
           <div class="t">备战</div><div class="d">看对手录像，提升这一轮的赢面</div></button>
