@@ -37,15 +37,23 @@ function simBo(a,b,need){ let x=0,y=0,p=winProb(a,b); while(x<need&&y<need){ rnd
 function minorChampion(lg){
   return S.world[lg].slice().sort((a,b)=>power(b.players)-power(a.players))[0].name;
 }
-/* 大赛区季后赛：前四打两轮，返回排名 [冠,亚,季,殿] */
+/* 大赛区季后赛：前四打两轮，返回排名 [冠,亚,季,殿]。
+   结果按「赛季+赛段+赛区」缓存：同一个季后赛只打一次。
+   不缓存的话，每次调用都会重摇一遍——「没进季后赛」时播给玩家的冠军，
+   和随后组世界赛名单用的冠军，可能是两支不同的队。 */
 function majorStandings(lg){
   const rk=rankOf(lg).map(x=>x.n);
   if(rk.length<4) return rk;
+  S.poCache=S.poCache||{};
+  const key=S.si+"|"+(S.split||0)+"|"+lg;
+  if(S.poCache[key]) return S.poCache[key].slice();
   const w1=simBo(rk[0],rk[3],3), w2=simBo(rk[1],rk[2],3);
   const champ=simBo(w1,w2,3);
   const runner=(champ===w1)?w2:w1;
   const rest=rk.filter(n=>n!==champ&&n!==runner);
-  return [champ,runner,rest[0],rest[1]];
+  const res=[champ,runner,rest[0],rest[1]];
+  S.poCache[key]=res.slice();
+  return res;
 }
 
 /* ---------- 组建世界赛 16 强 ---------- */
@@ -68,7 +76,8 @@ function buildWorldsField(playerResult,cfg){
   else if(playerResult===3) mySlot=2;
   else if(playerResult===2) mySlot=3;
   else if(playerResult===1 && S.playoffSeed && S.playoffSeed<=2) mySlot=4;
-  const others=seeds[HL].filter(n=>n!==S.team);
+  // LDL 不在 MAJOR 里：青训选手围观世界赛时，本赛区名额全走 LPL 那份
+  const others=(seeds[HL]||[]).filter(n=>n!==S.team);
   if(mySlot){
     seeds[HL]=others.slice(0,mySlot-1).concat([S.team]).concat(others.slice(mySlot-1)).slice(0,4);
   }else{
@@ -148,10 +157,9 @@ function openIntl(type,field,stage){
   field=field.filter(Boolean);
   const name=type==="msi"?"MSI":"世界赛";
   if(!field.includes(S.team)){
-    const champ=simWholeEvent(field,stage);
-    pushEvent(`${name}落幕，<b>${champ}</b> 捧起奖杯。${
-      leagueOf(champ)==="LCK"?"LCK 又一次站在了最高处。":"你在屏幕外看完了颁奖。"}`,
-      leagueOf(champ)==="LCK"?"bad":"info",name);
+    // 你没资格进正赛。但赛事不在这里一步跑完——
+    // 名单先记下来，由 spectateIntl 把它铺在接下来几周里，冠军最后揭晓。
+    S._spec={type,field:field.slice(),stage};
     return false;
   }
   S.intl={type,stage,field,record:[0,0],round:1,
@@ -215,6 +223,68 @@ function simWholeEvent(field,stage){
     alive=nx;
   }
   return alive[0];
+}
+/* 同一套模拟，但把每一轮的名单留下来，供分周播报 */
+function simEventStaged(field,stage){
+  let eight=field.slice().filter(Boolean);
+  if(stage==="swiss"||stage==="groups"){
+    eight=eight.slice().sort((a,b)=>pw(b)-pw(a)).slice(0,8);
+  }
+  const step=arr=>{
+    const nx=[];
+    for(let i=0;i<arr.length;i+=2){
+      nx.push(i+1<arr.length?simBo(arr[i],arr[i+1],3):arr[i]);
+    }
+    return nx;
+  };
+  let four=step(eight);
+  while(four.length>4) four=step(four);        // 名单不是 8 的时候多打几轮
+  const two=step(four);
+  return {eight,four,two,champ:step(two)[0]};
+}
+/* 冠军播报——围观和亲历淘汰共用一句 */
+function intlChampEvent(name,champ){
+  const lck=leagueOf(champ)==="LCK";
+  return {text:`${name}落幕，<b>${champ}</b> 捧起奖杯。${
+      lck?"LCK 又一次站在了最高处。":"你在屏幕外看完了颁奖。"}`,
+    tone:lck?"bad":"info", tag:name};
+}
+/* ---------- 围观：没资格去的赛事，照打，分周揭晓 ----------
+   MSI 铺在季中间歇（2 周）里，世界赛自成 3 周。
+   这几周就是普通的间歇周：训练、直播、休息、战队行动都开着。 */
+function spectateIntl(type){
+  const spec=(S._spec&&S._spec.type===type)?S._spec:null;
+  S._spec=null;
+  const F=SEASONS[S.si];
+  let field,stage;
+  if(spec){ field=spec.field; stage=spec.stage; }
+  else if(type==="msi"){
+    const seeds={}; MAJOR.forEach(lg=>seeds[lg]=majorStandings(lg));
+    field=MAJOR.flatMap(lg=>seeds[lg].slice(0,2));
+    stage=F.msi.mode==="groups"?"groups":"knockout";
+  }else{
+    const cfg=F.worlds;
+    const {direct,playin}=buildWorldsField(null,cfg);
+    field=direct.concat(simPlayIn(playin).slice(0,cfg.playin.take));
+    stage=cfg.main;
+  }
+  const name=type==="msi"?"MSI":"世界赛";
+  const st=simEventStaged(field,stage);
+  const ev=intlChampEvent(name,st.champ);
+  if(type==="msi"){
+    enterBreak("summer",MID_WEEKS,"季中间歇 · MSI 进行中",
+      `春季赛收官。MSI 在没有你的情况下开打——<b>夏季赛才是你的下一战</b>，这两周把该补的补上。`);
+    queueBreakNews(1,`MSI 开赛，${field.length} 支队伍到场。你在训练室里看完了揭幕战。`,"info","MSI");
+    queueBreakNews(2,`MSI 四强出炉：${st.four.map(n=>`<b>${n}</b>`).join("、")}。`,"info","MSI");
+    queueBreakNews(3,ev.text,ev.tone,ev.tag);          // 间歇结束时揭晓
+  }else{
+    enterBreak("wrap",3,"世界赛期间",
+      `你的赛季提前结束了。世界赛在没有你的情况下开打——<b>这三周，练</b>。明年站上去的得是你。`);
+    queueBreakNews(1,`世界赛${stage==="swiss"?"瑞士轮":stage==="groups"?"小组赛":""}开打，${field.length} 支队伍向奖杯发起冲击。没有你的名字。`,"info","世界赛");
+    queueBreakNews(2,`世界赛八强出炉：${st.eight.map(n=>`<b>${n}</b>`).join("、")}。`,"info","世界赛");
+    queueBreakNews(3,`世界赛四强：${st.four.map(n=>`<b>${n}</b>`).join("、")}。决赛就在下周。`,"info","世界赛");
+    queueBreakNews(4,ev.text,ev.tone,ev.tag);          // 三周走完、进结算前揭晓
+  }
 }
 
 /* ---------- 每场之后 ---------- */
@@ -326,12 +396,42 @@ function finishIntl(stageText,kind){
   pushEvent(`${name} ${stageText}：<b>${S.team}</b> 的赛季结束了。`,"bad",name);
   S.intlResult=(S.intlResult||{}); S.intlResult[I.type]=kind;
   noteDepth(kind);
+  // 你回家了，赛事还没完。剩下的对阵照打，冠军过几天才揭晓——
+  // 决赛输掉是例外：刚赢你的那支队就是冠军，当场就知道。
+  if(kind==="final"&&S.match){
+    const ev=intlChampEvent(name,S.match.oppName);
+    pushEvent(ev.text,ev.tone,ev.tag);
+  }else{
+    const base=((I.stage==="knockout"?(I.knockField||I.field):I.field)||[]).filter(n=>n!==S.team);
+    if(base.length){
+      const champ=simWholeEvent(base,I.stage==="knockout"?"knockout":I.stage);
+      if(champ) S._intlWrap={name,champ};
+    }
+  }
   S.intl=null; afterIntl();
 }
 function afterIntl(){
-  // MSI 打完回夏季赛，世界赛打完进休赛期
-  if(S.afterIntlGo==="summer"){ S.afterIntlGo=null; startSeason(false,1); return; }
-  S.afterIntlGo=null;
+  // MSI 打完回夏季赛，世界赛打完进休赛期。
+  // 被淘汰的人先过一段「赛事还在打」的日子，冠军在间歇的最后才揭晓。
+  const go=S.afterIntlGo; S.afterIntlGo=null;
+  const wrap=S._intlWrap; S._intlWrap=null;
+  if(go==="summer"){
+    if(wrap){
+      enterBreak("summer",1,"季中间歇",
+        `MSI 出局了。夏季赛开始前还有一点时间——<b>世界赛名额就看下个赛段</b>。`);
+      const ev=intlChampEvent(wrap.name,wrap.champ);
+      queueBreakNews(2,ev.text,ev.tone,ev.tag);      // 间歇结束时揭晓
+      return;
+    }
+    startSeason(false,1); return;
+  }
+  if(wrap){
+    enterBreak("wrap",2,"世界赛 · 你出局之后",
+      `你的世界赛结束了，比赛还在打。<b>剩下的几周，先把自己捡起来。</b>`);
+    const ev=intlChampEvent(wrap.name,wrap.champ);
+    queueBreakNews(3,ev.text,ev.tone,ev.tag);        // 两周走完、进结算前揭晓
+    return;
+  }
   S.step="offseason"; render();
 }
 

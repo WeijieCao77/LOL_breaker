@@ -24,7 +24,9 @@ function coachTrust(){ return clamp((S.staff&&S.staff.coach)||50,0,100); }
 function mgrTrust(){ return clamp((S.staff&&S.staff.mgr)||50,0,100); }
 function addStaff(k,n){
   if(!S.staff) initStaff();
-  S.staff[k]=clamp(S.staff[k]+n,0,100);
+  // q1：写入就掐掉浮点尾巴，否则回归公式滚几个赛段，
+  // 界面上就会出现 47.60402559999999 这种数
+  S.staff[k]=q1(clamp(S.staff[k]+n,0,100));
 }
 
 /* ---------- 威望 ---------- */
@@ -101,7 +103,7 @@ function relMod(){
 /* 关系每赛段的自然漂移：一起赢会更近，一起输会互相埋怨 */
 function relDrift(won){
   Object.keys(S.rel||{}).forEach(k=>{
-    S.rel[k]=clamp(S.rel[k]+(won?1.6:-2.2)+(rnd()*5-2.5),0,100);
+    S.rel[k]=q1(clamp(S.rel[k]+(won?1.6:-2.2)+(rnd()*5-2.5),0,100));
   });
 }
 
@@ -109,7 +111,7 @@ function relDrift(won){
 function canList(){
   const c=cloutOf(), ct=coachTrust();
   if(c<55) return {ok:false,why:`威望不够（${c}/55）。先打出成绩再谈阵容。`};
-  if(ct<68) return {ok:false,why:`教练不认你（信任 ${ct}/68）。他不会为你动人。`};
+  if(ct<68) return {ok:false,why:`教练不认你（信任 ${Math.round(ct)}/68）。他不会为你动人。`};
   if(S.listCooldown>0) return {ok:false,why:`刚提过一次，${S.listCooldown} 个赛段内别再提。`};
   return {ok:true};
 }
@@ -159,7 +161,7 @@ function doList(id){
 function canSign(){
   const c=cloutOf(), mt=mgrTrust();
   if(c<66) return {ok:false,why:`威望不够（${c}/66）。这种要求得是队魂级别的人才提得动。`};
-  if(mt<72) return {ok:false,why:`经理不认你（信任 ${mt}/72）。他要先看到你值这个钱。`};
+  if(mt<72) return {ok:false,why:`经理不认你（信任 ${Math.round(mt)}/72）。他要先看到你值这个钱。`};
   if(S.signCooldown>0) return {ok:false,why:`本赛季已经提过，${S.signCooldown} 个赛段后再说。`};
   return {ok:true};
 }
@@ -231,8 +233,8 @@ function cloutTick(won){
   // 信任向 50 回归：教练和经理不会因为你两年前打得好就一直信你。
   // 不加这条，中期之后门槛形同虚设。
   if(S.staff){
-    S.staff.coach=clamp(S.staff.coach+(50-S.staff.coach)*0.32,0,100);
-    S.staff.mgr  =clamp(S.staff.mgr  +(50-S.staff.mgr)  *0.32,0,100);
+    S.staff.coach=q1(clamp(S.staff.coach+(50-S.staff.coach)*0.32,0,100));
+    S.staff.mgr  =q1(clamp(S.staff.mgr  +(50-S.staff.mgr)  *0.32,0,100));
   }
   // 教练看你练不练、比赛顶不顶
   const g=(S.record?S.record.w+S.record.l:0);

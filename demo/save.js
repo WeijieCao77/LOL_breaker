@@ -67,6 +67,17 @@ function readSave() {
 function hasSave() { const b = readSave(); return !!(b && !b.bad); }
 function dropSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
 
+/* 老存档里攒下的浮点尾巴（47.60402559999999 这种）一次性抹平。
+   新代码在写入处已经 q1 了，这里只为已经存坏的档做一次清洗。 */
+function scrubFloats(s) {
+  const q = v => Math.round(v * 10) / 10;
+  const fix = o => { if (o) Object.keys(o).forEach(k => { if (typeof o[k] === "number") o[k] = q(o[k]); }); };
+  try {
+    fix(s.staff); fix(s.trust); fix(s.rel); fix(s.squad);
+    if (typeof s.form === "number") s.form = q(s.form);
+    if (typeof s.fatigue === "number") s.fatigue = q(s.fatigue);
+  } catch (e) {}
+}
 function loadGame() {
   const blob = readSave();
   if (!blob || blob.bad) return false;
@@ -74,6 +85,7 @@ function loadGame() {
     S = blob.S;
     // 存档时被剔除的弹窗字段补回空值，避免到处 undefined
     SAVE_SKIP.forEach(k => { if (S[k] === undefined) S[k] = null; });
+    scrubFloats(S);
     S.tab = "act";
     // 读档落在比赛中途会尴尬——回到本周界面
     if (S.step === "match") S.step = S.pre && !S.career ? "pre" : "season";

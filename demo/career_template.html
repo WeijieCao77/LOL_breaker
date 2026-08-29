@@ -288,6 +288,11 @@ const SEASONS=[
 const $=id=>document.getElementById(id);
 const rnd=()=>Math.random();
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+/* 数值统一量化到一位小数。
+   信任、默契这类池子每赛段都做「×0.32 向 50 回归」，浮点尾巴会越滚越长，
+   最后 47.60402559999999 这种数直接印在界面上。在写入的地方掐掉尾巴，
+   显示层就永远不用提防它——0.1 的精度对平衡毫无影响。 */
+const q1=v=>Math.round(v*10)/10;
 const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
 const mult=t=>0.40+t*0.16;
 const cap=t=>38+t*5;   // 天赋1->43(职业及格线)  天赋10->88(历史级)
@@ -615,6 +620,8 @@ function yearWeek(){
   if(S.step==="end")       return yearTotal();
   if(S.step==="offseason"){
     if(S.off&&S.off.next==="playoff") return base+phaseOffset((S.split>=1)?"supo":"sppo");
+    if(S.off&&S.off.next==="poEnd")  return base+phaseOffset((S.split>=1)?"supo":"sppo")+(S.off.week||1);
+    if(S.off&&S.off.next==="wrap")   return base+phaseOffset("worlds")+(S.off.week||1);
     if(S.off&&S.off.next==="summer") return base+phaseOffset("msi")+(S.off.week||1);
     return base+phaseOffset("off")+((S.off&&S.off.week)||1);
   }
@@ -1421,7 +1428,7 @@ function doAction(k){
     if(S.form!==undefined){
       const before=S.form;
       // 往「不错」的方向拉，但越接近上限拉得越慢；不可能靠排位刷到爆表
-      S.form=clamp(S.form+((68-S.form)*0.11+1.2)*prepMul,25,95);
+      S.form=q1(clamp(S.form+((68-S.form)*0.11+1.2)*prepMul,25,95));
       if(Math.round(S.form)>Math.round(before))
         pushEvent(`打了一晚上排位，手感回来一些（状态 ${Math.round(before)} → ${Math.round(S.form)}）。`,"info","排位");
     }
@@ -1896,7 +1903,24 @@ function startPlayoff(){
   const rk=lplRank(), seed=rk.findIndex(r=>r.n===S.team)+1;
   S.career.best=Math.min(S.career.best,seed);
   S.playoffSeed=seed;
-  if(seed>6){ S.playoff=null; endSeason(null,seed); return; }
+  if(seed>6){
+    /* 没进季后赛，但季后赛不会因此消失。
+       原来这里直接 endSeason()：常规赛最后一场刚打完，下一秒就弹出
+       世界赛冠军、跳进休赛期——世界像是替你按了快进。
+       现在别人打季后赛的这两周照样流逝，你训练、直播、休息都行，
+       半决赛和决赛的结果按周揭晓。 */
+    S.playoff=null;
+    const fin=majorStandings(S.homeLeague||"LPL");   // 有缓存：这里播的冠军就是之后的国际赛种子
+    S.pendingEnd={result:null,seed};
+    enterBreak("poEnd",2,SPLITS[S.split||0]+"季后赛 · 场边",
+      `常规赛第 ${seed} 名，无缘季后赛。<b>别人在打季后赛的这几周，你的时间是自己的</b>——练、直播、休息，都行。`);
+    if(fin&&fin.length>=4){
+      queueBreakNews(2,`季后赛半决赛打完：<b>${fin[0]}</b> 和 <b>${fin[1]}</b> 会师决赛，${fin[2]}、${fin[3]} 止步四强。`,"info","季后赛");
+      queueBreakNews(3,`<b>${fin[0]}</b> 击败 ${fin[1]}，夺得 ${SEASONS[S.si].tag} ${S.homeLeague||"LPL"}${SPLITS[S.split||0]}冠军。${
+        (S.homeLeague||"LPL")==="LDL"?"":S.split===0?"他们将代表赛区出战 MSI。":"他们拿到了世界赛的头号种子。"}`,"big","季后赛");
+    }
+    return;
+  }
   S.playoffSeed=seed;
   checkAch("playoff");
   S.playoff={round:1,seed,alive:true,beaten:[S.team]};
@@ -2007,21 +2031,20 @@ function endSeason(result,seed){
   // 二级联赛的冠军不去国际赛——LDL 打得再好也只是升上一队的资格
   const majorLg = (S.homeLeague||"LPL")!=="LDL";
   if(S.split===0){
-    // 春季赛结束 -> 冠军去 MSI -> 然后开夏季赛
+    // 春季赛结束 -> 冠军去 MSI -> 然后开夏季赛。
+    // 没去 MSI 的人也不会看到世界快进：MSI 照打，结果在间歇期里分周揭晓。
     S.afterIntlGo="summer";
     if(majorLg&&result==="champion"&&startIntl("msi",result)) return;
     S.afterIntlGo=null;
-    enterBreak("summer", MID_WEEKS, "季中间歇");   // 没去 MSI，那就有两周空当
+    spectateIntl("msi");
     return;
   }
-  // 夏季赛结束 -> 世界赛 -> 休赛期
+  // 夏季赛结束 -> 世界赛 -> 休赛期。
+  // 没资格去的人，世界赛那三周照样过：你在训练室里，冠军在最后一周才揭晓。
   S.afterIntlGo="offseason";
-  S.pendingWorlds=result;
-  const pr=S.pendingWorlds; S.pendingWorlds=null;
-  if(majorLg&&startIntl("worlds",pr)) return;
-  S.afterIntlGo=null; S.step="offseason";
-  if(typeof saveGame==='function') saveGame('休赛期');
-  render();
+  if(majorLg&&startIntl("worlds",result)) return;
+  S.afterIntlGo=null;
+  spectateIntl("worlds");
 }
 
 function viewOffseason(){
@@ -2058,13 +2081,29 @@ const OFF_WEEKS=3, MID_WEEKS=2;
 /* 春夏之间也是一段没有比赛的日子。
    原来没进 MSI 就直接开夏季赛，中间一点时间都没有——
    可那正是现实里休整、补短板的窗口。用同一套面板，只是去向不同。 */
-function enterBreak(next, weeks, label){
+function enterBreak(next, weeks, label, note){
   S.off={week:1, weeks, next, label};
   S.ap=apFor("off");
   S.step="offseason";
   S.fatigue=Math.max(0,S.fatigue-20);
-  pushEvent(`${label}（${weeks} 周）。没有比赛，正好把该补的补上。`,"info","间歇");
+  pushEvent(note||`${label}（${weeks} 周）。没有比赛，正好把该补的补上。`,"info","间歇");
   render();
+}
+/* ---------- 间歇期的分周新闻 ----------
+   没进季后赛/世界赛时，别人的比赛照打。结果不能一口气全倒出来——
+   半决赛、决赛、冠军按周揭晓，世界才有「还在转」的感觉。 */
+function queueBreakNews(week,text,tone,tag){
+  if(!S.off||week<=S.off.week){ pushEvent(text,tone,tag); return; }
+  S.off.news=S.off.news||{};
+  (S.off.news[week]=S.off.news[week]||[]).push({text,tone,tag});
+}
+function flushBreakNews(week){
+  if(!S.off||!S.off.news) return;
+  Object.keys(S.off.news).map(Number).sort((a,b)=>a-b).forEach(w=>{
+    if(w>week) return;
+    S.off.news[w].forEach(e=>pushEvent(e.text,e.tone,e.tag));
+    delete S.off.news[w];
+  });
 }
 function doOffseason(){
   if(S.off) return;          // 已经在休赛期里了，别把周数重置回第 1 周
@@ -2084,12 +2123,23 @@ function offNextWeek(){
   if(!S.off) return;
   if(typeof archiveWeek==="function") archiveWeek();
   if(S.off.week>=S.off.weeks){
+    flushBreakNews(1e9);                                  // 攒着的决赛与冠军，离开前全部揭晓
     const nx=S.off.next; S.off=null;
+    if(nx==="poEnd"){                                     // 别人的季后赛落幕 -> 赛段结算
+      const pe=S.pendingEnd; S.pendingEnd=null;
+      endSeason(pe?pe.result:null, pe?pe.seed:7); return;
+    }
+    if(nx==="wrap"){                                      // 世界赛落幕 -> 赛季结算页
+      S.step="offseason";
+      if(typeof saveGame==='function') saveGame('赛季结算');
+      render(); return;
+    }
     if(nx==="summer"){ startSeason(false,1); return; }    // 间歇结束 -> 夏季赛
     if(nx==="playoff"){ startPlayoff(); return; }         // 休整结束 -> 季后赛
     finishOffseason(); return;
   }
   S.off.week++; S.ap=apFor("off"); addFat(-14);
+  flushBreakNews(S.off.week);
   if(typeof tickBuffs==='function') tickBuffs();
   if(typeof tryRandomEvent==='function'&&rnd()<0.16) tryRandomEvent();
   if(typeof saveGame==='function') saveGame('休赛期第'+S.off.week+'周');
@@ -2135,6 +2185,10 @@ function offPanel(){
     <h2>${S.off.label||"休赛期"}<em>第 ${S.off.week}/${S.off.weeks} 周 · 剩余行动点 ${S.ap}</em></h2>
     <p class="note">没有比赛要打。${S.off.next==="playoff"
       ? `接下来就是 <b>季后赛</b>——把体能和状态调到最好，一场定生死。`
+      : S.off.next==="poEnd"
+      ? `季后赛正在进行——<b>没有你</b>。结果会一轮一轮传过来，你能做的只有把这段时间用在自己身上。`
+      : S.off.next==="wrap"
+      ? `世界赛正在进行。等它落幕，这个赛季才算真的结束。`
       : S.off.next==="summer"
       ? `接下来是 <b>${SEASONS[S.si].tag} 夏季赛</b>，还是吃 <b>${SEASONS[S.si].dim}</b>。`
       : (nx?`下赛季是 <b>${nx.tag} ${nx.y}</b>，版本「${nx.ver}」，吃 <b>${nx.dim}</b>——现在补这一项最划算。`:"")}</p>
@@ -2158,6 +2212,8 @@ function offPanel(){
         :(S.off.week>=S.off.weeks
             ?(S.off.next==="summer"?`开始夏季赛 →`
              :S.off.next==="playoff"?`进入季后赛 →`
+             :S.off.next==="poEnd"?`季后赛落幕 · 赛段结算 →`
+             :S.off.next==="wrap"?`世界赛落幕 · 赛季结算 →`
              :`开始 ${nx?nx.tag:"下"} 赛季 →`)
             :`进入第 ${S.off.week+1} 周 →`)}</button></div>
   </div>

@@ -14,14 +14,14 @@ function avgTrust(){
 function addTrust(id,n){
   if(!S.trust) return;
   if(S.trust[id]===undefined) return;
-  S.trust[id]=clamp(S.trust[id]+n,0,100);
+  S.trust[id]=q1(clamp(S.trust[id]+n,0,100));   // q1：掐掉浮点尾巴，别让它爬上界面
 }
 function addTrustAll(n){ Object.keys(S.trust||{}).forEach(k=>addTrust(k,n)); }
 /* 每个赛段结束，信任向 50 回归一截：关系是要一直维护的，不是攒满就一劳永逸 */
 function trustDecay(){
   Object.keys(S.trust||{}).forEach(k=>{
     const v=S.trust[k];
-    S.trust[k]=clamp(v+(50-v)*0.28,0,100);
+    S.trust[k]=q1(clamp(v+(50-v)*0.28,0,100));
   });
 }
 /* 信任对战力的修正：更衣室散了，五个人打不出五个人的东西 */

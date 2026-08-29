@@ -23,11 +23,11 @@ function addSquad(k,n){
   if(!S.squad) initSquad();
   // 收益递减：越高越难往上推，不然几次就拉满
   const room=clamp(1-(S.squad[k]-40)/52,0.12,1);
-  S.squad[k]=clamp(S.squad[k]+n*room,0,100);
+  S.squad[k]=q1(clamp(S.squad[k]+n*room,0,100));   // q1：掐掉浮点尾巴
 }
 function squadDecay(){
   if(!S.squad) return;
-  ["syn","tac"].forEach(k=>{ S.squad[k]=clamp(S.squad[k]+(50-S.squad[k])*SQUAD_DECAY,0,100); });
+  ["syn","tac"].forEach(k=>{ S.squad[k]=q1(clamp(S.squad[k]+(50-S.squad[k])*SQUAD_DECAY,0,100)); });
 }
 
 /* ---------- 换人对默契的冲击 ---------- */
@@ -36,8 +36,8 @@ function disruptSynergy(changed,who){
   if(!S.squad) return;
   const hit=clamp(changed*7.5,0,32);
   const before=S.squad.syn;
-  S.squad.syn=clamp(S.squad.syn-hit,0,100);
-  S.squad.tac=clamp(S.squad.tac-hit*0.45,0,100);   // 战术也受影响，但没那么大
+  S.squad.syn=q1(clamp(S.squad.syn-hit,0,100));
+  S.squad.tac=q1(clamp(S.squad.tac-hit*0.45,0,100));   // 战术也受影响，但没那么大
   if(hit>=5&&typeof pushEvent==="function"){
     pushEvent(`阵容变动：${who||"新人加入"}。<b>默契 ${Math.round(before)} → ${Math.round(S.squad.syn)}</b>，
       五个人要重新磨。纸面强了，打起来未必。`,"bad","磨合");
