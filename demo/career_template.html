@@ -2808,6 +2808,13 @@ function bind(){
   };
   st.querySelectorAll("[data-gear]").forEach(b=>b.onclick=()=>{
     const a=b.dataset.gear.split(":");buyGear(a[0],+a[1]);});
+  // 装备栏的「去商城挑」：切到商城并滚到对应外设区
+  st.querySelectorAll("[data-goshop]").forEach(b=>b.onclick=()=>{
+    const slot=b.dataset.goshop;
+    S.shopFocus=slot; S.tab="shop"; render();
+    const el=document.getElementById("shopgear-"+slot);
+    if(el&&el.scrollIntoView) el.scrollIntoView({block:"center"});
+  });
   st.querySelectorAll("[data-course]").forEach(b=>b.onclick=()=>buyCourse(b.dataset.course));
   st.querySelectorAll("[data-relax]").forEach(b=>b.onclick=()=>buyRelax(b.dataset.relax));
   const dc=$("decline"); if(dc) dc.onclick=()=>{S.step="pre";preNextYear();};

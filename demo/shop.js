@@ -224,27 +224,47 @@ function buyRelax(k){
 }
 
 /* ---------- 界面 ---------- */
+/* 装备栏只陈列你手上有什么——买卖是商城的事。
+   这里最多给一个「去商城挑」的按钮，点了直接跳到商城对应的外设区。 */
 function gearCard(){
   return `<div class="card"><h2>装备栏<em>加成会直接体现在比赛里</em></h2>
     <div class="gearlist">${SLOTS.map(s=>{
       const cur=(S.gear&&S.gear[s.k])||0, g=GEAR[s.k][cur];
-      const nxt=GEAR[s.k][cur+1];
+      const better=GEAR[s.k].length-1-cur;
       const dim=Object.keys(g.e)[0];
       return `<div class="gearrow">
         <div class="gslot">${s.n}</div>
         <div class="gname"><b>${g.n}</b>
           <span class="tag ${cur>=3?'g':''}">${TIER_N[cur]}</span>
           ${g.e[dim]?`<span class="gplus">${dim} +${g.e[dim]}</span>`:'<span class="gplus none">无加成</span>'}</div>
-        ${nxt?`<button class="btn sm ${S.money>=nxt.cost?'':'ghost'}" data-gear="${s.k}:${cur+1}"
-            ${S.money<nxt.cost?'disabled':''}>升级 ${nxt.cost} 万</button>`
-            :`<span class="tag g">已满级</span>`}
-      </div>${nxt?`<div class="gnext">下一档：${nxt.n} · ${Object.keys(nxt.e)[0]} +${nxt.e[Object.keys(nxt.e)[0]]}</div>`:""}`;
-    }).join("")}</div></div>`;
+        ${better>0?`<button class="btn ghost sm" data-goshop="${s.k}">去商城挑 →</button>`
+                  :`<span class="tag g">已是顶配</span>`}
+      </div>`;
+    }).join("")}</div>
+    <p class="note">这里只看你手上用的什么。想换更好的，去商城。</p></div>`;
 }
 function shopCard(){
+  const focus=S.shopFocus; S.shopFocus=null;   // 高亮只在跳转过来的那一次渲染生效
   return `${(typeof contractTerms==="function")?contractTerms():""}
     <div class="card"><h2>商城<em>余额 ${Math.round(S.money)} 万</em></h2>
-    <h3 style="font-size:14px">放松 · 花钱换体力，不占行动点</h3>
+    <h3 style="font-size:14px">外设 · 换上就生效，一直用到退役</h3>
+    ${SLOTS.map(s=>{
+      const cur=(S.gear&&S.gear[s.k])||0, curG=GEAR[s.k][cur];
+      const curDim=Object.keys(curG.e)[0];
+      const opts=GEAR[s.k].map((g,t)=>({g,t})).filter(x=>x.t>cur);
+      return `<div class="shopslot ${focus===s.k?'focus':''}" id="shopgear-${s.k}">
+        <div class="ssname">${s.n}　现在用的：<b>${curG.n}</b>（${TIER_N[cur]}${
+          curG.e[curDim]?` · ${curDim} +${curG.e[curDim]}`:""}）</div>
+        ${opts.length?`<div class="grid g2">${opts.map(({g,t})=>{
+          const dim=Object.keys(g.e)[0];
+          return `<button class="act" data-gear="${s.k}:${t}" ${S.money<g.cost?'disabled style="opacity:.35"':''}>
+            <div class="t">${g.n} <span class="tag ${t>=3?'g':''}">${TIER_N[t]}</span></div>
+            <div class="d">${dim} +${g.e[dim]}${curG.e[dim]?`（现在 +${curG.e[dim]}）`:""} · <b>${g.cost} 万</b></div></button>`;
+        }).join("")}</div>`
+        :`<p class="note" style="margin:4px 0 0">已经是顶配，没有更好的了。</p>`}
+      </div>`;
+    }).join("")}
+    <h3 style="font-size:14px;margin-top:18px">放松 · 花钱换体力，不占行动点</h3>
     <div class="grid g2">${RELAX.map(x=>`
       <button class="act" data-relax="${x.k}" ${S.money<x.cost?'disabled style="opacity:.35"':''}>
         <div class="t">${x.n} <span class="tag">${x.cost} 万</span></div>

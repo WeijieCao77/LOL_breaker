@@ -73,6 +73,12 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
   .pinbar .pv b{font-size:13px}
 }
 
+/* ---- 商城 · 外设区（按槽位分组） ---- */
+.shopslot{border:1px solid var(--line);padding:10px 12px;margin-bottom:10px}
+.shopslot .ssname{font-size:12.5px;color:var(--ink-3);margin-bottom:8px}
+.shopslot .ssname b{color:var(--ink)}
+.shopslot.focus{border-color:var(--gold);box-shadow:0 0 22px -8px rgba(201,169,97,.55)}
+
 /* ---- 卡片：斜切角 + 金色角标 ---- */
 .card{background:linear-gradient(180deg,rgba(20,55,78,.92),rgba(14,42,62,.92));
   border:1px solid var(--line);padding:20px;margin-bottom:16px;position:relative;
