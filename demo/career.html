@@ -1143,7 +1143,7 @@ function viewCreate(){
       <button class="btn ghost sm" id="reroll" style="margin-left:10px">换一批</button></h3>
     <div class="grid g2">${S.bgOffer.map(b=>`
       <button class="opt ${S.bgPick===b.k?'on':''}" data-bg="${b.k}">
-        <div class="t">${b.n}<span class="tag">${ORIGIN[b.origin].n}</span></div>
+        <div class="t">${b.n}</div>
         <div class="d">${b.d}</div>
       </button>`).join("")}</div>
     <p class="note">你现在 ${AGES[S.ageIdx].a} 岁，还没有战队。先用半年时间打上分、攒人气、被人看见——然后才谈签约。
