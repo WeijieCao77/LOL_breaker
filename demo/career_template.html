@@ -2447,7 +2447,12 @@ function hud(){
       <div><div class="k">段位</div><div class="v">${rankBadge(S.pre.rank,26)}</div></div>
       <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div></div>
       <div><div class="k">下一节点</div><div class="v">${(()=>{const n=nextMilestone();
-        return n?`${n.name} <small>${Math.max(0,n.w-S.pre.week)}周</small>`:"—"})()}</div></div>
+        if(!n) return "—";
+        // 只给「还有 N 周」很容易被算错——没有锚点，玩家会拿开局那个数
+        // 去减当前周次。把目标周次直接写出来，就没什么可算的了。
+        const d=Math.max(0,n.w-S.pre.week);
+        return `${n.name} <small>第 ${n.w} 周${d===0?"（就是本周）":`　还有 ${d} 周`}</small>`;
+      })()}</div></div>
     <div><div class="k">资金</div><div class="v mono">${Math.round(S.money)}<small>万</small></div></div>
     <div><div class="k">体能</div><div class="v mono">${100-Math.round(S.fatigue)}<small>/100</small></div></div>`;
     return;
