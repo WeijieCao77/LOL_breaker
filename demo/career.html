@@ -1105,7 +1105,7 @@ function summaryCard(){
   if(B.upkeep) extra.push(`每赛段要往家里寄 ${B.upkeep} 万`);   // 这条是负担，必须告知
   return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left">
     <div class="ru-eyebrow" style="text-align:center">你的起点</div>
-    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:16px">${A.a} 岁 · ${o.n} · ${B.n}</div>
+    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:16px">${A.a} 岁 · ${B.n}</div>
     <div class="attrs">${DIMS.map(d=>`
       <div class="at"><div class="lb">${d}</div>
         <div class="track"><div class="fill" style="width:${clamp(attrs[d],0,100)}%"></div>
@@ -1116,7 +1116,7 @@ function summaryCard(){
       extra.length?`<br>${extra.join("　·　")}`:""}</p>
     <p class="note" style="color:var(--ink-3)">竖线是天赋瓶颈。剩下的，靠你自己打出来。</p>
     <div class="row" style="justify-content:center;margin-top:18px">
-      <button class="btn" id="startgo">开始职业前之路 →</button>
+      <button class="btn" id="startgo">开启你的 LOL 人生 →</button>
     </div>
   </div></div>`;
 }
@@ -2457,7 +2457,7 @@ function actPanelPre(){
   const nextR=RANKS.find(r=>r.at>P.rank);
   return `
   <div class="card">
-    <h2>职业前 · 第 ${P.week} 周<em>剩余行动点 ${P.ap}</em></h2>
+    <h2>第 ${P.week} 周<em>剩余行动点 ${P.ap}</em></h2>
     <div class="ver">${(()=>{const sc=preScore();
       const near=sc/PRE_INVITE;
       // 说清楚「还早」是早在哪——两个赛事各自打没打，状态是分开的
