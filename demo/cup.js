@@ -91,17 +91,34 @@ function cupMyPower(k){
   return S.attrs.操作*0.42+S.attrs.运营*0.28+S.attrs.心态*0.18+S.attrs.体质*0.12
        +(S.attrs.指挥-50)*0.12
        +(typeof gearBonus==="function"?gearBonus("操作")*0.4:0)
-       +((k&&cupOf(k))?cupOf(k).prep*1.6:0);      // 备战的收益
+       +((k&&cupOf(k))?cupOf(k).prep*1.15:0)      // 针对这一轮对手的功课，下一轮清零
+       +(S.pre.cupPrep||0)*0.55;                  // 练下来的战术与配合，不清零
 }
 
-/* ---------- 备战 ---------- */
+/* ---------- 备战 ----------
+
+   备战里有两样东西，性质完全不同：
+
+   · 针对这一个对手的功课（看他们的录像、找弱点）——换了对手就作废
+   · 练下来的战术执行和配合默契——这是你自己的东西，不会因为
+     换个对手就没了，也不会因为换个赛事就归零
+
+   原来两样混在一个 c.prep 里，每轮清零，等于上一轮的功课全白做。
+   现在拆开：前者留在 c.prep（每轮重置），后者进 S.pre.cupPrep（永久），
+   并且真的落到属性上——运营和指挥会涨，在试训和职业赛里一样有用。  */
 function cupPrep(k){
   const c=cupOf(k);
   if(S.pre.ap<=0||!c||!c.alive) return;
   c.prep++;
+  S.pre.cupPrep=(S.pre.cupPrep||0)+1;
   addFat(11);
   S.pre.ap--;
-  preLog(`针对 <b>${cupOppName(k)}</b> 看了他们的录像，找到了几个能打的点。`,"info");
+  // 练配合这件事本身会长本事，所以给一点真实的属性成长（受天赋瓶颈约束）
+  const g1=Math.min(0.34,Math.max(0,capOf("运营")-S.attrs.运营));
+  const g2=Math.min(0.26,Math.max(0,capOf("指挥")-S.attrs.指挥));
+  S.attrs.运营+=g1; S.attrs.指挥+=g2;
+  preLog(`针对 <b>${cupOppName(k)}</b> 看了录像，也把几套配合过了一遍。
+    ${(g1+g2)>0.05?`<span class="hi">运营 +${g1.toFixed(2)}　指挥 +${g2.toFixed(2)}</span>`:""}`,"info");
   if(typeof noteAct==="function") noteAct("pre","prep");
   render();
 }
@@ -175,6 +192,7 @@ function endCupMatch(){
     if(c.round>=C.rounds){
       c.alive=false; cupPayout(k,true);
     } else {
+      // 清掉的只是「针对上一个对手」的功课；练出来的东西在 S.pre.cupPrep 里留着
       c.round++; c.prep=0; c.oppRoll=rollOpp();
       c.nextWeek=S.pre.week+C.gap;
       preLog(`下一轮对手是 <b>${cupOppName(k)}</b>，<b>第 ${c.nextWeek} 周</b>开打。`,"info");
@@ -233,7 +251,8 @@ function cupCard(){
       <p class="note" style="margin-top:10px">${wait>0
         ? `还有 <b>${wait} 周</b>开打。这几周可以正常训练，也可以专门备战。`
         : `<b style="color:var(--gold)">就是本周。</b>`}
-        ${c.prep>0?`　已备战 ${c.prep} 次。`:""}
+        ${c.prep>0?`　本轮针对性备战 ${c.prep} 次。`:""}${
+          (S.pre.cupPrep||0)>0?`　<span class="hi">累计练了 ${S.pre.cupPrep} 次，战术与配合 +${((S.pre.cupPrep||0)*0.55).toFixed(1)}（不清零）</span>`:""}
         <br>${d>8?"这个级别的对手你已经打过太多了，稳住就行。"
              :d>3?"你占优，但别浪。"
              :d>-2?"势均力敌，就看临场那几个决定。"
@@ -241,7 +260,7 @@ function cupCard(){
              :"实力差得有点多——赢面很小，除非临场赌对。"}</p>
       <div class="row">
         <button class="act" data-cupprep="${k}" style="flex:1" ${S.pre.ap<=0?'disabled':''}>
-          <div class="t">备战</div><div class="d">看对手录像，提升这一轮的赢面</div></button>
+          <div class="t">备战</div><div class="d">看对手录像（这一轮有效）+ 练配合（永久，涨运营与指挥）</div></button>
         ${wait<=0?`<button class="btn" data-cupgo="${k}">上场 →</button>`:""}
       </div></div>`;
   }).join("");
