@@ -126,8 +126,34 @@ function fitTier(tier){
   while(i < TIER_ORDER.length-1 && me >= CLUB_TIERS[TIER_ORDER[i+1]].expect + 6) i++;
   // 往下：只有差到离谱才降档；「够不着但被叫去试试」是允许的
   while(i > 0 && me < CLUB_TIERS[TIER_ORDER[i]].expect - 22) i--;
+  // 再被曝光度封顶：没人看见过你，再高的段位也只有次级联赛来问
+  const cap = TIER_ORDER.indexOf(exposureCap());
+  if(i > cap) i = cap;
   return TIER_ORDER[i];
 }
+/* 曝光度：决定「最高能被哪一档俱乐部看到」。
+
+   段位说明你值不值得看，曝光说明谁看得到你——这是两件事。
+   一线队不会因为天梯排名去签一个没有任何比赛数据、没有任何曝光的人，
+   那是次级联赛球探干的活。原来排位打到王者就直接触发豪门邀请，
+   于是「没直播、没打争霸赛，IG 来找我试训」这种事就会发生。
+
+   能被看见的途径：打过的比赛（有数据）、杯赛走得多深、名气。 */
+function exposureScore(){
+  const P = S.pre; if(!P) return 0;
+  return Math.min(S.fame, 420) * 0.50          // 名气
+       + (P.cityCup || 0) * 18                 // 城市赛走到第几轮
+       + (P.streamCup || 0) * 24               // 主播杯（邀请制，更受关注）
+       + Math.min(P.scoutSeen || 0, 12) * 4;   // 打过多少场正式比赛
+}
+function exposureCap(){
+  const v = exposureScore();
+  if(v >= 190) return "top";
+  if(v >= 110) return "mid";
+  if(v >= 45)  return "low";
+  return "acad";
+}
+
 /* 但门是有槛的：连钻石都没上，没有俱乐部会浪费四天看你。
    这是「有没有资格被看」的底线，和「能不能通过」无关。 */
 function inviteFloorOk(){
@@ -194,6 +220,19 @@ function addInvite(tier, reason){
   preLog(`<b>${team}</b> 看了你的比赛录像——${reason}。<b>他们邀请你去队里试训。</b>`, "big");
   if(typeof render === "function") render();
 }
+/* 这家队在联赛里到底排第几。
+   光写「弱队」没用——玩家看到 IG 想到的是一线豪门，
+   但 2022 的 IG 战力排 15/17，确实是弱队。得把真实位置摆出来。 */
+function clubStanding(name){
+  try{
+    const lg = S.world && S.world.LPL; if(!lg) return null;
+    const bare = String(name).replace(/ 青训队$/,"");
+    const rk = lg.map(t=>({n:t.name, p:power(t)})).sort((a,b)=>b.p-a.p);
+    const i = rk.findIndex(t=>t.n===bare);
+    return i<0 ? null : { pos:i+1, of:rk.length, power:rk[i].p };
+  }catch(e){ return null; }
+}
+
 /* 按档次挑一家真实存在的俱乐部 */
 function pickClub(tier){
   try{
@@ -213,7 +252,10 @@ function inviteCard(){
   const T = CLUB_TIERS[iv.tier];
   const me = tryoutSkill(), gap = me - iv.expect;
   return `<div class="card savecont"><h2>试训邀请<em>${T.n}</em></h2>
-    <h3>${typeof teamLogo==="function"?teamLogo(iv.team,22):""} ${iv.team}</h3>
+    <h3>${typeof teamLogo==="function"?teamLogo(iv.team,22):""} ${iv.team}${(()=>{
+      const st=clubStanding(iv.team);
+      return st?`<span class="tag">LPL 第 ${st.pos}/${st.of} · 战力 ${st.power.toFixed(1)}</span>`:"";
+    })()}</h3>
     <p class="note" style="margin:0 0 10px">他们来找你，是因为${iv.reason}。
       <b>但找你和要你是两回事</b>——能不能签下来，看接下来这四天。<br>
       去队里待四天，教练组会从操作、运营、指挥、心态四个方面评估你。
@@ -395,7 +437,9 @@ function dealCard(){
       <div class="row"><button class="btn ghost" id="dealend">继续练下去 →</button></div></div>`;
   }
   const lev = d.leverage;
-  return `<div class="card"><h2>合同谈判<em>${d.team} · ${T.n}</em></h2>
+  const st=clubStanding(d.team);
+  return `<div class="card"><h2>合同谈判<em>${d.team} · ${T.n}${
+    st?` · LPL 第 ${st.pos}/${st.of}`:""}</em></h2>
     <h3>${D.n}<span class="tag g">试训 ${d.grade}</span></h3>
     <div class="grid g2" style="margin:12px 0">
       <div class="ver"><div class="k">年薪</div><div class="v mono" style="font-size:22px;color:var(--gold-hi)">${d.salary}<small> 万/赛段</small></div></div>

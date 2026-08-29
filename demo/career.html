@@ -905,35 +905,67 @@ function proSeasonWrap(){
 /* ---------- 现在是什么时候 ----------
    一个地方定义，HUD、事件戳、日志都用它。
    玩家任何时候都该知道：哪个赛季、哪个阶段、还剩多久。 */
+
+/* 一年之内的周数要连续。
+   原来每个阶段各数各的：职业前数到第 12 周，一签约又从「春季赛第 1 周」
+   重新开始——现实里确实是新赛季从头算，但玩家看到的是时间倒流。
+   现在全年连续计数，阶段只当标签。 */
+const YEAR_PHASES=[
+  {k:"spring", n:"春季赛",    len:WEEKS},
+  {k:"sppo",   n:"春季季后赛", len:3},
+  {k:"msi",    n:"MSI",      len:2},
+  {k:"summer", n:"夏季赛",    len:WEEKS},
+  {k:"supo",   n:"夏季季后赛", len:3},
+  {k:"worlds", n:"世界赛",    len:3},
+  {k:"off",    n:"休赛期",    len:2}
+];
+function phaseOffset(k){
+  let o=0;
+  for(const p of YEAR_PHASES){ if(p.k===k) return o; o+=p.len; }
+  return o;
+}
+function yearTotal(){
+  return (S.yearBase||0)+YEAR_PHASES.reduce((a,p)=>a+p.len,0);
+}
+function yearWeek(){
+  if(S.step==="pre"||S.step==="offer") return S.pre?S.pre.week:1;
+  const base=S.yearBase||0;
+  if(S.step==="end")       return yearTotal();
+  if(S.step==="offseason") return base+phaseOffset("off")+1;
+  if(S.intl)               return base+phaseOffset(S.intl.type==="msi"?"msi":"worlds")+1;
+  if(S.playoff)            return base+phaseOffset((S.split>=1)?"supo":"sppo")+(S.playoff.round||1);
+  return base+phaseOffset((S.split>=1)?"summer":"spring")+(S.week||1);
+}
 function nowPhase(){
   const sea=SEASONS[S.si]||SEASONS[0];
   // 「现在」是个时钟，只报时间。职业前是你的处境，不是赛季的阶段
+  const YW=`第 ${yearWeek()} 周`;
   if(S.step==="pre"||S.step==="offer")
-    return {tag:sea.tag,phase:String(sea.y),detail:`第 ${S.pre?S.pre.week:1}/${PRE_YEAR} 周`,
+    return {tag:sea.tag,phase:"赛季前",detail:`${YW} · 窗口剩 ${Math.max(0,PRE_YEAR-(S.pre?S.pre.week:1))} 周`,
             urgent:S.pre&&S.pre.week>PRE_YEAR-4};
   if(S.intl){
     const n=S.intl.type==="msi"?"MSI":"世界赛";
     const st=S.intl.stage==="playin"?"入围赛":S.intl.stage==="groups"?"小组赛":
              S.intl.stage==="swiss"?"瑞士轮":
              (S.intl.knockRound>=3?"决赛":S.intl.knockRound===2?"半决赛":"八强");
-    return {tag:sea.tag,phase:n,detail:st,urgent:true};
+    return {tag:sea.tag,phase:n,detail:`${YW} · ${st}`,urgent:true};
   }
   if(S.playoff) return {tag:sea.tag,phase:SPLITS[S.split||0]+"季后赛",
-                        detail:`第 ${S.playoff.round} 轮`,urgent:true};
-  if(S.step==="offseason") return {tag:sea.tag,phase:"休赛期",detail:"转会与备战",urgent:false};
+                        detail:`${YW} · 第 ${S.playoff.round} 轮`,urgent:true};
+  if(S.step==="offseason") return {tag:sea.tag,phase:"休赛期",detail:`${YW} · 转会与备战`,urgent:false};
   if(S.step==="end") return {tag:sea.tag,phase:"生涯结束",detail:"",urgent:false};
-  return {tag:sea.tag,phase:SPLITS[S.split||0],detail:`第 ${S.week}/${WEEKS} 周`,
+  return {tag:sea.tag,phase:SPLITS[S.split||0],detail:`${YW} · 本阶段 ${S.week}/${WEEKS}`,
           urgent:S.week>=WEEKS-1};
 }
 function nowLabel(){ const n=nowPhase(); return `${n.tag} ${n.phase}${n.detail?" "+n.detail:""}`; }
 /* 事件戳：短一点，够定位就行 */
 function nowStamp(){
   const n=nowPhase();
-  if(S.step==="pre"||S.step==="offer") return `${n.tag} W${S.pre?S.pre.week:1}`;
+  if(S.step==="pre"||S.step==="offer") return `${n.tag} W${yearWeek()}`;
   if(n.phase==="MSI"||n.phase==="世界赛") return `${n.tag} ${n.phase}`;
   if(n.phase==="休赛期") return `${n.tag} 休赛期`;
   if(n.phase.includes("季后赛")) return `${n.tag} ${n.phase}`;
-  return `${n.tag} ${n.phase[0]}${S.week||1}`;
+  return `${n.tag} W${yearWeek()}`;
 }
 
 /* ---------- 事件系统 ---------- */
@@ -1533,6 +1565,7 @@ function acceptOffer(i){
   S.form=52; S.injury=null; S.listCooldown=0; S.signCooldown=0;
   S.rosterSig=myRoster().map(x=>x.id).sort().join("|");
   S.pendingContract=null;
+  S.yearBase=(S.pre&&S.pre.week)?S.pre.week:0;   // 今年在职业前用掉的周数，让全年计数接得上
   // P.world 和 S.world 本来就是同一个对象。签完约之后 P.world 再没人读，
   // 但 JSON.stringify 会把它当成第二份完整世界写进存档——76KB 的纯冗余，
   // 每次自动存档都写一遍。用完就断开。
@@ -2252,6 +2285,7 @@ function viewOffseason(){
 function doOffseason(){
   if(S.si>=SEASONS.length-1){ S.step="end"; render(); return; }
   S.si++; S.age++;
+  S.yearBase=0;              // 新的一年，全年计数从头开始
   const news=ageWorld();
   // 玩家自己的年龄曲线
   const base=ageCurve(S.age);
@@ -5759,8 +5793,34 @@ function fitTier(tier){
   while(i < TIER_ORDER.length-1 && me >= CLUB_TIERS[TIER_ORDER[i+1]].expect + 6) i++;
   // 往下：只有差到离谱才降档；「够不着但被叫去试试」是允许的
   while(i > 0 && me < CLUB_TIERS[TIER_ORDER[i]].expect - 22) i--;
+  // 再被曝光度封顶：没人看见过你，再高的段位也只有次级联赛来问
+  const cap = TIER_ORDER.indexOf(exposureCap());
+  if(i > cap) i = cap;
   return TIER_ORDER[i];
 }
+/* 曝光度：决定「最高能被哪一档俱乐部看到」。
+
+   段位说明你值不值得看，曝光说明谁看得到你——这是两件事。
+   一线队不会因为天梯排名去签一个没有任何比赛数据、没有任何曝光的人，
+   那是次级联赛球探干的活。原来排位打到王者就直接触发豪门邀请，
+   于是「没直播、没打争霸赛，IG 来找我试训」这种事就会发生。
+
+   能被看见的途径：打过的比赛（有数据）、杯赛走得多深、名气。 */
+function exposureScore(){
+  const P = S.pre; if(!P) return 0;
+  return Math.min(S.fame, 420) * 0.50          // 名气
+       + (P.cityCup || 0) * 18                 // 城市赛走到第几轮
+       + (P.streamCup || 0) * 24               // 主播杯（邀请制，更受关注）
+       + Math.min(P.scoutSeen || 0, 12) * 4;   // 打过多少场正式比赛
+}
+function exposureCap(){
+  const v = exposureScore();
+  if(v >= 190) return "top";
+  if(v >= 110) return "mid";
+  if(v >= 45)  return "low";
+  return "acad";
+}
+
 /* 但门是有槛的：连钻石都没上，没有俱乐部会浪费四天看你。
    这是「有没有资格被看」的底线，和「能不能通过」无关。 */
 function inviteFloorOk(){
@@ -5827,6 +5887,19 @@ function addInvite(tier, reason){
   preLog(`<b>${team}</b> 看了你的比赛录像——${reason}。<b>他们邀请你去队里试训。</b>`, "big");
   if(typeof render === "function") render();
 }
+/* 这家队在联赛里到底排第几。
+   光写「弱队」没用——玩家看到 IG 想到的是一线豪门，
+   但 2022 的 IG 战力排 15/17，确实是弱队。得把真实位置摆出来。 */
+function clubStanding(name){
+  try{
+    const lg = S.world && S.world.LPL; if(!lg) return null;
+    const bare = String(name).replace(/ 青训队$/,"");
+    const rk = lg.map(t=>({n:t.name, p:power(t)})).sort((a,b)=>b.p-a.p);
+    const i = rk.findIndex(t=>t.n===bare);
+    return i<0 ? null : { pos:i+1, of:rk.length, power:rk[i].p };
+  }catch(e){ return null; }
+}
+
 /* 按档次挑一家真实存在的俱乐部 */
 function pickClub(tier){
   try{
@@ -5846,7 +5919,10 @@ function inviteCard(){
   const T = CLUB_TIERS[iv.tier];
   const me = tryoutSkill(), gap = me - iv.expect;
   return `<div class="card savecont"><h2>试训邀请<em>${T.n}</em></h2>
-    <h3>${typeof teamLogo==="function"?teamLogo(iv.team,22):""} ${iv.team}</h3>
+    <h3>${typeof teamLogo==="function"?teamLogo(iv.team,22):""} ${iv.team}${(()=>{
+      const st=clubStanding(iv.team);
+      return st?`<span class="tag">LPL 第 ${st.pos}/${st.of} · 战力 ${st.power.toFixed(1)}</span>`:"";
+    })()}</h3>
     <p class="note" style="margin:0 0 10px">他们来找你，是因为${iv.reason}。
       <b>但找你和要你是两回事</b>——能不能签下来，看接下来这四天。<br>
       去队里待四天，教练组会从操作、运营、指挥、心态四个方面评估你。
@@ -6028,7 +6104,9 @@ function dealCard(){
       <div class="row"><button class="btn ghost" id="dealend">继续练下去 →</button></div></div>`;
   }
   const lev = d.leverage;
-  return `<div class="card"><h2>合同谈判<em>${d.team} · ${T.n}</em></h2>
+  const st=clubStanding(d.team);
+  return `<div class="card"><h2>合同谈判<em>${d.team} · ${T.n}${
+    st?` · LPL 第 ${st.pos}/${st.of}`:""}</em></h2>
     <h3>${D.n}<span class="tag g">试训 ${d.grade}</span></h3>
     <div class="grid g2" style="margin:12px 0">
       <div class="ver"><div class="k">年薪</div><div class="v mono" style="font-size:22px;color:var(--gold-hi)">${d.salary}<small> 万/赛段</small></div></div>
