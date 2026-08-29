@@ -5002,7 +5002,7 @@ const NODES_MORE=[
        而这里几乎是纯个人，所以对手带必须压得更低。
 
    带宽按玩家在这个阶段的真实水平定标：
-   第 10 周报名时玩家约 54，第 16 周决赛时约 57。
+   第 8 周报名时玩家约 53，决赛时约 55。
    第一版定成 46→56，结果钻石段位夺冠率只有 5%——第一年基本
    打不赢，那这个赛事对新玩家就等于不存在。整体下调 3 分。
 
@@ -5012,14 +5012,19 @@ const NODES_MORE=[
      主播杯      47 → 55.5
        邀请制，门槛更高，整体上浮一档；决赛的冠军主播队要强过你。
 
+   赛程节奏：一周一轮，整届 3–4 周打完。
+   原来是两周一轮，城市赛从第 10 周拖到第 16 周——业余赛事不是
+   这么办的，都是集中几周、一周多赛就结束。拖那么长还有个副作用：
+   试训邀请要等赛事结束才能发，赛程占满中段就没有窗口了。
+
    注意：这里的数字和职业选手评分不是一把尺子——
    职业评分是在同位置同层级内做 z 标准化的（见 export_game.py），
    50 分意思是「该层级的平均水平」，不能跨系统直接比大小。      */
 const CUPS={
-  city:{ name:"城市争霸赛", rounds:4, gap:2, band:[43,52.5],
+  city:{ name:"城市争霸赛", rounds:4, gap:1, band:[43,52.5],
          prize:[0,25,70,180,420],
          opps:["网吧联队","本地车队","大学生战队","市队"] },
-  stream:{ name:"主播杯", rounds:3, gap:2, band:[47,55.5],
+  stream:{ name:"主播杯", rounds:3, gap:1, band:[47,55.5],
          prize:[0,60,180,520],
          opps:["百万粉丝队","退役选手队","冠军主播队"] }
 };
@@ -5132,6 +5137,9 @@ function endCupMatch(){
   const m=S.cupMatch, k=m.kind, c=cupOf(k), C=CUPS[k];
   const won=m.sc[0]>m.sc[1];
   m.done=true;
+  // 打得越多，被球探看到的次数越多。累积在这里，但兑现要等整届打完——
+  // 赛程进行中发邀请会把比赛线整个短路（试过：玩家半决赛就签约走人）。
+  S.pre.scoutSeen = (S.pre.scoutSeen||0) + 1;
   if(won){
     c.wins++;
     addFame(4+c.round*2);
@@ -5504,20 +5512,41 @@ function tryoutSkill(){
    关键点是**不用夺冠**——走得远，数据被记下来，就够了。 */
 function checkTryoutInvite(kind, reached, champion){
   const C = (typeof CUPS !== "undefined") ? CUPS[kind] : null;
-  if(!C) return;
+  if(!C || !S.pre) return;
   const rounds = C.rounds;
-  // 走到一半以上就进视野；夺冠自然更受关注
   const depth = reached / rounds;
-  if(depth < 0.5 && !champion) return;
+  // 被看到的概率随「打过多少场」累积。
+  // 首轮就出局也不是零，只是很低；打得多、走得深、拿了冠军，概率才上来。
+  const seen = Math.min(S.pre.scoutSeen || 0, 10);
+  const p = clamp(0.10 + depth*0.50 + (champion?0.30:0) + seen*0.045, 0.05, 0.96);
+  if(rnd() >= p) return;
+
   let tier = champion ? "mid" : depth >= 0.75 ? "low" : "acad";
-  // 主播杯自带流量，俱乐部更看重
   if(kind === "stream" && tier !== "top") tier = tier === "acad" ? "low" : "mid";
-  tier = fitTier(tier);
-  addInvite(tier, `${C.name}走到第 ${reached+ (champion?0:1)} 轮${champion?"并夺冠":""}`);
+  const why = `${C.name}${champion ? "夺冠" : `走到第 ${reached+1} 轮`}`;
+  // 兑现时机：整届打完之后。这会儿可能还有别的赛事在跑，那就先排队。
+  queueInvite(fitTier(tier), why);
+}
+/* 发不出去就排队，等条件满足（赛程打完 / 冷却过了）再发。
+   之前是直接丢弃，等于「打完城市赛那次机会白攒了」。 */
+function queueInvite(tier, reason){
+  const P = S.pre; if(!P) return;
+  if(canInvite()){ addInvite(tier, reason); return; }
+  P.inviteQ = P.inviteQ || [];
+  if(P.inviteQ.length < 3) P.inviteQ.push({tier, reason});
+}
+function flushInviteQ(){
+  const P = S.pre; if(!P || !P.inviteQ || !P.inviteQ.length) return;
+  if(!canInvite()) return;
+  const q = P.inviteQ.shift();
+  // 排队期间你的水平可能变了，档次按现在重新判一次
+  addInvite(fitTier(q.tier), q.reason);
 }
 /* 段位或人气到了也会有人来问——不是只有比赛这一条路 */
 function checkRankInvite(){
-  const P = S.pre; if(!P || !canInvite()) return;
+  const P = S.pre; if(!P) return;
+  if(typeof flushInviteQ === "function") flushInviteQ();   // 排队的先发
+  if(!canInvite()) return;
   P.rankInvited = P.rankInvited || {};
   // 大师和宗师各算一次机会——上分这条路不该只在最后才兑现
   for(const [i, tier] of [[2,"acad"],[3,"low"],[4,"mid"],[5,"top"]]){
@@ -5546,7 +5575,7 @@ function fitTier(tier){
    实测过：整局平均只有 0.98 次试训机会，59/60 的局正好一次——
    意味着试训一失手，这一年就白费了。而试训本身是带运气的，
    「一次定生死」不是难度，是惩罚。
-   现在放开触发点、加四周冷却，目标是整局 2–4 次机会：
+   现在放开触发点、加两周冷却，目标是整局 2–4 次机会：
    失手一次还能再来，但也不至于多到没有分量。 */
 function canInvite(){
   const P = S.pre; if(!P) return false;
@@ -5580,7 +5609,7 @@ function addInvite(tier, reason){
   const team = pickClub(tier);
   if(!team) return;
   P.invite = { tier, team, reason, pending:true, week:P.week, expect:T.expect };
-  P.inviteCd = P.week + 4;
+  P.inviteCd = P.week + 2;
   P.inviteN = (P.inviteN || 0) + 1;
   preLog(`<b>${team}</b> 看了你的比赛录像——${reason}。<b>他们邀请你去队里试训。</b>`, "big");
   if(typeof render === "function") render();

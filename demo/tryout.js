@@ -61,20 +61,41 @@ function tryoutSkill(){
    关键点是**不用夺冠**——走得远，数据被记下来，就够了。 */
 function checkTryoutInvite(kind, reached, champion){
   const C = (typeof CUPS !== "undefined") ? CUPS[kind] : null;
-  if(!C) return;
+  if(!C || !S.pre) return;
   const rounds = C.rounds;
-  // 走到一半以上就进视野；夺冠自然更受关注
   const depth = reached / rounds;
-  if(depth < 0.5 && !champion) return;
+  // 被看到的概率随「打过多少场」累积。
+  // 首轮就出局也不是零，只是很低；打得多、走得深、拿了冠军，概率才上来。
+  const seen = Math.min(S.pre.scoutSeen || 0, 10);
+  const p = clamp(0.10 + depth*0.50 + (champion?0.30:0) + seen*0.045, 0.05, 0.96);
+  if(rnd() >= p) return;
+
   let tier = champion ? "mid" : depth >= 0.75 ? "low" : "acad";
-  // 主播杯自带流量，俱乐部更看重
   if(kind === "stream" && tier !== "top") tier = tier === "acad" ? "low" : "mid";
-  tier = fitTier(tier);
-  addInvite(tier, `${C.name}走到第 ${reached+ (champion?0:1)} 轮${champion?"并夺冠":""}`);
+  const why = `${C.name}${champion ? "夺冠" : `走到第 ${reached+1} 轮`}`;
+  // 兑现时机：整届打完之后。这会儿可能还有别的赛事在跑，那就先排队。
+  queueInvite(fitTier(tier), why);
+}
+/* 发不出去就排队，等条件满足（赛程打完 / 冷却过了）再发。
+   之前是直接丢弃，等于「打完城市赛那次机会白攒了」。 */
+function queueInvite(tier, reason){
+  const P = S.pre; if(!P) return;
+  if(canInvite()){ addInvite(tier, reason); return; }
+  P.inviteQ = P.inviteQ || [];
+  if(P.inviteQ.length < 3) P.inviteQ.push({tier, reason});
+}
+function flushInviteQ(){
+  const P = S.pre; if(!P || !P.inviteQ || !P.inviteQ.length) return;
+  if(!canInvite()) return;
+  const q = P.inviteQ.shift();
+  // 排队期间你的水平可能变了，档次按现在重新判一次
+  addInvite(fitTier(q.tier), q.reason);
 }
 /* 段位或人气到了也会有人来问——不是只有比赛这一条路 */
 function checkRankInvite(){
-  const P = S.pre; if(!P || !canInvite()) return;
+  const P = S.pre; if(!P) return;
+  if(typeof flushInviteQ === "function") flushInviteQ();   // 排队的先发
+  if(!canInvite()) return;
   P.rankInvited = P.rankInvited || {};
   // 大师和宗师各算一次机会——上分这条路不该只在最后才兑现
   for(const [i, tier] of [[2,"acad"],[3,"low"],[4,"mid"],[5,"top"]]){
@@ -103,7 +124,7 @@ function fitTier(tier){
    实测过：整局平均只有 0.98 次试训机会，59/60 的局正好一次——
    意味着试训一失手，这一年就白费了。而试训本身是带运气的，
    「一次定生死」不是难度，是惩罚。
-   现在放开触发点、加四周冷却，目标是整局 2–4 次机会：
+   现在放开触发点、加两周冷却，目标是整局 2–4 次机会：
    失手一次还能再来，但也不至于多到没有分量。 */
 function canInvite(){
   const P = S.pre; if(!P) return false;
@@ -137,7 +158,7 @@ function addInvite(tier, reason){
   const team = pickClub(tier);
   if(!team) return;
   P.invite = { tier, team, reason, pending:true, week:P.week, expect:T.expect };
-  P.inviteCd = P.week + 4;
+  P.inviteCd = P.week + 2;
   P.inviteN = (P.inviteN || 0) + 1;
   preLog(`<b>${team}</b> 看了你的比赛录像——${reason}。<b>他们邀请你去队里试训。</b>`, "big");
   if(typeof render === "function") render();
