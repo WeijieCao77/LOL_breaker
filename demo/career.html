@@ -672,24 +672,32 @@ function breakthrough(d,n,reason,key){
 /* ---------- 突破路径 ----------
    每一维都有明确的破法。前三条是机械的：肯这么练就一定拿得到。
    后两条要靠经历——但也写在明面上，不藏着。 */
+/* by:"train" 表示「继续练这一项」就能推进——只有操作是这样。
+   其余几项撞了瓶颈之后再点训练是没有意义的，界面必须说清楚
+   该去做什么，而不是显示一个点了不动的进度条。 */
 const BREAK_PATHS={
   操作:{ how:"连续 3 周把至少 3 个行动点全投在操作上",
+        by:"train", act:"练操作",
         auto:true, gain:2.0,
         prog:()=>`${clamp(S.btk&&S.btk.opStreak||0,0,3)}/3 周`,
         done:()=>(S.btk&&S.btk.opStreak||0)>=3 },
   运营:{ how:"一个赛段里做满 6 次战术复盘",
+        by:"squad", act:"战术复盘（战队行动）",
         auto:true, gain:2.0,
         prog:()=>`${clamp(S.btk&&S.btk.vod||0,0,6)}/6 次`,
         done:()=>(S.btk&&S.btk.vod||0)>=6 },
   体质:{ how:"一个赛段里休息满 6 次，并且这个赛段一场不缺",
+        by:"rest", act:"休息",
         auto:true, gain:1.6,
         prog:()=>`${clamp(S.btk&&S.btk.rest||0,0,6)}/6 次`,
         done:()=>(S.btk&&S.btk.rest||0)>=6 },
   心态:{ how:"在落后的局面里赢下 3 场，或者拿一次冠军",
+        by:"play", act:"在比赛里翻盘",
         auto:false, gain:0,
         prog:()=>`翻盘 ${clamp(S.comebacks||0,0,3)}/3`,
         done:()=>false },
   指挥:{ how:"和 27 岁以上的老将同队、待在强队，或者打进国际赛",
+        by:"env", act:"换环境",
         auto:false, gain:0,
         prog:()=>{ const v=myRoster&&S.team?myRoster().find(x=>!x.me&&x.age>=27):null;
                    return v?`队里有 ${v.id}`:"队里没有老将"; },
@@ -1605,6 +1613,27 @@ function rankGain(wins){
     S.attrs[d] = Math.min(capOf(d), S.attrs[d] + g);
   });
 }
+/* 训练按钮的文案与可点状态。
+   赛季和职业前两套面板各写过一份，结果修死锁时只改了一份，
+   职业前的操作突破照样点不动。统一到这里。 */
+function trainBtn(d, ap, attr){
+  const c=capOf(d), done=(attr!==undefined?attr:S.attrs[d])>=c;
+  const P=(typeof BREAK_PATHS!=="undefined")?BREAK_PATHS[d]:null;
+  // 只有「靠继续练」能突破的维度（操作），撞瓶颈之后点它才有意义。
+  // 运营靠战术复盘、体质靠休息——那些维度再点训练是纯浪费行动点。
+  const trainable = done && P && P.by==="train";
+  const dead = done && !trainable;
+  const locked = dead && P && P.by==="squad" && !S.squad;   // 职业前根本没有战队行动
+  return { dead, trainable,
+    dis: (ap<=0||dead),
+    style: trainable?'style="border-color:var(--gold)"':'',
+    title: `练${d}${trainable?' <span class="tag">冲击瓶颈</span>':''}`,
+    desc: trainable ? `已满，继续投入可冲破上限　<b>${P.prog?P.prog():""}</b>`
+        : locked   ? `已达瓶颈 · 突破要做<b>战术复盘</b>，签约战队后才有`
+        : dead     ? `已达瓶颈 · 突破靠<b>${P&&P.act?P.act:"别的途径"}</b>${
+                       P&&P.auto&&P.prog?`　${P.prog()}`:""}`
+        : DIM_HINT[d] };
+}
 function gain(d){
   const t=S.talent[d],c=cap(t),room=clamp(1-(S.attrs[d]/c),0,1);
   const ageM=S.age<=21?1.15:S.age<=24?1.0:0.6;
@@ -1740,16 +1769,9 @@ function viewSeason(){
     ${typeof routineBar==="function"?routineBar():""}
     ${S.injury?`<p class="note" style="color:var(--red);margin-top:0">受伤期间行动力只有 ${AP_HURT} 点。</p>`:""}
     <div class="grid g5">
-      ${DIMS.map(d=>{
-        const c=capOf(d),done=S.attrs[d]>=c;
-        // 撞了瓶颈的维度仍然可以练：不涨数值，但算突破进度
-        const P=(typeof BREAK_PATHS!=="undefined")?BREAK_PATHS[d]:null;
-        const prog=(done&&P&&P.auto&&P.prog)?P.prog():"";
-        return `<button class="act" data-train="${d}" ${S.ap<=0?'disabled style="opacity:.34"':''}
-          ${done?'style="border-color:var(--gold)"':''}>
-        <div class="t">练${d}${done?' <span class="tag">冲击瓶颈</span>':''}</div>
-        <div class="d">${done?(prog?`已满，继续投入可冲破天赋上限　<b>${prog}</b>`:'已达瓶颈，练下去也不涨了'):DIM_HINT[d]}</div>
-        </button>`}).join("")}
+      ${DIMS.map(d=>{const b=trainBtn(d,S.ap);
+        return `<button class="act" data-train="${d}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
+        <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">打排位</div><div class="d">五项小涨 + 找回手感${
           typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}</div></button>
@@ -2495,9 +2517,9 @@ function actPanelPre(){
                  p>=0.34?"打得挺吃力，容易掉":"实力不够，硬打只会掉分"})()}</div></button>
       <button class="act" data-pre="stream" ${P.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">直播</div><div class="d">涨人气与收入</div></button>
-      ${DIMS.map(d=>{const c=capOf(d),done=S.attrs[d]>=c;
-        return `<button class="act" data-pretrain="${d}" ${(P.ap<=0||done)?'disabled style="opacity:.34"':''}>
-        <div class="t">练${d}</div><div class="d">${done?'已达瓶颈':DIM_HINT[d]}</div></button>`}).join("")}
+      ${DIMS.map(d=>{const b=trainBtn(d,P.ap);
+        return `<button class="act" data-pretrain="${d}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
+        <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-pre="rest" ${P.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">休息</div><div class="d">清疲劳</div></button>
     </div>
