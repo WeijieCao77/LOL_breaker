@@ -838,7 +838,25 @@ function cloneWorld(){
       }))
     }));
   });
+  w.LDL=buildLDL(w);
   return w;
+}
+
+/* ---------- LDL：二级联赛 ----------
+   青训合同原来是假的：队名后面挂个「青训队」，签约时被 signDeal 剥掉，
+   人直接进 LPL 一队名单——于是一个青训选手的对手是 FPX 一队。
+   现在真的分开：LDL 有自己的十支队、自己的赛程和积分榜。
+   青训队实力大致等于对应一队减 12，打得好才升上一队（见 checkPromote）。 */
+function buildLDL(w){
+  const src=(w.LPL||[]);
+  const rk=src.map(t=>({t,p:avg(t.players.map(q=>avg(DIMS.map(d=>q.r[d]))))}))
+              .sort((a,b)=>b.p-a.p);
+  return rk.slice(-10).map(({t,p})=>({
+    name:t.name+" 青训队", parent:t.name, logo:t.logo,
+    syn:Math.max(20,(t.syn===undefined?50:t.syn)-10),
+    tac:Math.max(20,(t.tac===undefined?50:t.tac)-10),
+    players:POS.map(x=>Object.assign(makeRookie(x.k,p-12),{lg:"LDL",form:52,retired:false}))
+  }));
 }
 
 const ROOKIE_CN=["林","王","张","李","陈","刘","杨","黄","赵","周"];
@@ -2242,17 +2260,19 @@ function endSeason(result,seed){
   checkAch("splitend");
   checkAch("money");
   S.playoff=null;
+  // 二级联赛的冠军不去国际赛——LDL 打得再好也只是升上一队的资格
+  const majorLg = (S.homeLeague||"LPL")!=="LDL";
   if(S.split===0){
     // 春季赛结束 -> 冠军去 MSI -> 然后开夏季赛
     S.afterIntlGo="summer";
-    if(result==="champion"&&startIntl("msi",result)) return;
+    if(majorLg&&result==="champion"&&startIntl("msi",result)) return;
     S.afterIntlGo=null; startSeason(false,1); return;
   }
   // 夏季赛结束 -> 世界赛 -> 休赛期
   S.afterIntlGo="offseason";
   S.pendingWorlds=result;
   const pr=S.pendingWorlds; S.pendingWorlds=null;
-  if(startIntl("worlds",pr)) return;
+  if(majorLg&&startIntl("worlds",pr)) return;
   S.afterIntlGo=null; S.step="offseason";
   if(typeof saveGame==='function') saveGame('休赛期');
   render();
@@ -2294,7 +2314,8 @@ function doOffseason(){
   if(S.si>=SEASONS.length-1){ S.step="end"; render(); return; }
   S.off={week:1, weeks:OFF_WEEKS};
   S.ap=apFor("off");
-  if(typeof rollProOffers==="function") rollProOffers();   // 别的队会不会来挖你
+  if(typeof checkPromote==="function" && checkPromote()) { /* 升上一队了 */ }
+  else if(typeof rollProOffers==="function") rollProOffers();   // 别的队会不会来挖你
   S.fatigue=Math.max(0,S.fatigue-25);      // 赛季打完，先喘口气
   pushEvent(`赛季结束，进入休赛期（${OFF_WEEKS} 周）。没有比赛，
     但这是一年里唯一能安心补短板的时间。`,"info","休赛期");
@@ -6131,7 +6152,7 @@ const DEAL_TIERS = {
   first: { n:"核心首发", mul:1.00, k:"start" },
   start: { n:"首发",     mul:0.80, k:"start" },
   sub:   { n:"替补",     mul:0.55, k:"sub"   },
-  acad:  { n:"青训合同", mul:0.30, k:"sub"   }
+  acad:  { n:"青训合同", mul:0.30, k:"core"  }   // 进的是 LDL，在二队你就是主力
 };
 function makeDeal(){
   const t = S.tryout, r = t.result, T = CLUB_TIERS[t.tier], D = DEAL_TIERS[r.tier];
@@ -6253,16 +6274,24 @@ function signDeal(){
   if(!P.world)    P.world = cloneWorld();
   if(!P.baseline) P.baseline = leagueBaseline(P.world);
   // 青训队的名字带后缀，签的其实是俱乐部本身
-  let teamName = d.team.replace(/ 青训队$/, "");
+  // 青训合同签进 LDL，队名保留「青训队」后缀——那不是装饰，是你真的在二队。
+  // 原来这里把后缀剥掉、按 LPL 签约，于是青训选手的对手是一队。
+  const toLDL = (d.dealTier === "acad") || /青训队$/.test(d.team);
+  let teamName = toLDL ? d.team : d.team.replace(/ 青训队$/, "");
+  if(toLDL){
+    const has=(P.world.LDL||[]).some(t=>t.name===teamName);
+    if(!has && (P.world.LDL||[]).length) teamName=P.world.LDL[0].name;
+  }
   // 邀请是从 S.world 里挑的队名，签约时用的是新克隆的 world。
   // 正常情况下名字一致，但万一对不上（老存档、数据换版），
   // 不能让它崩在签约这一步——退回到一支中游队。
-  if(!P.world.LPL.some(t=>t.name===teamName)){
+  if(!toLDL && !P.world.LPL.some(t=>t.name===teamName)){
     const rk=P.world.LPL.map(t=>({n:t.name,p:power(t)})).sort((a,b)=>b.p-a.p);
     teamName=rk[Math.min(6,rk.length-1)].n;
   }
   const D = DEAL_TIERS[d.dealTier];
-  P.offers = [{ k:d.kind, team:teamName, t:D.n, d:"", note:"", league:"LPL" }];
+  P.offers = [{ k:d.kind, team:teamName, t:D.n, d:"", note:"",
+                league: toLDL ? "LDL" : "LPL" }];
   S.money += d.sign;
   if(d.sign) preLog(`签字费 <b>${d.sign} 万</b>到账。`, "good");
   S.pendingContract = {
@@ -6430,6 +6459,47 @@ function signTransfer(){
     "big", "转会");
   if(typeof checkAch==="function") checkAch("transfer", {to:d.team});
   S.deal = null; render();
+}
+
+/* ---------- 从青训升上一队 ----------
+   在 LDL 打出来了，母队自然会把你调上去。
+   判定看两样：你比一队同位置那个人强多少，以及你在二队的战绩。
+   没有这条路，签了青训合同的人就永远困在二队了。 */
+function parentClub(){
+  const t = (S.world.LDL || []).find(x => x.name === S.team);
+  return t ? t.parent : null;
+}
+function checkPromote(){
+  if((S.homeLeague || "LPL") !== "LDL") return false;
+  const pname = parentClub(); if(!pname) return false;
+  const pt = (S.world.LPL || []).find(t => t.name === pname); if(!pt) return false;
+  const inc = pt.players.find(q => q.pos === S.pos); if(!inc) return false;
+  const me = avg(DIMS.map(d => S.attrs[d]));
+  const him = avg(DIMS.map(d => inc.r[d]));
+  const g = S.record ? (S.record.w + S.record.l) : 0;
+  const wr = g >= 3 ? (S.record.w / g) : 0.5;
+  // 比一队那个人强，或者接近但二队战绩极好
+  const ok = (me >= him + 1) || (me >= him - 3 && wr >= 0.75);
+  if(!ok) return false;
+
+  const old = S.team;
+  S.team = pname; S.homeLeague = "LPL";
+  S.offerKind = "start"; S.understudy = null; S.promoted = true;
+  pt.players = pt.players.map(q => q.pos === S.pos
+    ? {id:S.name||"你", cn:"", pos:S.pos, age:S.age, r:S.attrs, me:true} : q);
+  S.trust = {}; if(typeof initTrust === "function") initTrust();
+  if(typeof syncTrust === "function") syncTrust();
+  // 升上来是涨薪的，但还是队里最便宜的那个
+  if(S.contract){
+    S.contract.salary = Math.round((S.contract.salary || 40) * 2.4);
+    S.contract.buyout = Math.round((S.contract.buyout || 60) * 3);
+    S.contract.tier = "sub"; S.contract.clubTier = "mid";
+  }
+  S.rosterSig = myRoster().map(x => x.id).sort().join("|");
+  pushEvent(`<b>${pname}</b> 把你从 <b>${old}</b> 调上了一队。
+    ${inc.id} 让出了首发位——你在 LDL 打的那些比赛，有人一直在看。`, "big", "升队");
+  if(typeof checkAch === "function") checkAch("promote");
+  return true;
 }
 
 

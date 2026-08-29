@@ -478,7 +478,25 @@ function cloneWorld(){
       }))
     }));
   });
+  w.LDL=buildLDL(w);
   return w;
+}
+
+/* ---------- LDL：二级联赛 ----------
+   青训合同原来是假的：队名后面挂个「青训队」，签约时被 signDeal 剥掉，
+   人直接进 LPL 一队名单——于是一个青训选手的对手是 FPX 一队。
+   现在真的分开：LDL 有自己的十支队、自己的赛程和积分榜。
+   青训队实力大致等于对应一队减 12，打得好才升上一队（见 checkPromote）。 */
+function buildLDL(w){
+  const src=(w.LPL||[]);
+  const rk=src.map(t=>({t,p:avg(t.players.map(q=>avg(DIMS.map(d=>q.r[d]))))}))
+              .sort((a,b)=>b.p-a.p);
+  return rk.slice(-10).map(({t,p})=>({
+    name:t.name+" 青训队", parent:t.name, logo:t.logo,
+    syn:Math.max(20,(t.syn===undefined?50:t.syn)-10),
+    tac:Math.max(20,(t.tac===undefined?50:t.tac)-10),
+    players:POS.map(x=>Object.assign(makeRookie(x.k,p-12),{lg:"LDL",form:52,retired:false}))
+  }));
 }
 
 const ROOKIE_CN=["林","王","张","李","陈","刘","杨","黄","赵","周"];
@@ -1882,17 +1900,19 @@ function endSeason(result,seed){
   checkAch("splitend");
   checkAch("money");
   S.playoff=null;
+  // 二级联赛的冠军不去国际赛——LDL 打得再好也只是升上一队的资格
+  const majorLg = (S.homeLeague||"LPL")!=="LDL";
   if(S.split===0){
     // 春季赛结束 -> 冠军去 MSI -> 然后开夏季赛
     S.afterIntlGo="summer";
-    if(result==="champion"&&startIntl("msi",result)) return;
+    if(majorLg&&result==="champion"&&startIntl("msi",result)) return;
     S.afterIntlGo=null; startSeason(false,1); return;
   }
   // 夏季赛结束 -> 世界赛 -> 休赛期
   S.afterIntlGo="offseason";
   S.pendingWorlds=result;
   const pr=S.pendingWorlds; S.pendingWorlds=null;
-  if(startIntl("worlds",pr)) return;
+  if(majorLg&&startIntl("worlds",pr)) return;
   S.afterIntlGo=null; S.step="offseason";
   if(typeof saveGame==='function') saveGame('休赛期');
   render();
@@ -1934,7 +1954,8 @@ function doOffseason(){
   if(S.si>=SEASONS.length-1){ S.step="end"; render(); return; }
   S.off={week:1, weeks:OFF_WEEKS};
   S.ap=apFor("off");
-  if(typeof rollProOffers==="function") rollProOffers();   // 别的队会不会来挖你
+  if(typeof checkPromote==="function" && checkPromote()) { /* 升上一队了 */ }
+  else if(typeof rollProOffers==="function") rollProOffers();   // 别的队会不会来挖你
   S.fatigue=Math.max(0,S.fatigue-25);      // 赛季打完，先喘口气
   pushEvent(`赛季结束，进入休赛期（${OFF_WEEKS} 周）。没有比赛，
     但这是一年里唯一能安心补短板的时间。`,"info","休赛期");
