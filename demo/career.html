@@ -2290,6 +2290,7 @@ function viewOffseason(){
    这段时间的重点：这是唯一一段你能安心补短板、攒人气的日子。 */
 const OFF_WEEKS=3;
 function doOffseason(){
+  if(S.off) return;          // 已经在休赛期里了，别把周数重置回第 1 周
   if(S.si>=SEASONS.length-1){ S.step="end"; render(); return; }
   S.off={week:1, weeks:OFF_WEEKS};
   S.ap=apFor("off");
