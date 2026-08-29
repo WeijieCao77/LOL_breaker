@@ -2477,6 +2477,7 @@ function render(){
     : S.step==="offseason"?viewOffseason() : viewEnd();
   $("stage").innerHTML = body
     + (typeof saveBar==="function"?saveBar():"")
+    + (typeof achPopCard==="function"?achPopCard():"")
     + (typeof confirmCard==="function"?confirmCard():"");
   bind();
 }
@@ -2596,6 +2597,7 @@ function bind(){
       "放弃并重开",()=>{ dropSave(); location.reload(); });
 
   /* ---- 通用确认框 ---- */
+  const _ap=$("achpopok"); if(_ap) _ap.onclick=()=>{ (S.achPop||[]).shift(); render(); };
   const _ck=$("cfmOk"); if(_ck) _ck.onclick=()=>{ const f=S.confirm&&S.confirm.fn; S.confirm=null; if(f) f(); else render(); };
   const _ca=$("cfmAlt"); if(_ca) _ca.onclick=()=>{ const a=S.confirm&&S.confirm.alt; S.confirm=null; if(a&&a.fn) a.fn(); else render(); };
   const _cn=$("cfmNo"); if(_cn) _cn.onclick=()=>{ S.confirm=null; render(); };

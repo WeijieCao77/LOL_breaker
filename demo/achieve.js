@@ -52,19 +52,19 @@ const ACHIEVEMENTS=[
    on:"course", cond:()=>hasCourse("kr")&&hasCourse("en"), r:{trust:12}},
 
   /* ---------- 圈内梗（只写你自己，不写真人） ---------- */
-  {id:"jungle_gospel", n:"我怎么去啊", tag:"梗",
+  {id:"jungle_gospel", secret:true, n:"我怎么去啊", tag:"梗",
    d:"打野位，队伍连败但你的参团率一点不低——复盘会上你说了那句所有打野都说过的话。",
    on:"match", cond:(c)=>S.pos==="jng"&&!c.won&&S.record.l>=2&&c.gap>=-2,
    flavor:"「下路一直叫我去，别人一直进我野区，我怎么去啊？」",
    r:{fat:-15,trust:-3,fame:20}},
 
-  {id:"world_no1_top", n:"世一上", tag:"梗",
+  {id:"world_no1_top", secret:true, n:"世一上", tag:"梗",
    d:"上单位，队伍输了，但你对位没输——当晚你在微博上写下三个字。",
    on:"match", cond:(c)=>S.pos==="top"&&!c.won&&c.laneWon,
    flavor:"「世一上。」评论区吵了一整夜。",
    r:{fame:34,trust:-4}},
 
-  {id:"faker_stare", n:"被注视", tag:"梗",
+  {id:"faker_stare", secret:true, n:"被注视", tag:"梗",
    d:"在国际赛场上对位过那个所有中单都要面对的名字。",
    on:"match", cond:(c)=>S.pos==="mid"&&c.intl&&c.oppLeague==="LCK",
    flavor:"赛后握手的时候，你想起了十年前在电视上看他的那个下午。",
@@ -76,13 +76,13 @@ const ACHIEVEMENTS=[
    flavor:"弹幕齐刷刷：内战无强敌，外战无……算了不说了。",
    r:{fame:18,trust:-2}},
 
-  {id:"gift_rain", n:"榜一大哥", tag:"梗",
+  {id:"gift_rain", secret:true, n:"榜一大哥", tag:"梗",
    d:"一场直播的礼物收入超过了你半个赛段的薪水。",
    on:"stream", cond:()=>streamIncome()>=salaryOf()*0.5,
    flavor:"榜一大哥在公屏上打了一行字：别打职业了，直播吧。",
    r:{money:60,fame:14}},
 
-  {id:"zero_ten", n:"零杀十死也能赢", tag:"梗",
+  {id:"zero_ten", secret:true, n:"零杀十死也能赢", tag:"梗",
    d:"个人数据难看到不忍直视，但这把还是赢了。",
    on:"match", cond:(c)=>c.won&&c.nodeFails>=2,
    flavor:"赛后采访你说：赢了就行。",
@@ -129,10 +129,27 @@ function checkAch(on,ctx){
     if(on!=="ach") queueAchCheck=true;
     pushEvent(`<b>成就解锁 · ${a.n}</b>　${a.d}${a.flavor?`<br><span style="color:var(--gold)">${a.flavor}</span>`:""}${
       gains.length?`<br><span style="color:var(--cyan)">${gains.join(" · ")}</span>`:""}`,"big","成就");
+    // 光写进大事记不够——解锁的那一下要被看见。
+    // 可能一次解锁好几个，所以排队一个个弹。
+    S.achPop=(S.achPop||[]).concat([{n:a.n,d:a.d,flavor:a.flavor||"",tag:a.tag,gains}]);
   });
 }
 
 /* ---------- 界面 ---------- */
+/* 解锁弹窗。多个同时达成就排队，点一下弹下一个。 */
+function achPopCard(){
+  const q=S.achPop; if(!q||!q.length) return "";
+  const a=q[0];
+  return `<div class="rankup"><div class="ru-inner" style="max-width:420px">
+    <div class="ru-eyebrow">成就解锁${q.length>1?`　（还有 ${q.length-1} 个）`:""}</div>
+    <div class="ru-tier" style="font-size:26px">${a.n}</div>
+    <div class="ru-txt">${a.d}${a.flavor?`<br><span style="color:var(--gold)">${a.flavor}</span>`:""}</div>
+    ${a.gains&&a.gains.length?`<div class="evres">${a.gains.map(g=>
+      `<span class="er up">${g}</span>`).join("")}</div>`:""}
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="achpopok">${q.length>1?"下一个 →":"知道了"}</button>
+    </div></div></div>`;
+}
 function achCard(){
   const got=ACHIEVEMENTS.filter(a=>hasAch(a.id));
   const byTag={};
@@ -142,12 +159,16 @@ function achCard(){
       <h3 style="font-size:13px;color:var(--ink-3);margin:14px 0 8px">${t}</h3>
       <div class="achgrid">${byTag[t].map(a=>{
         const on=hasAch(a.id);
-        return `<div class="ach ${on?'on':''}" title="${on?a.d:'尚未解锁'}">
-          <div class="an">${on?a.n:"？？？"}</div>
-          <div class="ad">${on?a.d:"条件未达成"}</div>
+        // 没解锁的也要写清条件——全打问号，玩家根本不知道往哪使劲。
+        // 只留 secret 那几条当彩蛋。
+        const hide=!on&&a.secret;
+        return `<div class="ach ${on?'on':''}" title="${hide?'彩蛋，自己撞上去':a.d}">
+          <div class="an">${hide?"？？？":a.n}</div>
+          <div class="ad">${hide?"藏起来的，自己撞上去":a.d}</div>
           ${on&&a.flavor?`<div class="af">${a.flavor}</div>`:""}
         </div>`}).join("")}</div>`).join("")}
-    <p class="note">解锁成就会立刻给到回报——回体力、涨士气或者发奖金。<b>「第一次」值得被记住。</b></p>
+    <p class="note">解锁成就会立刻给到回报——回体力、涨士气或者发奖金。<b>「第一次」值得被记住。</b><br>
+      打问号的是彩蛋，剩下的条件都写在上面——想拿就照着去做。</p>
   </div>`;
 }
 
