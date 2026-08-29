@@ -557,7 +557,7 @@ const YEAR_PHASES=[
   {k:"summer", n:"夏季赛",    len:WEEKS},
   {k:"supo",   n:"夏季季后赛", len:3},
   {k:"worlds", n:"世界赛",    len:3},
-  {k:"off",    n:"休赛期",    len:2}
+  {k:"off",    n:"休赛期",    len:3}
 ];
 function phaseOffset(k){
   let o=0;
@@ -571,7 +571,7 @@ function yearWeek(){
   if(S.step==="pre"||S.step==="offer") return S.pre?S.pre.week:1;
   const base=S.yearBase||0;
   if(S.step==="end")       return yearTotal();
-  if(S.step==="offseason") return base+phaseOffset("off")+1;
+  if(S.step==="offseason") return base+phaseOffset("off")+((S.off&&S.off.week)||1);
   if(S.intl)               return base+phaseOffset(S.intl.type==="msi"?"msi":"worlds")+1;
   if(S.playoff)            return base+phaseOffset((S.split>=1)?"supo":"sppo")+(S.playoff.round||1);
   return base+phaseOffset((S.split>=1)?"summer":"spring")+(S.week||1);
@@ -592,7 +592,8 @@ function nowPhase(){
   }
   if(S.playoff) return {tag:sea.tag,phase:SPLITS[S.split||0]+"季后赛",
                         detail:`${YW} · 第 ${S.playoff.round} 轮`,urgent:true};
-  if(S.step==="offseason") return {tag:sea.tag,phase:"休赛期",detail:`${YW} · 转会与备战`,urgent:false};
+  if(S.step==="offseason") return {tag:sea.tag,phase:"休赛期",
+    detail:S.off?`${YW} · 第 ${S.off.week}/${S.off.weeks} 周`:`${YW} · 赛季结算`,urgent:false};
   if(S.step==="end") return {tag:sea.tag,phase:"生涯结束",detail:"",urgent:false};
   return {tag:sea.tag,phase:SPLITS[S.split||0],detail:`${YW} · 本阶段 ${S.week}/${WEEKS}`,
           urgent:S.week>=WEEKS-1};
@@ -1898,6 +1899,7 @@ function endSeason(result,seed){
 }
 
 function viewOffseason(){
+  if(S.off) return offPanel();
   const ls=S.lastSeason,sea=SEASONS[S.si];
   const label=ls.result==="champion"?`<span class="tag g">LPL 冠军</span>`
     :ls.result===null?`常规赛第 ${ls.seed} 名 · 无缘季后赛`
@@ -1922,8 +1924,32 @@ function viewOffseason(){
   ${eventsCard()}`;
 }
 
+/* 休赛期不该是一个按钮。
+   AP_OFF 和 apFor("off") 早就写好了，但从来没被用上——结算页点一下
+   就直接跳进下赛季。可休赛期只是没有比赛，训练、排位、直播反而是
+   这段时间的重点：这是唯一一段你能安心补短板、攒人气的日子。 */
+const OFF_WEEKS=3;
 function doOffseason(){
   if(S.si>=SEASONS.length-1){ S.step="end"; render(); return; }
+  S.off={week:1, weeks:OFF_WEEKS};
+  S.ap=apFor("off");
+  S.fatigue=Math.max(0,S.fatigue-25);      // 赛季打完，先喘口气
+  pushEvent(`赛季结束，进入休赛期（${OFF_WEEKS} 周）。没有比赛，
+    但这是一年里唯一能安心补短板的时间。`,"info","休赛期");
+  render();
+}
+/* 休赛期推进；走完就进下一个赛季 */
+function offNextWeek(){
+  if(!S.off) return;
+  if(typeof archiveWeek==="function") archiveWeek();
+  if(S.off.week>=S.off.weeks){ S.off=null; finishOffseason(); return; }
+  S.off.week++; S.ap=apFor("off"); addFat(-14);
+  if(typeof tickBuffs==='function') tickBuffs();
+  if(typeof tryRandomEvent==='function'&&rnd()<0.16) tryRandomEvent();
+  if(typeof saveGame==='function') saveGame('休赛期第'+S.off.week+'周');
+  render();
+}
+function finishOffseason(){
   S.si++; S.age++;
   S.yearBase=0;              // 新的一年，全年计数从头开始
   const news=ageWorld();
@@ -1949,6 +1975,37 @@ function doOffseason(){
   }
   syncTrust();
   startSeason(false,0);
+}
+
+/* 休赛期的行动面板：没有比赛，其余照常 */
+function offPanel(){
+  const nx=SEASONS[S.si+1];
+  return `${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
+  <div class="card">
+    <h2>休赛期<em>第 ${S.off.week}/${S.off.weeks} 周 · 剩余行动点 ${S.ap}</em></h2>
+    <p class="note">没有比赛要打。${nx?`下赛季是 <b>${nx.tag} ${nx.y}</b>，版本「${nx.ver}」，
+      吃 <b>${nx.dim}</b>——现在补这一项最划算。`:""}</p>
+    ${fatigueBar()}
+    ${typeof routineBar==="function"?routineBar():""}
+    <div class="grid g5">
+      ${DIMS.map(d=>{const b=trainBtn(d,S.ap);
+        return `<button class="act" data-train="${d}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
+        <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
+      <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">打排位</div><div class="d">五项小涨 + 找回手感${
+          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}</div></button>
+      <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">直播</div><div class="d">涨人气与收入</div></button>
+      <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">休息</div><div class="d">清疲劳，护状态</div></button>
+    </div>
+    ${typeof squadActs==="function"?squadActs():""}
+    <div class="row"><button class="btn" id="offnext" ${S.ap>0?'disabled':''}>
+      ${S.ap>0?`还剩 ${S.ap} 个行动点`
+        :(S.off.week>=S.off.weeks?`开始 ${nx?nx.tag:"下"} 赛季 →`:`进入休赛期第 ${S.off.week+1} 周 →`)}</button></div>
+  </div>
+  ${typeof shopCard==="function"?shopCard():""}
+  ${eventsCard()}`;
 }
 
 /* ================= 结局 ================= */
@@ -2385,7 +2442,7 @@ function hud(){
       <div><div class="k">选手</div><div class="v">${meName()} <small>${POSN[S.pos]}</small></div></div>
       <div><div class="k">年龄</div><div class="v mono">${S.age}</div></div>
       <div class="hud-now ${nowPhase().urgent?'urgent':''}"><div class="k">现在</div>
-        <div class="v">${nowPhase().tag} ${nowPhase().phase} <small>${nowPhase().detail} · 窗口剩 ${Math.max(0,PRE_YEAR-S.pre.week)} 周</small></div></div>
+        <div class="v">${nowPhase().tag} ${nowPhase().phase} <small>${nowPhase().detail}</small></div></div>
       <div><div class="k">段位</div><div class="v">${rankBadge(S.pre.rank,26)}</div></div>
       <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div></div>
       <div><div class="k">下一节点</div><div class="v">${(()=>{const n=nextMilestone();
@@ -2519,6 +2576,7 @@ function bind(){
   st.querySelectorAll("[data-cupnode]").forEach(b=>b.onclick=()=>resolveCupNode(+b.dataset.cupnode));
   const _cd=$("cupdone"); if(_cd) _cd.onclick=cupDismissMatch;
   const _cr=$("cupresok"); if(_cr) _cr.onclick=()=>{S.cupResult=null;render()};
+  const _off=$("offnext"); if(_off) _off.onclick=offNextWeek;
   const _rtA=$("rtRepeat"); if(_rtA) _rtA.onclick=repeatLast;
   const _rtB=$("rtPlan");   if(_rtB) _rtB.onclick=runPlan;
   const _rtR=$("rtResume"); if(_rtR) _rtR.onclick=()=>{runActs(null,true);render();};

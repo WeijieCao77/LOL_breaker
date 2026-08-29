@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """导出 demo 用的精简游戏数据: 2022 四大赛区首发阵容 + 五维评分 + 中文名。"""
 import csv, os, json, collections
+import base64, io, os, re
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(BASE, "csv")
@@ -52,6 +53,40 @@ for (lg, tn, pos, nm), g in cnt.items():
 
 DIMS = ["操作", "运营", "心态", "指挥", "体质"]
 
+# ---- 队标 ----
+# data/logos/ 下有 72 个队标, 但一直没有进过游戏数据: 导出脚本压根没处理它,
+# 于是每支队的 logo 都是 undefined, teamLogo() 永远返回空字符串。
+# 原图平均 68KB(最大的 3508x2481), 直接内嵌会让单文件涨到 5MB 以上,
+# 所以统一缩到 40x40 再转 data URI —— 161KB, 界面上只显示 20-40px, 够用。
+def _logo_key(name):
+    return re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_").lower()
+
+def load_logos():
+    out = {}
+    d = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logos")
+    if not os.path.isdir(d):
+        return out
+    try:
+        from PIL import Image
+    except ImportError:
+        print("!! 没装 Pillow, 跳过队标内嵌")
+        return out
+    for fn in os.listdir(d):
+        if not fn.lower().endswith(".png"):
+            continue
+        try:
+            im = Image.open(os.path.join(d, fn)).convert("RGBA")
+            im.thumbnail((40, 40), Image.LANCZOS)
+            buf = io.BytesIO()
+            im.save(buf, "PNG", optimize=True)
+            out[_logo_key(os.path.splitext(fn)[0])] = (
+                "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode())
+        except Exception as e:
+            print("!! 队标处理失败", fn, e)
+    return out
+
+LOGOS = load_logos()
+
 # 评分是在「同位置 x 同层级」内做的 z 标准化, 跨赛区不可直接比较:
 # VCS 的第一名在 VCS 内是顶级 -> 高分, 但真实实力远低于 LPL/LCK 第一。
 # 按历史国际赛战绩给赛区强度修正, 把各赛区拉回同一把尺子。
@@ -92,6 +127,7 @@ for lg in LEAGUES:
         teams.append({
             "_stab": min(1.0, stab_num / 5.0),
             "name": tn,
+            "logo": LOGOS.get(_logo_key(tn)),
             "games": tg,
             "wr": round(teamwins[(lg, tn)] / tg, 3),
             "players": players,

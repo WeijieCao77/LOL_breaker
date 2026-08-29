@@ -42,7 +42,7 @@ const code = m[1];
 try {
   new Function(code + "\n;globalThis.__api={S:()=>S,SEASONS,SPLITS,DIMS,AGES,BACKGROUNDS,ACHIEVEMENTS,RANKS,"
     + "GEAR,SLOTS,COURSES,RELAX,SPEND,screenCreate,startPre,preAct,preNextWeek,acceptOffer,"
-    + "doTrain,doAction,startMatch,resolveNode,playGame,nextWeek,doOffseason,isBenched,benchWeek,"
+    + "doTrain,doAction,startMatch,resolveNode,playGame,nextWeek,doOffseason,offNextWeek,finishOffseason,OFF_WEEKS,isBenched,benchWeek,"
     + "resolveLocker,ending,cap,rankFull,nowLabel,nowPhase,yearWeek,yearTotal,rankIcon,fameTier,scoutTier,preScore,hasAch,"
     + "buyGear,buyCourse,buyRelax,gearBonus,streamIncome,drawBackgrounds,advancePreWeek,capOf,"
     + "soloSkill,soloWinP,rankReq,doSquad,SQUAD_ACTS,squadOf,PRE_MILESTONES,"
@@ -143,7 +143,16 @@ function playOne(opts) {
       if (S.match.node) A.resolveNode(1);
       else if (S.match.done) A.nextWeek();
       else A.playGame();
-    } else if (S.step === "offseason") A.doOffseason();
+    } else if (S.step === "offseason") {
+      // 休赛期现在是可玩的几周：先把结算页点掉，再把每周的行动点用完
+      if (!S.off) { A.doOffseason(); continue; }
+      if (S.ap > 0) {
+        const av = A.DIMS.filter(d => S.attrs[d] < A.capOf(d));
+        if (S.fatigue > 70) A.doAction("rest");
+        else if (av.length) A.doTrain(av[0]);
+        else A.doAction("solo");
+      } else A.offNextWeek();
+    }
   }
   S = A.S();
   return {
