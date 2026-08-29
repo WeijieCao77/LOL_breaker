@@ -154,13 +154,21 @@ function cupNextGame(){
   if(m.node) m.seen.push(m.node.q);
   render();
 }
+function cupWinP(m,swing){
+  const my=cupMyPower(m.kind)+(swing||0);
+  return clamp(1/(1+Math.exp(-(my-m.op)/5.5)),0.05,0.95);
+}
 function resolveCupNode(i){
   const m=S.cupMatch, opt=m.node.a[i], v=S.attrs[opt.dim];
   const p=clamp(0.30+(v/100)*0.55,0.15,0.9);
   const ok=rnd()<p;
+  const was=cupWinP(m,m.swing);
   m.swing+=(ok?1:-1)*opt.risk*5.0;
+  const now=cupWinP(m,m.swing);
+  const d=Math.round(now*100)-Math.round(was*100);
   m.lines.push(`<div><span class="hi">第${m.game}局</span> ${opt.t} — ${
-    ok?'<span class="w">成了</span>':'<span class="l">没成</span>'}</div>`);
+    ok?'<span class="w">成了</span>':'<span class="l">没成</span>'}　<span class="${
+      d>0?'w':d<0?'l':''}">赢面 ${Math.round(was*100)}% → ${Math.round(now*100)}%</span></div>`);
   m.node=null;
   cupPlayGame();
 }

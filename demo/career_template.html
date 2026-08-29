@@ -967,7 +967,7 @@ const PRE_MILESTONES=[
    desc:"有人开始注意到你了",
    run:()=>preLog("有个自称 <b>战队青训教练</b> 的人加了你好友，问你有没有想过打职业。","good"),
    fail:()=>{}},
-  {w:12, name:"主播杯", tag:"赛事", open:true, vague:true, signup:"stream", fee:60, prize:[0,60,180,520],
+  {w:14, name:"主播杯", tag:"赛事", open:true, vague:true, signup:"stream", fee:60, prize:[0,60,180,520],
    need:()=>S.fame>=60, needTxt:"邀请制 · 看人气",
    cur:()=>fameTier(),
    desc:"邀请制，名气不够连门都进不去",
@@ -1007,13 +1007,36 @@ function nextMilestone(){ return PRE_MILESTONES.find(m=>m.open&&m.w>=S.pre.week)
 
 function preNextWeek(){
   const P=S.pre;
-  const hit=PRE_MILESTONES.find(m=>m.w===P.week);
+  const busyCup = (typeof activeCups==="function") && activeCups().length>0;
+
+  // 被推迟的报名单独处理，不跟当周的里程碑抢——
+  // 否则同一周只要还有别的里程碑（比如「球探到场」），补发就被挡住了
+  if(P.deferSignup && !busyCup){
+    const d=PRE_MILESTONES.find(m=>m.name===P.deferSignup);
+    P.deferSignup=null;
+    if(d){
+      if(!d.need()){ d.fail(); }
+      else { S.signup=d; render(); return; }
+    }
+  }
+
+  let hit=PRE_MILESTONES.find(m=>m.w===P.week);
+  // 手上还有没打完的赛事，就别在这周开新的——两个赛程叠在一起，
+  // 行动点根本不够分，备战也顾不过来
+  if(hit&&hit.signup&&busyCup){
+    P.deferSignup=hit.name;
+    preLog(`<b>${hit.name}</b>开始报名了，但你手上的比赛还没打完——先打完再说。`,"info");
+    advancePreWeek(); return;
+  }
   if(hit&&hit.signup){
     if(!hit.need()){ hit.fail(); }
     else { S.signup=hit; render(); return; }     // 交给玩家决定报不报
   } else if(hit){ hit.need()?hit.run():hit.fail(); }
-  // 够格就随时有人来谈；不够就打到年末的转会窗口再看
-  if(P.week>=PRE_EARLIEST&&preScore()>=PRE_INVITE){
+  // 够格就随时有人来谈；不够就打到年末的转会窗口再看。
+  // 但比赛没打完不能来——试训邀请那条路已经加了这道闸，
+  // 这条老路径当时漏了，结果杯赛打到一半就弹出「进职业」。
+  const busy = (typeof activeCups==="function") && activeCups().length>0;
+  if(!busy && P.week>=PRE_EARLIEST&&preScore()>=PRE_INVITE){
     preLog(`俱乐部发来<b>正式试训邀请</b>。`,"big");
     makeOffers(); return;
   }
@@ -1128,7 +1151,9 @@ function acceptOffer(i){
   S=Object.assign({},S,{
     step:"season",age:S.age,world,baseline:P.baseline,team:of.team,homeLeague:lgKey,offerKind:of.k,
     understudy:of.k==="sub"?incumbent:null, promoted:of.k!=="sub",
-    si:0,week:1,ap:AP,record:{w:0,l:0},gameRec:{w:0,l:0},
+    // si 保持不动。原来写死 si:0，于是在职业前多打一年（已经到 S13）
+    // 的人一签约就被扔回 S12，整条时间线倒流。
+    week:1,ap:AP,record:{w:0,l:0},gameRec:{w:0,l:0},
     career:{w:0,l:0,titles:[],best:99},seasonAttr0:Object.assign({},S.attrs),
     buff:{},contract:(S.pendingContract||{years:2,left:2}),rivals:{},lockerSeen:[]
   });
@@ -1531,15 +1556,26 @@ function nextGame(){
   if(m.node) m.seenNodes.push(m.node.q);
   render();
 }
+/* 这一局此刻的赢面（给玩家看的，和 playGame 用同一套算法） */
+function gameWinP(swing){
+  const m=S.match,sea=SEASONS[S.si];
+  const my=power(myRoster(),S.fatigue,sea.fav)+(swing||0)+versionFit()+rivalBoost(m.oppName);
+  const op=power(m.opp.players,0,sea.fav);
+  return clampWinProb(1/(1+Math.exp(-(my-op)/SPREAD)), my-op);
+}
 function resolveNode(ai){
   const m=S.match,opt=m.node.a[ai],v=S.attrs[opt.dim];
   const p=clamp(0.30+(v/100)*0.55,0.15,0.9);
   const ok=rnd()<p;
+  const was=gameWinP(m.swing);            // 做决定之前的赢面
   m.swing+=(ok?1:-1)*opt.risk*6.0;
+  const now=gameWinP(m.swing);            // 做完之后
   if(typeof addStaff==='function') addStaff('coach',ok?0.3:-0.6);
   if(!ok) m.nodeFails=(m.nodeFails||0)+1;
+  const d=Math.round(now*100)-Math.round(was*100);
   m.lines.push(`<div><span class="hi">第${m.game}局</span> ${opt.t} — ${ok
-    ?`<span class="w">成了</span>`:`<span class="l">没成</span>`}</div>`);
+    ?`<span class="w">成了</span>`:`<span class="l">没成</span>`}　<span class="${
+      d>0?'w':d<0?'l':''}">赢面 ${Math.round(was*100)}% → ${Math.round(now*100)}%</span></div>`);
   m.node=null; playGame();
 }
 function playGame(){
@@ -1547,7 +1583,12 @@ function playGame(){
   const my=power(myRoster(),S.fatigue,sea.fav)+m.swing+versionFit()+rivalBoost(m.oppName);
   const op=power(m.opp.players,0,sea.fav);
   let p=1/(1+Math.exp(-(my-op)/SPREAD));
-  p=clampWinProb(p, power(myRoster(),S.fatigue,sea.fav)+versionFit()-op);
+  // 封顶用的差距必须把 m.swing（临场决策的结果）算进去。
+  // 原来传的是不含 swing 的原始差距，于是差距一超过 GAP_WINDOW，
+  // 赢面就被锁死在 7%——你抢龙抢成了也没用。
+  // 而游戏自己的文案写着「劣势：硬碰硬赢不了，得赌一把」，
+  // 赌了却不算数，那这些选项就真的没有意义了。
+  p=clampWinProb(p, my-op);
   const win=rnd()<p;
   if(win){m.sc[0]++;S.gameRec.w++;S.career.w++}else{m.sc[1]++;S.gameRec.l++;S.career.l++}
   m.lines.push(`<div>第${m.game}局 ${win?'<span class="w">胜</span>':'<span class="l">负</span>'}</div>`);

@@ -80,13 +80,13 @@ function checkTryoutInvite(kind, reached, champion){
    之前是直接丢弃，等于「打完城市赛那次机会白攒了」。 */
 function queueInvite(tier, reason){
   const P = S.pre; if(!P) return;
-  if(canInvite()){ addInvite(tier, reason); return; }
+  if(canInvite(tier)){ addInvite(tier, reason); return; }
   P.inviteQ = P.inviteQ || [];
   if(P.inviteQ.length < 3) P.inviteQ.push({tier, reason});
 }
 function flushInviteQ(){
   const P = S.pre; if(!P || !P.inviteQ || !P.inviteQ.length) return;
-  if(!canInvite()) return;
+  if(!canInvite(P.inviteQ[0].tier)) return;
   const q = P.inviteQ.shift();
   // 排队期间你的水平可能变了，档次按现在重新判一次
   addInvite(fitTier(q.tier), q.reason);
@@ -95,30 +95,45 @@ function flushInviteQ(){
 function checkRankInvite(){
   const P = S.pre; if(!P) return;
   if(typeof flushInviteQ === "function") flushInviteQ();   // 排队的先发
-  if(!canInvite()) return;
   P.rankInvited = P.rankInvited || {};
   // 大师和宗师各算一次机会——上分这条路不该只在最后才兑现
   for(const [i, tier] of [[2,"acad"],[3,"low"],[4,"mid"],[5,"top"]]){
     if(RANKS[i] && P.rank >= RANKS[i].at && !P.rankInvited[i]){
+      const t = fitTier(tier);
+      if(!canInvite(t)) continue;
       P.rankInvited[i] = 1;
-      addInvite(fitTier(tier), `排位打到${RANKS[i].n}`);
+      addInvite(t, `排位打到${RANKS[i].n}`);
       return;
     }
   }
   if(typeof checkFameInvite === "function") checkFameInvite();
 }
-/* 成绩决定「有没有人看你」，个人水平决定「谁来看你」。
-   两头都要卡：水平不够，成绩再好也只有青训队打电话；
-   水平明显超出，档次低的队自己就知道留不住你，会有更好的队来。 */
+/* 「有没有人找你」和「能不能通过」是两件事。
+
+   名气、成绩、段位决定谁来找你——一个百万粉丝的大主播，
+   俱乐部当然愿意见一面，哪怕他水平一般。能不能签下来，
+   是试训那四天的事，不该在发邀请这一步就替他判死刑。
+
+   原来 fitTier 会因为水平不够把档次一路压到青训队，于是
+   「大主播被豪门叫去试训、然后没通过」这个故事根本发生不了。
+   现在只在差得极远时才降档（比该档期望低 22 以上），
+   其余交给试训自己去筛。 */
 const TIER_ORDER = ["acad", "low", "mid", "top"];
 function fitTier(tier){
   const me = tryoutSkill();
   let i = TIER_ORDER.indexOf(tier);
-  // 往上：明显够得着更高一档就往上走
+  // 往上：明显够得着更高一档，更好的队会来抢
   while(i < TIER_ORDER.length-1 && me >= CLUB_TIERS[TIER_ORDER[i+1]].expect + 6) i++;
-  // 往下：连这一档的门槛都差得远，就只剩青训队
-  while(i > 0 && me < CLUB_TIERS[TIER_ORDER[i]].expect - 10) i--;
+  // 往下：只有差到离谱才降档；「够不着但被叫去试试」是允许的
+  while(i > 0 && me < CLUB_TIERS[TIER_ORDER[i]].expect - 22) i--;
   return TIER_ORDER[i];
+}
+/* 但门是有槛的：连钻石都没上，没有俱乐部会浪费四天看你。
+   这是「有没有资格被看」的底线，和「能不能通过」无关。 */
+function inviteFloorOk(){
+  const P = S.pre; if(!P) return false;
+  const need = (typeof RANKS !== "undefined" && RANKS[2]) ? RANKS[2].at : 26;   // 钻石
+  return P.rank >= need;
 }
 /* 邀请节流。
    实测过：整局平均只有 0.98 次试训机会，59/60 的局正好一次——
@@ -126,34 +141,50 @@ function fitTier(tier){
    「一次定生死」不是难度，是惩罚。
    现在放开触发点、加两周冷却，目标是整局 2–4 次机会：
    失手一次还能再来，但也不至于多到没有分量。 */
-function canInvite(){
+/* 各档次最早什么时候会来看你。
+   青训队和次级联赛的球探到处捡人，看到苗子就先联系；豪门要看完
+   整个赛季再说——所以窗口是分档次的，不是一刀切。
+
+   但都得在城市争霸赛（第 8 周报名、约第 12 周打完）之后：
+   试过让青训队第 5 周就来，结果玩家在业余赛开打前就签约走人，
+   整条赛事线被跳过——奖金、成就、决赛一个都碰不到。
+   「早」的价值在于比豪门早，不在于早到把内容跳过去。 */
+const TIER_EARLIEST = { acad:9, low:11, mid:13, top:15 };
+function earliestWeekFor(tier){
+  const w = TIER_EARLIEST[tier];
+  return (w === undefined) ? (typeof PRE_EARLIEST !== "undefined" ? PRE_EARLIEST : 13) : w;
+}
+function canInvite(tierWanted){
   const P = S.pre; if(!P) return false;
+  if(!inviteFloorOk()) return false;          // 连钻石都没到，没人会来
   if(P.invite && P.invite.pending) return false;        // 手上还有没处理的
   if(P.inviteCd && P.week < P.inviteCd) return false;   // 冷却中
-  // 太早不行。代码里本来就有 PRE_EARLIEST=13「主播杯打完之前没人下判断」，
-  // 加段位/人气触发时我把它绕过去了，结果第 6 周就有队来签，
-  // 玩家在城市赛开打之前就走人——整条业余赛事线被跳过，
-  // 奖金、成就、决赛全拿不到，职业赛胜率也掉了 11 个百分点。
-  if(typeof PRE_EARLIEST !== "undefined" && P.week < PRE_EARLIEST) return false;
+  // 太早不行，但「早」是分档次的：
+  // 青训队和次级联赛的球探本来就在到处捡人，看到苗子就先联系；
+  // 豪门要看完整个赛季再说。一刀切成第 13 周之后，等于把
+  // 「先去次级联赛打两年」这条真实存在的路堵死了。
+  if(P.week < earliestWeekFor(tierWanted)) return false;
   // 手上还有没打完的杯赛，也先别来——让玩家把比赛打完
   if(typeof activeCups === "function" && activeCups().length) return false;
   return true;
 }
 /* 人气到了也有人来问——直播这条路本来就是设计里的一条路 */
 function checkFameInvite(){
-  const P = S.pre; if(!P || !canInvite()) return;
+  const P = S.pre; if(!P) return;
   P.fameInvited = P.fameInvited || {};
   for(const [at, tier] of [[55,"acad"],[110,"low"],[190,"mid"]]){
     if(S.fame >= at && !P.fameInvited[at]){
+      const t = fitTier(tier);
+      if(!canInvite(t)) return;
       P.fameInvited[at] = 1;
-      addInvite(fitTier(tier), `直播间的人气涨到了${fameTier()}`);
+      addInvite(t, `直播间的人气涨到了${fameTier()}`);
       return;
     }
   }
 }
 function addInvite(tier, reason){
   const P = S.pre; if(!P) return;
-  if(!canInvite()) return;
+  if(!canInvite(tier)) return;
   const T = CLUB_TIERS[tier];
   const team = pickClub(tier);
   if(!team) return;
@@ -183,7 +214,8 @@ function inviteCard(){
   const me = tryoutSkill(), gap = me - iv.expect;
   return `<div class="card savecont"><h2>试训邀请<em>${T.n}</em></h2>
     <h3>${typeof teamLogo==="function"?teamLogo(iv.team,22):""} ${iv.team}</h3>
-    <p class="note" style="margin:0 0 10px">因为${iv.reason}。<br>
+    <p class="note" style="margin:0 0 10px">他们来找你，是因为${iv.reason}。
+      <b>但找你和要你是两回事</b>——能不能签下来，看接下来这四天。<br>
       去队里待四天，教练组会从操作、运营、指挥、心态四个方面评估你。
       <b>试训不是走过场——评级不够就没有合同</b>，评级高低也决定给你什么档次的合同。</p>
     <div class="ver">

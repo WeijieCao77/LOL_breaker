@@ -46,7 +46,7 @@ try {
     + "resolveLocker,ending,cap,rankFull,rankIcon,fameTier,scoutTier,preScore,hasAch,"
     + "buyGear,buyCourse,buyRelax,gearBonus,streamIncome,drawBackgrounds,advancePreWeek,capOf,"
     + "soloSkill,soloWinP,rankReq,doSquad,SQUAD_ACTS,squadOf,PRE_MILESTONES,"
-    + "resolveRandom,btkNote,BREAK_PATHS,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,tryoutSkill,checkTryoutInvite,checkRankInvite,addInvite,startTryout,resolveTryoutDay,tryoutGrade,endTryout,makeDeal,askDeal,signDeal,dropDeal,declineDeal,afterTryout,dealLeverage,CLUB_TIERS,DEAL_TIERS,TRYOUT_DAYS,DEAL_ASKS,salaryOf,contractCheck,consumeOffer,preNextYear,setS:(v)=>{S=v}};")();
+    + "resolveRandom,btkNote,BREAK_PATHS,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,tryoutSkill,checkTryoutInvite,checkRankInvite,addInvite,startTryout,resolveTryoutDay,tryoutGrade,endTryout,makeDeal,askDeal,signDeal,dropDeal,declineDeal,afterTryout,dealLeverage,CLUB_TIERS,DEAL_TIERS,TIER_EARLIEST,earliestWeekFor,canInvite,fitTier,inviteFloorOk,PRE_MILESTONES,PRE_EARLIEST,preNextWeek,TRYOUT_DAYS,DEAL_ASKS,salaryOf,contractCheck,consumeOffer,preNextYear,setS:(v)=>{S=v}};")();
 } catch (e) {
   console.error("脚本解析失败:", e.message);
   process.exit(1);
@@ -91,6 +91,10 @@ function playOne(opts) {
     // ---- 试训链路：邀请 → 四天评估 → 谈判 → 签字 ----
     if (S.pre && S.pre.invite && S.pre.invite.pending) {
       const iv = S.pre.invite; iv.pending = false;
+      // 模拟一个会权衡的玩家：业余赛季还没打完时，不为了一份青训合同
+      // 就把整年的比赛机会扔掉——反正拒了后面还会有别的队来。
+      // （机器人如果一律接受，测出来的就永远是「最贪」那条路。）
+      if (iv.tier === "acad" && S.pre.week < 15) continue;
       invites++;
       A.startTryout(iv.tier, iv.team, iv.expect);   // 来了就去，测试要覆盖到
       continue;
