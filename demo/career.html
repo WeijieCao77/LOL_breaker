@@ -1105,9 +1105,7 @@ function summaryCard(){
   if(B.upkeep) extra.push(`每赛段要往家里寄 ${B.upkeep} 万`);   // 这条是负担，必须告知
   return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left">
     <div class="ru-eyebrow" style="text-align:center">你的起点</div>
-    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:4px">${A.a-1} 岁 · ${o.n} · ${B.n}</div>
-    <p class="note" style="text-align:center;margin:0 0 16px">
-      你选的是 <b>${A.n}出道</b>——职业前这一年你 ${A.a-1} 岁，签约之后才满 ${A.a} 岁。</p>
+    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:16px">${A.a} 岁 · ${o.n} · ${B.n}</div>
     <div class="attrs">${DIMS.map(d=>`
       <div class="at"><div class="lb">${d}</div>
         <div class="track"><div class="fill" style="width:${clamp(attrs[d],0,100)}%"></div>
@@ -1137,7 +1135,7 @@ function viewCreate(){
     <h3 style="margin-top:20px">位置</h3>
     <div class="grid g5">${POS.map(p=>`<button class="opt ${S.pos===p.k?'on':''}" data-pos="${p.k}">
       <div class="t">${p.n}</div></button>`).join("")}</div>
-    <h3 style="margin-top:20px">出道年龄</h3>
+    <h3 style="margin-top:20px">起始年龄<span class="tag">你现在几岁</span></h3>
     <div class="grid g5">${AGES.map((x,i)=>`<button class="opt ${S.ageIdx===i?'on':''}" data-age="${i}">
       <div class="t">${x.n}</div><div class="d">${x.d}</div>
       </button>`).join("")}</div>
@@ -1148,7 +1146,7 @@ function viewCreate(){
         <div class="t">${b.n}<span class="tag">${ORIGIN[b.origin].n}</span></div>
         <div class="d">${b.d}</div>
       </button>`).join("")}</div>
-    <p class="note">你现在 ${AGES[S.ageIdx].a-1} 岁，还没有战队。先用半年时间打上分、攒人气、被人看见——然后才谈签约。
+    <p class="note">你现在 ${AGES[S.ageIdx].a} 岁，还没有战队。先用半年时间打上分、攒人气、被人看见——然后才谈签约。
       18–21 岁是成长期，22–24 岁巅峰，25 岁后开始下滑。</p>
   </div>
 
@@ -1215,7 +1213,7 @@ function startPre(){
   DIMS.forEach(d=>attrs[d]=Math.min(
     o.base[d]-9+(A.mod[d]||0)+((B.mod&&B.mod[d])||0), capOf(d)));
   S=Object.assign({},S,{
-    step:"pre",attrs,age:A.a-1,fame:Math.max(0,o.fame+(B.fame||0)),money:B.money||0,fatigue:0,
+    step:"pre",attrs,age:A.a,fame:Math.max(0,o.fame+(B.fame||0)),money:B.money||0,fatigue:0,
     ageCfg:A,bg:B,preYear:1,si:0,split:0,
     pre:{week:1,ap:PRE_AP,rank:0,scout:0,cityCup:null,streamCup:null,log:[],offers:null},
     seasonAttr0:Object.assign({},attrs),
@@ -1478,10 +1476,10 @@ function acceptOffer(i){
   const incumbent=team.players.find(q=>q.pos===S.pos);
   if(of.k!=="sub"){
     team.players=team.players.map(q=>q.pos===S.pos
-      ? {id:S.name||"你",cn:"",pos:S.pos,age:S.age+1,r:S.attrs,me:true} : q);
+      ? {id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true} : q);
   }
   S=Object.assign({},S,{
-    step:"season",age:S.age+1,world,baseline:P.baseline,team:of.team,homeLeague:lgKey,offerKind:of.k,
+    step:"season",age:S.age,world,baseline:P.baseline,team:of.team,homeLeague:lgKey,offerKind:of.k,
     understudy:of.k==="sub"?incumbent:null, promoted:of.k!=="sub",
     si:0,week:1,ap:AP,record:{w:0,l:0},gameRec:{w:0,l:0},
     career:{w:0,l:0,titles:[],best:99},seasonAttr0:Object.assign({},S.attrs),
@@ -5268,7 +5266,7 @@ function cupResultCard(){
    · 提供手动导出/导入，方便测试者把坏档发回来                        */
 
 const SAVE_KEY = "pojuzhe_save_v1";
-const SAVE_VER = 3;                 // 存档结构版本；改结构就 +1
+const SAVE_VER = 4;                 // 存档结构版本；改结构就 +1
 
 /* 这些字段挂着函数或临时 UI 状态，不进存档 */
 const SAVE_SKIP = ["locker", "rndEv", "signup", "rankUp", "rndResult",
@@ -5287,12 +5285,27 @@ function saveGame(reason) {
     return false;
   }
 }
+/* 老存档的迁移。
+   能升就升，别动不动让人重开——正在玩的人不该为我改数值付代价。
+   v3 -> v4：年龄语义从「出道年龄」改成「当前年龄」。
+   v3 的职业前存档里 age 比选的小一岁（签约时才 +1），而新代码
+   不再 +1，直接读会让整个生涯小一岁。所以职业前的档补回这一岁；
+   已经签约的档当年就已经是正确年龄，不用动。 */
+function migrate(blob) {
+  if (blob.ver === 3) {
+    const s = blob.S;
+    if (s.step === "pre" && typeof s.age === "number") s.age += 1;
+    blob.ver = 4;
+  }
+  return blob;
+}
 function readSave() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
-    const blob = JSON.parse(raw);
+    let blob = JSON.parse(raw);
     if (!blob || typeof blob !== "object" || !blob.S) return { bad: "格式不对" };
+    blob = migrate(blob);
     if (blob.ver !== SAVE_VER) return { bad: "版本不符（存档 v" + blob.ver + "，当前 v" + SAVE_VER + "）" };
     if (!blob.S.step || !blob.S.attrs) return { bad: "内容缺失" };
     return blob;
@@ -5392,10 +5405,11 @@ function importSave() {
       const rd = new FileReader();
       rd.onload = () => {
         try {
-          const blob = JSON.parse(rd.result);
+          let blob = JSON.parse(rd.result);
           if (!blob || !blob.S) { alert("这个文件不像是存档。"); return; }
+          blob = migrate(blob);
           if (blob.ver !== SAVE_VER) { alert("存档版本不符，读不了。"); return; }
-          localStorage.setItem(SAVE_KEY, rd.result);
+          localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
           loadGame();
         } catch (e) { alert("读取失败。"); }
       };

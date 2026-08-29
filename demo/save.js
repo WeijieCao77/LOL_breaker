@@ -10,7 +10,7 @@
    · 提供手动导出/导入，方便测试者把坏档发回来                        */
 
 const SAVE_KEY = "pojuzhe_save_v1";
-const SAVE_VER = 3;                 // 存档结构版本；改结构就 +1
+const SAVE_VER = 4;                 // 存档结构版本；改结构就 +1
 
 /* 这些字段挂着函数或临时 UI 状态，不进存档 */
 const SAVE_SKIP = ["locker", "rndEv", "signup", "rankUp", "rndResult",
@@ -29,12 +29,27 @@ function saveGame(reason) {
     return false;
   }
 }
+/* 老存档的迁移。
+   能升就升，别动不动让人重开——正在玩的人不该为我改数值付代价。
+   v3 -> v4：年龄语义从「出道年龄」改成「当前年龄」。
+   v3 的职业前存档里 age 比选的小一岁（签约时才 +1），而新代码
+   不再 +1，直接读会让整个生涯小一岁。所以职业前的档补回这一岁；
+   已经签约的档当年就已经是正确年龄，不用动。 */
+function migrate(blob) {
+  if (blob.ver === 3) {
+    const s = blob.S;
+    if (s.step === "pre" && typeof s.age === "number") s.age += 1;
+    blob.ver = 4;
+  }
+  return blob;
+}
 function readSave() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
-    const blob = JSON.parse(raw);
+    let blob = JSON.parse(raw);
     if (!blob || typeof blob !== "object" || !blob.S) return { bad: "格式不对" };
+    blob = migrate(blob);
     if (blob.ver !== SAVE_VER) return { bad: "版本不符（存档 v" + blob.ver + "，当前 v" + SAVE_VER + "）" };
     if (!blob.S.step || !blob.S.attrs) return { bad: "内容缺失" };
     return blob;
@@ -134,10 +149,11 @@ function importSave() {
       const rd = new FileReader();
       rd.onload = () => {
         try {
-          const blob = JSON.parse(rd.result);
+          let blob = JSON.parse(rd.result);
           if (!blob || !blob.S) { alert("这个文件不像是存档。"); return; }
+          blob = migrate(blob);
           if (blob.ver !== SAVE_VER) { alert("存档版本不符，读不了。"); return; }
-          localStorage.setItem(SAVE_KEY, rd.result);
+          localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
           loadGame();
         } catch (e) { alert("读取失败。"); }
       };
