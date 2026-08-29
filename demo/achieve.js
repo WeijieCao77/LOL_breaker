@@ -141,6 +141,7 @@ function achPopCard(){
   const q=S.achPop; if(!q||!q.length) return "";
   const a=q[0];
   return `<div class="rankup"><div class="ru-inner" style="max-width:420px">
+    <div class="ru-icon">${typeof gicon==="function"?gicon("ach",52):""}</div>
     <div class="ru-eyebrow">成就解锁${q.length>1?`　（还有 ${q.length-1} 个）`:""}</div>
     <div class="ru-tier" style="font-size:26px">${a.n}</div>
     <div class="ru-txt">${a.d}${a.flavor?`<br><span style="color:var(--gold)">${a.flavor}</span>`:""}</div>

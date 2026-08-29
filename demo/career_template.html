@@ -197,11 +197,15 @@ input[type=text]{background:var(--surface-2);border:1px solid var(--line);border
     <p class="sub">四十支战队、两百名选手的评分来自 2022 赛季真实比赛数据。四年里他们会变老、会下滑、会退役，新人会顶上来。你也一样。</p>
   </header>
   <div id="hud" class="hud hide"></div>
+  <div id="pin" class="pinbar hide"></div>
   <div id="stage"></div>
 </div>
 
 <script>
 const DATA = __GAME_DATA__;
+/* 像素头像（可选）：data/photos/ 里的照片经 make_avatars.py 烤成 24x24。
+   有照片的选手用像素头像，没有的用程序化 SVG（见 avatar.js）。 */
+const AVATARS = __AVATARS__;
 
 /* ================= 常量 ================= */
 const DIMS=["操作","运营","心态","指挥","体质"];
@@ -622,6 +626,7 @@ function yearWeek(){
     if(S.off&&S.off.next==="playoff") return base+phaseOffset((S.split>=1)?"supo":"sppo");
     if(S.off&&S.off.next==="poEnd")  return base+phaseOffset((S.split>=1)?"supo":"sppo")+(S.off.week||1);
     if(S.off&&S.off.next==="wrap")   return base+phaseOffset("worlds")+(S.off.week||1);
+    if(S.off&&S.off.next==="intl")   return base+phaseOffset((S.pendingIntl&&S.pendingIntl.type==="msi")?"msi":"worlds")+(S.off.week||1)-1;
     if(S.off&&S.off.next==="summer") return base+phaseOffset("msi")+(S.off.week||1);
     return base+phaseOffset("off")+((S.off&&S.off.week)||1);
   }
@@ -1032,7 +1037,9 @@ function preAct(k,dim){
     // 单纯开播涨得很慢；真正让人记住你的是段位和战绩
     const pop=1.9+S.pre.rank*0.05;
     const gift=streamIncome();
-    addFame(pop*m); S.money+=gift; addFat(4); checkAch("stream");
+    addFame(pop*m*(typeof streamFameMul==="function"?streamFameMul():1));
+    S.money+=gift; addFat(4); checkAch("stream");
+    if(typeof checkStreamBiz==="function") checkStreamBiz();   // 分成上调、独家谈约都在开播时发生
     if(gift>=50&&!P.bigGift){P.bigGift=true;
       preLog(`直播间刷起了礼物，这一场进账 <b>${Math.round(gift)} 万</b>。`,"good");}
     if(S.fame>=120&&!P.famous){P.famous=true;preLog(`直播间人数破万。<b>你在圈子里有名气了</b>，虽然还没打过一场正赛。`,"good");}
@@ -1435,7 +1442,9 @@ function doAction(k){
     addFat(7*prepMul);
   }
   else if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
-    addFame(4.5*m);S.money+=streamIncome();addFat(5);}
+    addFame(4.5*m*(typeof streamFameMul==="function"?streamFameMul():1));
+    S.money+=streamIncome();addFat(5);
+    if(typeof checkStreamBiz==="function") checkStreamBiz();}
   else{ if(typeof btkNote==="function") btkNote("rest",1);
     addFat(((S.buff&&S.buff.physio)?-42:-30)*((S.bg&&S.bg.rest)||1)*prepMul);
     S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.6*prepMul);}
@@ -1458,7 +1467,7 @@ const AUTO_FAR=99;
 /* 需要玩家决定的事——任何一个亮着，自动推进就必须停 */
 function autoStop(){
   return !!(S.rndEv||S.rndResult||S.locker||S.signup||S.rankUp
-           ||S.cupResult||S.cupMatch||S.confirm);
+           ||S.cupResult||S.cupMatch||S.confirm||S.streamOffer);
 }
 function autoRest(focus,weeks){
   const lim=weeks||AUTO_MAX;
@@ -1519,7 +1528,7 @@ function viewSeason(){
         <div class="t">打排位</div><div class="d">五项小涨 + 找回手感${
           typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}</div></button>
       <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">直播</div><div class="d">涨人气与收入</div></button>
+        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入</div></button>
       <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">休息</div><div class="d">清疲劳，护状态</div></button>
     </div>
@@ -1547,7 +1556,7 @@ function viewSeason(){
 function lockerCard(){
   const {ev,target}=S.locker;
   return `<div class="card"><h2>更衣室</h2>
-    <div class="node"><div class="q">${ev.q(target)}</div><div class="ctx">${ev.ctx}</div>
+    <div class="node"><div class="q">${typeof avatarOf==="function"?avatarOf(target,34):""} ${ev.q(target)}</div><div class="ctx">${ev.ctx}</div>
     <div class="grid g2">${ev.a.map((a,i)=>`<button class="opt" data-locker="${i}">
       <div class="t">${a.t}</div></button>`).join("")}</div></div></div>`;
 }
@@ -1561,7 +1570,7 @@ function teamCard(){
           t>=60?"linear-gradient(90deg,var(--cyan-dim),var(--cyan))":
           t>=35?"linear-gradient(90deg,#6B5A2A,var(--gold))":
                 "linear-gradient(90deg,#5A2228,var(--red))"}"></div></div>
-        <div class="vn mono">${p.id.slice(0,9)}${p.rookie?'<span class="tag">新</span>':""}${p.comeback?'<span class="tag g">复出</span>':""}</div>
+        <div class="vn mono">${typeof avatarOf==="function"?avatarOf(p,22):""} ${p.id.slice(0,9)}${p.rookie?'<span class="tag">新</span>':""}${p.comeback?'<span class="tag g">复出</span>':""}</div>
       </div>`}).join("")}</div>
     <p class="note">这是<b>他们对你</b>的信任，撑的是全队士气。<b>${
       avgTrust()>=62?"他们服你，关键球敢交到你手上。":
@@ -2030,20 +2039,28 @@ function endSeason(result,seed){
   S.playoff=null;
   // 二级联赛的冠军不去国际赛——LDL 打得再好也只是升上一队的资格
   const majorLg = (S.homeLeague||"LPL")!=="LDL";
+  // 玩家原话：「打完季后赛直接进世界赛……中间毫无休息」。
+  // 现在出征前先过一段集结周：休整、抽签，然后才开打。
   if(S.split===0){
     // 春季赛结束 -> 冠军去 MSI -> 然后开夏季赛。
     // 没去 MSI 的人也不会看到世界快进：MSI 照打，结果在间歇期里分周揭晓。
-    S.afterIntlGo="summer";
-    if(majorLg&&result==="champion"&&startIntl("msi",result)) return;
-    S.afterIntlGo=null;
+    if(majorLg&&result==="champion"){
+      S.pendingIntl={type:"msi",result};
+      enterBreak("intl",1,"出征 MSI 前 · 集结",
+        `联赛冠军到手，<b>MSI 的机票已经订好</b>。出发前还有一周——把状态调到最好。`);
+      return;
+    }
     spectateIntl("msi");
     return;
   }
   // 夏季赛结束 -> 世界赛 -> 休赛期。
   // 没资格去的人，世界赛那三周照样过：你在训练室里，冠军在最后一周才揭晓。
-  S.afterIntlGo="offseason";
-  if(majorLg&&startIntl("worlds",result)) return;
-  S.afterIntlGo=null;
+  if(majorLg&&typeof worldsSlot==="function"&&worldsSlot(result)!==null){
+    S.pendingIntl={type:"worlds",result};
+    enterBreak("intl",2,"世界赛前 · 集结与适应",
+      `<b>世界赛的名额到手了。</b>接下来两周：集结、飞抵主办地、适应场馆——抽签结果出来之前，把自己调整好。`);
+    return;
+  }
   spectateIntl("worlds");
 }
 
@@ -2083,9 +2100,13 @@ const OFF_WEEKS=3, MID_WEEKS=2;
    可那正是现实里休整、补短板的窗口。用同一套面板，只是去向不同。 */
 function enterBreak(next, weeks, label, note){
   S.off={week:1, weeks, next, label};
-  S.ap=apFor("off");
+  // 出征周是赶路、抽签、适应场馆——能自主安排的时间很少，
+  // 而且长途飞行和时差本身就不养人：体能不白回，想恢复就得
+  // 把仅有的行动点花在休息上。给满 3 点外加洗疲劳的话，
+  // 最强的队白拿 6 个行动点满血进世界赛，实测冠军率 9% -> 25%。
+  S.ap=(next==="intl")?1:apFor("off");
   S.step="offseason";
-  S.fatigue=Math.max(0,S.fatigue-20);
+  if(next!=="intl") S.fatigue=Math.max(0,S.fatigue-20);
   pushEvent(note||`${label}（${weeks} 周）。没有比赛，正好把该补的补上。`,"info","间歇");
   render();
 }
@@ -2110,6 +2131,7 @@ function doOffseason(){
   if(S.si>=SEASONS.length-1){ S.step="end"; render(); return; }
   S.off={week:1, weeks:OFF_WEEKS, next:"year", label:"休赛期"};
   S.ap=apFor("off");
+  S.askedTransfer=false;             // 每个休赛期能主动挂牌一次
   // 升队和转会都只在真正的休赛期发生——季中间歇和季后赛前的休整都不是转会窗口
   if(typeof checkPromote==="function" && checkPromote()) { /* 升上一队了 */ }
   else if(typeof rollProOffers==="function") rollProOffers();
@@ -2129,6 +2151,16 @@ function offNextWeek(){
       const pe=S.pendingEnd; S.pendingEnd=null;
       endSeason(pe?pe.result:null, pe?pe.seed:7); return;
     }
+    if(nx==="intl"){                                      // 集结结束 -> 出征
+      const pi=S.pendingIntl; S.pendingIntl=null;
+      if(pi){
+        S.afterIntlGo = pi.type==="msi" ? "summer" : "offseason";
+        if(startIntl(pi.type,pi.result)) return;
+        // 名额判定的边缘情况（理论上到不了这里）：退回围观
+        S.afterIntlGo=null; spectateIntl(pi.type); return;
+      }
+      S.step="offseason"; render(); return;
+    }
     if(nx==="wrap"){                                      // 世界赛落幕 -> 赛季结算页
       S.step="offseason";
       if(typeof saveGame==='function') saveGame('赛季结算');
@@ -2138,7 +2170,9 @@ function offNextWeek(){
     if(nx==="playoff"){ startPlayoff(); return; }         // 休整结束 -> 季后赛
     finishOffseason(); return;
   }
-  S.off.week++; S.ap=apFor("off"); addFat(-14);
+  S.off.week++;
+  S.ap=(S.off.next==="intl")?1:apFor("off");
+  if(S.off.next!=="intl") addFat(-14);
   flushBreakNews(S.off.week);
   if(typeof tickBuffs==='function') tickBuffs();
   if(typeof tryRandomEvent==='function'&&rnd()<0.16) tryRandomEvent();
@@ -2187,6 +2221,8 @@ function offPanel(){
       ? `接下来就是 <b>季后赛</b>——把体能和状态调到最好，一场定生死。`
       : S.off.next==="poEnd"
       ? `季后赛正在进行——<b>没有你</b>。结果会一轮一轮传过来，你能做的只有把这段时间用在自己身上。`
+      : S.off.next==="intl"
+      ? `接下来就是 <b>${S.pendingIntl&&S.pendingIntl.type==="msi"?"MSI":"世界赛"}</b>。抽签在出征时揭晓——这几天把体能和状态调到最好。`
       : S.off.next==="wrap"
       ? `世界赛正在进行。等它落幕，这个赛季才算真的结束。`
       : S.off.next==="summer"
@@ -2202,11 +2238,24 @@ function offPanel(){
         <div class="t">打排位</div><div class="d">五项小涨 + 找回手感${
           typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}</div></button>
       <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">直播</div><div class="d">涨人气与收入</div></button>
+        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入</div></button>
       <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">休息</div><div class="d">清疲劳，护状态</div></button>
     </div>
     ${typeof squadActs==="function"?squadActs():""}
+    ${(()=>{ if(!S.career||S.off.next!=="year"||typeof canAskTransfer!=="function") return "";
+      const c=canAskTransfer(), p=askTransferOdds();
+      return `<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">转会窗口</h3>
+      <div class="grid g2">
+        <button class="act" id="askTransfer" ${(!c.ok||S.ap<=0)?'disabled style="opacity:.4"':''}>
+          <div class="t">主动挂牌</div>
+          <div class="d">${c.ok
+            ?`让经纪人放消息说你想走。有人接的把握 <b style="color:${
+                p>=0.5?'var(--cyan)':p>=0.25?'var(--gold)':'var(--red)'}">${(p*100).toFixed(0)}%</b><br>
+              <span style="color:var(--red)">经理会不高兴；没人接的话，更衣室也会知道你想走</span>`
+            :`🔒 ${c.why}`}</div>
+        </button>
+      </div>`;})()}
     <div class="row"><button class="btn" id="offnext" ${S.ap>0?'disabled':''}>
       ${S.ap>0?`还剩 ${S.ap} 个行动点`
         :(S.off.week>=S.off.weeks
@@ -2214,6 +2263,7 @@ function offPanel(){
              :S.off.next==="playoff"?`进入季后赛 →`
              :S.off.next==="poEnd"?`季后赛落幕 · 赛段结算 →`
              :S.off.next==="wrap"?`世界赛落幕 · 赛季结算 →`
+             :S.off.next==="intl"?`出征 ${S.pendingIntl&&S.pendingIntl.type==="msi"?"MSI":"世界赛"} →`
              :`开始 ${nx?nx.tag:"下"} 赛季 →`)
             :`进入第 ${S.off.week+1} 周 →`)}</button></div>
   </div>
@@ -2366,6 +2416,7 @@ function signupCard(){
   const m=S.signup; if(!m) return "";
   const afford=S.money>=m.fee;
   return `<div class="rankup"><div class="ru-inner" style="max-width:460px">
+    <div class="ru-icon">${typeof gicon==="function"?gicon("cup",52):""}</div>
     <div class="ru-eyebrow">报名</div>
     <div class="ru-tier" style="font-size:22px"><b>${m.name}</b></div>
     <div class="ru-txt">${m.desc}<br><br>
@@ -2460,7 +2511,7 @@ function actPanelPre(){
           return p>=0.66?"这个分段你打得动":p>=0.5?"五五开，能上但不稳":
                  p>=0.34?"打得挺吃力，容易掉":"实力不够，硬打只会掉分"})()}</div></button>
       <button class="act" data-pre="stream" ${P.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">直播</div><div class="d">涨人气与收入</div></button>
+        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入</div></button>
       ${DIMS.map(d=>{const b=trainBtn(d,P.ap);
         return `<button class="act" data-pretrain="${d}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
@@ -2551,6 +2602,8 @@ function viewOffer(){
 /* __RIVALS_MODULE__ */
 
 /* __RANKICON_MODULE__ */
+
+/* __AVATAR_MODULE__ */
 
 /* __SHOP_MODULE__ */
 
@@ -2686,9 +2739,34 @@ function hud(){
     <div><div class="k">资金</div><div class="v mono">${Math.round(S.money)}<small>万</small></div></div>
     <div><div class="k">体能</div><div class="v mono">${100-Math.round(S.fatigue)}<small>/100</small></div></div>`;
 }
+/* 常驻属性条：贴在页面顶部，滚到哪都能看见。
+   玩家原话：「做决策时忘了自己的强项是什么」——五维只在属性卡里，
+   切个 tab 就没了。这里只放名称和数字，最强的一维标金色。 */
+function pinbar(){
+  const p=$("pin"); if(!p) return;
+  if(!S||S.step==="create"||!S.attrs){ p.classList.add("hide"); return; }
+  p.classList.remove("hide");
+  const top=DIMS.reduce((a,d)=>S.attrs[a]>=S.attrs[d]?a:d);
+  p.innerHTML=DIMS.map(d=>
+    `<span class="pv ${d===top?'top':''}"><i>${d}</i><b>${S.attrs[d].toFixed(0)}</b></span>`
+  ).join("")
+  +`<span class="pv dim"><i>体能</i><b>${100-Math.round(S.fatigue)}</b></span>`
+  +(S.form!==undefined&&S.career?`<span class="pv dim"><i>状态</i><b>${Math.round(myForm())}</b></span>`:"");
+}
+/* 新的阻塞项（际遇、邀请、报名……）出现时把页面拉回顶部。
+   玩家原话：「新的事件有时候会在下面，我不滑动都看不见」。
+   遮罩类弹窗本来就在屏幕中央，这条管的是内联卡片。 */
+let _lastBlock="";
+function blockSig(){
+  return [S.rndEv&&"ev",S.locker&&"lk",S.signup&&"su",S.rankUp&&"ru",
+    S.cupResult&&"cr",S.cupMatch&&"cm",S.confirm&&"cf",S.rndResult&&"rr",
+    (S.achPop&&S.achPop.length)&&"ap",S.tryout&&"to",S.deal&&"dl",
+    S.proOffer&&"po",S.streamOffer&&"so",
+    (S.pre&&S.pre.invite&&S.pre.invite.pending)&&"iv"].filter(Boolean).join("|");
+}
 function render(){
   if(typeof watchRoster==="function") watchRoster();
-  hud();
+  hud(); pinbar();
   const body = S.step==="create"?viewCreate()
     : S.step==="pre"?viewPre()
     : S.step==="offer"?viewOffer()
@@ -2699,8 +2777,14 @@ function render(){
   $("stage").innerHTML = body
     + (typeof saveBar==="function"?saveBar():"")
     + (typeof achPopCard==="function"?achPopCard():"")
+    + (typeof streamOfferCard==="function"?streamOfferCard():"")
     + (typeof confirmCard==="function"?confirmCard():"");
   bind();
+  const sig=blockSig();
+  if(sig&&sig!==_lastBlock&&typeof window!=="undefined"&&window.scrollTo){
+    try{ window.scrollTo(0,0); }catch(e){}
+  }
+  _lastBlock=sig;
 }
 function bind(){
   const st=$("stage");
@@ -2813,6 +2897,9 @@ function bind(){
   const _off=$("offnext"); if(_off) _off.onclick=offNextWeek;
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;
   const _pn=$("pofno"); if(_pn) _pn.onclick=dropProOffer;
+  const _at=$("askTransfer"); if(_at) _at.onclick=()=>askTransfer();
+  const _sy2=$("strmyes"); if(_sy2) _sy2.onclick=signStreamDeal;
+  const _sn2=$("strmno"); if(_sn2) _sn2.onclick=declineStreamDeal;
   const _rtA=$("rtRepeat"); if(_rtA) _rtA.onclick=repeatLast;
   const _rtB=$("rtPlan");   if(_rtB) _rtB.onclick=runPlan;
   const _rtR=$("rtResume"); if(_rtR) _rtR.onclick=()=>{runActs(null,true);render();};

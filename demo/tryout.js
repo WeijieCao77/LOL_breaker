@@ -246,17 +246,21 @@ function pickClub(tier, league){
     return tier === "acad" ? pick.n + " 青训队" : pick.n;
   }catch(e){ return null; }
 }
-/* 邀请卡：接受就进试训，拒绝就继续练 */
+/* 邀请卡：接受就进试训，拒绝就继续练。
+   做成遮罩弹窗——原来是排在页面流里的卡片，滚下去就错过了。 */
 function inviteCard(){
   const P = S.pre, iv = P && P.invite;
   if(!iv || !iv.pending) return "";
   const T = CLUB_TIERS[iv.tier];
   const me = tryoutSkill(), gap = me - iv.expect;
-  return `<div class="card savecont"><h2>试训邀请<em>${T.n}</em></h2>
-    <h3>${typeof teamLogo==="function"?teamLogo(iv.team,22):""} ${iv.team}${(()=>{
+  return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">
+    <div class="ru-icon" style="text-align:center">${typeof gicon==="function"?gicon("scout",52):""}</div>
+    <div class="ru-eyebrow" style="text-align:center">试训邀请 · ${T.n}</div>
+    <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:12px">${
+      typeof teamLogo==="function"?teamLogo(iv.team,22):""} <b>${iv.team}</b>${(()=>{
       const st=clubStanding(iv.team);
       return st?`<span class="tag">LPL 第 ${st.pos}/${st.of} · 战力 ${st.power.toFixed(1)}</span>`:"";
-    })()}</h3>
+    })()}</div>
     <p class="note" style="margin:0 0 10px">他们来找你，是因为${iv.reason}。
       <b>但找你和要你是两回事</b>——能不能签下来，看接下来这四天。<br>
       去队里待四天，教练组会从操作、运营、指挥、心态四个方面评估你。
@@ -269,11 +273,11 @@ function inviteCard(){
         : gap>=-4 ? "刚好在门槛上——四天里每个选择都算数。"
         : gap>=-10 ? "他们的期望比你现在高不少，得靠临场发挥。"
         : "说实话，这个档次的队伍现在还不适合你。去了大概率是陪跑。"}</span></div>
-    <div class="row">
+    <div class="row" style="justify-content:center">
       <button class="btn" id="ivgo">去试训 →</button>
       <button class="btn ghost" id="ivno">先不去，继续练</button>
     </div>
-    <p class="note">拒绝不会关上门，但这家俱乐部今年不会再来第二次。</p></div>`;
+    <p class="note">拒绝不会关上门，但这家俱乐部今年不会再来第二次。</p></div></div>`;
 }
 
 /* ---------- 二、试训过程 ---------- */
@@ -634,10 +638,13 @@ function proOfferCard(){
   const o = S.proOffer; if(!o) return "";
   const T = CLUB_TIERS[o.tier], st = clubStanding(o.team);
   const cur = clubStanding(S.team);
-  return `<div class="card savecont"><h2>转会问询<em>${T.n}</em></h2>
-    <h3>${typeof teamLogo==="function"?teamLogo(o.team,22):""} ${o.team}${
+  return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">
+    <div class="ru-icon" style="text-align:center">${typeof gicon==="function"?gicon("transfer",52):""}</div>
+    <div class="ru-eyebrow" style="text-align:center">${o.asked?"有人接了你的牌":"转会问询"} · ${T.n}</div>
+    <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:12px">${
+      typeof teamLogo==="function"?teamLogo(o.team,22):""} <b>${o.team}</b>${
       (o.league&&o.league!=="LPL")?`<span class="tag g">${o.league}</span>`
-      :(st?`<span class="tag">LPL 第 ${st.pos}/${st.of}</span>`:"")}</h3>
+      :(st?`<span class="tag">LPL 第 ${st.pos}/${st.of}</span>`:"")}</div>
     <p class="note" style="margin:0 0 10px">
       你现在在 <b>${S.team}</b>${cur?`（第 ${cur.pos}/${cur.of}）`:""}。
       ${o.direct
@@ -648,11 +655,11 @@ function proOfferCard(){
         (o.league==="LCK"&&typeof hasCourse==="function"&&hasCourse("kr"))?"你会韩语，沟通不是问题。"
         :(o.league!=="LCK"&&typeof hasCourse==="function"&&hasCourse("en"))?"你会英语，沟通不是问题。"
         :"语言不通。去了也能打，但更衣室里你插不上话——默契会一直上不去，除非补上语言课。"}`:""}</p>
-    <div class="row">
+    <div class="row" style="justify-content:center">
       <button class="btn" id="pofgo">${o.direct?"去谈合同 →":"去试训 →"}</button>
       <button class="btn ghost" id="pofno">留在 ${S.team}</button>
     </div>
-    <p class="note">拒绝没有惩罚，但这家今年不会再来。</p></div>`;
+    <p class="note">拒绝没有惩罚，但这家今年不会再来。</p></div></div>`;
 }
 /* 接受问询：要么进试训，要么直接谈 */
 function takeProOffer(){
@@ -667,6 +674,55 @@ function dropProOffer(){
   const o = S.proOffer; if(!o) return;
   pushEvent(`婉拒了 <b>${o.team}</b>。你还想在 <b>${S.team}</b> 把事情做完。`, "info", "转会");
   S.proOffer = null; render();
+}
+
+/* ---------- 六、主动挂牌：转会申请由你发起 ----------
+   原来只有被动等人来挖。现在休赛期可以自己放消息出去——
+   有没有人接，看你的表现、威望和合同里的违约金。
+   代价是明码标价的：经理不高兴，没人接的话更衣室还会知道你想走。 */
+function canAskTransfer(){
+  if(!S.career||!S.team) return {ok:false,why:"还没签约"};
+  if(!S.off||S.off.next!=="year") return {ok:false,why:"只有休赛期能挂牌——赛季中提转会，俱乐部直接按违约处理"};
+  if(S.askedTransfer) return {ok:false,why:"这个休赛期已经挂过一次牌了"};
+  if(S.proOffer||S.deal||S.tryout) return {ok:false,why:"手上还有没谈完的事"};
+  return {ok:true};
+}
+/* 有没有人接牌的把握，也摆给玩家看 */
+function askTransferOdds(){
+  const perf=proPerf()-buyoutDrag();
+  const cl=(typeof cloutOf==="function")?cloutOf():40;
+  return clamp(0.30+perf*0.030+(cl-40)/220,0.06,0.85);
+}
+function askTransfer(){
+  if(!canAskTransfer().ok||S.ap<=0) return;
+  S.ap--; S.askedTransfer=true;
+  if(typeof addStaff==="function") addStaff("mgr",-6);      // 你想走，管理层记下了
+  const perf=proPerf()-buyoutDrag();
+  const p=askTransferOdds();
+  pushEvent(`你让经纪人放出消息：<b>${meName()} 对转会持开放态度</b>。经理的脸色不太好看。`,"info","转会");
+  if(rnd()>=p){
+    pushEvent(`挂牌两周，问价的电话一个都没来。${
+      perf<0?"你现在的表现，市场不买账。"
+      :((S.contract&&S.contract.buyout)||0)>500?"违约金摆在那，想动你的队都得掂量。"
+      :"市面上暂时没有缺你这个位置的队。"}<br>
+      <span style="color:var(--red)">消息传开了——更衣室知道你想走。</span>`,"bad","转会");
+    if(typeof addTrustAll==="function") addTrustAll(-5);
+    render(); return;
+  }
+  const tier = perf>=19?"top":perf>=8?"mid":"low";
+  const abroad=pickForeign(perf);
+  const league=abroad||"LPL";
+  let team=pickClub(tier,league);
+  if(!team||team===S.team) team=pickClub(tier==="low"?"mid":"low","LPL");
+  if(!team||team===S.team){
+    pushEvent(`有队伍来问了两句，但位置对不上，没谈成。`,"info","转会");
+    render(); return;
+  }
+  const direct = perf>=13;      // 主动挂牌的人，买家省去试探，更愿意直接谈
+  S.proOffer={team,tier,league,perf:Math.round(perf),direct,
+              buyout:(S.contract&&S.contract.buyout)||0,asked:true};
+  pushEvent(`<b>${team}</b> 接了你的牌${direct?"，直接想谈合同":"，想先让你去试训"}。`,"big","转会");
+  render();
 }
 /* 转会的合同：底子比职业前那份好得多，因为你已经证明过自己 */
 function makeProDeal(tier, team, grade, league){

@@ -273,7 +273,7 @@ function cloutCard(){
     ${L.ok?`<div class="grid g2">${mates.map(t=>{
         const p=listOdds(t);
         return `<button class="act" data-list="${t.id}">
-          <div class="t">挂牌 ${t.id}</div>
+          <div class="t">${typeof avatarOf==="function"?avatarOf(t,20):""} 挂牌 ${t.id}</div>
           <div class="d">${POSN[t.pos]}　信任 ${Math.round(trustOf(t.id))}
             成算 <b style="color:${p>=0.5?'var(--cyan)':p>=0.3?'var(--gold)':'var(--red)'}">${(p*100).toFixed(0)}%</b><br>
             <span style="color:var(--red)">谈崩会走漏风声</span></div></button>`;
@@ -286,7 +286,7 @@ function cloutCard(){
        return ts.length?`<div class="grid g2">${ts.map(x=>{
          const p=signOdds(x);
          return `<button class="act" data-sign="${x.p.id}">
-           <div class="t">要 ${x.p.id}${x.p.cn?`（${x.p.cn}）`:""}</div>
+           <div class="t">${typeof avatarOf==="function"?avatarOf(x.p,20):""} 要 ${x.p.id}${x.p.cn?`（${x.p.cn}）`:""}</div>
            <div class="d">${POSN[x.p.pos]}　来自 ${x.team}
              成算 <b style="color:${p>=0.5?'var(--cyan)':p>=0.3?'var(--gold)':'var(--red)'}">${(p*100).toFixed(0)}%</b></div></button>`;
        }).join("")}</div>`:`<p class="note">现在没有你够得着又值得要的人。</p>`;})()

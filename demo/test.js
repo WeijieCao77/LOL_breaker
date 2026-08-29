@@ -46,6 +46,7 @@ try {
     + "resolveLocker,ending,cap,rankFull,nowLabel,nowPhase,yearWeek,yearTotal,rankIcon,fameTier,scoutTier,preScore,hasAch,"
     + "buyGear,buyCourse,buyRelax,gearBonus,streamIncome,drawBackgrounds,advancePreWeek,capOf,"
     + "soloSkill,soloWinP,rankReq,doSquad,SQUAD_ACTS,squadOf,PRE_MILESTONES,nextMilestone,"
+    + "askTransfer,canAskTransfer,askTransferOdds,checkStreamBiz,signStreamDeal,declineStreamDeal,worldsSlot,spectateIntl,startIntl,startPlayoff,endSeason,"
     + "resolveRandom,btkNote,BREAK_PATHS,sweepBreakthroughs,btkWeekEnd,breakthrough,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,proPerf,rollProOffers,checkPromote,parentClub,buildLDL,takeProOffer,dropProOffer,makeProDeal,signTransfer,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,dueCups,forfeitCup,cupOppName,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,tryoutSkill,checkTryoutInvite,checkRankInvite,addInvite,startTryout,resolveTryoutDay,tryoutGrade,endTryout,makeDeal,askDeal,signDeal,dropDeal,declineDeal,afterTryout,dealLeverage,CLUB_TIERS,DEAL_TIERS,TIER_EARLIEST,earliestWeekFor,canInvite,fitTier,exposureCap,exposureScore,inviteFloorOk,PRE_MILESTONES,nextMilestone,PRE_EARLIEST,preNextWeek,TRYOUT_DAYS,DEAL_ASKS,salaryOf,contractCheck,consumeOffer,preNextYear,setS:(v)=>{S=v}};")();
 } catch (e) {
   console.error("脚本解析失败:", e.message);
@@ -74,6 +75,9 @@ function playOne(opts) {
     S = A.S();
     if (S.rankUp) { rankUps++; S.rankUp = null; continue; }
     if (S.rndEv) { A.resolveRandom(0); continue; }
+    if (S.streamOffer) {                  // 平台独家：轮流签/不签，两条路都要测到
+      (guard % 2 ? A.signStreamDeal() : A.declineStreamDeal()); continue;
+    }
     if (S.signup) {                       // 报名弹窗：钱够就报
       const mm = S.signup; S.signup = null;
       if (S.money >= mm.fee) { S.money -= mm.fee; A.enterCup(mm.signup); signups++; }

@@ -189,7 +189,7 @@ function squadCard(){
     <div class="attrs">${mates.map(p=>{
       const v=(p.r.操作*0.34+p.r.运营*0.28+p.r.心态*0.14+p.r.体质*0.10);
       return `<div class="at"><div class="lb">${POSN[p.pos]}</div>${bar(v)}
-        <div class="vn mono">${p.me?'<b style="color:var(--gold)">你</b>':p.id.slice(0,8)} ${v.toFixed(0)}</div></div>`;
+        <div class="vn mono">${typeof avatarOf==="function"?avatarOf(p,22):""} ${p.me?'<b style="color:var(--gold)">你</b>':p.id.slice(0,8)} ${v.toFixed(0)}</div></div>`;
     }).join("")}</div>
 
     <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">权重 · 五个人怎么变成一支队</h3>

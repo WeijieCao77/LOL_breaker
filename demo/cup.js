@@ -319,6 +319,7 @@ function cupMatchCard(){
 function cupResultCard(){
   const r=S.cupResult; if(!r) return "";
   return `<div class="rankup"><div class="ru-inner" style="max-width:440px">
+    <div class="ru-icon">${typeof gicon==="function"?gicon("cup",52):""}</div>
     <div class="ru-eyebrow">${r.name}</div>
     <div class="ru-tier">${r.champion?"冠军":`止步第 ${r.reached+1} 轮`}</div>
     <div class="ru-txt">${r.champion

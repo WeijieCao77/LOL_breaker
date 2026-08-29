@@ -13,6 +13,7 @@ team = io.open(os.path.join(BASE, "team.js"), encoding="utf-8").read()
 rivals = io.open(os.path.join(BASE, "rivals.js"), encoding="utf-8").read()
 rankart = io.open(os.path.join(BASE, "rankart.js"), encoding="utf-8").read()
 rankicon = rankart + "\n" + io.open(os.path.join(BASE, "rankicon.js"), encoding="utf-8").read()
+avatar = io.open(os.path.join(BASE, "avatar.js"), encoding="utf-8").read()
 shop = io.open(os.path.join(BASE, "shop.js"), encoding="utf-8").read()
 origins = io.open(os.path.join(BASE, "origins.js"), encoding="utf-8").read()
 achieve = (io.open(os.path.join(BASE, "achieve_more.js"), encoding="utf-8").read()
@@ -30,6 +31,9 @@ cup = io.open(os.path.join(BASE, "cup.js"), encoding="utf-8").read()
 save = io.open(os.path.join(BASE, "save.js"), encoding="utf-8").read()
 tryout = io.open(os.path.join(BASE, "tryout.js"), encoding="utf-8").read()
 data = io.open(os.path.join(ROOT, "data", "csv", "game_data_2022.json"), encoding="utf-8").read()
+# 像素头像可选：data/photos/ 有照片就跑 make_avatars.py 生成，没有就空着
+_av = os.path.join(ROOT, "data", "avatars.json")
+avatars = io.open(_av, encoding="utf-8").read() if os.path.exists(_av) else "{}"
 
 # 1) 样式
 out, n = re.subn(r"<style>.*?</style>", lambda m: "<style>\n" + css + "\n</style>", tpl, count=1, flags=re.S)
@@ -42,13 +46,15 @@ assert n == 1, "header block not found"
 # 3) 国际赛模块
 assert "/* __INTL_MODULE__ */" in out, "intl placeholder missing"
 out = out.replace("/* __INTL_MODULE__ */", intl)
-for ph, mod in (("/* __TEAM_MODULE__ */", team), ("/* __RIVALS_MODULE__ */", rivals), ("/* __RANKICON_MODULE__ */", rankicon), ("/* __SHOP_MODULE__ */", shop), ("/* __ORIGINS_MODULE__ */", origins), ("/* __ACHIEVE_MODULE__ */", achieve), ("/* __SQUAD_MODULE__ */", squad), ("/* __RANDOM_MODULE__ */", random_), ("/* __FORM_MODULE__ */", form), ("/* __POSTMATCH_MODULE__ */", postm), ("/* __INJURY_MODULE__ */", injury), ("/* __CLOUT_MODULE__ */", clout), ("/* __ROUTINE_MODULE__ */", routine), ("/* __NODES_MODULE__ */", nodes), ("/* __CUP_MODULE__ */", cup), ("/* __SAVE_MODULE__ */", save), ("/* __TRYOUT_MODULE__ */", tryout)):
+for ph, mod in (("/* __TEAM_MODULE__ */", team), ("/* __RIVALS_MODULE__ */", rivals), ("/* __RANKICON_MODULE__ */", rankicon), ("/* __AVATAR_MODULE__ */", avatar), ("/* __SHOP_MODULE__ */", shop), ("/* __ORIGINS_MODULE__ */", origins), ("/* __ACHIEVE_MODULE__ */", achieve), ("/* __SQUAD_MODULE__ */", squad), ("/* __RANDOM_MODULE__ */", random_), ("/* __FORM_MODULE__ */", form), ("/* __POSTMATCH_MODULE__ */", postm), ("/* __INJURY_MODULE__ */", injury), ("/* __CLOUT_MODULE__ */", clout), ("/* __ROUTINE_MODULE__ */", routine), ("/* __NODES_MODULE__ */", nodes), ("/* __CUP_MODULE__ */", cup), ("/* __SAVE_MODULE__ */", save), ("/* __TRYOUT_MODULE__ */", tryout)):
     assert ph in out, ph
     out = out.replace(ph, mod)
 
 # 4) 数据
 assert "__GAME_DATA__" in out, "data placeholder missing"
 out = out.replace("__GAME_DATA__", data)
+assert "__AVATARS__" in out, "avatars placeholder missing"
+out = out.replace("__AVATARS__", avatars)
 
 # 5) 包成一份完整的 HTML 文档
 #

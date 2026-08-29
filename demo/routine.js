@@ -69,7 +69,7 @@ function runActs(list, fromCursor){
     if(guard++ > 40) break;
     if(apNow() <= 0) break;
     // 有事发生就停下，交回给玩家——但记住停在第几项
-    if(S.rndEv || S.locker || S.signup || S.rankUp){
+    if(S.rndEv || S.locker || S.signup || S.rankUp || S.streamOffer){
       S.exec = { wk: weekKey(), list: list.slice(), i: i };
       return done;
     }
@@ -139,7 +139,7 @@ function clearPlan(){ S.plan = null; render(); }
 /* ---------- 界面 ---------- */
 function routineBar(){
   const ap = (S.step === "pre") ? (S.pre ? S.pre.ap : 0) : S.ap;
-  const blocked = S.rndEv || S.locker || S.signup || S.rankUp;
+  const blocked = S.rndEv || S.locker || S.signup || S.rankUp || S.streamOffer;
   const hasLast = S.lastWeek && S.lastWeek.length;
   const hasPlan = S.plan && S.plan.length;
   const pend = (typeof pendingActs === "function") ? pendingActs() : null;

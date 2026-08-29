@@ -56,6 +56,24 @@ function majorStandings(lg){
   return res;
 }
 
+/* 世界赛资格看季后赛走到哪，不是看常规赛排名。
+   原来只要 S.playoffSeed<=4 就给名额——于是常规赛第 4、季后赛首轮
+   被打出去的人照样去世界赛，而现实里那是拿不到积分的。
+     夺冠      -> 一号种子
+     输在决赛   -> 二号种子
+     输在半决赛 -> 三号种子
+     首轮出局   -> 只有常规赛前二才勉强拿到最后一个名额
+     没进季后赛 -> 没有
+   抽出来单独一个函数，是因为 endSeason 要在「出征前的集结周」开始前
+   就知道你去不去得了——不能等 buildWorldsField 跑完才知道。 */
+function worldsSlot(playerResult){
+  if(playerResult==="champion") return 1;
+  if(playerResult===3) return 2;
+  if(playerResult===2) return 3;
+  if(playerResult===1 && S.playoffSeed && S.playoffSeed<=2) return 4;
+  return null;
+}
+
 /* ---------- 组建世界赛 16 强 ---------- */
 function buildWorldsField(playerResult,cfg){
   cfg=cfg||{playin:{teams:8,take:4}};
@@ -63,19 +81,8 @@ function buildWorldsField(playerResult,cfg){
   const seeds={};
   MAJOR.forEach(lg=>{ seeds[lg]=majorStandings(lg); });
 
-  // 世界赛资格看季后赛走到哪，不是看常规赛排名。
-  // 原来只要 S.playoffSeed<=4 就给名额——于是常规赛第 4、季后赛首轮
-  // 被打出去的人照样去世界赛，而现实里那是拿不到积分的。
-  //   夺冠      -> 一号种子
-  //   输在决赛   -> 二号种子
-  //   输在半决赛 -> 三号种子
-  //   首轮出局   -> 只有常规赛前二才勉强拿到最后一个名额
-  //   没进季后赛 -> 没有
-  let mySlot=null;
-  if(playerResult==="champion") mySlot=1;
-  else if(playerResult===3) mySlot=2;
-  else if(playerResult===2) mySlot=3;
-  else if(playerResult===1 && S.playoffSeed && S.playoffSeed<=2) mySlot=4;
+  // 世界赛资格看季后赛走到哪，不是看常规赛排名（见 worldsSlot）。
+  let mySlot=worldsSlot(playerResult);
   // LDL 不在 MAJOR 里：青训选手围观世界赛时，本赛区名额全走 LPL 那份
   const others=(seeds[HL]||[]).filter(n=>n!==S.team);
   if(mySlot){
@@ -145,7 +152,9 @@ function startIntl(type,playerResult){
     S.intl={type:"worlds",stage:"playin",field:playin,direct,record:[0,0],round:1,
             cfg,queue:playin.filter(n=>n!==S.team).sort((a,b)=>pw(a)-pw(b))};
     pushEvent(`<b>${S.team}</b> 只拿到入围赛资格，要从最底下打起。`,"bad","世界赛");
-    S.step="match"; startMatch(cfg.playin.bo,S.intl.queue[0]); return true;
+    pushEvent(intlDrawText("世界赛入围赛",playin),"info","世界赛");
+    enterPrep("intl", S.intl.queue[0], cfg.playin.bo, "世界赛入围赛首战 · 赛前备战");
+    return true;
   }
   qual=simPlayIn(playin).slice(0,cfg.playin.take);
   const field=direct.concat(qual);
@@ -172,9 +181,21 @@ function openIntl(type,field,stage){
   pushEvent(`<b>${S.team}</b> 进入 ${name}${
     stage==="swiss"?" 瑞士轮":stage==="groups"?" 小组赛":""}。${
     type==="worlds"?"这是全年最后一次机会。":""}`,"big",name);
-  S.step="match";
-  startMatch(intlBoNeed(), nextIntlOpp());
+  // 抽签结果要摆出来——玩家原话：「应该要有文字版的日志告诉我
+  // 抽签结果、小组分配之类的」。以前是一眼就进比赛，名单都没见过。
+  pushEvent(intlDrawText(name+(stage==="swiss"?"瑞士轮":stage==="groups"?"小组赛":""),field),"info",name);
+  const first=nextIntlOpp();
+  pushEvent(`赛程出来了：${name}首个对手 <b>${first}</b>（${leagueOf(first)}）。`,"info",name);
+  enterPrep("intl", first, intlBoNeed(), `${name}首战 · 赛前备战`);
   return true;
+}
+/* 抽签名单：按赛区列出来，你自己的队标粗 */
+function intlDrawText(title,field){
+  const byLg={};
+  field.filter(Boolean).forEach(n=>{ const lg=leagueOf(n); (byLg[lg]=byLg[lg]||[]).push(n); });
+  return `${title}抽签揭晓（${field.filter(Boolean).length} 队）：<br>`+
+    Object.entries(byLg).map(([lg,ts])=>
+      `${lg}　${ts.map(t=>t===S.team?`<b>${t}</b>`:t).join("、")}`).join("<br>");
 }
 
 /* 本场几胜制：瑞士轮普通局 BO1，晋级/淘汰局 BO3；小组赛 BO1；淘汰赛 BO5 */
@@ -345,11 +366,13 @@ function intlAdvance(){
     // 晋级八强
     const others=I.field.filter(n=>n!==S.team)
       .sort((a,b)=>pw(b)-pw(a)).slice(0,7);
+    const wasGroups=I.stage==="groups";
     I.stage="knockout"; I.knockField=[S.team].concat(others);
     if(typeof checkAch==="function") checkAch("intlknock");
     I.knockRound=1; I.beaten=[];
-    pushEvent(`<b>${S.team}</b> ${I.stage==="groups"?"小组出线":"瑞士轮 3 胜晋级"}，进入八强。`,"good",name);
-    S.step="match"; startMatch(3,nextIntlOpp()); return;
+    pushEvent(`<b>${S.team}</b> ${wasGroups?"小组出线":"瑞士轮 3 胜晋级"}，进入八强。`,"good",name);
+    pushEvent(`八强对阵抽签：你们抽到了 <b>${nextIntlOpp()}</b>（${leagueOf(nextIntlOpp())}）。淘汰赛全部 BO5。`,"info",name);
+    enterPrep("intl", nextIntlOpp(), 3, `${name}八强 · 赛前备战`); return;
   }
   I.round++; S.step="match"; startMatch(intlBoNeed(),nextIntlOpp());
 }

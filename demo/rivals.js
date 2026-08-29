@@ -53,7 +53,7 @@ function rivalCard(){
   if(!r) return "";
   const meeting=S.schedule&&S.schedule[S.week-1]===r.team;
   return `<div class="card"><h2>宿敌<em>${r.beat}胜 ${r.lost}负</em></h2>
-    <h3>${r.id}${r.cn?`（${r.cn}）`:""} <span class="tag">${POSN[r.pos]}</span>
+    <h3>${typeof avatarOf==="function"?avatarOf(r,30):""} ${r.id}${r.cn?`（${r.cn}）`:""} <span class="tag">${POSN[r.pos]}</span>
       <span class="tag g">${r.team}</span></h3>
     <p class="note" style="margin-top:2px">${meeting
       ? '<b style="color:var(--gold)">本周就是他。</b>'

@@ -99,13 +99,104 @@ function courseTrainMul(dim){
   return 1;
 }
 
+/* ---------- 直播这门生意 ----------
+   原来名气涨了收入就悄悄变多——数字在后台动，玩家没有参与感。
+   现在拆成两条明面上的线：
+     · 分成档：咖位到了，平台上调你的礼物分成——会发事件告诉你，
+       从 50% 一路谈到 88%，不是无声的数值。
+     · 独家签约：人气到档，平台来谈独家。签了保底高、旱涝保收，
+       但收入就锁在合同里，人气再涨也不加钱，而且平台控流量，
+       直播涨名气变慢；不签则收入跟着人气水涨船高，上限更高。   */
+const STREAM_CUTS=[
+  {at:0,   cut:0.50, n:"五五开"},
+  {at:55,  cut:0.62, n:"62% 分成"},
+  {at:160, cut:0.75, n:"75% 分成"},
+  {at:260, cut:0.88, n:"顶流分成（88%）"}
+];
+const STREAM_DEALS=[
+  {lvl:1, at:95,  sign:100, base:26, n:"平台独家（B 级）"},
+  {lvl:2, at:260, sign:350, base:62, n:"平台独家（S 级）"}
+];
+function streamCut(){ return STREAM_CUTS[S.streamCutIdx||0].cut; }
 /* 直播打赏：名气越高，礼物越多 —— 这是主播出身的主要变现路径 */
 function streamIncome(){
-  const f=S.fame;
-  const gift=Math.pow(Math.max(f,0)/40,1.22)*2.6;      // 名气有回报，但不能指数爆炸
-  const base=4+f*0.05;
   const originMul=S.origin==="streamer"?1.7:1.0;
+  if(S.streamDeal) return S.streamDeal.base*originMul;   // 独家：合同价，旱涝保收
+  const f=S.fame;
+  const gift=Math.pow(Math.max(f,0)/40,1.22)*4.4*streamCut();
+  const base=4+f*0.05;
   return (base+gift)*originMul;
+}
+/* 独家平台控流量，涨名气比全网直播慢 */
+function streamFameMul(){ return S.streamDeal?0.7:1.0; }
+
+/* 每次开播时结算「平台关系」：分成该升就升（发事件），独家该谈就谈（弹窗）。
+   放在直播动作里而不是每周结算里——你和平台打交道的时机就是开播。 */
+function checkStreamBiz(){
+  const f=S.fame||0;
+  // 分成上调：一档一档来，每次都告诉玩家
+  let idx=S.streamCutIdx||0;
+  if(!S.streamDeal){
+    while(idx<STREAM_CUTS.length-1&&f>=STREAM_CUTS[idx+1].at){
+      idx++;
+      S.streamCutIdx=idx;
+      const c=STREAM_CUTS[idx];
+      const evt=`你的咖位到了「${fameTier()}」这一档，平台主动把礼物分成提到 <b>${c.n}</b>。<br>同样的礼物，进你口袋的变多了。`;
+      if(S.pre&&!S.career&&typeof preLog==="function") preLog(evt,"good");
+      pushEvent(evt,"good","直播");
+    }
+  }
+  // 独家签约：人气到档，平台来人。谈崩/拒绝了这档就不会再来。
+  if(S.streamOffer) return;
+  S.streamOfferSeen=S.streamOfferSeen||{};
+  for(const d of STREAM_DEALS){
+    if(f<d.at) continue;
+    if(S.streamOfferSeen[d.lvl]) continue;
+    if(S.streamDeal&&S.streamDeal.lvl>=d.lvl) continue;
+    S.streamOfferSeen[d.lvl]=1;
+    S.streamOffer={lvl:d.lvl,sign:d.sign,base:d.base,n:d.n};
+    break;
+  }
+}
+function signStreamDeal(){
+  const o=S.streamOffer; if(!o) return;
+  S.streamOffer=null;
+  S.streamDeal={lvl:o.lvl,base:o.base,n:o.n};
+  S.money+=o.sign;
+  pushEvent(`和平台签下<b>${o.n}</b>：签字费 <b>${o.sign} 万</b>到账，此后每次直播保底 <b>${o.base} 万</b>。<br>
+    <span style="color:var(--ink-3)">代价写在合同里：收入锁死在保底，人气再涨也不加钱；平台控流量，直播涨名气也会变慢。</span>`,"big","直播");
+  render();
+}
+function declineStreamDeal(){
+  const o=S.streamOffer; if(!o) return;
+  S.streamOffer=null;
+  pushEvent(`拒绝了平台的<b>${o.n}</b>。收入继续跟着人气浮动——上限是你自己挣的，下限也是。`,"info","直播");
+  render();
+}
+/* 独家签约弹窗：两条路各有各的道理，摆开了让玩家选 */
+function streamOfferCard(){
+  const o=S.streamOffer; if(!o) return "";
+  const now=Math.round(streamIncome());
+  const originMul=S.origin==="streamer"?1.7:1.0;
+  const locked=Math.round(o.base*originMul);
+  return `<div class="rankup"><div class="ru-inner" style="max-width:540px;text-align:left;max-height:86vh;overflow-y:auto">
+    <div class="ru-icon" style="text-align:center">${typeof gicon==="function"?gicon("stream",52):""}</div>
+    <div class="ru-eyebrow" style="text-align:center">平台来谈独家了</div>
+    <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:12px">${o.n}</div>
+    <p class="note" style="margin:0 0 10px">你的人气到了「${fameTier()}」，平台的商务带着合同上门：
+      签字费 <b style="color:var(--gold)">${o.sign} 万</b>，此后每次直播保底 <b style="color:var(--gold)">${locked} 万</b>
+      （你现在每次直播约 ${now} 万）。</p>
+    <div class="grid g2">
+      <div class="ver"><b>签独家</b><br><span class="note" style="margin:0">签字费到手、收入旱涝保收，成绩低谷也饿不着。<br>
+        但收入锁死在保底，人气再涨也不加钱；平台控流量，<b>直播涨名气变慢</b>。</span></div>
+      <div class="ver"><b>不签</b><br><span class="note" style="margin:0">收入跟着人气浮动，分成档也会继续往上谈——
+        打出名堂的话上限比保底高得多。<br>代价是没有下限，凉了就是真的凉。</span></div>
+    </div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="strmyes">签独家</button>
+      <button class="btn ghost" id="strmno">不签，自己闯</button>
+    </div>
+    <p class="note">拒了这一档就不会再来；人气再上一个大台阶，才会有更高的报价。</p></div></div>`;
 }
 
 function buyGear(slot,tier){
@@ -173,5 +264,7 @@ function shopCard(){
     <p class="note">${S.career
       ? `薪资按名气与荣誉每赛段结算，当前预计 <b>${salaryOf()} 万</b>。`
       : `还没签约，暂时没有薪资。`}
-      直播打赏随名气水涨船高——现在每次直播约 <b>${Math.round(streamIncome())} 万</b>。</p></div>`;
+      ${S.streamDeal
+        ? `直播签了<b>${S.streamDeal.n}</b>：每次直播保底 <b>${Math.round(streamIncome())} 万</b>，旱涝保收，但人气再涨也不加钱。`
+        : `直播现在是<b>${STREAM_CUTS[S.streamCutIdx||0].n}</b>，每次约 <b>${Math.round(streamIncome())} 万</b>——咖位上去了平台会主动上调分成。`}</p></div>`;
 }

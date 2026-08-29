@@ -53,6 +53,26 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .hud .v{font-size:16px;font-weight:650;margin-top:1px;color:var(--gold-hi)}
 .hud .v small{font-size:11px;color:var(--ink-3);font-weight:400}
 
+/* ---- 常驻属性条：sticky 贴顶，滚到哪都看得见 ---- */
+.pinbar{position:sticky;top:0;z-index:40;display:flex;gap:14px;align-items:center;
+  padding:7px 14px;margin:0 -4px 14px;overflow-x:auto;white-space:nowrap;
+  background:rgba(10,30,47,.96);backdrop-filter:blur(6px);
+  border:1px solid var(--line);border-top:none;
+  scrollbar-width:none}
+.pinbar::-webkit-scrollbar{display:none}
+.pinbar .pv{display:inline-flex;align-items:baseline;gap:5px;flex:none;
+  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
+.pinbar .pv i{font-style:normal;font-size:11px;color:var(--ink-3);letter-spacing:.05em}
+.pinbar .pv b{font-size:14.5px;font-weight:650;color:var(--ink);font-variant-numeric:tabular-nums}
+.pinbar .pv.top b{color:var(--gold-hi)}
+.pinbar .pv.top i{color:var(--gold)}
+.pinbar .pv.dim b{color:var(--ink-2)}
+@media(max-width:480px){
+  .pinbar{gap:9px;padding:6px 10px}
+  .pinbar .pv i{font-size:10px}
+  .pinbar .pv b{font-size:13px}
+}
+
 /* ---- 卡片：斜切角 + 金色角标 ---- */
 .card{background:linear-gradient(180deg,rgba(20,55,78,.92),rgba(14,42,62,.92));
   border:1px solid var(--line);padding:20px;margin-bottom:16px;position:relative;
