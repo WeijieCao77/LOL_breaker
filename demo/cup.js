@@ -3,7 +3,7 @@
    原来是报名之后一次性把所有轮次跑完，玩家只能看结果，全程没有参与。
    现在改成真正的赛程：
 
-     报名 → 隔两周打第一轮 → 赢了才有下一轮 → 每轮更难
+     报名 → 隔一周打第一轮 → 赢了才有下一轮 → 每轮更难
      轮次之间的周你照常训练、直播、冲分，也可以专门备战
      每一场都有节点决策，赢面靠你自己的属性和选择撑
 
@@ -60,8 +60,10 @@ function enterCup(kind){
   S.cups[kind]={ kind, name:C.name, round:1, rounds:C.rounds,
                  nextWeek:S.pre.week+C.gap, alive:true, wins:0, prep:0,
                  oppRoll:rollOpp() };
-  preLog(`报名成功。<b>${C.name}</b> 第一轮在 <b>第 ${S.cups[kind].nextWeek} 周</b>——
-    中间这两周你可以练，也可以专门备战。`,"good");
+  // 别把间隔写死在文案里——赛程从两周一轮改成一周一轮之后，
+  // 这句「中间这两周」就成了假话。
+  preLog(`报名成功。<b>${C.name}</b> 第一轮在 <b>第 ${S.cups[kind].nextWeek} 周</b>，
+    每轮之间隔 ${C.gap} 周。这段时间可以正常训练，也可以专门备战。`,"good");
 }
 /* 对手强度随轮次递增 */
 function cupOf(k){ return (S.cups||{})[k]; }
@@ -132,6 +134,22 @@ function cupTick(){
       preLog(`<b>${c.name}</b> 第 ${c.round} 轮就是本周——随时可以上场。`,"good"); }
     if(wait>0) c.due=false;
   });
+}
+
+/* 本周到点、但还没打的比赛 */
+function dueCups(){
+  return activeCups().filter(c=>c.nextWeek<=S.pre.week);
+}
+/* 不打就是弃权。
+   原来推进周次完全不检查这个：比赛可以被无限期挂着，赛程也不往前走，
+   于是「本周开打」永远显示在那儿，等于这场比赛不存在。
+   现实里没上场就是弃权，这里也一样——但必须先问清楚。 */
+function forfeitCup(k){
+  const c=cupOf(k), C=CUPS[k];
+  if(!c||!c.alive) return;
+  c.alive=false;
+  preLog(`<b>${C.name}</b> 第 ${c.round} 轮开赛时你没有出现。<b>按弃权处理。</b>`,"bad");
+  cupPayout(k,false);
 }
 
 /* ---------- 开打 ---------- */
@@ -257,7 +275,7 @@ function cupCard(){
           <div class="pw">${powerRank(op)}水平 · ${op.toFixed(0)}</div></div>
       </div>
       <p class="note" style="margin-top:10px">${wait>0
-        ? `还有 <b>${wait} 周</b>开打。这几周可以正常训练，也可以专门备战。`
+        ? `还有 <b>${wait} 周</b>开打。这期间可以正常训练，也可以专门备战。`
         : `<b style="color:var(--gold)">就是本周。</b>`}
         ${c.prep>0?`　本轮针对性备战 ${c.prep} 次。`:""}${
           (S.pre.cupPrep||0)>0?`　<span class="hi">累计练了 ${S.pre.cupPrep} 次，战术与配合 +${((S.pre.cupPrep||0)*0.55).toFixed(1)}（不清零）</span>`:""}

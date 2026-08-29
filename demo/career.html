@@ -707,7 +707,7 @@ function btkWeekEnd(){
   else S.btk.opStreak=0;
   S.btk.opThisWeek=0;
   const P=BREAK_PATHS.操作;
-  if(P.done()){ breakthrough("操作",P.gain,"连着两周只练操作，手感磨出来了。");
+  if(P.done()){ breakthrough("操作",P.gain,"连着三周把行动点全砸在操作上，手感磨出来了。");
     S.btk.opStreak=0; }
 }
 /* 每赛段结算：运营与体质 */
@@ -2509,8 +2509,14 @@ function actPanelPre(){
       ${lockedAct("战队合练","专项练配合，团战执行会顺很多","签约职业战队后解锁")}
       ${lockedAct("队友双排","排位里带一带，练默契也拉近关系","签约职业战队后解锁")}
     </div>
+    ${(()=>{const due=(typeof dueCups==="function")?dueCups():[];
+      return due.length?`<p class="note" style="color:var(--gold);margin-top:14px">
+        <b>${CUPS[due[0].kind].name}</b> 第 ${due[0].round} 轮就在本周，你还没上场——
+        直接进入下一周会按弃权处理。</p>`:"";})()}
     <div class="row"><button class="btn" id="prenext" ${P.ap>0?'disabled':''}>
-      ${P.ap>0?`还剩 ${P.ap} 个行动点`:`进入第 ${P.week+1} 周 →`}</button></div>
+      ${P.ap>0?`还剩 ${P.ap} 个行动点`
+        :((typeof dueCups==="function"&&dueCups().length)?`进入第 ${P.week+1} 周（有比赛没打）→`
+                                                         :`进入第 ${P.week+1} 周 →`)}</button></div>
   </div>`;
 }
 function viewPre(){
@@ -5072,7 +5078,7 @@ const NODES_MORE=[
    原来是报名之后一次性把所有轮次跑完，玩家只能看结果，全程没有参与。
    现在改成真正的赛程：
 
-     报名 → 隔两周打第一轮 → 赢了才有下一轮 → 每轮更难
+     报名 → 隔一周打第一轮 → 赢了才有下一轮 → 每轮更难
      轮次之间的周你照常训练、直播、冲分，也可以专门备战
      每一场都有节点决策，赢面靠你自己的属性和选择撑
 
@@ -5129,8 +5135,10 @@ function enterCup(kind){
   S.cups[kind]={ kind, name:C.name, round:1, rounds:C.rounds,
                  nextWeek:S.pre.week+C.gap, alive:true, wins:0, prep:0,
                  oppRoll:rollOpp() };
-  preLog(`报名成功。<b>${C.name}</b> 第一轮在 <b>第 ${S.cups[kind].nextWeek} 周</b>——
-    中间这两周你可以练，也可以专门备战。`,"good");
+  // 别把间隔写死在文案里——赛程从两周一轮改成一周一轮之后，
+  // 这句「中间这两周」就成了假话。
+  preLog(`报名成功。<b>${C.name}</b> 第一轮在 <b>第 ${S.cups[kind].nextWeek} 周</b>，
+    每轮之间隔 ${C.gap} 周。这段时间可以正常训练，也可以专门备战。`,"good");
 }
 /* 对手强度随轮次递增 */
 function cupOf(k){ return (S.cups||{})[k]; }
@@ -5201,6 +5209,22 @@ function cupTick(){
       preLog(`<b>${c.name}</b> 第 ${c.round} 轮就是本周——随时可以上场。`,"good"); }
     if(wait>0) c.due=false;
   });
+}
+
+/* 本周到点、但还没打的比赛 */
+function dueCups(){
+  return activeCups().filter(c=>c.nextWeek<=S.pre.week);
+}
+/* 不打就是弃权。
+   原来推进周次完全不检查这个：比赛可以被无限期挂着，赛程也不往前走，
+   于是「本周开打」永远显示在那儿，等于这场比赛不存在。
+   现实里没上场就是弃权，这里也一样——但必须先问清楚。 */
+function forfeitCup(k){
+  const c=cupOf(k), C=CUPS[k];
+  if(!c||!c.alive) return;
+  c.alive=false;
+  preLog(`<b>${C.name}</b> 第 ${c.round} 轮开赛时你没有出现。<b>按弃权处理。</b>`,"bad");
+  cupPayout(k,false);
 }
 
 /* ---------- 开打 ---------- */
@@ -5326,7 +5350,7 @@ function cupCard(){
           <div class="pw">${powerRank(op)}水平 · ${op.toFixed(0)}</div></div>
       </div>
       <p class="note" style="margin-top:10px">${wait>0
-        ? `还有 <b>${wait} 周</b>开打。这几周可以正常训练，也可以专门备战。`
+        ? `还有 <b>${wait} 周</b>开打。这期间可以正常训练，也可以专门备战。`
         : `<b style="color:var(--gold)">就是本周。</b>`}
         ${c.prep>0?`　本轮针对性备战 ${c.prep} 次。`:""}${
           (S.pre.cupPrep||0)>0?`　<span class="hi">累计练了 ${S.pre.cupPrep} 次，战术与配合 +${((S.pre.cupPrep||0)*0.55).toFixed(1)}（不清零）</span>`:""}
@@ -6208,7 +6232,7 @@ function bind(){
   const sy=$("signyes"); if(sy) sy.onclick=()=>{
     const m=S.signup; S.signup=null;
     S.money-=m.fee; preLog(`交了 <b>${m.fee} 万</b>报名费，${m.name}走起。`,"info");
-    enterCup(m.signup);   // 建赛程，第一场在两周后
+    enterCup(m.signup);   // 建赛程，第一场按 CUPS[kind].gap 排
     advancePreWeek();
   };
   const sn=$("signno"); if(sn) sn.onclick=()=>{
@@ -6243,7 +6267,21 @@ function bind(){
   });
   st.querySelectorAll("[data-pre]").forEach(b=>b.onclick=()=>preAct(b.dataset.pre));
   st.querySelectorAll("[data-pretrain]").forEach(b=>b.onclick=()=>preAct("train",b.dataset.pretrain));
-  const pn=$("prenext"); if(pn&&!S.rndEv&&!S.cupMatch) pn.onclick=preNextWeek;
+  const pn=$("prenext"); if(pn&&!S.rndEv&&!S.cupMatch) pn.onclick=()=>{
+    // 本周有到点没打的比赛，不能就这么翻页过去
+    const due=(typeof dueCups==="function")?dueCups():[];
+    if(due.length){
+      const c=due[0], nm=CUPS[c.kind].name;
+      askConfirm(`${nm}还没打`,
+        `<b>${nm}</b> 第 ${c.round} 轮就在本周，对手是 <b>${cupOppName(c.kind)}</b>，你还没上场。<br>
+         直接进入下一周就是 <b style="color:var(--red)">弃权</b>——这届比赛到此为止，
+         奖金按已经赢下的轮次结算。`,
+        "去打这一场", ()=>startCupMatch(c.kind),
+        {t:"弃权，进入下一周", fn:()=>{ due.forEach(x=>forfeitCup(x.kind)); preNextWeek(); }});
+      return;
+    }
+    preNextWeek();
+  };
   // 年末的报价现在也只是「试训机会」——点了是去试训，不是直接签
   st.querySelectorAll("[data-offer]").forEach(b=>b.onclick=()=>{
     const of=S.pre.offers[+b.dataset.offer];
