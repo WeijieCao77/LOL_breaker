@@ -46,7 +46,7 @@ try {
     + "resolveLocker,ending,cap,rankFull,nowLabel,nowPhase,yearWeek,yearTotal,rankIcon,fameTier,scoutTier,preScore,hasAch,"
     + "buyGear,buyCourse,buyRelax,gearBonus,streamIncome,drawBackgrounds,advancePreWeek,capOf,"
     + "soloSkill,soloWinP,rankReq,doSquad,SQUAD_ACTS,squadOf,PRE_MILESTONES,nextMilestone,"
-    + "resolveRandom,btkNote,BREAK_PATHS,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,dueCups,forfeitCup,cupOppName,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,tryoutSkill,checkTryoutInvite,checkRankInvite,addInvite,startTryout,resolveTryoutDay,tryoutGrade,endTryout,makeDeal,askDeal,signDeal,dropDeal,declineDeal,afterTryout,dealLeverage,CLUB_TIERS,DEAL_TIERS,TIER_EARLIEST,earliestWeekFor,canInvite,fitTier,exposureCap,exposureScore,inviteFloorOk,PRE_MILESTONES,nextMilestone,PRE_EARLIEST,preNextWeek,TRYOUT_DAYS,DEAL_ASKS,salaryOf,contractCheck,consumeOffer,preNextYear,setS:(v)=>{S=v}};")();
+    + "resolveRandom,btkNote,BREAK_PATHS,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,proPerf,rollProOffers,takeProOffer,dropProOffer,makeProDeal,signTransfer,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,dueCups,forfeitCup,cupOppName,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,tryoutSkill,checkTryoutInvite,checkRankInvite,addInvite,startTryout,resolveTryoutDay,tryoutGrade,endTryout,makeDeal,askDeal,signDeal,dropDeal,declineDeal,afterTryout,dealLeverage,CLUB_TIERS,DEAL_TIERS,TIER_EARLIEST,earliestWeekFor,canInvite,fitTier,exposureCap,exposureScore,inviteFloorOk,PRE_MILESTONES,nextMilestone,PRE_EARLIEST,preNextWeek,TRYOUT_DAYS,DEAL_ASKS,salaryOf,contractCheck,consumeOffer,preNextYear,setS:(v)=>{S=v}};")();
 } catch (e) {
   console.error("脚本解析失败:", e.message);
   process.exit(1);
@@ -68,7 +68,7 @@ function playOne(opts) {
 
   let guard = 0, preYears = 0, rankUps = 0, lockers = 0;
   let signups = 0, cupMatches = 0, preps = 0, cupPick = 0;
-  let invites = 0, tryPick = 0, dealPick = 0;
+  let invites = 0, tryPick = 0, dealPick = 0, transfers = 0;
   const cupRuns = [], grades = [], deals = [];
   while (A.S().step !== "end" && guard++ < 40000) {
     S = A.S();
@@ -146,6 +146,10 @@ function playOne(opts) {
     } else if (S.step === "offseason") {
       // 休赛期现在是可玩的几周：先把结算页点掉，再把每周的行动点用完
       if (!S.off) { A.doOffseason(); continue; }
+      // 有队来挖：表现好就走人（测试里一律接受，用来量频率）
+      if (S.proOffer) { transfers++; A.takeProOffer(); continue; }
+      if (S.tryout) { const t=S.tryout; if(t.done) A.afterTryout(); else A.resolveTryoutDay(1); continue; }
+      if (S.deal) { if(S.deal.transfer) A.signTransfer(); else A.signDeal(); continue; }
       if (S.ap > 0) {
         const av = A.DIMS.filter(d => S.attrs[d] < A.capOf(d));
         if (S.fatigue > 70) A.doAction("rest");
@@ -158,7 +162,7 @@ function playOne(opts) {
   return {
     ok: S.step === "end", steps: guard, preYears, rankUps, lockers,
     signups, cupMatches, preps, cupRuns,
-    invites, grades, deals,
+    invites, grades, deals, transfers,
     contract: S.contract && S.contract.salary !== undefined ? S.contract : null,
     saved: A.hasSave(),
     team: S.team || "未签约", age: S.age,

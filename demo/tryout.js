@@ -534,6 +534,135 @@ function dropDeal(){
 function afterTryout(){
   const t = S.tryout;
   if(!t) return;
-  if(!t.result || !t.result.tier){ dropDeal(); return; }
+  if(!t.result || !t.result.tier){
+    if(t.pro){ pushEvent(`<b>${t.team}</b> 看完之后没有开价。`,"bad","转会"); S.tryout=null; render(); return; }
+    dropDeal(); return;
+  }
+  if(t.pro){ const g=t.result.g, tier=t.tier, team=t.team; S.tryout=null; makeProDeal(tier,team,g); return; }
   makeDeal();
+}
+
+/* ================= 五、转会：别的队来挖你 =================
+
+   签了约不等于世界就此定格。你在赛场上打得好，别的俱乐部当然会看见——
+   而且看得够清楚的时候，人家不会再要你去试训四天，直接把合同摆上桌。
+
+   两个入口，取决于他们对你有多确定：
+     · 表现不错但还想亲眼看看 → 试训邀请（还是那四天）
+     · 表现好到不需要确认     → 直接报价，跳过试训
+
+   代价是合同里的违约金：买你的队要付给你现在的东家。违约金越高，
+   来的队就越少、档次越低——这正是签约时压低违约金的意义所在。  */
+
+/* 这个赛段你打成什么样。决定有没有人来、来的是谁、要不要先看试训。 */
+function proPerf(){
+  if(!S.career) return -99;
+  const me = avg(DIMS.map(d=>S.attrs[d]));
+  const base = (S.baseline && S.baseline[S.homeLeague||"LPL"]) || 50;
+  let v = (me - base) * 1.5;                       // 个人水平相对联赛
+  const g = S.record ? (S.record.w + S.record.l) : 0;
+  if(g >= 3) v += ((S.record.w / g) - 0.5) * 20;   // 这个赛段的战绩
+  v += ((S.career.titles || []).length) * 4;
+  v += (((S.career.msi || 0) + (S.career.worlds || 0))) * 9;
+  if(typeof myForm === "function") v += (myForm() - 52) * 0.18;
+  v += Math.min(S.fame || 0, 400) * 0.018;
+  if(S.benchedSplits) v -= S.benchedSplits * 6;    // 一直坐板凳，没人看得到你
+  return v;
+}
+/* 违约金越高，越少有队愿意动你 */
+function buyoutDrag(){
+  const b = (S.contract && S.contract.buyout) || 0;
+  return b / 260;          // 900 万违约金 ≈ 拉低 3.5 分表现分
+}
+/* 休赛期开始时摇一次：有没有人来问 */
+function rollProOffers(){
+  if(!S.career || S.proOffer || S.deal || S.tryout) return;
+  const perf = proPerf() - buyoutDrag();
+  const p = clamp(0.08 + perf * 0.028, 0.02, 0.72);
+  if(rnd() >= p) return;
+  const tier = perf >= 19 ? "top" : perf >= 10 ? "mid" : "low";
+  const team = pickClub(tier);
+  if(!team || team === S.team) return;
+  // 看得够清楚就不用再试训了
+  const direct = perf >= 15;
+  S.proOffer = { team, tier, perf: Math.round(perf), direct,
+                 buyout: (S.contract && S.contract.buyout) || 0 };
+  pushEvent(`<b>${team}</b> 的人来问了你的情况。${
+    direct ? "他们不打算再看试训，直接想谈合同。" : "他们想先让你去队里试训几天。"}`,
+    "big", "转会");
+}
+function proOfferCard(){
+  const o = S.proOffer; if(!o) return "";
+  const T = CLUB_TIERS[o.tier], st = clubStanding(o.team);
+  const cur = clubStanding(S.team);
+  return `<div class="card savecont"><h2>转会问询<em>${T.n}</em></h2>
+    <h3>${typeof teamLogo==="function"?teamLogo(o.team,22):""} ${o.team}${
+      st?`<span class="tag">LPL 第 ${st.pos}/${st.of}</span>`:""}</h3>
+    <p class="note" style="margin:0 0 10px">
+      你现在在 <b>${S.team}</b>${cur?`（第 ${cur.pos}/${cur.of}）`:""}。
+      ${o.direct
+        ? "他们看过你这个赛段的比赛，<b>不需要试训</b>，直接想谈合同。"
+        : "他们想先让你去队里试训四天再决定。"}
+      ${o.buyout?`<br>要带走你，得先付 <b>${o.buyout} 万</b>违约金——这笔钱归你现在的俱乐部。`:""}</p>
+    <div class="row">
+      <button class="btn" id="pofgo">${o.direct?"去谈合同 →":"去试训 →"}</button>
+      <button class="btn ghost" id="pofno">留在 ${S.team}</button>
+    </div>
+    <p class="note">拒绝没有惩罚，但这家今年不会再来。</p></div>`;
+}
+/* 接受问询：要么进试训，要么直接谈 */
+function takeProOffer(){
+  const o = S.proOffer; if(!o) return;
+  S.proOffer = null;
+  if(o.direct){ makeProDeal(o.tier, o.team, "A"); return; }
+  S.tryout = { tier:o.tier, team:o.team, expect:CLUB_TIERS[o.tier].expect,
+               day:0, score:0, lines:[], fat:0, done:false, pro:true };
+  render();
+}
+function dropProOffer(){
+  const o = S.proOffer; if(!o) return;
+  pushEvent(`婉拒了 <b>${o.team}</b>。你还想在 <b>${S.team}</b> 把事情做完。`, "info", "转会");
+  S.proOffer = null; render();
+}
+/* 转会的合同：底子比职业前那份好得多，因为你已经证明过自己 */
+function makeProDeal(tier, team, grade){
+  const T = CLUB_TIERS[tier], lerp = (a,b,x)=>a+(b-a)*clamp(x,0,1);
+  const q = clamp((proPerf() + 6) / 30, 0.15, 1);
+  S.deal = {
+    team, clubTier:tier, dealTier:(grade==="A+"?"first":grade==="A"?"start":"sub"),
+    grade, kind:(grade==="A+"||grade==="A")?"start":"sub", transfer:true,
+    salary: Math.round(lerp(T.pay[0], T.pay[1], q)),
+    sign:   Math.round(lerp(T.sign[0], T.sign[1], q)),
+    years:  T.years,
+    buyout: Math.round(lerp(T.buyout[0], T.buyout[1], q)),
+    asks:0, dead:false, signed:false, log:[],
+    // 已经打出成绩的人，谈判底气不该再看职业前那点排位分
+    leverage: clamp(14 + proPerf()*0.9 + Math.min(S.fame,400)*0.03, 8, 70)
+  };
+  render();
+}
+/* 真的换队 */
+function signTransfer(){
+  const d = S.deal; if(!d || d.dead || d.signed) return;
+  d.signed = true;
+  const old = S.team, fee = (S.contract && S.contract.buyout) || 0;
+  S.team = d.team;
+  S.offerKind = d.kind;
+  S.understudy = null; S.promoted = true;
+  const t = myTeam();
+  if(t) t.players = t.players.map(q => q.pos===S.pos
+    ? {id:S.name||"你", cn:"", pos:S.pos, age:S.age, r:S.attrs, me:true} : q);
+  S.trust = {}; if(typeof initTrust==="function") initTrust();
+  if(typeof syncTrust==="function") syncTrust();
+  S.money += d.sign;
+  S.contract = { years:d.years, left:d.years, salary:d.salary, sign:d.sign,
+                 buyout:d.buyout, team:d.team, tier:d.dealTier, grade:d.grade,
+                 clubTier:d.clubTier };
+  S.rosterSig = myRoster().map(x=>x.id).sort().join("|");
+  if(typeof disruptSynergy==="function") disruptSynergy(1, `<b>${meName()}</b> 转会加盟`);
+  pushEvent(`<b>${meName()}</b> 从 <b>${old}</b> 转会到 <b>${d.team}</b>。${
+    fee?`对方付了 <b>${fee} 万</b>违约金。`:""}年薪 ${d.salary} 万，${d.years} 个赛段。`,
+    "big", "转会");
+  if(typeof checkAch==="function") checkAch("transfer", {to:d.team});
+  S.deal = null; render();
 }
