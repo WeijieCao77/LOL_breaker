@@ -1609,7 +1609,11 @@ function doAction(k){
    被一个按钮替你做了（而且是随机做的）。
 
    现在它只替你跳过「没得选的周」，一旦有事立刻交回给你。       */
-const AUTO_MAX=6;   // 一次最多推 6 周，按一下丢掉半个赛季是不合理的
+/* 上限交给玩家选：有人想「跳过没事的几周」，有人想「这赛季别烦我」。
+   写死 6 周是我一开始的保守，但真正的安全阀是 autoStop()——
+   有事就停，跟推几周无关。 */
+const AUTO_MAX=6;
+const AUTO_FAR=99;
 
 /* 需要玩家决定的事——任何一个亮着，自动推进就必须停 */
 function autoStop(){
@@ -1638,7 +1642,7 @@ function autoRest(focus,weeks){
   if(w>0){
     const why=autoStop()?"有事情需要你处理。"
              :S.step!==s0?"赛季阶段变了。"
-             :w>=lim?"到了自动推进的上限（一次最多 6 周）。":"";
+             :w>=lim?`到了这次推进的上限（${lim} 周）。`:"";
     pushEvent(`自动推进了 <b>${w} 周</b>（第 ${w0}–${S.week>w0?S.week-1:w0} 周），停下了：${why}`,"info","推进");
   }
   render();
@@ -3879,6 +3883,17 @@ function squadActs(){
    刻意做得「不致命」——最多是两周的临时增益或者一笔小钱，
    不会一次事件定生死。它们负责的是质感，不是数值。 */
 
+/* 花钱的统一出口。
+   际遇里原来是直接 pay(50) 这样扣，不看余额——实测 7% 的局
+   会把资金扣成负数，最低到过 −35 万。而「负债」在这个游戏里
+   没有任何机制承接：不影响什么，也解释不通，纯粹是个漏洞。
+   现在买不起的选项在界面上就是禁用的，这里再兜一道底。 */
+function pay(n){
+  if(S.money < n) return false;
+  S.money -= n;
+  return true;
+}
+
 /* ---------- 临时增益 ---------- */
 /* {k:效果, v:倍率/数值, left:剩余周数, n:显示名} */
 function addBuff(k,v,weeks,n){
@@ -3919,9 +3934,9 @@ const RANDOM_EVENTS=[
   {id:"scam", w:2, when:()=>S.money>=60,
    q:()=>`有人私信你，说能内推进某青训营，先交 <b>50 万</b>「考察费」。`,
    ctx:"对方头像是个战队队标，但你查不到这个人。",
-   a:[{t:"交钱试试",e:()=>{ if(rnd()<0.72){ S.money-=50;
+   a:[{t:"交钱试试", cost:50, e:()=>{ if(rnd()<0.72){ pay(50);
           return "对方收了钱就把你拉黑了。这五十万买了个教训。"; }
-        S.money-=50; S.pre&&(S.pre.scoutHint=1); addFame(14);
+        pay(50); S.pre&&(S.pre.scoutHint=1); addFame(14);
         return "居然是真的，你被安排去看了一场训练赛，认识了两个人。"}},
       {t:"不理",e:()=>{return "你没回。第二天那个号就注销了。"}},
       {t:"挂到网上",e:()=>{S.fame+=9;
@@ -3930,7 +3945,7 @@ const RANDOM_EVENTS=[
   {id:"wrist", w:2, when:()=>S.fatigue>=55,
    q:()=>`手腕开始疼。你已经连着几周高强度了。`,
    ctx:"忍一忍也能打，但你知道这东西会积累。",
-   a:[{t:"去医院看看",e:()=>{S.money-=25;addFat(-30);addBuff("train",0.8,1,"休养中");
+   a:[{t:"去医院看看", cost:25, e:()=>{pay(25);addFat(-30);addBuff("train",0.8,1,"休养中");
         return "医生说没大事，让你少练两天。"}},
       {t:"贴个膏药接着练",e:()=>{addFat(10);
         if(rnd()<0.3){ S.attrs.体质=Math.max(20,S.attrs.体质-1.5);
@@ -3948,7 +3963,7 @@ const RANDOM_EVENTS=[
   {id:"oldFriend", w:2, when:()=>true,
    q:()=>`初中同学约你出去吃饭，说好久没见了。`,
    ctx:"你已经三个月没出过门。",
-   a:[{t:"去",e:()=>{addFat(-22);S.money-=8;addBuff("mood",1.2,2,"心情不错");
+   a:[{t:"去", cost:8, e:()=>{addFat(-22);pay(8);addBuff("mood",1.2,2,"心情不错");
         return "聊了一晚上，回来的时候觉得轻松多了。"}},
       {t:"不去，练",e:()=>{addFat(4);addBuff("train",1.15,1,"心无旁骛");
         return "你把那顿饭的时间换成了两把排位。"}}]},
@@ -3969,7 +3984,7 @@ const RANDOM_EVENTS=[
   {id:"laptop", w:1, when:()=>true,
    q:()=>`电脑半夜蓝屏了，硬盘可能坏了。`,
    ctx:"修一下要钱，换一台更要钱。",
-   a:[{t:"花钱修",e:()=>{S.money-=35;
+   a:[{t:"花钱修", cost:35, e:()=>{pay(35);
         return "修好了，就是风扇声更大了。"}},
       {t:"凑合用",e:()=>{addBuff("train",0.85,2,"设备拖后腿");
         return "接下来两周时不时卡一下，手感很受影响。"}}]},
@@ -4000,7 +4015,7 @@ const RANDOM_EVENTS=[
         return "热度上去了，但你自己也难受了两周。"}},
       {t:"不看，专心打",e:()=>{addBuff("train",1.2,2,"用成绩说话");
         return "你把手机扔一边，练得更狠了。"}},
-      {t:"找公关处理",e:()=>{S.money-=40;S.fame+=4;
+      {t:"找公关处理", cost:40, e:()=>{pay(40);S.fame+=4;
         return "视频很快下架了。钱花得不冤。"}}]},
 
   {id:"bonus", w:1, when:()=>!!S.team,
@@ -4096,8 +4111,12 @@ function randomCard(){
   const e=S.rndEv; if(!e) return "";
   return `<div class="card"><h2>际遇</h2>
     <div class="node"><div class="q">${e.q}</div><div class="ctx">${e.ctx}</div>
-    <div class="grid g2">${e.a.map((x,i)=>`<button class="opt" data-rnd="${i}">
-      <div class="t">${x.t}</div></button>`).join("")}</div></div></div>`;
+    <div class="grid g2">${e.a.map((x,i)=>{
+      const poor = x.cost && S.money < x.cost;
+      return `<button class="opt" data-rnd="${i}" ${poor?'disabled style="opacity:.4"':''}>
+        <div class="t">${x.t}${x.cost?` <span class="tag">${x.cost} 万</span>`:""}</div>
+        ${poor?`<div class="d" style="color:var(--red)">钱不够（你有 ${Math.round(S.money)} 万）</div>`:""}
+      </button>`;}).join("")}</div></div></div>`;
 }
 
 
@@ -4984,21 +5003,23 @@ const NODES_MORE=[
 
    带宽按玩家在这个阶段的真实水平定标：
    第 10 周报名时玩家约 54，第 16 周决赛时约 57。
+   第一版定成 46→56，结果钻石段位夺冠率只有 5%——第一年基本
+   打不赢，那这个赛事对新玩家就等于不存在。整体下调 3 分。
 
-     城市争霸赛  46 → 56
+     城市争霸赛  43 → 52.5
        首轮明显打得过（网吧联队），决赛才追平你当时的水平（市队）。
        名单长度要和轮数一致，否则最后一支永远轮不到——决赛得是最强的那支。
-     主播杯      50 → 59
+     主播杯      47 → 55.5
        邀请制，门槛更高，整体上浮一档；决赛的冠军主播队要强过你。
 
    注意：这里的数字和职业选手评分不是一把尺子——
    职业评分是在同位置同层级内做 z 标准化的（见 export_game.py），
    50 分意思是「该层级的平均水平」，不能跨系统直接比大小。      */
 const CUPS={
-  city:{ name:"城市争霸赛", rounds:4, gap:2, band:[46,56],
+  city:{ name:"城市争霸赛", rounds:4, gap:2, band:[43,52.5],
          prize:[0,25,70,180,420],
          opps:["网吧联队","本地车队","大学生战队","市队"] },
-  stream:{ name:"主播杯", rounds:3, gap:2, band:[50,59],
+  stream:{ name:"主播杯", rounds:3, gap:2, band:[47,55.5],
          prize:[0,60,180,520],
          opps:["百万粉丝队","退役选手队","冠军主播队"] }
 };
@@ -5115,6 +5136,10 @@ function endCupMatch(){
     c.wins++;
     addFame(4+c.round*2);
     preLog(`<b>${C.name}</b> 第 ${c.round} 轮：${m.sc[0]}:${m.sc[1]} 击败 ${m.opp}。`,"good");
+    // 这里原本会「每赢一轮就可能来邀请」，但那会把杯赛线整个短路：
+    // 玩家在半决赛就签约走人，奖金、成就、决赛全都拿不到，
+    // 职业赛胜率也从 66% 掉到 51%（签得太早，属性还没练起来）。
+    // 邀请只在整届打完后发——机会数量靠段位和人气那两条线补。
     if(c.round>=C.rounds){
       c.alive=false; cupPayout(k,true);
     } else {
@@ -5398,8 +5423,9 @@ function safeName(v){
 
 /* 通用确认框。用在那些「按下去就回不来」的操作上：
    自动推进、重开档、覆盖存档。 */
-function askConfirm(title, body, okText, fn){
-  S.confirm = { title, body, ok: okText || "确定", fn };
+function askConfirm(title, body, okText, fn, alt){
+  // alt 可选：{t:"按钮字", fn:()=>{}}，用在「同一件事、两种力度」的场合
+  S.confirm = { title, body, ok: okText || "确定", fn, alt };
   render();
 }
 function confirmCard(){
@@ -5410,6 +5436,7 @@ function confirmCard(){
     <div class="ru-txt">${c.body}</div>
     <div class="row" style="justify-content:center">
       <button class="btn" id="cfmOk">${c.ok}</button>
+      ${c.alt?`<button class="btn" id="cfmAlt">${c.alt.t}</button>`:""}
       <button class="btn ghost" id="cfmNo">取消</button>
     </div></div></div>`;
 }
@@ -5490,12 +5517,17 @@ function checkTryoutInvite(kind, reached, champion){
 }
 /* 段位或人气到了也会有人来问——不是只有比赛这一条路 */
 function checkRankInvite(){
-  const P = S.pre; if(!P || P.invite) return;
-  if(P.rankInvited) return;
-  if(P.rank >= RANKS[4].at){          // 宗师
-    P.rankInvited = true;
-    addInvite(fitTier("low"), `排位打到${rankFull(P.rank)}`);
+  const P = S.pre; if(!P || !canInvite()) return;
+  P.rankInvited = P.rankInvited || {};
+  // 大师和宗师各算一次机会——上分这条路不该只在最后才兑现
+  for(const [i, tier] of [[2,"acad"],[3,"low"],[4,"mid"],[5,"top"]]){
+    if(RANKS[i] && P.rank >= RANKS[i].at && !P.rankInvited[i]){
+      P.rankInvited[i] = 1;
+      addInvite(fitTier(tier), `排位打到${RANKS[i].n}`);
+      return;
+    }
   }
+  if(typeof checkFameInvite === "function") checkFameInvite();
 }
 /* 成绩决定「有没有人看你」，个人水平决定「谁来看你」。
    两头都要卡：水平不够，成绩再好也只有青训队打电话；
@@ -5510,13 +5542,46 @@ function fitTier(tier){
   while(i > 0 && me < CLUB_TIERS[TIER_ORDER[i]].expect - 10) i--;
   return TIER_ORDER[i];
 }
+/* 邀请节流。
+   实测过：整局平均只有 0.98 次试训机会，59/60 的局正好一次——
+   意味着试训一失手，这一年就白费了。而试训本身是带运气的，
+   「一次定生死」不是难度，是惩罚。
+   现在放开触发点、加四周冷却，目标是整局 2–4 次机会：
+   失手一次还能再来，但也不至于多到没有分量。 */
+function canInvite(){
+  const P = S.pre; if(!P) return false;
+  if(P.invite && P.invite.pending) return false;        // 手上还有没处理的
+  if(P.inviteCd && P.week < P.inviteCd) return false;   // 冷却中
+  // 太早不行。代码里本来就有 PRE_EARLIEST=13「主播杯打完之前没人下判断」，
+  // 加段位/人气触发时我把它绕过去了，结果第 6 周就有队来签，
+  // 玩家在城市赛开打之前就走人——整条业余赛事线被跳过，
+  // 奖金、成就、决赛全拿不到，职业赛胜率也掉了 11 个百分点。
+  if(typeof PRE_EARLIEST !== "undefined" && P.week < PRE_EARLIEST) return false;
+  // 手上还有没打完的杯赛，也先别来——让玩家把比赛打完
+  if(typeof activeCups === "function" && activeCups().length) return false;
+  return true;
+}
+/* 人气到了也有人来问——直播这条路本来就是设计里的一条路 */
+function checkFameInvite(){
+  const P = S.pre; if(!P || !canInvite()) return;
+  P.fameInvited = P.fameInvited || {};
+  for(const [at, tier] of [[55,"acad"],[110,"low"],[190,"mid"]]){
+    if(S.fame >= at && !P.fameInvited[at]){
+      P.fameInvited[at] = 1;
+      addInvite(fitTier(tier), `直播间的人气涨到了${fameTier()}`);
+      return;
+    }
+  }
+}
 function addInvite(tier, reason){
   const P = S.pre; if(!P) return;
-  if(P.invite && P.invite.pending) return;      // 一次只处理一个，别堆
+  if(!canInvite()) return;
   const T = CLUB_TIERS[tier];
   const team = pickClub(tier);
   if(!team) return;
   P.invite = { tier, team, reason, pending:true, week:P.week, expect:T.expect };
+  P.inviteCd = P.week + 4;
+  P.inviteN = (P.inviteN || 0) + 1;
   preLog(`<b>${team}</b> 看了你的比赛录像——${reason}。<b>他们邀请你去队里试训。</b>`, "big");
   if(typeof render === "function") render();
 }
@@ -6036,6 +6101,7 @@ function bind(){
 
   /* ---- 通用确认框 ---- */
   const _ck=$("cfmOk"); if(_ck) _ck.onclick=()=>{ const f=S.confirm&&S.confirm.fn; S.confirm=null; if(f) f(); else render(); };
+  const _ca=$("cfmAlt"); if(_ca) _ca.onclick=()=>{ const a=S.confirm&&S.confirm.alt; S.confirm=null; if(a&&a.fn) a.fn(); else render(); };
   const _cn=$("cfmNo"); if(_cn) _cn.onclick=()=>{ S.confirm=null; render(); };
   const _rtC=$("rtSave");   if(_rtC) _rtC.onclick=savePlan;
   const _rtD=$("rtSave2");  if(_rtD) _rtD.onclick=savePlan;
@@ -6048,10 +6114,11 @@ function bind(){
   const au=$("auto"); if(au) au.onclick=()=>{
     const f=DIMS.reduce((a,b)=>S.talent[a]>=S.talent[b]?a:b);
     askConfirm("自动推进",
-      `接下来最多 <b>6 周</b>由系统替你安排：疲劳高就休息，否则练 <b>${f}</b>，然后打完比赛。<br>
-       一旦有事情需要你决定，会立刻停下来交回给你。<br>
-       <span class="note">这几周的训练和临场决策都不是你做的。</span>`,
-      "开始推进", ()=>autoRest(f));
+      `由系统替你安排：疲劳高就休息，否则练 <b>${f}</b>，然后打完比赛。<br>
+       <b>一旦有事情需要你决定，会立刻停下来交回给你</b>——推几周不影响这一点。<br>
+       <span class="note">这期间的训练和临场决策都不是你做的。</span>`,
+      "推 6 周", ()=>autoRest(f,AUTO_MAX),
+      {t:"推到赛季结束", fn:()=>autoRest(f,AUTO_FAR)});
   };
   st.querySelectorAll("[data-node]").forEach(b=>b.onclick=()=>resolveNode(+b.dataset.node));
   const nx=$("next"); if(nx) nx.onclick=nextWeek;

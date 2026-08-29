@@ -173,8 +173,9 @@ function safeName(v){
 
 /* 通用确认框。用在那些「按下去就回不来」的操作上：
    自动推进、重开档、覆盖存档。 */
-function askConfirm(title, body, okText, fn){
-  S.confirm = { title, body, ok: okText || "确定", fn };
+function askConfirm(title, body, okText, fn, alt){
+  // alt 可选：{t:"按钮字", fn:()=>{}}，用在「同一件事、两种力度」的场合
+  S.confirm = { title, body, ok: okText || "确定", fn, alt };
   render();
 }
 function confirmCard(){
@@ -185,6 +186,7 @@ function confirmCard(){
     <div class="ru-txt">${c.body}</div>
     <div class="row" style="justify-content:center">
       <button class="btn" id="cfmOk">${c.ok}</button>
+      ${c.alt?`<button class="btn" id="cfmAlt">${c.alt.t}</button>`:""}
       <button class="btn ghost" id="cfmNo">取消</button>
     </div></div></div>`;
 }

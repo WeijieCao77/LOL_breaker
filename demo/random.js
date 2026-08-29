@@ -3,6 +3,17 @@
    刻意做得「不致命」——最多是两周的临时增益或者一笔小钱，
    不会一次事件定生死。它们负责的是质感，不是数值。 */
 
+/* 花钱的统一出口。
+   际遇里原来是直接 pay(50) 这样扣，不看余额——实测 7% 的局
+   会把资金扣成负数，最低到过 −35 万。而「负债」在这个游戏里
+   没有任何机制承接：不影响什么，也解释不通，纯粹是个漏洞。
+   现在买不起的选项在界面上就是禁用的，这里再兜一道底。 */
+function pay(n){
+  if(S.money < n) return false;
+  S.money -= n;
+  return true;
+}
+
 /* ---------- 临时增益 ---------- */
 /* {k:效果, v:倍率/数值, left:剩余周数, n:显示名} */
 function addBuff(k,v,weeks,n){
@@ -43,9 +54,9 @@ const RANDOM_EVENTS=[
   {id:"scam", w:2, when:()=>S.money>=60,
    q:()=>`有人私信你，说能内推进某青训营，先交 <b>50 万</b>「考察费」。`,
    ctx:"对方头像是个战队队标，但你查不到这个人。",
-   a:[{t:"交钱试试",e:()=>{ if(rnd()<0.72){ S.money-=50;
+   a:[{t:"交钱试试", cost:50, e:()=>{ if(rnd()<0.72){ pay(50);
           return "对方收了钱就把你拉黑了。这五十万买了个教训。"; }
-        S.money-=50; S.pre&&(S.pre.scoutHint=1); addFame(14);
+        pay(50); S.pre&&(S.pre.scoutHint=1); addFame(14);
         return "居然是真的，你被安排去看了一场训练赛，认识了两个人。"}},
       {t:"不理",e:()=>{return "你没回。第二天那个号就注销了。"}},
       {t:"挂到网上",e:()=>{S.fame+=9;
@@ -54,7 +65,7 @@ const RANDOM_EVENTS=[
   {id:"wrist", w:2, when:()=>S.fatigue>=55,
    q:()=>`手腕开始疼。你已经连着几周高强度了。`,
    ctx:"忍一忍也能打，但你知道这东西会积累。",
-   a:[{t:"去医院看看",e:()=>{S.money-=25;addFat(-30);addBuff("train",0.8,1,"休养中");
+   a:[{t:"去医院看看", cost:25, e:()=>{pay(25);addFat(-30);addBuff("train",0.8,1,"休养中");
         return "医生说没大事，让你少练两天。"}},
       {t:"贴个膏药接着练",e:()=>{addFat(10);
         if(rnd()<0.3){ S.attrs.体质=Math.max(20,S.attrs.体质-1.5);
@@ -72,7 +83,7 @@ const RANDOM_EVENTS=[
   {id:"oldFriend", w:2, when:()=>true,
    q:()=>`初中同学约你出去吃饭，说好久没见了。`,
    ctx:"你已经三个月没出过门。",
-   a:[{t:"去",e:()=>{addFat(-22);S.money-=8;addBuff("mood",1.2,2,"心情不错");
+   a:[{t:"去", cost:8, e:()=>{addFat(-22);pay(8);addBuff("mood",1.2,2,"心情不错");
         return "聊了一晚上，回来的时候觉得轻松多了。"}},
       {t:"不去，练",e:()=>{addFat(4);addBuff("train",1.15,1,"心无旁骛");
         return "你把那顿饭的时间换成了两把排位。"}}]},
@@ -93,7 +104,7 @@ const RANDOM_EVENTS=[
   {id:"laptop", w:1, when:()=>true,
    q:()=>`电脑半夜蓝屏了，硬盘可能坏了。`,
    ctx:"修一下要钱，换一台更要钱。",
-   a:[{t:"花钱修",e:()=>{S.money-=35;
+   a:[{t:"花钱修", cost:35, e:()=>{pay(35);
         return "修好了，就是风扇声更大了。"}},
       {t:"凑合用",e:()=>{addBuff("train",0.85,2,"设备拖后腿");
         return "接下来两周时不时卡一下，手感很受影响。"}}]},
@@ -124,7 +135,7 @@ const RANDOM_EVENTS=[
         return "热度上去了，但你自己也难受了两周。"}},
       {t:"不看，专心打",e:()=>{addBuff("train",1.2,2,"用成绩说话");
         return "你把手机扔一边，练得更狠了。"}},
-      {t:"找公关处理",e:()=>{S.money-=40;S.fame+=4;
+      {t:"找公关处理", cost:40, e:()=>{pay(40);S.fame+=4;
         return "视频很快下架了。钱花得不冤。"}}]},
 
   {id:"bonus", w:1, when:()=>!!S.team,
@@ -220,6 +231,10 @@ function randomCard(){
   const e=S.rndEv; if(!e) return "";
   return `<div class="card"><h2>际遇</h2>
     <div class="node"><div class="q">${e.q}</div><div class="ctx">${e.ctx}</div>
-    <div class="grid g2">${e.a.map((x,i)=>`<button class="opt" data-rnd="${i}">
-      <div class="t">${x.t}</div></button>`).join("")}</div></div></div>`;
+    <div class="grid g2">${e.a.map((x,i)=>{
+      const poor = x.cost && S.money < x.cost;
+      return `<button class="opt" data-rnd="${i}" ${poor?'disabled style="opacity:.4"':''}>
+        <div class="t">${x.t}${x.cost?` <span class="tag">${x.cost} 万</span>`:""}</div>
+        ${poor?`<div class="d" style="color:var(--red)">钱不够（你有 ${Math.round(S.money)} 万）</div>`:""}
+      </button>`;}).join("")}</div></div></div>`;
 }

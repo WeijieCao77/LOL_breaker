@@ -1249,7 +1249,11 @@ function doAction(k){
    被一个按钮替你做了（而且是随机做的）。
 
    现在它只替你跳过「没得选的周」，一旦有事立刻交回给你。       */
-const AUTO_MAX=6;   // 一次最多推 6 周，按一下丢掉半个赛季是不合理的
+/* 上限交给玩家选：有人想「跳过没事的几周」，有人想「这赛季别烦我」。
+   写死 6 周是我一开始的保守，但真正的安全阀是 autoStop()——
+   有事就停，跟推几周无关。 */
+const AUTO_MAX=6;
+const AUTO_FAR=99;
 
 /* 需要玩家决定的事——任何一个亮着，自动推进就必须停 */
 function autoStop(){
@@ -1278,7 +1282,7 @@ function autoRest(focus,weeks){
   if(w>0){
     const why=autoStop()?"有事情需要你处理。"
              :S.step!==s0?"赛季阶段变了。"
-             :w>=lim?"到了自动推进的上限（一次最多 6 周）。":"";
+             :w>=lim?`到了这次推进的上限（${lim} 周）。`:"";
     pushEvent(`自动推进了 <b>${w} 周</b>（第 ${w0}–${S.week>w0?S.week-1:w0} 周），停下了：${why}`,"info","推进");
   }
   render();
@@ -2364,6 +2368,7 @@ function bind(){
 
   /* ---- 通用确认框 ---- */
   const _ck=$("cfmOk"); if(_ck) _ck.onclick=()=>{ const f=S.confirm&&S.confirm.fn; S.confirm=null; if(f) f(); else render(); };
+  const _ca=$("cfmAlt"); if(_ca) _ca.onclick=()=>{ const a=S.confirm&&S.confirm.alt; S.confirm=null; if(a&&a.fn) a.fn(); else render(); };
   const _cn=$("cfmNo"); if(_cn) _cn.onclick=()=>{ S.confirm=null; render(); };
   const _rtC=$("rtSave");   if(_rtC) _rtC.onclick=savePlan;
   const _rtD=$("rtSave2");  if(_rtD) _rtD.onclick=savePlan;
@@ -2376,10 +2381,11 @@ function bind(){
   const au=$("auto"); if(au) au.onclick=()=>{
     const f=DIMS.reduce((a,b)=>S.talent[a]>=S.talent[b]?a:b);
     askConfirm("自动推进",
-      `接下来最多 <b>6 周</b>由系统替你安排：疲劳高就休息，否则练 <b>${f}</b>，然后打完比赛。<br>
-       一旦有事情需要你决定，会立刻停下来交回给你。<br>
-       <span class="note">这几周的训练和临场决策都不是你做的。</span>`,
-      "开始推进", ()=>autoRest(f));
+      `由系统替你安排：疲劳高就休息，否则练 <b>${f}</b>，然后打完比赛。<br>
+       <b>一旦有事情需要你决定，会立刻停下来交回给你</b>——推几周不影响这一点。<br>
+       <span class="note">这期间的训练和临场决策都不是你做的。</span>`,
+      "推 6 周", ()=>autoRest(f,AUTO_MAX),
+      {t:"推到赛季结束", fn:()=>autoRest(f,AUTO_FAR)});
   };
   st.querySelectorAll("[data-node]").forEach(b=>b.onclick=()=>resolveNode(+b.dataset.node));
   const nx=$("next"); if(nx) nx.onclick=nextWeek;

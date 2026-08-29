@@ -74,12 +74,17 @@ function checkTryoutInvite(kind, reached, champion){
 }
 /* 段位或人气到了也会有人来问——不是只有比赛这一条路 */
 function checkRankInvite(){
-  const P = S.pre; if(!P || P.invite) return;
-  if(P.rankInvited) return;
-  if(P.rank >= RANKS[4].at){          // 宗师
-    P.rankInvited = true;
-    addInvite(fitTier("low"), `排位打到${rankFull(P.rank)}`);
+  const P = S.pre; if(!P || !canInvite()) return;
+  P.rankInvited = P.rankInvited || {};
+  // 大师和宗师各算一次机会——上分这条路不该只在最后才兑现
+  for(const [i, tier] of [[2,"acad"],[3,"low"],[4,"mid"],[5,"top"]]){
+    if(RANKS[i] && P.rank >= RANKS[i].at && !P.rankInvited[i]){
+      P.rankInvited[i] = 1;
+      addInvite(fitTier(tier), `排位打到${RANKS[i].n}`);
+      return;
+    }
   }
+  if(typeof checkFameInvite === "function") checkFameInvite();
 }
 /* 成绩决定「有没有人看你」，个人水平决定「谁来看你」。
    两头都要卡：水平不够，成绩再好也只有青训队打电话；
@@ -94,13 +99,46 @@ function fitTier(tier){
   while(i > 0 && me < CLUB_TIERS[TIER_ORDER[i]].expect - 10) i--;
   return TIER_ORDER[i];
 }
+/* 邀请节流。
+   实测过：整局平均只有 0.98 次试训机会，59/60 的局正好一次——
+   意味着试训一失手，这一年就白费了。而试训本身是带运气的，
+   「一次定生死」不是难度，是惩罚。
+   现在放开触发点、加四周冷却，目标是整局 2–4 次机会：
+   失手一次还能再来，但也不至于多到没有分量。 */
+function canInvite(){
+  const P = S.pre; if(!P) return false;
+  if(P.invite && P.invite.pending) return false;        // 手上还有没处理的
+  if(P.inviteCd && P.week < P.inviteCd) return false;   // 冷却中
+  // 太早不行。代码里本来就有 PRE_EARLIEST=13「主播杯打完之前没人下判断」，
+  // 加段位/人气触发时我把它绕过去了，结果第 6 周就有队来签，
+  // 玩家在城市赛开打之前就走人——整条业余赛事线被跳过，
+  // 奖金、成就、决赛全拿不到，职业赛胜率也掉了 11 个百分点。
+  if(typeof PRE_EARLIEST !== "undefined" && P.week < PRE_EARLIEST) return false;
+  // 手上还有没打完的杯赛，也先别来——让玩家把比赛打完
+  if(typeof activeCups === "function" && activeCups().length) return false;
+  return true;
+}
+/* 人气到了也有人来问——直播这条路本来就是设计里的一条路 */
+function checkFameInvite(){
+  const P = S.pre; if(!P || !canInvite()) return;
+  P.fameInvited = P.fameInvited || {};
+  for(const [at, tier] of [[55,"acad"],[110,"low"],[190,"mid"]]){
+    if(S.fame >= at && !P.fameInvited[at]){
+      P.fameInvited[at] = 1;
+      addInvite(fitTier(tier), `直播间的人气涨到了${fameTier()}`);
+      return;
+    }
+  }
+}
 function addInvite(tier, reason){
   const P = S.pre; if(!P) return;
-  if(P.invite && P.invite.pending) return;      // 一次只处理一个，别堆
+  if(!canInvite()) return;
   const T = CLUB_TIERS[tier];
   const team = pickClub(tier);
   if(!team) return;
   P.invite = { tier, team, reason, pending:true, week:P.week, expect:T.expect };
+  P.inviteCd = P.week + 4;
+  P.inviteN = (P.inviteN || 0) + 1;
   preLog(`<b>${team}</b> 看了你的比赛录像——${reason}。<b>他们邀请你去队里试训。</b>`, "big");
   if(typeof render === "function") render();
 }
