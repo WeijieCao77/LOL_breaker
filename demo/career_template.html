@@ -854,6 +854,7 @@ function startPre(){
     o.base[d]-9+(A.mod[d]||0)+((B.mod&&B.mod[d])||0), capOf(d)));
   S=Object.assign({},S,{
     step:"pre",attrs,age:A.a,fame:Math.max(0,o.fame+(B.fame||0)),money:B.money||0,fatigue:0,
+    btk:{opStreak:0,opThisWeek:0,vod:0,rest:0},
     ageCfg:A,bg:B,preYear:1,si:0,split:0,
     pre:{week:1,ap:PRE_AP,rank:0,scout:0,cityCup:null,streamCup:null,log:[],offers:null},
     seasonAttr0:Object.assign({},attrs),
@@ -908,10 +909,10 @@ function preAct(k,dim){
       else { l++; P.rank=clamp(P.rank-step*0.82,0,100); }
     }
     addFat(8);
-    // 排位打多了本身就会变强——否则「冲分」和「训练」互抢行动点，
-    // 起始实力又刚好卡在门槛上，玩家会陷入怎么打都不涨分的死循环。
-    S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.16+w*0.06);
-    S.attrs.运营=Math.min(capOf("运营"),S.attrs.运营+0.07+w*0.03);
+    // 排位打多了本身就会变强，而且是全面的——一局排位里对线、
+    // 运营、心态、指挥、体力都在用，只是每一样都不如专项训练练得深。
+    // （这也让「冲分」和「训练」不再是纯粹互抢行动点的关系。）
+    rankGain(w);
     const afterT=rankName(P.rank), afterF=rankFull(P.rank);
     addFame(w*0.5);      // 赢下来的分才带来关注
     P.lastQ={w,l,p}; checkAch("rank");
@@ -932,15 +933,18 @@ function preAct(k,dim){
     if(P.rank>=95&&!P.top10){P.top10=true;preLog(`你冲进<b>国服前 10</b>。这个位置上的人，职业队不会看不见。`,"big");}
   } else if(k==="stream"){
     const m=S.origin==="streamer"?1.7:1.0;
-    const pop=4+S.pre.rank*0.07;
+    // 单纯开播涨得很慢；真正让人记住你的是段位和战绩
+    const pop=1.9+S.pre.rank*0.05;
     const gift=streamIncome();
     addFame(pop*m); S.money+=gift; addFat(4); checkAch("stream");
     if(gift>=50&&!P.bigGift){P.bigGift=true;
       preLog(`直播间刷起了礼物，这一场进账 <b>${Math.round(gift)} 万</b>。`,"good");}
     if(S.fame>=120&&!P.famous){P.famous=true;preLog(`直播间人数破万。<b>你在圈子里有名气了</b>，虽然还没打过一场正赛。`,"good");}
   } else if(k==="train"){
-    const c=capOf(dim); if(S.attrs[dim]>=c) return;
-    S.attrs[dim]=Math.min(c,S.attrs[dim]+gain(dim)*0.85); addFat(9);
+    const c=capOf(dim);
+    if(dim==="操作"&&typeof btkNote==="function") btkNote("op",1);   // 到瓶颈也要能攒突破进度
+    if(S.attrs[dim]<c) S.attrs[dim]=Math.min(c,S.attrs[dim]+gain(dim)*0.85);
+    addFat(9);
   } else { addFat(-32); S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.5); }
   P.ap--; render();
 }
@@ -1038,6 +1042,9 @@ function advancePreWeek(){
   if(typeof injuryTick==='function') injuryTick();
   if(typeof cupTick==='function') cupTick();
   if(typeof checkRankInvite==='function') checkRankInvite();
+  // 突破进度也要在职业前结算。原来 btkWeekEnd 只在赛季的 nextWeek 里调，
+  // 职业前那条「连续 3 周投操作」的提示就永远是 0/3——提示让你做的事做了也不算数。
+  if(typeof btkWeekEnd==='function') btkWeekEnd();
   if(typeof rollInjury==='function') rollInjury('职业前');
   if(typeof tickBuffs==='function') tickBuffs();
   simWorldPre();
@@ -1198,6 +1205,21 @@ function startSeason(first,split){
 }
 
 /* ================= 赛季回合 ================= */
+/* 打排位带来的成长：五项都涨，但每一项都比专项训练浅。
+   权重按「一局排位里各项用得多不多」来分：对线和运营用得最多，
+   心态其次（连败翻盘那种），指挥在路人局里最难练，体质最慢。
+   赢下来的局练得更扎实，所以带一个胜场加成。
+
+   定标：主项（操作）约为专项训练的一半。第一版给到 75%，那样排位
+   单项就快赶上专项、还外送四项，等于没人会去训练了。 */
+const RANK_GAIN = { 操作:0.105, 运营:0.080, 心态:0.055, 指挥:0.035, 体质:0.025 };
+function rankGain(wins){
+  const w = wins || 0;
+  DIMS.forEach(d=>{
+    const g = RANK_GAIN[d] * (1 + w*0.22);
+    S.attrs[d] = Math.min(capOf(d), S.attrs[d] + g);
+  });
+}
 function gain(d){
   const t=S.talent[d],c=cap(t),room=clamp(1-(S.attrs[d]/c),0,1);
   const ageM=S.age<=21?1.15:S.age<=24?1.0:0.6;
@@ -1215,25 +1237,48 @@ function gain(d){
 const addFat=n=>{S.fatigue=clamp(S.fatigue+n,0,100)};
 /* 名气有边际递减：从零到小有名气很快，再往上越来越难。
    没有这条，打赏收入和签约评分都会随时间无限膨胀。 */
+/* 人气应该主要来自战绩，直播只是慢速补充。
+   原来 40 次直播就能到「平台头部」——一个 17 岁的无名小卒半年内
+   成为平台头部，既荒谬，也让「直播」比「打比赛」更容易出名，方向反了。
+   阻尼从 /240 收到 /150：越有名越难涨，靠点直播堆不上去。 */
 function addFame(n){
   if(!n) return;
   if(n<0){ S.fame=Math.max(0,S.fame+n); return; }
-  const damp=1/(1+Math.max(0,S.fame)/240);
+  const damp=1/(1+Math.max(0,S.fame)/150);
   S.fame=Math.max(0,S.fame+n*damp);
 }
 
 function doTrain(d){
-  if(S.ap<=0||S.attrs[d]>=capOf(d))return;
+  if(S.ap<=0) return;
+  const capped = S.attrs[d] >= capOf(d);
+  // 到了瓶颈也必须能练。
+  // 突破操作的条件是「连续 3 周把至少 3 个行动点投在操作上」，
+  // 而进度只在 doTrain 里记——原来一到瓶颈按钮就禁用，
+  // 于是提示让你去做的事，你根本点不动，死锁在那儿。
   if(d==="操作"&&typeof btkNote==="function") btkNote("op",1);
-  S.attrs[d]=Math.min(capOf(d),S.attrs[d]+gain(d));
+  if(!capped) S.attrs[d]=Math.min(capOf(d),S.attrs[d]+gain(d));
   if(typeof noteAct==='function') noteAct('train',d);
   checkAch("train");
-  addFat(9); S.ap--; checkAch("train"); render();
+  addFat(9); S.ap--; render();
 }
 function doAction(k){
   if(S.ap<=0)return;
   if(typeof noteAct==="function") noteAct("do",k);
-  if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
+  if(k==="solo"){
+    // 职业选手也要打排位保持手感。属性上和职业前一样是全面小涨，
+    // 但真正的价值是状态——手感这东西不练会掉。
+    const w=1+Math.floor(rnd()*3);
+    if(typeof rankGain==="function") rankGain(w);
+    if(S.form!==undefined){
+      const before=S.form;
+      // 往「不错」的方向拉，但越接近上限拉得越慢；不可能靠排位刷到爆表
+      S.form=clamp(S.form+(68-S.form)*0.11+1.2,25,95);
+      if(Math.round(S.form)>Math.round(before))
+        pushEvent(`打了一晚上排位，手感回来一些（状态 ${Math.round(before)} → ${Math.round(S.form)}）。`,"info","排位");
+    }
+    addFat(7);
+  }
+  else if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
     addFame(4.5*m);S.money+=streamIncome();addFat(5);}
   else{ if(typeof btkNote==="function") btkNote("rest",1);
     addFat(((S.buff&&S.buff.physio)?-42:-30)*((S.bg&&S.bg.rest)||1));S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.6);}
@@ -1310,9 +1355,19 @@ function viewSeason(){
     ${typeof routineBar==="function"?routineBar():""}
     ${S.injury?`<p class="note" style="color:var(--red);margin-top:0">受伤期间行动力只有 ${AP_HURT} 点。</p>`:""}
     <div class="grid g5">
-      ${DIMS.map(d=>{const c=capOf(d),done=S.attrs[d]>=c;
-        return `<button class="act" data-train="${d}" ${(S.ap<=0||done)?'disabled style="opacity:.34"':''}>
-        <div class="t">练${d}</div><div class="d">${done?'已达瓶颈':DIM_HINT[d]}</div></button>`}).join("")}
+      ${DIMS.map(d=>{
+        const c=capOf(d),done=S.attrs[d]>=c;
+        // 撞了瓶颈的维度仍然可以练：不涨数值，但算突破进度
+        const P=(typeof BREAK_PATHS!=="undefined")?BREAK_PATHS[d]:null;
+        const prog=(done&&P&&P.auto&&P.prog)?P.prog():"";
+        return `<button class="act" data-train="${d}" ${S.ap<=0?'disabled style="opacity:.34"':''}
+          ${done?'style="border-color:var(--gold)"':''}>
+        <div class="t">练${d}${done?' <span class="tag">冲击瓶颈</span>':''}</div>
+        <div class="d">${done?(prog?`已满，继续投入可冲破天赋上限　<b>${prog}</b>`:'已达瓶颈，练下去也不涨了'):DIM_HINT[d]}</div>
+        </button>`}).join("")}
+      <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">打排位</div><div class="d">五项小涨 + 找回手感${
+          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}</div></button>
       <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">直播</div><div class="d">涨人气与收入</div></button>
       <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>

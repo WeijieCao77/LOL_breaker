@@ -97,10 +97,9 @@ function runActs(list, fromCursor){
       if(inPre()){
         preAct(key === "stream" ? "stream" : key === "rest" ? "rest" : "rank");
       } else {
-        // 职业前的「打排位」在赛季里没有对应项 —— 折算成练最短板
+        // 赛季里现在有真的「打排位」了（保持手感），直接对应过去
         if(key === "rank"){
-          const av = DIMS.filter(x => S.attrs[x] < capOf(x));
-          av.length ? doTrain(av[0]) : doAction("stream");
+          doAction("solo");
         } else {
           doAction(key === "rest" ? "rest" : "stream");
         }
