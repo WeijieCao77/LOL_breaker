@@ -75,7 +75,15 @@ function squadWeights(players,fatigue,team){
   const mine=players.some(x=>x.me)||(S.team&&team&&team.name===S.team)
              ||(S.team&&!team&&S.squad&&players===myRoster());
   return [
-    {k:"syn", n:"默契", v:mine?squadOf("syn"):50, mult:1+((mine?squadOf("syn"):50)-50)/950},
+    // 默契要把「队友之间的关系」算进去。relMod() 早就写好了，
+    // 注释都写着「有一对闹掰，整队都别想顺」，但一直没有任何地方调用它——
+    // 于是更衣室关系是纯装饰的，和「信任」两套数字互相矛盾也没人管。
+    // 语言：在外赛区打球，听不懂更衣室就磨不出默契。
+    // 会当地语言是加成，不会是惩罚——这比「不会就没人要你」更贴近现实。
+    {k:"syn", n:"默契", v:mine?squadOf("syn"):50,
+     mult:(1+((mine?squadOf("syn"):50)-50)/950)
+          *((mine&&typeof relMod==="function")?relMod():1)
+          *((mine&&typeof langSyn==="function")?langSyn():1)},
     {k:"tac", n:"战术", v:mine?squadOf("tac"):50, mult:1+((mine?squadOf("tac"):50)-50)/1100},
     {k:"mor", n:"士气", v:mine&&typeof avgTrust==="function"?avgTrust():50,
      mult:1+(((mine&&typeof avgTrust==="function")?avgTrust():50)-50)/380},
@@ -141,9 +149,22 @@ function gapVerdict(diff){
   if(diff>-GAP_WINDOW)  return {k:"under", t:"劣势",     d:"硬碰硬赢不了，得赌一把。"};
   return {k:"hopeless", t:"差距过大", d:"这一场基本没戏。打完它，把状态留给下一场。"};
 }
+/* 大差距下的封顶。
+   原来是一刀切：差距超过 7.5 就锁死 7%。于是差距 -14.5 的局里，
+   抢龙抢成了把差距缩到 -10.3，还在锁里——界面显示「赢面 7% → 7%」，
+   等于告诉玩家「你做对了，但没用」。
+
+   现在封顶随差距滑动：差得越多上限越低，但每缩小一点差距，
+   上限就抬一点。临场决策在劣势局里永远算数，只是救不回天堑。 */
 function clampWinProb(p,diff){
-  if(diff<=-GAP_WINDOW) return Math.min(p,0.07);
-  if(diff>=GAP_WINDOW)  return Math.max(p,0.93);
+  if(diff<=-GAP_WINDOW){
+    const cap=clamp(0.20+(diff+GAP_WINDOW)*0.018,0.03,0.20);
+    return Math.min(p,cap);
+  }
+  if(diff>=GAP_WINDOW){
+    const floor=clamp(0.80+(diff-GAP_WINDOW)*0.018,0.80,0.97);
+    return Math.max(p,floor);
+  }
   return p;
 }
 

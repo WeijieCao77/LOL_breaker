@@ -42,11 +42,11 @@ const code = m[1];
 try {
   new Function(code + "\n;globalThis.__api={S:()=>S,SEASONS,SPLITS,DIMS,AGES,BACKGROUNDS,ACHIEVEMENTS,RANKS,"
     + "GEAR,SLOTS,COURSES,RELAX,SPEND,screenCreate,startPre,preAct,preNextWeek,acceptOffer,"
-    + "doTrain,doAction,startMatch,resolveNode,playGame,nextWeek,doOffseason,offNextWeek,finishOffseason,OFF_WEEKS,isBenched,benchWeek,"
+    + "doTrain,doAction,startMatch,resolveNode,playGame,nextWeek,doOffseason,offNextWeek,prepGo,enterPrep,finishOffseason,OFF_WEEKS,isBenched,benchWeek,"
     + "resolveLocker,ending,cap,rankFull,nowLabel,nowPhase,yearWeek,yearTotal,rankIcon,fameTier,scoutTier,preScore,hasAch,"
     + "buyGear,buyCourse,buyRelax,gearBonus,streamIncome,drawBackgrounds,advancePreWeek,capOf,"
     + "soloSkill,soloWinP,rankReq,doSquad,SQUAD_ACTS,squadOf,PRE_MILESTONES,nextMilestone,"
-    + "resolveRandom,btkNote,BREAK_PATHS,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,proPerf,rollProOffers,checkPromote,parentClub,buildLDL,takeProOffer,dropProOffer,makeProDeal,signTransfer,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,dueCups,forfeitCup,cupOppName,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,tryoutSkill,checkTryoutInvite,checkRankInvite,addInvite,startTryout,resolveTryoutDay,tryoutGrade,endTryout,makeDeal,askDeal,signDeal,dropDeal,declineDeal,afterTryout,dealLeverage,CLUB_TIERS,DEAL_TIERS,TIER_EARLIEST,earliestWeekFor,canInvite,fitTier,exposureCap,exposureScore,inviteFloorOk,PRE_MILESTONES,nextMilestone,PRE_EARLIEST,preNextWeek,TRYOUT_DAYS,DEAL_ASKS,salaryOf,contractCheck,consumeOffer,preNextYear,setS:(v)=>{S=v}};")();
+    + "resolveRandom,btkNote,BREAK_PATHS,sweepBreakthroughs,btkWeekEnd,breakthrough,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,proPerf,rollProOffers,checkPromote,parentClub,buildLDL,takeProOffer,dropProOffer,makeProDeal,signTransfer,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,dueCups,forfeitCup,cupOppName,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,tryoutSkill,checkTryoutInvite,checkRankInvite,addInvite,startTryout,resolveTryoutDay,tryoutGrade,endTryout,makeDeal,askDeal,signDeal,dropDeal,declineDeal,afterTryout,dealLeverage,CLUB_TIERS,DEAL_TIERS,TIER_EARLIEST,earliestWeekFor,canInvite,fitTier,exposureCap,exposureScore,inviteFloorOk,PRE_MILESTONES,nextMilestone,PRE_EARLIEST,preNextWeek,TRYOUT_DAYS,DEAL_ASKS,salaryOf,contractCheck,consumeOffer,preNextYear,setS:(v)=>{S=v}};")();
 } catch (e) {
   console.error("脚本解析失败:", e.message);
   process.exit(1);
@@ -139,6 +139,14 @@ function playOne(opts) {
         else if (av.length) A.doTrain(av[0]);
         else A.doAction("stream");
       } else { A.isBenched() ? A.benchWeek() : A.startMatch(false); }
+    } else if (S.step === "prep") {
+      // 淘汰赛之间的备战：把行动点用掉再上场
+      if (S.ap > 0) {
+        const av = A.DIMS.filter(d => S.attrs[d] < A.capOf(d));
+        if (S.fatigue > 55) A.doAction("rest");
+        else if (av.length) A.doTrain(av[0]);
+        else A.doAction("solo");
+      } else A.prepGo();
     } else if (S.step === "match") {
       if (S.match.node) A.resolveNode(1);
       else if (S.match.done) A.nextWeek();

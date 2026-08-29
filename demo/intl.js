@@ -55,13 +55,24 @@ function buildWorldsField(playerResult,cfg){
   const seeds={};
   MAJOR.forEach(lg=>{ seeds[lg]=majorStandings(lg); });
 
-  // 玩家结果覆盖本赛区种子顺序
-  if(playerResult==="champion"){
-    seeds[HL]=[S.team].concat(seeds[HL].filter(n=>n!==S.team)).slice(0,4);
-  } else if(S.playoffSeed&&S.playoffSeed<=4){
-    const others=seeds[HL].filter(n=>n!==S.team);
-    const slot=clamp(S.playoffSeed-1,1,3);
-    seeds[HL]=others.slice(0,slot).concat([S.team]).concat(others.slice(slot)).slice(0,4);
+  // 世界赛资格看季后赛走到哪，不是看常规赛排名。
+  // 原来只要 S.playoffSeed<=4 就给名额——于是常规赛第 4、季后赛首轮
+  // 被打出去的人照样去世界赛，而现实里那是拿不到积分的。
+  //   夺冠      -> 一号种子
+  //   输在决赛   -> 二号种子
+  //   输在半决赛 -> 三号种子
+  //   首轮出局   -> 只有常规赛前二才勉强拿到最后一个名额
+  //   没进季后赛 -> 没有
+  let mySlot=null;
+  if(playerResult==="champion") mySlot=1;
+  else if(playerResult===3) mySlot=2;
+  else if(playerResult===2) mySlot=3;
+  else if(playerResult===1 && S.playoffSeed && S.playoffSeed<=2) mySlot=4;
+  const others=seeds[HL].filter(n=>n!==S.team);
+  if(mySlot){
+    seeds[HL]=others.slice(0,mySlot-1).concat([S.team]).concat(others.slice(mySlot-1)).slice(0,4);
+  }else{
+    seeds[HL]=others.slice(0,4);          // 没资格，本赛区名额全给别人
   }
 
   // 正赛 16 席 = 直进席 + 入围晋级席
@@ -225,7 +236,7 @@ function intlAdvance(){
       if(!openIntl("worlds",field,(I.cfg&&I.cfg.main)||"swiss")) finishIntl("正赛出局","main");
       return;
     }
-    I.round++; S.step="match"; startMatch(intlBoNeed(),nextIntlOpp()); return;
+    I.round++; enterPrep("intl", nextIntlOpp(), intlBoNeed(), `${name}第 ${I.round} 轮 · 赛前备战`); return;
   }
 
   /* --- 淘汰赛 --- */
@@ -238,11 +249,11 @@ function intlAdvance(){
         I.losses++;
         if(I.losses>=2){ finishIntl(I.wins>=3?"败者组决赛":"败者组","knock"); return; }
         pushEvent(`MSI：<b>${S.team}</b> 输给 ${S.match.oppName}，掉入败者组。<b>再输一场就回家。</b>`,"bad","MSI");
-        I.knockRound++; S.step="match"; startMatch(3,nextIntlOpp()); return;
+        I.knockRound++; enterPrep("intl", nextIntlOpp(), 3, `${name}淘汰赛 · 赛前备战`); return;
       }
       I.wins++;
       if(I.wins>=(I.losses?4:3)){ crownChampion(); return; }
-      I.knockRound++; S.step="match"; startMatch(3,nextIntlOpp()); return;
+      I.knockRound++; enterPrep("intl", nextIntlOpp(), 3, `${name}淘汰赛 · 赛前备战`); return;
     }
     /* 世界赛：8 强单败 BO5，三轮 */
     if(!won){
@@ -250,7 +261,7 @@ function intlAdvance(){
       finishIntl(stage,I.knockRound>=3?"final":I.knockRound===2?"semi":"knock"); return;
     }
     if(I.knockRound>=3){ crownChampion(); return; }
-    I.knockRound++; S.step="match"; startMatch(3,nextIntlOpp()); return;
+    I.knockRound++; enterPrep("intl", nextIntlOpp(), 3, `${name}淘汰赛 · 赛前备战`); return;
   }
 
   /* --- 瑞士轮 / 小组赛 --- */

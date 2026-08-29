@@ -260,9 +260,9 @@ function cloutCard(){
       <div class="at"><div class="lb">威望</div>${bar(c,gold)}
         <div class="vn mono"><b>${c}</b></div></div>
       <div class="at"><div class="lb">教练</div>${bar(coachTrust(),cyan)}
-        <div class="vn mono"><b>${coachTrust()}</b></div></div>
+        <div class="vn mono"><b>${Math.round(coachTrust())}</b></div></div>
       <div class="at"><div class="lb">经理</div>${bar(mgrTrust(),cyan)}
-        <div class="vn mono"><b>${mgrTrust()}</b></div></div>
+        <div class="vn mono"><b>${Math.round(mgrTrust())}</b></div></div>
     </div>
     <p class="note">${T.d}　威望来自冠军、人气、你在队里的分量和生涯战绩。</p>
 
@@ -307,7 +307,7 @@ function relCard(){
         <span class="rn">${p.a.id.slice(0,8)} ↔ ${p.b.id.slice(0,8)}</span>
         <span class="rb"><i style="width:${clamp(p.v,0,100)}%"></i></span>
         <span class="rv mono">${Math.round(p.v)}</span></div>`).join("")}</div>
-    <p class="note">队友之间也有关系，不只是对你。
+    <p class="note">这是<b>队友互相之间</b>的关系，撑的是默契——和「他们对你的信任」是两回事。
       ${worst.v<32?`<b style="color:var(--red)">${worst.a.id} 和 ${worst.b.id} 已经不怎么说话了</b>——这会直接吃掉默契。`
         :"目前没有闹到台面上的矛盾。"}
       合练和团建能缓和，连败会加剧。</p></div>`;

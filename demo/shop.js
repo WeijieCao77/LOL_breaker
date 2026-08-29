@@ -82,6 +82,16 @@ function langBonus(){
   if((hl==="LEC"||hl==="LCS")&&hasCourse("en")) return 2.2;
   return 0;
 }
+/* 语言对默契的影响。
+   在外赛区打球，听不懂更衣室就是磨不出配合；会说当地话则明显更顺。
+   本赛区当然没有这个问题。 */
+function langSyn(){
+  const hl=S.homeLeague||"LPL";
+  if(hl==="LPL"||hl==="LDL") return 1;
+  const ok = (hl==="LCK") ? hasCourse("kr") : hasCourse("en");
+  return ok ? 1.05 : 0.90;
+}
+
 /* 课程对训练的加成 */
 function courseTrainMul(dim){
   if(dim==="心态"&&hasCourse("psy")) return 1.25;

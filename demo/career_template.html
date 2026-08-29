@@ -248,7 +248,11 @@ const SPREAD=13.5;   // 赛程加长后，单场的确定性要再降一点，�
 /* 赛段从 5 周拉到 7 周，每周点数就要相应下调——
    否则总行动点从 20 涨到 28，成长速度凭空多了四成。
    目标是「比赛更多、成长不变」：内容变长，强度不变。 */
-const AP_SEASON=3, AP_PRE=6, AP_OFF=6, AP_HURT=2;
+/* AP_OFF 原来是 6，和职业前一样。但加了季中间歇、季后赛前休整、
+   休赛期三段之后，一年凭空多出 30+ 个行动点，几乎把赛季的总量翻倍——
+   实测 MSI 冠军率被抬到 45%。间歇期该有价值（没有比赛要打），
+   但不该是双倍价值。 */
+const AP_SEASON=3, AP_PRE=6, AP_OFF=3, AP_HURT=2;
 function apFor(phase){
   if(S.injury) return AP_HURT;
   if(phase==="pre") return AP_PRE;
@@ -333,24 +337,44 @@ const BREAK_PATHS={
         done:()=>(S.btk&&S.btk.rest||0)>=6 },
   心态:{ how:"在落后的局面里赢下 3 场，或者拿一次冠军",
         by:"play", act:"在比赛里翻盘",
-        auto:false, gain:0,
+        auto:true, gain:3.0, sweep:true, key:"cb3",
+        reason:"你已经在落后的局面里赢过三次。队友开始相信你不会崩。",
         prog:()=>`翻盘 ${clamp(S.comebacks||0,0,3)}/3`,
-        done:()=>false },
+        done:()=>(S.comebacks||0)>=3||((S.career&&S.career.titles||[]).length>0) },
   指挥:{ how:"和 27 岁以上的老将同队、待在强队，或者打进国际赛",
         by:"env", act:"换环境",
-        auto:false, gain:0,
+        auto:true, gain:2.4, sweep:true, key:"cmdenv",
+        reason:"这一年你身边的人和场面，把你看事情的方式改了。",
         prog:()=>{ const v=myRoster&&S.team?myRoster().find(x=>!x.me&&x.age>=27):null;
-                   return v?`队里有 ${v.id}`:"队里没有老将"; },
-        done:()=>false }
+                   return v?`队里有 ${v.id}`:((S.career&&S.career.bestIntl)?"打过国际赛":"队里没有老将"); },
+        done:()=>{ if(!S.team) return false;
+                   const v=myRoster().find(x=>!x.me&&x.age>=27);
+                   return !!v || power(myRoster(),0)>=60 || !!(S.career&&S.career.bestIntl); } }
 };
 /* 机械条件的计数器 */
 function initBtk(){ S.btk={opStreak:0,opThisWeek:0,vod:0,rest:0}; }
 function btkNote(d,n){ S.btk=S.btk||{opStreak:0,opThisWeek:0,vod:0,rest:0};
   if(d==="op") S.btk.opThisWeek+=n;
   else S.btk[d]=(S.btk[d]||0)+n; }
+/* 声明式补发。
+   原来心态那条是在「恰好第 3 次翻盘」那一刻用 ===3 触发的，
+   而界面读的是 BREAK_PATHS.心态.done()——那个写死 false。
+   于是进度条数到 3/3，瓶颈却纹丝不动。
+   现在只要条件成立就补发，错过那一瞬间也没关系。 */
+function sweepBreakthroughs(){
+  if(typeof BREAK_PATHS==="undefined") return;
+  DIMS.forEach(d=>{
+    const P=BREAK_PATHS[d];
+    if(!P||!P.sweep||!P.gain||!P.done) return;
+    try{ if(P.done()) breakthrough(d,P.gain,P.reason||"条件达成了。",P.key||("path_"+d)); }
+    catch(e){}
+  });
+}
+
 /* 每周结算：操作的连续周数要在周末判定 */
 function btkWeekEnd(){
   S.btk=S.btk||{opStreak:0,opThisWeek:0,vod:0,rest:0};
+  sweepBreakthroughs();
   if(S.btk.opThisWeek>=3) S.btk.opStreak++;
   else S.btk.opStreak=0;
   S.btk.opThisWeek=0;
@@ -589,7 +613,12 @@ function yearWeek(){
   if(S.step==="pre"||S.step==="offer") return S.pre?S.pre.week:1;
   const base=S.yearBase||0;
   if(S.step==="end")       return yearTotal();
-  if(S.step==="offseason") return base+phaseOffset("off")+((S.off&&S.off.week)||1);
+  if(S.step==="offseason"){
+    if(S.off&&S.off.next==="playoff") return base+phaseOffset((S.split>=1)?"supo":"sppo");
+    if(S.off&&S.off.next==="summer") return base+phaseOffset("msi")+(S.off.week||1);
+    return base+phaseOffset("off")+((S.off&&S.off.week)||1);
+  }
+  if(S.step==="prep") return base+phaseOffset((S.split>=1)?"supo":"sppo")+((S.playoff&&S.playoff.round)||1);
   if(S.intl)               return base+phaseOffset(S.intl.type==="msi"?"msi":"worlds")+1;
   if(S.playoff)            return base+phaseOffset((S.split>=1)?"supo":"sppo")+(S.playoff.round||1);
   return base+phaseOffset((S.split>=1)?"summer":"spring")+(S.week||1);
@@ -610,7 +639,8 @@ function nowPhase(){
   }
   if(S.playoff) return {tag:sea.tag,phase:SPLITS[S.split||0]+"季后赛",
                         detail:`${YW} · 第 ${S.playoff.round} 轮`,urgent:true};
-  if(S.step==="offseason") return {tag:sea.tag,phase:"休赛期",
+  if(S.step==="prep") return {tag:sea.tag,phase:"赛前备战",detail:YW,urgent:true};
+  if(S.step==="offseason") return {tag:sea.tag,phase:(S.off&&S.off.label)||"休赛期",
     detail:S.off?`${YW} · 第 ${S.off.week}/${S.off.weeks} 周`:`${YW} · 赛季结算`,urgent:false};
   if(S.step==="end") return {tag:sea.tag,phase:"生涯结束",detail:"",urgent:false};
   return {tag:sea.tag,phase:SPLITS[S.split||0],detail:`${YW} · 本阶段 ${S.week}/${WEEKS}`,
@@ -1370,24 +1400,38 @@ function doTrain(d){
 function doAction(k){
   if(S.ap<=0)return;
   if(typeof noteAct==="function") noteAct("do",k);
+  // 赛前备战是几天，不是一周：恢复和调整的量要按比例缩。
+  // 不缩的话，玩家能在每场淘汰赛前把疲劳清光、把状态拉满，
+  // 而这两样都是直接乘在战力上的——实测把 MSI 冠军率抬到 45%。
+  const prepMul = (S.step==="prep") ? 0.45 : 1;
   if(k==="solo"){
     // 职业选手也要打排位保持手感。属性上和职业前一样是全面小涨，
     // 但真正的价值是状态——手感这东西不练会掉。
     const w=1+Math.floor(rnd()*3);
     if(typeof rankGain==="function") rankGain(w);
+    // 段位也要跟着动。原来赛季里段位是个冻住的死数字，
+    // 进职业之后就再也不变了——但职业选手照样在天梯上。
+    if(S.pre&&S.pre.rank!==undefined&&typeof soloWinP==="function"){
+      const st=(typeof rankStep==="function")?rankStep():2;
+      for(let i=0;i<3;i++){
+        if(rnd()<soloWinP()) S.pre.rank=clamp(S.pre.rank+st*prepMul,0,100);
+        else S.pre.rank=clamp(S.pre.rank-st*0.82*prepMul,0,100);
+      }
+    }
     if(S.form!==undefined){
       const before=S.form;
       // 往「不错」的方向拉，但越接近上限拉得越慢；不可能靠排位刷到爆表
-      S.form=clamp(S.form+(68-S.form)*0.11+1.2,25,95);
+      S.form=clamp(S.form+((68-S.form)*0.11+1.2)*prepMul,25,95);
       if(Math.round(S.form)>Math.round(before))
         pushEvent(`打了一晚上排位，手感回来一些（状态 ${Math.round(before)} → ${Math.round(S.form)}）。`,"info","排位");
     }
-    addFat(7);
+    addFat(7*prepMul);
   }
   else if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
     addFame(4.5*m);S.money+=streamIncome();addFat(5);}
   else{ if(typeof btkNote==="function") btkNote("rest",1);
-    addFat(((S.buff&&S.buff.physio)?-42:-30)*((S.bg&&S.bg.rest)||1));S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.6);}
+    addFat(((S.buff&&S.buff.physio)?-42:-30)*((S.bg&&S.bg.rest)||1)*prepMul);
+    S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.6*prepMul);}
   S.ap--;render();
 }
 /* 自动推进 —— 推到「下一件需要你拿主意的事」就停。
@@ -1512,10 +1556,11 @@ function teamCard(){
                 "linear-gradient(90deg,#5A2228,var(--red))"}"></div></div>
         <div class="vn mono">${p.id.slice(0,9)}${p.rookie?'<span class="tag">新</span>':""}${p.comeback?'<span class="tag g">复出</span>':""}</div>
       </div>`}).join("")}</div>
-    <p class="note">信任影响全队发挥。<b>${
-      avgTrust()>=62?"更衣室很稳，五个人像一个人。":
-      avgTrust()>=40?"关系正常，没什么额外加成。":
-      "更衣室出问题了——打不出五个人该有的东西。"}</b></p></div>`;
+    <p class="note">这是<b>他们对你</b>的信任，撑的是全队士气。<b>${
+      avgTrust()>=62?"他们服你，关键球敢交到你手上。":
+      avgTrust()>=40?"还行，但也谈不上多信你。":
+      "他们不信你——你说的话在这个队里没有分量。"}</b><br>
+      <span style="color:var(--ink-3)">队友<b>互相之间</b>的关系是另一回事，看「更衣室关系」那一栏。</span></p></div>`;
 }
 /* 合同条款要摆出来——谈判谈了半天，玩家得能随时看到自己签了什么。
    （原来这里还有一个 moneyCard()，从来没有被任何地方调用过，
@@ -1825,7 +1870,12 @@ function benchWeek(){
 function nextWeek(){
   if(S.intl){ intlAdvance(); return; }
   if(S.playoff){ playoffAdvance(); return; }
-  if(S.week>=WEEKS){ startPlayoff(); return; }
+  if(S.week>=WEEKS){
+    // 现实里常规赛打完不会第二天就打季后赛，中间有几天到一周的间隔。
+    // 这一周也是有用的：调整状态、针对性备战、把体能补回来。
+    enterBreak("playoff", 1, "常规赛结束 · 季后赛前");
+    return;
+  }
   S.week++; S.ap=apFor('season'); S.step="season"; S.match=null; addFat(-10);
   if(typeof injuryTick==="function") injuryTick();
   if(typeof rollInjury==="function") rollInjury("赛季中");
@@ -1867,8 +1917,62 @@ function playoffAdvance(){
   S.playoff.beaten.push(S.match.oppName);
   S.playoff.round++;
   if(S.playoff.round>3){ endSeason("champion",S.playoff.seed); return; }
-  S.step="match";
-  startMatch(true, playoffOpp(S.playoff.round));
+  const nm=playoffOpp(S.playoff.round);
+  enterPrep("playoff", nm, true,
+    `季后赛第 ${S.playoff.round} 轮 · 赛前备战`);
+}
+
+/* ---------- 淘汰赛之间的备战 ----------
+   原来季后赛打完一轮直接 startMatch() 开下一轮，国际赛也一样：
+   一路连打三场甚至更多，中间一个行动点都没有、训练框都不出现。
+   最高强度的比赛反而最没得操作，这不对。
+   现在每轮之间插一个备战环节：2 个行动点，休息、复盘、找手感都行。 */
+function enterPrep(mode, opp, bo, label){
+  S.prep={mode, opp, bo, label};
+  // 只给 1 点。给 2 点的时候玩家能在每场淘汰赛前连休两次、清掉 60+ 疲劳，
+  // 而疲劳是直接乘在战力上的——实测 MSI 冠军率被抬到 45%、世界冠军 25%。
+  // 赛前该有得选，但不该变成免费回血站。
+  S.ap=1;
+  S.step="prep";
+  render();
+}
+function prepGo(){
+  const P=S.prep; if(!P) return;
+  S.prep=null;
+  if(P.mode==="intl"){ S.step="match"; startMatch(P.bo, P.opp); return; }
+  S.step="match"; startMatch(true, P.opp);
+}
+function prepPanel(){
+  const P=S.prep; if(!P) return "";
+  const oppT=(S.world[S.homeLeague||"LPL"]||[]).find(t=>t.name===P.opp)
+          || Object.values(S.world).flat().find(t=>t.name===P.opp);
+  return `${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
+  <div class="card">
+    <h2>${P.label}<em>剩余行动点 ${S.ap}</em></h2>
+    <div class="next">
+      <div class="sd"><div class="nm">${meName()}</div>
+        <div class="pw">${S.team}</div></div>
+      <div class="mid">VS</div>
+      <div class="sd"><div class="nm">${typeof teamLogo==="function"?teamLogo(P.opp,20):""} ${P.opp}</div>
+        <div class="pw">${oppT?`战力 ${power(oppT,0,SEASONS[S.si].fav).toFixed(1)}`:""}</div></div>
+    </div>
+    <p class="note">下一场之前还有一点时间。<b>怎么用是你的事</b>——歇一口气、过一遍录像，
+      或者临阵再练一手。</p>
+    ${fatigueBar()}
+    <div class="grid g5">
+      ${DIMS.map(d=>{const b=trainBtn(d,S.ap);
+        return `<button class="act" data-train="${d}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
+        <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
+      <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">打排位</div><div class="d">找回手感${
+          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}</div></button>
+      <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">休息</div><div class="d">清疲劳，护状态</div></button>
+    </div>
+    ${typeof squadActs==="function"?squadActs():""}
+    <div class="row"><button class="btn" id="prepgo">上场 →</button></div>
+    <p class="note">行动点没用完也可以直接上场。</p>
+  </div>`;
 }
 
 function endSeason(result,seed){
@@ -1906,7 +2010,9 @@ function endSeason(result,seed){
     // 春季赛结束 -> 冠军去 MSI -> 然后开夏季赛
     S.afterIntlGo="summer";
     if(majorLg&&result==="champion"&&startIntl("msi",result)) return;
-    S.afterIntlGo=null; startSeason(false,1); return;
+    S.afterIntlGo=null;
+    enterBreak("summer", MID_WEEKS, "季中间歇");   // 没去 MSI，那就有两周空当
+    return;
   }
   // 夏季赛结束 -> 世界赛 -> 休赛期
   S.afterIntlGo="offseason";
@@ -1948,14 +2054,26 @@ function viewOffseason(){
    AP_OFF 和 apFor("off") 早就写好了，但从来没被用上——结算页点一下
    就直接跳进下赛季。可休赛期只是没有比赛，训练、排位、直播反而是
    这段时间的重点：这是唯一一段你能安心补短板、攒人气的日子。 */
-const OFF_WEEKS=3;
+const OFF_WEEKS=3, MID_WEEKS=2;
+/* 春夏之间也是一段没有比赛的日子。
+   原来没进 MSI 就直接开夏季赛，中间一点时间都没有——
+   可那正是现实里休整、补短板的窗口。用同一套面板，只是去向不同。 */
+function enterBreak(next, weeks, label){
+  S.off={week:1, weeks, next, label};
+  S.ap=apFor("off");
+  S.step="offseason";
+  S.fatigue=Math.max(0,S.fatigue-20);
+  pushEvent(`${label}（${weeks} 周）。没有比赛，正好把该补的补上。`,"info","间歇");
+  render();
+}
 function doOffseason(){
   if(S.off) return;          // 已经在休赛期里了，别把周数重置回第 1 周
   if(S.si>=SEASONS.length-1){ S.step="end"; render(); return; }
-  S.off={week:1, weeks:OFF_WEEKS};
+  S.off={week:1, weeks:OFF_WEEKS, next:"year", label:"休赛期"};
   S.ap=apFor("off");
+  // 升队和转会都只在真正的休赛期发生——季中间歇和季后赛前的休整都不是转会窗口
   if(typeof checkPromote==="function" && checkPromote()) { /* 升上一队了 */ }
-  else if(typeof rollProOffers==="function") rollProOffers();   // 别的队会不会来挖你
+  else if(typeof rollProOffers==="function") rollProOffers();
   S.fatigue=Math.max(0,S.fatigue-25);      // 赛季打完，先喘口气
   pushEvent(`赛季结束，进入休赛期（${OFF_WEEKS} 周）。没有比赛，
     但这是一年里唯一能安心补短板的时间。`,"info","休赛期");
@@ -1965,7 +2083,12 @@ function doOffseason(){
 function offNextWeek(){
   if(!S.off) return;
   if(typeof archiveWeek==="function") archiveWeek();
-  if(S.off.week>=S.off.weeks){ S.off=null; finishOffseason(); return; }
+  if(S.off.week>=S.off.weeks){
+    const nx=S.off.next; S.off=null;
+    if(nx==="summer"){ startSeason(false,1); return; }    // 间歇结束 -> 夏季赛
+    if(nx==="playoff"){ startPlayoff(); return; }         // 休整结束 -> 季后赛
+    finishOffseason(); return;
+  }
   S.off.week++; S.ap=apFor("off"); addFat(-14);
   if(typeof tickBuffs==='function') tickBuffs();
   if(typeof tryRandomEvent==='function'&&rnd()<0.16) tryRandomEvent();
@@ -2009,9 +2132,12 @@ function offPanel(){
   return `${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
   ${typeof proOfferCard==="function"?proOfferCard():""}
   <div class="card">
-    <h2>休赛期<em>第 ${S.off.week}/${S.off.weeks} 周 · 剩余行动点 ${S.ap}</em></h2>
-    <p class="note">没有比赛要打。${nx?`下赛季是 <b>${nx.tag} ${nx.y}</b>，版本「${nx.ver}」，
-      吃 <b>${nx.dim}</b>——现在补这一项最划算。`:""}</p>
+    <h2>${S.off.label||"休赛期"}<em>第 ${S.off.week}/${S.off.weeks} 周 · 剩余行动点 ${S.ap}</em></h2>
+    <p class="note">没有比赛要打。${S.off.next==="playoff"
+      ? `接下来就是 <b>季后赛</b>——把体能和状态调到最好，一场定生死。`
+      : S.off.next==="summer"
+      ? `接下来是 <b>${SEASONS[S.si].tag} 夏季赛</b>，还是吃 <b>${SEASONS[S.si].dim}</b>。`
+      : (nx?`下赛季是 <b>${nx.tag} ${nx.y}</b>，版本「${nx.ver}」，吃 <b>${nx.dim}</b>——现在补这一项最划算。`:"")}</p>
     ${fatigueBar()}
     ${typeof routineBar==="function"?routineBar():""}
     <div class="grid g5">
@@ -2029,7 +2155,11 @@ function offPanel(){
     ${typeof squadActs==="function"?squadActs():""}
     <div class="row"><button class="btn" id="offnext" ${S.ap>0?'disabled':''}>
       ${S.ap>0?`还剩 ${S.ap} 个行动点`
-        :(S.off.week>=S.off.weeks?`开始 ${nx?nx.tag:"下"} 赛季 →`:`进入休赛期第 ${S.off.week+1} 周 →`)}</button></div>
+        :(S.off.week>=S.off.weeks
+            ?(S.off.next==="summer"?`开始夏季赛 →`
+             :S.off.next==="playoff"?`进入季后赛 →`
+             :`开始 ${nx?nx.tag:"下"} 赛季 →`)
+            :`进入第 ${S.off.week+1} 周 →`)}</button></div>
   </div>
   ${typeof shopCard==="function"?shopCard():""}
   ${eventsCard()}`;
@@ -2492,6 +2622,9 @@ function hud(){
     <div><div class="k">战队</div><div class="v">${S.team}</div></div>
     <div><div class="k">本季</div><div class="v mono">${S.record.w}−${S.record.l}</div></div>
     <div><div class="k">冠军</div><div class="v mono">${S.career.titles.length}</div></div>
+    <div><div class="k">段位</div><div class="v">${
+      (S.pre&&S.pre.rank!==undefined)?rankBadge(S.pre.rank,26):"—"}</div></div>
+    <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div></div>
     <div><div class="k">状态</div><div class="v" style="font-size:13px">${
       typeof formTier==="function"&&S.form!==undefined?formTier(myForm()).n:"—"}</div></div>
     <div><div class="k">资金</div><div class="v mono">${Math.round(S.money)}<small>万</small></div></div>
@@ -2504,6 +2637,7 @@ function render(){
     : S.step==="pre"?viewPre()
     : S.step==="offer"?viewOffer()
     : S.step==="season"?viewSeason()
+    : S.step==="prep"?prepPanel()
     : S.step==="match"?viewMatch()
     : S.step==="offseason"?viewOffseason() : viewEnd();
   $("stage").innerHTML = body
@@ -2619,6 +2753,7 @@ function bind(){
   st.querySelectorAll("[data-cupnode]").forEach(b=>b.onclick=()=>resolveCupNode(+b.dataset.cupnode));
   const _cd=$("cupdone"); if(_cd) _cd.onclick=cupDismissMatch;
   const _cr=$("cupresok"); if(_cr) _cr.onclick=()=>{S.cupResult=null;render()};
+  const _pp=$("prepgo"); if(_pp) _pp.onclick=prepGo;
   const _off=$("offnext"); if(_off) _off.onclick=offNextWeek;
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;
   const _pn=$("pofno"); if(_pn) _pn.onclick=dropProOffer;

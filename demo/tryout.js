@@ -234,9 +234,10 @@ function clubStanding(name){
 }
 
 /* 按档次挑一家真实存在的俱乐部 */
-function pickClub(tier){
+function pickClub(tier, league){
   try{
-    const lg = S.world && S.world.LPL ? S.world.LPL : null;
+    const key = league || "LPL";
+    const lg = (S.world && S.world[key]) ? S.world[key] : null;
     if(!lg || !lg.length) return null;
     const rk = lg.map(t=>({n:t.name, p:power(t)})).sort((a,b)=>b.p-a.p);
     const seg = { top:[0,3], mid:[4,10], low:[11,rk.length-1], acad:[11,rk.length-1] }[tier];
@@ -546,7 +547,7 @@ function afterTryout(){
     if(t.pro){ pushEvent(`<b>${t.team}</b> 看完之后没有开价。`,"bad","转会"); S.tryout=null; render(); return; }
     dropDeal(); return;
   }
-  if(t.pro){ const g=t.result.g, tier=t.tier, team=t.team; S.tryout=null; makeProDeal(tier,team,g); return; }
+  if(t.pro){ const g=t.result.g, tier=t.tier, team=t.team, lg=t.league; S.tryout=null; makeProDeal(tier,team,g,lg); return; }
   makeDeal();
 }
 
@@ -589,15 +590,45 @@ function rollProOffers(){
   const p = clamp(0.08 + perf * 0.028, 0.02, 0.72);
   if(rnd() >= p) return;
   const tier = perf >= 19 ? "top" : perf >= 10 ? "mid" : "low";
-  const team = pickClub(tier);
+  // 外赛区也在同步运转，也会来挖人。
+  // 但他们只追已经证明过自己的人，而且会掂量语言——
+  // 会韩语的中单，LCK 才敢真的谈。没有语言课也不是不可能，只是难得多。
+  const abroad = pickForeign(perf);
+  const league = abroad || "LPL";
+  const team = pickClub(tier, league);
   if(!team || team === S.team) return;
   // 看得够清楚就不用再试训了
   const direct = perf >= 15;
-  S.proOffer = { team, tier, perf: Math.round(perf), direct,
+  S.proOffer = { team, tier, league, perf: Math.round(perf), direct,
                  buyout: (S.contract && S.contract.buyout) || 0 };
   pushEvent(`<b>${team}</b> 的人来问了你的情况。${
     direct ? "他们不打算再看试训，直接想谈合同。" : "他们想先让你去队里试训几天。"}`,
     "big", "转会");
+}
+/* 会不会是外赛区来的。
+   语言课在这里第一次真的有用：会当地语言，对方才敢认真谈。
+   原来 langBonus() 只在「已经身处 LCK」时给 +2.6，
+   而去外赛区的唯一入口是年末报价里 score>=92 那条——
+   于是韩语课基本是买不回本的。 */
+function pickForeign(perf){
+  if((S.homeLeague||"LPL")!=="LPL") return null;      // 已经在外面了
+  if(perf < 12) return null;                          // 没证明过自己，人家不会跨国来找
+  const opts=[];
+  const kr = (typeof hasCourse==="function") && hasCourse("kr");
+  const en = (typeof hasCourse==="function") && hasCourse("en");
+  if(S.world.LCK) opts.push({lg:"LCK", w: kr ? 1.8 : 1.0});
+  if(S.world.LEC) opts.push({lg:"LEC", w: en ? 1.5 : 0.9});
+  if(S.world.LCS) opts.push({lg:"LCS", w: en ? 1.3 : 0.8});
+  // 语言不该挡住别人来找你：现实里不会韩语照样有人签，
+  // 差别在进队之后能不能融进去。所以这里只按表现算概率，
+  // 语言的作用挪到了默契上（见 squadWeights 里的 langSyn）。
+  const base = 0.30 + (perf-12)*0.012;
+  if(rnd() >= clamp(base,0.05,0.6)) return null;
+  const tot=opts.reduce((a,o)=>a+o.w,0);
+  if(!tot) return null;
+  let r=rnd()*tot;
+  for(const o of opts){ if((r-=o.w)<=0) return o.lg; }
+  return null;
 }
 function proOfferCard(){
   const o = S.proOffer; if(!o) return "";
@@ -605,13 +636,18 @@ function proOfferCard(){
   const cur = clubStanding(S.team);
   return `<div class="card savecont"><h2>转会问询<em>${T.n}</em></h2>
     <h3>${typeof teamLogo==="function"?teamLogo(o.team,22):""} ${o.team}${
-      st?`<span class="tag">LPL 第 ${st.pos}/${st.of}</span>`:""}</h3>
+      (o.league&&o.league!=="LPL")?`<span class="tag g">${o.league}</span>`
+      :(st?`<span class="tag">LPL 第 ${st.pos}/${st.of}</span>`:"")}</h3>
     <p class="note" style="margin:0 0 10px">
       你现在在 <b>${S.team}</b>${cur?`（第 ${cur.pos}/${cur.of}）`:""}。
       ${o.direct
         ? "他们看过你这个赛段的比赛，<b>不需要试训</b>，直接想谈合同。"
         : "他们想先让你去队里试训四天再决定。"}
-      ${o.buyout?`<br>要带走你，得先付 <b>${o.buyout} 万</b>违约金——这笔钱归你现在的俱乐部。`:""}</p>
+      ${o.buyout?`<br>要带走你，得先付 <b>${o.buyout} 万</b>违约金——这笔钱归你现在的俱乐部。`:""}
+      ${(o.league&&o.league!=="LPL")?`<br><b style="color:var(--gold)">这是 ${o.league}。</b>${
+        (o.league==="LCK"&&typeof hasCourse==="function"&&hasCourse("kr"))?"你会韩语，沟通不是问题。"
+        :(o.league!=="LCK"&&typeof hasCourse==="function"&&hasCourse("en"))?"你会英语，沟通不是问题。"
+        :"语言不通。去了也能打，但更衣室里你插不上话——默契会一直上不去，除非补上语言课。"}`:""}</p>
     <div class="row">
       <button class="btn" id="pofgo">${o.direct?"去谈合同 →":"去试训 →"}</button>
       <button class="btn ghost" id="pofno">留在 ${S.team}</button>
@@ -622,9 +658,9 @@ function proOfferCard(){
 function takeProOffer(){
   const o = S.proOffer; if(!o) return;
   S.proOffer = null;
-  if(o.direct){ makeProDeal(o.tier, o.team, "A"); return; }
+  if(o.direct){ makeProDeal(o.tier, o.team, "A", o.league); return; }
   S.tryout = { tier:o.tier, team:o.team, expect:CLUB_TIERS[o.tier].expect,
-               day:0, score:0, lines:[], fat:0, done:false, pro:true };
+               day:0, score:0, lines:[], fat:0, done:false, pro:true, league:o.league };
   render();
 }
 function dropProOffer(){
@@ -633,12 +669,12 @@ function dropProOffer(){
   S.proOffer = null; render();
 }
 /* 转会的合同：底子比职业前那份好得多，因为你已经证明过自己 */
-function makeProDeal(tier, team, grade){
+function makeProDeal(tier, team, grade, league){
   const T = CLUB_TIERS[tier], lerp = (a,b,x)=>a+(b-a)*clamp(x,0,1);
   const q = clamp((proPerf() + 6) / 30, 0.15, 1);
   S.deal = {
     team, clubTier:tier, dealTier:(grade==="A+"?"first":grade==="A"?"start":"sub"),
-    grade, kind:(grade==="A+"||grade==="A")?"start":"sub", transfer:true,
+    grade, kind:(grade==="A+"||grade==="A")?"start":"sub", transfer:true, league:league||"LPL",
     salary: Math.round(lerp(T.pay[0], T.pay[1], q)),
     sign:   Math.round(lerp(T.sign[0], T.sign[1], q)),
     years:  T.years,
@@ -653,11 +689,12 @@ function makeProDeal(tier, team, grade){
 function signTransfer(){
   const d = S.deal; if(!d || d.dead || d.signed) return;
   d.signed = true;
-  const old = S.team, fee = (S.contract && S.contract.buyout) || 0;
+  const old = S.team, oldLg = S.homeLeague||"LPL", fee = (S.contract && S.contract.buyout) || 0;
   S.team = d.team;
+  if(d.league) S.homeLeague = d.league;      // 跨赛区转会，联赛也要跟着换
   S.offerKind = d.kind;
   S.understudy = null; S.promoted = true;
-  const t = myTeam();
+  const t = (S.world[S.homeLeague||"LPL"]||[]).find(x=>x.name===S.team);
   if(t) t.players = t.players.map(q => q.pos===S.pos
     ? {id:S.name||"你", cn:"", pos:S.pos, age:S.age, r:S.attrs, me:true} : q);
   S.trust = {}; if(typeof initTrust==="function") initTrust();
@@ -668,7 +705,8 @@ function signTransfer(){
                  clubTier:d.clubTier };
   S.rosterSig = myRoster().map(x=>x.id).sort().join("|");
   if(typeof disruptSynergy==="function") disruptSynergy(1, `<b>${meName()}</b> 转会加盟`);
-  pushEvent(`<b>${meName()}</b> 从 <b>${old}</b> 转会到 <b>${d.team}</b>。${
+  pushEvent(`<b>${meName()}</b> 从 <b>${old}</b> 转会到 <b>${d.team}</b>${
+    (d.league&&d.league!==oldLg)?`，去了 <b>${d.league}</b>`:""}。${
     fee?`对方付了 <b>${fee} 万</b>违约金。`:""}年薪 ${d.salary} 万，${d.years} 个赛段。`,
     "big", "转会");
   if(typeof checkAch==="function") checkAch("transfer", {to:d.team});
