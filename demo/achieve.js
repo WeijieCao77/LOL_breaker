@@ -21,13 +21,13 @@ const ACHIEVEMENTS=[
   {id:"playoff", n:"季后赛", d:"第一次打进季后赛。", tag:"里程碑",
    on:"playoff", cond:()=>true, r:{fat:-25,money:40}},
   {id:"lgtitle", n:"联赛冠军", d:"第一次捧起联赛奖杯。", tag:"里程碑",
-   on:"lgtitle", cond:()=>true, r:{fat:-45,money:180,fame:40,trust:14}},
+   on:"lgtitle", cond:()=>true, r:{fat:-45,money:100,fame:40,trust:14}},   // 奖金制度上线后减半：冠军的钱走奖金表，这里只是首冠纪念
   {id:"intl", n:"走出国门", d:"第一次站上国际赛场。", tag:"里程碑",
    on:"intl", cond:()=>true, r:{fat:-30,fame:26}},
   {id:"msi", n:"MSI 冠军", d:"拿下季中冠军赛。", tag:"里程碑",
-   on:"msi", cond:()=>true, r:{fat:-60,money:520,fame:110,trust:20}},
+   on:"msi", cond:()=>true, r:{fat:-60,money:260,fame:110,trust:20}},
   {id:"worlds", n:"世界冠军", d:"你把那座奖杯举起来了。", tag:"里程碑",
-   on:"worlds", cond:()=>true, r:{fat:-80,money:1200,fame:260,trust:26}},
+   on:"worlds", cond:()=>true, r:{fat:-80,money:600,fame:260,trust:26}},
 
   /* ---------- 战绩 ---------- */
   {id:"reverse", n:"让二追三", d:"在 BO5 里先丢两局，然后连扳三局。", tag:"战绩",
@@ -103,7 +103,8 @@ function applyAchReward(r){
   if(!r) return [];
   const out=[];
   if(r.fat){ addFat(r.fat); out.push(`体力 +${-r.fat}`); }
-  if(r.money){ S.money+=r.money; out.push(`奖金 ${r.money} 万`); }
+  if(r.money){ if(typeof addMoney==="function") addMoney("ach",r.money); else S.money+=r.money;
+    out.push(`奖金 ${r.money} 万`); }
   if(r.fame){ addFame(r.fame); out.push(`名气 +${r.fame}`); }
   if(r.trust&&typeof addTrustAll==="function"){ addTrustAll(r.trust); out.push(`士气 ${r.trust>0?"+":""}${r.trust}`); }
   return out;

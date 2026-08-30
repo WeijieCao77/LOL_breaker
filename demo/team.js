@@ -79,9 +79,9 @@ const LOCKER=[
   {id:"media", when:()=>S.fame>=100&&rnd()<0.35,
    q:t=>`媒体想做你的专访，队里其他人一个都没约。`,
    ctx:"流量都在你身上，这未必是好事。",
-   a:[{t:"接，顺便多提队友",e:(t)=>{S.fame+=12;S.money+=14;addTrustAll(5);
+   a:[{t:"接，顺便多提队友",e:(t)=>{S.fame+=12;addMoney("other",14);addTrustAll(5);
         return "采访里你把功劳分了出去。队友看到了。"}},
-      {t:"接，好好聊自己",e:(t)=>{S.fame+=22;S.money+=20;addTrustAll(-7);
+      {t:"接，好好聊自己",e:(t)=>{S.fame+=22;addMoney("other",20);addTrustAll(-7);
         return "热度起来了。更衣室里有人觉得你飘了。"}},
       {t:"推掉，专心训练",e:(t)=>{S.fame-=4;addTrustAll(4);
         DIMS.forEach(()=>{}); return "你没去。教练组对此表示满意。"}}]}
@@ -132,7 +132,7 @@ function salaryOf(){
 }
 function payday(){
   const pay=salaryOf();
-  S.money+=pay;
+  if(typeof addMoney==="function") addMoney("salary",pay); else S.money+=pay;
   pushEvent(`赛段结算：薪资到账 <b>${pay} 万</b>（当前人气 ${Math.round(S.fame)}）。`,"info","合同");
 }
 /* 合同：两个赛季一签，到期看表现续约或走人 */

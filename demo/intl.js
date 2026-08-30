@@ -397,6 +397,12 @@ function noteDepth(kind){
 }
 function crownChampion(){
   const I=S.intl, name=I.type==="msi"?"MSI":"世界赛";
+  // 冠军奖金每次都发——不是一次性成就（那边只发首冠纪念）
+  if(typeof addMoney==="function"&&typeof PRIZE_MSI!=="undefined"){
+    const amt=I.type==="msi"?PRIZE_MSI.champion:PRIZE_W.champion;
+    addMoney("prize",amt);
+    pushEvent(`${name}冠军奖金到账 <b>${amt} 万</b>。`,"good","奖金");
+  }
   S.career.titles.push(`${SEASONS[S.si].tag} ${name}`);
   S.career[I.type]= (S.career[I.type]||0)+1;
   // 记年份，供「双冠王 / 卫冕 / 三冠」判定
@@ -419,6 +425,15 @@ function finishIntl(stageText,kind){
   pushEvent(`${name} ${stageText}：<b>${S.team}</b> 的赛季结束了。`,"bad",name);
   S.intlResult=(S.intlResult||{}); S.intlResult[I.type]=kind;
   noteDepth(kind);
+  // 奖金按走到的最高档结算（MSI 双败里带着三胜出局的按亚军算）
+  if(typeof addMoney==="function"&&typeof PRIZE_MSI!=="undefined"){
+    let pk=kind;
+    if(I.double&&(I.wins||0)>=3&&kind==="knock") pk="final";
+    const tbl=I.type==="msi"?PRIZE_MSI:PRIZE_W;
+    const amt=tbl[pk]||tbl.main||0;
+    if(amt){ addMoney("prize",amt);
+      pushEvent(`${name}奖金按名次结算：<b>${amt} 万</b>。`,"info","奖金"); }
+  }
   // 你回家了，赛事还没完。剩下的对阵照打，冠军过几天才揭晓——
   // 决赛输掉是例外：刚赢你的那支队就是冠军，当场就知道。
   if(kind==="final"&&S.match){

@@ -1,3 +1,84 @@
+/* ================= 财务 =================
+
+   钱从来不少，但一直是哑巴：比赛每胜一场其实发 9 万、输了也有 4 万
+   出场费，界面从没提过；冠军的钱靠一次性成就发，第二次夺冠分文没有；
+   每赛段挣了多少花了多少，没有任何地方能看。
+
+   现在立两条规矩：
+   · 所有钱的进出走 addMoney() 一个口——顺带记进 S.ledger 流水，
+     以后再也不可能出现「发了钱不吭声」的隐形收入。
+   · 赛事奖金是制度不是彩蛋：走到哪一档发哪一档，每次都发（见 PRIZE_*），
+     原来顶着奖金名义的一次性成就奖励相应减半。                       */
+
+const LEDGER_IN =[["salary","工资"],["match","比赛收入"],["stream","直播"],
+                  ["prize","赛事奖金"],["sign","签字费"],["ach","成就奖励"],["other","其他收入"]];
+const LEDGER_OUT=[["gear","装备"],["course","课程"],["relax","放松"],["team","团队投入"],
+                  ["home","寄回家"],["fee","报名费"],["other","其他开销"]];
+function _emptyLedger(){ return {in:{},out:{}}; }
+function initLedger(){
+  S.ledger={cur:_emptyLedger(),prev:null,label:(typeof nowLabel==="function")?nowLabel():"",prevLabel:""};
+}
+/* 唯一的进出账入口。n 为正是收入、为负是支出；kind 对应上面两张表的键。 */
+function addMoney(kind,n){
+  n=Math.round(n||0);
+  if(!n) return 0;
+  if(!S.ledger) initLedger();
+  S.money=(S.money||0)+n;
+  const side=n>0?S.ledger.cur.in:S.ledger.cur.out;
+  side[kind]=(side[kind]||0)+Math.abs(n);
+  return n;
+}
+/* 赛段边界：本赛段流水归档成「上赛段」，重新开账 */
+function ledgerRotate(){
+  if(!S.ledger) { initLedger(); return; }
+  S.ledger.prev=S.ledger.cur;
+  S.ledger.prevLabel=S.ledger.label;
+  S.ledger.cur=_emptyLedger();
+  S.ledger.label=(typeof nowLabel==="function")?nowLabel():"";
+}
+function _ledgerSum(o){ return Object.values(o||{}).reduce((a,b)=>a+b,0); }
+
+/* ---------- 赛事奖金表（稳健档，到档就发、取最高档、每次都发） ---------- */
+const PRIZE_PO    ={champion:200, runner:80, semi:40};
+const PRIZE_PO_LDL={champion:40,  runner:15, semi:0};
+const PRIZE_MSI   ={main:60, knock:150, final:250, champion:500};
+const PRIZE_W     ={playin:40, main:80, knock:150, semi:250, final:400, champion:800};
+
+/* ---------- 财务总览卡 ---------- */
+function financeCard(){
+  const led=S.ledger||{cur:_emptyLedger()};
+  const cur=led.cur||_emptyLedger();
+  const inSum=_ledgerSum(cur.in), outSum=_ledgerSum(cur.out), net=inSum-outSum;
+  const pnet=led.prev?_ledgerSum(led.prev.in)-_ledgerSum(led.prev.out):null;
+  const row=(n,v,dn)=>`<div class="fin-r"><span>${n}</span>
+    <span class="mono ${dn?'dn':'up'}">${dn?"−":"+"}${v}</span></div>`;
+  const rows=LEDGER_IN.filter(([k])=>cur.in[k]).map(([k,n])=>row(n,cur.in[k],false)).join("")
+           + LEDGER_OUT.filter(([k])=>cur.out[k]).map(([k,n])=>row(n,cur.out[k],true)).join("");
+  return `<div class="card"><h2>财务总览<em>${led.label||""}</em></h2>
+    <div class="fin-cash mono">${Math.round(S.money)}<small> 万</small></div>
+    ${S.career&&typeof salaryOf==="function"
+      ?`<p class="note" style="margin:2px 0 10px">下赛段工资预计 <b>${salaryOf()} 万</b>（合同年薪 ${(S.contract&&S.contract.salary)||"—"} ＋ 人气与荣誉浮动）</p>`:""}
+    ${rows?`<div class="fin-tab">${rows}
+      <div class="fin-r fin-net"><span>本赛段净</span>
+        <span class="mono ${net>=0?'up':'dn'}">${net>=0?"+":"−"}${Math.abs(net)}</span></div></div>`
+      :`<p class="note">本赛段还没有进出账。</p>`}
+    ${pnet!==null?`<p class="note">上赛段（${led.prevLabel||"—"}）净 ${pnet>=0?"+":"−"}${Math.abs(pnet)} 万。</p>`:""}
+    <p class="note">每一笔进出都记在这里，明细在大事记里能对上账。</p></div>`;
+}
+/* ---------- 奖金标准：固定数值，小表格放底部，不抢戏 ---------- */
+function prizeNote(){
+  return `<div class="card"><h2>奖金标准<em>固定数值 · 到档就发</em></h2>
+    <div class="tw"><table style="font-size:12.5px">
+      <tr><th>赛事</th><th>标准（万）</th></tr>
+      <tr><td>常规赛</td><td class="n">胜场 9 · 出场费 4</td></tr>
+      <tr><td>季后赛</td><td class="n">四强 40 · 亚军 80 · 冠军 200（LDL 冠军 40）</td></tr>
+      <tr><td>MSI</td><td class="n">参赛 60 · 淘汰赛 150 · 亚军 250 · 冠军 500</td></tr>
+      <tr><td>世界赛</td><td class="n">入围 40 · 正赛 80 · 八强 150 · 四强 250 · 亚军 400 · 冠军 800</td></tr>
+    </table></div>
+    <p class="note">国际赛按走到的最高档发放，不叠加；每次参赛都发，不是一次性的。
+      首次夺冠另有成就奖励。</p></div>`;
+}
+
 /* ================= 商城 · 装备 · 课程 · 经济 =================
    收入：薪资（赛段结算）+ 直播打赏（名气越高越多）+ 夺冠奖金
    支出：外设（永久装备，5 个槽）/ 课程（永久解锁）/ 放松（花钱换体力，省行动点）
@@ -122,8 +203,12 @@ function streamCut(){ return STREAM_CUTS[S.streamCutIdx||0].cut; }
 function streamIncome(){
   const originMul=S.origin==="streamer"?1.7:1.0;
   if(S.streamDeal) return S.streamDeal.base*originMul;   // 独家：合同价，旱涝保收
-  const f=S.fame;
-  const gift=Math.pow(Math.max(f,0)/40,1.22)*4.4*streamCut();
+  // 名气进礼物公式要封顶：pow(f/40,1.22) 无上界，生涯后期名气过千时
+  // 一次直播能到两百多万，比世界赛夺冠还值钱——实测有整局挣到五亿的。
+  // 封在 600（「顶流」之上），不签独家的上限 ~135/次，
+  // 仍比独家保底高一截，「自由身上限更高」的承诺不变，但有边界。
+  const f=Math.min(Math.max(S.fame||0,0),600);
+  const gift=Math.pow(f/40,1.22)*4.4*streamCut();
   const base=4+f*0.05;
   return (base+gift)*originMul;
 }
@@ -162,7 +247,7 @@ function signStreamDeal(){
   const o=S.streamOffer; if(!o) return;
   S.streamOffer=null;
   S.streamDeal={lvl:o.lvl,base:o.base,n:o.n};
-  S.money+=o.sign;
+  addMoney("sign",o.sign);
   pushEvent(`和平台签下<b>${o.n}</b>：签字费 <b>${o.sign} 万</b>到账，此后每次直播保底 <b>${o.base} 万</b>。<br>
     <span style="color:var(--ink-3)">代价写在合同里：收入锁死在保底，人气再涨也不加钱；平台控流量，直播涨名气也会变慢。</span>`,"big","直播");
   render();
@@ -203,21 +288,21 @@ function buyGear(slot,tier){
   const g=GEAR[slot][tier];
   const cur=(S.gear&&S.gear[slot])||0;
   if(tier<=cur||S.money<g.cost) return;
-  S.money-=g.cost; S.gear[slot]=tier;
+  addMoney("gear",-g.cost); S.gear[slot]=tier;
   pushEvent(`换上了 <b>${g.n}</b>（${TIER_N[tier]}级${SLOTS.find(s=>s.k===slot).n}）。`,"good","装备");
   render();
 }
 function buyCourse(k){
   const c=COURSES.find(x=>x.k===k);
   if(!c||hasCourse(k)||S.money<c.cost) return;
-  S.money-=c.cost; S.courses[k]=1;
+  addMoney("course",-c.cost); S.courses[k]=1;
   pushEvent(`报了 <b>${c.n}</b>。${c.d}`,"good","课程");
   render();
 }
 function buyRelax(k){
   const x=RELAX.find(r=>r.k===k);
   if(!x||S.money<x.cost) return;
-  S.money-=x.cost; addFat(x.fat);
+  addMoney("relax",-x.cost); addFat(x.fat);
   if(x.trust&&typeof addTrustAll==="function") addTrustAll(x.trust);
   pushEvent(`${x.n}：体力回来了${x.trust?"，顺便和队友聊了聊":""}。`,"info","放松");
   render();
@@ -243,10 +328,16 @@ function gearCard(){
     }).join("")}</div>
     <p class="note">这里只看你手上用的什么。想换更好的，去商城。</p></div>`;
 }
+/* 经济页 = 财务总览 -> 我的合同 -> 商城 -> 奖金标准（自上而下） */
+function economyCards(){
+  return financeCard()
+    + ((typeof contractTerms==="function")?contractTerms():"")
+    + shopCard()
+    + prizeNote();
+}
 function shopCard(){
   const focus=S.shopFocus; S.shopFocus=null;   // 高亮只在跳转过来的那一次渲染生效
-  return `${(typeof contractTerms==="function")?contractTerms():""}
-    <div class="card"><h2>商城<em>余额 ${Math.round(S.money)} 万</em></h2>
+  return `<div class="card"><h2>商城<em>余额 ${Math.round(S.money)} 万</em></h2>
     <h3 style="font-size:14px">外设 · 换上就生效，一直用到退役</h3>
     ${SLOTS.map(s=>{
       const cur=(S.gear&&S.gear[s.k])||0, curG=GEAR[s.k][cur];

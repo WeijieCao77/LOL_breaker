@@ -53,6 +53,10 @@ const CUPS={
          opps:["百万粉丝队","退役选手队","冠军主播队"] }
 };
 
+/* 业余队名：报名时玩家起的名字，没起就用选手 ID */
+function cupTeamName(){
+  return (S.pre&&S.pre.cupTeam)?escapeHtml(S.pre.cupTeam):meName();
+}
 /* ---------- 报名之后：建赛程，而不是直接出结果 ---------- */
 function enterCup(kind){
   const C=CUPS[kind]; if(!C) return;
@@ -234,7 +238,8 @@ function cupPayout(k,champion){
   const c=cupOf(k), C=CUPS[k];
   const reached=champion?C.rounds:c.wins;
   const prize=(C.prize||[])[reached]||0;
-  if(prize){ S.money+=prize; preLog(`奖金到账 <b>${prize} 万</b>。`,"good"); }
+  if(prize){ if(typeof addMoney==="function") addMoney("prize",prize); else S.money+=prize;
+    preLog(`奖金到账 <b>${prize} 万</b>。`,"good"); }
   addFame(reached*(k==="stream"?6:4));
   if(k==="city") S.pre.cityCup=reached;
   else S.pre.streamCup=reached;
@@ -268,7 +273,7 @@ function cupCard(){
     const d=my-op;
     return `<div class="card cup"><h2>${C.name}<em>第 ${c.round}/${C.rounds} 轮</em></h2>
       <div class="next">
-        <div class="sd"><div class="nm">${meName()}</div>
+        <div class="sd"><div class="nm">${cupTeamName()}</div>
           <div class="pw">${powerRank(my)}水平 · ${my.toFixed(0)}</div></div>
         <div class="mid">VS</div>
         <div class="sd"><div class="nm">${cupOppName(k)}</div>
@@ -304,7 +309,7 @@ function cupMatchCard(){
   const c=cupOf(m.kind);
   return `<div class="card"><h2>${C.name}<em>第 ${c?c.round:1} 轮 · 三局两胜</em></h2>
     <div class="vs">
-      <div class="side"><div class="nm">${meName()}</div></div>
+      <div class="side"><div class="nm">${cupTeamName()}</div></div>
       <div class="score">${m.sc[0]} : ${m.sc[1]}</div>
       <div class="side"><div class="nm">${m.opp}</div></div>
     </div>

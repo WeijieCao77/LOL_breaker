@@ -125,6 +125,16 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .review .rh{color:var(--ink-2);line-height:1.6}
 @media(max-width:560px){.review .rv-i{grid-template-columns:1fr}}
 
+/* ---- 财务总览 ---- */
+.fin-cash{font-size:34px;font-weight:650;color:var(--gold-hi);line-height:1.15}
+.fin-cash small{font-size:13px;color:var(--ink-3);font-weight:400}
+.fin-tab{margin:10px 0 4px;border-top:1px solid var(--line)}
+.fin-r{display:flex;justify-content:space-between;gap:12px;padding:6px 2px;
+  border-bottom:1px dashed rgba(201,169,97,.18);font-size:13.5px;color:var(--ink-2)}
+.fin-r .up{color:var(--cyan)}
+.fin-r .dn{color:var(--red)}
+.fin-r.fin-net{border-top:1px solid var(--line);border-bottom:none;font-weight:700;color:var(--ink)}
+
 /* ---- 商城 · 外设区（按槽位分组） ---- */
 .shopslot{border:1px solid var(--line);padding:10px 12px;margin-bottom:10px}
 .shopslot .ssname{font-size:12.5px;color:var(--ink-3);margin-bottom:8px}

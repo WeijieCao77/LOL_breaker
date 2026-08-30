@@ -137,6 +137,16 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .review .rh{color:var(--ink-2);line-height:1.6}
 @media(max-width:560px){.review .rv-i{grid-template-columns:1fr}}
 
+/* ---- 财务总览 ---- */
+.fin-cash{font-size:34px;font-weight:650;color:var(--gold-hi);line-height:1.15}
+.fin-cash small{font-size:13px;color:var(--ink-3);font-weight:400}
+.fin-tab{margin:10px 0 4px;border-top:1px solid var(--line)}
+.fin-r{display:flex;justify-content:space-between;gap:12px;padding:6px 2px;
+  border-bottom:1px dashed rgba(201,169,97,.18);font-size:13.5px;color:var(--ink-2)}
+.fin-r .up{color:var(--cyan)}
+.fin-r .dn{color:var(--red)}
+.fin-r.fin-net{border-top:1px solid var(--line);border-bottom:none;font-weight:700;color:var(--ink)}
+
 /* ---- 商城 · 外设区（按槽位分组） ---- */
 .shopslot{border:1px solid var(--line);padding:10px 12px;margin-bottom:10px}
 .shopslot .ssname{font-size:12.5px;color:var(--ink-3);margin-bottom:8px}
@@ -969,10 +979,23 @@ function adaptOf(){
   return clamp(52+(S.attrs.运营-50)*0.32-(sd-1.8)*7.5, 18, 96);
 }
 
-/* 版本相性：本赛季强调的维度是不是你的强项 */
+/* 版本相性：本赛季强调的维度上，你比同行强还是弱。
+   原来比的是一条写死的 55 分线——于是「操作是我最高的一项，
+   版本吃操作，我却逆版本」这种事天天发生；而且这条线不分联赛，
+   LDL 平均才 40 上下，50 分在二队明明是版本受益者。
+   现在和所在联赛的真实平均比：版本抬高某一维的权重，全联盟都在吃，
+   比同行强才占得到便宜。 */
+function leagueDimAvg(d){
+  const lg=S.homeLeague||"LPL";
+  const ts=(S.world&&S.world[lg])||[];
+  let s=0,n=0;
+  ts.forEach(t=>t.players.forEach(p=>{ if(!p.me&&p.r&&p.r[d]!==undefined){ s+=p.r[d]; n++; } }));
+  return n?s/n:55;
+}
 function versionFit(){
   const sea=SEASONS[S.si], d=sea.dim;
-  const rel=(S.attrs[d]-55)/12;                 // 你在该维度的相对水平
+  const bar=leagueDimAvg(d);
+  const rel=(S.attrs[d]-bar)/12;                // 你在该维度相对联赛的水平
   const posBonus=sea.fav.includes(S.pos)?1.6:0;
   const cushion=adaptOf()/100;                  // 适应力缓冲逆版本
   return (rel*2.2+posBonus+(rel<0?rel*-1*cushion*1.4:0))*2.0;
@@ -1501,6 +1524,7 @@ function startPre(){
   });
   S.pre.rank=initialRank();
   initShop(); initAch();
+  if(typeof initLedger==="function") initLedger();
   // 世界从现在就开始转——你打排位的每一周，职业赛都在打
   S.world=cloneWorld();
   S.baseline=leagueBaseline(S.world);
@@ -1576,7 +1600,8 @@ function preAct(k,dim){
     const pop=1.9+S.pre.rank*0.05;
     const gift=streamIncome();
     addFame(pop*m*(typeof streamFameMul==="function"?streamFameMul():1));
-    S.money+=gift; addFat(4); checkAch("stream");
+    if(typeof addMoney==='function') addMoney('stream',gift); else S.money+=gift;
+    addFat(4); checkAch("stream");
     if(typeof checkStreamBiz==="function") checkStreamBiz();   // 分成上调、独家谈约都在开播时发生
     if(gift>=50&&!P.bigGift){P.bigGift=true;
       preLog(`直播间刷起了礼物，这一场进账 <b>${Math.round(gift)} 万</b>。`,"good");}
@@ -1747,6 +1772,7 @@ function preNextYear(){
   S.si++; S.age++; P.preYear=(P.preYear||1)+1;
   P.week=1; P.ap=apFor('pre'); P.cityCup=null; P.streamCup=null;
   S.fatigue=0; S.buff={};
+  if(typeof ledgerRotate==="function") ledgerRotate();
   P.rank=Math.max(0,P.rank-4);          // 一年下来手会生一点
   proSeasonWrap();
   pushEvent(`<b>${SEASONS[S.si].tag} ${SEASONS[S.si].y}</b>：你还没打上职业。${SEASONS[S.si].story}`,"bad","赛季");
@@ -1857,6 +1883,7 @@ function startSeason(first,split){
     S.world[lg].forEach(t=>S.standings[lg][t.name]={w:0,l:0});
   });
   S.week=1; S.ap=apFor('season'); S.record={w:0,l:0}; S.step="season"; S.tab="act";
+  if(typeof ledgerRotate==="function") ledgerRotate();
   if(typeof saveGame==='function') saveGame('赛季开始');
   if(S.benchedThisSplit){ S.benchedSplits=(S.benchedSplits||0)+1; S.benchedThisSplit=false; }
   if(S.split===0) S.seasonAttr0=Object.assign({},S.attrs);
@@ -2089,7 +2116,8 @@ function doAction(k){
   }
   else if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
     addFame(4.5*m*(typeof streamFameMul==="function"?streamFameMul():1));
-    S.money+=streamIncome();addFat(5);
+    if(typeof addMoney==='function') addMoney('stream',streamIncome()); else S.money+=streamIncome();
+    addFat(5);
     if(typeof checkStreamBiz==="function") checkStreamBiz();
     // 榜一大哥只会在你真的开播的时候出现，不该每周瞎摇
     if(typeof fireEvent==="function") fireEvent("streamGift",0.20);}
@@ -2158,19 +2186,24 @@ function viewSeason(){
     ${tabBar(TABS_SEASON)}
     ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
     ${T==="team"?squadCard()+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
-    ${T==="shop"?shopCard():""}
+    ${T==="shop"?(typeof economyCards==="function"?economyCards():shopCard()):""}
     ${T==="world"?standingsCard()+rivalCard()+newsCard()+eventsCard():""}
     ${T==="ach"?achCard():""}`;
   const oppName=S.schedule[S.week-1];
   const opp=S.world[S.homeLeague||"LPL"].find(t=>t.name===oppName);
   const fit=versionFit();
   const benched=isBenched();
-  return `
+  // 「本周」和其他标签同一套格式：标签栏在最上，内容在下。
+  // 原来行动卡拼在标签栏上面，是六个标签里唯一的例外——没有理由。
+  return `${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
+  ${tabBar(TABS_SEASON)}
   <div class="card">
     <h2>${sea.tag} ${SPLITS[S.split||0]} · 第 ${S.week}/${WEEKS} 周<em>剩余行动点 ${S.ap}</em></h2>
     <div class="ver">版本 <b>${sea.ver}</b> — 本赛季强调 <b>${sea.dim}</b>${
       sea.fav.includes(S.pos)?`，且<b>${POSN[S.pos]}是版本红利位</b>`:""}。
-      你的版本相性：<b>${fit>=1.5?"顺风":fit>=-0.5?"中性":"逆版本"}</b>。</div>
+      你的版本相性：<b>${fit>=1.5?"顺风":fit>=-0.5?"中性":"逆版本"}</b>
+      <span style="color:var(--ink-3)">（你的${sea.dim} ${S.attrs[sea.dim].toFixed(0)} · ${
+        S.homeLeague||"LPL"}均值 ${leagueDimAvg(sea.dim).toFixed(0)}——顺逆是和同行比出来的）</span></div>
     ${fatigueBar()}
     ${typeof riskHint==="function"?riskHint():""}
     ${typeof routineBar==="function"?routineBar():""}
@@ -2198,14 +2231,7 @@ function viewSeason(){
     ${opp?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${power(opp,0,sea.fav).toFixed(1)}）
       vs 你队 ${power(myRoster(),S.fatigue,sea.fav).toFixed(1)}</p>`:""}
   </div>
-  ${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
-  ${tabBar(TABS_SEASON)}
-  ${T==="act"?(typeof injuryCard==="function"?injuryCard():"")+nextMatchCard()+attrCard():""}
-  ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
-  ${T==="team"?squadCard()+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
-  ${T==="shop"?shopCard():""}
-  ${T==="world"?standingsCard()+rivalCard()+newsCard()+eventsCard():""}
-  ${T==="ach"?achCard():""}`;
+  ${(typeof injuryCard==="function"?injuryCard():"")+nextMatchCard()}`;
 }
 
 /* 和际遇一样改成遮罩——更衣室是要你表态的，藏在行动卡下面等于没有 */
@@ -2413,9 +2439,11 @@ function endMatch(){
     if(st&&st[S.team]) st[S.team][won?"w":"l"]++;
     if(st&&st[m.oppName]) st[m.oppName][won?"l":"w"]++;
   }
-  addFame(won?7:-2.5); S.money+=won?9:4; addFat(13);
+  addFame(won?7:-2.5); addFat(13);
+  const purse=won?9:4;
+  if(typeof addMoney==='function') addMoney('match',purse); else S.money+=purse;
   S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+(won?0.5:1.1));
-  S.log.push(`<div>${SEASONS[S.si].tag} 第${S.week}周 vs ${m.oppName} <b>${m.sc[0]}:${m.sc[1]}</b> ${won?'<span class="w">胜</span>':'<span class="l">负</span>'}</div>`);
+  S.log.push(`<div>${SEASONS[S.si].tag} 第${S.week}周 vs ${m.oppName} <b>${m.sc[0]}:${m.sc[1]}</b> ${won?'<span class="w">胜</span>':'<span class="l">负</span>'}　<span class="hi">${won?"胜场奖金":"出场费"} +${purse} 万</span></div>`);
 
   // ---- 成就追踪 ----
   S.winStreak=won?(S.winStreak||0)+1:0;
@@ -2697,8 +2725,9 @@ function prepPanel(){
 function endSeason(result,seed){
   payday();
   const up=(S.bg&&S.bg.upkeep)||0;
-  if(up){ S.money=Math.max(0,S.money-up);
-    pushEvent(`往家里寄了 <b>${up} 万</b>。`,"info","家用"); }
+  if(up){ const paid=Math.min(up,Math.max(0,S.money));
+    if(typeof addMoney==='function') addMoney('home',-paid); else S.money-=paid;
+    pushEvent(`往家里寄了 <b>${paid} 万</b>。`,"info","家用"); }
   trustDecay(); squadDecay(); checkBreakthrough();
   // 赛段打完先攒一次球探关注——转会不该只在休赛期那一瞬间才有动静
   if(typeof noteScoutInterest==='function') noteScoutInterest();
@@ -2723,6 +2752,13 @@ function endSeason(result,seed){
   if(cut) S.gotCut=true;
   S.lastSeason={result,seed,rec:Object.assign({},S.record),
     grow:DIMS.map(d=>({d,g:S.attrs[d]-S.seasonAttr0[d]}))};
+  // 赛事奖金：走到哪一档发哪一档，每次都发（见 shop.js 的 PRIZE_*）
+  if(typeof addMoney==="function"&&typeof PRIZE_PO!=="undefined"){
+    const tbl=(S.homeLeague||"LPL")==="LDL"?PRIZE_PO_LDL:PRIZE_PO;
+    const amt=result==="champion"?tbl.champion:result===3?tbl.runner:result===2?tbl.semi:0;
+    if(amt){ addMoney("prize",amt);
+      pushEvent(`${SPLITS[S.split||0]}季后赛奖金到账 <b>${amt} 万</b>。`,"good","奖金"); }
+  }
   if(result==="champion"){
     const sp=SPLITS[S.split||0];
     S.career.titles.push(`${SEASONS[S.si].tag} ${S.homeLeague||"LPL"}${sp}`);
@@ -2982,6 +3018,7 @@ function offPanel(){
              :`开始 ${nx?nx.tag:"下"} 赛季 →`)
             :`进入第 ${S.off.week+1} 周 →`)}</button></div>
   </div>
+  ${typeof financeCard==="function"?financeCard():""}
   ${typeof shopCard==="function"?shopCard():""}
   ${eventsCard()}`;
 }
@@ -3138,6 +3175,11 @@ function signupCard(){
       报名费 <b style="color:var(--gold)">${m.fee} 万</b>，你现在有 ${Math.round(S.money)} 万。<br>
       奖金按名次发，走得越远拿得越多；打得好还能涨名气。<br>
       <span style="color:var(--ink-3)">不报也可以——省下钱和体力，但这一年就没这个机会了。</span></div>
+    <div style="margin:0 0 16px">
+      <div class="note" style="margin-bottom:5px">报名队名（对阵表和战报都用它）</div>
+      <input type="text" id="cupteam" maxlength="12"
+        value="${escapeHtml((S.pre&&S.pre.cupTeam)||((S.name&&S.name!=="无名"?S.name:"无名")+"战队"))}"
+        placeholder="给你的队起个名字"></div>
     <div class="row" style="justify-content:center">
       <button class="btn" id="signyes" ${afford?"":"disabled"}>${afford?"交钱，报名":"钱不够"}</button>
       <button class="btn ghost" id="signno">这次算了</button>
@@ -3163,7 +3205,7 @@ const TABS_PRE=[
   {k:"act",  n:"本周", z:"act"},
   {k:"squad",n:"战队", z:"team"},
   {k:"world",n:"世界", z:"world"},
-  {k:"shop", n:"商城", z:"money"},
+  {k:"shop", n:"经济", z:"money"},
   {k:"ach",  n:"成就", z:"rec"},
   {k:"log",  n:"日志", z:"rec"}
 ];
@@ -3172,7 +3214,7 @@ const TABS_SEASON=[
   {k:"me",   n:"我的", z:"me"},
   {k:"team", n:"队伍", z:"team"},
   {k:"world",n:"世界", z:"world"},
-  {k:"shop", n:"商城", z:"money"},
+  {k:"shop", n:"经济", z:"money"},
   {k:"ach",  n:"成就", z:"rec"}
 ];
 function tabBar(list){
@@ -3272,6 +3314,7 @@ function viewPre(){
   ${S.cupResult?cupResultCard():''}${S.signup?signupCard():''}${S.rankUp?rankUpCard():''}${S.rndResult?randomResultCard():''}${S.rndEv?randomCard():''}
   ${tabBar(TABS_PRE)}
   ${S.cupMatch?cupMatchCard():""}
+  ${T==="act"&&!S.cupMatch?actPanelPre():""}
   ${T==="act"&&!S.cupMatch?(typeof cupCard==="function"?cupCard():""):""}
   ${T==="act"&&!S.cupMatch?(typeof injuryCard==="function"?injuryCard():"")+attrCard():""}
   ${T==="world"?scheduleCard()+proCard()+eventsCard():""}
@@ -3287,15 +3330,14 @@ function viewPre(){
          你的个人数值只是基础战力的一部分——五个人怎么变成一支队，是另一半。</p>`)
     +lockedCard("队友","签约职业战队后解锁。",
       `<p class="note" style="margin:0">每个队友对你有独立的信任度，会因为你的选择涨落，也会影响全队发挥。</p>`):""}
-  ${T==="shop"?gearCard()+shopCard()
+  ${T==="shop"?(typeof financeCard==="function"?financeCard():"")+gearCard()+shopCard()+(typeof prizeNote==="function"?prizeNote():"")
       +lockedCard("俱乐部资源","签约职业战队后解锁。",
         `<p class="note" style="margin:0">私教、理疗师、团队建设、舆论公关——
           进队之后才用得上，也才付得起。</p>`):""}
   ${T==="ach"?achCard():""}
   ${T!=="log"?"":`<div class="card"><h2>生涯日志<em>${nowLabel()}</em></h2>
     <div class="feed">${P.log.slice(-40).reverse().map(l=>`<div class="ev ${l.tone}">
-      <span class="tg">${l.stamp||("W"+l.w)}</span><span class="tx">${l.t}</span></div>`).join("")}</div></div>`}
-  ${T==="act"?actPanelPre():""}`;
+      <span class="tg">${l.stamp||("W"+l.w)}</span><span class="tx">${l.t}</span></div>`).join("")}</div></div>`}`;
 }
 
 function viewOffer(){
@@ -3719,6 +3761,12 @@ function noteDepth(kind){
 }
 function crownChampion(){
   const I=S.intl, name=I.type==="msi"?"MSI":"世界赛";
+  // 冠军奖金每次都发——不是一次性成就（那边只发首冠纪念）
+  if(typeof addMoney==="function"&&typeof PRIZE_MSI!=="undefined"){
+    const amt=I.type==="msi"?PRIZE_MSI.champion:PRIZE_W.champion;
+    addMoney("prize",amt);
+    pushEvent(`${name}冠军奖金到账 <b>${amt} 万</b>。`,"good","奖金");
+  }
   S.career.titles.push(`${SEASONS[S.si].tag} ${name}`);
   S.career[I.type]= (S.career[I.type]||0)+1;
   // 记年份，供「双冠王 / 卫冕 / 三冠」判定
@@ -3741,6 +3789,15 @@ function finishIntl(stageText,kind){
   pushEvent(`${name} ${stageText}：<b>${S.team}</b> 的赛季结束了。`,"bad",name);
   S.intlResult=(S.intlResult||{}); S.intlResult[I.type]=kind;
   noteDepth(kind);
+  // 奖金按走到的最高档结算（MSI 双败里带着三胜出局的按亚军算）
+  if(typeof addMoney==="function"&&typeof PRIZE_MSI!=="undefined"){
+    let pk=kind;
+    if(I.double&&(I.wins||0)>=3&&kind==="knock") pk="final";
+    const tbl=I.type==="msi"?PRIZE_MSI:PRIZE_W;
+    const amt=tbl[pk]||tbl.main||0;
+    if(amt){ addMoney("prize",amt);
+      pushEvent(`${name}奖金按名次结算：<b>${amt} 万</b>。`,"info","奖金"); }
+  }
   // 你回家了，赛事还没完。剩下的对阵照打，冠军过几天才揭晓——
   // 决赛输掉是例外：刚赢你的那支队就是冠军，当场就知道。
   if(kind==="final"&&S.match){
@@ -3873,9 +3930,9 @@ const LOCKER=[
   {id:"media", when:()=>S.fame>=100&&rnd()<0.35,
    q:t=>`媒体想做你的专访，队里其他人一个都没约。`,
    ctx:"流量都在你身上，这未必是好事。",
-   a:[{t:"接，顺便多提队友",e:(t)=>{S.fame+=12;S.money+=14;addTrustAll(5);
+   a:[{t:"接，顺便多提队友",e:(t)=>{S.fame+=12;addMoney("other",14);addTrustAll(5);
         return "采访里你把功劳分了出去。队友看到了。"}},
-      {t:"接，好好聊自己",e:(t)=>{S.fame+=22;S.money+=20;addTrustAll(-7);
+      {t:"接，好好聊自己",e:(t)=>{S.fame+=22;addMoney("other",20);addTrustAll(-7);
         return "热度起来了。更衣室里有人觉得你飘了。"}},
       {t:"推掉，专心训练",e:(t)=>{S.fame-=4;addTrustAll(4);
         DIMS.forEach(()=>{}); return "你没去。教练组对此表示满意。"}}]}
@@ -3926,7 +3983,7 @@ function salaryOf(){
 }
 function payday(){
   const pay=salaryOf();
-  S.money+=pay;
+  if(typeof addMoney==="function") addMoney("salary",pay); else S.money+=pay;
   pushEvent(`赛段结算：薪资到账 <b>${pay} 万</b>（当前人气 ${Math.round(S.fame)}）。`,"info","合同");
 }
 /* 合同：两个赛季一签，到期看表现续约或走人 */
@@ -4206,6 +4263,87 @@ function gicon(name,size,color){
 }
 
 
+/* ================= 财务 =================
+
+   钱从来不少，但一直是哑巴：比赛每胜一场其实发 9 万、输了也有 4 万
+   出场费，界面从没提过；冠军的钱靠一次性成就发，第二次夺冠分文没有；
+   每赛段挣了多少花了多少，没有任何地方能看。
+
+   现在立两条规矩：
+   · 所有钱的进出走 addMoney() 一个口——顺带记进 S.ledger 流水，
+     以后再也不可能出现「发了钱不吭声」的隐形收入。
+   · 赛事奖金是制度不是彩蛋：走到哪一档发哪一档，每次都发（见 PRIZE_*），
+     原来顶着奖金名义的一次性成就奖励相应减半。                       */
+
+const LEDGER_IN =[["salary","工资"],["match","比赛收入"],["stream","直播"],
+                  ["prize","赛事奖金"],["sign","签字费"],["ach","成就奖励"],["other","其他收入"]];
+const LEDGER_OUT=[["gear","装备"],["course","课程"],["relax","放松"],["team","团队投入"],
+                  ["home","寄回家"],["fee","报名费"],["other","其他开销"]];
+function _emptyLedger(){ return {in:{},out:{}}; }
+function initLedger(){
+  S.ledger={cur:_emptyLedger(),prev:null,label:(typeof nowLabel==="function")?nowLabel():"",prevLabel:""};
+}
+/* 唯一的进出账入口。n 为正是收入、为负是支出；kind 对应上面两张表的键。 */
+function addMoney(kind,n){
+  n=Math.round(n||0);
+  if(!n) return 0;
+  if(!S.ledger) initLedger();
+  S.money=(S.money||0)+n;
+  const side=n>0?S.ledger.cur.in:S.ledger.cur.out;
+  side[kind]=(side[kind]||0)+Math.abs(n);
+  return n;
+}
+/* 赛段边界：本赛段流水归档成「上赛段」，重新开账 */
+function ledgerRotate(){
+  if(!S.ledger) { initLedger(); return; }
+  S.ledger.prev=S.ledger.cur;
+  S.ledger.prevLabel=S.ledger.label;
+  S.ledger.cur=_emptyLedger();
+  S.ledger.label=(typeof nowLabel==="function")?nowLabel():"";
+}
+function _ledgerSum(o){ return Object.values(o||{}).reduce((a,b)=>a+b,0); }
+
+/* ---------- 赛事奖金表（稳健档，到档就发、取最高档、每次都发） ---------- */
+const PRIZE_PO    ={champion:200, runner:80, semi:40};
+const PRIZE_PO_LDL={champion:40,  runner:15, semi:0};
+const PRIZE_MSI   ={main:60, knock:150, final:250, champion:500};
+const PRIZE_W     ={playin:40, main:80, knock:150, semi:250, final:400, champion:800};
+
+/* ---------- 财务总览卡 ---------- */
+function financeCard(){
+  const led=S.ledger||{cur:_emptyLedger()};
+  const cur=led.cur||_emptyLedger();
+  const inSum=_ledgerSum(cur.in), outSum=_ledgerSum(cur.out), net=inSum-outSum;
+  const pnet=led.prev?_ledgerSum(led.prev.in)-_ledgerSum(led.prev.out):null;
+  const row=(n,v,dn)=>`<div class="fin-r"><span>${n}</span>
+    <span class="mono ${dn?'dn':'up'}">${dn?"−":"+"}${v}</span></div>`;
+  const rows=LEDGER_IN.filter(([k])=>cur.in[k]).map(([k,n])=>row(n,cur.in[k],false)).join("")
+           + LEDGER_OUT.filter(([k])=>cur.out[k]).map(([k,n])=>row(n,cur.out[k],true)).join("");
+  return `<div class="card"><h2>财务总览<em>${led.label||""}</em></h2>
+    <div class="fin-cash mono">${Math.round(S.money)}<small> 万</small></div>
+    ${S.career&&typeof salaryOf==="function"
+      ?`<p class="note" style="margin:2px 0 10px">下赛段工资预计 <b>${salaryOf()} 万</b>（合同年薪 ${(S.contract&&S.contract.salary)||"—"} ＋ 人气与荣誉浮动）</p>`:""}
+    ${rows?`<div class="fin-tab">${rows}
+      <div class="fin-r fin-net"><span>本赛段净</span>
+        <span class="mono ${net>=0?'up':'dn'}">${net>=0?"+":"−"}${Math.abs(net)}</span></div></div>`
+      :`<p class="note">本赛段还没有进出账。</p>`}
+    ${pnet!==null?`<p class="note">上赛段（${led.prevLabel||"—"}）净 ${pnet>=0?"+":"−"}${Math.abs(pnet)} 万。</p>`:""}
+    <p class="note">每一笔进出都记在这里，明细在大事记里能对上账。</p></div>`;
+}
+/* ---------- 奖金标准：固定数值，小表格放底部，不抢戏 ---------- */
+function prizeNote(){
+  return `<div class="card"><h2>奖金标准<em>固定数值 · 到档就发</em></h2>
+    <div class="tw"><table style="font-size:12.5px">
+      <tr><th>赛事</th><th>标准（万）</th></tr>
+      <tr><td>常规赛</td><td class="n">胜场 9 · 出场费 4</td></tr>
+      <tr><td>季后赛</td><td class="n">四强 40 · 亚军 80 · 冠军 200（LDL 冠军 40）</td></tr>
+      <tr><td>MSI</td><td class="n">参赛 60 · 淘汰赛 150 · 亚军 250 · 冠军 500</td></tr>
+      <tr><td>世界赛</td><td class="n">入围 40 · 正赛 80 · 八强 150 · 四强 250 · 亚军 400 · 冠军 800</td></tr>
+    </table></div>
+    <p class="note">国际赛按走到的最高档发放，不叠加；每次参赛都发，不是一次性的。
+      首次夺冠另有成就奖励。</p></div>`;
+}
+
 /* ================= 商城 · 装备 · 课程 · 经济 =================
    收入：薪资（赛段结算）+ 直播打赏（名气越高越多）+ 夺冠奖金
    支出：外设（永久装备，5 个槽）/ 课程（永久解锁）/ 放松（花钱换体力，省行动点）
@@ -4330,8 +4468,12 @@ function streamCut(){ return STREAM_CUTS[S.streamCutIdx||0].cut; }
 function streamIncome(){
   const originMul=S.origin==="streamer"?1.7:1.0;
   if(S.streamDeal) return S.streamDeal.base*originMul;   // 独家：合同价，旱涝保收
-  const f=S.fame;
-  const gift=Math.pow(Math.max(f,0)/40,1.22)*4.4*streamCut();
+  // 名气进礼物公式要封顶：pow(f/40,1.22) 无上界，生涯后期名气过千时
+  // 一次直播能到两百多万，比世界赛夺冠还值钱——实测有整局挣到五亿的。
+  // 封在 600（「顶流」之上），不签独家的上限 ~135/次，
+  // 仍比独家保底高一截，「自由身上限更高」的承诺不变，但有边界。
+  const f=Math.min(Math.max(S.fame||0,0),600);
+  const gift=Math.pow(f/40,1.22)*4.4*streamCut();
   const base=4+f*0.05;
   return (base+gift)*originMul;
 }
@@ -4370,7 +4512,7 @@ function signStreamDeal(){
   const o=S.streamOffer; if(!o) return;
   S.streamOffer=null;
   S.streamDeal={lvl:o.lvl,base:o.base,n:o.n};
-  S.money+=o.sign;
+  addMoney("sign",o.sign);
   pushEvent(`和平台签下<b>${o.n}</b>：签字费 <b>${o.sign} 万</b>到账，此后每次直播保底 <b>${o.base} 万</b>。<br>
     <span style="color:var(--ink-3)">代价写在合同里：收入锁死在保底，人气再涨也不加钱；平台控流量，直播涨名气也会变慢。</span>`,"big","直播");
   render();
@@ -4411,21 +4553,21 @@ function buyGear(slot,tier){
   const g=GEAR[slot][tier];
   const cur=(S.gear&&S.gear[slot])||0;
   if(tier<=cur||S.money<g.cost) return;
-  S.money-=g.cost; S.gear[slot]=tier;
+  addMoney("gear",-g.cost); S.gear[slot]=tier;
   pushEvent(`换上了 <b>${g.n}</b>（${TIER_N[tier]}级${SLOTS.find(s=>s.k===slot).n}）。`,"good","装备");
   render();
 }
 function buyCourse(k){
   const c=COURSES.find(x=>x.k===k);
   if(!c||hasCourse(k)||S.money<c.cost) return;
-  S.money-=c.cost; S.courses[k]=1;
+  addMoney("course",-c.cost); S.courses[k]=1;
   pushEvent(`报了 <b>${c.n}</b>。${c.d}`,"good","课程");
   render();
 }
 function buyRelax(k){
   const x=RELAX.find(r=>r.k===k);
   if(!x||S.money<x.cost) return;
-  S.money-=x.cost; addFat(x.fat);
+  addMoney("relax",-x.cost); addFat(x.fat);
   if(x.trust&&typeof addTrustAll==="function") addTrustAll(x.trust);
   pushEvent(`${x.n}：体力回来了${x.trust?"，顺便和队友聊了聊":""}。`,"info","放松");
   render();
@@ -4451,10 +4593,16 @@ function gearCard(){
     }).join("")}</div>
     <p class="note">这里只看你手上用的什么。想换更好的，去商城。</p></div>`;
 }
+/* 经济页 = 财务总览 -> 我的合同 -> 商城 -> 奖金标准（自上而下） */
+function economyCards(){
+  return financeCard()
+    + ((typeof contractTerms==="function")?contractTerms():"")
+    + shopCard()
+    + prizeNote();
+}
 function shopCard(){
   const focus=S.shopFocus; S.shopFocus=null;   // 高亮只在跳转过来的那一次渲染生效
-  return `${(typeof contractTerms==="function")?contractTerms():""}
-    <div class="card"><h2>商城<em>余额 ${Math.round(S.money)} 万</em></h2>
+  return `<div class="card"><h2>商城<em>余额 ${Math.round(S.money)} 万</em></h2>
     <h3 style="font-size:14px">外设 · 换上就生效，一直用到退役</h3>
     ${SLOTS.map(s=>{
       const cur=(S.gear&&S.gear[s.k])||0, curG=GEAR[s.k][cur];
@@ -4757,13 +4905,13 @@ const ACHIEVEMENTS=[
   {id:"playoff", n:"季后赛", d:"第一次打进季后赛。", tag:"里程碑",
    on:"playoff", cond:()=>true, r:{fat:-25,money:40}},
   {id:"lgtitle", n:"联赛冠军", d:"第一次捧起联赛奖杯。", tag:"里程碑",
-   on:"lgtitle", cond:()=>true, r:{fat:-45,money:180,fame:40,trust:14}},
+   on:"lgtitle", cond:()=>true, r:{fat:-45,money:100,fame:40,trust:14}},   // 奖金制度上线后减半：冠军的钱走奖金表，这里只是首冠纪念
   {id:"intl", n:"走出国门", d:"第一次站上国际赛场。", tag:"里程碑",
    on:"intl", cond:()=>true, r:{fat:-30,fame:26}},
   {id:"msi", n:"MSI 冠军", d:"拿下季中冠军赛。", tag:"里程碑",
-   on:"msi", cond:()=>true, r:{fat:-60,money:520,fame:110,trust:20}},
+   on:"msi", cond:()=>true, r:{fat:-60,money:260,fame:110,trust:20}},
   {id:"worlds", n:"世界冠军", d:"你把那座奖杯举起来了。", tag:"里程碑",
-   on:"worlds", cond:()=>true, r:{fat:-80,money:1200,fame:260,trust:26}},
+   on:"worlds", cond:()=>true, r:{fat:-80,money:600,fame:260,trust:26}},
 
   /* ---------- 战绩 ---------- */
   {id:"reverse", n:"让二追三", d:"在 BO5 里先丢两局，然后连扳三局。", tag:"战绩",
@@ -4839,7 +4987,8 @@ function applyAchReward(r){
   if(!r) return [];
   const out=[];
   if(r.fat){ addFat(r.fat); out.push(`体力 +${-r.fat}`); }
-  if(r.money){ S.money+=r.money; out.push(`奖金 ${r.money} 万`); }
+  if(r.money){ if(typeof addMoney==="function") addMoney("ach",r.money); else S.money+=r.money;
+    out.push(`奖金 ${r.money} 万`); }
   if(r.fame){ addFame(r.fame); out.push(`名气 +${r.fame}`); }
   if(r.trust&&typeof addTrustAll==="function"){ addTrustAll(r.trust); out.push(`士气 ${r.trust>0?"+":""}${r.trust}`); }
   return out;
@@ -5157,7 +5306,7 @@ function squadActs(){
    现在买不起的选项在界面上就是禁用的，这里再兜一道底。 */
 function pay(n){
   if(S.money < n) return false;
-  S.money -= n;
+  if(typeof addMoney==="function") addMoney("other",-n); else S.money-=n;
   return true;
 }
 
@@ -5230,9 +5379,9 @@ const RANDOM_EVENTS=[
   {id:"streamGift", auto:false, when:()=>S.fame>=40,
    q:()=>`直播间来了个大哥，一口气刷了一堆礼物。`,
    ctx:"他要求你连麦陪他打两把。",
-   a:[{t:"陪打",e:()=>{S.money+=45;addFat(8);addFame(4);
+   a:[{t:"陪打",e:()=>{addMoney("other",45);addFat(8);addFame(4);
         return "他玩得很开心，还说下次再来。"}},
-      {t:"婉拒，正常直播",e:()=>{S.money+=12;addFame(6);
+      {t:"婉拒，正常直播",e:()=>{addMoney("other",12);addFame(6);
         return "弹幕觉得你挺有原则的。"}}]},
 
   {id:"oldFriend", w:2, when:()=>true,
@@ -5296,7 +5445,7 @@ const RANDOM_EVENTS=[
   {id:"bonus", w:1, when:()=>!!S.team,
    q:()=>`俱乐部发了笔额外奖金——上个赛段的赞助分成。`,
    ctx:"数额不大，但没想到还有这个。",
-   a:[{t:"收下",e:()=>{const n=30+Math.floor(rnd()*50);S.money+=n;
+   a:[{t:"收下",e:()=>{const n=30+Math.floor(rnd()*50);addMoney("other",n);
         return `到账 ${n} 万。`}}]},
 
   {id:"junior", w:2, when:()=>(S.pre?S.pre.rank>=25:false),
@@ -5374,7 +5523,7 @@ const RANDOM_EVENTS=[
   {id:"sponsor", w:1, when:()=>!!S.team&&S.fame>=90,
    q:()=>`赞助商寄来一箱新外设，希望你直播时用一下。`,
    ctx:"东西不错，但手感和你现在用的不一样。",
-   a:[{t:"接了，直播时用",e:()=>{const n=40+Math.floor(rnd()*40);S.money+=n;
+   a:[{t:"接了，直播时用",e:()=>{const n=40+Math.floor(rnd()*40);addMoney("other",n);
         addBuff("train",0.92,1,"手感在适应");
         return `到账 ${n} 万。手感别扭了几天。`}},
       {t:"婉拒，手感要紧",e:()=>{typeof addStaff==="function"&&addStaff("mgr",-2);
@@ -5684,7 +5833,7 @@ function reviewAdvice(m){
     how:"点「打排位」找手感；状态是按战绩、体能、更衣室每赛段重算的——先把这三样稳住"});
   if(bad("体能")) personal.push({q:`体能只剩 ${100-Math.round(S.fatigue)}/100`,
     how:"点「休息」，或商城买按摩/理疗（花钱不占行动点）——疲劳是直接乘在战力上的"});
-  if(bad("版本相性")) personal.push({q:`逆版本：本赛季吃「${sea.dim}」，你这一项还没到版本要求`,
+  if(bad("版本相性")) personal.push({q:`逆版本：本赛季吃「${sea.dim}」，你这一项还低于联赛平均`,
     how:`把「练${sea.dim}」排进日常；天赋练均衡一点，适应力也能缓冲版本`});
   const fd=m.failDims||[];
   if(fd.length>=2){
@@ -6474,6 +6623,10 @@ const CUPS={
          opps:["百万粉丝队","退役选手队","冠军主播队"] }
 };
 
+/* 业余队名：报名时玩家起的名字，没起就用选手 ID */
+function cupTeamName(){
+  return (S.pre&&S.pre.cupTeam)?escapeHtml(S.pre.cupTeam):meName();
+}
 /* ---------- 报名之后：建赛程，而不是直接出结果 ---------- */
 function enterCup(kind){
   const C=CUPS[kind]; if(!C) return;
@@ -6655,7 +6808,8 @@ function cupPayout(k,champion){
   const c=cupOf(k), C=CUPS[k];
   const reached=champion?C.rounds:c.wins;
   const prize=(C.prize||[])[reached]||0;
-  if(prize){ S.money+=prize; preLog(`奖金到账 <b>${prize} 万</b>。`,"good"); }
+  if(prize){ if(typeof addMoney==="function") addMoney("prize",prize); else S.money+=prize;
+    preLog(`奖金到账 <b>${prize} 万</b>。`,"good"); }
   addFame(reached*(k==="stream"?6:4));
   if(k==="city") S.pre.cityCup=reached;
   else S.pre.streamCup=reached;
@@ -6689,7 +6843,7 @@ function cupCard(){
     const d=my-op;
     return `<div class="card cup"><h2>${C.name}<em>第 ${c.round}/${C.rounds} 轮</em></h2>
       <div class="next">
-        <div class="sd"><div class="nm">${meName()}</div>
+        <div class="sd"><div class="nm">${cupTeamName()}</div>
           <div class="pw">${powerRank(my)}水平 · ${my.toFixed(0)}</div></div>
         <div class="mid">VS</div>
         <div class="sd"><div class="nm">${cupOppName(k)}</div>
@@ -6725,7 +6879,7 @@ function cupMatchCard(){
   const c=cupOf(m.kind);
   return `<div class="card"><h2>${C.name}<em>第 ${c?c.round:1} 轮 · 三局两胜</em></h2>
     <div class="vs">
-      <div class="side"><div class="nm">${meName()}</div></div>
+      <div class="side"><div class="nm">${cupTeamName()}</div></div>
       <div class="score">${m.sc[0]} : ${m.sc[1]}</div>
       <div class="side"><div class="nm">${m.opp}</div></div>
     </div>
@@ -6881,6 +7035,7 @@ function loadGame() {
     scrubFloats(S);
     fixLegacyAcad(S);
     fixStaleRank(S);
+    if (!S.ledger && typeof initLedger === "function") initLedger();   // 老档没有流水：从下一笔开始记
     S.tab = "act";
     // 读档落在比赛中途会尴尬——回到本周界面
     if (S.step === "match") S.step = S.pre && !S.career ? "pre" : "season";
@@ -7552,7 +7707,7 @@ function signDeal(){
   const D = DEAL_TIERS[d.dealTier];
   P.offers = [{ k:d.kind, team:teamName, t:D.n, d:"", note:"",
                 league: toLDL ? "LDL" : "LPL" }];
-  S.money += d.sign;
+  addMoney("sign", d.sign);
   if(d.sign) preLog(`签字费 <b>${d.sign} 万</b>到账。`, "good");
   S.pendingContract = {
     years:d.years, left:d.years, salary:d.salary, sign:d.sign,
@@ -7822,7 +7977,7 @@ function signTransfer(){
     ? {id:S.name||"你", cn:"", pos:S.pos, age:S.age, r:S.attrs, me:true} : q);
   S.trust = {}; if(typeof initTrust==="function") initTrust();
   if(typeof syncTrust==="function") syncTrust();
-  S.money += d.sign;
+  addMoney("sign", d.sign);
   S.contract = { years:d.years, left:d.years, salary:d.salary, sign:d.sign,
                  buyout:d.buyout, team:d.team, tier:d.dealTier, grade:d.grade,
                  clubTier:d.clubTier };
@@ -8062,7 +8217,11 @@ function pinbar(){
   if(!S||S.step==="create"||!S.attrs){ p.classList.add("hide"); return; }
   p.classList.remove("hide");
   const top=DIMS.reduce((a,d)=>S.attrs[a]>=S.attrs[d]?a:d);
-  p.innerHTML=DIMS.map(d=>
+  // 行动点放最前面——这是每周最要紧的操作数字，有剩余时亮金色
+  const ap=(S.step==="pre"&&S.pre)?S.pre.ap
+          :(S.step==="season"||S.step==="prep"||S.step==="offseason")?S.ap:null;
+  p.innerHTML=(ap!==null&&ap!==undefined?`<span class="pv ${ap>0?'top':'dim'}"><i>行动</i><b>${ap}</b></span>`:"")
+  +DIMS.map(d=>
     `<span class="pv ${d===top?'top':''}"><i>${d}</i><b>${S.attrs[d].toFixed(0)}</b></span>`
   ).join("")
   +`<span class="pv dim"><i>体能</i><b>${100-Math.round(S.fatigue)}</b></span>`
@@ -8128,7 +8287,10 @@ function bind(){
   const ru=$("rankupok"); if(ru) ru.onclick=()=>{S.rankUp=null;render()};
   const sy=$("signyes"); if(sy) sy.onclick=()=>{
     const m=S.signup; S.signup=null;
-    S.money-=m.fee; preLog(`交了 <b>${m.fee} 万</b>报名费，${m.name}走起。`,"info");
+    const tn=$("cupteam");
+    if(tn&&S.pre){ const v=safeName(tn.value); if(v) S.pre.cupTeam=v; }
+    if(typeof addMoney==='function') addMoney('fee',-m.fee); else S.money-=m.fee;
+    preLog(`交了 <b>${m.fee} 万</b>报名费，以「<b>${escapeHtml((S.pre&&S.pre.cupTeam)||meName())}</b>」的名义报了 ${m.name}。`,"info");
     enterCup(m.signup);   // 建赛程，第一场按 CUPS[kind].gap 排
     advancePreWeek();
   };
@@ -8166,7 +8328,7 @@ function bind(){
   st.querySelectorAll("[data-locker]").forEach(b=>b.onclick=()=>resolveLocker(+b.dataset.locker));
   st.querySelectorAll("[data-spend]").forEach(b=>b.onclick=()=>{
     const x=SPEND[+b.dataset.spend];
-    if(S.money>=x.cost&&!(S.buff&&S.buff[x.k])){S.money-=x.cost;x.run();
+    if(S.money>=x.cost&&!(S.buff&&S.buff[x.k])){ if(typeof addMoney==='function') addMoney('team',-x.cost); else S.money-=x.cost; x.run();
       pushEvent(`花 ${x.cost} 万：${x.n}。`,"info","开销");render();}
   });
   st.querySelectorAll("[data-pre]").forEach(b=>b.onclick=()=>preAct(b.dataset.pre));

@@ -80,7 +80,7 @@ function reviewAdvice(m){
     how:"点「打排位」找手感；状态是按战绩、体能、更衣室每赛段重算的——先把这三样稳住"});
   if(bad("体能")) personal.push({q:`体能只剩 ${100-Math.round(S.fatigue)}/100`,
     how:"点「休息」，或商城买按摩/理疗（花钱不占行动点）——疲劳是直接乘在战力上的"});
-  if(bad("版本相性")) personal.push({q:`逆版本：本赛季吃「${sea.dim}」，你这一项还没到版本要求`,
+  if(bad("版本相性")) personal.push({q:`逆版本：本赛季吃「${sea.dim}」，你这一项还低于联赛平均`,
     how:`把「练${sea.dim}」排进日常；天赋练均衡一点，适应力也能缓冲版本`});
   const fd=m.failDims||[];
   if(fd.length>=2){

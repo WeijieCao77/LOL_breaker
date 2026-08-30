@@ -529,7 +529,7 @@ function signDeal(){
   const D = DEAL_TIERS[d.dealTier];
   P.offers = [{ k:d.kind, team:teamName, t:D.n, d:"", note:"",
                 league: toLDL ? "LDL" : "LPL" }];
-  S.money += d.sign;
+  addMoney("sign", d.sign);
   if(d.sign) preLog(`签字费 <b>${d.sign} 万</b>到账。`, "good");
   S.pendingContract = {
     years:d.years, left:d.years, salary:d.salary, sign:d.sign,
@@ -799,7 +799,7 @@ function signTransfer(){
     ? {id:S.name||"你", cn:"", pos:S.pos, age:S.age, r:S.attrs, me:true} : q);
   S.trust = {}; if(typeof initTrust==="function") initTrust();
   if(typeof syncTrust==="function") syncTrust();
-  S.money += d.sign;
+  addMoney("sign", d.sign);
   S.contract = { years:d.years, left:d.years, salary:d.salary, sign:d.sign,
                  buyout:d.buyout, team:d.team, tier:d.dealTier, grade:d.grade,
                  clubTier:d.clubTier };

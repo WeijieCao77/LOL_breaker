@@ -10,7 +10,7 @@
    现在买不起的选项在界面上就是禁用的，这里再兜一道底。 */
 function pay(n){
   if(S.money < n) return false;
-  S.money -= n;
+  if(typeof addMoney==="function") addMoney("other",-n); else S.money-=n;
   return true;
 }
 
@@ -83,9 +83,9 @@ const RANDOM_EVENTS=[
   {id:"streamGift", auto:false, when:()=>S.fame>=40,
    q:()=>`直播间来了个大哥，一口气刷了一堆礼物。`,
    ctx:"他要求你连麦陪他打两把。",
-   a:[{t:"陪打",e:()=>{S.money+=45;addFat(8);addFame(4);
+   a:[{t:"陪打",e:()=>{addMoney("other",45);addFat(8);addFame(4);
         return "他玩得很开心，还说下次再来。"}},
-      {t:"婉拒，正常直播",e:()=>{S.money+=12;addFame(6);
+      {t:"婉拒，正常直播",e:()=>{addMoney("other",12);addFame(6);
         return "弹幕觉得你挺有原则的。"}}]},
 
   {id:"oldFriend", w:2, when:()=>true,
@@ -149,7 +149,7 @@ const RANDOM_EVENTS=[
   {id:"bonus", w:1, when:()=>!!S.team,
    q:()=>`俱乐部发了笔额外奖金——上个赛段的赞助分成。`,
    ctx:"数额不大，但没想到还有这个。",
-   a:[{t:"收下",e:()=>{const n=30+Math.floor(rnd()*50);S.money+=n;
+   a:[{t:"收下",e:()=>{const n=30+Math.floor(rnd()*50);addMoney("other",n);
         return `到账 ${n} 万。`}}]},
 
   {id:"junior", w:2, when:()=>(S.pre?S.pre.rank>=25:false),
@@ -227,7 +227,7 @@ const RANDOM_EVENTS=[
   {id:"sponsor", w:1, when:()=>!!S.team&&S.fame>=90,
    q:()=>`赞助商寄来一箱新外设，希望你直播时用一下。`,
    ctx:"东西不错，但手感和你现在用的不一样。",
-   a:[{t:"接了，直播时用",e:()=>{const n=40+Math.floor(rnd()*40);S.money+=n;
+   a:[{t:"接了，直播时用",e:()=>{const n=40+Math.floor(rnd()*40);addMoney("other",n);
         addBuff("train",0.92,1,"手感在适应");
         return `到账 ${n} 万。手感别扭了几天。`}},
       {t:"婉拒，手感要紧",e:()=>{typeof addStaff==="function"&&addStaff("mgr",-2);

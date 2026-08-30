@@ -125,6 +125,7 @@ function loadGame() {
     scrubFloats(S);
     fixLegacyAcad(S);
     fixStaleRank(S);
+    if (!S.ledger && typeof initLedger === "function") initLedger();   // 老档没有流水：从下一笔开始记
     S.tab = "act";
     // 读档落在比赛中途会尴尬——回到本周界面
     if (S.step === "match") S.step = S.pre && !S.career ? "pre" : "season";
