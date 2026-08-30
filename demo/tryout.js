@@ -251,6 +251,13 @@ function pickClub(tier, league){
 function inviteCard(){
   const P = S.pre, iv = P && P.invite;
   if(!iv || !iv.pending) return "";
+  /* 比赛结果要先看完，邀请才能弹。
+     cupPayout() 是在杯赛结束的当下就发邀请的，而那一刻比分卡还挂在页面上——
+     邀请是遮罩，直接盖住结果，玩家不知道自己到底进没进下一轮。
+     而这恰恰是他做决定需要的信息：进了就该先打完决赛，没进才该去试训。
+     邀请不会因此丢失：pending 一直留在 S.pre.invite 上，只有玩家表态才清掉，
+     所以这里只是把它排到结果后面，不是取消。 */
+  if(S.cupMatch || S.cupResult || S.rankUp || S.rndEv || S.rndResult || S.signup) return "";
   const T = CLUB_TIERS[iv.tier];
   const me = tryoutSkill(), gap = me - iv.expect;
   return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">

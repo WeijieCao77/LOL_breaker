@@ -2096,8 +2096,11 @@ const AUTO_FAR=99;
 
 /* 需要玩家决定的事——任何一个亮着，自动推进就必须停 */
 function autoStop(){
+  // 待处理的试训邀请也是「需要你决定的事」，漏在这里的话
+  // 「自动推进到下一件事」会直接冲过去，机会就这么没了。
   return !!(S.rndEv||S.rndResult||S.locker||S.signup||S.rankUp
-           ||S.cupResult||S.cupMatch||S.confirm||S.streamOffer);
+           ||S.cupResult||S.cupMatch||S.confirm||S.streamOffer
+           ||(S.pre&&S.pre.invite&&S.pre.invite.pending));
 }
 function autoRest(focus,weeks){
   const lim=weeks||AUTO_MAX;
@@ -7219,6 +7222,13 @@ function pickClub(tier, league){
 function inviteCard(){
   const P = S.pre, iv = P && P.invite;
   if(!iv || !iv.pending) return "";
+  /* 比赛结果要先看完，邀请才能弹。
+     cupPayout() 是在杯赛结束的当下就发邀请的，而那一刻比分卡还挂在页面上——
+     邀请是遮罩，直接盖住结果，玩家不知道自己到底进没进下一轮。
+     而这恰恰是他做决定需要的信息：进了就该先打完决赛，没进才该去试训。
+     邀请不会因此丢失：pending 一直留在 S.pre.invite 上，只有玩家表态才清掉，
+     所以这里只是把它排到结果后面，不是取消。 */
+  if(S.cupMatch || S.cupResult || S.rankUp || S.rndEv || S.rndResult || S.signup) return "";
   const T = CLUB_TIERS[iv.tier];
   const me = tryoutSkill(), gap = me - iv.expect;
   return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">

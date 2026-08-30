@@ -1580,8 +1580,11 @@ const AUTO_FAR=99;
 
 /* 需要玩家决定的事——任何一个亮着，自动推进就必须停 */
 function autoStop(){
+  // 待处理的试训邀请也是「需要你决定的事」，漏在这里的话
+  // 「自动推进到下一件事」会直接冲过去，机会就这么没了。
   return !!(S.rndEv||S.rndResult||S.locker||S.signup||S.rankUp
-           ||S.cupResult||S.cupMatch||S.confirm||S.streamOffer);
+           ||S.cupResult||S.cupMatch||S.confirm||S.streamOffer
+           ||(S.pre&&S.pre.invite&&S.pre.invite.pending));
 }
 function autoRest(focus,weeks){
   const lim=weeks||AUTO_MAX;
