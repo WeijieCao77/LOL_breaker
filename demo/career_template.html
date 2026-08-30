@@ -876,7 +876,7 @@ function ageWorld(){
 function screenCreate(){
   S={step:"create", name:"", pos:"mid", origin:"academy", ageIdx:1,
        bgPick:null, bgOffer:drawBackgrounds(),
-       talent:{操作:4,运营:4,心态:4,指挥:4,体质:4}};
+       talent:{操作:0,运营:0,心态:0,指挥:0,体质:0}};
   render();
 }
 const talentLeft=()=>TOTAL_TALENT-DIMS.reduce((a,d)=>a+S.talent[d],0);
@@ -943,7 +943,7 @@ function viewCreate(){
     ${DIMS.map(d=>`<div class="tal">
       <div class="nm">${d}</div><div class="desc">${DIM_DESC[d]}</div>
       <div class="ctl">
-        <button data-dec="${d}" ${S.talent[d]<=1?'disabled':''}>−</button>
+        <button data-dec="${d}" ${S.talent[d]<=0?'disabled':''}>−</button>
         <div class="n mono">${S.talent[d]}</div>
         <button data-inc="${d}" ${(left<=0||S.talent[d]>=10)?'disabled':''}>+</button>
       </div>
@@ -1191,10 +1191,14 @@ function preNextWeek(){
     else { S.signup=hit; render(); return; }     // 交给玩家决定报不报
   } else if(hit){ hit.need()?hit.run():hit.fail(); }
   // 够格就随时有人来谈；不够就打到年末的转会窗口再看。
+  // 这里原来还压了一条「第 13 周之前不算」的日期闸。删了：
+  // 转会窗口是给一线队队员的，还没打上职业的人什么时候被看上都正常。
+  // preScore 本身就是一道够高的能力闸（要么国服前列，要么杯赛走得深），
+  // 早期根本摸不到，不需要再拿日历兜一次底。
   // 但比赛没打完不能来——试训邀请那条路已经加了这道闸，
   // 这条老路径当时漏了，结果杯赛打到一半就弹出「进职业」。
   const busy = (typeof activeCups==="function") && activeCups().length>0;
-  if(!busy && P.week>=PRE_EARLIEST&&preScore()>=PRE_INVITE){
+  if(!busy && preScore()>=PRE_INVITE){
     preLog(`俱乐部发来<b>正式试训邀请</b>。`,"big");
     makeOffers(); return;
   }
@@ -2778,13 +2782,31 @@ function actPanelPre(){
         if(!c&&st)  return "主播杯打完了，但城市赛那一栏还是空的。";
         return "两个比赛都打完了，接下来就看转会窗口。";
       })();
-      return P.week<PRE_EARLIEST
-        ? `还太早——${cupTxt}`
+      // 试训邀请不再看日历，所以这里也不能再说「还太早」——
+      // 要说的是「现在谁看得到你」，以及差在段位还是差在曝光。
+      const live=(typeof activeCups==="function")?activeCups().length:0;
+      const played=(P.cityCup!==undefined)||(P.streamCup!==undefined);
+      return live ? cupTxt
         : near>=1 ? `<b style="color:var(--cyan)">你已经够格了，试训邀请随时会来。</b>`
         : near>=0.8 ? `<b>就差一点</b>，再稳一稳就有人找你了。`
         : near>=0.55 ? `有人注意到你了，但还不足以让俱乐部下决心。`
-        : `目前的履历，还进不了任何一家的名单。`})()}
-      <br>距离转会窗口还有 <b>${Math.max(0,PRE_YEAR-P.week)}</b> 周。</div>
+        : played ? `目前的履历，还进不了任何一家的名单。`
+        : `${cupTxt}`})()}
+      ${(()=>{
+        // 谁能看到你：段位一把尺、曝光一把尺，取更严的那个。
+        // 这条是新规则的说明书——玩家得知道该去练段位还是该去露脸。
+        if(typeof rankCap!=="function"||typeof exposureCap!=="function") return "";
+        if(typeof inviteFloorOk==="function"&&!inviteFloorOk())
+          return `<br>试训邀请：<b style="color:var(--red)">连钻石都没到，还没有球探会看你</b>。`;
+        const rc=rankCap(), ec=exposureCap();
+        const nm=t=>(typeof CLUB_TIERS!=="undefined"&&CLUB_TIERS[t])?CLUB_TIERS[t].n:t;
+        const worse=(TIER_ORDER.indexOf(rc)<=TIER_ORDER.indexOf(ec))?"rank":"exp";
+        return `<br>现在会来找你的最高档：<b>${nm(rc===ec?rc:(worse==="rank"?rc:ec))}</b>　·　${
+          rc===ec ? `段位和曝光刚好卡在同一档`
+          : worse==="rank" ? `卡在<b>段位</b>上——曝光够到 ${nm(ec)} 了，再往上冲分`
+          : `卡在<b>曝光</b>上——段位够到 ${nm(rc)} 了，去打比赛、涨人气`}`;
+      })()}
+      <br>距离转会窗口还有 <b>${Math.max(0,PRE_YEAR-P.week)}</b> 周<span style="color:var(--ink-3)">（那是年末各队定人的日子；试训邀请不等它，什么时候够格什么时候来）</span>。</div>
     <div class="ver">
       ${rankBadge(P.rank,40)}${nextR?`　→　下一档 ${nextR.n}`:`　→　已经到顶`}<br>
       排位实力 <b>${soloSkill().toFixed(0)}</b>　·　当前分段门槛 <b>${rankReq(P.rank).toFixed(0)}</b>${
@@ -3142,7 +3164,7 @@ function bind(){
   st.querySelectorAll("[data-inc]").forEach(b=>b.onclick=()=>{
     const d=b.dataset.inc;if(talentLeft()>0&&S.talent[d]<10){S.talent[d]++;render()}});
   st.querySelectorAll("[data-dec]").forEach(b=>b.onclick=()=>{
-    const d=b.dataset.dec;if(S.talent[d]>1){S.talent[d]--;render()}});
+    const d=b.dataset.dec;if(S.talent[d]>0){S.talent[d]--;render()}});
   const nm=$("nm"); if(nm) nm.oninput=e=>{S.name=safeName(e.target.value)};
   const go=$("go"); if(go) go.onclick=()=>{
     S.name=(nm&&safeName(nm.value))||"无名"; S.showStart=true; render(); };

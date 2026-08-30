@@ -565,6 +565,9 @@ td .tlogo{margin-right:5px}
 .buff{font-size:11.5px;padding:3px 10px;border:1px solid var(--line);
   display:inline-flex;align-items:center;gap:7px}
 .buff i{font-style:normal;font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:10px;opacity:.75}
+/* 效果说明：比名字轻，比周数重——玩家一眼要看到「到底加什么」 */
+.buff em{font-style:normal;font-size:11px;opacity:.92;
+  padding-left:7px;border-left:1px solid currentColor;border-left-color:rgba(255,255,255,.16)}
 .buff.good{border-color:var(--cyan-dim);color:var(--cyan);background:rgba(79,190,218,.09)}
 .buff.bad{border-color:#5A2228;color:var(--red);background:rgba(196,83,95,.09)}
 
@@ -1419,7 +1422,7 @@ function ageWorld(){
 function screenCreate(){
   S={step:"create", name:"", pos:"mid", origin:"academy", ageIdx:1,
        bgPick:null, bgOffer:drawBackgrounds(),
-       talent:{操作:4,运营:4,心态:4,指挥:4,体质:4}};
+       talent:{操作:0,运营:0,心态:0,指挥:0,体质:0}};
   render();
 }
 const talentLeft=()=>TOTAL_TALENT-DIMS.reduce((a,d)=>a+S.talent[d],0);
@@ -1486,7 +1489,7 @@ function viewCreate(){
     ${DIMS.map(d=>`<div class="tal">
       <div class="nm">${d}</div><div class="desc">${DIM_DESC[d]}</div>
       <div class="ctl">
-        <button data-dec="${d}" ${S.talent[d]<=1?'disabled':''}>−</button>
+        <button data-dec="${d}" ${S.talent[d]<=0?'disabled':''}>−</button>
         <div class="n mono">${S.talent[d]}</div>
         <button data-inc="${d}" ${(left<=0||S.talent[d]>=10)?'disabled':''}>+</button>
       </div>
@@ -1734,10 +1737,14 @@ function preNextWeek(){
     else { S.signup=hit; render(); return; }     // 交给玩家决定报不报
   } else if(hit){ hit.need()?hit.run():hit.fail(); }
   // 够格就随时有人来谈；不够就打到年末的转会窗口再看。
+  // 这里原来还压了一条「第 13 周之前不算」的日期闸。删了：
+  // 转会窗口是给一线队队员的，还没打上职业的人什么时候被看上都正常。
+  // preScore 本身就是一道够高的能力闸（要么国服前列，要么杯赛走得深），
+  // 早期根本摸不到，不需要再拿日历兜一次底。
   // 但比赛没打完不能来——试训邀请那条路已经加了这道闸，
   // 这条老路径当时漏了，结果杯赛打到一半就弹出「进职业」。
   const busy = (typeof activeCups==="function") && activeCups().length>0;
-  if(!busy && P.week>=PRE_EARLIEST&&preScore()>=PRE_INVITE){
+  if(!busy && preScore()>=PRE_INVITE){
     preLog(`俱乐部发来<b>正式试训邀请</b>。`,"big");
     makeOffers(); return;
   }
@@ -3321,13 +3328,31 @@ function actPanelPre(){
         if(!c&&st)  return "主播杯打完了，但城市赛那一栏还是空的。";
         return "两个比赛都打完了，接下来就看转会窗口。";
       })();
-      return P.week<PRE_EARLIEST
-        ? `还太早——${cupTxt}`
+      // 试训邀请不再看日历，所以这里也不能再说「还太早」——
+      // 要说的是「现在谁看得到你」，以及差在段位还是差在曝光。
+      const live=(typeof activeCups==="function")?activeCups().length:0;
+      const played=(P.cityCup!==undefined)||(P.streamCup!==undefined);
+      return live ? cupTxt
         : near>=1 ? `<b style="color:var(--cyan)">你已经够格了，试训邀请随时会来。</b>`
         : near>=0.8 ? `<b>就差一点</b>，再稳一稳就有人找你了。`
         : near>=0.55 ? `有人注意到你了，但还不足以让俱乐部下决心。`
-        : `目前的履历，还进不了任何一家的名单。`})()}
-      <br>距离转会窗口还有 <b>${Math.max(0,PRE_YEAR-P.week)}</b> 周。</div>
+        : played ? `目前的履历，还进不了任何一家的名单。`
+        : `${cupTxt}`})()}
+      ${(()=>{
+        // 谁能看到你：段位一把尺、曝光一把尺，取更严的那个。
+        // 这条是新规则的说明书——玩家得知道该去练段位还是该去露脸。
+        if(typeof rankCap!=="function"||typeof exposureCap!=="function") return "";
+        if(typeof inviteFloorOk==="function"&&!inviteFloorOk())
+          return `<br>试训邀请：<b style="color:var(--red)">连钻石都没到，还没有球探会看你</b>。`;
+        const rc=rankCap(), ec=exposureCap();
+        const nm=t=>(typeof CLUB_TIERS!=="undefined"&&CLUB_TIERS[t])?CLUB_TIERS[t].n:t;
+        const worse=(TIER_ORDER.indexOf(rc)<=TIER_ORDER.indexOf(ec))?"rank":"exp";
+        return `<br>现在会来找你的最高档：<b>${nm(rc===ec?rc:(worse==="rank"?rc:ec))}</b>　·　${
+          rc===ec ? `段位和曝光刚好卡在同一档`
+          : worse==="rank" ? `卡在<b>段位</b>上——曝光够到 ${nm(ec)} 了，再往上冲分`
+          : `卡在<b>曝光</b>上——段位够到 ${nm(rc)} 了，去打比赛、涨人气`}`;
+      })()}
+      <br>距离转会窗口还有 <b>${Math.max(0,PRE_YEAR-P.week)}</b> 周<span style="color:var(--ink-3)">（那是年末各队定人的日子；试训邀请不等它，什么时候够格什么时候来）</span>。</div>
     <div class="ver">
       ${rankBadge(P.rank,40)}${nextR?`　→　下一档 ${nextR.n}`:`　→　已经到顶`}<br>
       排位实力 <b>${soloSkill().toFixed(0)}</b>　·　当前分段门槛 <b>${rankReq(P.rank).toFixed(0)}</b>${
@@ -5409,10 +5434,27 @@ function tickBuffs(){
   S.tbuff.forEach(b=>b.left--);
   S.tbuff=S.tbuff.filter(b=>b.left>0);
 }
+/* 增益必须把效果写在脸上。
+   「设备拖后腿 2周」——拖的是什么后腿？「心无旁骛」又加什么？
+   玩家看不懂就等于没有这条增益，只剩一个吓人的红框。
+   所以每个 chip 都自己算出百分比，用当前公式现算，不写死。 */
+function buffPct(v){ const n=Math.round((v-1)*100); return `${n>=0?"+":"−"}${Math.abs(n)}%`; }
+function buffEffect(b){
+  // train：直接乘进 gain()，就是训练收益
+  if(b.k==="train") return `训练收益 ${buffPct(b.v)}`;
+  // mood：同样乘进 gain()，另外还改排位胜率（soloWinP 里 (v-1)*8 加在实力差上）。
+  //       实力差换算成胜率不是线性的，这里按「势均力敌时」折算，跟界面口径一致。
+  if(b.k==="mood"){
+    const md=(b.v-1)*8;
+    const dp=(1/(1+Math.exp(-md/5.2))-0.5)*100;
+    return `训练收益 ${buffPct(b.v)}・排位胜率 ${buffPct(1+dp/100)}`;
+  }
+  return buffPct(b.v);
+}
 function buffChips(){
   if(!S.tbuff||!S.tbuff.length) return "";
   return `<div class="buffs">${S.tbuff.map(b=>
-    `<span class="buff ${b.v>=1?'good':'bad'}">${b.n}<i>${b.left}周</i></span>`).join("")}</div>`;
+    `<span class="buff ${b.v>=1?'good':'bad'}">${b.n}<em>${buffEffect(b)}</em><i>${b.left}周</i></span>`).join("")}</div>`;
 }
 
 /* ---------- 事件池 ----------
@@ -7499,8 +7541,11 @@ function fitTier(tier){
   while(i < TIER_ORDER.length-1 && me >= CLUB_TIERS[TIER_ORDER[i+1]].expect + 6) i++;
   // 往下：只有差到离谱才降档；「够不着但被叫去试试」是允许的
   while(i > 0 && me < CLUB_TIERS[TIER_ORDER[i]].expect - 22) i--;
-  // 再被曝光度封顶：没人看见过你，再高的段位也只有次级联赛来问
-  const cap = TIER_ORDER.indexOf(exposureCap());
+  // 再被两道天花板封顶，取更严的那个：
+  //   曝光——没人看见过你，再高的段位也只有次级联赛来问
+  //   段位——天梯上还在钻石，豪门不会因为你直播人气高就来看你
+  const cap = Math.min(TIER_ORDER.indexOf(exposureCap()),
+                       TIER_ORDER.indexOf(rankCap()));
   if(i > cap) i = cap;
   return TIER_ORDER[i];
 }
@@ -7540,30 +7585,32 @@ function inviteFloorOk(){
    「一次定生死」不是难度，是惩罚。
    现在放开触发点、加两周冷却，目标是整局 2–4 次机会：
    失手一次还能再来，但也不至于多到没有分量。 */
-/* 各档次最早什么时候会来看你。
-   青训队和次级联赛的球探到处捡人，看到苗子就先联系；豪门要看完
-   整个赛季再说——所以窗口是分档次的，不是一刀切。
+/* 什么时候会有人来找你——看的是你，不是日历。
 
-   但都得在城市争霸赛（第 8 周报名、约第 12 周打完）之后：
-   试过让青训队第 5 周就来，结果玩家在业余赛开打前就签约走人，
-   整条赛事线被跳过——奖金、成就、决赛一个都碰不到。
-   「早」的价值在于比豪门早，不在于早到把内容跳过去。 */
-const TIER_EARLIEST = { acad:9, low:11, mid:13, top:15 };
-function earliestWeekFor(tier){
-  const w = TIER_EARLIEST[tier];
-  return (w === undefined) ? (typeof PRE_EARLIEST !== "undefined" ? PRE_EARLIEST : 13) : w;
+   原来这里是一张写死的周表（青训第 9 周、豪门第 15 周）。那等于告诉玩家
+   「几月几号之前你再强也没人要」，而现实里恰恰相反：转会窗口是给一线队
+   队员用的，一个还没打上职业的人，任何时候都可能被球探私信。
+
+   所以周表整个删掉，换成两把尺子——玩家自己的两项，和队伍的档次一一对应：
+     · 段位：你值不值得看。青训球探在天梯上就能翻到你，豪门要国服前列。
+     · 曝光：谁看得到你（exposureScore：人气 + 杯赛走多深 + 打过多少场）。
+   两把尺子各自算出「最高能被哪一档看到」，取更严的那个。
+   于是「弱队早、强队晚」自然发生，而不是靠日期硬卡。 */
+const TIER_RANK = { acad:26, low:44, mid:60, top:74 };   // 钻石 / 大师 / 宗师 / 王者
+function rankCap(){
+  const r = (S.pre && S.pre.rank) || 0;
+  let t = TIER_ORDER[0];
+  TIER_ORDER.forEach(k => { if(r >= TIER_RANK[k]) t = k; });
+  return t;
 }
 function canInvite(tierWanted){
   const P = S.pre; if(!P) return false;
   if(!inviteFloorOk()) return false;          // 连钻石都没到，没人会来
   if(P.invite && P.invite.pending) return false;        // 手上还有没处理的
   if(P.inviteCd && P.week < P.inviteCd) return false;   // 冷却中
-  // 太早不行，但「早」是分档次的：
-  // 青训队和次级联赛的球探本来就在到处捡人，看到苗子就先联系；
-  // 豪门要看完整个赛季再说。一刀切成第 13 周之后，等于把
-  // 「先去次级联赛打两年」这条真实存在的路堵死了。
-  if(P.week < earliestWeekFor(tierWanted)) return false;
-  // 手上还有没打完的杯赛，也先别来——让玩家把比赛打完
+  // 正在打的比赛优先。玩家在城市争霸赛/主播杯的赛程里时不发邀请——
+  // 一边打着比赛一边被叫去试训，是让人两头都做不好的假选择。
+  // 邀请不会因此丢失：发不出去的会进 inviteQ，打完再补发。
   if(typeof activeCups === "function" && activeCups().length) return false;
   return true;
 }
@@ -8514,7 +8561,7 @@ function bind(){
   st.querySelectorAll("[data-inc]").forEach(b=>b.onclick=()=>{
     const d=b.dataset.inc;if(talentLeft()>0&&S.talent[d]<10){S.talent[d]++;render()}});
   st.querySelectorAll("[data-dec]").forEach(b=>b.onclick=()=>{
-    const d=b.dataset.dec;if(S.talent[d]>1){S.talent[d]--;render()}});
+    const d=b.dataset.dec;if(S.talent[d]>0){S.talent[d]--;render()}});
   const nm=$("nm"); if(nm) nm.oninput=e=>{S.name=safeName(e.target.value)};
   const go=$("go"); if(go) go.onclick=()=>{
     S.name=(nm&&safeName(nm.value))||"无名"; S.showStart=true; render(); };

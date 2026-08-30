@@ -30,10 +30,27 @@ function tickBuffs(){
   S.tbuff.forEach(b=>b.left--);
   S.tbuff=S.tbuff.filter(b=>b.left>0);
 }
+/* 增益必须把效果写在脸上。
+   「设备拖后腿 2周」——拖的是什么后腿？「心无旁骛」又加什么？
+   玩家看不懂就等于没有这条增益，只剩一个吓人的红框。
+   所以每个 chip 都自己算出百分比，用当前公式现算，不写死。 */
+function buffPct(v){ const n=Math.round((v-1)*100); return `${n>=0?"+":"−"}${Math.abs(n)}%`; }
+function buffEffect(b){
+  // train：直接乘进 gain()，就是训练收益
+  if(b.k==="train") return `训练收益 ${buffPct(b.v)}`;
+  // mood：同样乘进 gain()，另外还改排位胜率（soloWinP 里 (v-1)*8 加在实力差上）。
+  //       实力差换算成胜率不是线性的，这里按「势均力敌时」折算，跟界面口径一致。
+  if(b.k==="mood"){
+    const md=(b.v-1)*8;
+    const dp=(1/(1+Math.exp(-md/5.2))-0.5)*100;
+    return `训练收益 ${buffPct(b.v)}・排位胜率 ${buffPct(1+dp/100)}`;
+  }
+  return buffPct(b.v);
+}
 function buffChips(){
   if(!S.tbuff||!S.tbuff.length) return "";
   return `<div class="buffs">${S.tbuff.map(b=>
-    `<span class="buff ${b.v>=1?'good':'bad'}">${b.n}<i>${b.left}周</i></span>`).join("")}</div>`;
+    `<span class="buff ${b.v>=1?'good':'bad'}">${b.n}<em>${buffEffect(b)}</em><i>${b.left}周</i></span>`).join("")}</div>`;
 }
 
 /* ---------- 事件池 ----------

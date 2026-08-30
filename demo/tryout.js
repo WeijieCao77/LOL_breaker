@@ -126,8 +126,11 @@ function fitTier(tier){
   while(i < TIER_ORDER.length-1 && me >= CLUB_TIERS[TIER_ORDER[i+1]].expect + 6) i++;
   // 往下：只有差到离谱才降档；「够不着但被叫去试试」是允许的
   while(i > 0 && me < CLUB_TIERS[TIER_ORDER[i]].expect - 22) i--;
-  // 再被曝光度封顶：没人看见过你，再高的段位也只有次级联赛来问
-  const cap = TIER_ORDER.indexOf(exposureCap());
+  // 再被两道天花板封顶，取更严的那个：
+  //   曝光——没人看见过你，再高的段位也只有次级联赛来问
+  //   段位——天梯上还在钻石，豪门不会因为你直播人气高就来看你
+  const cap = Math.min(TIER_ORDER.indexOf(exposureCap()),
+                       TIER_ORDER.indexOf(rankCap()));
   if(i > cap) i = cap;
   return TIER_ORDER[i];
 }
@@ -167,30 +170,32 @@ function inviteFloorOk(){
    「一次定生死」不是难度，是惩罚。
    现在放开触发点、加两周冷却，目标是整局 2–4 次机会：
    失手一次还能再来，但也不至于多到没有分量。 */
-/* 各档次最早什么时候会来看你。
-   青训队和次级联赛的球探到处捡人，看到苗子就先联系；豪门要看完
-   整个赛季再说——所以窗口是分档次的，不是一刀切。
+/* 什么时候会有人来找你——看的是你，不是日历。
 
-   但都得在城市争霸赛（第 8 周报名、约第 12 周打完）之后：
-   试过让青训队第 5 周就来，结果玩家在业余赛开打前就签约走人，
-   整条赛事线被跳过——奖金、成就、决赛一个都碰不到。
-   「早」的价值在于比豪门早，不在于早到把内容跳过去。 */
-const TIER_EARLIEST = { acad:9, low:11, mid:13, top:15 };
-function earliestWeekFor(tier){
-  const w = TIER_EARLIEST[tier];
-  return (w === undefined) ? (typeof PRE_EARLIEST !== "undefined" ? PRE_EARLIEST : 13) : w;
+   原来这里是一张写死的周表（青训第 9 周、豪门第 15 周）。那等于告诉玩家
+   「几月几号之前你再强也没人要」，而现实里恰恰相反：转会窗口是给一线队
+   队员用的，一个还没打上职业的人，任何时候都可能被球探私信。
+
+   所以周表整个删掉，换成两把尺子——玩家自己的两项，和队伍的档次一一对应：
+     · 段位：你值不值得看。青训球探在天梯上就能翻到你，豪门要国服前列。
+     · 曝光：谁看得到你（exposureScore：人气 + 杯赛走多深 + 打过多少场）。
+   两把尺子各自算出「最高能被哪一档看到」，取更严的那个。
+   于是「弱队早、强队晚」自然发生，而不是靠日期硬卡。 */
+const TIER_RANK = { acad:26, low:44, mid:60, top:74 };   // 钻石 / 大师 / 宗师 / 王者
+function rankCap(){
+  const r = (S.pre && S.pre.rank) || 0;
+  let t = TIER_ORDER[0];
+  TIER_ORDER.forEach(k => { if(r >= TIER_RANK[k]) t = k; });
+  return t;
 }
 function canInvite(tierWanted){
   const P = S.pre; if(!P) return false;
   if(!inviteFloorOk()) return false;          // 连钻石都没到，没人会来
   if(P.invite && P.invite.pending) return false;        // 手上还有没处理的
   if(P.inviteCd && P.week < P.inviteCd) return false;   // 冷却中
-  // 太早不行，但「早」是分档次的：
-  // 青训队和次级联赛的球探本来就在到处捡人，看到苗子就先联系；
-  // 豪门要看完整个赛季再说。一刀切成第 13 周之后，等于把
-  // 「先去次级联赛打两年」这条真实存在的路堵死了。
-  if(P.week < earliestWeekFor(tierWanted)) return false;
-  // 手上还有没打完的杯赛，也先别来——让玩家把比赛打完
+  // 正在打的比赛优先。玩家在城市争霸赛/主播杯的赛程里时不发邀请——
+  // 一边打着比赛一边被叫去试训，是让人两头都做不好的假选择。
+  // 邀请不会因此丢失：发不出去的会进 inviteQ，打完再补发。
   if(typeof activeCups === "function" && activeCups().length) return false;
   return true;
 }
