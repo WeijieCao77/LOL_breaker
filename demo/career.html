@@ -20,7 +20,28 @@
   --cyan:#4FBEDA; --cyan-dim:#1E5E75;
   --red:#C4535F;
   --ink:#E8F0F6; --ink-2:#9DB8C9; --ink-3:#5E8199;
+
+  /* 五个功能域的身份色。
+     原来每个标签页都是同样的深蓝卡片配金色标题，切过去认不出自己在哪——
+     缺的不是颜色，是分工。这五个色只用在三处：标签、卡片左边线、区块标题；
+     底色、面板、按钮一概不动，整体仍然是那个冷蓝夜景。
+     红色不参与分域，继续只表示「危险与损失」，这样它一出现就有意义。 */
+  --z-act:#C9A961;    /* 行动 · 金——你花掉行动点的地方，保留主色 */
+  --z-me:#4FBEDA;     /* 我   · 青——成长、状态、装备 */
+  --z-team:#5FA88B;   /* 队伍 · 绿——默契、信任、话语权 */
+  --z-world:#8B93D9;  /* 世界 · 蓝紫——你影响不了的外部世界，用冷色 */
+  --z-money:#D89B4A;  /* 经济 · 琥珀——商城、合同、收入 */
+  --z-rec:#7E93A6;    /* 记录 · 灰蓝——成就与日志，是查阅不是操作，刻意压低 */
+
+  --pin-h:0px;        /* 属性条实测高度，由 render() 写入，给标签栏定位用 */
 }
+/* 当前功能域：#stage 上的标记决定这一页用哪个身份色 */
+#stage{--zone:var(--z-act)}
+#stage[data-zone="me"]{--zone:var(--z-me)}
+#stage[data-zone="team"]{--zone:var(--z-team)}
+#stage[data-zone="world"]{--zone:var(--z-world)}
+#stage[data-zone="money"]{--zone:var(--z-money)}
+#stage[data-zone="rec"]{--zone:var(--z-rec)}
 *{box-sizing:border-box}
 html{background:var(--void)}
 body{
@@ -44,8 +65,10 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--gold);outline-o
 h1,h2,h3{text-wrap:balance}
 
 /* ---- 标题区 ---- */
-.top{padding:30px 0 20px;margin-bottom:20px;position:relative}
-.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
+/* 必须限定到 header：属性条里最高维度那一项也叫 .top（.pv.top），
+   不限定的话它会被这里的 padding:30px 撑高 50px，把整条属性条顶到 104px。 */
+header.top{padding:30px 0 20px;margin-bottom:20px;position:relative}
+header.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
   background:linear-gradient(90deg,var(--gold) 0%,var(--line-hot) 38%,transparent 100%)}
 .brand{display:flex;align-items:center;gap:16px;margin-bottom:10px}
 .brand svg{flex:none;filter:drop-shadow(0 0 12px rgba(201,169,97,.35))}
@@ -64,6 +87,20 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
   font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
 .hud .v{font-size:16px;font-weight:650;margin-top:1px;color:var(--gold-hi)}
 .hud .v small{font-size:11px;color:var(--ink-3);font-weight:400}
+/* 名气格下面的「还差几次直播」——档位名只说了你在哪，这行说还有多远 */
+.fnext{margin-top:5px;font-size:10px;line-height:1.5;color:var(--ink-3);letter-spacing:.02em}
+.fnext b{color:var(--gold);font-weight:650;font-variant-numeric:tabular-nums}
+.fbar{display:block;height:3px;background:rgba(4,10,18,.85);border:1px solid var(--line);
+  margin-bottom:4px;overflow:hidden}
+.fbar i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan-dim),var(--cyan))}
+/* 手机上 8 个格子按 96px 的下限只能排 3 列，折成 4 行占掉 333px——
+   一块「你是谁、现在第几周」的信息不值这个价。收紧到 4 列 2 行。 */
+@media(max-width:560px){
+  .hud>div{flex:1 1 74px;padding:6px 9px}
+  .hud .k{font-size:8.5px;letter-spacing:.1em}
+  .hud .v{font-size:13.5px;line-height:1.35}
+  .hud .v small{font-size:10px}
+}
 
 /* ---- 常驻属性条：sticky 贴顶，滚到哪都看得见 ---- */
 .pinbar{position:sticky;top:0;z-index:40;display:flex;gap:14px;align-items:center;
@@ -95,10 +132,10 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .card{background:linear-gradient(180deg,rgba(20,55,78,.92),rgba(14,42,62,.92));
   border:1px solid var(--line);padding:20px;margin-bottom:16px;position:relative;
   clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px)}
-.card::before{content:"";position:absolute;left:0;top:13px;width:1px;height:26px;background:var(--gold)}
+.card::before{content:"";position:absolute;left:0;top:13px;width:3px;height:26px;background:var(--zone,var(--gold))}
 .card::after{content:"";position:absolute;right:13px;bottom:0;width:26px;height:1px;background:var(--gold)}
 .card h2{font-size:11px;letter-spacing:.2em;text-transform:uppercase;
-  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-weight:600;color:var(--gold);
+  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-weight:600;color:var(--zone,var(--gold));
   margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line);
   display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .card h2 em{font-style:normal;color:var(--ink-2);text-transform:none;letter-spacing:.04em}
@@ -108,7 +145,9 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 
 /* ---- 选项 / 行动 ---- */
 .grid{display:grid;gap:9px}
-.g5{grid-template-columns:repeat(auto-fit,minmax(118px,1fr))}
+/* 118 → 140：行动按钮上多了一行「体能/收益」标注，118px 宽会把它挤成两行，
+   按钮因此高一倍。140 在桌面和手机上都得到约 150px 的列宽，标注正好一行放下。 */
+.g5{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
 .g2{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
 .opt,.act{background:linear-gradient(180deg,rgba(30,74,99,.5),rgba(14,42,62,.6));
   border:1px solid var(--line);padding:13px;text-align:left;color:var(--ink);
@@ -122,6 +161,24 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .opt .d,.act .d{font-size:12.5px;color:var(--ink-2);margin-top:3px;line-height:1.5}
 .act .t{font-size:14px}
 .act .d{font-size:11.5px;color:var(--ink-3)}
+
+/* ---- 行动成本标注 ----
+   花掉几个行动点、体能掉多少、换回什么——点之前就看得见。
+   数值由 costTrain/costSolo/costStream/costRest 现算，这里只管排版。 */
+.act .cost{
+  margin-top:7px;padding-top:6px;border-top:1px solid rgba(47,110,140,.34);
+  display:flex;flex-wrap:wrap;align-items:baseline;
+  font-size:10.5px;line-height:1.75;color:var(--ink-3);
+  font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.act .cost span+span::before{content:"·";margin:0 5px;color:var(--line-hot)}
+.act .cost i{font-style:normal;font-weight:650}
+.act .cost .ap{color:var(--gold)}
+.act .cost .up{color:var(--cyan)}
+.act .cost .dn{color:#B58E52}
+.act[disabled] .cost{opacity:.75}
+/* 行动点恒为 1，在体能条那里统一说明一次 */
+.apnote{grid-column:1/-1;margin-top:7px;font-size:11.5px;color:var(--ink-3);line-height:1.6}
+.apnote b{color:var(--gold)}
 
 /* ---- 天赋分配 ---- */
 .tal{display:flex;align-items:center;gap:13px;padding:10px 0;border-bottom:1px solid var(--line)}
@@ -277,6 +334,22 @@ input[type=text]::placeholder{color:var(--ink-3)}
 .tagline{color:var(--ink-2);font-size:14.5px;margin:12px 0 0;letter-spacing:.02em}
 .pillars{font-size:12px;color:var(--ink-3);margin:6px 0 0;letter-spacing:.06em}
 
+/* ---- 收起态：进了游戏之后的大标题 ----
+   实测：标题区 237px + HUD 118 + 属性条 109 + 标签栏 44 = 518px，
+   占掉 900px 首屏的 58%，内容只剩 42%。
+   那块「破局者 / THE BREAKER / S12 到 S16……」第一次看很好，
+   之后每一屏都在重复占地方——它是仪式感，不是导航。
+   收成一条 ~48px 的窄横幅，首屏可用面积回到约 63%。 */
+header.top.compact{padding:12px 0 10px;margin-bottom:12px}
+header.top.compact .brand{gap:11px;margin-bottom:0}
+header.top.compact .brand svg{width:30px;height:30px}
+header.top.compact .game-kicker,
+header.top.compact .game-en,
+header.top.compact .tagline,
+header.top.compact .pillars{display:none}
+header.top.compact .game-title{font-size:19px;letter-spacing:.1em;text-shadow:none}
+header.top.compact::after{opacity:.5}
+
 /* 离散指示器：只给档位感，不泄露精确数值 */
 .pips{display:flex;gap:5px;align-items:center}
 .pips i{flex:1;height:8px;background:rgba(6,21,32,.85);border:1px solid var(--line);
@@ -345,25 +418,67 @@ td .tlogo{margin-right:5px}
 .ru-icon .rankicon{filter:drop-shadow(0 0 26px rgba(201,169,97,.7))}
 .ru-eyebrow{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:11px;letter-spacing:.32em;
   color:var(--gold);text-transform:uppercase;margin-bottom:8px}
+/* 际遇 / 更衣室：要玩家做决定的遮罩。
+   比「升段」「夺冠」那类播报宽一些，文字左对齐——它是要读的，不是要看的。
+   选项多时内部滚动，别让整个遮罩超出屏幕。 */
+/* 用 width 而不是只给 max-width：父容器是 place-items:center 的网格，
+   只给 max-width 的话框会被内容撑成多窄算多窄，两个选项挤成竖排。 */
+.ev-inner{width:min(560px,calc(100vw - 34px));max-width:none;
+  text-align:left;padding:24px 28px;max-height:86vh;overflow-y:auto}
+.ev-inner .ru-eyebrow{text-align:left;margin-bottom:10px}
+.ev-q{font-weight:650;font-size:16px;line-height:1.6;color:var(--gold-hi)}
+.ev-ctx{font-size:13px;color:var(--ink-2);margin-top:7px;line-height:1.6}
 .ru-tier{font-size:26px;font-weight:700;color:var(--ink-2);letter-spacing:.06em}
 .ru-tier b{color:var(--gold-hi);text-shadow:0 0 24px rgba(201,169,97,.6)}
 .ru-txt{color:var(--ink-2);font-size:14px;margin:14px 0 22px;line-height:1.7}
 @media(prefers-reduced-motion:reduce){.rankup,.ru-icon{animation:none}}
 
 /* ---- 分栏 ---- */
+/* 固定住。原来是 static，翻到第三屏想换页得先滚回顶部——
+   而属性条反倒是 sticky 的，两者的角色正好反了。
+   top 用实测的属性条高度，避免写死一个在手机上会错位的数。 */
 .tabs{display:flex;gap:2px;margin-bottom:16px;background:var(--line);
   border:1px solid var(--line);overflow-x:auto;
+  position:sticky;top:var(--pin-h,0px);z-index:30;
+  scrollbar-width:none;
   clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px)}
+.tabs::-webkit-scrollbar{display:none}
 .tab{flex:1 0 auto;min-width:72px;background:linear-gradient(180deg,var(--panel),rgba(6,21,32,.9));
   border:none;color:var(--ink-3);padding:11px 16px;font-size:14px;font-weight:600;
   letter-spacing:.06em;position:relative;white-space:nowrap;transition:color .15s,background .15s}
 .tab:hover{color:var(--ink-2);background:linear-gradient(180deg,var(--panel-2),var(--panel))}
-.tab.on{color:var(--gold-hi);background:linear-gradient(180deg,rgba(201,169,97,.2),rgba(14,42,62,.95))}
+.tab.on{color:var(--ink);background:linear-gradient(180deg,rgba(20,55,78,.95),rgba(14,42,62,.98))}
 .tab.on::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
-  background:var(--gold);box-shadow:0 0 10px var(--gold)}
+  background:var(--tz,var(--gold));box-shadow:0 0 10px var(--tz,var(--gold))}
+/* 每个标签带自己的域色：未选中时只染下划线的预留位，选中后整条亮起来 */
+.tab.z-act{--tz:var(--z-act)}   .tab.z-me{--tz:var(--z-me)}
+.tab.z-team{--tz:var(--z-team)} .tab.z-world{--tz:var(--z-world)}
+.tab.z-money{--tz:var(--z-money)} .tab.z-rec{--tz:var(--z-rec)}
+.tab.on{color:var(--tz,var(--gold-hi))}
 .tcount{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:10px;margin-left:6px;
   padding:1px 6px;background:rgba(6,21,32,.7);color:var(--gold);border-radius:99px}
 @media(max-width:560px){.tab{padding:10px 12px;font-size:13px;min-width:62px}}
+
+/* ---- 桌面：导航改成左侧竖栏 ----
+   宽屏下内容区固定 1000px 且单列，左右各空一大块，纵向却要滚三屏——
+   横向空间完全没用上。把标签栏立起来放到左边：横向花掉 96px，
+   换来导航永久可见，而且正好吃掉原本浪费的留白。
+   纯 CSS 实现，DOM 结构不动：#stage 变成两列网格，
+   .tabs 占满左列所有行，其余子元素一律进右列（源码顺序即上下顺序）。
+   窄屏自动退回原来的横条，手机上不受影响。 */
+@media(min-width:900px){
+  #stage{display:grid;grid-template-columns:96px minmax(0,1fr);gap:0 16px;align-items:start}
+  #stage>*{grid-column:2;min-width:0}
+  #stage>.tabs{
+    grid-column:1;grid-row:1/-1;align-self:start;
+    position:sticky;top:calc(var(--pin-h,0px) + 8px);
+    flex-direction:column;gap:1px;margin:0;overflow:visible}
+  #stage>.tabs .tab{flex:none;width:100%;min-width:0;text-align:center;
+    padding:13px 6px;font-size:13.5px;letter-spacing:.08em}
+  /* 竖栏里下划线改成左边一道竖线，方向对得上 */
+  #stage>.tabs .tab.on::after{left:0;right:auto;top:0;bottom:0;width:2px;height:auto}
+  #stage>.tabs .tcount{display:block;margin:4px auto 0}
+}
 
 /* ---- 实力差距条 ---- */
 .gapbar{margin-top:12px;padding:11px 15px;border-left:3px solid var(--line);
@@ -541,7 +656,7 @@ td .tlogo{margin-right:5px}
 </head>
 <body>
 <div class="wrap">
-  <header class="top">
+  <header class="top" id="top">
     <div class="brand">
       <svg width="66" height="66" viewBox="0 0 100 100" aria-hidden="true">
         <defs>
@@ -1429,6 +1544,7 @@ function preAct(k,dim){
     if(gift>=50&&!P.bigGift){P.bigGift=true;
       preLog(`直播间刷起了礼物，这一场进账 <b>${Math.round(gift)} 万</b>。`,"good");}
     if(S.fame>=120&&!P.famous){P.famous=true;preLog(`直播间人数破万。<b>你在圈子里有名气了</b>，虽然还没打过一场正赛。`,"good");}
+    if(typeof fireEvent==="function") fireEvent("streamGift",0.20);
   } else if(k==="train"){
     const c=capOf(dim);
     if(dim==="操作"&&typeof btkNote==="function") btkNote("op",1);   // 到瓶颈也要能攒突破进度
@@ -1715,6 +1831,8 @@ function startSeason(first,split){
     S.log.push(`<div class="hi">— ${SEASONS[S.si].tag} 赛季开始（版本：${SEASONS[S.si].ver}）—</div>`);
     const sea=SEASONS[S.si];
     pushEvent(`<b>${sea.tag} 开赛</b>，版本主题「${sea.ver}」。本赛季 ${sea.fav.map(x=>POSN[x]).join("、")} 是红利位，<b>${sea.dim}</b>的权重上升。`,"big","版本");
+    // 版本真的换了，才谈得上「你的英雄池被砍了一刀」
+    if(typeof fireEvent==="function") fireEvent("patch",0.5);
   }
   render();
 }
@@ -1750,11 +1868,11 @@ function trainBtn(d, ap, attr){
     dis: (ap<=0||dead),
     style: trainable?'style="border-color:var(--gold)"':'',
     title: `练${d}${trainable?' <span class="tag">冲击瓶颈</span>':''}`,
-    desc: trainable ? `已满，继续投入可冲破上限　<b>${P.prog?P.prog():""}</b>`
+    desc: trainable ? `已满，继续投入可冲破上限　<b>${P.prog?P.prog():""}</b>${costTrain(d)}`
         : locked   ? `已达瓶颈 · 突破要做<b>战术复盘</b>，签约战队后才有`
         : dead     ? `已达瓶颈 · 突破靠<b>${P&&P.act?P.act:"别的途径"}</b>${
                        P&&P.auto&&P.prog?`　${P.prog()}`:""}`
-        : DIM_HINT[d] };
+        : DIM_HINT[d]+costTrain(d) };
 }
 function gain(d){
   const t=S.talent[d],c=cap(t),room=clamp(1-(S.attrs[d]/c),0,1);
@@ -1782,6 +1900,106 @@ function addFame(n){
   if(n<0){ S.fame=Math.max(0,S.fame+n); return; }
   const damp=1/(1+Math.max(0,S.fame)/150);
   S.fame=Math.max(0,S.fame+n*damp);
+}
+
+/* ---------- 行动成本标注 ----------
+   点之前就该知道这一下花掉什么、换回什么。全部现算，不写死：
+   训练收益随「离瓶颈还剩多少」递减，直播收入随人气涨，
+   休息量受理疗师和备战阶段影响——写死的数字很快就会骗人。
+   口径跟界面一致：显示的是「体能」（=100−疲劳），所以训练是体能 −9。
+   按钮只有 123px 宽，所以标注必须短：行动点恒为 1，统一在体能条那里说一次，
+   不在九个按钮上各写一遍——那会把按钮撑高一倍半，等于用可读性换可读性。 */
+function costBits(bits){
+  const s=bits.filter(Boolean).map(b=>`<span>${b}</span>`).join("");
+  return s?`<div class="cost">${s}</div>`:"";
+}
+const _eDn=n=>`体能<i class="dn">−${Math.round(n)}</i>`;
+const _eUp=n=>`体能<i class="up">+${Math.round(n)}</i>`;
+const _prepMul=()=>(S.step==="prep")?0.45:1;
+/* 名气有阻尼，标注要写玩家真正拿到的那个数 */
+const _fameReal=n=>n*(1/(1+Math.max(0,S.fame||0)/150));
+
+/* 职业前和赛季中是两套数值（训练 ×0.85、休息 +32、直播基数不同），
+   标注必须跟着当前阶段走，否则等于换个地方骗人。 */
+const _isPre=()=>S.step==="pre";
+function costTrain(d){
+  const capped=S.attrs[d]>=capOf(d);
+  const g=gain(d)*(_isPre()?0.85:1);
+  return costBits([_eDn(9),
+    capped?null:`${d}<i class="up">+${g.toFixed(1)}</i>`]);
+}
+function costSolo(){
+  if(_isPre()) return costBits([_eDn(8), `段位±`, `五维微涨`]);
+  const m=_prepMul();
+  let f=null;
+  if(S.form!==undefined){
+    const d=((68-S.form)*0.11+1.2)*m;
+    if(Math.abs(d)>=0.05) f=`状态<i class="${d>0?"up":"dn"}">${d>0?"+":"−"}${Math.abs(d).toFixed(1)}</i>`;
+  }
+  return costBits([_eDn(7*m), f, `五维微涨`]);
+}
+/* 一次直播往 addFame() 里送的原始名气值（阻尼在 addFame 内部再打）。
+   职业前基数跟着段位走、主播出身 ×1.7；赛季中固定 4.5、主播出身 ×1.6。
+   抽出来是因为「还要播几次能升档」也要用它，两处算法必须是同一个。 */
+function streamFameRaw(){
+  const pre=_isPre();
+  const m=S.origin==="streamer"?(pre?1.7:1.6):1.0;
+  const mul=(typeof streamFameMul==="function")?streamFameMul():1;
+  return pre ? (1.9+((S.pre&&S.pre.rank)||0)*0.05)*m*mul : 4.5*m*mul;
+}
+/* 距离下一个名气档还差几次直播。
+   名气有阻尼（越有名越难涨），所以不能拿差值除以单次收益，得一次次往前推。
+   返回 null = 已经到顶。 */
+function fameToNext(){
+  const cur=S.fame||0;
+  const nx=FAME_TIERS.find(([at])=>at>cur);
+  if(!nx) return null;
+  const raw=streamFameRaw();
+  let v=cur,n=0;
+  if(raw>0){ while(v<nx[0]&&n<400){ v+=raw*(1/(1+Math.max(0,v)/150)); n++; } }
+  return {at:nx[0], name:nx[1], need:(raw>0&&n<400)?n:null,
+          pct:clamp((cur-fameTierAt(cur))/(nx[0]-fameTierAt(cur))*100,0,100)};
+}
+/* 当前所在档位的起点值，用来算档内进度 */
+function fameTierAt(v){
+  v=(v===undefined)?S.fame:v;
+  let at=0; FAME_TIERS.forEach(([a])=>{ if(v>=a) at=a; });
+  return at;
+}
+/* HUD 里名气格下面那一行：一条细进度条 + 「还差几次直播」。
+   原来只写一个档位名，等于告诉你「你在这儿」却不说「还有多远」。
+   仍然不甩原始数字——「人气 137」没人知道是什么概念，
+   但「再播 6 次上一档」是句人话。 */
+function fameNextNote(){
+  const nx=(typeof fameToNext==="function")?fameToNext():null;
+  if(!nx) return `<div class="fnext"><span class="fbar"><i style="width:100%"></i></span>已经到顶</div>`;
+  const need=nx.need;
+  /* 档位越高，靠直播推得越慢（阻尼），到后面要几百次——
+     这时候报个「再播 374 次」等于误导。名气本来就主要来自战绩，
+     直播只是慢速补充，所以数字大的时候把这句话直接说出来。 */
+  /* HUD 格子很窄，档位名放不下——放进 title，格子里只留最要紧的那个数。
+     完整的「距下一档 N 次」写在直播按钮上，那里才是要做决定的地方。 */
+  // need 为 null 表示推演到上限都没够着——那本来就是「靠直播到不了」，和数字太大是同一回事
+  const far = (need===null || need>30);
+  const txt = far ? `直播推不动了 · 靠战绩` : `再播 <b>${need}</b> 次升档`;
+  return `<div class="fnext" title="下一档：${nx.name}${
+      far?"（这一档主要靠比赛成绩，直播推不上去）":`（再播 ${need} 次）`}">
+    <span class="fbar"><i style="width:${nx.pct.toFixed(0)}%"></i></span>${txt}</div>`;
+}
+function costStream(){
+  const pre=_isPre();
+  const inc=(typeof streamIncome==="function")?streamIncome():0;
+  const nx=fameToNext();
+  return costBits([_eDn(pre?4:5),
+    `人气<i class="up">+${_fameReal(streamFameRaw()).toFixed(1)}</i>`,
+    `<i class="up">+${Math.round(inc)}</i>万`,
+    // 只在还够得着的时候报数；几百次的时候报数等于误导（那一档得靠战绩）
+    (nx&&nx.need&&nx.need<=30)?`距下一档 <i class="up">${nx.need}</i> 次`:null]);
+}
+function costRest(){
+  if(_isPre()) return costBits([_eUp(32), `心态<i class="up">+0.5</i>`]);
+  const v=-((S.buff&&S.buff.physio)?-42:-30)*((S.bg&&S.bg.rest)||1)*_prepMul();
+  return costBits([_eUp(v)]);
 }
 
 function doTrain(d){
@@ -1830,7 +2048,9 @@ function doAction(k){
   else if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
     addFame(4.5*m*(typeof streamFameMul==="function"?streamFameMul():1));
     S.money+=streamIncome();addFat(5);
-    if(typeof checkStreamBiz==="function") checkStreamBiz();}
+    if(typeof checkStreamBiz==="function") checkStreamBiz();
+    // 榜一大哥只会在你真的开播的时候出现，不该每周瞎摇
+    if(typeof fireEvent==="function") fireEvent("streamGift",0.20);}
   else{ if(typeof btkNote==="function") btkNote("rest",1);
     addFat(((S.buff&&S.buff.physio)?-42:-30)*((S.bg&&S.bg.rest)||1)*prepMul);
     S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.6*prepMul);}
@@ -1888,9 +2108,9 @@ function viewSeason(){
   if(T!=="act") return `${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
     ${tabBar(TABS_SEASON)}
     ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
-    ${T==="team"?squadCard()+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():"")+rivalCard()+standingsCard():""}
+    ${T==="team"?squadCard()+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
     ${T==="shop"?shopCard():""}
-    ${T==="news"?eventsCard()+newsCard():""}
+    ${T==="world"?standingsCard()+rivalCard()+newsCard()+eventsCard():""}
     ${T==="ach"?achCard():""}`;
   const oppName=S.schedule[S.week-1];
   const opp=S.world[S.homeLeague||"LPL"].find(t=>t.name===oppName);
@@ -1912,11 +2132,11 @@ function viewSeason(){
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">打排位</div><div class="d">五项小涨 + 找回手感${
-          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}</div></button>
+          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
       <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入</div></button>
+        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入${costStream()}</div></button>
       <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">休息</div><div class="d">清疲劳，护状态</div></button>
+        <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
     <div class="row">
@@ -1933,18 +2153,22 @@ function viewSeason(){
   ${tabBar(TABS_SEASON)}
   ${T==="act"?(typeof injuryCard==="function"?injuryCard():"")+nextMatchCard()+attrCard():""}
   ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
-  ${T==="team"?squadCard()+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():"")+rivalCard()+standingsCard():""}
+  ${T==="team"?squadCard()+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
   ${T==="shop"?shopCard():""}
-  ${T==="news"?eventsCard()+newsCard():""}
+  ${T==="world"?standingsCard()+rivalCard()+newsCard()+eventsCard():""}
   ${T==="ach"?achCard():""}`;
 }
 
+/* 和际遇一样改成遮罩——更衣室是要你表态的，藏在行动卡下面等于没有 */
 function lockerCard(){
   const {ev,target}=S.locker;
-  return `<div class="card"><h2>更衣室</h2>
-    <div class="node"><div class="q">${typeof avatarOf==="function"?avatarOf(target,34):""} ${ev.q(target)}</div><div class="ctx">${ev.ctx}</div>
-    <div class="grid g2">${ev.a.map((a,i)=>`<button class="opt" data-locker="${i}">
-      <div class="t">${a.t}</div></button>`).join("")}</div></div></div>`;
+  return `<div class="rankup"><div class="ru-inner ev-inner">
+    <div class="ru-eyebrow">更衣室</div>
+    <div class="ev-q">${typeof avatarOf==="function"?avatarOf(target,34):""} ${ev.q(target)}</div>
+    <div class="ev-ctx">${ev.ctx}</div>
+    <div class="grid g2" style="margin-top:14px">${ev.a.map((a,i)=>`<button class="opt" data-locker="${i}">
+      <div class="t">${a.t}</div></button>`).join("")}</div>
+  </div></div>`;
 }
 function teamCard(){
   const mates=myRoster().filter(p=>!p.me);
@@ -1994,11 +2218,15 @@ function fatigueBar(){
   const f=Math.round(S.fatigue);
   const tier=f>=75?"bad":f>=45?"warn":"ok";
   const txt=f>=75?"透支——状态明显下滑":f>=45?"有点累了":"状态在线";
+  // 行动点恒为 1，在这里统一说一次，就不用在每个按钮上重复
+  const ap=(S.step==="pre")?(S.pre&&S.pre.ap):S.ap;
   return `<div class="energy">
     <div class="elabel">体能 <b>${100-f}</b><small>/100</small></div>
     <div class="ebar ${tier}"><div class="efill" style="width:${100-f}%"></div>
       <div class="emark" style="left:25%"></div><div class="emark" style="left:55%"></div></div>
-    <div class="enote ${tier}">${txt}</div></div>`;
+    <div class="enote ${tier}">${txt}</div>
+    <div class="apnote">下面每个行动消耗 <b>1</b> 行动点${
+      ap!==undefined?`，本周还剩 <b>${ap}</b> 点`:""}。按钮上写的是该行动的体能变化与收益。</div></div>`;
 }
 function attrCard(){
   return `<div class="card"><h2>你的属性<em>${S.age} 岁 · ${POSN[S.pos]}</em></h2>
@@ -2185,9 +2413,23 @@ function endMatch(){
   if(typeof rollInjury==='function'&&S.fatigue>55) rollInjury('赛后');
   simWorld(); m.done=true;
   if(!won) tryLockerEvent();
+  /* 赛后事件：每一条都由这场比赛里真的发生的事引出来。
+     fireEvent 内部会检查「已经有事件挂着」，所以这里按重要性排，先到先得。 */
+  if(typeof fireEvent==="function"){
+    // 赢下比自己强的队 → 官方采访点名要你
+    if(won && ctx.gap < -1.5) fireEvent("bigWin", 0.45);
+    // 连败到第三场 → 经理找你谈
+    if(!won && (S.record.l||0) >= 3) fireEvent("skid", 0.40);
+    // 营销号剪的是「你这场没成的那几个操作」，所以必须真的失手过；
+    // 输了比赢了更容易被拿来做文章。
+    if((m.nodeFails||0) > 0) fireEvent("hater", won?0.10:0.22);
+    // 强队爆冷是 simWorld 真的模拟出来的，不是编的
+    if(S._upset) fireEvent("upset", 0.55);
+  }
   render();
 }
 function simWorld(){
+  S._upset=null;          // 每周重摇：际遇里说的冷门必须是「这一周真的发生的」
   Object.keys(S.world).forEach(lg=>{
     const sea=SEASONS[S.si];
     const ts=S.world[lg].filter(t=>!(lg==="LPL"&&(t.name===S.team||(S.match&&t.name===S.match.oppName))));
@@ -2197,6 +2439,11 @@ function simWorld(){
       const aw=rnd()<p;
       S.standings[lg][a.name][aw?"w":"l"]++;
       S.standings[lg][b.name][aw?"l":"w"]++;
+      // 赛前明显不被看好的一方赢了 —— 记下来给际遇当素材，
+      // 这样「强队今天输了」说的是真发生过的一场，而不是随手编个队名。
+      if(lg===(S.homeLeague||"LPL")&&!S._upset&&(aw?p<0.33:p>0.67)){
+        S._upset = aw ? {winner:a.name,loser:b.name} : {winner:b.name,loser:a.name};
+      }
       if(lg==="LPL"){
         const f1=noteForm(a.name,aw), f2=noteForm(b.name,!aw);
         const rk=lplRank(), notable=new Set(
@@ -2384,9 +2631,9 @@ function prepPanel(){
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">打排位</div><div class="d">找回手感${
-          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}</div></button>
+          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
       <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">休息</div><div class="d">清疲劳，护状态</div></button>
+        <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${typeof squadActs==="function"?squadActs():""}
     <div class="row"><button class="btn" id="prepgo">上场 →</button></div>
@@ -2400,6 +2647,8 @@ function endSeason(result,seed){
   if(up){ S.money=Math.max(0,S.money-up);
     pushEvent(`往家里寄了 <b>${up} 万</b>。`,"info","家用"); }
   trustDecay(); squadDecay(); checkBreakthrough();
+  // 赛段打完先攒一次球探关注——转会不该只在休赛期那一瞬间才有动静
+  if(typeof noteScoutInterest==='function') noteScoutInterest();
   if(typeof cloutTick==='function') cloutTick();
   if(typeof rollForm==='function') rollForm();
   if(typeof rollWorldForm==='function'){ rollWorldForm(); formNews(); }
@@ -2622,11 +2871,11 @@ function offPanel(){
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">打排位</div><div class="d">五项小涨 + 找回手感${
-          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}</div></button>
+          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
       <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入</div></button>
+        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入${costStream()}</div></button>
       <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">休息</div><div class="d">清疲劳，护状态</div></button>
+        <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${typeof squadActs==="function"?squadActs():""}
     ${(()=>{ if(!S.career||S.off.next!=="year"||typeof canAskTransfer!=="function") return "";
@@ -2826,33 +3075,44 @@ function rankUpCard(){
     </div></div>`;
 }
 /* ---------- 分栏 ---------- */
+/* z = 功能域，决定这一页的身份色。
+   原来六个标签页长得一模一样（同样的深蓝卡片 + 同样的金色标题），
+   切过去认不出自己在哪——问题不是颜色不够多，是颜色不承载信息。
+   现在五个域各一个色，只用在三个地方：标签、卡片左边线、区块标题。 */
 const TABS_PRE=[
-  {k:"act",  n:"本周"},
-  {k:"sched",n:"赛程"},
-  {k:"squad",n:"战队"},
-  {k:"pro",  n:"联赛"},
-  {k:"shop", n:"商城"},
-  {k:"ach",  n:"成就"},
-  {k:"log",  n:"日志"}
+  {k:"act",  n:"本周", z:"act"},
+  {k:"squad",n:"战队", z:"team"},
+  {k:"world",n:"世界", z:"world"},
+  {k:"shop", n:"商城", z:"money"},
+  {k:"ach",  n:"成就", z:"rec"},
+  {k:"log",  n:"日志", z:"rec"}
 ];
 const TABS_SEASON=[
-  {k:"act",  n:"本周"},
-  {k:"me",   n:"我的"},
-  {k:"team", n:"队伍"},
-  {k:"shop", n:"商城"},
-  {k:"news", n:"动态"},
-  {k:"ach",  n:"成就"}
+  {k:"act",  n:"本周", z:"act"},
+  {k:"me",   n:"我的", z:"me"},
+  {k:"team", n:"队伍", z:"team"},
+  {k:"world",n:"世界", z:"world"},
+  {k:"shop", n:"商城", z:"money"},
+  {k:"ach",  n:"成就", z:"rec"}
 ];
 function tabBar(list){
   const cur=curTab(list);
   return `<div class="tabs">${list.map(t=>
-    `<button class="tab ${t.k===cur?'on':''}" data-tab="${t.k}">${t.n}${
+    `<button class="tab z-${t.z||"act"} ${t.k===cur?'on':''}" data-tab="${t.k}">${t.n}${
       t.k==="ach"?`<span class="tcount">${ACHIEVEMENTS.filter(a=>hasAch(a.id)).length}</span>`:""}</button>`
   ).join("")}</div>`;
 }
 function curTab(list){
   const has=list.some(t=>t.k===S.tab);
   return has?S.tab:list[0].k;
+}
+/* 当前所在的功能域，给 #stage 打个标记，卡片左边线和区块标题跟着换色。
+   只有这两处换——底色、面板、按钮一律不动，整体还是那个冷蓝夜景。 */
+function curZone(){
+  const list = S.step==="pre" ? TABS_PRE : S.step==="season" ? TABS_SEASON : null;
+  if(!list) return "act";
+  const k=curTab(list), t=list.find(x=>x.k===k);
+  return (t&&t.z)||"act";
 }
 
 function actPanelPre(){
@@ -2895,14 +3155,14 @@ function actPanelPre(){
       <button class="act" data-pre="rank" ${P.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">打排位</div><div class="d">${(()=>{const p=soloWinP();
           return p>=0.66?"这个分段你打得动":p>=0.5?"五五开，能上但不稳":
-                 p>=0.34?"打得挺吃力，容易掉":"实力不够，硬打只会掉分"})()}</div></button>
+                 p>=0.34?"打得挺吃力，容易掉":"实力不够，硬打只会掉分"})()}${costSolo()}</div></button>
       <button class="act" data-pre="stream" ${P.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入</div></button>
+        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入${costStream()}</div></button>
       ${DIMS.map(d=>{const b=trainBtn(d,P.ap);
         return `<button class="act" data-pretrain="${d}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-pre="rest" ${P.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">休息</div><div class="d">清疲劳</div></button>
+        <div class="t">休息</div><div class="d">清疲劳${costRest()}</div></button>
     </div>
     ${typeof routineBar==="function"?routineBar():""}
     <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队<span class="tag">未解锁</span></h3>
@@ -2934,7 +3194,7 @@ function viewPre(){
   ${S.cupMatch?cupMatchCard():""}
   ${T==="act"&&!S.cupMatch?(typeof cupCard==="function"?cupCard():""):""}
   ${T==="act"&&!S.cupMatch?(typeof injuryCard==="function"?injuryCard():"")+attrCard():""}
-  ${T==="sched"?scheduleCard():""}
+  ${T==="world"?scheduleCard()+proCard()+eventsCard():""}
   ${T==="squad"?lockedCard("战队实力","签约职业战队后解锁。在那之前，你只有自己。",
       `<p>加入战队后，这里会显示：</p>
        <div class="attrs" style="opacity:.4;pointer-events:none">
@@ -2947,7 +3207,6 @@ function viewPre(){
          你的个人数值只是基础战力的一部分——五个人怎么变成一支队，是另一半。</p>`)
     +lockedCard("队友","签约职业战队后解锁。",
       `<p class="note" style="margin:0">每个队友对你有独立的信任度，会因为你的选择涨落，也会影响全队发挥。</p>`):""}
-  ${T==="pro"?proCard()+eventsCard():""}
   ${T==="shop"?gearCard()+shopCard()
       +lockedCard("俱乐部资源","签约职业战队后解锁。",
         `<p class="note" style="margin:0">私教、理疗师、团队建设、舆论公关——
@@ -4622,6 +4881,8 @@ function disruptSynergy(changed,who){
   if(hit>=5&&typeof pushEvent==="function"){
     pushEvent(`阵容变动：${who||"新人加入"}。<b>默契 ${Math.round(before)} → ${Math.round(S.squad.syn)}</b>，
       五个人要重新磨。纸面强了，打起来未必。`,"bad","磨合");
+    // 队友真的被换走了，才有「走之前来找你吃顿饭」这回事
+    if(typeof fireEvent==="function") fireEvent("exMate",0.45);
   }
 }
 /* 每次渲染前对一下名单，有变动就砸默契 */
@@ -4686,8 +4947,11 @@ function squadBreakdown(players,fatigue,verFav,team){
 }
 
 /* ---------- 战队行动（签约后才有） ---------- */
+/* sum 是给按钮上那行成本标注用的，就写在效果旁边——
+   分开放两处，改了数值忘了改文案是迟早的事。 */
 const SQUAD_ACTS=[
   {k:"scrim", n:"训练赛", d:"和别的队打，最接近实战",
+   sum:["默契 +3.4","战术 +3.0","信任 +1.2","有几率摩擦"],
    fat:16, run:()=>{ addSquad("syn",3.4); addSquad("tac",3.0);
      if(typeof addTrustAll==="function") addTrustAll(1.2);
      if(rnd()<0.28){
@@ -4697,13 +4961,16 @@ const SQUAD_ACTS=[
          addSquad("tac",1.6); addTrust(t.id,-2); }
      }}},
   {k:"vod", n:"战术复盘", d:"逐帧过录像，把上一场的问题挖出来",
+   sum:["战术 +4.2","运营 +0.35","攒运营突破"],
    fat:9,  run:()=>{ addSquad("tac",4.2);
      if(typeof btkNote==="function") btkNote("vod",1);   // 突破「运营」瓶颈的机械条件
      S.attrs.运营=Math.min(capOf("运营"),S.attrs.运营+0.35); }},
   {k:"drill", n:"战队合练", d:"专项练配合，团战执行会顺很多",
+   sum:["默契 +4.4","信任 +1.8"],
    fat:13, run:()=>{ addSquad("syn",4.4);
      if(typeof addTrustAll==="function") addTrustAll(1.8); }},
   {k:"duo", n:"队友双排", d:"排位里带一带，练默契也拉近关系",
+   sum:["默契 +2.2","信任 +3.4","操作 +0.25"],
    fat:7,  run:()=>{ addSquad("syn",2.2);
      if(typeof addTrustAll==="function") addTrustAll(3.4);
      S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.25); }}
@@ -4789,7 +5056,11 @@ function squadActs(){
   return `<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队</h3>
     <div class="grid g5">${SQUAD_ACTS.map(a=>`
       <button class="act" data-squad="${a.k}" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">${a.n}</div><div class="d">${a.d}</div></button>`).join("")}</div>`;
+        <div class="t">${a.n}</div><div class="d">${a.d}${
+          (typeof costBits==="function")
+            ? costBits([`体能<i class="dn">−${a.fat}</i>`]
+                .concat((a.sum||[]).map(x=>x.replace(/\s*([+−-][0-9.]+)/,'<i class="up">$1</i>'))))
+            : ""}</div></button>`).join("")}</div>`;
 }
 
 
@@ -4832,17 +5103,25 @@ function buffChips(){
 }
 
 /* ---------- 事件池 ----------
-   when: 触发条件；weight: 相对权重
-   选项的 e() 返回一句结果文字。                          */
+   when: 触发条件；w: 在随机池里的相对权重
+   auto:false —— 不进随机池，只由 fireEvent(id) 定向触发。
+   选项的 e() 返回一句结果文字。
+
+   为什么要分这两类：
+   「你从小看的 EDG 今天又输了」原来是 when:()=>true 的纯随机事件——
+   玩家未必认识 EDG，而且 EDG 那天到底输没输，游戏里是有答案的，
+   凭空捏一个等于告诉玩家「这些文字和你的世界无关」。
+   凡是能由真实发生的事引出来的，就不该靠摇骰子。            */
 const RANDOM_EVENTS=[
-  {id:"edgLose", w:3, when:()=>true,
-   q:()=>{ const t=["EDG","RNG","JDG","BLG","TES","LNG"][Math.floor(rnd()*6)];
-           S._ev={t}; return `你从小看的 <b>${S._ev.t}</b> 今天又输了，还是那种该赢的局。`; },
-   ctx:"你盯着结算界面看了很久。",
+  /* 强队爆冷：由 simWorld 真的模拟出冷门之后才触发，队名取自当周真实结果 */
+  {id:"upset", auto:false, when:()=>!!(S._upset),
+   q:()=>{ const u=S._upset||{};
+     return `<b>${u.loser}</b> 输给了 <b>${u.winner}</b>，赛前没人看好${u.winner}。`; },
+   ctx:"你把这场的回放看了两遍。这行没有理所当然的赢。",
    a:[{t:"憋着一股劲，加练",e:()=>{addBuff("train",1.5,2,"憋着劲");addFat(6);
         return "接下来两周你练得比谁都狠。"}},
-      {t:"发条动态骂两句",e:()=>{S.fame+=6;addTrustAll&&0;
-        return "转发不少，也有人说你不懂别乱说。"}},
+      {t:"发条动态点评两句",e:()=>{addFame(6);
+        return "转发不少，也有人说你自己都还没打上首发。"}},
       {t:"关掉，睡了",e:()=>{addFat(-8);
         return "第二天状态还行。有些事跟你没关系。"}}]},
 
@@ -4867,7 +5146,7 @@ const RANDOM_EVENTS=[
           return "疼了一整周。你的体质悄悄掉了一点。"; }
         return "扛过去了，这次运气不错。"}}]},
 
-  {id:"streamGift", w:2, when:()=>S.fame>=40,
+  {id:"streamGift", auto:false, when:()=>S.fame>=40,
    q:()=>`直播间来了个大哥，一口气刷了一堆礼物。`,
    ctx:"他要求你连麦陪他打两把。",
    a:[{t:"陪打",e:()=>{S.money+=45;addFat(8);addFame(4);
@@ -4923,9 +5202,9 @@ const RANDOM_EVENTS=[
         typeof addTrustAll==="function"&&addTrustAll(-4);
         return "你一个人练到很晚。有人觉得你不合群。"}}]},
 
-  {id:"hater", w:2, when:()=>S.fame>=70,
+  {id:"hater", auto:false, when:()=>S.fame>=70,
    q:()=>`有个营销号剪了你的失误集锦，标题很难听。`,
-   ctx:"底下已经几千条了。",
+   ctx:()=>`剪的正是你上一场没成的那几个操作。底下已经几千条了。`,
    a:[{t:"回怼",e:()=>{S.fame+=14;addBuff("mood",0.85,2,"心态受影响");
         return "热度上去了，但你自己也难受了两周。"}},
       {t:"不看，专心打",e:()=>{addBuff("train",1.2,2,"用成绩说话");
@@ -4945,23 +5224,109 @@ const RANDOM_EVENTS=[
    a:[{t:"带他两把",e:()=>{addFame(7);addFat(5);
         if(rnd()<0.4) return "他把你们的对局发了出去，你涨了点粉。";
         return "输了两把，但他很开心。"}},
-      {t:"婉拒",e:()=>{return "你说最近在冲分。他表示理解。"}}]}
+      {t:"婉拒",e:()=>{return "你说最近在冲分。他表示理解。"}}]},
+
+  /* ---------- 以下为定向触发：都由刚刚真的发生的事引出来 ---------- */
+
+  {id:"skid", auto:false, when:()=>!!S.team,
+   q:()=>`连败之后，经理把你单独叫去办公室。`,
+   ctx:()=>`他没发火，只是问你一句：「你觉得问题在哪？」`,
+   a:[{t:"是我的问题，我会调整",e:()=>{typeof addStaff==="function"&&addStaff("mgr",4);
+        addBuff("train",1.25,2,"憋着一口气");
+        return "他点点头，说这话他信。你接下来两周练得很沉。"}},
+      {t:"是体系问题，该换打法",e:()=>{typeof addSquad==="function"&&addSquad("tac",3.2);
+        typeof addStaff==="function"&&addStaff("coach",-3);
+        return "教练组重新写了 BP 思路。战术顺了，但教练记住了这句话。"}},
+      {t:"队友跟不上",e:()=>{typeof addTrustAll==="function"&&addTrustAll(-8);
+        typeof addStaff==="function"&&addStaff("mgr",2);
+        return "经理没接话。第二天更衣室里没人跟你说话。"}}]},
+
+  {id:"bigWin", auto:false, when:()=>!!S.team,
+   q:()=>`赢下强队之后，官方采访点名要你。`,
+   ctx:"镜头已经架好了，导播在倒计时。",
+   a:[{t:"把功劳给队友",e:()=>{typeof addTrustAll==="function"&&addTrustAll(9);addFame(8);
+        return "队友在后台听到了。这句话比赢球本身更管用。"}},
+      {t:"放狠话，点名下一个对手",e:()=>{addFame(26);
+        typeof noteGrudge==="function"&&0;
+        return "热搜挂了一天。下一场对面打得格外凶。"}},
+      {t:"照稿念，客套两句",e:()=>{addFame(3);
+        return "安全，也没人记住。"}}]},
+
+  {id:"patch", auto:false, when:()=>!!S.team,
+   q:()=>`新版本上线，你最拿手的那几个英雄被砍了一刀。`,
+   ctx:"训练室里所有人都在重新试阵容。",
+   a:[{t:"硬练新英雄池", cost:0, e:()=>{addFat(14);
+        S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.6);
+        addBuff("train",1.2,2,"重新学起");
+        return "两周没打好，但手里多了三个能用的。"}},
+      {t:"找教练要针对性 BP",e:()=>{typeof addSquad==="function"&&addSquad("tac",3.6);
+        typeof addStaff==="function"&&addStaff("coach",2);
+        return "教练给你留了保护位。这个版本你不至于难受。"}},
+      {t:"不管版本，硬打",e:()=>{addBuff("mood",0.9,2,"逆版本");
+        return "你还在打上个版本的游戏。有几场很别扭。"}}]},
+
+  {id:"exMate", auto:false, when:()=>!!S.team,
+   q:()=>`一起打了很久的队友被卖了，走之前来找你吃了顿饭。`,
+   ctx:"他说下赛季可能就是对面了。",
+   a:[{t:"敬他一杯，好聚好散",e:()=>{addFat(-10);addBuff("mood",1.15,2,"心里踏实");
+        return "他说你是队里唯一送他的人。"}},
+      {t:"问清楚俱乐部是怎么想的",e:()=>{typeof addStaff==="function"&&addStaff("mgr",-3);
+        S.scoutHeat=(S.scoutHeat||0)+1;
+        return "他透了点底：管理层也在评估你的位置。你多了个心眼。"}}]},
+
+  {id:"airport", w:1, when:()=>S.fame>=140,
+   q:()=>`机场有人认出你，要求合影。`,
+   ctx:"你正赶着登机，队友已经过安检了。",
+   a:[{t:"停下来合影",e:()=>{addFame(9);addFat(3);
+        return "对方发了微博，转发不少。"}},
+      {t:"边走边说抱歉",e:()=>{addFame(-4);
+        return "有人拍了背影，配文说你耍大牌。"}}]},
+
+  {id:"family", w:2, when:()=>true,
+   q:()=>`家里打电话，问你过年回不回去。`,
+   ctx:"赛程排在那儿，你自己也说不准。",
+   a:[{t:"答应回去待两天",e:()=>{addFat(-18);addBuff("mood",1.2,2,"回了趟家");
+        return "在家睡了两天，什么都没想。"}},
+      {t:"说今年怕是回不去",e:()=>{addBuff("train",1.15,2,"没别的事");
+        return "电话那头停了一下，说打好就行。"}}]},
+
+  {id:"sponsor", w:1, when:()=>!!S.team&&S.fame>=90,
+   q:()=>`赞助商寄来一箱新外设，希望你直播时用一下。`,
+   ctx:"东西不错，但手感和你现在用的不一样。",
+   a:[{t:"接了，直播时用",e:()=>{const n=40+Math.floor(rnd()*40);S.money+=n;
+        addBuff("train",0.92,1,"手感在适应");
+        return `到账 ${n} 万。手感别扭了几天。`}},
+      {t:"婉拒，手感要紧",e:()=>{typeof addStaff==="function"&&addStaff("mgr",-2);
+        return "商务那边不太高兴，但你的手感没受影响。"}}]}
 ];
 
 /* ---------- 触发与结算 ---------- */
+const EV_CAP=2;                                  // 同一个事件一局最多出几次
+function evBusy(){ return !!(S.rndEv||S.locker||S.signup||S.rankUp||S.cupMatch||S.tryout||S.deal); }
+function evLeft(e){ return ((S.rndSeen||{})[e.id]||0) < (e.max||EV_CAP); }
+function evOpen(e){ try{ return !e.when||e.when(); }catch(x){ return false; } }
+function setEv(ev){
+  S.rndSeen=Object.assign({},S.rndSeen||{},{[ev.id]:((S.rndSeen||{})[ev.id]||0)+1});
+  S.rndEv={id:ev.id,q:ev.q(),ctx:(typeof ev.ctx==="function"?ev.ctx():ev.ctx),a:ev.a};
+}
+/* 环境事件：每周摇一次，只从 auto 池里挑 */
 function tryRandomEvent(){
-  if(S.rndEv||S.locker||S.signup||S.rankUp) return false;
-  const seen=S.rndSeen||{};
-  const pool=RANDOM_EVENTS.filter(e=>{
-    if((seen[e.id]||0)>=2) return false;      // 同一个事件一局最多两次
-    try{ return e.when(); }catch(x){ return false; }
-  });
+  if(evBusy()) return false;
+  const pool=RANDOM_EVENTS.filter(e=>e.auto!==false&&evLeft(e)&&evOpen(e));
   if(!pool.length) return false;
   const tot=pool.reduce((a,e)=>a+e.w,0);
   let r=rnd()*tot;
-  const ev=pool.find(e=>(r-=e.w)<=0)||pool[0];
-  S.rndSeen=Object.assign({},seen,{[ev.id]:(seen[ev.id]||0)+1});
-  S.rndEv={id:ev.id,q:ev.q(),ctx:ev.ctx,a:ev.a};
+  setEv(pool.find(e=>(r-=e.w)<=0)||pool[0]);
+  return true;
+}
+/* 定向触发：由刚刚真的发生的事引出对应事件。
+   p 是触发概率——不是每次直播都会来大哥，但来了一定是因为你在直播。 */
+function fireEvent(id,p){
+  if(evBusy()) return false;
+  if(p!==undefined&&rnd()>=p) return false;
+  const e=RANDOM_EVENTS.find(x=>x.id===id);
+  if(!e||!evLeft(e)||!evOpen(e)) return false;
+  setEv(e);
   return true;
 }
 /* 选之前先拍个快照，选完对比出「到底变了什么」——
@@ -5022,16 +5387,24 @@ function randomResultCard(){
       <button class="btn" id="rndok">知道了</button></div>
   </div></div>`;
 }
+/* 遮罩，不是内联卡片。
+   原来它排在整张行动卡后面，而行动卡本身就有一屏多高——
+   玩家点完行动直接按「下一周」，根本没往下滑，于是从头到尾没看见过际遇。
+   （结果卡 randomResultCard 反倒一直是遮罩，正好反了：
+     要你做决定的那一下藏着，告诉你结果的那一下弹出来。） */
 function randomCard(){
   const e=S.rndEv; if(!e) return "";
-  return `<div class="card"><h2>际遇</h2>
-    <div class="node"><div class="q">${e.q}</div><div class="ctx">${e.ctx}</div>
-    <div class="grid g2">${e.a.map((x,i)=>{
+  return `<div class="rankup"><div class="ru-inner ev-inner">
+    <div class="ru-eyebrow">际遇</div>
+    <div class="ev-q">${e.q}</div>
+    <div class="ev-ctx">${e.ctx}</div>
+    <div class="grid g2" style="margin-top:14px">${e.a.map((x,i)=>{
       const poor = x.cost && S.money < x.cost;
       return `<button class="opt" data-rnd="${i}" ${poor?'disabled style="opacity:.4"':''}>
         <div class="t">${x.t}${x.cost?` <span class="tag">${x.cost} 万</span>`:""}</div>
         ${poor?`<div class="d" style="color:var(--red)">钱不够（你有 ${Math.round(S.money)} 万）</div>`:""}
-      </button>`;}).join("")}</div></div></div>`;
+      </button>`;}).join("")}</div>
+  </div></div>`;
 }
 
 
@@ -7042,12 +7415,38 @@ function buyoutDrag(){
   const b = (S.contract && S.contract.buyout) || 0;
   return b / 260;          // 900 万违约金 ≈ 拉低 3.5 分表现分
 }
-/* 休赛期开始时摇一次：有没有人来问 */
+/* ---------- 赛季中的球探关注 ----------
+   原来「有没有人来挖你」全年只有休赛期那一个瞬间掷一次骰子——
+   赛季里打得再好也听不到任何风声，到了转会期要么有要么没有，
+   玩家的实际体感就是「进了队之后再没人理过我」。
+   现在拆成两段：赛段结算时先攒关注度并且明确告诉你，休赛期再兑现成报价。 */
+function noteScoutInterest(){
+  if(!S.career || !S.team) return;
+  const perf = proPerf() - buyoutDrag();
+  if(perf < 4) return;                                  // 打得不够好，确实没人看
+  // 频率刻意压住：每个赛段都有人来看，这条播报就不值钱了
+  if(rnd() >= clamp(0.10 + perf * 0.018, 0, 0.55)) return;
+  S.scoutHeat = (S.scoutHeat || 0) + 1;
+  const tier = perf >= 19 ? "top" : perf >= 10 ? "mid" : "low";
+  const t = pickClub(tier, S.homeLeague || "LPL");
+  const who = (t && t !== S.team) ? `<b>${t}</b> 的` : "有几家俱乐部的";
+  pushEvent(`${who}球探出现在你们这场的看台上。<br>
+    <span style="color:var(--ink-3)">转会期还没到，但你的名字已经被记下了。</span>`, "good", "转会");
+}
+
+/* 休赛期开始时兑现：有没有人来问 */
 function rollProOffers(){
   if(!S.career || S.proOffer || S.deal || S.tryout) return;
   const perf = proPerf() - buyoutDrag();
-  const p = clamp(0.08 + perf * 0.028, 0.02, 0.72);
-  if(rnd() >= p) return;
+  // 赛季里攒下的关注度直接折成概率：被盯了一年，转会期不该毫无动静
+  const heat = Math.min(S.scoutHeat || 0, 6);
+  let p = clamp(0.10 + perf * 0.030 + heat * 0.075, 0.02, 0.88);
+  // 保底：打得确实好，却连着两个休赛期没有任何人来问，说不过去
+  const dry = S.offerDry || 0;
+  if(perf >= 13 && dry >= 1) p = Math.max(p, 0.92);
+  S.scoutHeat = 0;
+  if(rnd() >= p){ S.offerDry = dry + 1; return; }
+  S.offerDry = 0;
   const tier = perf >= 19 ? "top" : perf >= 10 ? "mid" : "low";
   // 外赛区也在同步运转，也会来挖人。
   // 但他们只追已经证明过自己的人，而且会掂量语言——
@@ -7345,7 +7744,7 @@ function hud(){
       <div class="hud-now ${nowPhase().urgent?'urgent':''}"><div class="k">现在</div>
         <div class="v">${nowPhase().tag} ${nowPhase().phase} <small>${nowPhase().detail}</small></div></div>
       <div><div class="k">段位</div><div class="v">${rankBadge(S.pre.rank,26)}</div></div>
-      <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div></div>
+      <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div>${fameNextNote()}</div>
       <div><div class="k">下一节点</div><div class="v">${(()=>{const n=nextMilestone();
         if(!n) return "—";
         // 只给「还有 N 周」很容易被算错——没有锚点，玩家会拿开局那个数
@@ -7368,7 +7767,7 @@ function hud(){
     <div><div class="k">冠军</div><div class="v mono">${S.career.titles.length}</div></div>
     <div><div class="k">段位</div><div class="v">${
       (S.pre&&S.pre.rank!==undefined)?rankBadge(S.pre.rank,26):"—"}</div></div>
-    <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div></div>
+    <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div>${fameNextNote()}</div>
     <div><div class="k">状态</div><div class="v" style="font-size:13px">${
       typeof formTier==="function"&&S.form!==undefined?formTier(myForm()).n:"—"}</div></div>
     <div><div class="k">资金</div><div class="v mono">${Math.round(S.money)}<small>万</small></div></div>
@@ -7409,11 +7808,27 @@ function render(){
     : S.step==="prep"?prepPanel()
     : S.step==="match"?viewMatch()
     : S.step==="offseason"?viewOffseason() : viewEnd();
-  $("stage").innerHTML = body
+  const _st=$("stage");
+  _st.innerHTML = body
     + (typeof saveBar==="function"?saveBar():"")
     + (typeof achPopCard==="function"?achPopCard():"")
     + (typeof streamOfferCard==="function"?streamOfferCard():"")
     + (typeof confirmCard==="function"?confirmCard():"");
+  if(_st.setAttribute) _st.setAttribute("data-zone", curZone());
+  /* 大标题只在创建页和结局页铺开。
+     进了游戏之后它每一屏都在重复占 237px，而首屏总共才 900px——
+     收成一条窄横幅，把地方让给内容。 */
+  const _top=$("top");
+  if(_top&&_top.classList){
+    const full = S.step==="create" || S.step==="end";
+    _top.classList[full?"remove":"add"]("compact");
+  }
+  /* 标签栏要贴在属性条正下方，而属性条高度随宽度变——量一次写进变量，不写死 */
+  const _pin=$("pin");
+  if(_pin&&_pin.getBoundingClientRect&&document.documentElement&&document.documentElement.style){
+    const h=Math.round(_pin.getBoundingClientRect().height);
+    document.documentElement.style.setProperty("--pin-h",(h>0?h:0)+"px");
+  }
   bind();
   const sig=blockSig();
   if(sig&&sig!==_lastBlock&&typeof window!=="undefined"&&window.scrollTo){

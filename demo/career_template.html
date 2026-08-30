@@ -1043,6 +1043,7 @@ function preAct(k,dim){
     if(gift>=50&&!P.bigGift){P.bigGift=true;
       preLog(`直播间刷起了礼物，这一场进账 <b>${Math.round(gift)} 万</b>。`,"good");}
     if(S.fame>=120&&!P.famous){P.famous=true;preLog(`直播间人数破万。<b>你在圈子里有名气了</b>，虽然还没打过一场正赛。`,"good");}
+    if(typeof fireEvent==="function") fireEvent("streamGift",0.20);
   } else if(k==="train"){
     const c=capOf(dim);
     if(dim==="操作"&&typeof btkNote==="function") btkNote("op",1);   // 到瓶颈也要能攒突破进度
@@ -1329,6 +1330,8 @@ function startSeason(first,split){
     S.log.push(`<div class="hi">— ${SEASONS[S.si].tag} 赛季开始（版本：${SEASONS[S.si].ver}）—</div>`);
     const sea=SEASONS[S.si];
     pushEvent(`<b>${sea.tag} 开赛</b>，版本主题「${sea.ver}」。本赛季 ${sea.fav.map(x=>POSN[x]).join("、")} 是红利位，<b>${sea.dim}</b>的权重上升。`,"big","版本");
+    // 版本真的换了，才谈得上「你的英雄池被砍了一刀」
+    if(typeof fireEvent==="function") fireEvent("patch",0.5);
   }
   render();
 }
@@ -1364,11 +1367,11 @@ function trainBtn(d, ap, attr){
     dis: (ap<=0||dead),
     style: trainable?'style="border-color:var(--gold)"':'',
     title: `练${d}${trainable?' <span class="tag">冲击瓶颈</span>':''}`,
-    desc: trainable ? `已满，继续投入可冲破上限　<b>${P.prog?P.prog():""}</b>`
+    desc: trainable ? `已满，继续投入可冲破上限　<b>${P.prog?P.prog():""}</b>${costTrain(d)}`
         : locked   ? `已达瓶颈 · 突破要做<b>战术复盘</b>，签约战队后才有`
         : dead     ? `已达瓶颈 · 突破靠<b>${P&&P.act?P.act:"别的途径"}</b>${
                        P&&P.auto&&P.prog?`　${P.prog()}`:""}`
-        : DIM_HINT[d] };
+        : DIM_HINT[d]+costTrain(d) };
 }
 function gain(d){
   const t=S.talent[d],c=cap(t),room=clamp(1-(S.attrs[d]/c),0,1);
@@ -1396,6 +1399,106 @@ function addFame(n){
   if(n<0){ S.fame=Math.max(0,S.fame+n); return; }
   const damp=1/(1+Math.max(0,S.fame)/150);
   S.fame=Math.max(0,S.fame+n*damp);
+}
+
+/* ---------- 行动成本标注 ----------
+   点之前就该知道这一下花掉什么、换回什么。全部现算，不写死：
+   训练收益随「离瓶颈还剩多少」递减，直播收入随人气涨，
+   休息量受理疗师和备战阶段影响——写死的数字很快就会骗人。
+   口径跟界面一致：显示的是「体能」（=100−疲劳），所以训练是体能 −9。
+   按钮只有 123px 宽，所以标注必须短：行动点恒为 1，统一在体能条那里说一次，
+   不在九个按钮上各写一遍——那会把按钮撑高一倍半，等于用可读性换可读性。 */
+function costBits(bits){
+  const s=bits.filter(Boolean).map(b=>`<span>${b}</span>`).join("");
+  return s?`<div class="cost">${s}</div>`:"";
+}
+const _eDn=n=>`体能<i class="dn">−${Math.round(n)}</i>`;
+const _eUp=n=>`体能<i class="up">+${Math.round(n)}</i>`;
+const _prepMul=()=>(S.step==="prep")?0.45:1;
+/* 名气有阻尼，标注要写玩家真正拿到的那个数 */
+const _fameReal=n=>n*(1/(1+Math.max(0,S.fame||0)/150));
+
+/* 职业前和赛季中是两套数值（训练 ×0.85、休息 +32、直播基数不同），
+   标注必须跟着当前阶段走，否则等于换个地方骗人。 */
+const _isPre=()=>S.step==="pre";
+function costTrain(d){
+  const capped=S.attrs[d]>=capOf(d);
+  const g=gain(d)*(_isPre()?0.85:1);
+  return costBits([_eDn(9),
+    capped?null:`${d}<i class="up">+${g.toFixed(1)}</i>`]);
+}
+function costSolo(){
+  if(_isPre()) return costBits([_eDn(8), `段位±`, `五维微涨`]);
+  const m=_prepMul();
+  let f=null;
+  if(S.form!==undefined){
+    const d=((68-S.form)*0.11+1.2)*m;
+    if(Math.abs(d)>=0.05) f=`状态<i class="${d>0?"up":"dn"}">${d>0?"+":"−"}${Math.abs(d).toFixed(1)}</i>`;
+  }
+  return costBits([_eDn(7*m), f, `五维微涨`]);
+}
+/* 一次直播往 addFame() 里送的原始名气值（阻尼在 addFame 内部再打）。
+   职业前基数跟着段位走、主播出身 ×1.7；赛季中固定 4.5、主播出身 ×1.6。
+   抽出来是因为「还要播几次能升档」也要用它，两处算法必须是同一个。 */
+function streamFameRaw(){
+  const pre=_isPre();
+  const m=S.origin==="streamer"?(pre?1.7:1.6):1.0;
+  const mul=(typeof streamFameMul==="function")?streamFameMul():1;
+  return pre ? (1.9+((S.pre&&S.pre.rank)||0)*0.05)*m*mul : 4.5*m*mul;
+}
+/* 距离下一个名气档还差几次直播。
+   名气有阻尼（越有名越难涨），所以不能拿差值除以单次收益，得一次次往前推。
+   返回 null = 已经到顶。 */
+function fameToNext(){
+  const cur=S.fame||0;
+  const nx=FAME_TIERS.find(([at])=>at>cur);
+  if(!nx) return null;
+  const raw=streamFameRaw();
+  let v=cur,n=0;
+  if(raw>0){ while(v<nx[0]&&n<400){ v+=raw*(1/(1+Math.max(0,v)/150)); n++; } }
+  return {at:nx[0], name:nx[1], need:(raw>0&&n<400)?n:null,
+          pct:clamp((cur-fameTierAt(cur))/(nx[0]-fameTierAt(cur))*100,0,100)};
+}
+/* 当前所在档位的起点值，用来算档内进度 */
+function fameTierAt(v){
+  v=(v===undefined)?S.fame:v;
+  let at=0; FAME_TIERS.forEach(([a])=>{ if(v>=a) at=a; });
+  return at;
+}
+/* HUD 里名气格下面那一行：一条细进度条 + 「还差几次直播」。
+   原来只写一个档位名，等于告诉你「你在这儿」却不说「还有多远」。
+   仍然不甩原始数字——「人气 137」没人知道是什么概念，
+   但「再播 6 次上一档」是句人话。 */
+function fameNextNote(){
+  const nx=(typeof fameToNext==="function")?fameToNext():null;
+  if(!nx) return `<div class="fnext"><span class="fbar"><i style="width:100%"></i></span>已经到顶</div>`;
+  const need=nx.need;
+  /* 档位越高，靠直播推得越慢（阻尼），到后面要几百次——
+     这时候报个「再播 374 次」等于误导。名气本来就主要来自战绩，
+     直播只是慢速补充，所以数字大的时候把这句话直接说出来。 */
+  /* HUD 格子很窄，档位名放不下——放进 title，格子里只留最要紧的那个数。
+     完整的「距下一档 N 次」写在直播按钮上，那里才是要做决定的地方。 */
+  // need 为 null 表示推演到上限都没够着——那本来就是「靠直播到不了」，和数字太大是同一回事
+  const far = (need===null || need>30);
+  const txt = far ? `直播推不动了 · 靠战绩` : `再播 <b>${need}</b> 次升档`;
+  return `<div class="fnext" title="下一档：${nx.name}${
+      far?"（这一档主要靠比赛成绩，直播推不上去）":`（再播 ${need} 次）`}">
+    <span class="fbar"><i style="width:${nx.pct.toFixed(0)}%"></i></span>${txt}</div>`;
+}
+function costStream(){
+  const pre=_isPre();
+  const inc=(typeof streamIncome==="function")?streamIncome():0;
+  const nx=fameToNext();
+  return costBits([_eDn(pre?4:5),
+    `人气<i class="up">+${_fameReal(streamFameRaw()).toFixed(1)}</i>`,
+    `<i class="up">+${Math.round(inc)}</i>万`,
+    // 只在还够得着的时候报数；几百次的时候报数等于误导（那一档得靠战绩）
+    (nx&&nx.need&&nx.need<=30)?`距下一档 <i class="up">${nx.need}</i> 次`:null]);
+}
+function costRest(){
+  if(_isPre()) return costBits([_eUp(32), `心态<i class="up">+0.5</i>`]);
+  const v=-((S.buff&&S.buff.physio)?-42:-30)*((S.bg&&S.bg.rest)||1)*_prepMul();
+  return costBits([_eUp(v)]);
 }
 
 function doTrain(d){
@@ -1444,7 +1547,9 @@ function doAction(k){
   else if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
     addFame(4.5*m*(typeof streamFameMul==="function"?streamFameMul():1));
     S.money+=streamIncome();addFat(5);
-    if(typeof checkStreamBiz==="function") checkStreamBiz();}
+    if(typeof checkStreamBiz==="function") checkStreamBiz();
+    // 榜一大哥只会在你真的开播的时候出现，不该每周瞎摇
+    if(typeof fireEvent==="function") fireEvent("streamGift",0.20);}
   else{ if(typeof btkNote==="function") btkNote("rest",1);
     addFat(((S.buff&&S.buff.physio)?-42:-30)*((S.bg&&S.bg.rest)||1)*prepMul);
     S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.6*prepMul);}
@@ -1502,9 +1607,9 @@ function viewSeason(){
   if(T!=="act") return `${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
     ${tabBar(TABS_SEASON)}
     ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
-    ${T==="team"?squadCard()+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():"")+rivalCard()+standingsCard():""}
+    ${T==="team"?squadCard()+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
     ${T==="shop"?shopCard():""}
-    ${T==="news"?eventsCard()+newsCard():""}
+    ${T==="world"?standingsCard()+rivalCard()+newsCard()+eventsCard():""}
     ${T==="ach"?achCard():""}`;
   const oppName=S.schedule[S.week-1];
   const opp=S.world[S.homeLeague||"LPL"].find(t=>t.name===oppName);
@@ -1526,11 +1631,11 @@ function viewSeason(){
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">打排位</div><div class="d">五项小涨 + 找回手感${
-          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}</div></button>
+          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
       <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入</div></button>
+        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入${costStream()}</div></button>
       <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">休息</div><div class="d">清疲劳，护状态</div></button>
+        <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
     <div class="row">
@@ -1547,18 +1652,22 @@ function viewSeason(){
   ${tabBar(TABS_SEASON)}
   ${T==="act"?(typeof injuryCard==="function"?injuryCard():"")+nextMatchCard()+attrCard():""}
   ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
-  ${T==="team"?squadCard()+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():"")+rivalCard()+standingsCard():""}
+  ${T==="team"?squadCard()+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
   ${T==="shop"?shopCard():""}
-  ${T==="news"?eventsCard()+newsCard():""}
+  ${T==="world"?standingsCard()+rivalCard()+newsCard()+eventsCard():""}
   ${T==="ach"?achCard():""}`;
 }
 
+/* 和际遇一样改成遮罩——更衣室是要你表态的，藏在行动卡下面等于没有 */
 function lockerCard(){
   const {ev,target}=S.locker;
-  return `<div class="card"><h2>更衣室</h2>
-    <div class="node"><div class="q">${typeof avatarOf==="function"?avatarOf(target,34):""} ${ev.q(target)}</div><div class="ctx">${ev.ctx}</div>
-    <div class="grid g2">${ev.a.map((a,i)=>`<button class="opt" data-locker="${i}">
-      <div class="t">${a.t}</div></button>`).join("")}</div></div></div>`;
+  return `<div class="rankup"><div class="ru-inner ev-inner">
+    <div class="ru-eyebrow">更衣室</div>
+    <div class="ev-q">${typeof avatarOf==="function"?avatarOf(target,34):""} ${ev.q(target)}</div>
+    <div class="ev-ctx">${ev.ctx}</div>
+    <div class="grid g2" style="margin-top:14px">${ev.a.map((a,i)=>`<button class="opt" data-locker="${i}">
+      <div class="t">${a.t}</div></button>`).join("")}</div>
+  </div></div>`;
 }
 function teamCard(){
   const mates=myRoster().filter(p=>!p.me);
@@ -1608,11 +1717,15 @@ function fatigueBar(){
   const f=Math.round(S.fatigue);
   const tier=f>=75?"bad":f>=45?"warn":"ok";
   const txt=f>=75?"透支——状态明显下滑":f>=45?"有点累了":"状态在线";
+  // 行动点恒为 1，在这里统一说一次，就不用在每个按钮上重复
+  const ap=(S.step==="pre")?(S.pre&&S.pre.ap):S.ap;
   return `<div class="energy">
     <div class="elabel">体能 <b>${100-f}</b><small>/100</small></div>
     <div class="ebar ${tier}"><div class="efill" style="width:${100-f}%"></div>
       <div class="emark" style="left:25%"></div><div class="emark" style="left:55%"></div></div>
-    <div class="enote ${tier}">${txt}</div></div>`;
+    <div class="enote ${tier}">${txt}</div>
+    <div class="apnote">下面每个行动消耗 <b>1</b> 行动点${
+      ap!==undefined?`，本周还剩 <b>${ap}</b> 点`:""}。按钮上写的是该行动的体能变化与收益。</div></div>`;
 }
 function attrCard(){
   return `<div class="card"><h2>你的属性<em>${S.age} 岁 · ${POSN[S.pos]}</em></h2>
@@ -1799,9 +1912,23 @@ function endMatch(){
   if(typeof rollInjury==='function'&&S.fatigue>55) rollInjury('赛后');
   simWorld(); m.done=true;
   if(!won) tryLockerEvent();
+  /* 赛后事件：每一条都由这场比赛里真的发生的事引出来。
+     fireEvent 内部会检查「已经有事件挂着」，所以这里按重要性排，先到先得。 */
+  if(typeof fireEvent==="function"){
+    // 赢下比自己强的队 → 官方采访点名要你
+    if(won && ctx.gap < -1.5) fireEvent("bigWin", 0.45);
+    // 连败到第三场 → 经理找你谈
+    if(!won && (S.record.l||0) >= 3) fireEvent("skid", 0.40);
+    // 营销号剪的是「你这场没成的那几个操作」，所以必须真的失手过；
+    // 输了比赢了更容易被拿来做文章。
+    if((m.nodeFails||0) > 0) fireEvent("hater", won?0.10:0.22);
+    // 强队爆冷是 simWorld 真的模拟出来的，不是编的
+    if(S._upset) fireEvent("upset", 0.55);
+  }
   render();
 }
 function simWorld(){
+  S._upset=null;          // 每周重摇：际遇里说的冷门必须是「这一周真的发生的」
   Object.keys(S.world).forEach(lg=>{
     const sea=SEASONS[S.si];
     const ts=S.world[lg].filter(t=>!(lg==="LPL"&&(t.name===S.team||(S.match&&t.name===S.match.oppName))));
@@ -1811,6 +1938,11 @@ function simWorld(){
       const aw=rnd()<p;
       S.standings[lg][a.name][aw?"w":"l"]++;
       S.standings[lg][b.name][aw?"l":"w"]++;
+      // 赛前明显不被看好的一方赢了 —— 记下来给际遇当素材，
+      // 这样「强队今天输了」说的是真发生过的一场，而不是随手编个队名。
+      if(lg===(S.homeLeague||"LPL")&&!S._upset&&(aw?p<0.33:p>0.67)){
+        S._upset = aw ? {winner:a.name,loser:b.name} : {winner:b.name,loser:a.name};
+      }
       if(lg==="LPL"){
         const f1=noteForm(a.name,aw), f2=noteForm(b.name,!aw);
         const rk=lplRank(), notable=new Set(
@@ -1998,9 +2130,9 @@ function prepPanel(){
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">打排位</div><div class="d">找回手感${
-          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}</div></button>
+          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
       <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">休息</div><div class="d">清疲劳，护状态</div></button>
+        <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${typeof squadActs==="function"?squadActs():""}
     <div class="row"><button class="btn" id="prepgo">上场 →</button></div>
@@ -2014,6 +2146,8 @@ function endSeason(result,seed){
   if(up){ S.money=Math.max(0,S.money-up);
     pushEvent(`往家里寄了 <b>${up} 万</b>。`,"info","家用"); }
   trustDecay(); squadDecay(); checkBreakthrough();
+  // 赛段打完先攒一次球探关注——转会不该只在休赛期那一瞬间才有动静
+  if(typeof noteScoutInterest==='function') noteScoutInterest();
   if(typeof cloutTick==='function') cloutTick();
   if(typeof rollForm==='function') rollForm();
   if(typeof rollWorldForm==='function'){ rollWorldForm(); formNews(); }
@@ -2236,11 +2370,11 @@ function offPanel(){
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">打排位</div><div class="d">五项小涨 + 找回手感${
-          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}</div></button>
+          typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
       <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入</div></button>
+        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入${costStream()}</div></button>
       <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">休息</div><div class="d">清疲劳，护状态</div></button>
+        <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${typeof squadActs==="function"?squadActs():""}
     ${(()=>{ if(!S.career||S.off.next!=="year"||typeof canAskTransfer!=="function") return "";
@@ -2440,33 +2574,44 @@ function rankUpCard(){
     </div></div>`;
 }
 /* ---------- 分栏 ---------- */
+/* z = 功能域，决定这一页的身份色。
+   原来六个标签页长得一模一样（同样的深蓝卡片 + 同样的金色标题），
+   切过去认不出自己在哪——问题不是颜色不够多，是颜色不承载信息。
+   现在五个域各一个色，只用在三个地方：标签、卡片左边线、区块标题。 */
 const TABS_PRE=[
-  {k:"act",  n:"本周"},
-  {k:"sched",n:"赛程"},
-  {k:"squad",n:"战队"},
-  {k:"pro",  n:"联赛"},
-  {k:"shop", n:"商城"},
-  {k:"ach",  n:"成就"},
-  {k:"log",  n:"日志"}
+  {k:"act",  n:"本周", z:"act"},
+  {k:"squad",n:"战队", z:"team"},
+  {k:"world",n:"世界", z:"world"},
+  {k:"shop", n:"商城", z:"money"},
+  {k:"ach",  n:"成就", z:"rec"},
+  {k:"log",  n:"日志", z:"rec"}
 ];
 const TABS_SEASON=[
-  {k:"act",  n:"本周"},
-  {k:"me",   n:"我的"},
-  {k:"team", n:"队伍"},
-  {k:"shop", n:"商城"},
-  {k:"news", n:"动态"},
-  {k:"ach",  n:"成就"}
+  {k:"act",  n:"本周", z:"act"},
+  {k:"me",   n:"我的", z:"me"},
+  {k:"team", n:"队伍", z:"team"},
+  {k:"world",n:"世界", z:"world"},
+  {k:"shop", n:"商城", z:"money"},
+  {k:"ach",  n:"成就", z:"rec"}
 ];
 function tabBar(list){
   const cur=curTab(list);
   return `<div class="tabs">${list.map(t=>
-    `<button class="tab ${t.k===cur?'on':''}" data-tab="${t.k}">${t.n}${
+    `<button class="tab z-${t.z||"act"} ${t.k===cur?'on':''}" data-tab="${t.k}">${t.n}${
       t.k==="ach"?`<span class="tcount">${ACHIEVEMENTS.filter(a=>hasAch(a.id)).length}</span>`:""}</button>`
   ).join("")}</div>`;
 }
 function curTab(list){
   const has=list.some(t=>t.k===S.tab);
   return has?S.tab:list[0].k;
+}
+/* 当前所在的功能域，给 #stage 打个标记，卡片左边线和区块标题跟着换色。
+   只有这两处换——底色、面板、按钮一律不动，整体还是那个冷蓝夜景。 */
+function curZone(){
+  const list = S.step==="pre" ? TABS_PRE : S.step==="season" ? TABS_SEASON : null;
+  if(!list) return "act";
+  const k=curTab(list), t=list.find(x=>x.k===k);
+  return (t&&t.z)||"act";
 }
 
 function actPanelPre(){
@@ -2509,14 +2654,14 @@ function actPanelPre(){
       <button class="act" data-pre="rank" ${P.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">打排位</div><div class="d">${(()=>{const p=soloWinP();
           return p>=0.66?"这个分段你打得动":p>=0.5?"五五开，能上但不稳":
-                 p>=0.34?"打得挺吃力，容易掉":"实力不够，硬打只会掉分"})()}</div></button>
+                 p>=0.34?"打得挺吃力，容易掉":"实力不够，硬打只会掉分"})()}${costSolo()}</div></button>
       <button class="act" data-pre="stream" ${P.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入</div></button>
+        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入${costStream()}</div></button>
       ${DIMS.map(d=>{const b=trainBtn(d,P.ap);
         return `<button class="act" data-pretrain="${d}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-pre="rest" ${P.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">休息</div><div class="d">清疲劳</div></button>
+        <div class="t">休息</div><div class="d">清疲劳${costRest()}</div></button>
     </div>
     ${typeof routineBar==="function"?routineBar():""}
     <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队<span class="tag">未解锁</span></h3>
@@ -2548,7 +2693,7 @@ function viewPre(){
   ${S.cupMatch?cupMatchCard():""}
   ${T==="act"&&!S.cupMatch?(typeof cupCard==="function"?cupCard():""):""}
   ${T==="act"&&!S.cupMatch?(typeof injuryCard==="function"?injuryCard():"")+attrCard():""}
-  ${T==="sched"?scheduleCard():""}
+  ${T==="world"?scheduleCard()+proCard()+eventsCard():""}
   ${T==="squad"?lockedCard("战队实力","签约职业战队后解锁。在那之前，你只有自己。",
       `<p>加入战队后，这里会显示：</p>
        <div class="attrs" style="opacity:.4;pointer-events:none">
@@ -2561,7 +2706,6 @@ function viewPre(){
          你的个人数值只是基础战力的一部分——五个人怎么变成一支队，是另一半。</p>`)
     +lockedCard("队友","签约职业战队后解锁。",
       `<p class="note" style="margin:0">每个队友对你有独立的信任度，会因为你的选择涨落，也会影响全队发挥。</p>`):""}
-  ${T==="pro"?proCard()+eventsCard():""}
   ${T==="shop"?gearCard()+shopCard()
       +lockedCard("俱乐部资源","签约职业战队后解锁。",
         `<p class="note" style="margin:0">私教、理疗师、团队建设、舆论公关——
@@ -2710,7 +2854,7 @@ function hud(){
       <div class="hud-now ${nowPhase().urgent?'urgent':''}"><div class="k">现在</div>
         <div class="v">${nowPhase().tag} ${nowPhase().phase} <small>${nowPhase().detail}</small></div></div>
       <div><div class="k">段位</div><div class="v">${rankBadge(S.pre.rank,26)}</div></div>
-      <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div></div>
+      <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div>${fameNextNote()}</div>
       <div><div class="k">下一节点</div><div class="v">${(()=>{const n=nextMilestone();
         if(!n) return "—";
         // 只给「还有 N 周」很容易被算错——没有锚点，玩家会拿开局那个数
@@ -2733,7 +2877,7 @@ function hud(){
     <div><div class="k">冠军</div><div class="v mono">${S.career.titles.length}</div></div>
     <div><div class="k">段位</div><div class="v">${
       (S.pre&&S.pre.rank!==undefined)?rankBadge(S.pre.rank,26):"—"}</div></div>
-    <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div></div>
+    <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div>${fameNextNote()}</div>
     <div><div class="k">状态</div><div class="v" style="font-size:13px">${
       typeof formTier==="function"&&S.form!==undefined?formTier(myForm()).n:"—"}</div></div>
     <div><div class="k">资金</div><div class="v mono">${Math.round(S.money)}<small>万</small></div></div>
@@ -2774,11 +2918,27 @@ function render(){
     : S.step==="prep"?prepPanel()
     : S.step==="match"?viewMatch()
     : S.step==="offseason"?viewOffseason() : viewEnd();
-  $("stage").innerHTML = body
+  const _st=$("stage");
+  _st.innerHTML = body
     + (typeof saveBar==="function"?saveBar():"")
     + (typeof achPopCard==="function"?achPopCard():"")
     + (typeof streamOfferCard==="function"?streamOfferCard():"")
     + (typeof confirmCard==="function"?confirmCard():"");
+  if(_st.setAttribute) _st.setAttribute("data-zone", curZone());
+  /* 大标题只在创建页和结局页铺开。
+     进了游戏之后它每一屏都在重复占 237px，而首屏总共才 900px——
+     收成一条窄横幅，把地方让给内容。 */
+  const _top=$("top");
+  if(_top&&_top.classList){
+    const full = S.step==="create" || S.step==="end";
+    _top.classList[full?"remove":"add"]("compact");
+  }
+  /* 标签栏要贴在属性条正下方，而属性条高度随宽度变——量一次写进变量，不写死 */
+  const _pin=$("pin");
+  if(_pin&&_pin.getBoundingClientRect&&document.documentElement&&document.documentElement.style){
+    const h=Math.round(_pin.getBoundingClientRect().height);
+    document.documentElement.style.setProperty("--pin-h",(h>0?h:0)+"px");
+  }
   bind();
   const sig=blockSig();
   if(sig&&sig!==_lastBlock&&typeof window!=="undefined"&&window.scrollTo){

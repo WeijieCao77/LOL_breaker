@@ -37,17 +37,25 @@ function buffChips(){
 }
 
 /* ---------- 事件池 ----------
-   when: 触发条件；weight: 相对权重
-   选项的 e() 返回一句结果文字。                          */
+   when: 触发条件；w: 在随机池里的相对权重
+   auto:false —— 不进随机池，只由 fireEvent(id) 定向触发。
+   选项的 e() 返回一句结果文字。
+
+   为什么要分这两类：
+   「你从小看的 EDG 今天又输了」原来是 when:()=>true 的纯随机事件——
+   玩家未必认识 EDG，而且 EDG 那天到底输没输，游戏里是有答案的，
+   凭空捏一个等于告诉玩家「这些文字和你的世界无关」。
+   凡是能由真实发生的事引出来的，就不该靠摇骰子。            */
 const RANDOM_EVENTS=[
-  {id:"edgLose", w:3, when:()=>true,
-   q:()=>{ const t=["EDG","RNG","JDG","BLG","TES","LNG"][Math.floor(rnd()*6)];
-           S._ev={t}; return `你从小看的 <b>${S._ev.t}</b> 今天又输了，还是那种该赢的局。`; },
-   ctx:"你盯着结算界面看了很久。",
+  /* 强队爆冷：由 simWorld 真的模拟出冷门之后才触发，队名取自当周真实结果 */
+  {id:"upset", auto:false, when:()=>!!(S._upset),
+   q:()=>{ const u=S._upset||{};
+     return `<b>${u.loser}</b> 输给了 <b>${u.winner}</b>，赛前没人看好${u.winner}。`; },
+   ctx:"你把这场的回放看了两遍。这行没有理所当然的赢。",
    a:[{t:"憋着一股劲，加练",e:()=>{addBuff("train",1.5,2,"憋着劲");addFat(6);
         return "接下来两周你练得比谁都狠。"}},
-      {t:"发条动态骂两句",e:()=>{S.fame+=6;addTrustAll&&0;
-        return "转发不少，也有人说你不懂别乱说。"}},
+      {t:"发条动态点评两句",e:()=>{addFame(6);
+        return "转发不少，也有人说你自己都还没打上首发。"}},
       {t:"关掉，睡了",e:()=>{addFat(-8);
         return "第二天状态还行。有些事跟你没关系。"}}]},
 
@@ -72,7 +80,7 @@ const RANDOM_EVENTS=[
           return "疼了一整周。你的体质悄悄掉了一点。"; }
         return "扛过去了，这次运气不错。"}}]},
 
-  {id:"streamGift", w:2, when:()=>S.fame>=40,
+  {id:"streamGift", auto:false, when:()=>S.fame>=40,
    q:()=>`直播间来了个大哥，一口气刷了一堆礼物。`,
    ctx:"他要求你连麦陪他打两把。",
    a:[{t:"陪打",e:()=>{S.money+=45;addFat(8);addFame(4);
@@ -128,9 +136,9 @@ const RANDOM_EVENTS=[
         typeof addTrustAll==="function"&&addTrustAll(-4);
         return "你一个人练到很晚。有人觉得你不合群。"}}]},
 
-  {id:"hater", w:2, when:()=>S.fame>=70,
+  {id:"hater", auto:false, when:()=>S.fame>=70,
    q:()=>`有个营销号剪了你的失误集锦，标题很难听。`,
-   ctx:"底下已经几千条了。",
+   ctx:()=>`剪的正是你上一场没成的那几个操作。底下已经几千条了。`,
    a:[{t:"回怼",e:()=>{S.fame+=14;addBuff("mood",0.85,2,"心态受影响");
         return "热度上去了，但你自己也难受了两周。"}},
       {t:"不看，专心打",e:()=>{addBuff("train",1.2,2,"用成绩说话");
@@ -150,23 +158,109 @@ const RANDOM_EVENTS=[
    a:[{t:"带他两把",e:()=>{addFame(7);addFat(5);
         if(rnd()<0.4) return "他把你们的对局发了出去，你涨了点粉。";
         return "输了两把，但他很开心。"}},
-      {t:"婉拒",e:()=>{return "你说最近在冲分。他表示理解。"}}]}
+      {t:"婉拒",e:()=>{return "你说最近在冲分。他表示理解。"}}]},
+
+  /* ---------- 以下为定向触发：都由刚刚真的发生的事引出来 ---------- */
+
+  {id:"skid", auto:false, when:()=>!!S.team,
+   q:()=>`连败之后，经理把你单独叫去办公室。`,
+   ctx:()=>`他没发火，只是问你一句：「你觉得问题在哪？」`,
+   a:[{t:"是我的问题，我会调整",e:()=>{typeof addStaff==="function"&&addStaff("mgr",4);
+        addBuff("train",1.25,2,"憋着一口气");
+        return "他点点头，说这话他信。你接下来两周练得很沉。"}},
+      {t:"是体系问题，该换打法",e:()=>{typeof addSquad==="function"&&addSquad("tac",3.2);
+        typeof addStaff==="function"&&addStaff("coach",-3);
+        return "教练组重新写了 BP 思路。战术顺了，但教练记住了这句话。"}},
+      {t:"队友跟不上",e:()=>{typeof addTrustAll==="function"&&addTrustAll(-8);
+        typeof addStaff==="function"&&addStaff("mgr",2);
+        return "经理没接话。第二天更衣室里没人跟你说话。"}}]},
+
+  {id:"bigWin", auto:false, when:()=>!!S.team,
+   q:()=>`赢下强队之后，官方采访点名要你。`,
+   ctx:"镜头已经架好了，导播在倒计时。",
+   a:[{t:"把功劳给队友",e:()=>{typeof addTrustAll==="function"&&addTrustAll(9);addFame(8);
+        return "队友在后台听到了。这句话比赢球本身更管用。"}},
+      {t:"放狠话，点名下一个对手",e:()=>{addFame(26);
+        typeof noteGrudge==="function"&&0;
+        return "热搜挂了一天。下一场对面打得格外凶。"}},
+      {t:"照稿念，客套两句",e:()=>{addFame(3);
+        return "安全，也没人记住。"}}]},
+
+  {id:"patch", auto:false, when:()=>!!S.team,
+   q:()=>`新版本上线，你最拿手的那几个英雄被砍了一刀。`,
+   ctx:"训练室里所有人都在重新试阵容。",
+   a:[{t:"硬练新英雄池", cost:0, e:()=>{addFat(14);
+        S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.6);
+        addBuff("train",1.2,2,"重新学起");
+        return "两周没打好，但手里多了三个能用的。"}},
+      {t:"找教练要针对性 BP",e:()=>{typeof addSquad==="function"&&addSquad("tac",3.6);
+        typeof addStaff==="function"&&addStaff("coach",2);
+        return "教练给你留了保护位。这个版本你不至于难受。"}},
+      {t:"不管版本，硬打",e:()=>{addBuff("mood",0.9,2,"逆版本");
+        return "你还在打上个版本的游戏。有几场很别扭。"}}]},
+
+  {id:"exMate", auto:false, when:()=>!!S.team,
+   q:()=>`一起打了很久的队友被卖了，走之前来找你吃了顿饭。`,
+   ctx:"他说下赛季可能就是对面了。",
+   a:[{t:"敬他一杯，好聚好散",e:()=>{addFat(-10);addBuff("mood",1.15,2,"心里踏实");
+        return "他说你是队里唯一送他的人。"}},
+      {t:"问清楚俱乐部是怎么想的",e:()=>{typeof addStaff==="function"&&addStaff("mgr",-3);
+        S.scoutHeat=(S.scoutHeat||0)+1;
+        return "他透了点底：管理层也在评估你的位置。你多了个心眼。"}}]},
+
+  {id:"airport", w:1, when:()=>S.fame>=140,
+   q:()=>`机场有人认出你，要求合影。`,
+   ctx:"你正赶着登机，队友已经过安检了。",
+   a:[{t:"停下来合影",e:()=>{addFame(9);addFat(3);
+        return "对方发了微博，转发不少。"}},
+      {t:"边走边说抱歉",e:()=>{addFame(-4);
+        return "有人拍了背影，配文说你耍大牌。"}}]},
+
+  {id:"family", w:2, when:()=>true,
+   q:()=>`家里打电话，问你过年回不回去。`,
+   ctx:"赛程排在那儿，你自己也说不准。",
+   a:[{t:"答应回去待两天",e:()=>{addFat(-18);addBuff("mood",1.2,2,"回了趟家");
+        return "在家睡了两天，什么都没想。"}},
+      {t:"说今年怕是回不去",e:()=>{addBuff("train",1.15,2,"没别的事");
+        return "电话那头停了一下，说打好就行。"}}]},
+
+  {id:"sponsor", w:1, when:()=>!!S.team&&S.fame>=90,
+   q:()=>`赞助商寄来一箱新外设，希望你直播时用一下。`,
+   ctx:"东西不错，但手感和你现在用的不一样。",
+   a:[{t:"接了，直播时用",e:()=>{const n=40+Math.floor(rnd()*40);S.money+=n;
+        addBuff("train",0.92,1,"手感在适应");
+        return `到账 ${n} 万。手感别扭了几天。`}},
+      {t:"婉拒，手感要紧",e:()=>{typeof addStaff==="function"&&addStaff("mgr",-2);
+        return "商务那边不太高兴，但你的手感没受影响。"}}]}
 ];
 
 /* ---------- 触发与结算 ---------- */
+const EV_CAP=2;                                  // 同一个事件一局最多出几次
+function evBusy(){ return !!(S.rndEv||S.locker||S.signup||S.rankUp||S.cupMatch||S.tryout||S.deal); }
+function evLeft(e){ return ((S.rndSeen||{})[e.id]||0) < (e.max||EV_CAP); }
+function evOpen(e){ try{ return !e.when||e.when(); }catch(x){ return false; } }
+function setEv(ev){
+  S.rndSeen=Object.assign({},S.rndSeen||{},{[ev.id]:((S.rndSeen||{})[ev.id]||0)+1});
+  S.rndEv={id:ev.id,q:ev.q(),ctx:(typeof ev.ctx==="function"?ev.ctx():ev.ctx),a:ev.a};
+}
+/* 环境事件：每周摇一次，只从 auto 池里挑 */
 function tryRandomEvent(){
-  if(S.rndEv||S.locker||S.signup||S.rankUp) return false;
-  const seen=S.rndSeen||{};
-  const pool=RANDOM_EVENTS.filter(e=>{
-    if((seen[e.id]||0)>=2) return false;      // 同一个事件一局最多两次
-    try{ return e.when(); }catch(x){ return false; }
-  });
+  if(evBusy()) return false;
+  const pool=RANDOM_EVENTS.filter(e=>e.auto!==false&&evLeft(e)&&evOpen(e));
   if(!pool.length) return false;
   const tot=pool.reduce((a,e)=>a+e.w,0);
   let r=rnd()*tot;
-  const ev=pool.find(e=>(r-=e.w)<=0)||pool[0];
-  S.rndSeen=Object.assign({},seen,{[ev.id]:(seen[ev.id]||0)+1});
-  S.rndEv={id:ev.id,q:ev.q(),ctx:ev.ctx,a:ev.a};
+  setEv(pool.find(e=>(r-=e.w)<=0)||pool[0]);
+  return true;
+}
+/* 定向触发：由刚刚真的发生的事引出对应事件。
+   p 是触发概率——不是每次直播都会来大哥，但来了一定是因为你在直播。 */
+function fireEvent(id,p){
+  if(evBusy()) return false;
+  if(p!==undefined&&rnd()>=p) return false;
+  const e=RANDOM_EVENTS.find(x=>x.id===id);
+  if(!e||!evLeft(e)||!evOpen(e)) return false;
+  setEv(e);
   return true;
 }
 /* 选之前先拍个快照，选完对比出「到底变了什么」——
@@ -227,14 +321,22 @@ function randomResultCard(){
       <button class="btn" id="rndok">知道了</button></div>
   </div></div>`;
 }
+/* 遮罩，不是内联卡片。
+   原来它排在整张行动卡后面，而行动卡本身就有一屏多高——
+   玩家点完行动直接按「下一周」，根本没往下滑，于是从头到尾没看见过际遇。
+   （结果卡 randomResultCard 反倒一直是遮罩，正好反了：
+     要你做决定的那一下藏着，告诉你结果的那一下弹出来。） */
 function randomCard(){
   const e=S.rndEv; if(!e) return "";
-  return `<div class="card"><h2>际遇</h2>
-    <div class="node"><div class="q">${e.q}</div><div class="ctx">${e.ctx}</div>
-    <div class="grid g2">${e.a.map((x,i)=>{
+  return `<div class="rankup"><div class="ru-inner ev-inner">
+    <div class="ru-eyebrow">际遇</div>
+    <div class="ev-q">${e.q}</div>
+    <div class="ev-ctx">${e.ctx}</div>
+    <div class="grid g2" style="margin-top:14px">${e.a.map((x,i)=>{
       const poor = x.cost && S.money < x.cost;
       return `<button class="opt" data-rnd="${i}" ${poor?'disabled style="opacity:.4"':''}>
         <div class="t">${x.t}${x.cost?` <span class="tag">${x.cost} 万</span>`:""}</div>
         ${poor?`<div class="d" style="color:var(--red)">钱不够（你有 ${Math.round(S.money)} 万）</div>`:""}
-      </button>`;}).join("")}</div></div></div>`;
+      </button>`;}).join("")}</div>
+  </div></div>`;
 }

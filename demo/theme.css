@@ -8,7 +8,28 @@
   --cyan:#4FBEDA; --cyan-dim:#1E5E75;
   --red:#C4535F;
   --ink:#E8F0F6; --ink-2:#9DB8C9; --ink-3:#5E8199;
+
+  /* 五个功能域的身份色。
+     原来每个标签页都是同样的深蓝卡片配金色标题，切过去认不出自己在哪——
+     缺的不是颜色，是分工。这五个色只用在三处：标签、卡片左边线、区块标题；
+     底色、面板、按钮一概不动，整体仍然是那个冷蓝夜景。
+     红色不参与分域，继续只表示「危险与损失」，这样它一出现就有意义。 */
+  --z-act:#C9A961;    /* 行动 · 金——你花掉行动点的地方，保留主色 */
+  --z-me:#4FBEDA;     /* 我   · 青——成长、状态、装备 */
+  --z-team:#5FA88B;   /* 队伍 · 绿——默契、信任、话语权 */
+  --z-world:#8B93D9;  /* 世界 · 蓝紫——你影响不了的外部世界，用冷色 */
+  --z-money:#D89B4A;  /* 经济 · 琥珀——商城、合同、收入 */
+  --z-rec:#7E93A6;    /* 记录 · 灰蓝——成就与日志，是查阅不是操作，刻意压低 */
+
+  --pin-h:0px;        /* 属性条实测高度，由 render() 写入，给标签栏定位用 */
 }
+/* 当前功能域：#stage 上的标记决定这一页用哪个身份色 */
+#stage{--zone:var(--z-act)}
+#stage[data-zone="me"]{--zone:var(--z-me)}
+#stage[data-zone="team"]{--zone:var(--z-team)}
+#stage[data-zone="world"]{--zone:var(--z-world)}
+#stage[data-zone="money"]{--zone:var(--z-money)}
+#stage[data-zone="rec"]{--zone:var(--z-rec)}
 *{box-sizing:border-box}
 html{background:var(--void)}
 body{
@@ -32,8 +53,10 @@ button:focus-visible,input:focus-visible{outline:1px solid var(--gold);outline-o
 h1,h2,h3{text-wrap:balance}
 
 /* ---- 标题区 ---- */
-.top{padding:30px 0 20px;margin-bottom:20px;position:relative}
-.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
+/* 必须限定到 header：属性条里最高维度那一项也叫 .top（.pv.top），
+   不限定的话它会被这里的 padding:30px 撑高 50px，把整条属性条顶到 104px。 */
+header.top{padding:30px 0 20px;margin-bottom:20px;position:relative}
+header.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
   background:linear-gradient(90deg,var(--gold) 0%,var(--line-hot) 38%,transparent 100%)}
 .brand{display:flex;align-items:center;gap:16px;margin-bottom:10px}
 .brand svg{flex:none;filter:drop-shadow(0 0 12px rgba(201,169,97,.35))}
@@ -52,6 +75,20 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
   font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
 .hud .v{font-size:16px;font-weight:650;margin-top:1px;color:var(--gold-hi)}
 .hud .v small{font-size:11px;color:var(--ink-3);font-weight:400}
+/* 名气格下面的「还差几次直播」——档位名只说了你在哪，这行说还有多远 */
+.fnext{margin-top:5px;font-size:10px;line-height:1.5;color:var(--ink-3);letter-spacing:.02em}
+.fnext b{color:var(--gold);font-weight:650;font-variant-numeric:tabular-nums}
+.fbar{display:block;height:3px;background:rgba(4,10,18,.85);border:1px solid var(--line);
+  margin-bottom:4px;overflow:hidden}
+.fbar i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan-dim),var(--cyan))}
+/* 手机上 8 个格子按 96px 的下限只能排 3 列，折成 4 行占掉 333px——
+   一块「你是谁、现在第几周」的信息不值这个价。收紧到 4 列 2 行。 */
+@media(max-width:560px){
+  .hud>div{flex:1 1 74px;padding:6px 9px}
+  .hud .k{font-size:8.5px;letter-spacing:.1em}
+  .hud .v{font-size:13.5px;line-height:1.35}
+  .hud .v small{font-size:10px}
+}
 
 /* ---- 常驻属性条：sticky 贴顶，滚到哪都看得见 ---- */
 .pinbar{position:sticky;top:0;z-index:40;display:flex;gap:14px;align-items:center;
@@ -83,10 +120,10 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .card{background:linear-gradient(180deg,rgba(20,55,78,.92),rgba(14,42,62,.92));
   border:1px solid var(--line);padding:20px;margin-bottom:16px;position:relative;
   clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px)}
-.card::before{content:"";position:absolute;left:0;top:13px;width:1px;height:26px;background:var(--gold)}
+.card::before{content:"";position:absolute;left:0;top:13px;width:3px;height:26px;background:var(--zone,var(--gold))}
 .card::after{content:"";position:absolute;right:13px;bottom:0;width:26px;height:1px;background:var(--gold)}
 .card h2{font-size:11px;letter-spacing:.2em;text-transform:uppercase;
-  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-weight:600;color:var(--gold);
+  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-weight:600;color:var(--zone,var(--gold));
   margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line);
   display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .card h2 em{font-style:normal;color:var(--ink-2);text-transform:none;letter-spacing:.04em}
@@ -96,7 +133,9 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 
 /* ---- 选项 / 行动 ---- */
 .grid{display:grid;gap:9px}
-.g5{grid-template-columns:repeat(auto-fit,minmax(118px,1fr))}
+/* 118 → 140：行动按钮上多了一行「体能/收益」标注，118px 宽会把它挤成两行，
+   按钮因此高一倍。140 在桌面和手机上都得到约 150px 的列宽，标注正好一行放下。 */
+.g5{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
 .g2{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
 .opt,.act{background:linear-gradient(180deg,rgba(30,74,99,.5),rgba(14,42,62,.6));
   border:1px solid var(--line);padding:13px;text-align:left;color:var(--ink);
@@ -110,6 +149,24 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .opt .d,.act .d{font-size:12.5px;color:var(--ink-2);margin-top:3px;line-height:1.5}
 .act .t{font-size:14px}
 .act .d{font-size:11.5px;color:var(--ink-3)}
+
+/* ---- 行动成本标注 ----
+   花掉几个行动点、体能掉多少、换回什么——点之前就看得见。
+   数值由 costTrain/costSolo/costStream/costRest 现算，这里只管排版。 */
+.act .cost{
+  margin-top:7px;padding-top:6px;border-top:1px solid rgba(47,110,140,.34);
+  display:flex;flex-wrap:wrap;align-items:baseline;
+  font-size:10.5px;line-height:1.75;color:var(--ink-3);
+  font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.act .cost span+span::before{content:"·";margin:0 5px;color:var(--line-hot)}
+.act .cost i{font-style:normal;font-weight:650}
+.act .cost .ap{color:var(--gold)}
+.act .cost .up{color:var(--cyan)}
+.act .cost .dn{color:#B58E52}
+.act[disabled] .cost{opacity:.75}
+/* 行动点恒为 1，在体能条那里统一说明一次 */
+.apnote{grid-column:1/-1;margin-top:7px;font-size:11.5px;color:var(--ink-3);line-height:1.6}
+.apnote b{color:var(--gold)}
 
 /* ---- 天赋分配 ---- */
 .tal{display:flex;align-items:center;gap:13px;padding:10px 0;border-bottom:1px solid var(--line)}
@@ -265,6 +322,22 @@ input[type=text]::placeholder{color:var(--ink-3)}
 .tagline{color:var(--ink-2);font-size:14.5px;margin:12px 0 0;letter-spacing:.02em}
 .pillars{font-size:12px;color:var(--ink-3);margin:6px 0 0;letter-spacing:.06em}
 
+/* ---- 收起态：进了游戏之后的大标题 ----
+   实测：标题区 237px + HUD 118 + 属性条 109 + 标签栏 44 = 518px，
+   占掉 900px 首屏的 58%，内容只剩 42%。
+   那块「破局者 / THE BREAKER / S12 到 S16……」第一次看很好，
+   之后每一屏都在重复占地方——它是仪式感，不是导航。
+   收成一条 ~48px 的窄横幅，首屏可用面积回到约 63%。 */
+header.top.compact{padding:12px 0 10px;margin-bottom:12px}
+header.top.compact .brand{gap:11px;margin-bottom:0}
+header.top.compact .brand svg{width:30px;height:30px}
+header.top.compact .game-kicker,
+header.top.compact .game-en,
+header.top.compact .tagline,
+header.top.compact .pillars{display:none}
+header.top.compact .game-title{font-size:19px;letter-spacing:.1em;text-shadow:none}
+header.top.compact::after{opacity:.5}
+
 /* 离散指示器：只给档位感，不泄露精确数值 */
 .pips{display:flex;gap:5px;align-items:center}
 .pips i{flex:1;height:8px;background:rgba(6,21,32,.85);border:1px solid var(--line);
@@ -333,25 +406,67 @@ td .tlogo{margin-right:5px}
 .ru-icon .rankicon{filter:drop-shadow(0 0 26px rgba(201,169,97,.7))}
 .ru-eyebrow{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:11px;letter-spacing:.32em;
   color:var(--gold);text-transform:uppercase;margin-bottom:8px}
+/* 际遇 / 更衣室：要玩家做决定的遮罩。
+   比「升段」「夺冠」那类播报宽一些，文字左对齐——它是要读的，不是要看的。
+   选项多时内部滚动，别让整个遮罩超出屏幕。 */
+/* 用 width 而不是只给 max-width：父容器是 place-items:center 的网格，
+   只给 max-width 的话框会被内容撑成多窄算多窄，两个选项挤成竖排。 */
+.ev-inner{width:min(560px,calc(100vw - 34px));max-width:none;
+  text-align:left;padding:24px 28px;max-height:86vh;overflow-y:auto}
+.ev-inner .ru-eyebrow{text-align:left;margin-bottom:10px}
+.ev-q{font-weight:650;font-size:16px;line-height:1.6;color:var(--gold-hi)}
+.ev-ctx{font-size:13px;color:var(--ink-2);margin-top:7px;line-height:1.6}
 .ru-tier{font-size:26px;font-weight:700;color:var(--ink-2);letter-spacing:.06em}
 .ru-tier b{color:var(--gold-hi);text-shadow:0 0 24px rgba(201,169,97,.6)}
 .ru-txt{color:var(--ink-2);font-size:14px;margin:14px 0 22px;line-height:1.7}
 @media(prefers-reduced-motion:reduce){.rankup,.ru-icon{animation:none}}
 
 /* ---- 分栏 ---- */
+/* 固定住。原来是 static，翻到第三屏想换页得先滚回顶部——
+   而属性条反倒是 sticky 的，两者的角色正好反了。
+   top 用实测的属性条高度，避免写死一个在手机上会错位的数。 */
 .tabs{display:flex;gap:2px;margin-bottom:16px;background:var(--line);
   border:1px solid var(--line);overflow-x:auto;
+  position:sticky;top:var(--pin-h,0px);z-index:30;
+  scrollbar-width:none;
   clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px)}
+.tabs::-webkit-scrollbar{display:none}
 .tab{flex:1 0 auto;min-width:72px;background:linear-gradient(180deg,var(--panel),rgba(6,21,32,.9));
   border:none;color:var(--ink-3);padding:11px 16px;font-size:14px;font-weight:600;
   letter-spacing:.06em;position:relative;white-space:nowrap;transition:color .15s,background .15s}
 .tab:hover{color:var(--ink-2);background:linear-gradient(180deg,var(--panel-2),var(--panel))}
-.tab.on{color:var(--gold-hi);background:linear-gradient(180deg,rgba(201,169,97,.2),rgba(14,42,62,.95))}
+.tab.on{color:var(--ink);background:linear-gradient(180deg,rgba(20,55,78,.95),rgba(14,42,62,.98))}
 .tab.on::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;
-  background:var(--gold);box-shadow:0 0 10px var(--gold)}
+  background:var(--tz,var(--gold));box-shadow:0 0 10px var(--tz,var(--gold))}
+/* 每个标签带自己的域色：未选中时只染下划线的预留位，选中后整条亮起来 */
+.tab.z-act{--tz:var(--z-act)}   .tab.z-me{--tz:var(--z-me)}
+.tab.z-team{--tz:var(--z-team)} .tab.z-world{--tz:var(--z-world)}
+.tab.z-money{--tz:var(--z-money)} .tab.z-rec{--tz:var(--z-rec)}
+.tab.on{color:var(--tz,var(--gold-hi))}
 .tcount{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:10px;margin-left:6px;
   padding:1px 6px;background:rgba(6,21,32,.7);color:var(--gold);border-radius:99px}
 @media(max-width:560px){.tab{padding:10px 12px;font-size:13px;min-width:62px}}
+
+/* ---- 桌面：导航改成左侧竖栏 ----
+   宽屏下内容区固定 1000px 且单列，左右各空一大块，纵向却要滚三屏——
+   横向空间完全没用上。把标签栏立起来放到左边：横向花掉 96px，
+   换来导航永久可见，而且正好吃掉原本浪费的留白。
+   纯 CSS 实现，DOM 结构不动：#stage 变成两列网格，
+   .tabs 占满左列所有行，其余子元素一律进右列（源码顺序即上下顺序）。
+   窄屏自动退回原来的横条，手机上不受影响。 */
+@media(min-width:900px){
+  #stage{display:grid;grid-template-columns:96px minmax(0,1fr);gap:0 16px;align-items:start}
+  #stage>*{grid-column:2;min-width:0}
+  #stage>.tabs{
+    grid-column:1;grid-row:1/-1;align-self:start;
+    position:sticky;top:calc(var(--pin-h,0px) + 8px);
+    flex-direction:column;gap:1px;margin:0;overflow:visible}
+  #stage>.tabs .tab{flex:none;width:100%;min-width:0;text-align:center;
+    padding:13px 6px;font-size:13.5px;letter-spacing:.08em}
+  /* 竖栏里下划线改成左边一道竖线，方向对得上 */
+  #stage>.tabs .tab.on::after{left:0;right:auto;top:0;bottom:0;width:2px;height:auto}
+  #stage>.tabs .tcount{display:block;margin:4px auto 0}
+}
 
 /* ---- 实力差距条 ---- */
 .gapbar{margin-top:12px;padding:11px 15px;border-left:3px solid var(--line);

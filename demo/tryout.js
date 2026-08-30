@@ -587,12 +587,38 @@ function buyoutDrag(){
   const b = (S.contract && S.contract.buyout) || 0;
   return b / 260;          // 900 万违约金 ≈ 拉低 3.5 分表现分
 }
-/* 休赛期开始时摇一次：有没有人来问 */
+/* ---------- 赛季中的球探关注 ----------
+   原来「有没有人来挖你」全年只有休赛期那一个瞬间掷一次骰子——
+   赛季里打得再好也听不到任何风声，到了转会期要么有要么没有，
+   玩家的实际体感就是「进了队之后再没人理过我」。
+   现在拆成两段：赛段结算时先攒关注度并且明确告诉你，休赛期再兑现成报价。 */
+function noteScoutInterest(){
+  if(!S.career || !S.team) return;
+  const perf = proPerf() - buyoutDrag();
+  if(perf < 4) return;                                  // 打得不够好，确实没人看
+  // 频率刻意压住：每个赛段都有人来看，这条播报就不值钱了
+  if(rnd() >= clamp(0.10 + perf * 0.018, 0, 0.55)) return;
+  S.scoutHeat = (S.scoutHeat || 0) + 1;
+  const tier = perf >= 19 ? "top" : perf >= 10 ? "mid" : "low";
+  const t = pickClub(tier, S.homeLeague || "LPL");
+  const who = (t && t !== S.team) ? `<b>${t}</b> 的` : "有几家俱乐部的";
+  pushEvent(`${who}球探出现在你们这场的看台上。<br>
+    <span style="color:var(--ink-3)">转会期还没到，但你的名字已经被记下了。</span>`, "good", "转会");
+}
+
+/* 休赛期开始时兑现：有没有人来问 */
 function rollProOffers(){
   if(!S.career || S.proOffer || S.deal || S.tryout) return;
   const perf = proPerf() - buyoutDrag();
-  const p = clamp(0.08 + perf * 0.028, 0.02, 0.72);
-  if(rnd() >= p) return;
+  // 赛季里攒下的关注度直接折成概率：被盯了一年，转会期不该毫无动静
+  const heat = Math.min(S.scoutHeat || 0, 6);
+  let p = clamp(0.10 + perf * 0.030 + heat * 0.075, 0.02, 0.88);
+  // 保底：打得确实好，却连着两个休赛期没有任何人来问，说不过去
+  const dry = S.offerDry || 0;
+  if(perf >= 13 && dry >= 1) p = Math.max(p, 0.92);
+  S.scoutHeat = 0;
+  if(rnd() >= p){ S.offerDry = dry + 1; return; }
+  S.offerDry = 0;
   const tier = perf >= 19 ? "top" : perf >= 10 ? "mid" : "low";
   // 外赛区也在同步运转，也会来挖人。
   // 但他们只追已经证明过自己的人，而且会掂量语言——

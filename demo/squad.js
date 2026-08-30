@@ -41,6 +41,8 @@ function disruptSynergy(changed,who){
   if(hit>=5&&typeof pushEvent==="function"){
     pushEvent(`阵容变动：${who||"新人加入"}。<b>默契 ${Math.round(before)} → ${Math.round(S.squad.syn)}</b>，
       五个人要重新磨。纸面强了，打起来未必。`,"bad","磨合");
+    // 队友真的被换走了，才有「走之前来找你吃顿饭」这回事
+    if(typeof fireEvent==="function") fireEvent("exMate",0.45);
   }
 }
 /* 每次渲染前对一下名单，有变动就砸默契 */
@@ -105,8 +107,11 @@ function squadBreakdown(players,fatigue,verFav,team){
 }
 
 /* ---------- 战队行动（签约后才有） ---------- */
+/* sum 是给按钮上那行成本标注用的，就写在效果旁边——
+   分开放两处，改了数值忘了改文案是迟早的事。 */
 const SQUAD_ACTS=[
   {k:"scrim", n:"训练赛", d:"和别的队打，最接近实战",
+   sum:["默契 +3.4","战术 +3.0","信任 +1.2","有几率摩擦"],
    fat:16, run:()=>{ addSquad("syn",3.4); addSquad("tac",3.0);
      if(typeof addTrustAll==="function") addTrustAll(1.2);
      if(rnd()<0.28){
@@ -116,13 +121,16 @@ const SQUAD_ACTS=[
          addSquad("tac",1.6); addTrust(t.id,-2); }
      }}},
   {k:"vod", n:"战术复盘", d:"逐帧过录像，把上一场的问题挖出来",
+   sum:["战术 +4.2","运营 +0.35","攒运营突破"],
    fat:9,  run:()=>{ addSquad("tac",4.2);
      if(typeof btkNote==="function") btkNote("vod",1);   // 突破「运营」瓶颈的机械条件
      S.attrs.运营=Math.min(capOf("运营"),S.attrs.运营+0.35); }},
   {k:"drill", n:"战队合练", d:"专项练配合，团战执行会顺很多",
+   sum:["默契 +4.4","信任 +1.8"],
    fat:13, run:()=>{ addSquad("syn",4.4);
      if(typeof addTrustAll==="function") addTrustAll(1.8); }},
   {k:"duo", n:"队友双排", d:"排位里带一带，练默契也拉近关系",
+   sum:["默契 +2.2","信任 +3.4","操作 +0.25"],
    fat:7,  run:()=>{ addSquad("syn",2.2);
      if(typeof addTrustAll==="function") addTrustAll(3.4);
      S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.25); }}
@@ -208,5 +216,9 @@ function squadActs(){
   return `<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队</h3>
     <div class="grid g5">${SQUAD_ACTS.map(a=>`
       <button class="act" data-squad="${a.k}" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">${a.n}</div><div class="d">${a.d}</div></button>`).join("")}</div>`;
+        <div class="t">${a.n}</div><div class="d">${a.d}${
+          (typeof costBits==="function")
+            ? costBits([`体能<i class="dn">−${a.fat}</i>`]
+                .concat((a.sum||[]).map(x=>x.replace(/\s*([+−-][0-9.]+)/,'<i class="up">$1</i>'))))
+            : ""}</div></button>`).join("")}</div>`;
 }
