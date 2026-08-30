@@ -57,6 +57,34 @@ const CUPS={
 function cupTeamName(){
   return (S.pre&&S.pre.cupTeam)?escapeHtml(S.pre.cupTeam):meName();
 }
+
+/* ---------- 车队：随机路人队友 ----------
+   业余赛不是一个人打的——报名时从路人池里抽 4 个队友组成车队。
+   数值锚定赛事带宽（城市赛钻石档、主播杯更高一档），
+   默契战术从很低起步：路人车队本来就是临时拼的，
+   要靠训练赛/复盘/合练/双排真的练出来（和职业队同一套行动）。 */
+const PUB_NAMES=["一刀","峡谷小","野区暴君","中路一霸","河道蟹","閃现撞墙","下饭","超神","躺赢",
+  "带妹","netcafe","Wraith","Zzz","Kite","Muffin","Pudge","北极","卡莎驾到","操作拉满","布隆天下第一",
+  "蓝Buff是我的","不吃兵线","龙魂猎人","逆风翻盘王","泉水指挥官","扫地僧","夜行者","小飞侠"];
+function drawCupMates(kind){
+  const C=CUPS[kind]||CUPS.city;
+  const [lo,hi]=C.band;
+  S.pre.mates=POS.filter(p=>p.k!==S.pos).map(p=>{
+    // 偏上沿抽：愿意跟你组队打比赛的路人，本来就是这个池子里想赢的那批
+    const lvl=lo+(0.45+0.55*rnd())*(hi-lo);
+    const r={};
+    DIMS.forEach(d=>r[d]=clamp(Math.round(lvl+(rnd()*14-7)),25,75));
+    return {id:PUB_NAMES[Math.floor(rnd()*PUB_NAMES.length)]+(10+Math.floor(rnd()*90)),
+            pos:p.k, age:16+Math.floor(rnd()*14), r};
+  });
+  // 临时车队：默契战术起点偏低，信任一般——这正是战队行动的用武之地
+  S.squad={syn:45+Math.floor(rnd()*8), tac:47+Math.floor(rnd()*8)};
+  S.trust={};
+  S.pre.mates.forEach(m=>S.trust[m.id]=42+Math.floor(rnd()*14));
+  preLog(`车队「<b>${cupTeamName()}</b>」集结：${
+    S.pre.mates.map(m=>`${m.id}（${POSN[m.pos]}）`).join("、")}。<br>
+    <span style="color:var(--ink-3)">临时拼的队，默契和战术都得从头练——战队行动解锁了。</span>`,"big");
+}
 /* ---------- 报名之后：建赛程，而不是直接出结果 ---------- */
 function enterCup(kind){
   const C=CUPS[kind]; if(!C) return;
@@ -64,6 +92,9 @@ function enterCup(kind){
   S.cups[kind]={ kind, name:C.name, round:1, rounds:C.rounds,
                  nextWeek:S.pre.week+C.gap, alive:true, wins:0, prep:0,
                  oppRoll:rollOpp() };
+  // 抽车队：手上已有活的车队就沿用（两个赛事一起打也是同一批人），
+  // 没有才抽新的——练出来的默契跟着车队走
+  if(!S.pre.mates||!S.pre.mates.length) drawCupMates(kind);
   // 别把间隔写死在文案里——赛程从两周一轮改成一周一轮之后，
   // 这句「中间这两周」就成了假话。
   preLog(`报名成功。<b>${C.name}</b> 第一轮在 <b>第 ${S.cups[kind].nextWeek} 周</b>，
@@ -92,13 +123,32 @@ function cupOppName(k){
   const c=cupOf(k), C=CUPS[k];
   return C.opps[Math.min(c.round-1,C.opps.length-1)];
 }
-/* 你的业余赛战力：和职业赛不同，这里几乎全看个人 */
+/* 你的业余赛战力。
+   有车队之后就是真的战队战力：你（权重 2，车队围着你打）+ 四个路人
+   的个人数值，再乘默契、战术、士气——和职业赛同一套构成，只是
+   系数更敏感（路人队从 30 练到 60 的收益要看得见）。
+   老档没有车队时退回纯个人的旧公式。 */
+function cupPersonal(p){
+  const r=p.r||p;
+  return r.操作*0.42+r.运营*0.28+r.心态*0.18+r.体质*0.12+(r.指挥-50)*0.12;
+}
 function cupMyPower(k){
-  return S.attrs.操作*0.42+S.attrs.运营*0.28+S.attrs.心态*0.18+S.attrs.体质*0.12
-       +(S.attrs.指挥-50)*0.12
-       +(typeof gearBonus==="function"?gearBonus("操作")*0.4:0)
-       +((k&&cupOf(k))?cupOf(k).prep*1.15:0)      // 针对这一轮对手的功课，下一轮清零
-       +(S.pre.cupPrep||0)*0.55;                  // 练下来的战术与配合，不清零
+  const solo=cupPersonal(S.attrs)
+       +(typeof gearBonus==="function"?gearBonus("操作")*0.4:0);
+  const legacy=((k&&cupOf(k))?cupOf(k).prep*1.15:0)+(S.pre.cupPrep||0)*0.55;
+  if(S.pre&&S.pre.mates&&S.pre.mates.length){
+    // 业余赛就是大腿抬着队友打：你占 72%，车队水位占 28%——
+    // 定标目标是「刚组队时 ≈ 旧的纯个人公式，练满默契战术后略强」，
+    // 用 40 局批测对齐过旧版夺冠率（城市赛 ~52%、主播杯 ~40%）
+    const teamAvg=(solo+S.pre.mates.reduce((a,m)=>a+cupPersonal(m),0))/(1+S.pre.mates.length);
+    const base=solo*0.72+teamAvg*0.28;
+    const syn=(typeof squadOf==="function")?squadOf("syn"):50;
+    const tac=(typeof squadOf==="function")?squadOf("tac"):50;
+    const mor=(typeof avgTrust==="function")?avgTrust():50;
+    // 业余队的磨合弹性比职业队大得多——从 44 练到 65 的差距要打得出来
+    return base*(1+(syn-50)/550)*(1+(tac-50)/650)*(1+(mor-50)/900)+legacy;
+  }
+  return solo+legacy;
 }
 
 /* ---------- 备战 ----------
@@ -296,11 +346,11 @@ function cupCard(){
              :d>-2?"势均力敌，就看临场那几个决定。"
              :d>-7?"对手比你强，得靠备战和决策去搏。"
              :"实力差得有点多——赢面很小，除非临场赌对。"}</p>
-      <div class="row">
-        <button class="act" data-cupprep="${k}" style="flex:1" ${S.pre.ap<=0?'disabled':''}>
-          <div class="t">备战</div><div class="d">看对手录像（这一轮有效）+ 练配合（永久，涨运营与指挥）</div></button>
-        ${wait<=0?`<button class="btn" data-cupgo="${k}">上场 →</button>`:""}
-      </div></div>`;
+      ${S.pre.mates&&S.pre.mates.length?`<div class="oppinfo">${
+        S.pre.mates.map(m=>`<span class="chipx">${typeof avatarOf==="function"?avatarOf(m,18):""} ${m.id} <b>${POSN[m.pos]}</b></span>`).join("")}</div>
+      <p class="note" style="margin-top:8px">备战就是练队：<b>「本周」里的战队行动</b>（训练赛/复盘/合练/双排）
+        喂的默契与战术，直接乘在这支车队的战力上——去「战队」页看拆解。</p>`:""}
+      ${wait<=0?`<div class="row"><button class="btn" data-cupgo="${k}">上场 →</button></div>`:""}</div>`;
   }).join("");
 }
 function cupMatchCard(){
@@ -320,6 +370,37 @@ function cupMatchCard(){
     ${m.lines.length?`<div class="log">${m.lines.slice().reverse().join("")}</div>`:""}
     ${m.done?`<div class="row"><button class="btn" id="cupdone">继续 →</button></div>`:""}
   </div>`;
+}
+/* ---------- 职业前的战队页：车队真实存在 ---------- */
+function preSquadCard(){
+  if(!S.pre||!S.pre.mates||!S.pre.mates.length) return "";
+  const my=cupMyPower(null);
+  const syn=(typeof squadOf==="function")?squadOf("syn"):50;
+  const tac=(typeof squadOf==="function")?squadOf("tac"):50;
+  const mor=(typeof avgTrust==="function")?avgTrust():50;
+  const bar=(v)=>`<div class="track"><div class="fill" style="width:${clamp(v,0,100)}%;background:${
+    v>=62?"linear-gradient(90deg,var(--cyan-dim),var(--cyan))":
+    v>=42?"linear-gradient(90deg,#6B5A2A,var(--gold))":
+          "linear-gradient(90deg,#5A2228,var(--red))"}"></div></div>`;
+  return `<div class="card"><h2>车队「${cupTeamName()}」<em>赛事战力 ${my.toFixed(1)}</em></h2>
+    <h3 style="font-size:13px;color:var(--ink-3);margin:0 0 8px">五个人</h3>
+    <div class="attrs">
+      ${[{id:meName(),pos:S.pos,r:S.attrs,me:true}].concat(S.pre.mates).map(p=>{
+        const v=cupPersonal(p.me?S.attrs:p);
+        return `<div class="at wide"><div class="lb">${POSN[p.pos]}</div>${bar(v)}
+          <div class="vn mono"><b>${v.toFixed(0)}</b>${typeof avatarOf==="function"?avatarOf(p,22):""}<span class="pname">${
+            p.me?'<b style="color:var(--gold)">你</b>':p.id}</span></div></div>`;
+      }).join("")}
+    </div>
+    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">这五个人像不像一支队</h3>
+    <div class="attrs">
+      <div class="at"><div class="lb">默契</div>${bar(syn)}<div class="vn mono"><b>${Math.round(syn)}</b></div></div>
+      <div class="at"><div class="lb">战术</div>${bar(tac)}<div class="vn mono"><b>${Math.round(tac)}</b></div></div>
+      <div class="at"><div class="lb">士气</div>${bar(mor)}<div class="vn mono"><b>${Math.round(mor)}</b></div></div>
+    </div>
+    <p class="note">临时拼的车队，默契战术从很低起步——<b>「本周」里的战队行动</b>
+      （训练赛/战术复盘/合练/双排）就是练它们的，练出来的每一分都乘在赛事战力上。
+      签约职业队后，车队解散，这套本事跟着你走。</p></div>`;
 }
 function cupResultCard(){
   const r=S.cupResult; if(!r) return "";

@@ -123,8 +123,11 @@ function playOne(opts) {
       const due = A.activeCups().find(c => c.nextWeek <= S.pre.week);
       if (due) { cupMatches++; A.startCupMatch(due.kind); continue; }
       if (S.pre.ap > 0) {
-        const soon = A.activeCups().find(c => c.nextWeek - S.pre.week <= 2 && c.prep < 2);
-        if (soon && S.fatigue < 70) { preps++; A.cupPrep(soon.kind); }
+        // 备战改成真的练队：赛前两周做战队行动（默契/战术直接乘进赛事战力）
+        const soon = A.activeCups().find(c => c.nextWeek - S.pre.week <= 2);
+        if (soon && S.fatigue < 70 && S.pre.mates && S.pre.mates.length) {
+          preps++; A.doSquad(["scrim", "vod", "drill", "duo"][preps % 4]);
+        }
         else if (S.fatigue > 75) A.preAct("rest");
         else A.preAct(S.pre.week % 4 === 0 ? "stream" : "rank");
       } else { const w = S.pre.week; A.preNextWeek(); if (A.S().pre && A.S().pre.week < w) preYears++; }

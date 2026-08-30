@@ -114,7 +114,7 @@ const SQUAD_ACTS=[
    sum:["默契 +3.4","战术 +3.0","信任 +1.2","有几率摩擦"],
    fat:16, run:()=>{ addSquad("syn",3.4); addSquad("tac",3.0);
      if(typeof addTrustAll==="function") addTrustAll(1.2);
-     if(rnd()<0.28){
+     if(rnd()<0.28&&S.team){
        const bad=myRoster().filter(p=>!p.me);
        const t=bad[Math.floor(rnd()*bad.length)];
        if(t){ pushEvent(`训练赛里暴露了问题：<b>${t.id}</b> 的处理方式和队伍对不上，复盘会开到半夜。`,"info","训练赛");
@@ -135,10 +135,22 @@ const SQUAD_ACTS=[
      if(typeof addTrustAll==="function") addTrustAll(3.4);
      S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.25); }}
 ];
+/* 职业前的车队也用这套行动：训练赛/复盘/合练/双排喂的是同一组
+   默契与战术池（S.squad），只是行动点从 S.pre.ap 扣。 */
 function doSquad(k){
-  if(S.ap<=0) return;
+  const inPre=!S.career&&S.pre;
+  const ap=inPre?S.pre.ap:S.ap;
+  if(ap<=0) return;
   const a=SQUAD_ACTS.find(x=>x.k===k); if(!a) return;
-  a.run(); addFat(a.fat); S.ap--; render();
+  a.run(); addFat(a.fat);
+  if(inPre){
+    S.pre.ap--;
+    // 车队一起练过的场次是硬积累：除了默契战术池，还直接落一点
+    // 赛事战力（沿用 cupPrep 通道，和旧「备战」的量级对齐）
+    S.pre.cupPrep=(S.pre.cupPrep||0)+0.5;
+  } else S.ap--;
+  if(typeof noteAct==="function") noteAct("squad",a.k);
+  render();
 }
 
 /* ---------- 综合实力与差距 ---------- */
@@ -214,9 +226,11 @@ function squadCard(){
 }
 function squadActs(){
   if(!S.squad) return "";
-  return `<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队</h3>
+  const ap=(!S.career&&S.pre)?S.pre.ap:S.ap;   // 职业前的车队用职业前的行动点
+  return `<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队${
+    (!S.career&&S.pre&&typeof cupTeamName==="function")?`<span class="tag g">${cupTeamName()}</span>`:""}</h3>
     <div class="grid g5">${SQUAD_ACTS.map(a=>`
-      <button class="act" data-squad="${a.k}" ${S.ap<=0?'disabled style="opacity:.34"':''}>
+      <button class="act" data-squad="${a.k}" ${ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">${a.n}</div><div class="d">${a.d}${
           (typeof costBits==="function")
             ? costBits([`体能<i class="dn">−${a.fat}</i>`]

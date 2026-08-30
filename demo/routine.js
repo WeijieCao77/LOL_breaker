@@ -90,8 +90,9 @@ function runActs(list, fromCursor){
       else  inPre() ? preAct("stream") : doAction("stream");
 
     } else if(a.k === "squad"){
-      // 战队行动只有进队之后才有；职业前就换成排位
-      if(!inPre() && typeof doSquad === "function" && S.squad) doSquad(a.v);
+      // 战队行动：进队之后有，职业前有车队（报名了业余赛）也有
+      const canSquad=typeof doSquad==="function"&&S.squad&&(!inPre()||(S.pre&&S.pre.mates&&S.pre.mates.length));
+      if(canSquad) doSquad(a.v);
       else if(inPre()) preAct("rank");
       else doAction("stream");
 

@@ -1259,6 +1259,10 @@ function preNextYear(){
   S.fatigue=0; S.buff={};
   if(typeof ledgerRotate==="function") ledgerRotate();
   P.rank=Math.max(0,P.rank-4);          // 一年下来手会生一点
+  if(P.mates&&P.mates.length){          // 车队是一年一拼的：各回各家
+    preLog(`车队散了——路人队友们各回各家。明年再报名，再拼一支。`,"info");
+    P.mates=null; S.squad=null; S.trust=null;
+  }
   proSeasonWrap();
   pushEvent(`<b>${SEASONS[S.si].tag} ${SEASONS[S.si].y}</b>：你还没打上职业。${SEASONS[S.si].story}`,"bad","赛季");
   preLog(`<b>${SEASONS[S.si].tag} ${SEASONS[S.si].y} 赛季开始</b>，你 ${S.age} 岁了。
@@ -1323,6 +1327,7 @@ function acceptOffer(i){
   // 但 JSON.stringify 会把它当成第二份完整世界写进存档——76KB 的纯冗余，
   // 每次自动存档都写一遍。用完就断开。
   S.pre.world=null; S.pre.offers=null; S.pre.baseline=null;
+  S.pre.mates=null;              // 车队就到这了——职业队的默契信任由 initSquad/initTrust 重开
   // 你自己就是那个「强援」：base 上去了，但五个人要重新磨
   disruptSynergy(1,`<b>${meName()}</b> 加盟`);
   pushEvent(`<b>${meName()}</b> 正式签约 <b>${of.team}</b>（${of.t}）。职业生涯从这里开始。`,"big","签约");
@@ -2801,13 +2806,14 @@ function actPanelPre(){
         <div class="t">休息</div><div class="d">清疲劳${costRest()}</div></button>
     </div>
     ${typeof routineBar==="function"?routineBar():""}
-    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队<span class="tag">未解锁</span></h3>
+    ${(S.pre.mates&&S.pre.mates.length&&typeof squadActs==="function")?squadActs()
+      :`<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队<span class="tag">未解锁</span></h3>
     <div class="grid g5">
-      ${lockedAct("训练赛","和别的队打，最接近实战","签约职业战队后解锁")}
-      ${lockedAct("战术复盘","逐帧过录像，把问题挖出来","签约职业战队后解锁")}
-      ${lockedAct("战队合练","专项练配合，团战执行会顺很多","签约职业战队后解锁")}
-      ${lockedAct("队友双排","排位里带一带，练默契也拉近关系","签约职业战队后解锁")}
-    </div>
+      ${lockedAct("训练赛","和别的队打，最接近实战","报名业余赛事组建车队后解锁")}
+      ${lockedAct("战术复盘","逐帧过录像，把问题挖出来","报名业余赛事组建车队后解锁")}
+      ${lockedAct("战队合练","专项练配合，团战执行会顺很多","报名业余赛事组建车队后解锁")}
+      ${lockedAct("队友双排","排位里带一带，练默契也拉近关系","报名业余赛事组建车队后解锁")}
+    </div>`}
     ${(()=>{const due=(typeof dueCups==="function")?dueCups():[];
       return due.length?`<p class="note" style="color:var(--gold);margin-top:14px">
         <b>${CUPS[due[0].kind].name}</b> 第 ${due[0].round} 轮就在本周，你还没上场——
@@ -2832,7 +2838,8 @@ function viewPre(){
   ${T==="act"&&!S.cupMatch?(typeof cupCard==="function"?cupCard():""):""}
   ${T==="act"&&!S.cupMatch?(typeof injuryCard==="function"?injuryCard():"")+attrCard():""}
   ${T==="world"?scheduleCard()+proCard()+eventsCard():""}
-  ${T==="squad"?lockedCard("战队实力","签约职业战队后解锁。在那之前，你只有自己。",
+  ${T==="squad"&&S.pre.mates&&S.pre.mates.length&&typeof preSquadCard==="function"?preSquadCard():""}
+  ${T==="squad"&&!(S.pre.mates&&S.pre.mates.length)?lockedCard("战队实力","报名城市争霸赛或主播杯，抽到车队后解锁；签约职业战队后是完整版。",
       `<p>加入战队后，这里会显示：</p>
        <div class="attrs" style="opacity:.4;pointer-events:none">
          <div class="at"><div class="lb">基础</div><div class="track"><div class="fill" style="width:52%"></div></div><div class="vn mono">五人个人数值</div></div>
@@ -2842,7 +2849,7 @@ function viewPre(){
        </div>
        <p class="note" style="margin-top:14px">综合实力 = 基础战力 × 默契 × 战术 × 士气 × 指挥 × 体能。<br>
          你的个人数值只是基础战力的一部分——五个人怎么变成一支队，是另一半。</p>`)
-    +lockedCard("队友","签约职业战队后解锁。",
+    +lockedCard("队友","签约职业战队后解锁完整版。",
       `<p class="note" style="margin:0">每个队友对你有独立的信任度，会因为你的选择涨落，也会影响全队发挥。</p>`):""}
   ${T==="shop"?(typeof financeCard==="function"?financeCard():"")+gearCard()+shopCard()+(typeof prizeNote==="function"?prizeNote():"")
       +lockedCard("俱乐部资源","签约职业战队后解锁。",
