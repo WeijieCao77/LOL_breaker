@@ -96,6 +96,25 @@ function fixLegacyAcad(s) {
     });
   } catch (e) {}
 }
+/* 老档天梯结算：段位分远高于当前实力能守住的位置（运气峰值 + 冻结太久），
+   读档时先结算掉一截，之后每赛段还会继续向实力线回落（见 endSeason）。 */
+function fixStaleRank(s) {
+  try {
+    if (!s || !s.career || !s.pre || typeof s.pre.rank !== "number") return;
+    if (!s.attrs) return;
+    const sk = s.attrs.操作 * 0.5 + s.attrs.运营 * 0.3 + s.attrs.心态 * 0.2;
+    const hold = clamp((sk - 40) / 0.38 + 6, 0, 100);
+    if (s.pre.rank > hold + 18) {
+      const before = s.pre.rank;
+      s.pre.rank = Math.round(hold + 10);
+      (s.events = s.events || []).push({
+        s: "天梯", w: 0, tone: "info", tag: "排位",
+        text: "天梯结算：之前的段位是手感最好那阵冲上去的<b>峰值</b>，挂着不打是守不住的。" +
+              "按你现在的实力重定到 <b>" + rankFull(s.pre.rank) + "</b>——想回去，用排位一分一分打回去。"
+      });
+    }
+  } catch (e) {}
+}
 function loadGame() {
   const blob = readSave();
   if (!blob || blob.bad) return false;
@@ -105,6 +124,7 @@ function loadGame() {
     SAVE_SKIP.forEach(k => { if (S[k] === undefined) S[k] = null; });
     scrubFloats(S);
     fixLegacyAcad(S);
+    fixStaleRank(S);
     S.tab = "act";
     // 读档落在比赛中途会尴尬——回到本周界面
     if (S.step === "match") S.step = S.pre && !S.career ? "pre" : "season";
