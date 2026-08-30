@@ -44,7 +44,7 @@ const LOCKER=[
         return "你把锅接了。更衣室安静下来，气氛缓和。"}},
       {t:"数据摆出来，不是我的问题",e:(t)=>{addTrust(t.id,-12);addTrustAll(-3);
         return `你把回放调出来逐帧过。${t.id} 没再说话，但脸色不好看。`}},
-      {t:"当场吵回去",e:(t)=>{addTrust(t.id,-20);addTrustAll(-6);S.fame+=3;
+      {t:"当场吵回去",e:(t)=>{addTrust(t.id,-20);addTrustAll(-6);addFans(3);
         return "更衣室炸了。第二天这段被爆料出去，上了热搜。"}}]},
 
   {id:"resource", when:()=>rnd()<0.4,
@@ -76,14 +76,14 @@ const LOCKER=[
       {t:"实话说，你该考虑转型",e:(t)=>{addTrust(t.id,-10);
         return "他沉默了很久，说谢谢你的诚实。"}}]},
 
-  {id:"media", when:()=>S.fame>=100&&rnd()<0.35,
+  {id:"media", when:()=>S.fans>=100&&rnd()<0.35,
    q:t=>`媒体想做你的专访，队里其他人一个都没约。`,
    ctx:"流量都在你身上，这未必是好事。",
-   a:[{t:"接，顺便多提队友",e:(t)=>{S.fame+=12;addMoney("other",14);addTrustAll(5);
+   a:[{t:"接，顺便多提队友",e:(t)=>{addFans(12);addMoney("other",14);addTrustAll(5);
         return "采访里你把功劳分了出去。队友看到了。"}},
-      {t:"接，好好聊自己",e:(t)=>{S.fame+=22;addMoney("other",20);addTrustAll(-7);
+      {t:"接，好好聊自己",e:(t)=>{addFans(22);addMoney("other",20);addTrustAll(-7);
         return "热度起来了。更衣室里有人觉得你飘了。"}},
-      {t:"推掉，专心训练",e:(t)=>{S.fame-=4;addTrustAll(4);
+      {t:"推掉，专心训练",e:(t)=>{addFans(-4);addTrustAll(4);
         DIMS.forEach(()=>{}); return "你没去。教练组对此表示满意。"}}]}
 ];
 
@@ -117,13 +117,13 @@ const SPEND=[
   {k:"team",n:"团队建设",cost:110,d:"全队信任提升",
    run:()=>{addTrustAll(16);}},
   {k:"pr",n:"舆论公关",cost:70,d:"压下负面，人气回升",
-   run:()=>{S.fame+=14;}}
+   run:()=>{addFans(14);}}
 ];
 /* 薪资 = 谈出来的年薪 + 人气与荣誉带来的浮动。
    合同里那个数字必须真的算数，否则谈判就是假的。 */
 function salaryOf(){
   const c=S.contract||{};
-  const bonus=Math.round(S.fame*0.20)+(S.career.leagueTitles||0)*14
+  const bonus=Math.round(S.fans*0.20)+(S.career.leagueTitles||0)*14
     +((S.career.msi||0)+(S.career.worlds||0))*36;
   if(c.salary!==undefined) return Math.round(c.salary+bonus);
   // 老存档或没走谈判流程的情况，退回旧算法
@@ -133,7 +133,7 @@ function salaryOf(){
 function payday(){
   const pay=salaryOf();
   if(typeof addMoney==="function") addMoney("salary",pay); else S.money+=pay;
-  pushEvent(`赛段结算：薪资到账 <b>${pay} 万</b>（当前人气 ${Math.round(S.fame)}）。`,"info","合同");
+  pushEvent(`赛段结算：薪资到账 <b>${pay} 万</b>（当前人气 ${Math.round(S.fans)}）。`,"info","合同");
 }
 /* 合同：两个赛季一签，到期看表现续约或走人 */
 function contractCheck(){

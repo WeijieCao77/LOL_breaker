@@ -106,7 +106,7 @@ function checkRankInvite(){
       return;
     }
   }
-  if(typeof checkFameInvite === "function") checkFameInvite();
+  if(typeof checkFanInvite === "function") checkFanInvite();
 }
 /* 「有没有人找你」和「能不能通过」是两件事。
 
@@ -144,7 +144,7 @@ function fitTier(tier){
    能被看见的途径：打过的比赛（有数据）、杯赛走得多深、名气。 */
 function exposureScore(){
   const P = S.pre; if(!P) return 0;
-  return Math.min(S.fame, 420) * 0.50          // 名气
+  return Math.min(S.fans, 420) * 0.50          // 名气
        + (P.cityCup || 0) * 18                 // 城市赛走到第几轮
        + (P.streamCup || 0) * 24               // 主播杯（邀请制，更受关注）
        + Math.min(P.scoutSeen || 0, 12) * 4;   // 打过多少场正式比赛
@@ -200,15 +200,15 @@ function canInvite(tierWanted){
   return true;
 }
 /* 人气到了也有人来问——直播这条路本来就是设计里的一条路 */
-function checkFameInvite(){
+function checkFanInvite(){
   const P = S.pre; if(!P) return;
-  P.fameInvited = P.fameInvited || {};
+  P.fanInvited = P.fanInvited || {};
   for(const [at, tier] of [[55,"acad"],[110,"low"],[190,"mid"]]){
-    if(S.fame >= at && !P.fameInvited[at]){
+    if(S.fans >= at && !P.fanInvited[at]){
       const t = fitTier(tier);
       if(!canInvite(t)) return;
-      P.fameInvited[at] = 1;
-      addInvite(t, `直播间的人气涨到了${fameTier()}`);
+      P.fanInvited[at] = 1;
+      addInvite(t, `直播间的人气涨到了${fanTier()}`);
       return;
     }
   }
@@ -403,7 +403,7 @@ function makeDeal(){
 /* 还价的底气：试训评级 + 人气 + 段位。没有底气就别开口。 */
 function dealLeverage(grade){
   const g = { "A+":26, "A":18, "B":10, "C":4 }[grade] || 0;
-  return clamp(g + Math.min(S.fame,300)*0.045 + (S.pre.rank)*0.12, 5, 62);
+  return clamp(g + Math.min(S.fans,300)*0.045 + (S.pre.rank)*0.12, 5, 62);
 }
 /* 四个可以谈的方向。每个都有代价——不是免费加钱。 */
 const DEAL_ASKS = [
@@ -601,7 +601,7 @@ function proPerf(){
   v += ((S.career.titles || []).length) * 4;
   v += (((S.career.msi || 0) + (S.career.worlds || 0))) * 9;
   if(typeof myForm === "function") v += (myForm() - 52) * 0.18;
-  v += Math.min(S.fame || 0, 400) * 0.018;
+  v += Math.min(S.fans || 0, 400) * 0.018;
   if(S.benchedSplits) v -= S.benchedSplits * 6;    // 一直坐板凳，没人看得到你
   return v;
 }
@@ -786,7 +786,7 @@ function makeProDeal(tier, team, grade, league){
     buyout: Math.round(lerp(T.buyout[0], T.buyout[1], q)),
     asks:0, dead:false, signed:false, log:[],
     // 已经打出成绩的人，谈判底气不该再看职业前那点排位分
-    leverage: clamp(14 + proPerf()*0.9 + Math.min(S.fame,400)*0.03, 8, 70)
+    leverage: clamp(14 + proPerf()*0.9 + Math.min(S.fans,400)*0.03, 8, 70)
   };
   render();
 }

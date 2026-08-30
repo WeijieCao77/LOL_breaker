@@ -38,7 +38,7 @@ function cloutOf(){
   v+=(S.career.leagueTitles||0)*5;
   v+=((S.career.msi||0)+(S.career.worlds||0))*11;
   // 人气
-  v+=clamp((S.fame||0)/14,0,16);
+  v+=clamp((S.fans||0)/14,0,16);
   // 队内地位：你在 base 里占多少
   const me=myRoster().find(p=>p.me);
   if(me){
@@ -242,7 +242,7 @@ function cloutTick(won){
   addStaff("coach",clamp((S.btk&&S.btk.vod||0)-1,-1,3));      // 复盘做得多，教练喜欢
   if(S.fatigue>78) addStaff("coach",-2);                       // 把自己练废了他也不高兴
   // 经理看你值不值钱
-  addStaff("mgr",clamp((S.fame-90)/26,-4,6));
+  addStaff("mgr",clamp((S.fans-90)/26,-4,6));
   if(g>0) addStaff("mgr",((S.record.w/g)-0.5)*12);
   relDrift(g>0&&S.record.w>=S.record.l);
   syncRelations();

@@ -270,7 +270,7 @@ function endCupMatch(){
   S.pre.scoutSeen = (S.pre.scoutSeen||0) + 1;
   if(won){
     c.wins++;
-    addFame(4+c.round*2);
+    addFans(4+c.round*2);
     preLog(`<b>${C.name}</b> 第 ${c.round} 轮：${m.sc[0]}:${m.sc[1]} 击败 ${m.opp}。`,"good");
     // 这里原本会「每赢一轮就可能来邀请」，但那会把杯赛线整个短路：
     // 玩家在半决赛就签约走人，奖金、成就、决赛全都拿不到，
@@ -297,12 +297,12 @@ function cupPayout(k,champion){
   const prize=(C.prize||[])[reached]||0;
   if(prize){ if(typeof addMoney==="function") addMoney("prize",prize); else S.money+=prize;
     preLog(`奖金到账 <b>${prize} 万</b>。`,"good"); }
-  addFame(reached*(k==="stream"?6:4));
+  addFans(reached*(k==="stream"?6:4));
   if(k==="city") S.pre.cityCup=reached;
   else if(k==="stream") S.pre.streamCup=reached;
   if(k==="show"){
     // 表演赛的收获是曝光：全场镜头都在你身上
-    addFame(28);
+    addFans(28);
     S.pre.scoutSeen=(S.pre.scoutSeen||0)+2;
     preLog(champion
       ?`表演赛打服全场。<b>弹幕都在问：这人为什么还不打职业？</b>`

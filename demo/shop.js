@@ -207,18 +207,22 @@ function streamIncome(){
   // 一次直播能到两百多万，比世界赛夺冠还值钱——实测有整局挣到五亿的。
   // 封在 600（「顶流」之上），不签独家的上限 ~135/次，
   // 仍比独家保底高一截，「自由身上限更高」的承诺不变，但有边界。
-  const f=Math.min(Math.max(S.fame||0,0),600);
-  const gift=Math.pow(f/40,1.22)*4.4*streamCut();
+  // 底盘看粉丝（有多少人会来看），当天的量看热度（最近有没有人在讨论你）。
+  // 这就是「礼物 = f(粉丝基数) × g(当下热度)」——赢球那几周直播特别值钱，
+  // 冷下来之后同样的粉丝掉一半收入，直播因此有了「趁热打铁」这个决策。
+  const f=Math.min(Math.max(S.fans||0,0),600);
+  const heatMul=clamp(0.55+(S.heat||0)/260,0.55,1.9);
+  const gift=Math.pow(f/40,1.22)*4.4*streamCut()*heatMul;
   const base=4+f*0.05;
   return (base+gift)*originMul;
 }
 /* 独家平台控流量，涨名气比全网直播慢 */
-function streamFameMul(){ return S.streamDeal?0.7:1.0; }
+function streamFansMul(){ return S.streamDeal?0.7:1.0; }
 
 /* 每次开播时结算「平台关系」：分成该升就升（发事件），独家该谈就谈（弹窗）。
    放在直播动作里而不是每周结算里——你和平台打交道的时机就是开播。 */
 function checkStreamBiz(){
-  const f=S.fame||0;
+  const f=S.fans||0;
   // 分成上调：一档一档来，每次都告诉玩家
   let idx=S.streamCutIdx||0;
   if(!S.streamDeal){
@@ -226,7 +230,7 @@ function checkStreamBiz(){
       idx++;
       S.streamCutIdx=idx;
       const c=STREAM_CUTS[idx];
-      const evt=`你的咖位到了「${fameTier()}」这一档，平台主动把礼物分成提到 <b>${c.n}</b>。<br>同样的礼物，进你口袋的变多了。`;
+      const evt=`你的咖位到了「${fanTier()}」这一档，平台主动把礼物分成提到 <b>${c.n}</b>。<br>同样的礼物，进你口袋的变多了。`;
       if(S.pre&&!S.career&&typeof preLog==="function") preLog(evt,"good");
       pushEvent(evt,"good","直播");
     }
@@ -268,7 +272,7 @@ function streamOfferCard(){
     <div class="ru-icon" style="text-align:center">${typeof gicon==="function"?gicon("stream",52):""}</div>
     <div class="ru-eyebrow" style="text-align:center">平台来谈独家了</div>
     <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:12px">${o.n}</div>
-    <p class="note" style="margin:0 0 10px">你的人气到了「${fameTier()}」，平台的商务带着合同上门：
+    <p class="note" style="margin:0 0 10px">你的人气到了「${fanTier()}」，平台的商务带着合同上门：
       签字费 <b style="color:var(--gold)">${o.sign} 万</b>，此后每次直播保底 <b style="color:var(--gold)">${locked} 万</b>
       （你现在每次直播约 ${now} 万）。</p>
     <div class="grid g2">

@@ -579,6 +579,8 @@ td .tlogo{margin-right:5px}
 
 /* ---- HUD 的「现在」格 ---- */
 .hud .hud-now{flex:1 1 210px;background:linear-gradient(180deg,rgba(201,169,97,.16),var(--panel))}
+/* 粉丝格里要塞下「档位名 + 粉丝数」，96px 的基准宽度会把它挤成两行半 */
+.hud .hud-fan{flex:1 1 148px}
 .hud .hud-now .k{color:var(--gold)}
 .hud .hud-now .v{color:var(--gold-hi)}
 .hud .hud-now.urgent{background:linear-gradient(180deg,rgba(196,83,95,.22),var(--panel));

@@ -105,7 +105,7 @@ function applyAchReward(r){
   if(r.fat){ addFat(r.fat); out.push(`体力 +${-r.fat}`); }
   if(r.money){ if(typeof addMoney==="function") addMoney("ach",r.money); else S.money+=r.money;
     out.push(`奖金 ${r.money} 万`); }
-  if(r.fame){ addFame(r.fame); out.push(`名气 +${r.fame}`); }
+  if(r.fame){ addFans(r.fame); out.push(`名气 +${r.fame}`); }
   if(r.trust&&typeof addTrustAll==="function"){ addTrustAll(r.trust); out.push(`士气 ${r.trust>0?"+":""}${r.trust}`); }
   return out;
 }

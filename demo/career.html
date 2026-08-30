@@ -591,6 +591,8 @@ td .tlogo{margin-right:5px}
 
 /* ---- HUD 的「现在」格 ---- */
 .hud .hud-now{flex:1 1 210px;background:linear-gradient(180deg,rgba(201,169,97,.16),var(--panel))}
+/* 粉丝格里要塞下「档位名 + 粉丝数」，96px 的基准宽度会把它挤成两行半 */
+.hud .hud-fan{flex:1 1 148px}
 .hud .hud-now .k{color:var(--gold)}
 .hud .hud-now .v{color:var(--gold-hi)}
 .hud .hud-now.urgent{background:linear-gradient(180deg,rgba(196,83,95,.22),var(--panel));
@@ -1432,7 +1434,7 @@ function summaryCard(){
   const o=ORIGIN[S.origin], A=AGES[S.ageIdx], B=bgOf(S.bgPick);
   const attrs={};
   DIMS.forEach(d=>attrs[d]=Math.min(o.base[d]-9+(A.mod[d]||0)+((B.mod&&B.mod[d])||0),capOf(d)));
-  const money=B.money||0, fame=Math.max(0,o.fame+(B.fame||0));
+  const money=B.money||0, fans=Math.max(0,o.fame+(B.fame||0));
   // 背景带来的增益不写在脸上——照常生效，让玩家自己在打的过程中体会
   const extra=[];
   if(B.upkeep) extra.push(`每赛段要往家里寄 ${B.upkeep} 万`);   // 这条是负担，必须告知
@@ -1445,7 +1447,7 @@ function summaryCard(){
           <div class="capline" style="left:${clamp(capOf(d),0,100)}%"></div></div>
         <div class="vn mono"><b>${attrs[d].toFixed(0)}</b> /${capOf(d)}</div></div>`).join("")}
     </div>
-    <p class="note">起始资金 <b>${money} 万</b>　·　名气 <b>${fameTier(fame)}</b>${
+    <p class="note">起始资金 <b>${money} 万</b>　·　粉丝 <b>${fanTier(fans)}</b>${
       extra.length?`<br>${extra.join("　·　")}`:""}</p>
     <p class="note" style="color:var(--ink-3)">竖线是天赋瓶颈。剩下的，靠你自己打出来。</p>
     <div class="row" style="justify-content:center;margin-top:18px">
@@ -1546,7 +1548,7 @@ function startPre(){
   DIMS.forEach(d=>attrs[d]=Math.min(
     o.base[d]-9+(A.mod[d]||0)+((B.mod&&B.mod[d])||0), capOf(d)));
   S=Object.assign({},S,{
-    step:"pre",attrs,age:A.a,fame:Math.max(0,o.fame+(B.fame||0)),money:B.money||0,fatigue:0,
+    step:"pre",attrs,age:A.a,fans:Math.max(0,o.fame+(B.fame||0)),heat:0,money:B.money||0,fatigue:0,
     btk:{opStreak:0,opThisWeek:0,vod:0,rest:0},
     ageCfg:A,bg:B,preYear:1,si:0,split:0,
     pre:{week:1,ap:PRE_AP,rank:0,scout:0,cityCup:null,streamCup:null,log:[],offers:null},
@@ -1608,7 +1610,7 @@ function preAct(k,dim){
     // （这也让「冲分」和「训练」不再是纯粹互抢行动点的关系。）
     rankGain(w);
     const afterT=rankName(P.rank), afterF=rankFull(P.rank);
-    addFame(w*0.5);      // 赢下来的分才带来关注
+    addFans(w*0.5);      // 赢下来的分才带来关注
     P.lastQ={w,l,p}; checkAch("rank");
     const up=RANKS.findIndex(r=>r.n===afterT)>RANKS.findIndex(r=>r.n===beforeT);
     if(afterT!==beforeT&&up){
@@ -1630,13 +1632,13 @@ function preAct(k,dim){
     // 单纯开播涨得很慢；真正让人记住你的是段位和战绩
     const pop=1.9+S.pre.rank*0.05;
     const gift=streamIncome();
-    addFame(pop*m*(typeof streamFameMul==="function"?streamFameMul():1));
+    addFans(pop*m*(typeof streamFansMul==="function"?streamFansMul():1));
     if(typeof addMoney==='function') addMoney('stream',gift); else S.money+=gift;
     addFat(4); checkAch("stream");
     if(typeof checkStreamBiz==="function") checkStreamBiz();   // 分成上调、独家谈约都在开播时发生
     if(gift>=50&&!P.bigGift){P.bigGift=true;
       preLog(`直播间刷起了礼物，这一场进账 <b>${Math.round(gift)} 万</b>。`,"good");}
-    if(S.fame>=120&&!P.famous){P.famous=true;preLog(`直播间人数破万。<b>你在圈子里有名气了</b>，虽然还没打过一场正赛。`,"good");}
+    if(S.fans>=120&&!P.famous){P.famous=true;preLog(`直播间人数破万。<b>你在圈子里有名气了</b>，虽然还没打过一场正赛。`,"good");}
     if(typeof fireEvent==="function") fireEvent("streamGift",0.20);
   } else if(k==="train"){
     const c=capOf(dim);
@@ -1666,8 +1668,8 @@ const PRE_MILESTONES=[
    run:()=>preLog("有个自称 <b>战队青训教练</b> 的人加了你好友，问你有没有想过打职业。","good"),
    fail:()=>{}},
   {w:14, name:"主播杯", tag:"赛事", open:true, vague:true, signup:"stream", fee:60, prize:[0,60,180,520],
-   need:()=>S.fame>=60, needTxt:"邀请制 · 看人气",
-   cur:()=>fameTier(),
+   need:()=>S.fans>=60, needTxt:"邀请制 · 看人气",
+   cur:()=>fanTier(),
    desc:"邀请制，名气不够连门都进不去",
    run:()=>enterCup("stream"),
    fail:()=>preLog("主播杯是邀请制。<b>你的人气还不够，没收到邀请</b>。","bad")},
@@ -1678,8 +1680,8 @@ const PRE_MILESTONES=[
    run:()=>preLog("两家俱乐部的球探同时出现在你的直播间。<b>试训邀请快来了。</b>","big"),
    fail:()=>{}},
   {w:17, name:"全明星周末 · 主播表演赛", tag:"赛事", open:true, vague:true, signup:"show", fee:0,
-   need:()=>S.fame>=95, needTxt:"邀请制 · 大主播才有请柬",
-   cur:()=>fameTier(),
+   need:()=>S.fans>=95, needTxt:"邀请制 · 大主播才有请柬",
+   cur:()=>fanTier(),
    desc:"年度盛典的娱乐表演赛（现实里就是全明星周末的主播对抗）。不打职业的大主播，一年就这一次主舞台",
    run:()=>enterCup("show"),
    fail:()=>preLog("全明星周末开幕了，<b>请柬没有来</b>——那个舞台看的是人气。","info")},
@@ -1696,15 +1698,18 @@ function scoutTier(){
   return r<0.2?"没人知道你是谁":r<0.4?"偶尔有人提起":r<0.6?"圈子里有你的名字"
        :r<0.82?"有俱乐部在打听":r<1?"已经有人在联系你了":"随时可以谈签约";
 }
-/* 人气用人话说，别甩数字——没人知道「人气 137」是什么概念 */
-const FAME_TIERS=[
-  [0,"无人问津"],[25,"直播间几十个人"],[55,"小主播"],[95,"普通大主播"],
-  [160,"平台头部"],[260,"虎牙一哥"],[400,"全网顶流"],[600,"出圈到路人都认识"],[850,"这个项目的门面"]
+/* 咖位用人话说，别甩数字——没人知道「粉丝 137」是什么概念。
+   档位按实测的粉丝分布重排（120 局：p2 614 / p25 1121 / p50 1536 /
+   p75 2141 / p98 4759）。旧表最高档是 850，而实测中位 2539——
+   九个档只有最高那一档被用到，后四档等于不存在。 */
+const FAN_TIERS=[
+  [0,"无人问津"],[45,"直播间几十个人"],[120,"小主播"],[320,"有固定观众"],
+  [750,"平台头部"],[1400,"全网知名"],[2400,"出圈到路人都认识"],[4200,"这个项目的门面"]
 ];
-function fameTier(v){
-  v=(v===undefined)?S.fame:v;
-  let n=FAME_TIERS[0][1];
-  FAME_TIERS.forEach(([at,nm])=>{ if(v>=at) n=nm; });
+function fanTier(v){
+  v=(v===undefined)?S.fans:v;
+  let n=FAN_TIERS[0][1];
+  FAN_TIERS.forEach(([at,nm])=>{ if(v>=at) n=nm; });
   return n;
 }
 function nextMilestone(){ return PRE_MILESTONES.find(m=>m.open&&m.w>=S.pre.week); }
@@ -1778,6 +1783,7 @@ function advancePreWeek(){
   if(typeof btkWeekEnd==='function') btkWeekEnd();
   if(typeof rollInjury==='function') rollInjury('职业前');
   if(typeof tickBuffs==='function') tickBuffs();
+  if(typeof fanWeek==='function') fanWeek();
   simWorldPre();
   if(typeof tryRandomEvent==='function'&&rnd()<0.15) tryRandomEvent();   // 频率减半，太密会烦
   if(typeof saveGame==='function') saveGame('第'+P.week+'周');
@@ -1804,7 +1810,7 @@ function advancePreWeek(){
    原来还有个「星探关注度」，但它和名气靠同样的行为增长，玩家分不清区别——已合并。 */
 function preScore(){
   const P=S.pre;
-  return P.rank*0.92+Math.min(S.fame,300)*0.22+(P.cityCup||0)*8+(P.streamCup||0)*8;
+  return P.rank*0.92+Math.min(S.fans,300)*0.22+(P.cityCup||0)*8+(P.streamCup||0)*8;
 }
 /* 这一年没签成：世界往前走一年，你也老一岁。没有死线，只有代价。 */
 function preNextYear(){
@@ -1902,7 +1908,7 @@ function joinTeam(){
     ? {id:S.name||"你",cn:"",pos:S.pos,age:18,r:attrs,me:true} : p);
 
   S=Object.assign({},S,{
-    step:"season",attrs,age:18,fame:o.fame,money:0,fatigue:0,
+    step:"season",attrs,age:18,fans:o.fame,heat:0,money:0,fatigue:0,
     si:0,week:1,ap:AP,world,team:team.name,
     record:{w:0,l:0},gameRec:{w:0,l:0},career:{w:0,l:0,titles:[],best:99},
     log:[],news:[],events:[],retiredPool:[],usedLegends:[],form:{},formSeen:{},
@@ -2020,18 +2026,98 @@ function btkChaseNote(){
       :`　<span class="ct-bad">剩余行动点补不满了——这周连击会断</span>`}</div>`;
 }
 const addFat=n=>{S.fatigue=clamp(S.fatigue+n,0,100)};
-/* 名气有边际递减：从零到小有名气很快，再往上越来越难。
-   没有这条，打赏收入和签约评分都会随时间无限膨胀。 */
-/* 人气应该主要来自战绩，直播只是慢速补充。
-   原来 40 次直播就能到「平台头部」——一个 17 岁的无名小卒半年内
-   成为平台头部，既荒谬，也让「直播」比「打比赛」更容易出名，方向反了。
-   阻尼从 /240 收到 /150：越有名越难涨，靠点直播堆不上去。 */
-function addFame(n){
-  if(!n) return;
-  if(n<0){ S.fame=Math.max(0,S.fame+n); return; }
-  const damp=1/(1+Math.max(0,S.fame)/150);
-  S.fame=Math.max(0,S.fame+n*damp);
+/* ---------- 名气拆成两层：粉丝与热度 ----------
+
+   原来只有一个 S.fame，同时当曝光、当资产、当直播收入乘数。一个数字扛五件事，
+   任何一处调整都会牵动其余四处，所以它只能一路涨——实测生涯末中位 2539，
+   而档位表最高档才 850：九个档位只有一个被用到，后四档形同虚设。
+   重排档位治不了它，因为根因不是档位画错了，是「热度」和「粉丝」被混成了一个数。
+
+     · 粉丝 S.fans —— 真正认你这个人的人。慢涨、几乎不掉，有边际递减
+                      （从零到小有名气很快，再往上越来越难）。档位表看它。
+     · 热度 S.heat —— 最近有多少人在讨论你。快涨快跌，每周衰减 10%。
+
+   同一件事同时喂两层，但喂法不同：粉丝打阻尼，热度不打——
+   夺冠那周热度就是会炸，这才对；但那一周不会让你凭空多出几百万粉丝。
+
+   现实里也是这样：选手退役了粉丝还在，热度会掉。 */
+const HEAT_DECAY=0.90;     // 每周热度回落一成
+/* ---------- 粉丝：向天花板收敛，天花板由战绩决定 ----------
+
+   前两版都失败了，失败的原因值得写下来，免得下次再走一遍：
+
+   第一版是「直接堆粉丝 + 边际递减」。实测无冠生涯 3339 粉、双冠生涯 3614 粉，
+   只差 8%。第二版加了由战绩决定的天花板，差距也只拉到 28%。
+   原因是同一个：一局里 addFans 被调用一千多次、原始输入 7000 点以上，
+   全是直播、排位、周常事件这些「谁都会做」的量；而世界赛夺冠的奖励是 260 点。
+   只要粉丝是「把这些量加起来」，它衡量的就永远是你玩了多久，不是你打出了什么。
+
+   所以第三版换了个方向：日常不再直接堆粉丝，它堆的是热度；
+   粉丝每周朝天花板收敛一步，收敛速度由热度决定。于是——
+     · 打出成绩 → 天花板抬高 → 粉丝真的涨得上去
+     · 只播不赢 → 天花板就那么高，播一年也就到顶
+     · 直播依然有用，它决定你多快摸到自己的上限，也决定当下的收入 */
+function fanCap(){
+  const c=S.career||{}, P=S.pre||{};
+  let cap=120;                                    // 谁都有的底盘
+  cap+=Math.min(P.rank||0,100)*1.5;               // 天梯打上去也是本事
+  cap+=(P.cityCup||0)*35+(P.streamCup||0)*55;     // 业余赛走多深
+  cap+=Math.min(c.w||0,200)*2.0;                  // 在一队站住脚，赢的场次本身就涨粉
+  cap+=(c.leagueTitles||0)*520;
+  cap+=(c.msi||0)*1150;
+  cap+=(c.worlds||0)*2300;
+  if(S.streamDeal) cap+=180;                      // 独家合同带来的平台推流
+  if((S.homeLeague||"LPL")!=="LPL") cap*=0.82;    // 人在外赛区，国内热度接不住
+  return cap;
 }
+/* 离天花板还有多远，0–1。界面上要用它画进度条。 */
+function fanFill(){ return clamp((S.fans||0)/Math.max(fanCap(),1),0,1); }
+function addFans(n){
+  if(!n) return;
+  if(S.heat===undefined) S.heat=0;
+  S.heat=Math.max(0,S.heat+n);       // 一切「涨名气」的事，涨的都是热度
+  // 掉粉的事另算：热度掉了，已经沉淀的粉丝也会走一小部分
+  if(n<0) S.fans=Math.max(0,(S.fans||0)+n*0.3);
+}
+/* 每周：粉丝朝天花板走一步，然后热度回落。 */
+function fanWeek(){
+  if(S.heat===undefined) S.heat=0;
+  const cap=fanCap();
+  // 靠拢速度＝底速 + 热度带来的加速。热度越高，沉淀越快。
+  // 职业前只有 19 周，用赛季的底速根本收敛不动——实测主播杯参与率
+  // 从 92% 掉到 27%、全明星从 17% 掉到 3%，等于把业余赛线掐断了。
+  // 那是「模型太慢」，不是「玩家不够格」，所以职业前单独给一档底速。
+  let rate=(S.career?0.012:0.055)+clamp((S.heat||0)/9000,0,0.045);
+  if(typeof fanContentMul==="function") rate*=fanContentMul();
+  const gap=cap-(S.fans||0);
+  // 天花板掉下来（比如去了外赛区、或者一直坐板凳），粉丝慢慢流失，不是断崖
+  S.fans=Math.max(0,(S.fans||0)+gap*(gap>0?rate:0.02));
+  S.heat=Math.max(0,S.heat*HEAT_DECAY);
+}
+/* 热度用人话说——它是个会掉的数，不该甩原始值 */
+function heatTier(){
+  const h=S.heat||0;
+  return h<40?"没什么人讨论你":h<110?"偶尔被提到":h<220?"有热度"
+       :h<400?"正在风口上":"全网都在说你";
+}
+/* 粉丝数怎么说给玩家听。
+   内部尺度是 0–5000 上下的抽象分，直接当「万粉」念两头都不像话：
+   顶流成了 4000 万（太多），刚起步的 45 分成了 45 万（太多）。
+   用一条幂曲线摊开，标定到档位表上：
+   「直播间几十个人」≈5 千、「小主播」≈3 万、「平台头部」≈86 万、
+   「全网知名」≈270 万、「门面」≈2000 万——都是现实里对得上的量级。 */
+function fansWan(v){
+  v=(v===undefined)?(S.fans||0):v;
+  return Math.pow(Math.max(0,v),1.83)/2120;
+}
+function fansText(v){
+  const w=fansWan(v);
+  if(w<0.1) return `${Math.max(0,Math.round(w*10000))} 人`;
+  if(w<1)   return `${(w*10).toFixed(0)} 千`;
+  if(w<10)  return `${w.toFixed(1)} 万`;
+  return `${Math.round(w)} 万`;
+}
+
 
 /* ---------- 行动成本标注 ----------
    点之前就该知道这一下花掉什么、换回什么。全部现算，不写死：
@@ -2048,7 +2134,6 @@ const _eDn=n=>`体能<i class="dn">−${Math.round(n)}</i>`;
 const _eUp=n=>`体能<i class="up">+${Math.round(n)}</i>`;
 const _prepMul=()=>(S.step==="prep")?0.45:1;
 /* 名气有阻尼，标注要写玩家真正拿到的那个数 */
-const _fameReal=n=>n*(1/(1+Math.max(0,S.fame||0)/150));
 
 /* 职业前和赛季中是两套数值（训练 ×0.85、休息 +32、直播基数不同），
    标注必须跟着当前阶段走，否则等于换个地方骗人。 */
@@ -2069,63 +2154,60 @@ function costSolo(){
   }
   return costBits([_eDn(7*m), f, `五维微涨`]);
 }
-/* 一次直播往 addFame() 里送的原始名气值（阻尼在 addFame 内部再打）。
+/* 一次直播往 addFans() 里送的原始热度值。
    职业前基数跟着段位走、主播出身 ×1.7；赛季中固定 4.5、主播出身 ×1.6。
-   抽出来是因为「还要播几次能升档」也要用它，两处算法必须是同一个。 */
-function streamFameRaw(){
+   直播涨的是热度，热度再决定粉丝沉淀得多快——所以这个数是「热度 +N」。 */
+function streamFansRaw(){
   const pre=_isPre();
   const m=S.origin==="streamer"?(pre?1.7:1.6):1.0;
-  const mul=(typeof streamFameMul==="function")?streamFameMul():1;
+  const mul=(typeof streamFansMul==="function")?streamFansMul():1;
   return pre ? (1.9+((S.pre&&S.pre.rank)||0)*0.05)*m*mul : 4.5*m*mul;
 }
-/* 距离下一个名气档还差几次直播。
-   名气有阻尼（越有名越难涨），所以不能拿差值除以单次收益，得一次次往前推。
-   返回 null = 已经到顶。 */
-function fameToNext(){
-  const cur=S.fame||0;
-  const nx=FAME_TIERS.find(([at])=>at>cur);
-  if(!nx) return null;
-  const raw=streamFameRaw();
-  let v=cur,n=0;
-  if(raw>0){ while(v<nx[0]&&n<400){ v+=raw*(1/(1+Math.max(0,v)/150)); n++; } }
-  return {at:nx[0], name:nx[1], need:(raw>0&&n<400)?n:null,
-          pct:clamp((cur-fameTierAt(cur))/(nx[0]-fameTierAt(cur))*100,0,100)};
-}
 /* 当前所在档位的起点值，用来算档内进度 */
-function fameTierAt(v){
-  v=(v===undefined)?S.fame:v;
-  let at=0; FAME_TIERS.forEach(([a])=>{ if(v>=a) at=a; });
+function fanTierAt(v){
+  v=(v===undefined)?S.fans:v;
+  let at=0; FAN_TIERS.forEach(([a])=>{ if(v>=a) at=a; });
   return at;
 }
-/* HUD 里名气格下面那一行：一条细进度条 + 「还差几次直播」。
-   原来只写一个档位名，等于告诉你「你在这儿」却不说「还有多远」。
-   仍然不甩原始数字——「人气 137」没人知道是什么概念，
-   但「再播 6 次上一档」是句人话。 */
-function fameNextNote(){
-  const nx=(typeof fameToNext==="function")?fameToNext():null;
+/* 下一个咖位档，以及「够不够得着」。
+   粉丝现在是朝天花板收敛的，所以「还差几次直播」这个说法已经不成立了——
+   直播只能让你更快摸到自己的上限，摸不过去。真正要告诉玩家的是两件事：
+   离下一档还有多远，以及这一档是「等就能到」还是「必须打出成绩」。 */
+function fanToNext(){
+  const cur=S.fans||0;
+  const nx=FAN_TIERS.find(([at])=>at>cur);
+  if(!nx) return null;
+  const at0=fanTierAt(cur);
+  return {at:nx[0], name:nx[1],
+          reach:fanCap()>=nx[0],                 // 天花板够不够得着下一档
+          pct:clamp((cur-at0)/(nx[0]-at0)*100,0,100)};
+}
+/* HUD 里粉丝格下面那一行：一条细进度条 + 一句人话。
+   仍然不甩原始数字——但「天花板不够，得靠成绩」是句能指导决策的话。 */
+/* HUD 里热度格下面那一条。
+   热度每周回落一成，所以这里要说的是「它还能撑多久」，
+   而不是又一个静态数字——玩家据此决定「趁热直播」还是「先练」。 */
+function heatNote(){
+  const h=S.heat||0;
+  const pct=clamp(h/450*100,0,100);
+  const txt = h<40 ? `直播和赢球都能涨` : h>=400 ? `趁现在直播最值钱` : `每周回落一成`;
+  return `<div class="fnext" title="热度决定直播收入，也决定粉丝沉淀得多快；每周自然回落 10%">
+    <span class="fbar"><i style="width:${pct.toFixed(0)}%"></i></span>${txt}</div>`;
+}
+function fanNextNote(){
+  const nx=(typeof fanToNext==="function")?fanToNext():null;
   if(!nx) return `<div class="fnext"><span class="fbar"><i style="width:100%"></i></span>已经到顶</div>`;
-  const need=nx.need;
-  /* 档位越高，靠直播推得越慢（阻尼），到后面要几百次——
-     这时候报个「再播 374 次」等于误导。名气本来就主要来自战绩，
-     直播只是慢速补充，所以数字大的时候把这句话直接说出来。 */
-  /* HUD 格子很窄，档位名放不下——放进 title，格子里只留最要紧的那个数。
-     完整的「距下一档 N 次」写在直播按钮上，那里才是要做决定的地方。 */
-  // need 为 null 表示推演到上限都没够着——那本来就是「靠直播到不了」，和数字太大是同一回事
-  const far = (need===null || need>30);
-  const txt = far ? `直播推不动了 · 靠战绩` : `再播 <b>${need}</b> 次升档`;
+  const txt = nx.reach ? `离 <b>${nx.name}</b> 还差一点` : `要更好的成绩`;
   return `<div class="fnext" title="下一档：${nx.name}${
-      far?"（这一档主要靠比赛成绩，直播推不上去）":`（再播 ${need} 次）`}">
+      nx.reach?"（照这样打下去能到）":"（你现在的成绩撑不起这一档——去赢比赛）"}">
     <span class="fbar"><i style="width:${nx.pct.toFixed(0)}%"></i></span>${txt}</div>`;
 }
 function costStream(){
   const pre=_isPre();
   const inc=(typeof streamIncome==="function")?streamIncome():0;
-  const nx=fameToNext();
   return costBits([_eDn(pre?4:5),
-    `人气<i class="up">+${_fameReal(streamFameRaw()).toFixed(1)}</i>`,
-    `<i class="up">+${Math.round(inc)}</i>万`,
-    // 只在还够得着的时候报数；几百次的时候报数等于误导（那一档得靠战绩）
-    (nx&&nx.need&&nx.need<=30)?`距下一档 <i class="up">${nx.need}</i> 次`:null]);
+    `热度<i class="up">+${streamFansRaw().toFixed(1)}</i>`,
+    `<i class="up">+${Math.round(inc)}</i>万`]);
 }
 function costRest(){
   if(_isPre()) return costBits([_eUp(32), `心态<i class="up">+0.5</i>`]);
@@ -2178,7 +2260,7 @@ function doAction(k){
     addFat(7*prepMul);
   }
   else if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
-    addFame(4.5*m*(typeof streamFameMul==="function"?streamFameMul():1));
+    addFans(4.5*m*(typeof streamFansMul==="function"?streamFansMul():1));
     if(typeof addMoney==='function') addMoney('stream',streamIncome()); else S.money+=streamIncome();
     addFat(5);
     if(typeof checkStreamBiz==="function") checkStreamBiz();
@@ -2396,7 +2478,7 @@ function attrCard(){
     })()}
     ${typeof buffChips==="function"?buffChips():""}
     <p class="note">竖线是当前瓶颈，<b style="color:var(--gold)">↑</b> 是被经历顶开的部分（夺冠、进强队、跟老将同队都会让它松动）。绿数字是本赛季成长。适应力 ${Math.round(adaptOf())}（由天赋均衡度决定）·
-      人气 ${Math.round(S.fame)} · 疲劳 ${Math.round(S.fatigue)}/100</p></div>`;
+      粉丝 ${fansText()}（${fanTier()}）· 热度 ${heatTier()} · 疲劳 ${Math.round(S.fatigue)}/100</p></div>`;
 }
 
 /* ================= 比赛 ================= */
@@ -2503,7 +2585,7 @@ function endMatch(){
     if(st&&st[S.team]) st[S.team][won?"w":"l"]++;
     if(st&&st[m.oppName]) st[m.oppName][won?"l":"w"]++;
   }
-  addFame(won?7:-2.5); addFat(13);
+  addFans(won?7:-2.5); addFat(13);
   const purse=won?9:4;
   if(typeof addMoney==='function') addMoney('match',purse); else S.money+=purse;
   S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+(won?0.5:1.1));
@@ -2655,7 +2737,7 @@ function benchWeek(){
   const w1=rnd()<p, w2=rnd()<p, won=(w1&&w2)||((w1||w2)&&rnd()<p);
   S.standings[S.homeLeague||"LPL"][S.team][won?"w":"l"]++;
   S.standings[S.homeLeague||"LPL"][on][won?"l":"w"]++;
-  addFame(-1.5);      // 不上场，热度在掉
+  addFans(-1.5);      // 不上场，热度在掉
   pushEvent(`${S.team} ${won?"击败":"负于"} ${on}。<b>你在替补席上看完了整场</b>，没人提你的名字。`,won?"info":"bad","替补");
   S.match=null; nextWeek();
 }
@@ -2676,6 +2758,7 @@ function nextWeek(){
   if(typeof archiveWeek==="function") archiveWeek();
   if(typeof btkWeekEnd==="function") btkWeekEnd();
   if(typeof tickBuffs==='function') tickBuffs();
+  if(typeof fanWeek==='function') fanWeek();
   if(typeof tryRandomEvent==='function'&&rnd()<0.14) tryRandomEvent();
   if(typeof saveGame==='function') saveGame('S'+S.si+' 第'+S.week+'周');
   render();
@@ -2996,6 +3079,7 @@ function offNextWeek(){
   }
   flushBreakNews(S.off.week);
   if(typeof tickBuffs==='function') tickBuffs();
+  if(typeof fanWeek==='function') fanWeek();
   if(typeof tryRandomEvent==='function'&&rnd()<0.16) tryRandomEvent();
   if(typeof saveGame==='function') saveGame('休赛期第'+S.off.week+'周');
   render();
@@ -3133,7 +3217,7 @@ function viewEnd(){
       <h2>生涯总结 · S12–S16</h2>
       <div class="big">${e.n}</div>
       <p>${e.d}</p>
-      <p class="note">${meName()} · ${POSN[S.pos]} · ${S.age} 岁 · 最高 ${rankFull(S.pre?S.pre.rank:0)} · ${fameTier()}</p>
+      <p class="note">${meName()} · ${POSN[S.pos]} · ${S.age} 岁 · 最高 ${rankFull(S.pre?S.pre.rank:0)} · ${fanTier()}</p>
       <div class="row"><button class="btn" id="again">再开一局</button></div>
     </div>${achCard()}`;
   }
@@ -3220,7 +3304,7 @@ function scheduleCard(){
     <tbody>${rows}</tbody></table></div>
     <p class="note">这些是写在明面上的日程，<b>不达标就直接错过</b>。
       至于有没有人在暗处盯着你——那种事不会有人提前通知。</p>
-    <div class="ver" style="margin-top:12px">外界对你的关注：<b>${scoutTier()}</b> · 名气：<b>${fameTier()}</b></div>
+    <div class="ver" style="margin-top:12px">外界对你的关注：<b>${scoutTier()}</b> · 粉丝：<b>${fanTier()}</b> <span class="mono">${fansText()}</span> · 热度：<b>${heatTier()}</b></div>
     </div>`;
 }
 
@@ -3361,7 +3445,7 @@ function actPanelPre(){
         soloSkill()>=rankReq(P.rank)+6?"这个分段对你没什么难度，往上冲。":
         soloSkill()>=rankReq(P.rank)-2?"卡在门槛附近，有涨有掉——再练一点就稳了。":
         "实力还撑不住这个分段，硬打会掉分。先去练。"}</span><br>
-      名气 <b>${fameTier()}</b>　·　俱乐部评价 <b>${scoutTier()}</b><br>
+      粉丝 <b>${fanTier()}</b> <span class="mono">${fansText()}</span>　·　热度 <b>${heatTier()}</b>　·　俱乐部评价 <b>${scoutTier()}</b><br>
       <span style="color:var(--ink-3)">世界不会因为你没比赛就临时生成一场。耐得住性子，机会才会出现。</span></div>
     ${typeof btkChaseNote==="function"?btkChaseNote():""}
     ${fatigueBar()}
@@ -3438,7 +3522,7 @@ function viewOffer(){
   const P=S.pre;
   return `<div class="card">
     <h2>转会窗口 · 收到的试训邀请<em>综合评估 ${P.finalScore}</em></h2>
-    <h3>${rankFull(P.rank)} · ${fameTier()} · 城市赛 ${P.cityCup!==null?P.cityCup+" 轮":"未参赛"} · 主播杯 ${P.streamCup!==null?P.streamCup+" 轮":"未参赛"}</h3>
+    <h3>${rankFull(P.rank)} · ${fanTier()} · 城市赛 ${P.cityCup!==null?P.cityCup+" 轮":"未参赛"} · 主播杯 ${P.streamCup!==null?P.streamCup+" 轮":"未参赛"}</h3>
     <p class="note">这段时间你做的每一件事，都变成了现在桌上的选项。
       <b>但这些只是试训机会，不是合同</b>——去了要评估四天，评级不够一样拿不到合同。
       档次越高的队，期望值也越高。</p>
@@ -3989,7 +4073,7 @@ const LOCKER=[
         return "你把锅接了。更衣室安静下来，气氛缓和。"}},
       {t:"数据摆出来，不是我的问题",e:(t)=>{addTrust(t.id,-12);addTrustAll(-3);
         return `你把回放调出来逐帧过。${t.id} 没再说话，但脸色不好看。`}},
-      {t:"当场吵回去",e:(t)=>{addTrust(t.id,-20);addTrustAll(-6);S.fame+=3;
+      {t:"当场吵回去",e:(t)=>{addTrust(t.id,-20);addTrustAll(-6);addFans(3);
         return "更衣室炸了。第二天这段被爆料出去，上了热搜。"}}]},
 
   {id:"resource", when:()=>rnd()<0.4,
@@ -4021,14 +4105,14 @@ const LOCKER=[
       {t:"实话说，你该考虑转型",e:(t)=>{addTrust(t.id,-10);
         return "他沉默了很久，说谢谢你的诚实。"}}]},
 
-  {id:"media", when:()=>S.fame>=100&&rnd()<0.35,
+  {id:"media", when:()=>S.fans>=100&&rnd()<0.35,
    q:t=>`媒体想做你的专访，队里其他人一个都没约。`,
    ctx:"流量都在你身上，这未必是好事。",
-   a:[{t:"接，顺便多提队友",e:(t)=>{S.fame+=12;addMoney("other",14);addTrustAll(5);
+   a:[{t:"接，顺便多提队友",e:(t)=>{addFans(12);addMoney("other",14);addTrustAll(5);
         return "采访里你把功劳分了出去。队友看到了。"}},
-      {t:"接，好好聊自己",e:(t)=>{S.fame+=22;addMoney("other",20);addTrustAll(-7);
+      {t:"接，好好聊自己",e:(t)=>{addFans(22);addMoney("other",20);addTrustAll(-7);
         return "热度起来了。更衣室里有人觉得你飘了。"}},
-      {t:"推掉，专心训练",e:(t)=>{S.fame-=4;addTrustAll(4);
+      {t:"推掉，专心训练",e:(t)=>{addFans(-4);addTrustAll(4);
         DIMS.forEach(()=>{}); return "你没去。教练组对此表示满意。"}}]}
 ];
 
@@ -4062,13 +4146,13 @@ const SPEND=[
   {k:"team",n:"团队建设",cost:110,d:"全队信任提升",
    run:()=>{addTrustAll(16);}},
   {k:"pr",n:"舆论公关",cost:70,d:"压下负面，人气回升",
-   run:()=>{S.fame+=14;}}
+   run:()=>{addFans(14);}}
 ];
 /* 薪资 = 谈出来的年薪 + 人气与荣誉带来的浮动。
    合同里那个数字必须真的算数，否则谈判就是假的。 */
 function salaryOf(){
   const c=S.contract||{};
-  const bonus=Math.round(S.fame*0.20)+(S.career.leagueTitles||0)*14
+  const bonus=Math.round(S.fans*0.20)+(S.career.leagueTitles||0)*14
     +((S.career.msi||0)+(S.career.worlds||0))*36;
   if(c.salary!==undefined) return Math.round(c.salary+bonus);
   // 老存档或没走谈判流程的情况，退回旧算法
@@ -4078,7 +4162,7 @@ function salaryOf(){
 function payday(){
   const pay=salaryOf();
   if(typeof addMoney==="function") addMoney("salary",pay); else S.money+=pay;
-  pushEvent(`赛段结算：薪资到账 <b>${pay} 万</b>（当前人气 ${Math.round(S.fame)}）。`,"info","合同");
+  pushEvent(`赛段结算：薪资到账 <b>${pay} 万</b>（当前人气 ${Math.round(S.fans)}）。`,"info","合同");
 }
 /* 合同：两个赛季一签，到期看表现续约或走人 */
 function contractCheck(){
@@ -4566,18 +4650,22 @@ function streamIncome(){
   // 一次直播能到两百多万，比世界赛夺冠还值钱——实测有整局挣到五亿的。
   // 封在 600（「顶流」之上），不签独家的上限 ~135/次，
   // 仍比独家保底高一截，「自由身上限更高」的承诺不变，但有边界。
-  const f=Math.min(Math.max(S.fame||0,0),600);
-  const gift=Math.pow(f/40,1.22)*4.4*streamCut();
+  // 底盘看粉丝（有多少人会来看），当天的量看热度（最近有没有人在讨论你）。
+  // 这就是「礼物 = f(粉丝基数) × g(当下热度)」——赢球那几周直播特别值钱，
+  // 冷下来之后同样的粉丝掉一半收入，直播因此有了「趁热打铁」这个决策。
+  const f=Math.min(Math.max(S.fans||0,0),600);
+  const heatMul=clamp(0.55+(S.heat||0)/260,0.55,1.9);
+  const gift=Math.pow(f/40,1.22)*4.4*streamCut()*heatMul;
   const base=4+f*0.05;
   return (base+gift)*originMul;
 }
 /* 独家平台控流量，涨名气比全网直播慢 */
-function streamFameMul(){ return S.streamDeal?0.7:1.0; }
+function streamFansMul(){ return S.streamDeal?0.7:1.0; }
 
 /* 每次开播时结算「平台关系」：分成该升就升（发事件），独家该谈就谈（弹窗）。
    放在直播动作里而不是每周结算里——你和平台打交道的时机就是开播。 */
 function checkStreamBiz(){
-  const f=S.fame||0;
+  const f=S.fans||0;
   // 分成上调：一档一档来，每次都告诉玩家
   let idx=S.streamCutIdx||0;
   if(!S.streamDeal){
@@ -4585,7 +4673,7 @@ function checkStreamBiz(){
       idx++;
       S.streamCutIdx=idx;
       const c=STREAM_CUTS[idx];
-      const evt=`你的咖位到了「${fameTier()}」这一档，平台主动把礼物分成提到 <b>${c.n}</b>。<br>同样的礼物，进你口袋的变多了。`;
+      const evt=`你的咖位到了「${fanTier()}」这一档，平台主动把礼物分成提到 <b>${c.n}</b>。<br>同样的礼物，进你口袋的变多了。`;
       if(S.pre&&!S.career&&typeof preLog==="function") preLog(evt,"good");
       pushEvent(evt,"good","直播");
     }
@@ -4627,7 +4715,7 @@ function streamOfferCard(){
     <div class="ru-icon" style="text-align:center">${typeof gicon==="function"?gicon("stream",52):""}</div>
     <div class="ru-eyebrow" style="text-align:center">平台来谈独家了</div>
     <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:12px">${o.n}</div>
-    <p class="note" style="margin:0 0 10px">你的人气到了「${fameTier()}」，平台的商务带着合同上门：
+    <p class="note" style="margin:0 0 10px">你的人气到了「${fanTier()}」，平台的商务带着合同上门：
       签字费 <b style="color:var(--gold)">${o.sign} 万</b>，此后每次直播保底 <b style="color:var(--gold)">${locked} 万</b>
       （你现在每次直播约 ${now} 万）。</p>
     <div class="grid g2">
@@ -5083,7 +5171,7 @@ function applyAchReward(r){
   if(r.fat){ addFat(r.fat); out.push(`体力 +${-r.fat}`); }
   if(r.money){ if(typeof addMoney==="function") addMoney("ach",r.money); else S.money+=r.money;
     out.push(`奖金 ${r.money} 万`); }
-  if(r.fame){ addFame(r.fame); out.push(`名气 +${r.fame}`); }
+  if(r.fame){ addFans(r.fame); out.push(`名气 +${r.fame}`); }
   if(r.trust&&typeof addTrustAll==="function"){ addTrustAll(r.trust); out.push(`士气 ${r.trust>0?"+":""}${r.trust}`); }
   return out;
 }
@@ -5475,7 +5563,7 @@ const RANDOM_EVENTS=[
    ctx:"你把这场的回放看了两遍。这行没有理所当然的赢。",
    a:[{t:"憋着一股劲，加练",e:()=>{addBuff("train",1.5,2,"憋着劲");addFat(6);
         return "接下来两周你练得比谁都狠。"}},
-      {t:"发条动态点评两句",e:()=>{addFame(6);
+      {t:"发条动态点评两句",e:()=>{addFans(6);
         return "转发不少，也有人说你自己都还没打上首发。"}},
       {t:"关掉，睡了",e:()=>{addFat(-8);
         return "第二天状态还行。有些事跟你没关系。"}}]},
@@ -5485,10 +5573,10 @@ const RANDOM_EVENTS=[
    ctx:"对方头像是个战队队标，但你查不到这个人。",
    a:[{t:"交钱试试", cost:50, e:()=>{ if(rnd()<0.72){ pay(50);
           return "对方收了钱就把你拉黑了。这五十万买了个教训。"; }
-        pay(50); S.pre&&(S.pre.scoutHint=1); addFame(14);
+        pay(50); S.pre&&(S.pre.scoutHint=1); addFans(14);
         return "居然是真的，你被安排去看了一场训练赛，认识了两个人。"}},
       {t:"不理",e:()=>{return "你没回。第二天那个号就注销了。"}},
-      {t:"挂到网上",e:()=>{S.fame+=9;
+      {t:"挂到网上",e:()=>{addFans(9);
         return "帖子火了，不少人说自己也被骗过。"}}]},
 
   {id:"wrist", w:2, when:()=>S.fatigue>=55,
@@ -5501,12 +5589,12 @@ const RANDOM_EVENTS=[
           return "疼了一整周。你的体质悄悄掉了一点。"; }
         return "扛过去了，这次运气不错。"}}]},
 
-  {id:"streamGift", auto:false, when:()=>S.fame>=40,
+  {id:"streamGift", auto:false, when:()=>S.fans>=40,
    q:()=>`直播间来了个大哥，一口气刷了一堆礼物。`,
    ctx:"他要求你连麦陪他打两把。",
-   a:[{t:"陪打",e:()=>{addMoney("other",45);addFat(8);addFame(4);
+   a:[{t:"陪打",e:()=>{addMoney("other",45);addFat(8);addFans(4);
         return "他玩得很开心，还说下次再来。"}},
-      {t:"婉拒，正常直播",e:()=>{addMoney("other",12);addFame(6);
+      {t:"婉拒，正常直播",e:()=>{addMoney("other",12);addFans(6);
         return "弹幕觉得你挺有原则的。"}}]},
 
   {id:"oldFriend", w:2, when:()=>true,
@@ -5524,7 +5612,7 @@ const RANDOM_EVENTS=[
      S._ev={t:t?t.name:"某支队"};
      return `<b>${S._ev.t}</b> 官宣裁掉了首发选手，位置空出来了。`; },
    ctx:"消息底下全是「谁能顶上」。",
-   a:[{t:"给自己剪个集锦发过去",e:()=>{addFame(11);
+   a:[{t:"给自己剪个集锦发过去",e:()=>{addFans(11);
         if(rnd()<0.35){ S.pre&&(S.pre.rank=clamp(S.pre.rank+2,0,100));
           return "有个教练回了你一条：「继续打，我们看着。」"; }
         return "石沉大海。但集锦本身涨了点关注。"}},
@@ -5541,10 +5629,10 @@ const RANDOM_EVENTS=[
   {id:"coachDM", w:2, when:()=>(S.pre?S.pre.rank>=30:false),
    q:()=>`一个认证是「青训教练」的号加了你，问你想不想来试训。`,
    ctx:"这次头像和认证都对得上。",
-   a:[{t:"去",e:()=>{addFat(14);addFame(16);
+   a:[{t:"去",e:()=>{addFat(14);addFans(16);
         if(S.pre) S.pre.tryoutSeen=1;
         return "打了一下午训练赛。教练说保持联系。"}},
-      {t:"先问清楚条件",e:()=>{addFame(5);
+      {t:"先问清楚条件",e:()=>{addFans(5);
         return "对方说了些含糊的话。你没去成，但也没损失。"}}]},
 
   {id:"teamDinner", w:2, when:()=>!!S.team,
@@ -5557,14 +5645,14 @@ const RANDOM_EVENTS=[
         typeof addTrustAll==="function"&&addTrustAll(-4);
         return "你一个人练到很晚。有人觉得你不合群。"}}]},
 
-  {id:"hater", auto:false, when:()=>S.fame>=70,
+  {id:"hater", auto:false, when:()=>S.fans>=70,
    q:()=>`有个营销号剪了你的失误集锦，标题很难听。`,
    ctx:()=>`剪的正是你上一场没成的那几个操作。底下已经几千条了。`,
-   a:[{t:"回怼",e:()=>{S.fame+=14;addBuff("mood",0.85,2,"心态受影响");
+   a:[{t:"回怼",e:()=>{addFans(14);addBuff("mood",0.85,2,"心态受影响");
         return "热度上去了，但你自己也难受了两周。"}},
       {t:"不看，专心打",e:()=>{addBuff("train",1.2,2,"用成绩说话");
         return "你把手机扔一边，练得更狠了。"}},
-      {t:"找公关处理", cost:40, e:()=>{pay(40);S.fame+=4;
+      {t:"找公关处理", cost:40, e:()=>{pay(40);addFans(4);
         return "视频很快下架了。钱花得不冤。"}}]},
 
   {id:"bonus", w:1, when:()=>!!S.team,
@@ -5576,7 +5664,7 @@ const RANDOM_EVENTS=[
   {id:"junior", w:2, when:()=>(S.pre?S.pre.rank>=25:false),
    q:()=>`同分段一个小号加你好友，说很崇拜你，想跟你双排。`,
    ctx:"他打得不太行，但很热情。",
-   a:[{t:"带他两把",e:()=>{addFame(7);addFat(5);
+   a:[{t:"带他两把",e:()=>{addFans(7);addFat(5);
         if(rnd()<0.4) return "他把你们的对局发了出去，你涨了点粉。";
         return "输了两把，但他很开心。"}},
       {t:"婉拒",e:()=>{return "你说最近在冲分。他表示理解。"}}]},
@@ -5599,12 +5687,12 @@ const RANDOM_EVENTS=[
   {id:"bigWin", auto:false, when:()=>!!S.team,
    q:()=>`赢下强队之后，官方采访点名要你。`,
    ctx:"镜头已经架好了，导播在倒计时。",
-   a:[{t:"把功劳给队友",e:()=>{typeof addTrustAll==="function"&&addTrustAll(9);addFame(8);
+   a:[{t:"把功劳给队友",e:()=>{typeof addTrustAll==="function"&&addTrustAll(9);addFans(8);
         return "队友在后台听到了。这句话比赢球本身更管用。"}},
-      {t:"放狠话，点名下一个对手",e:()=>{addFame(26);
+      {t:"放狠话，点名下一个对手",e:()=>{addFans(26);
         typeof noteGrudge==="function"&&0;
         return "热搜挂了一天。下一场对面打得格外凶。"}},
-      {t:"照稿念，客套两句",e:()=>{addFame(3);
+      {t:"照稿念，客套两句",e:()=>{addFans(3);
         return "安全，也没人记住。"}}]},
 
   {id:"patch", auto:false, when:()=>!!S.team,
@@ -5629,12 +5717,12 @@ const RANDOM_EVENTS=[
         S.scoutHeat=(S.scoutHeat||0)+1;
         return "他透了点底：管理层也在评估你的位置。你多了个心眼。"}}]},
 
-  {id:"airport", w:1, when:()=>S.fame>=140,
+  {id:"airport", w:1, when:()=>S.fans>=140,
    q:()=>`机场有人认出你，要求合影。`,
    ctx:"你正赶着登机，队友已经过安检了。",
-   a:[{t:"停下来合影",e:()=>{addFame(9);addFat(3);
+   a:[{t:"停下来合影",e:()=>{addFans(9);addFat(3);
         return "对方发了微博，转发不少。"}},
-      {t:"边走边说抱歉",e:()=>{addFame(-4);
+      {t:"边走边说抱歉",e:()=>{addFans(-4);
         return "有人拍了背影，配文说你耍大牌。"}}]},
 
   {id:"family", w:2, when:()=>true,
@@ -5645,7 +5733,7 @@ const RANDOM_EVENTS=[
       {t:"说今年怕是回不去",e:()=>{addBuff("train",1.15,2,"没别的事");
         return "电话那头停了一下，说打好就行。"}}]},
 
-  {id:"sponsor", w:1, when:()=>!!S.team&&S.fame>=90,
+  {id:"sponsor", w:1, when:()=>!!S.team&&S.fans>=90,
    q:()=>`赞助商寄来一箱新外设，希望你直播时用一下。`,
    ctx:"东西不错，但手感和你现在用的不一样。",
    a:[{t:"接了，直播时用",e:()=>{const n=40+Math.floor(rnd()*40);addMoney("other",n);
@@ -5687,7 +5775,7 @@ function fireEvent(id,p){
 /* 选之前先拍个快照，选完对比出「到底变了什么」——
    光给一句文字，玩家不知道自己是赚了还是亏了。 */
 function snapshot(){
-  const o={money:S.money,fame:S.fame,fat:S.fatigue};
+  const o={money:S.money,fans:S.fans,heat:S.heat||0,fat:S.fatigue};
   DIMS.forEach(d=>o["a_"+d]=S.attrs[d]);
   if(S.pre) o.rank=S.pre.rank;
   if(typeof avgTrust==="function"&&S.trust) o.trust=avgTrust();
@@ -5703,7 +5791,8 @@ function diffOf(a,b){
     out.push({n,v:(d>0?"+":"")+d.toFixed(0)+(unit||""),good:inv?d<0:d>0});
   };
   num("资金",a.money,b.money," 万");
-  num("名气",a.fame,b.fame);
+  num("粉丝",a.fans,b.fans);
+  num("热度",a.heat,b.heat);
   num("体力",-a.fat,-b.fat);                 // 存的是疲劳，显示成体力要取反
   if(a.rank!==undefined) num("段位分",a.rank,b.rank);
   if(a.trust!==undefined) num("士气",a.trust,b.trust);
@@ -6153,7 +6242,7 @@ function cloutOf(){
   v+=(S.career.leagueTitles||0)*5;
   v+=((S.career.msi||0)+(S.career.worlds||0))*11;
   // 人气
-  v+=clamp((S.fame||0)/14,0,16);
+  v+=clamp((S.fans||0)/14,0,16);
   // 队内地位：你在 base 里占多少
   const me=myRoster().find(p=>p.me);
   if(me){
@@ -6357,7 +6446,7 @@ function cloutTick(won){
   addStaff("coach",clamp((S.btk&&S.btk.vod||0)-1,-1,3));      // 复盘做得多，教练喜欢
   if(S.fatigue>78) addStaff("coach",-2);                       // 把自己练废了他也不高兴
   // 经理看你值不值钱
-  addStaff("mgr",clamp((S.fame-90)/26,-4,6));
+  addStaff("mgr",clamp((S.fans-90)/26,-4,6));
   if(g>0) addStaff("mgr",((S.record.w/g)-0.5)*12);
   relDrift(g>0&&S.record.w>=S.record.l);
   syncRelations();
@@ -6966,7 +7055,7 @@ function endCupMatch(){
   S.pre.scoutSeen = (S.pre.scoutSeen||0) + 1;
   if(won){
     c.wins++;
-    addFame(4+c.round*2);
+    addFans(4+c.round*2);
     preLog(`<b>${C.name}</b> 第 ${c.round} 轮：${m.sc[0]}:${m.sc[1]} 击败 ${m.opp}。`,"good");
     // 这里原本会「每赢一轮就可能来邀请」，但那会把杯赛线整个短路：
     // 玩家在半决赛就签约走人，奖金、成就、决赛全都拿不到，
@@ -6993,12 +7082,12 @@ function cupPayout(k,champion){
   const prize=(C.prize||[])[reached]||0;
   if(prize){ if(typeof addMoney==="function") addMoney("prize",prize); else S.money+=prize;
     preLog(`奖金到账 <b>${prize} 万</b>。`,"good"); }
-  addFame(reached*(k==="stream"?6:4));
+  addFans(reached*(k==="stream"?6:4));
   if(k==="city") S.pre.cityCup=reached;
   else if(k==="stream") S.pre.streamCup=reached;
   if(k==="show"){
     // 表演赛的收获是曝光：全场镜头都在你身上
-    addFame(28);
+    addFans(28);
     S.pre.scoutSeen=(S.pre.scoutSeen||0)+2;
     preLog(champion
       ?`表演赛打服全场。<b>弹幕都在问：这人为什么还不打职业？</b>`
@@ -7273,6 +7362,7 @@ function loadGame() {
     fixLegacyAcad(S);
     fixStaleRank(S);
     if (!S.ledger && typeof initLedger === "function") initLedger();   // 老档没有流水：从下一笔开始记
+    fixLegacyFame(S);
     S.tab = "act";
     // 读档落在比赛中途会尴尬——回到本周界面
     if (S.step === "match") S.step = S.pre && !S.career ? "pre" : "season";
@@ -7281,6 +7371,15 @@ function loadGame() {
   } catch (e) {
     return false;
   }
+}
+
+/* 名气拆成粉丝＋热度之前的老档：只有 S.fame。
+   粉丝直接继承那个数（尺度没变，所有门槛照旧成立）；
+   热度没法从存档里还原，给一个和粉丝相称的起点，让它自己在几周内回到真实值。 */
+function fixLegacyFame(s) {
+  if (s.fans === undefined) s.fans = s.fame || 0;
+  delete s.fame;
+  if (s.heat === undefined) s.heat = Math.min(260, (s.fans || 0) * 0.12);
 }
 
 /* 存档时间的人话 */
@@ -7521,7 +7620,7 @@ function checkRankInvite(){
       return;
     }
   }
-  if(typeof checkFameInvite === "function") checkFameInvite();
+  if(typeof checkFanInvite === "function") checkFanInvite();
 }
 /* 「有没有人找你」和「能不能通过」是两件事。
 
@@ -7559,7 +7658,7 @@ function fitTier(tier){
    能被看见的途径：打过的比赛（有数据）、杯赛走得多深、名气。 */
 function exposureScore(){
   const P = S.pre; if(!P) return 0;
-  return Math.min(S.fame, 420) * 0.50          // 名气
+  return Math.min(S.fans, 420) * 0.50          // 名气
        + (P.cityCup || 0) * 18                 // 城市赛走到第几轮
        + (P.streamCup || 0) * 24               // 主播杯（邀请制，更受关注）
        + Math.min(P.scoutSeen || 0, 12) * 4;   // 打过多少场正式比赛
@@ -7615,15 +7714,15 @@ function canInvite(tierWanted){
   return true;
 }
 /* 人气到了也有人来问——直播这条路本来就是设计里的一条路 */
-function checkFameInvite(){
+function checkFanInvite(){
   const P = S.pre; if(!P) return;
-  P.fameInvited = P.fameInvited || {};
+  P.fanInvited = P.fanInvited || {};
   for(const [at, tier] of [[55,"acad"],[110,"low"],[190,"mid"]]){
-    if(S.fame >= at && !P.fameInvited[at]){
+    if(S.fans >= at && !P.fanInvited[at]){
       const t = fitTier(tier);
       if(!canInvite(t)) return;
-      P.fameInvited[at] = 1;
-      addInvite(t, `直播间的人气涨到了${fameTier()}`);
+      P.fanInvited[at] = 1;
+      addInvite(t, `直播间的人气涨到了${fanTier()}`);
       return;
     }
   }
@@ -7818,7 +7917,7 @@ function makeDeal(){
 /* 还价的底气：试训评级 + 人气 + 段位。没有底气就别开口。 */
 function dealLeverage(grade){
   const g = { "A+":26, "A":18, "B":10, "C":4 }[grade] || 0;
-  return clamp(g + Math.min(S.fame,300)*0.045 + (S.pre.rank)*0.12, 5, 62);
+  return clamp(g + Math.min(S.fans,300)*0.045 + (S.pre.rank)*0.12, 5, 62);
 }
 /* 四个可以谈的方向。每个都有代价——不是免费加钱。 */
 const DEAL_ASKS = [
@@ -8016,7 +8115,7 @@ function proPerf(){
   v += ((S.career.titles || []).length) * 4;
   v += (((S.career.msi || 0) + (S.career.worlds || 0))) * 9;
   if(typeof myForm === "function") v += (myForm() - 52) * 0.18;
-  v += Math.min(S.fame || 0, 400) * 0.018;
+  v += Math.min(S.fans || 0, 400) * 0.018;
   if(S.benchedSplits) v -= S.benchedSplits * 6;    // 一直坐板凳，没人看得到你
   return v;
 }
@@ -8201,7 +8300,7 @@ function makeProDeal(tier, team, grade, league){
     buyout: Math.round(lerp(T.buyout[0], T.buyout[1], q)),
     asks:0, dead:false, signed:false, log:[],
     // 已经打出成绩的人，谈判底气不该再看职业前那点排位分
-    leverage: clamp(14 + proPerf()*0.9 + Math.min(S.fame,400)*0.03, 8, 70)
+    leverage: clamp(14 + proPerf()*0.9 + Math.min(S.fans,400)*0.03, 8, 70)
   };
   render();
 }
@@ -8422,7 +8521,8 @@ function hud(){
       <div class="hud-now ${nowPhase().urgent?'urgent':''}"><div class="k">现在</div>
         <div class="v">${nowPhase().tag} ${nowPhase().phase} <small>${nowPhase().detail}</small></div></div>
       <div><div class="k">段位</div><div class="v">${rankBadge(S.pre.rank,26)}</div></div>
-      <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div>${fameNextNote()}</div>
+      <div class="hud-fan"><div class="k">粉丝</div><div class="v" style="font-size:13px">${fanTier()}<small class="mono"> ${fansText()}</small></div>${fanNextNote()}</div>
+      <div><div class="k">热度</div><div class="v" style="font-size:13px">${heatTier()}</div>${heatNote()}</div>
       <div><div class="k">下一节点</div><div class="v">${(()=>{const n=nextMilestone();
         if(!n) return "—";
         // 只给「还有 N 周」很容易被算错——没有锚点，玩家会拿开局那个数
@@ -8445,7 +8545,8 @@ function hud(){
     <div><div class="k">冠军</div><div class="v mono">${S.career.titles.length}</div></div>
     <div><div class="k">段位</div><div class="v">${
       (S.pre&&S.pre.rank!==undefined)?rankBadge(S.pre.rank,26):"—"}</div></div>
-    <div><div class="k">名气</div><div class="v" style="font-size:13px">${fameTier()}</div>${fameNextNote()}</div>
+    <div class="hud-fan"><div class="k">粉丝</div><div class="v" style="font-size:13px">${fanTier()}<small class="mono"> ${fansText()}</small></div>${fanNextNote()}</div>
+      <div><div class="k">热度</div><div class="v" style="font-size:13px">${heatTier()}</div>${heatNote()}</div>
     <div><div class="k">状态</div><div class="v" style="font-size:13px">${
       typeof formTier==="function"&&S.form!==undefined?formTier(myForm()).n:"—"}</div></div>
     <div><div class="k">资金</div><div class="v mono">${Math.round(S.money)}<small>万</small></div></div>

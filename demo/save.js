@@ -126,6 +126,7 @@ function loadGame() {
     fixLegacyAcad(S);
     fixStaleRank(S);
     if (!S.ledger && typeof initLedger === "function") initLedger();   // 老档没有流水：从下一笔开始记
+    fixLegacyFame(S);
     S.tab = "act";
     // 读档落在比赛中途会尴尬——回到本周界面
     if (S.step === "match") S.step = S.pre && !S.career ? "pre" : "season";
@@ -134,6 +135,15 @@ function loadGame() {
   } catch (e) {
     return false;
   }
+}
+
+/* 名气拆成粉丝＋热度之前的老档：只有 S.fame。
+   粉丝直接继承那个数（尺度没变，所有门槛照旧成立）；
+   热度没法从存档里还原，给一个和粉丝相称的起点，让它自己在几周内回到真实值。 */
+function fixLegacyFame(s) {
+  if (s.fans === undefined) s.fans = s.fame || 0;
+  delete s.fame;
+  if (s.heat === undefined) s.heat = Math.min(260, (s.fans || 0) * 0.12);
 }
 
 /* 存档时间的人话 */
