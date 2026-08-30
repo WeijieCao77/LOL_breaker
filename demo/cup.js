@@ -50,7 +50,13 @@ const CUPS={
          opps:["网吧联队","本地车队","大学生战队","市队"] },
   stream:{ name:"主播杯", rounds:3, gap:1, band:[47,55.5],
          prize:[0,60,180,520],
-         opps:["百万粉丝队","退役选手队","冠军主播队"] }
+         opps:["百万粉丝队","退役选手队","冠军主播队"] },
+  /* 全明星周末的娱乐表演赛（现实原型：LPL 全明星周末「主播对抗」）。
+     邀请制看人气，免报名费，输了也有出场费——这是舞台，不是淘汰赛。
+     主办方配明星队友，所以不动你的车队，胜负按个人发挥算。 */
+  show:{ name:"全明星周末 · 主播表演赛", rounds:1, gap:1, band:[51,51],
+         prize:[20,120],
+         opps:["明星联队"] }
 };
 
 /* 业余队名：报名时玩家起的名字，没起就用选手 ID */
@@ -93,8 +99,9 @@ function enterCup(kind){
                  nextWeek:S.pre.week+C.gap, alive:true, wins:0, prep:0,
                  oppRoll:rollOpp() };
   // 抽车队：手上已有活的车队就沿用（两个赛事一起打也是同一批人），
-  // 没有才抽新的——练出来的默契跟着车队走
-  if(!S.pre.mates||!S.pre.mates.length) drawCupMates(kind);
+  // 没有才抽新的——练出来的默契跟着车队走。
+  // 表演赛除外：主办方配明星队友，不动你的车队
+  if(kind!=="show"&&(!S.pre.mates||!S.pre.mates.length)) drawCupMates(kind);
   // 别把间隔写死在文案里——赛程从两周一轮改成一周一轮之后，
   // 这句「中间这两周」就成了假话。
   preLog(`报名成功。<b>${C.name}</b> 第一轮在 <b>第 ${S.cups[kind].nextWeek} 周</b>，
@@ -292,11 +299,24 @@ function cupPayout(k,champion){
     preLog(`奖金到账 <b>${prize} 万</b>。`,"good"); }
   addFame(reached*(k==="stream"?6:4));
   if(k==="city") S.pre.cityCup=reached;
-  else S.pre.streamCup=reached;
+  else if(k==="stream") S.pre.streamCup=reached;
+  if(k==="show"){
+    // 表演赛的收获是曝光：全场镜头都在你身上
+    addFame(28);
+    S.pre.scoutSeen=(S.pre.scoutSeen||0)+2;
+    preLog(champion
+      ?`表演赛打服全场。<b>弹幕都在问：这人为什么还不打职业？</b>`
+      :`表演赛输了，但没人在乎比分——<b>整个圈子都记住了你的名字。</b>`,"big");
+  }
   if(typeof checkAch==="function") checkAch("cup",{kind:k,win:reached});
   // 关键：不用夺冠。走得远，数据被记下来，就有人来问。
-  if(typeof checkTryoutInvite==="function") checkTryoutInvite(k,reached,champion);
-  if(champion) preLog(`<b>${C.name} 冠军。</b>这个名字开始有人记住了。`,"big");
+  if(k!=="show"&&typeof checkTryoutInvite==="function") checkTryoutInvite(k,reached,champion);
+  if(champion&&k!=="show") preLog(`<b>${C.name} 冠军。</b>这个名字开始有人记住了。`,"big");
+  // 车队的生命周期跟着赛事走：全打完了，路人各回各家，战队栏目重新上锁
+  if(!S.career&&S.pre.mates&&S.pre.mates.length&&
+     typeof activeCups==="function"&&activeCups().length===0){
+    disbandCrew();
+  }
   // 结算先挂在这场比赛上，等玩家看完比分点「继续」再弹总结。
   // 之前这里直接 S.cupMatch=null，被淘汰那一场的比分和过程会凭空消失——
   // 玩家只看到一个「止步第几轮」的框，不知道最后那局是怎么输的。
@@ -309,6 +329,16 @@ function cupDismissMatch(){
   if(m&&m.result) S.cupResult=m.result;
   S.cupMatch=null;
   render();
+}
+
+/* 车队散伙：赛事全部打完（或跨年）就各回各家。
+   下一次报名重新抽人、重新取名——车队就是一届一拼的。 */
+function disbandCrew(){
+  if(!S.pre) return;
+  const nm=(S.pre.cupTeam)?`「${escapeHtml(S.pre.cupTeam)}」`:"车队";
+  S.pre.mates=null; S.squad=null; S.trust=null; S.pre.cupTeam=null;
+  preLog(`${nm}散伙了——比赛打完，路人队友们各回各家。<br>
+    <span style="color:var(--ink-3)">下次报名会重新组队、重新取名。练出来的本事（运营/指挥/场次积累）跟着你走。</span>`,"info");
 }
 
 /* ---------- 界面 ---------- */
