@@ -906,12 +906,12 @@ function promoteCard(){
     <p class="note" style="margin:0 0 10px">合同签给的是俱乐部，你现在注册在二队名单。
       升队窗口：<b>季中间歇</b> 和 <b>休赛期</b>——到点自动核查，达标就调上去。</p>
     <div class="attrs">
-      <div class="at"><div class="lb">你</div>
+      <div class="at wide"><div class="lb">你</div>
         <div class="track"><div class="fill" style="width:${clamp(me,0,100)}%"></div></div>
         <div class="vn mono"><b>${me.toFixed(1)}</b></div></div>
-      <div class="at"><div class="lb">一队${POSN[S.pos]}</div>
+      <div class="at wide"><div class="lb">一队${POSN[S.pos]}</div>
         <div class="track"><div class="fill" style="width:${clamp(him,0,100)}%;background:var(--bar-2)"></div></div>
-        <div class="vn mono">${inc?(typeof avatarOf==="function"?avatarOf(inc,20):"")+" "+inc.id.slice(0,9):"—"} <b>${him.toFixed(1)}</b></div></div>
+        <div class="vn mono"><b>${him.toFixed(1)}</b>${inc?(typeof avatarOf==="function"?avatarOf(inc,20):"")+`<span class="pname">${inc.id.slice(0,9)}</span>`:"—"}</div></div>
     </div>
     <p class="note">升队条件（满足其一）：<br>
       ① 综合压过一队对位 1 分——${ok1?'<b style="color:var(--cyan)">已达成，等下个窗口</b>':`还差 <b>${(him+1-me).toFixed(1)}</b> 分`}<br>

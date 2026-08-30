@@ -224,6 +224,14 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .at .vn b{color:var(--gold-hi);font-size:13.5px}
 .at .vn .up{color:var(--cyan)}
 .at .vn .dn{color:var(--red)}
+/* 带头像和名字的行（战队实力、升队通道）：右列固定 82px 放不下
+   「头像+名字+数值」，数值被挤到名字下面换行。改成自适应列宽、
+   一行排开：数值紧跟在 bar 后面，然后才是头像和名字。 */
+.at.wide{grid-template-columns:50px 1fr auto}
+.at.wide .vn{display:flex;align-items:center;gap:6px;white-space:nowrap;text-align:left}
+.at.wide .vn b{min-width:26px;text-align:right}
+.at.wide .vn .pname{max-width:96px;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:480px){.at.wide .vn .pname{max-width:64px}}
 
 /* ---- 对阵 ---- */
 .vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;margin-bottom:14px}
@@ -772,7 +780,12 @@ const SPREAD=13.5;   // 赛程加长后，单场的确定性要再降一点，�
    休赛期三段之后，一年凭空多出 30+ 个行动点，几乎把赛季的总量翻倍——
    实测 MSI 冠军率被抬到 45%。间歇期该有价值（没有比赛要打），
    但不该是双倍价值。 */
-const AP_SEASON=3, AP_PRE=6, AP_OFF=3, AP_HURT=2;
+/* 3 -> 4：玩家反馈赛季周只有 3 点，九个行动按钮加四个战队行动，
+   每周只够点三下，「能做的事情太少」。提 1 点换的是决策空间，
+   不是成长速度——签约后的训练收益同步乘 0.8（见 gain），
+   每周训练总量 4×0.8=3.2 对 3×1.0=3.0，只多 7%。
+   改完照例跑 120 局对比冠军率，通胀就回调。 */
+const AP_SEASON=4, AP_PRE=6, AP_OFF=4, AP_HURT=2;
 function apFor(phase){
   if(S.injury) return AP_HURT;
   if(phase==="pre") return AP_PRE;
@@ -1910,7 +1923,11 @@ function gain(d){
   const cs=(typeof courseTrainMul==="function")?courseTrainMul(d):1;
   // 职业前打排位现在也长属性，进队时的底子比以前厚，
   // 所以职业后的训练收益要相应压低，否则终局会失衡。
-  return 1.00*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*ij;
+  // apComp：赛季/休赛期每周从 3 点提到 4 点，多出来的是决策空间，
+  // 不能顺手多出 33% 的成长——签约后单次收益乘 0.8 对冲。
+  // 职业前还是 6 点没动，不吃这个折扣。
+  const apComp=S.career?0.80:1.00;
+  return apComp*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*ij;
 }
 const addFat=n=>{S.fatigue=clamp(S.fatigue+n,0,100)};
 /* 名气有边际递减：从零到小有名气很快，再往上越来越难。
@@ -2207,12 +2224,12 @@ function teamCard(){
   return `<div class="card"><h2>队友<em>平均信任 ${Math.round(avgTrust())}</em></h2>
     <div class="attrs">${mates.map(p=>{
       const t=trustOf(p.id);
-      return `<div class="at"><div class="lb">${POSN[p.pos]}</div>
+      return `<div class="at wide"><div class="lb">${POSN[p.pos]}</div>
         <div class="track"><div class="fill" style="width:${t}%;background:${
           t>=60?"linear-gradient(90deg,var(--cyan-dim),var(--cyan))":
           t>=35?"linear-gradient(90deg,#6B5A2A,var(--gold))":
                 "linear-gradient(90deg,#5A2228,var(--red))"}"></div></div>
-        <div class="vn mono">${typeof avatarOf==="function"?avatarOf(p,22):""} ${p.id.slice(0,9)}${p.rookie?'<span class="tag">新</span>':""}${p.comeback?'<span class="tag g">复出</span>':""}</div>
+        <div class="vn mono">${typeof avatarOf==="function"?avatarOf(p,22):""}<span class="pname">${p.id.slice(0,9)}</span>${p.rookie?'<span class="tag">新</span>':""}${p.comeback?'<span class="tag g">复出</span>':""}</div>
       </div>`}).join("")}</div>
     <p class="note">这是<b>他们对你</b>的信任，撑的是全队士气。<b>${
       avgTrust()>=62?"他们服你，关键球敢交到你手上。":
@@ -5099,8 +5116,9 @@ function squadCard(){
     <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">基础战力 · 五名选手的个人数值</h3>
     <div class="attrs">${mates.map(p=>{
       const v=(p.r.操作*0.34+p.r.运营*0.28+p.r.心态*0.14+p.r.体质*0.10);
-      return `<div class="at"><div class="lb">${POSN[p.pos]}</div>${bar(v)}
-        <div class="vn mono">${typeof avatarOf==="function"?avatarOf(p,22):""} ${p.me?'<b style="color:var(--gold)">你</b>':p.id.slice(0,8)} ${v.toFixed(0)}</div></div>`;
+      return `<div class="at wide"><div class="lb">${POSN[p.pos]}</div>${bar(v)}
+        <div class="vn mono"><b>${v.toFixed(0)}</b>${typeof avatarOf==="function"?avatarOf(p,22):""}<span class="pname">${
+          p.me?'<b style="color:var(--gold)">你</b>':p.id.slice(0,8)}</span></div></div>`;
     }).join("")}</div>
 
     <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">权重 · 五个人怎么变成一支队</h3>
@@ -7911,12 +7929,12 @@ function promoteCard(){
     <p class="note" style="margin:0 0 10px">合同签给的是俱乐部，你现在注册在二队名单。
       升队窗口：<b>季中间歇</b> 和 <b>休赛期</b>——到点自动核查，达标就调上去。</p>
     <div class="attrs">
-      <div class="at"><div class="lb">你</div>
+      <div class="at wide"><div class="lb">你</div>
         <div class="track"><div class="fill" style="width:${clamp(me,0,100)}%"></div></div>
         <div class="vn mono"><b>${me.toFixed(1)}</b></div></div>
-      <div class="at"><div class="lb">一队${POSN[S.pos]}</div>
+      <div class="at wide"><div class="lb">一队${POSN[S.pos]}</div>
         <div class="track"><div class="fill" style="width:${clamp(him,0,100)}%;background:var(--bar-2)"></div></div>
-        <div class="vn mono">${inc?(typeof avatarOf==="function"?avatarOf(inc,20):"")+" "+inc.id.slice(0,9):"—"} <b>${him.toFixed(1)}</b></div></div>
+        <div class="vn mono"><b>${him.toFixed(1)}</b>${inc?(typeof avatarOf==="function"?avatarOf(inc,20):"")+`<span class="pname">${inc.id.slice(0,9)}</span>`:"—"}</div></div>
     </div>
     <p class="note">升队条件（满足其一）：<br>
       ① 综合压过一队对位 1 分——${ok1?'<b style="color:var(--cyan)">已达成，等下个窗口</b>':`还差 <b>${(him+1-me).toFixed(1)}</b> 分`}<br>

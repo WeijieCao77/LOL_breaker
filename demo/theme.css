@@ -212,6 +212,14 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .at .vn b{color:var(--gold-hi);font-size:13.5px}
 .at .vn .up{color:var(--cyan)}
 .at .vn .dn{color:var(--red)}
+/* 带头像和名字的行（战队实力、升队通道）：右列固定 82px 放不下
+   「头像+名字+数值」，数值被挤到名字下面换行。改成自适应列宽、
+   一行排开：数值紧跟在 bar 后面，然后才是头像和名字。 */
+.at.wide{grid-template-columns:50px 1fr auto}
+.at.wide .vn{display:flex;align-items:center;gap:6px;white-space:nowrap;text-align:left}
+.at.wide .vn b{min-width:26px;text-align:right}
+.at.wide .vn .pname{max-width:96px;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:480px){.at.wide .vn .pname{max-width:64px}}
 
 /* ---- 对阵 ---- */
 .vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;margin-bottom:14px}

@@ -256,7 +256,12 @@ const SPREAD=13.5;   // 赛程加长后，单场的确定性要再降一点，�
    休赛期三段之后，一年凭空多出 30+ 个行动点，几乎把赛季的总量翻倍——
    实测 MSI 冠军率被抬到 45%。间歇期该有价值（没有比赛要打），
    但不该是双倍价值。 */
-const AP_SEASON=3, AP_PRE=6, AP_OFF=3, AP_HURT=2;
+/* 3 -> 4：玩家反馈赛季周只有 3 点，九个行动按钮加四个战队行动，
+   每周只够点三下，「能做的事情太少」。提 1 点换的是决策空间，
+   不是成长速度——签约后的训练收益同步乘 0.8（见 gain），
+   每周训练总量 4×0.8=3.2 对 3×1.0=3.0，只多 7%。
+   改完照例跑 120 局对比冠军率，通胀就回调。 */
+const AP_SEASON=4, AP_PRE=6, AP_OFF=4, AP_HURT=2;
 function apFor(phase){
   if(S.injury) return AP_HURT;
   if(phase==="pre") return AP_PRE;
@@ -1394,7 +1399,11 @@ function gain(d){
   const cs=(typeof courseTrainMul==="function")?courseTrainMul(d):1;
   // 职业前打排位现在也长属性，进队时的底子比以前厚，
   // 所以职业后的训练收益要相应压低，否则终局会失衡。
-  return 1.00*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*ij;
+  // apComp：赛季/休赛期每周从 3 点提到 4 点，多出来的是决策空间，
+  // 不能顺手多出 33% 的成长——签约后单次收益乘 0.8 对冲。
+  // 职业前还是 6 点没动，不吃这个折扣。
+  const apComp=S.career?0.80:1.00;
+  return apComp*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*ij;
 }
 const addFat=n=>{S.fatigue=clamp(S.fatigue+n,0,100)};
 /* 名气有边际递减：从零到小有名气很快，再往上越来越难。
@@ -1691,12 +1700,12 @@ function teamCard(){
   return `<div class="card"><h2>队友<em>平均信任 ${Math.round(avgTrust())}</em></h2>
     <div class="attrs">${mates.map(p=>{
       const t=trustOf(p.id);
-      return `<div class="at"><div class="lb">${POSN[p.pos]}</div>
+      return `<div class="at wide"><div class="lb">${POSN[p.pos]}</div>
         <div class="track"><div class="fill" style="width:${t}%;background:${
           t>=60?"linear-gradient(90deg,var(--cyan-dim),var(--cyan))":
           t>=35?"linear-gradient(90deg,#6B5A2A,var(--gold))":
                 "linear-gradient(90deg,#5A2228,var(--red))"}"></div></div>
-        <div class="vn mono">${typeof avatarOf==="function"?avatarOf(p,22):""} ${p.id.slice(0,9)}${p.rookie?'<span class="tag">新</span>':""}${p.comeback?'<span class="tag g">复出</span>':""}</div>
+        <div class="vn mono">${typeof avatarOf==="function"?avatarOf(p,22):""}<span class="pname">${p.id.slice(0,9)}</span>${p.rookie?'<span class="tag">新</span>':""}${p.comeback?'<span class="tag g">复出</span>':""}</div>
       </div>`}).join("")}</div>
     <p class="note">这是<b>他们对你</b>的信任，撑的是全队士气。<b>${
       avgTrust()>=62?"他们服你，关键球敢交到你手上。":
