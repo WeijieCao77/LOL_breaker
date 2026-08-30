@@ -78,6 +78,24 @@ function scrubFloats(s) {
     if (typeof s.fatigue === "number") s.fatigue = q(s.fatigue);
   } catch (e) {}
 }
+/* 老档修补：LDL 拆分上线之前签的青训合同，人是直接进 LPL 一队打的。
+   世界回不去了——按现实处理：你本来就一直在打一队，合同就地转正，
+   薪资和违约金按一队标准上调（同 checkPromote 的口径）。 */
+function fixLegacyAcad(s) {
+  try {
+    if (!s || !s.career || !s.contract) return;
+    if (s.contract.tier !== "acad") return;
+    if ((s.homeLeague || "LPL") === "LDL") return;    // 真在二队打，没问题
+    s.contract.tier = "sub";
+    s.contract.salary = Math.round((s.contract.salary || 20) * 2.4);
+    s.contract.buyout = Math.round((s.contract.buyout || 60) * 3);
+    if (s.contract.clubTier === "acad") s.contract.clubTier = "low";
+    (s.events = s.events || []).push({
+      s: "合同", w: 0, tone: "good", tag: "合同",
+      text: "俱乐部把你的<b>青训合同转正</b>了——你本来就一直在一队打比赛。薪资和违约金按一队标准上调。"
+    });
+  } catch (e) {}
+}
 function loadGame() {
   const blob = readSave();
   if (!blob || blob.bad) return false;
@@ -86,6 +104,7 @@ function loadGame() {
     // 存档时被剔除的弹窗字段补回空值，避免到处 undefined
     SAVE_SKIP.forEach(k => { if (S[k] === undefined) S[k] = null; });
     scrubFloats(S);
+    fixLegacyAcad(S);
     S.tab = "act";
     // 读档落在比赛中途会尴尬——回到本周界面
     if (S.step === "match") S.step = S.pre && !S.career ? "pre" : "season";

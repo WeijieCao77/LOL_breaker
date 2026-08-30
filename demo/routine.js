@@ -76,9 +76,13 @@ function runActs(list, fromCursor){
     const before = apNow();
 
     if(a.k === "train"){
-      // 计划里的维度练满了就换一个还能练的——空转等于白扔一个行动点
+      // 计划里的维度练满了就换一个还能练的——空转等于白扔一个行动点。
+      // 但「继续练就能突破」的维度（操作）例外：撞了瓶颈接着练正是
+      // 突破条件本身，换掉它的话「连续 3 周投操作」永远数不到 1。
+      // 之前就是这里把玩家计划里的练操作偷偷改练了别的。
       let d = a.v;
-      if(S.attrs[d] >= capOf(d)){
+      const bp = (typeof BREAK_PATHS !== "undefined") ? BREAK_PATHS[d] : null;
+      if(S.attrs[d] >= capOf(d) && !(bp && bp.by === "train")){
         const av = DIMS.filter(x => S.attrs[x] < capOf(x));
         d = av.length ? av[0] : null;
       }
