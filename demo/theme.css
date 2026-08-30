@@ -110,6 +110,21 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
   .pinbar .pv b{font-size:13px}
 }
 
+/* ---- 赛后复盘 ---- */
+.review{border:1px solid var(--gold);padding:12px 14px;margin-top:14px;
+  background:rgba(201,169,97,.06)}
+.review.win{border-color:var(--line)}
+.review .rv-h{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;
+  font-size:11px;letter-spacing:.2em;color:var(--gold);text-transform:uppercase}
+.review .rv-g{margin-top:10px}
+.review .rv-g>b{font-size:12.5px;color:var(--gold-hi)}
+.review .rv-i{display:grid;grid-template-columns:minmax(120px,38%) 1fr;gap:10px;
+  padding:7px 0;border-bottom:1px dashed rgba(201,169,97,.22);font-size:13px}
+.review .rv-i:last-child{border-bottom:none}
+.review .rq{color:var(--ink);font-weight:600}
+.review .rh{color:var(--ink-2);line-height:1.6}
+@media(max-width:560px){.review .rv-i{grid-template-columns:1fr}}
+
 /* ---- 商城 · 外设区（按槽位分组） ---- */
 .shopslot{border:1px solid var(--line);padding:10px 12px;margin-bottom:10px}
 .shopslot .ssname{font-size:12.5px;color:var(--ink-3);margin-bottom:8px}

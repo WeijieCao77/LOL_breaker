@@ -329,10 +329,10 @@ function breakthrough(d,n,reason,key){
    其余几项撞了瓶颈之后再点训练是没有意义的，界面必须说清楚
    该去做什么，而不是显示一个点了不动的进度条。 */
 const BREAK_PATHS={
-  操作:{ how:"连续 3 周把至少 3 个行动点全投在操作上",
+  操作:{ how:"连续 3 周，每周至少 3 个行动点投在操作上（行动点不足 3 的周全投也算）",
         by:"train", act:"练操作",
         auto:true, gain:2.0,
-        prog:()=>`${clamp(S.btk&&S.btk.opStreak||0,0,3)}/3 周`,
+        prog:()=>`${clamp(S.btk&&S.btk.opStreak||0,0,3)}/3 周 · 本周已投 ${S.btk&&S.btk.opThisWeek||0} 点`,
         done:()=>(S.btk&&S.btk.opStreak||0)>=3 },
   运营:{ how:"一个赛段里做满 6 次战术复盘",
         by:"squad", act:"战术复盘（战队行动）",
@@ -380,11 +380,15 @@ function sweepBreakthroughs(){
   });
 }
 
-/* 每周结算：操作的连续周数要在周末判定 */
+/* 每周结算：操作的连续周数要在周末判定。
+   「至少 3 点」在行动点本来就不足 3 的周（受伤 2 点）放宽为「全投也算」——
+   否则伤一周连击就断，提示让你做的事你根本做不到。 */
 function btkWeekEnd(){
   S.btk=S.btk||{opStreak:0,opThisWeek:0,vod:0,rest:0};
   sweepBreakthroughs();
-  if(S.btk.opThisWeek>=3) S.btk.opStreak++;
+  const budget=(typeof apFor==="function")?apFor(S.step==="pre"?"pre":(S.off?"off":"season")):3;
+  const need=clamp(Math.min(3,budget),1,3);
+  if(S.btk.opThisWeek>=need) S.btk.opStreak++;
   else S.btk.opStreak=0;
   S.btk.opThisWeek=0;
   const P=BREAK_PATHS.操作;
@@ -516,15 +520,20 @@ function cloneWorld(){
 }
 
 /* ---------- LDL：二级联赛 ----------
-   青训合同原来是假的：队名后面挂个「青训队」，签约时被 signDeal 剥掉，
-   人直接进 LPL 一队名单——于是一个青训选手的对手是 FPX 一队。
-   现在真的分开：LDL 有自己的十支队、自己的赛程和积分榜。
-   青训队实力大致等于对应一队减 12，打得好才升上一队（见 checkPromote）。 */
+   结构对齐 2022 年的真实规则：
+     俱乐部 = 一队（LPL 名单）+ 青训队（LDL 名单）。
+     合同签给俱乐部；你注册在哪个名单，决定你在哪个联赛打比赛。
+     2022 年 LPL 十七家俱乐部被强制配置青训队（LDL 当年 24 队 =
+     17 家青训 + 7 支独立队；独立队暂未做）——所以这里是全部十七家，
+     不再只有后十名，「这家没有青训编制」的怪事不会再发生。
+   青训队实力大致等于对应一队减 12。
+   上调窗口 = 季中间歇 + 休赛期（见 checkPromote）；
+   一队替补拿不到比赛时，休赛期俱乐部会提议下放（见 offerSendDown）。 */
 function buildLDL(w){
   const src=(w.LPL||[]);
   const rk=src.map(t=>({t,p:avg(t.players.map(q=>avg(DIMS.map(d=>q.r[d]))))}))
               .sort((a,b)=>b.p-a.p);
-  return rk.slice(-10).map(({t,p})=>({
+  return rk.map(({t,p})=>({
     name:t.name+" 青训队", parent:t.name, logo:t.logo,
     syn:Math.max(20,(t.syn===undefined?50:t.syn)-10),
     tac:Math.max(20,(t.tac===undefined?50:t.tac)-10),
@@ -1583,8 +1592,12 @@ function autoRest(focus,weeks){
     while(S.ap>0){
       if(autoStop()) break;
       const av=DIMS.filter(d=>S.attrs[d]<capOf(d));
+      const fbp=(typeof BREAK_PATHS!=="undefined")?BREAK_PATHS[focus]:null;
       if(S.fatigue>70) doAction("rest");
-      else if(av.length) doTrain(av.includes(focus)?focus:av[0]);
+      else if(av.includes(focus)) doTrain(focus);
+      // 主项撞了瓶颈但「继续练就能突破」——那就接着练，别改道
+      else if(fbp&&fbp.by==="train"&&S.attrs[focus]>=capOf(focus)) doTrain(focus);
+      else if(av.length) doTrain(av[0]);
       else doAction("stream");
     }
     if(autoStop()||S.ap>0) break;      // 有事，或者一个点都没推动
@@ -1607,7 +1620,7 @@ function viewSeason(){
   if(T!=="act") return `${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
     ${tabBar(TABS_SEASON)}
     ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
-    ${T==="team"?squadCard()+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
+    ${T==="team"?squadCard()+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
     ${T==="shop"?shopCard():""}
     ${T==="world"?standingsCard()+rivalCard()+newsCard()+eventsCard():""}
     ${T==="ach"?achCard():""}`;
@@ -1645,14 +1658,14 @@ function viewSeason(){
     </div>
     ${benched?`<p class="note" style="color:var(--loss)">你还在替补席。首发是 <b>${S.understudy.id}</b>（综合 ${avg(DIMS.map(d=>S.understudy.r[d])).toFixed(0)}，你 ${avg(DIMS.map(d=>S.attrs[d])).toFixed(0)}）。
       <b>练到压过他，才轮得到你上场。</b></p>`:""}
-    <p class="note">本周对手 <b>${oppName}</b>（战力 ${power(opp,0,sea.fav).toFixed(1)}）
-      vs 你队 ${power(myRoster(),S.fatigue,sea.fav).toFixed(1)}</p>
+    ${opp?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${power(opp,0,sea.fav).toFixed(1)}）
+      vs 你队 ${power(myRoster(),S.fatigue,sea.fav).toFixed(1)}</p>`:""}
   </div>
   ${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
   ${tabBar(TABS_SEASON)}
   ${T==="act"?(typeof injuryCard==="function"?injuryCard():"")+nextMatchCard()+attrCard():""}
   ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
-  ${T==="team"?squadCard()+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
+  ${T==="team"?squadCard()+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
   ${T==="shop"?shopCard():""}
   ${T==="world"?standingsCard()+rivalCard()+newsCard()+eventsCard():""}
   ${T==="ach"?achCard():""}`;
@@ -1698,7 +1711,10 @@ function contractTerms(){
   const paid=salaryOf();
   return `<div class="card"><h2>我的合同<em>剩 ${c.left||0}/${c.years||0} 赛段</em></h2>
     <h3>${S.team||""}${T?"　"+T.n:""}${D?"　"+D.n:""}${
-      c.grade?`<span class="tag g">试训 ${c.grade}</span>`:""}</h3>
+      c.grade?`<span class="tag g">试训 ${c.grade}</span>`:""}${
+      (S.homeLeague||"LPL")==="LDL"
+        ?`<span class="tag g">注册：LDL 二队名单</span>${typeof parentClub==="function"&&parentClub()?`<span class="tag">母队 ${parentClub()}</span>`:""}`
+        :`<span class="tag">注册：${S.homeLeague||"LPL"} 一队名单</span>`}</h3>
     <div class="grid g2" style="margin-top:10px">
       <div class="ver"><div class="k">签约年薪</div>
         <div class="v mono" style="font-size:20px;color:var(--gold-hi)">${c.salary}<small> 万/赛段</small></div></div>
@@ -1819,7 +1835,8 @@ function resolveNode(ai){
   m.swing+=(ok?1:-1)*opt.risk*6.0;
   const now=gameWinP(m.swing);            // 做完之后
   if(typeof addStaff==='function') addStaff('coach',ok?0.3:-0.6);
-  if(!ok) m.nodeFails=(m.nodeFails||0)+1;
+  if(!ok){ m.nodeFails=(m.nodeFails||0)+1;
+    (m.failDims=m.failDims||[]).push(opt.dim); }   // 复盘要知道输在哪个维度上
   const d=Math.round(now*100)-Math.round(was*100);
   m.lines.push(`<div><span class="hi">第${m.game}局</span> ${opt.t} — ${ok
     ?`<span class="w">成了</span>`:`<span class="l">没成</span>`}　<span class="${
@@ -2266,9 +2283,11 @@ function doOffseason(){
   S.off={week:1, weeks:OFF_WEEKS, next:"year", label:"休赛期"};
   S.ap=apFor("off");
   S.askedTransfer=false;             // 每个休赛期能主动挂牌一次
-  // 升队和转会都只在真正的休赛期发生——季中间歇和季后赛前的休整都不是转会窗口
+  // 升队、转会、下放都跟着注册窗口走：休赛期是主窗口（季中间歇是另一个，见 offNextWeek）
   if(typeof checkPromote==="function" && checkPromote()) { /* 升上一队了 */ }
   else if(typeof rollProOffers==="function") rollProOffers();
+  // 一队替补整年拿不到比赛：俱乐部会提议下放青训队打 LDL（可拒绝）
+  if(!S.proOffer&&!S.confirm&&typeof offerSendDown==="function") offerSendDown();
   S.fatigue=Math.max(0,S.fatigue-25);      // 赛季打完，先喘口气
   pushEvent(`赛季结束，进入休赛期（${OFF_WEEKS} 周）。没有比赛，
     但这是一年里唯一能安心补短板的时间。`,"info","休赛期");
@@ -2300,13 +2319,25 @@ function offNextWeek(){
       if(typeof saveGame==='function') saveGame('赛季结算');
       render(); return;
     }
-    if(nx==="summer"){ startSeason(false,1); return; }    // 间歇结束 -> 夏季赛
+    if(nx==="summer"){
+      // 季中间歇也是注册窗口：LDL 打得好，夏季赛能直接调上一队——
+      // 现实里升降就是跟着转会/注册窗走的，不用等到年底
+      if(typeof checkPromote==="function") checkPromote();
+      startSeason(false,1); return;
+    }
     if(nx==="playoff"){ startPlayoff(); return; }         // 休整结束 -> 季后赛
     finishOffseason(); return;
   }
   S.off.week++;
   S.ap=(S.off.next==="intl")?1:apFor("off");
   if(S.off.next!=="intl") addFat(-14);
+  // 休赛期/间歇周也要结算突破进度——原来只有赛季周结算，
+  // 玩家在休赛期连练三周操作，计数器纹丝不动。
+  // 出征周只有 1 点，练不满是制度问题不是玩家问题：不计数也不清零。
+  if(typeof btkWeekEnd==="function"){
+    if(S.off.next==="intl"){ if(S.btk) S.btk.opThisWeek=0; }
+    else btkWeekEnd();
+  }
   flushBreakNews(S.off.week);
   if(typeof tickBuffs==='function') tickBuffs();
   if(typeof tryRandomEvent==='function'&&rnd()<0.16) tryRandomEvent();

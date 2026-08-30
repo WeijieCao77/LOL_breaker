@@ -466,8 +466,12 @@ function dealCard(){
       <button class="btn ghost" id="dealno">不签，再练一年</button>
     </div>
     <p class="note">签字费当场到账，年薪每个赛段结算一次。违约金越高，以后别队越难把你买走。<br>
-      <b>不签也是一条路</b>——青训合同签下去就是两个赛段的板凳，
-      再练一年换一家更好的队未必更亏。但这家今年不会再来了。</p>
+      ${d.dealTier==="acad"
+        ?`<b>青训合同去的是 LDL 二队</b>——在青训队打首发攒数据，压过一队对位才升上去。`
+        :d.dealTier==="sub"
+        ?`<b>替补合同意味着板凳</b>——训练赛压过首发才轮得到你上场。`
+        :""}
+      <b>不签也是一条路</b>——再练一年换一家更好的队未必更亏。但这家今年不会再来了。</p>
   </div>`;
 }
 
@@ -497,9 +501,16 @@ function signDeal(){
   // 原来这里把后缀剥掉、按 LPL 签约，于是青训选手的对手是一队。
   const toLDL = (d.dealTier === "acad") || /青训队$/.test(d.team);
   let teamName = toLDL ? d.team : d.team.replace(/ 青训队$/, "");
+  if(toLDL && !/青训队$/.test(teamName)) teamName += " 青训队";   // 青训合同就该进青训队
   if(toLDL){
     const has=(P.world.LDL||[]).some(t=>t.name===teamName);
-    if(!has && (P.world.LDL||[]).length) teamName=P.world.LDL[0].name;
+    if(!has && (P.world.LDL||[]).length){
+      // LDL 只收留了后十名俱乐部的青训——这家一队没有青训编制。
+      // 现实里俱乐部会把你推荐去合作的二队，这里也一样，但要说清楚。
+      const alt=P.world.LDL[0].name;
+      preLog(`${teamName.replace(/ 青训队$/,"")} 没有自己的青训编制，把你推荐去了 <b>${alt}</b>——合同照签，人去那边报到。`,"info");
+      teamName=alt;
+    }
   }
   // 邀请是从 S.world 里挑的队名，签约时用的是新克隆的 world。
   // 正常情况下名字一致，但万一对不上（老存档、数据换版），
@@ -823,15 +834,83 @@ function checkPromote(){
     ? {id:S.name||"你", cn:"", pos:S.pos, age:S.age, r:S.attrs, me:true} : q);
   S.trust = {}; if(typeof initTrust === "function") initTrust();
   if(typeof syncTrust === "function") syncTrust();
-  // 升上来是涨薪的，但还是队里最便宜的那个
+  // 升上来是涨薪的，但还是队里最便宜的那个。
+  // 合同也要跟着走：签约主体是俱乐部，注册名单从二队换到一队，
+  // 条款按一队标准转正——俱乐部档次按母队真实排名定，别一律写「中游」。
   if(S.contract){
     S.contract.salary = Math.round((S.contract.salary || 40) * 2.4);
     S.contract.buyout = Math.round((S.contract.buyout || 60) * 3);
-    S.contract.tier = "sub"; S.contract.clubTier = "mid";
+    S.contract.tier = "sub";
+    S.contract.team = pname;
+    const st = clubStanding(pname);
+    S.contract.clubTier = st ? (st.pos <= 4 ? "top" : st.pos <= 10 ? "mid" : "low") : "mid";
   }
   S.rosterSig = myRoster().map(x => x.id).sort().join("|");
   pushEvent(`<b>${pname}</b> 把你从 <b>${old}</b> 调上了一队。
     ${inc.id} 让出了首发位——你在 LDL 打的那些比赛，有人一直在看。`, "big", "升队");
   if(typeof checkAch === "function") checkAch("promote");
   return true;
+}
+
+/* ---------- 下放：一队替补去 LDL 打比赛 ----------
+   现实里的通道：替补拿不到出场时间，俱乐部会把他注册到二队名单
+   打 LDL 攒比赛——合同不变，人还是俱乐部的，打出来再调回来。
+   没有这条，替补线就是死路：坐着，练，等，什么都发生不了。 */
+function offerSendDown(){
+  if((S.homeLeague||"LPL")!=="LPL") return false;
+  if(S.promoted||!S.understudy||S.offerKind!=="sub") return false;
+  const acad=(S.world.LDL||[]).find(t=>t.parent===S.team);
+  if(!acad) return false;
+  askConfirm("俱乐部想把你下放到青训队",
+    `一队首发还是 <b>${S.understudy.id}</b>，你在替补席上拿不到一场正赛。<br>
+     经理的方案：注册到 <b>${acad.name}</b> 打 LDL——有比赛打、有数据看，
+     打出来就调回一队。<b>合同不变。</b><br>
+     <span class="note">留在一队也行：训练强度更高，但一场正赛都没有，热度会一直掉。</span>`,
+    "去 LDL 打比赛", ()=>doSendDown(acad),
+    {t:"留在一队等机会", fn:()=>{ pushEvent(`你拒绝了下放，选择留在 <b>${S.team}</b> 等机会。`,"info","青训"); render(); }});
+  return true;
+}
+function doSendDown(acad){
+  const old=S.team;
+  S.team=acad.name; S.homeLeague="LDL";
+  S.offerKind="core"; S.promoted=true; S.understudy=null;
+  const t=myTeam();
+  t.players=t.players.map(q=>q.pos===S.pos
+    ? {id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true} : q);
+  S.trust={}; if(typeof initTrust==="function") initTrust();
+  if(typeof syncTrust==="function") syncTrust();
+  if(typeof initRelations==="function") initRelations();
+  S.rosterSig=myRoster().map(x=>x.id).sort().join("|");
+  pushEvent(`你被注册到 <b>${acad.name}</b>（LDL）。从替补席到首发位——
+    <b>比赛打起来，数据摆出来，一队的门才会再开。</b>`,"big","青训");
+  render();
+}
+
+/* ---------- 升队通道卡：条件全部摆在明面上 ---------- */
+function promoteCard(){
+  if((S.homeLeague||"LPL")!=="LDL") return "";
+  const pname=parentClub(); if(!pname) return "";
+  const pt=(S.world.LPL||[]).find(t=>t.name===pname); if(!pt) return "";
+  const inc=pt.players.find(q=>q.pos===S.pos);
+  const me=avg(DIMS.map(d=>S.attrs[d])), him=inc?avg(DIMS.map(d=>inc.r[d])):0;
+  const g=S.record?(S.record.w+S.record.l):0, wr=g>=3?(S.record.w/g):null;
+  const ok1=me>=him+1;
+  return `<div class="card"><h2>升队通道<em>母队 ${typeof teamLogo==="function"?teamLogo(pname,18):""} ${pname}</em></h2>
+    <p class="note" style="margin:0 0 10px">合同签给的是俱乐部，你现在注册在二队名单。
+      升队窗口：<b>季中间歇</b> 和 <b>休赛期</b>——到点自动核查，达标就调上去。</p>
+    <div class="attrs">
+      <div class="at"><div class="lb">你</div>
+        <div class="track"><div class="fill" style="width:${clamp(me,0,100)}%"></div></div>
+        <div class="vn mono"><b>${me.toFixed(1)}</b></div></div>
+      <div class="at"><div class="lb">一队${POSN[S.pos]}</div>
+        <div class="track"><div class="fill" style="width:${clamp(him,0,100)}%;background:var(--bar-2)"></div></div>
+        <div class="vn mono">${inc?(typeof avatarOf==="function"?avatarOf(inc,20):"")+" "+inc.id.slice(0,9):"—"} <b>${him.toFixed(1)}</b></div></div>
+    </div>
+    <p class="note">升队条件（满足其一）：<br>
+      ① 综合压过一队对位 1 分——${ok1?'<b style="color:var(--cyan)">已达成，等下个窗口</b>':`还差 <b>${(him+1-me).toFixed(1)}</b> 分`}<br>
+      ② 差距 3 分以内 且 本赛段胜率 ≥75%——${
+        me>=him-3?(wr===null?"数值达标，本赛段还没打满 3 场"
+          :wr>=0.75?'<b style="color:var(--cyan)">已达成，等下个窗口</b>'
+          :`数值达标，但胜率 ${(wr*100).toFixed(0)}% 还不够`)
+        :"数值还差得多，先练"}</p></div>`;
 }

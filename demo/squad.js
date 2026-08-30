@@ -49,7 +49,7 @@ function disruptSynergy(changed,who){
 function watchRoster(){
   if(!S.squad||!S.team) return;
   const ids=myRoster().map(p=>p.id).sort().join("|");
-  if(S.rosterSig===undefined){ S.rosterSig=ids; return; }
+  if(S.rosterSig===undefined||S.rosterSig===null){ S.rosterSig=ids; return; }
   if(ids===S.rosterSig) return;
   const before=S.rosterSig.split("|"), now=ids.split("|");
   const changed=now.filter(x=>!before.includes(x)).length;
