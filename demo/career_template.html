@@ -263,10 +263,11 @@ const SPREAD=13.5;   // 赛程加长后，单场的确定性要再降一点，�
    改完照例跑 120 局对比冠军率，通胀就回调。 */
 const AP_SEASON=4, AP_PRE=6, AP_OFF=4, AP_HURT=2;
 function apFor(phase){
-  if(S.injury) return AP_HURT;
-  if(phase==="pre") return AP_PRE;
-  if(phase==="off") return AP_OFF;
-  return AP_SEASON;
+  const v=S&&S.injury?AP_HURT:phase==="pre"?AP_PRE:phase==="off"?AP_OFF:AP_SEASON;
+  // 顺手记下这一周实际发了多少点——冲瓶颈的周结算要用真实预算来审判，
+  // 而不是结算那一刻反推（备战/出征这些 1 点的段落会被冤枉成「没投满」）
+  if(S&&S.btk) S.btk.apWeek=v;
+  return v;
 }
 const AP=AP_SEASON;   // 兼容旧引用
 const SPLITS=["春季赛","夏季赛"];
@@ -334,10 +335,10 @@ function breakthrough(d,n,reason,key){
    其余几项撞了瓶颈之后再点训练是没有意义的，界面必须说清楚
    该去做什么，而不是显示一个点了不动的进度条。 */
 const BREAK_PATHS={
-  操作:{ how:"连续 3 周，每周至少 3 个行动点投在操作上（行动点不足 3 的周全投也算）",
+  操作:{ how:"连续 3 周，每周至少 3 个行动点投在操作上（备战/出征/受伤这类不足 3 点的周自动暂停，不断连击）",
         by:"train", act:"练操作",
         auto:true, gain:2.0,
-        prog:()=>`${clamp(S.btk&&S.btk.opStreak||0,0,3)}/3 周 · 本周已投 ${S.btk&&S.btk.opThisWeek||0} 点`,
+        prog:()=>`本周 ${S.btk&&S.btk.opThisWeek||0}/3 点 · 已连续 ${clamp(S.btk&&S.btk.opStreak||0,0,3)}/3 周`,
         done:()=>(S.btk&&S.btk.opStreak||0)>=3 },
   运营:{ how:"一个赛段里做满 6 次战术复盘",
         by:"squad", act:"战术复盘（战队行动）",
@@ -391,20 +392,28 @@ function sweepBreakthroughs(){
 function btkWeekEnd(){
   S.btk=S.btk||{opStreak:0,opThisWeek:0,vod:0,rest:0};
   sweepBreakthroughs();
-  const budget=(typeof apFor==="function")?apFor(S.step==="pre"?"pre":(S.off?"off":"season")):3;
-  const need=clamp(Math.min(3,budget),1,3);
+  // 审判用这一周「实际发放」的预算（apFor/enterPrep/出征周都会记录）。
+  // 玩家实测抓出来的冤案：季后赛备战、出征这些 1 点的段落，把仅有的
+  // 点全投操作也凑不满 3，下一次结算却按整周审判——连击被无声清零。
+  const budget=(S.btk.apWeek!==undefined)?S.btk.apWeek:3;
   const invested=S.btk.opThisWeek, was=S.btk.opStreak;
-  // 只有在真的冲瓶颈时才播报进度——没顶到上限的操作训练不用刷屏
   const chasing=S.attrs&&S.attrs.操作>=capOf("操作")-0.05;
-  if(invested>=need) S.btk.opStreak++;
+  if(budget<3){
+    // 行动点不足 3 的周（受伤 / 备战 / 出征）：暂停，不计数也绝不清零
+    S.btk.opThisWeek=0;
+    if(chasing&&was>0)
+      pushEvent(`这段时间行动点不足 3 点，冲击操作瓶颈<b>按暂停处理</b>——连续 ${was}/3 周保留。`,"info","突破");
+    return;
+  }
+  if(invested>=3) S.btk.opStreak++;
   else S.btk.opStreak=0;
   S.btk.opThisWeek=0;
   if(chasing){
-    if(invested>=need&&S.btk.opStreak<3)
+    if(invested>=3&&S.btk.opStreak<3)
       pushEvent(`冲击操作瓶颈：本周投满 ${invested} 点，连续 <b>${S.btk.opStreak}/3 周</b>。`,"good","突破");
     // 断了必须说——默默清零就是「练了却没计入」的体感来源
-    else if(invested<need&&(was>0||invested>0))
-      pushEvent(`冲击操作瓶颈<b>断了</b>：这周只投了 ${invested}/${need} 点，连续周数清零。要连着 3 周、每周至少 ${need} 点。`,"bad","突破");
+    else if(invested<3&&(was>0||invested>0))
+      pushEvent(`冲击操作瓶颈<b>断了</b>：这周只投了 ${invested}/3 点，连续周数清零。要连着 3 周、每周至少 3 点。`,"bad","突破");
   }
   const P=BREAK_PATHS.操作;
   if(P.done()){ breakthrough("操作",P.gain,"连着三周把行动点全砸在操作上，手感磨出来了。");
@@ -1408,7 +1417,9 @@ function trainBtn(d, ap, attr){
     dis: (ap<=0||dead),
     style: trainable?'style="border-color:var(--gold)"':'',
     title: `练${d}${trainable?' <span class="tag">冲击瓶颈</span>':''}`,
-    desc: trainable ? `已满，继续投入可冲破上限　<b>${P.prog?P.prog():""}</b>${costTrain(d)}`
+    // tip 挂在按钮 title 上：鼠标悬停就能看到完整规则/突破路径
+    tip: (done&&P)?P.how:(done?"已到天赋上限":DIM_DESC[d]),
+    desc: trainable ? `<b>连续 3 周、每周投满 3 点</b>可破上限　${P.prog?P.prog():""}${costTrain(d)}`
         : locked   ? `已达瓶颈 · 突破要做<b>战术复盘</b>，签约战队后才有`
         : dead     ? `已达瓶颈 · 突破靠<b>${P&&P.act?P.act:"别的途径"}</b>${
                        P&&P.auto&&P.prog?`　${P.prog()}`:""}`
@@ -1431,6 +1442,24 @@ function gain(d){
   // 职业前还是 6 点没动，不吃这个折扣。
   const apComp=S.career?0.80:1.00;
   return apComp*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*ij;
+}
+/* 冲瓶颈状态条：正在冲操作瓶颈时，把规则和本周进度顶在行动区最上面。
+   玩家原话：「我根本不知道要每周投入三个点」——规则不能只藏在按钮小字里。 */
+function btkChaseNote(){
+  if(!S.attrs||typeof capOf!=="function") return "";
+  if(S.attrs.操作<capOf("操作")-0.05) return "";
+  if(((S.capBonus&&S.capBonus.操作)||0)>=CAP_MAX_BONUS-0.01) return "";
+  const b=S.btk||{}; const op=b.opThisWeek||0, st=clamp(b.opStreak||0,0,3);
+  const ap=(S.step==="pre"&&S.pre)?S.pre.ap:(S.ap||0);
+  const low=(b.apWeek!==undefined&&b.apWeek<3);
+  const canFill=op>=3||ap>=(3-op);
+  return `<div class="chase ${op>=3?'ok':(low||canFill)?'':'warn'}">
+    <b>冲击操作瓶颈</b>　规则：<b>连续 3 周、每周投满 3 点「练操作」</b>${
+      low?"（本周点数不足 3，自动暂停、不断连击）":""}<br>
+    本周已投 <b>${op}/3</b> 点 · 已连续 <b>${st}/3</b> 周${
+      op>=3?`　<span class="ct-ok">本周已达标</span>`
+      :low?"":canFill?`　还差 <b>${3-op}</b> 点`
+      :`　<span class="ct-bad">剩余行动点补不满了——这周连击会断</span>`}</div>`;
 }
 const addFat=n=>{S.fatigue=clamp(S.fatigue+n,0,100)};
 /* 名气有边际递减：从零到小有名气很快，再往上越来越难。
@@ -1675,6 +1704,7 @@ function viewSeason(){
   ${tabBar(TABS_SEASON)}
   <div class="card">
     <h2>${sea.tag} ${SPLITS[S.split||0]} · 第 ${S.week}/${WEEKS} 周<em>剩余行动点 ${S.ap}</em></h2>
+    ${typeof btkChaseNote==="function"?btkChaseNote():""}
     <div class="ver">版本 <b>${sea.ver}</b> — 本赛季强调 <b>${sea.dim}</b>${
       sea.fav.includes(S.pos)?`，且<b>${POSN[S.pos]}是版本红利位</b>`:""}。
       你的版本相性：<b>${fit>=1.5?"顺风":fit>=-0.5?"中性":"逆版本"}</b>
@@ -1686,7 +1716,7 @@ function viewSeason(){
     ${S.injury?`<p class="note" style="color:var(--red);margin-top:0">受伤期间行动力只有 ${AP_HURT} 点。</p>`:""}
     <div class="grid g5">
       ${DIMS.map(d=>{const b=trainBtn(d,S.ap);
-        return `<button class="act" data-train="${d}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
+        return `<button class="act" data-train="${d}" title="${b.tip||''}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">打排位</div><div class="d">五项小涨 + 找回手感${
@@ -2156,6 +2186,7 @@ function enterPrep(mode, opp, bo, label){
   // 而疲劳是直接乘在战力上的——实测 MSI 冠军率被抬到 45%、世界冠军 25%。
   // 赛前该有得选，但不该变成免费回血站。
   S.ap=1;
+  if(S.btk) S.btk.apWeek=1;
   S.step="prep";
   render();
 }
@@ -2181,10 +2212,11 @@ function prepPanel(){
     </div>
     <p class="note">下一场之前还有一点时间。<b>怎么用是你的事</b>——歇一口气、过一遍录像，
       或者临阵再练一手。</p>
+    ${typeof btkChaseNote==="function"?btkChaseNote():""}
     ${fatigueBar()}
     <div class="grid g5">
       ${DIMS.map(d=>{const b=trainBtn(d,S.ap);
-        return `<button class="act" data-train="${d}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
+        return `<button class="act" data-train="${d}" title="${b.tip||''}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">打排位</div><div class="d">找回手感${
@@ -2318,6 +2350,7 @@ function enterBreak(next, weeks, label, note){
   // 把仅有的行动点花在休息上。给满 3 点外加洗疲劳的话，
   // 最强的队白拿 6 个行动点满血进世界赛，实测冠军率 9% -> 25%。
   S.ap=(next==="intl")?1:apFor("off");
+  if(next==="intl"&&S.btk) S.btk.apWeek=1;
   S.step="offseason";
   if(next!=="intl") S.fatigue=Math.max(0,S.fatigue-20);
   pushEvent(note||`${label}（${weeks} 周）。没有比赛，正好把该补的补上。`,"info","间歇");
@@ -2458,11 +2491,12 @@ function offPanel(){
       : S.off.next==="summer"
       ? `接下来是 <b>${SEASONS[S.si].tag} 夏季赛</b>，还是吃 <b>${SEASONS[S.si].dim}</b>。`
       : (nx?`下赛季是 <b>${nx.tag} ${nx.y}</b>，版本「${nx.ver}」，吃 <b>${nx.dim}</b>——现在补这一项最划算。`:"")}</p>
+    ${typeof btkChaseNote==="function"?btkChaseNote():""}
     ${fatigueBar()}
     ${typeof routineBar==="function"?routineBar():""}
     <div class="grid g5">
       ${DIMS.map(d=>{const b=trainBtn(d,S.ap);
-        return `<button class="act" data-train="${d}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
+        return `<button class="act" data-train="${d}" title="${b.tip||''}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">打排位</div><div class="d">五项小涨 + 找回手感${
@@ -2751,6 +2785,7 @@ function actPanelPre(){
         "实力还撑不住这个分段，硬打会掉分。先去练。"}</span><br>
       名气 <b>${fameTier()}</b>　·　俱乐部评价 <b>${scoutTier()}</b><br>
       <span style="color:var(--ink-3)">世界不会因为你没比赛就临时生成一场。耐得住性子，机会才会出现。</span></div>
+    ${typeof btkChaseNote==="function"?btkChaseNote():""}
     ${fatigueBar()}
     <div class="grid g5">
       <button class="act" data-pre="rank" ${P.ap<=0?'disabled style="opacity:.34"':''}>

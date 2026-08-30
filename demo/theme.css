@@ -125,6 +125,15 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .review .rh{color:var(--ink-2);line-height:1.6}
 @media(max-width:560px){.review .rv-i{grid-template-columns:1fr}}
 
+/* ---- 冲瓶颈状态条 ---- */
+.chase{border:1px solid var(--gold);background:rgba(201,169,97,.08);
+  padding:10px 14px;margin:0 0 12px;font-size:13.5px;line-height:1.7;color:var(--ink-2)}
+.chase b{color:var(--gold-hi)}
+.chase.ok{border-color:var(--cyan);background:rgba(79,190,218,.07)}
+.chase.warn{border-color:var(--red);background:rgba(196,83,95,.09)}
+.chase .ct-ok{color:var(--cyan);font-weight:650}
+.chase .ct-bad{color:var(--red);font-weight:650}
+
 /* ---- 财务总览 ---- */
 .fin-cash{font-size:34px;font-weight:650;color:var(--gold-hi);line-height:1.15}
 .fin-cash small{font-size:13px;color:var(--ink-3);font-weight:400}
