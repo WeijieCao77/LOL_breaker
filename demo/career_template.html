@@ -1543,6 +1543,7 @@ function doAction(k){
         if(rnd()<soloWinP()) S.pre.rank=clamp(S.pre.rank+st*prepMul,0,100);
         else S.pre.rank=clamp(S.pre.rank-st*0.82*prepMul,0,100);
       }
+      if(typeof checkAch==="function") checkAch("rank");   // 生涯里冲到国服前十也该解锁
     }
     if(S.form!==undefined){
       const before=S.form;
@@ -2165,6 +2166,19 @@ function endSeason(result,seed){
   trustDecay(); squadDecay(); checkBreakthrough();
   // 赛段打完先攒一次球探关注——转会不该只在休赛期那一瞬间才有动静
   if(typeof noteScoutInterest==='function') noteScoutInterest();
+  // 天梯不守就掉：段位分向「当前实力守得住的位置」回落。
+  // 爬分是带下行阻尼的随机游走，运气好的连胜能把峰值冲到实力线上方
+  // 十几分——那是峰值快照，不是水平。挂着王者却只有钻石的实力，
+  // 一个赛段不守，分就该掉。
+  if(S.pre&&typeof S.pre.rank==="number"&&typeof soloSkill==="function"){
+    const hold=clamp((soloSkill()-40)/0.38+6,0,100);
+    if(S.pre.rank>hold){
+      const before=S.pre.rank;
+      S.pre.rank=q1(Math.max(hold,S.pre.rank-(S.pre.rank-hold)*0.35));
+      if(rankName(before)!==rankName(S.pre.rank))
+        pushEvent(`一个赛段没怎么守天梯，段位掉到 <b>${rankFull(S.pre.rank)}</b>。分数是要用实力守的。`,"info","排位");
+    }
+  }
   if(typeof cloutTick==='function') cloutTick();
   if(typeof rollForm==='function') rollForm();
   if(typeof rollWorldForm==='function'){ rollWorldForm(); formNews(); }
