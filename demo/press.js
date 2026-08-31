@@ -117,7 +117,7 @@ function roleCard(){
   }else{
     const mates=myRoster().filter(p=>!p.me);
     const tavg=mates.length?avg(mates.map(p=>avg(DIMS.map(d=>p.r[d])))):me;
-    role=S.offerKind==="core"?"核心首发":"首发";
+    role=acad?"二队首发 · 攒数据升队":(S.offerKind==="core"?"核心首发":"首发");
     comp=clamp(55+(me-tavg)*6,5,98);
     compTxt=comp>=70?"位置很稳，队伍围绕你打":comp>=45?"位置稳固，但别松懈":"你是队里最薄的一环——教练在看替补名单";
   }

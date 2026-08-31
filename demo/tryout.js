@@ -422,15 +422,22 @@ const DEAL_TIERS = {
   acad:  { n:"青训合同", mul:0.30, k:"core"  }   // 进的是 LDL，在二队你就是主力
 };
 function makeDeal(){
-  const t = S.tryout, r = t.result, T = CLUB_TIERS[t.tier], D = DEAL_TIERS[r.tier];
+  const t = S.tryout, r = t.result, T = CLUB_TIERS[t.tier];
+  /* 二队/青训俱乐部签出来的只能是青训合同——注册进 LDL、先坐板凳是制度，
+     和你试训评几都没关系。原来 A+ 会把合同档写成「核心首发」，
+     经济页挂着核心首发、队伍页写着还没进名单（玩家线上抓的自相矛盾）。
+     评级的价值走 q（工资在本队区间里的落点），不再借大俱乐部的档位系数。 */
+  const rt = (t.tier === "acad") ? "acad" : r.tier;
+  const D  = DEAL_TIERS[rt];
+  const mul = (t.tier === "acad") ? 1.0 : D.mul;   // 青训自己的价目表不再打三折
   const lerp=(a,b,x)=>a+(b-a)*clamp(x,0,1);
   const q = clamp((r.d + 10) / 26, 0, 1);          // 评级在这家队里的相对位置
   S.deal = {
-    team:t.team, clubTier:t.tier, dealTier:r.tier, grade:r.g, kind:D.k,
-    salary: Math.round(lerp(T.pay[0], T.pay[1], q) * D.mul),
-    sign:   Math.round(lerp(T.sign[0], T.sign[1], q) * D.mul),
+    team:t.team, clubTier:t.tier, dealTier:rt, grade:r.g, kind:D.k,
+    salary: Math.round(lerp(T.pay[0], T.pay[1], q) * mul),
+    sign:   Math.round(lerp(T.sign[0], T.sign[1], q) * mul),
     years:  T.years,
-    buyout: Math.round(lerp(T.buyout[0], T.buyout[1], q) * D.mul),
+    buyout: Math.round(lerp(T.buyout[0], T.buyout[1], q) * mul),
     asks: 0, leverage: dealLeverage(r.g), dead:false, signed:false, log:[]
   };
   S.tryout = null;

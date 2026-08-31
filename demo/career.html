@@ -9248,6 +9248,7 @@ function loadGame() {
     if (!S.ledger && typeof initLedger === "function") initLedger();   // 老档没有流水：从下一笔开始记
     fixLegacyFame(S);
     fixLegacyForeignAch(S);
+    fixLegacyAcadTier(S);
     // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
     // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
     if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
@@ -9285,6 +9286,17 @@ function fixLegacyForeignAch(s) {
     if (s.achLog) s.achLog = s.achLog.filter(x => x.id !== "foreign");
     (s.events = s.events || []).push({ s: "更正", w: s.week || 0, tone: "info", tag: "成就",
       text: `更正：<b>「远走他乡」</b>发错了——你签的是国内俱乐部的青训体系，LDL 不是外赛区。徽章收回，奖励不追；哪天真去了外赛区，它还会亮。` });
+  } catch (e) {}
+}
+
+/* 青训合同的档位标签更正：老档里 A+ 试训会把青训约写成「核心首发」，
+   和队伍页的「青训生·还没进名单」当面打架。只改标签，钱不动。 */
+function fixLegacyAcadTier(s) {
+  try {
+    const c = s.contract;
+    if (!c || c.clubTier !== "acad" || c.tier === "acad") return;
+    c.tier = "acad";
+    if (s.pendingContract && s.pendingContract.clubTier === "acad") s.pendingContract.tier = "acad";
   } catch (e) {}
 }
 
@@ -9846,15 +9858,22 @@ const DEAL_TIERS = {
   acad:  { n:"青训合同", mul:0.30, k:"core"  }   // 进的是 LDL，在二队你就是主力
 };
 function makeDeal(){
-  const t = S.tryout, r = t.result, T = CLUB_TIERS[t.tier], D = DEAL_TIERS[r.tier];
+  const t = S.tryout, r = t.result, T = CLUB_TIERS[t.tier];
+  /* 二队/青训俱乐部签出来的只能是青训合同——注册进 LDL、先坐板凳是制度，
+     和你试训评几都没关系。原来 A+ 会把合同档写成「核心首发」，
+     经济页挂着核心首发、队伍页写着还没进名单（玩家线上抓的自相矛盾）。
+     评级的价值走 q（工资在本队区间里的落点），不再借大俱乐部的档位系数。 */
+  const rt = (t.tier === "acad") ? "acad" : r.tier;
+  const D  = DEAL_TIERS[rt];
+  const mul = (t.tier === "acad") ? 1.0 : D.mul;   // 青训自己的价目表不再打三折
   const lerp=(a,b,x)=>a+(b-a)*clamp(x,0,1);
   const q = clamp((r.d + 10) / 26, 0, 1);          // 评级在这家队里的相对位置
   S.deal = {
-    team:t.team, clubTier:t.tier, dealTier:r.tier, grade:r.g, kind:D.k,
-    salary: Math.round(lerp(T.pay[0], T.pay[1], q) * D.mul),
-    sign:   Math.round(lerp(T.sign[0], T.sign[1], q) * D.mul),
+    team:t.team, clubTier:t.tier, dealTier:rt, grade:r.g, kind:D.k,
+    salary: Math.round(lerp(T.pay[0], T.pay[1], q) * mul),
+    sign:   Math.round(lerp(T.sign[0], T.sign[1], q) * mul),
     years:  T.years,
-    buyout: Math.round(lerp(T.buyout[0], T.buyout[1], q) * D.mul),
+    buyout: Math.round(lerp(T.buyout[0], T.buyout[1], q) * mul),
     asks: 0, leverage: dealLeverage(r.g), dead:false, signed:false, log:[]
   };
   S.tryout = null;
@@ -10876,7 +10895,7 @@ function roleCard(){
   }else{
     const mates=myRoster().filter(p=>!p.me);
     const tavg=mates.length?avg(mates.map(p=>avg(DIMS.map(d=>p.r[d])))):me;
-    role=S.offerKind==="core"?"核心首发":"首发";
+    role=acad?"二队首发 · 攒数据升队":(S.offerKind==="core"?"核心首发":"首发");
     comp=clamp(55+(me-tavg)*6,5,98);
     compTxt=comp>=70?"位置很稳，队伍围绕你打":comp>=45?"位置稳固，但别松懈":"你是队里最薄的一环——教练在看替补名单";
   }

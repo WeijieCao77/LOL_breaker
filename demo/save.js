@@ -128,6 +128,7 @@ function loadGame() {
     if (!S.ledger && typeof initLedger === "function") initLedger();   // 老档没有流水：从下一笔开始记
     fixLegacyFame(S);
     fixLegacyForeignAch(S);
+    fixLegacyAcadTier(S);
     // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
     // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
     if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
@@ -165,6 +166,17 @@ function fixLegacyForeignAch(s) {
     if (s.achLog) s.achLog = s.achLog.filter(x => x.id !== "foreign");
     (s.events = s.events || []).push({ s: "更正", w: s.week || 0, tone: "info", tag: "成就",
       text: `更正：<b>「远走他乡」</b>发错了——你签的是国内俱乐部的青训体系，LDL 不是外赛区。徽章收回，奖励不追；哪天真去了外赛区，它还会亮。` });
+  } catch (e) {}
+}
+
+/* 青训合同的档位标签更正：老档里 A+ 试训会把青训约写成「核心首发」，
+   和队伍页的「青训生·还没进名单」当面打架。只改标签，钱不动。 */
+function fixLegacyAcadTier(s) {
+  try {
+    const c = s.contract;
+    if (!c || c.clubTier !== "acad" || c.tier === "acad") return;
+    c.tier = "acad";
+    if (s.pendingContract && s.pendingContract.clubTier === "acad") s.pendingContract.tier = "acad";
   } catch (e) {}
 }
 
