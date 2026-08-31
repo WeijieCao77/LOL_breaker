@@ -2317,7 +2317,10 @@ function simWorld(){
   S._upset=null;          // 每周重摇：际遇里说的冷门必须是「这一周真的发生的」
   Object.keys(S.world).forEach(lg=>{
     const sea=SEASONS[S.si];
-    const ts=S.world[lg].filter(t=>!(lg==="LPL"&&(t.name===S.team||(S.match&&t.name===S.match.oppName))));
+    // 排除「你的队和你本周对手」要看你实际在哪个联赛——原来写死 LPL，
+    // 玩家在 LDL 时自己的队每周被这里多模拟一场：实测 7 周打出 6-8（14 场），
+    // 同联赛别的队才 7-9 场。玩家从积分榜截图里抓出来的。
+    const ts=S.world[lg].filter(t=>!(lg===(S.homeLeague||"LPL")&&(t.name===S.team||(S.match&&t.name===S.match.oppName))));
     for(let i=0;i<ts.length-1;i+=2){
       const a=ts[i],b=ts[i+1];
       const p=1/(1+Math.exp(-(power(a,0,sea.fav)-power(b,0,sea.fav))/SPREAD));
@@ -3341,15 +3344,27 @@ function eventsCard(){
 }
 function standingsCard(){
   const rows=lplRank();
-  return `<div class="card"><h2>${S.homeLeague||"LPL"} 积分榜<em>第 ${S.week} 周</em></h2>
+  const HL=S.homeLeague||"LPL";
+  // 在 LDL 打球不代表看不见一线——现实里二队选手天天看一队比赛。
+  // 玩家原话：「看不到一线队的排名但是又能看到其他赛区排名就很奇怪」。
+  const lpl = HL==="LDL" ? `<div class="card"><h2>LPL 积分榜<em>一线联赛</em></h2>
+    <div class="tw"><table><thead><tr><th>#</th><th>战队</th><th>战绩</th></tr></thead><tbody>
+    ${Object.entries(S.standings.LPL||{}).map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0}))
+      .sort((a,b)=>b.p-a.p||b.w-a.w)
+      .map((r,i)=>`<tr class="${i===5?'cut':''}"><td class="n">${i+1}</td>
+        <td>${teamLogo(r.n,18)}${r.n}</td><td class="n">${r.w}−${r.l}</td></tr>`).join("")}
+    </tbody></table></div>
+    <p class="note">LDL 是青训联赛，没有 MSI / 世界赛资格——想上国际赛场，先上一队。</p></div>` : "";
+  return `<div class="card"><h2>${HL} 积分榜<em>第 ${S.week} 周</em></h2>
     <div class="tw"><table><thead><tr><th>#</th><th>战队</th><th>战绩</th></tr></thead><tbody>
     ${rows.map((r,i)=>`<tr class="${r.n===S.team?'me':''} ${i===5?'cut':''}">
       <td class="n">${i+1}</td><td>${teamLogo(r.n,18)}${r.n}${r.n===S.team?'<span class="tag">你</span>':''}</td>
       <td class="n">${r.w}−${r.l}</td></tr>`).join("")}</tbody></table></div>
-    <p class="note">粗线以上进季后赛。</p></div>`;
+    <p class="note">粗线以上进季后赛。</p></div>${lpl}`;
 }
 function newsCard(){
-  const other=Object.keys(S.world).filter(l=>l!=="LPL").map(lg=>{
+  // 「其他赛区」= 除了你在的和已经单独成卡的（LPL/LDL 都有自己的卡）
+  const other=Object.keys(S.world).filter(l=>l!=="LPL"&&l!=="LDL"&&l!==(S.homeLeague||"LPL")).map(lg=>{
     const t=Object.entries(S.standings[lg]).map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0}))
       .sort((a,b)=>b.p-a.p)[0];
     return `<tr><td>${lg}</td><td>${t?t.n:"—"}</td><td class="n">${t?t.w+"−"+t.l:"—"}</td></tr>`;
