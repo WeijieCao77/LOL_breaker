@@ -33,6 +33,7 @@ nodes = io.open(os.path.join(BASE, "nodes.js"), encoding="utf-8").read()
 cup = io.open(os.path.join(BASE, "cup.js"), encoding="utf-8").read()
 save = io.open(os.path.join(BASE, "save.js"), encoding="utf-8").read()
 tryout = io.open(os.path.join(BASE, "tryout.js"), encoding="utf-8").read()
+press = io.open(os.path.join(BASE, "press.js"), encoding="utf-8").read()
 data = io.open(os.path.join(ROOT, "data", "csv", "game_data_2022.json"), encoding="utf-8").read()
 # 像素头像可选：data/photos/ 有照片就跑 make_avatars.py 生成，没有就空着
 _av = os.path.join(ROOT, "data", "avatars.json")
@@ -49,7 +50,7 @@ assert n == 1, "header block not found"
 # 3) 国际赛模块
 assert "/* __INTL_MODULE__ */" in out, "intl placeholder missing"
 out = out.replace("/* __INTL_MODULE__ */", intl)
-for ph, mod in (("/* __TEAM_MODULE__ */", team), ("/* __RIVALS_MODULE__ */", rivals), ("/* __RANKICON_MODULE__ */", rankicon), ("/* __AVATAR_MODULE__ */", avatar), ("/* __SHOP_MODULE__ */", shop), ("/* __ORIGINS_MODULE__ */", origins), ("/* __ACHIEVE_MODULE__ */", achieve), ("/* __SQUAD_MODULE__ */", squad), ("/* __RANDOM_MODULE__ */", random_), ("/* __FORM_MODULE__ */", form), ("/* __POSTMATCH_MODULE__ */", postm), ("/* __INJURY_MODULE__ */", injury), ("/* __CLOUT_MODULE__ */", clout), ("/* __ROUTINE_MODULE__ */", routine), ("/* __TRAIT_MODULE__ */", trait), ("/* __QUEST_MODULE__ */", quest), ("/* __AUTO_MODULE__ */", auto), ("/* __NODES_MODULE__ */", nodes), ("/* __CUP_MODULE__ */", cup), ("/* __SAVE_MODULE__ */", save), ("/* __TRYOUT_MODULE__ */", tryout)):
+for ph, mod in (("/* __TEAM_MODULE__ */", team), ("/* __RIVALS_MODULE__ */", rivals), ("/* __RANKICON_MODULE__ */", rankicon), ("/* __AVATAR_MODULE__ */", avatar), ("/* __SHOP_MODULE__ */", shop), ("/* __ORIGINS_MODULE__ */", origins), ("/* __ACHIEVE_MODULE__ */", achieve), ("/* __SQUAD_MODULE__ */", squad), ("/* __RANDOM_MODULE__ */", random_), ("/* __FORM_MODULE__ */", form), ("/* __POSTMATCH_MODULE__ */", postm), ("/* __INJURY_MODULE__ */", injury), ("/* __CLOUT_MODULE__ */", clout), ("/* __ROUTINE_MODULE__ */", routine), ("/* __TRAIT_MODULE__ */", trait), ("/* __QUEST_MODULE__ */", quest), ("/* __AUTO_MODULE__ */", auto), ("/* __NODES_MODULE__ */", nodes), ("/* __CUP_MODULE__ */", cup), ("/* __SAVE_MODULE__ */", save), ("/* __TRYOUT_MODULE__ */", tryout), ("/* __PRESS_MODULE__ */", press)):
     assert ph in out, ph
     out = out.replace(ph, mod)
 

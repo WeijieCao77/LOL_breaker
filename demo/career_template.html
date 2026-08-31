@@ -1154,6 +1154,8 @@ function preAct(k,dim){
     // 运营、心态、指挥、体力都在用，只是每一样都不如专项训练练得深。
     // （这也让「冲分」和「训练」不再是纯粹互抢行动点的关系。）
     rankGain(w);
+    if(typeof ladderEncounter==="function") ladderEncounter();   // 天梯撞车
+
     const afterT=rankName(P.rank), afterF=rankFull(P.rank);
     addFans(w*0.5);      // 赢下来的分才带来关注
     P.lastQ={w,l,p}; checkAch("rank");
@@ -1327,6 +1329,7 @@ function advancePreWeek(){
   }
   if(typeof archiveWeek==='function') archiveWeek();
   P.week++; P.ap=apFor('pre'); addFat(-9);
+  if(typeof weeklyEcho==="function") weeklyEcho();
   if(typeof injuryTick==='function') injuryTick();
   if(typeof cupTick==='function') cupTick();
   if(typeof checkRankInvite==='function') checkRankInvite();
@@ -1587,7 +1590,8 @@ function gain(d){
   // 不能顺手多出 33% 的成长——签约后单次收益乘 0.8 对冲。
   // 职业前还是 6 点没动，不吃这个折扣。
   const apComp=S.career?0.80:1.00;
-  return apComp*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*tt*ij;
+  const asset=(S.assets&&S.assets.station)?1.04:1;   // 数据分析工作站
+  return apComp*asset*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*tt*ij;
 }
 /* 冲瓶颈状态条：正在冲操作瓶颈时，把规则和本周进度顶在行动区最上面。
    玩家原话：「我根本不知道要每周投入三个点」——规则不能只藏在按钮小字里。 */
@@ -1727,8 +1731,8 @@ function costBits(bits){
 const _eDn=n=>`体能<i class="dn">−${Math.round(n)}</i>`;
 const _eUp=n=>`体能<i class="up">+${Math.round(n)}</i>`;
 /* 备战是几天不是一周，出征周是赶路加时差——两种「压缩周」里
-   休息/排位的效果都按 0.45 折算，数值和 doAction 里保持一致 */
-const _prepMul=()=>(S.step==="prep"||(S.off&&S.off.next==="intl"))?0.45:1;
+   休息/排位的效果都按 0.45 折算（保姆车资产提到 0.55），和 doAction 保持一致 */
+const _prepMul=()=>(S.step==="prep"||(S.off&&S.off.next==="intl"))?((S.assets&&S.assets.van)?0.55:0.45):1;
 /* 名气有阻尼，标注要写玩家真正拿到的那个数 */
 
 /* 职业前和赛季中是两套数值（训练 ×0.85、休息 +32、直播基数不同），
@@ -1826,12 +1830,14 @@ function doTrain(d){
 }
 function doAction(k){
   if(S.ap<=0)return;
+  // 做内容：先选方向再扣点（弹窗里选，doContent 真正结算）
+  if(k==="content"){ S.contentPick=true; render(); return; }
   if(typeof noteAct==="function") noteAct("do",k);
   // 赛前备战是几天，不是一周；出征周是赶路、时差、适应场馆。
   // 两种「压缩周」的恢复和调整都按 0.45 缩，不缩的话玩家能在每场
   // 淘汰赛前把疲劳清光、把状态拉满，而这两样都直接乘在战力上——
   // 实测曾把 MSI 冠军率抬到 45%、世界赛 9% 抬到 25%。
-  const prepMul = (S.step==="prep"||(S.off&&S.off.next==="intl")) ? 0.45 : 1;
+  const prepMul = (S.step==="prep"||(S.off&&S.off.next==="intl")) ? ((S.assets&&S.assets.van)?0.55:0.45) : 1;
   if(k==="solo"){
     // 职业选手也要打排位保持手感。属性上和职业前一样是全面小涨，
     // 但真正的价值是状态——手感这东西不练会掉。
@@ -1855,6 +1861,7 @@ function doAction(k){
         pushEvent(`打了一晚上排位，手感回来一些（状态 ${Math.round(before)} → ${Math.round(S.form)}）。`,"info","排位");
     }
     addFat(7*prepMul);
+    if(typeof ladderEncounter==="function") ladderEncounter();   // 天梯撞车：排位夜的抽卡
   }
   else if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
     addFans(4.5*m*(typeof streamFansMul==="function"?streamFansMul():1));
@@ -1866,7 +1873,10 @@ function doAction(k){
     if(typeof fireEvent==="function") fireEvent("streamGift",0.20);}
   else{ if(typeof btkNote==="function") btkNote("rest",1);
     addFat(((S.buff&&S.buff.physio)?-42:-30)*((S.bg&&S.bg.rest)||1)*prepMul);
-    S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.6*prepMul);}
+    if(S.assets&&S.assets.rehab) addFat(-8*prepMul);        // 私人康复室
+    S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.6*prepMul);
+    // 休息也是泄压阀：心理课让它更管用
+    if(S.tilt) S.tilt=Math.max(0,q1(S.tilt-(10+(typeof hasCourse==="function"&&hasCourse("psy")?6:0))*prepMul));}
   S.ap--;render();
 }
 /* 自动推进 —— 推到「下一件需要你拿主意的事」就停。
@@ -1888,7 +1898,7 @@ function autoStop(){
   // 待处理的试训邀请也是「需要你决定的事」，漏在这里的话
   // 「自动推进到下一件事」会直接冲过去，机会就这么没了。
   return !!(S.rndEv||S.rndResult||S.locker||S.signup||S.rankUp
-           ||S.cupResult||S.cupMatch||S.confirm||S.streamOffer||S.intlChamp
+           ||S.cupResult||S.cupMatch||S.confirm||S.streamOffer||S.intlChamp||S.contentPick
            ||(S.pre&&S.pre.invite&&S.pre.invite.pending));
 }
 function autoRest(focus,weeks){
@@ -1927,17 +1937,21 @@ function autoRest(focus,weeks){
    原来休赛期没有标签栏，把财务总览和商城直接拼在行动卡下面，
    于是「所有栏目合到一起了」。玩家报的就是这个。 */
 function tabContent(T){
-  return `${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
+  return `${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+(typeof dataCard==="function"?dataCard():"")+gearCard():""}
     ${T==="team"?squadCard()+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
     ${T==="shop"?(typeof economyCards==="function"?economyCards():shopCard()):""}
     ${T==="tx"?(typeof transferPage==="function"?transferPage():""):""}
     ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
-    ${T==="world"?standingsCard()+rivalCard()+newsCard()+eventsCard():""}
+    ${T==="world"?standingsCard()+rivalCard()
+      +(typeof pressCard==="function"?pressCard():"")
+      +(typeof followUpCard==="function"?followUpCard():"")
+      +newsCard()+eventsCard():""}
     ${T==="ach"?achCard():""}`;
 }
 function viewSeason(){
   const sea=SEASONS[S.si], T=curTab(TABS_SEASON);
-  const champ=(S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"";
+  const champ=((S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"")
+    +((S.contentPick&&typeof contentCard==="function")?contentCard():"");
   if(T!=="act") return `${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
     ${tabBar(TABS_SEASON)}
     ${tabContent(T)}`;
@@ -1960,6 +1974,7 @@ function viewSeason(){
       <span style="color:var(--ink-3)">（你的${sea.dim} ${S.attrs[sea.dim].toFixed(0)} · ${
         S.homeLeague||"LPL"}均值 ${leagueDimAvg(sea.dim).toFixed(0)}——顺逆是和同行比出来的）</span></div>
     ${fatigueBar()}
+    ${typeof tiltNote==="function"?tiltNote():""}
     ${typeof riskHint==="function"?riskHint():""}
     ${typeof routineBar==="function"?routineBar():""}
     ${S.injury?`<p class="note" style="color:var(--red);margin-top:0">受伤期间行动力只有 ${AP_HURT} 点。</p>`:""}
@@ -1972,6 +1987,8 @@ function viewSeason(){
           typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
       <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入${costStream()}</div></button>
+      <button class="act" data-do="content" ${S.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">做内容</div><div class="d">教学 / 高光 / 复盘 / 整活——同样一点，方向不同</div></button>
       <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
@@ -2169,6 +2186,12 @@ function startMatch(bo,oppName){
   const need=(typeof bo==="number")?bo:(bo?3:2);   // 1=BO1 2=BO3 3=BO5
   S.match={opp,oppName:(opp&&opp.name)||on,sc:[0,0],game:1,lines:[],node:null,swing:0,done:false,
            need,bo5:need>=3};
+  // 竞技锐度：距离上一场正赛超过 4 周（长间歇/休赛期回来），手是生的——
+  // 开局带一点负 swing，第一局打完就找回来。轻手感，不是惩罚。
+  if(S.career&&S.lastFightClock!==undefined&&((S.evClock||0)-S.lastFightClock)>=4){
+    S.match.swing-=2;
+    S.match.lines.push(`<div><span class="hi">久疏赛场</span> 离上一场正赛已经有一阵了，开局手有点生（第一局赢面略降）。</div>`);
+  }
   S.step="match"; nextGame();
 }
 function nextGame(){
@@ -2186,10 +2209,16 @@ function nextGame(){
   if(m.node) m.seenNodes.push(m.node.q);
   render();
 }
+/* 心态气压对战力的拖累：Tilt 55 以下没事，越往上手越抖（100 时约 −1.8）。
+   泄压的路都写在明面上：赢一场、休息、心理课。 */
+function tiltDrag(){
+  const t=S.tilt||0;
+  return t>55?(t-55)*0.04:0;
+}
 /* 这一局此刻的赢面（给玩家看的，和 playGame 用同一套算法） */
 function gameWinP(swing){
   const m=S.match,sea=SEASONS[S.si];
-  const my=power(myRoster(),S.fatigue,sea.fav)+(swing||0)+versionFit()+rivalBoost(m.oppName);
+  const my=power(myRoster(),S.fatigue,sea.fav)+(swing||0)+versionFit()+rivalBoost(m.oppName)-tiltDrag();
   const op=power(m.opp.players,0,sea.fav);
   return clampWinProb(1/(1+Math.exp(-(my-op)/SPREAD)), my-op);
 }
@@ -2211,7 +2240,7 @@ function resolveNode(ai){
 }
 function playGame(){
   const m=S.match,sea=SEASONS[S.si];
-  const my=power(myRoster(),S.fatigue,sea.fav)+m.swing+versionFit()+rivalBoost(m.oppName);
+  const my=power(myRoster(),S.fatigue,sea.fav)+m.swing+versionFit()+rivalBoost(m.oppName)-tiltDrag();
   const op=power(m.opp.players,0,sea.fav);
   let p=1/(1+Math.exp(-(my-op)/SPREAD));
   // 封顶用的差距必须把 m.swing（临场决策的结果）算进去。
@@ -2232,6 +2261,56 @@ function autoMatch(){
     if(S.match.node) resolveNode(rnd()<0.5?0:1); else playGame();
   }
   if(S.step==="match"&&S.match.done) nextWeek();
+}
+/* ---------- 个人数据与比赛档案（2026-08-31 竞品拆解移植）----------
+   每个系列赛合成一份可信的个人数据：KDA、分均补刀、伤害占比、评分。
+   球探、周报、试训谈判看的都是这些数字——「都是用比赛衡量的」。
+   合成口径：以你和对手的真实战力差、临场节点成败为骨架，按位置画像摆数。 */
+const POS_STATLINE={top:[3.1,2.7,4.9,8.3,0.24],jng:[2.8,2.5,7.6,6.2,0.18],
+  mid:[4.1,2.5,5.2,8.8,0.28],bot:[5.0,2.3,4.4,9.4,0.30],sup:[1.0,2.9,9.8,1.6,0.10]};
+function synthSeriesStats(m,won,myPw,opPw){
+  if(!S.career) return;
+  const P=POS_STATLINE[S.pos]||POS_STATLINE.mid;
+  const games=m.sc[0]+m.sc[1];
+  // 表现系数：战力差 + 胜负 + 节点失手拖累
+  const perf=clamp(1+ (myPw-opPw)*0.022 + (won?0.14:-0.10) - (m.nodeFails||0)*0.05 + (rnd()-0.5)*0.24, 0.5, 1.65);
+  const k=q1(P[0]*perf), d=q1(P[1]*(2-perf)*0.85+0.6), a=q1(P[2]*(0.8+perf*0.25));
+  const cs=q1(P[3]*(0.9+perf*0.12)), dmg=Math.round(P[4]*100*(0.82+perf*0.2));
+  const kda=q1((k+a)/Math.max(1,d));
+  const rating=q1(clamp(0.35+perf*0.55+(kda-2.6)*0.045,0.2,2.0));
+  const tag=S.intl?(S.intl.type==="msi"?"MSI":"世界赛"):S.playoff?"季后赛":((S.homeLeague||"LPL")==="LDL"?"LDL":"联赛");
+  S.archive=(S.archive||[]);
+  S.archive.push({si:S.si,w:S.week,tag,opp:m.oppName,sc:m.sc.slice(),win:won,g:games,k,d,a,cs,dmg,rating});
+  if(S.archive.length>60) S.archive.shift();
+  S.stats=S.stats||{n:0,k:0,d:0,a:0,r:0};
+  S.stats.n++; S.stats.k+=k; S.stats.d+=d; S.stats.a+=a; S.stats.r+=rating;
+  m.myline={k,d,a,cs,dmg,rating};
+  S.log.push(`<div><span class="hi">个人数据</span> ${k}/${d}/${a} · 分均补刀 ${cs} · 伤害 ${dmg}% · 评分 <b>${rating.toFixed(2)}</b></div>`);
+}
+/* 我的页 · 比赛档案卡：生涯场均 + 最近八个系列赛 */
+function dataCard(){
+  if(!S.career||!S.stats||!S.stats.n) return "";
+  const st=S.stats, n=st.n;
+  const rows=(S.archive||[]).slice(-8).reverse();
+  return `<div class="card"><h2>比赛档案<em>${n} 个系列赛</em></h2>
+    <p class="note" style="margin:0 0 8px">生涯场均
+      <b>${q1(st.k/n)} / ${q1(st.d/n)} / ${q1(st.a/n)}</b> · 评分 <b>${(st.r/n).toFixed(2)}</b>
+      <span style="color:var(--ink-3)">——球探和试训谈判看的就是这几个数字。</span></p>
+    <div class="tw"><table><thead><tr><th></th><th>对手</th><th>比分</th><th>KDA</th><th>评分</th></tr></thead><tbody>
+    ${rows.map(x=>`<tr><td class="n">${SEASONS[x.si]?SEASONS[x.si].tag:""} ${x.tag}</td>
+      <td>${x.opp}</td><td class="n">${x.win?"":""}${x.sc[0]}−${x.sc[1]}</td>
+      <td class="n">${x.k}/${x.d}/${x.a}</td>
+      <td class="n" style="color:${x.rating>=1.1?'var(--cyan)':x.rating<0.85?'var(--red)':'inherit'}">${x.rating.toFixed(2)}</td></tr>`).join("")}
+    </tbody></table></div></div>`;
+}
+/* 本周页 · 心态气压条：只在开始起飞时出现，不占地方 */
+function tiltNote(){
+  const t=S.tilt||0;
+  if(t<40) return "";
+  const drag=tiltDrag();
+  return `<p class="note" style="color:${t>=60?'var(--red)':'var(--gold)'};margin:2px 0">
+    心态气压 <b>${Math.round(t)}</b>/100${drag?`——发挥正在被拖累（战力 −${drag.toFixed(1)}）`:"，再输就要影响发挥了"}。
+    <span style="color:var(--ink-3)">休息、心理课、或者赢一场都能泄压。</span></p>`;
 }
 function endMatch(){
   const m=S.match,won=m.sc[0]>m.sc[1];
@@ -2292,6 +2371,26 @@ function endMatch(){
   checkAch("match",ctx);
   if(won) checkAch("win",ctx);
   if(won&&ctx.intl&&ctx.oppLeague==="LCK") checkAch("beatlck",ctx);
+
+  // ---- 世界的回声（2026-08-31 竞品拆解移植）----
+  // 每个系列赛产出真实的个人数据进档案：球探、周报、试训看的都是这些数字
+  if(typeof synthSeriesStats==="function") synthSeriesStats(m,won,myPw,opPw);
+  // 宿敌账本：赢下有明星选手的队要被记住
+  if(typeof noteRivalBeat==="function") noteRivalBeat(m.opp.players,won);
+  // 心态气压：输球攒 Tilt，赢球泄压。0:2 被横扫压力翻倍。
+  S.tilt=clamp((S.tilt||0)+(won?-8:(swept||m.sc[0]===0?18:12)),0,100);
+  if(!won&&S.tilt>=60&&!S._tiltWarned){
+    S._tiltWarned=true;
+    pushEvent(`连着输球，<b>心态开始起飞</b>（Tilt ${Math.round(S.tilt)}）。<br>
+      <span style="color:var(--ink-3)">带着这种状态上场是要掉发挥的——休息、心理课、或者赢一场，都能把它压回去。</span>`,"bad","心态");
+  }
+  if(S.tilt<40) S._tiltWarned=false;
+  S.lastFightClock=S.evClock||0;                 // 竞技锐度：记住最后一场正赛在什么时候
+  // 大胜后的采访：说不说狠话，两周后见分晓（事件链）
+  if(won&&ctx.gap<-1&&rnd()<0.30&&typeof queueFollowUp==="function"){
+    queueFollowUp("bigTalk",2,{opp:m.oppName});
+    pushEvent(`赛后采访你上头了一句「<b>${m.oppName} 也就这样</b>」。话说出去就收不回来了——两周后见分晓。`,"info","舆论");
+  }
   // 赛后归因：用判定胜负的那套数，现场算一次存下来
   if(typeof attribute==='function'){
     try{ m.attr=attribute(myRoster(),m.opp,S.fatigue,SEASONS[S.si].fav); }catch(e){}
@@ -2411,6 +2510,11 @@ function benchWeek(){
        青训生要先在训练赛里打出来，教练才会把你写进去。`
     : `${S.team} ${won?"击败":"负于"} ${on}。<b>你在替补席上看完了整场</b>，没人提你的名字。`,
     won?"info":"bad", acad?"青训":"替补");
+  // 替补周世界也要转。原来 simWorld 只在你亲自打完比赛时跑，
+  // 坐板凳的赛段里其他队整周停摆——实测有队 7 周只攒了 0-4 场。
+  // 临时把本周对手挂在 S.match 上，防止它在模拟里被再打一场（双算）。
+  S.match={oppName:on};
+  simWorld();
   S.match=null; nextWeek();
 }
 
@@ -2425,6 +2529,8 @@ function nextWeek(){
     return;
   }
   S.week++; S.ap=apFor('season'); S.step="season"; S.match=null; addFat(-10);
+  if(S.assets&&S.assets.apt) addFat(-4);           // 电竞公寓：住得好，恢复就是快
+  if(typeof weeklyEcho==="function") weeklyEcho(); // 事件链/周报/商业机会的周节拍
   if(typeof injuryTick==="function") injuryTick();
   if(typeof rollInjury==="function") rollInjury("赛季中");
   if(typeof archiveWeek==="function") archiveWeek();
@@ -2650,7 +2756,8 @@ function endSeason(result,seed){
 }
 
 function viewOffseason(){
-  const champ=(S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"";
+  const champ=((S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"")
+    +((S.contentPick&&typeof contentCard==="function")?contentCard():"");
   if(S.off){
     const T=curTab(TABS_SEASON);
     const pops=`${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
@@ -2782,6 +2889,8 @@ function offNextWeek(){
   S.off.week++;
   S.ap=(S.off.next==="intl")?2:apFor("off");
   if(S.off.next==="intl"&&S.btk) S.btk.apWeek=2;
+  if(S.assets&&S.assets.apt) addFat(-4);
+  if(typeof weeklyEcho==="function") weeklyEcho();
   if(S.off.next!=="intl") addFat(-14);
   // 休赛期/间歇周也要结算突破进度——原来只有赛季周结算，
   // 玩家在休赛期连练三周操作，计数器纹丝不动。
@@ -2858,6 +2967,8 @@ function offPanel(){
           typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
       <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入${costStream()}</div></button>
+      <button class="act" data-do="content" ${S.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">做内容</div><div class="d">教学 / 高光 / 复盘 / 整活——同样一点，方向不同</div></button>
       <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
@@ -3287,6 +3398,8 @@ function viewOffer(){
 /* __SAVE_MODULE__ */
 /* __TRYOUT_MODULE__ */
 
+/* __PRESS_MODULE__ */
+
 /* ================= 侧栏 ================= */
 function formBar(team){
   const f=S.teamForm[team]||[];
@@ -3433,7 +3546,7 @@ function pinbar(){
 let _lastBlock="";
 function blockSig(){
   return [S.rndEv&&"ev",S.locker&&"lk",S.signup&&"su",S.rankUp&&"ru",
-    S.cupResult&&"cr",S.cupMatch&&"cm",S.confirm&&"cf",S.rndResult&&"rr",S.intlChamp&&"ic",
+    S.cupResult&&"cr",S.cupMatch&&"cm",S.confirm&&"cf",S.rndResult&&"rr",S.intlChamp&&"ic",S.contentPick&&"cp",
     (S.achPop&&S.achPop.length)&&"ap",S.tryout&&"to",S.deal&&"dl",
     S.proOffer&&"po",S.streamOffer&&"so",
     (S.pre&&S.pre.invite&&S.pre.invite.pending)&&"iv"].filter(Boolean).join("|");
@@ -3607,6 +3720,11 @@ function bind(){
   const _cd=$("cupdone"); if(_cd) _cd.onclick=cupDismissMatch;
   const _cr=$("cupresok"); if(_cr) _cr.onclick=()=>{S.cupResult=null;render()};
   const _ic=$("intlchampok"); if(_ic) _ic.onclick=()=>{S.intlChamp=null;render()};
+  st.querySelectorAll("[data-content]").forEach(b=>b.onclick=()=>{
+    if(typeof doContent==="function") doContent(b.dataset.content); });
+  const _cc=$("contentcancel"); if(_cc) _cc.onclick=()=>{S.contentPick=null;render()};
+  st.querySelectorAll("[data-asset]").forEach(b=>b.onclick=()=>{
+    if(typeof buyAsset==="function") buyAsset(b.dataset.asset); });
   const _pp=$("prepgo"); if(_pp) _pp.onclick=prepGo;
   const _off=$("offnext"); if(_off) _off.onclick=offNextWeek;
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;

@@ -117,6 +117,33 @@ const ACH_MORE=[
   {id:"grandmaster", n:"国服第一", d:"排位打到国服前十。", tag:"经济",
    on:"rank", cond:()=>S.pre&&S.pre.rank>=95, r:{money:300,fame:110}},
 
+  /* ---------- 宿敌（2026-08-31 竞品拆解移植：交手账本读的是真实名单） ---------- */
+  {id:"star1", n:"第一滴血", d:"第一次在正式比赛里赢下带明星选手的队伍。", tag:"宿敌",
+   on:"match", cond:()=>typeof beatCount==="function"&&Object.keys(S.beatStars||{}).length>=1, r:{fame:30}},
+  {id:"beatfaker", n:"破神者", d:"三次战胜 Faker 所在的队伍。", tag:"宿敌",
+   on:"match", cond:()=>typeof beatCount==="function"&&beatCount("Faker")>=3, r:{fame:200,trust:10},
+   flavor:"至暗时刻的墙上有一块最硬的砖。你把它敲下来了三次。"},
+  {id:"beatchovy", n:"中路答卷", d:"三次战胜 Chovy 所在的队伍。", tag:"宿敌",
+   on:"match", cond:()=>typeof beatCount==="function"&&beatCount("Chovy")>=3, r:{fame:130}},
+  {id:"beatknight", n:"内战无敌手", d:"三次战胜 Knight 所在的队伍。", tag:"宿敌",
+   on:"match", cond:()=>typeof beatCount==="function"&&beatCount("Knight")>=3, r:{fame:90}},
+  {id:"star5", n:"名人册", d:"交手账本里写下 5 位明星选手的名字。", tag:"宿敌",
+   on:"match", cond:()=>Object.keys(S.beatStars||{}).length>=5, r:{fame:110},
+   flavor:"他们记不记得你不重要。账本记得。"},
+
+  /* ---------- 内容与商业 ---------- */
+  {id:"content10", n:"更新日历", d:"发布 10 条内容。", tag:"经济",
+   on:"content", cond:()=>(S.contentN||0)>=10, r:{fame:50}},
+  {id:"bizrep", n:"商业底蕴", d:"商业底蕴攒满 25 点。", tag:"经济",
+   on:"content", cond:()=>(S.bizRep||0)>=25, r:{fame:60}},
+  {id:"firstbiz", n:"第一单商务", d:"接到第一个商业邀约。", tag:"经济",
+   on:"biz", cond:()=>true, r:{fame:30}},
+  {id:"asset1", n:"置业", d:"买下第一件资产。", tag:"经济",
+   on:"asset", cond:()=>Object.keys(S.assets||{}).length>=1, r:{fame:20}},
+  {id:"asset4", n:"这就是生活", d:"四件资产全部入手。", tag:"经济",
+   on:"asset", cond:()=>typeof ASSETS!=="undefined"&&ASSETS.every(a=>(S.assets||{})[a.k]), r:{fame:80},
+   flavor:"职业选手的钱，最后都变成了让自己打得更久的东西。"},
+
   /* ---------- 收尾 ---------- */
   {id:"ach30", n:"收藏家", d:"解锁 30 项成就。", tag:"收尾",
    on:"ach", cond:()=>Object.keys(S.ach||{}).length>=30, r:{money:500,fame:100}},

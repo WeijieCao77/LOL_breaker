@@ -1804,6 +1804,8 @@ function preAct(k,dim){
     // 运营、心态、指挥、体力都在用，只是每一样都不如专项训练练得深。
     // （这也让「冲分」和「训练」不再是纯粹互抢行动点的关系。）
     rankGain(w);
+    if(typeof ladderEncounter==="function") ladderEncounter();   // 天梯撞车
+
     const afterT=rankName(P.rank), afterF=rankFull(P.rank);
     addFans(w*0.5);      // 赢下来的分才带来关注
     P.lastQ={w,l,p}; checkAch("rank");
@@ -1977,6 +1979,7 @@ function advancePreWeek(){
   }
   if(typeof archiveWeek==='function') archiveWeek();
   P.week++; P.ap=apFor('pre'); addFat(-9);
+  if(typeof weeklyEcho==="function") weeklyEcho();
   if(typeof injuryTick==='function') injuryTick();
   if(typeof cupTick==='function') cupTick();
   if(typeof checkRankInvite==='function') checkRankInvite();
@@ -2237,7 +2240,8 @@ function gain(d){
   // 不能顺手多出 33% 的成长——签约后单次收益乘 0.8 对冲。
   // 职业前还是 6 点没动，不吃这个折扣。
   const apComp=S.career?0.80:1.00;
-  return apComp*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*tt*ij;
+  const asset=(S.assets&&S.assets.station)?1.04:1;   // 数据分析工作站
+  return apComp*asset*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*tt*ij;
 }
 /* 冲瓶颈状态条：正在冲操作瓶颈时，把规则和本周进度顶在行动区最上面。
    玩家原话：「我根本不知道要每周投入三个点」——规则不能只藏在按钮小字里。 */
@@ -2377,8 +2381,8 @@ function costBits(bits){
 const _eDn=n=>`体能<i class="dn">−${Math.round(n)}</i>`;
 const _eUp=n=>`体能<i class="up">+${Math.round(n)}</i>`;
 /* 备战是几天不是一周，出征周是赶路加时差——两种「压缩周」里
-   休息/排位的效果都按 0.45 折算，数值和 doAction 里保持一致 */
-const _prepMul=()=>(S.step==="prep"||(S.off&&S.off.next==="intl"))?0.45:1;
+   休息/排位的效果都按 0.45 折算（保姆车资产提到 0.55），和 doAction 保持一致 */
+const _prepMul=()=>(S.step==="prep"||(S.off&&S.off.next==="intl"))?((S.assets&&S.assets.van)?0.55:0.45):1;
 /* 名气有阻尼，标注要写玩家真正拿到的那个数 */
 
 /* 职业前和赛季中是两套数值（训练 ×0.85、休息 +32、直播基数不同），
@@ -2476,12 +2480,14 @@ function doTrain(d){
 }
 function doAction(k){
   if(S.ap<=0)return;
+  // 做内容：先选方向再扣点（弹窗里选，doContent 真正结算）
+  if(k==="content"){ S.contentPick=true; render(); return; }
   if(typeof noteAct==="function") noteAct("do",k);
   // 赛前备战是几天，不是一周；出征周是赶路、时差、适应场馆。
   // 两种「压缩周」的恢复和调整都按 0.45 缩，不缩的话玩家能在每场
   // 淘汰赛前把疲劳清光、把状态拉满，而这两样都直接乘在战力上——
   // 实测曾把 MSI 冠军率抬到 45%、世界赛 9% 抬到 25%。
-  const prepMul = (S.step==="prep"||(S.off&&S.off.next==="intl")) ? 0.45 : 1;
+  const prepMul = (S.step==="prep"||(S.off&&S.off.next==="intl")) ? ((S.assets&&S.assets.van)?0.55:0.45) : 1;
   if(k==="solo"){
     // 职业选手也要打排位保持手感。属性上和职业前一样是全面小涨，
     // 但真正的价值是状态——手感这东西不练会掉。
@@ -2505,6 +2511,7 @@ function doAction(k){
         pushEvent(`打了一晚上排位，手感回来一些（状态 ${Math.round(before)} → ${Math.round(S.form)}）。`,"info","排位");
     }
     addFat(7*prepMul);
+    if(typeof ladderEncounter==="function") ladderEncounter();   // 天梯撞车：排位夜的抽卡
   }
   else if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
     addFans(4.5*m*(typeof streamFansMul==="function"?streamFansMul():1));
@@ -2516,7 +2523,10 @@ function doAction(k){
     if(typeof fireEvent==="function") fireEvent("streamGift",0.20);}
   else{ if(typeof btkNote==="function") btkNote("rest",1);
     addFat(((S.buff&&S.buff.physio)?-42:-30)*((S.bg&&S.bg.rest)||1)*prepMul);
-    S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.6*prepMul);}
+    if(S.assets&&S.assets.rehab) addFat(-8*prepMul);        // 私人康复室
+    S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.6*prepMul);
+    // 休息也是泄压阀：心理课让它更管用
+    if(S.tilt) S.tilt=Math.max(0,q1(S.tilt-(10+(typeof hasCourse==="function"&&hasCourse("psy")?6:0))*prepMul));}
   S.ap--;render();
 }
 /* 自动推进 —— 推到「下一件需要你拿主意的事」就停。
@@ -2538,7 +2548,7 @@ function autoStop(){
   // 待处理的试训邀请也是「需要你决定的事」，漏在这里的话
   // 「自动推进到下一件事」会直接冲过去，机会就这么没了。
   return !!(S.rndEv||S.rndResult||S.locker||S.signup||S.rankUp
-           ||S.cupResult||S.cupMatch||S.confirm||S.streamOffer||S.intlChamp
+           ||S.cupResult||S.cupMatch||S.confirm||S.streamOffer||S.intlChamp||S.contentPick
            ||(S.pre&&S.pre.invite&&S.pre.invite.pending));
 }
 function autoRest(focus,weeks){
@@ -2577,17 +2587,21 @@ function autoRest(focus,weeks){
    原来休赛期没有标签栏，把财务总览和商城直接拼在行动卡下面，
    于是「所有栏目合到一起了」。玩家报的就是这个。 */
 function tabContent(T){
-  return `${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
+  return `${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+(typeof dataCard==="function"?dataCard():"")+gearCard():""}
     ${T==="team"?squadCard()+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
     ${T==="shop"?(typeof economyCards==="function"?economyCards():shopCard()):""}
     ${T==="tx"?(typeof transferPage==="function"?transferPage():""):""}
     ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
-    ${T==="world"?standingsCard()+rivalCard()+newsCard()+eventsCard():""}
+    ${T==="world"?standingsCard()+rivalCard()
+      +(typeof pressCard==="function"?pressCard():"")
+      +(typeof followUpCard==="function"?followUpCard():"")
+      +newsCard()+eventsCard():""}
     ${T==="ach"?achCard():""}`;
 }
 function viewSeason(){
   const sea=SEASONS[S.si], T=curTab(TABS_SEASON);
-  const champ=(S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"";
+  const champ=((S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"")
+    +((S.contentPick&&typeof contentCard==="function")?contentCard():"");
   if(T!=="act") return `${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
     ${tabBar(TABS_SEASON)}
     ${tabContent(T)}`;
@@ -2610,6 +2624,7 @@ function viewSeason(){
       <span style="color:var(--ink-3)">（你的${sea.dim} ${S.attrs[sea.dim].toFixed(0)} · ${
         S.homeLeague||"LPL"}均值 ${leagueDimAvg(sea.dim).toFixed(0)}——顺逆是和同行比出来的）</span></div>
     ${fatigueBar()}
+    ${typeof tiltNote==="function"?tiltNote():""}
     ${typeof riskHint==="function"?riskHint():""}
     ${typeof routineBar==="function"?routineBar():""}
     ${S.injury?`<p class="note" style="color:var(--red);margin-top:0">受伤期间行动力只有 ${AP_HURT} 点。</p>`:""}
@@ -2622,6 +2637,8 @@ function viewSeason(){
           typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
       <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入${costStream()}</div></button>
+      <button class="act" data-do="content" ${S.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">做内容</div><div class="d">教学 / 高光 / 复盘 / 整活——同样一点，方向不同</div></button>
       <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
@@ -2819,6 +2836,12 @@ function startMatch(bo,oppName){
   const need=(typeof bo==="number")?bo:(bo?3:2);   // 1=BO1 2=BO3 3=BO5
   S.match={opp,oppName:(opp&&opp.name)||on,sc:[0,0],game:1,lines:[],node:null,swing:0,done:false,
            need,bo5:need>=3};
+  // 竞技锐度：距离上一场正赛超过 4 周（长间歇/休赛期回来），手是生的——
+  // 开局带一点负 swing，第一局打完就找回来。轻手感，不是惩罚。
+  if(S.career&&S.lastFightClock!==undefined&&((S.evClock||0)-S.lastFightClock)>=4){
+    S.match.swing-=2;
+    S.match.lines.push(`<div><span class="hi">久疏赛场</span> 离上一场正赛已经有一阵了，开局手有点生（第一局赢面略降）。</div>`);
+  }
   S.step="match"; nextGame();
 }
 function nextGame(){
@@ -2836,10 +2859,16 @@ function nextGame(){
   if(m.node) m.seenNodes.push(m.node.q);
   render();
 }
+/* 心态气压对战力的拖累：Tilt 55 以下没事，越往上手越抖（100 时约 −1.8）。
+   泄压的路都写在明面上：赢一场、休息、心理课。 */
+function tiltDrag(){
+  const t=S.tilt||0;
+  return t>55?(t-55)*0.04:0;
+}
 /* 这一局此刻的赢面（给玩家看的，和 playGame 用同一套算法） */
 function gameWinP(swing){
   const m=S.match,sea=SEASONS[S.si];
-  const my=power(myRoster(),S.fatigue,sea.fav)+(swing||0)+versionFit()+rivalBoost(m.oppName);
+  const my=power(myRoster(),S.fatigue,sea.fav)+(swing||0)+versionFit()+rivalBoost(m.oppName)-tiltDrag();
   const op=power(m.opp.players,0,sea.fav);
   return clampWinProb(1/(1+Math.exp(-(my-op)/SPREAD)), my-op);
 }
@@ -2861,7 +2890,7 @@ function resolveNode(ai){
 }
 function playGame(){
   const m=S.match,sea=SEASONS[S.si];
-  const my=power(myRoster(),S.fatigue,sea.fav)+m.swing+versionFit()+rivalBoost(m.oppName);
+  const my=power(myRoster(),S.fatigue,sea.fav)+m.swing+versionFit()+rivalBoost(m.oppName)-tiltDrag();
   const op=power(m.opp.players,0,sea.fav);
   let p=1/(1+Math.exp(-(my-op)/SPREAD));
   // 封顶用的差距必须把 m.swing（临场决策的结果）算进去。
@@ -2882,6 +2911,56 @@ function autoMatch(){
     if(S.match.node) resolveNode(rnd()<0.5?0:1); else playGame();
   }
   if(S.step==="match"&&S.match.done) nextWeek();
+}
+/* ---------- 个人数据与比赛档案（2026-08-31 竞品拆解移植）----------
+   每个系列赛合成一份可信的个人数据：KDA、分均补刀、伤害占比、评分。
+   球探、周报、试训谈判看的都是这些数字——「都是用比赛衡量的」。
+   合成口径：以你和对手的真实战力差、临场节点成败为骨架，按位置画像摆数。 */
+const POS_STATLINE={top:[3.1,2.7,4.9,8.3,0.24],jng:[2.8,2.5,7.6,6.2,0.18],
+  mid:[4.1,2.5,5.2,8.8,0.28],bot:[5.0,2.3,4.4,9.4,0.30],sup:[1.0,2.9,9.8,1.6,0.10]};
+function synthSeriesStats(m,won,myPw,opPw){
+  if(!S.career) return;
+  const P=POS_STATLINE[S.pos]||POS_STATLINE.mid;
+  const games=m.sc[0]+m.sc[1];
+  // 表现系数：战力差 + 胜负 + 节点失手拖累
+  const perf=clamp(1+ (myPw-opPw)*0.022 + (won?0.14:-0.10) - (m.nodeFails||0)*0.05 + (rnd()-0.5)*0.24, 0.5, 1.65);
+  const k=q1(P[0]*perf), d=q1(P[1]*(2-perf)*0.85+0.6), a=q1(P[2]*(0.8+perf*0.25));
+  const cs=q1(P[3]*(0.9+perf*0.12)), dmg=Math.round(P[4]*100*(0.82+perf*0.2));
+  const kda=q1((k+a)/Math.max(1,d));
+  const rating=q1(clamp(0.35+perf*0.55+(kda-2.6)*0.045,0.2,2.0));
+  const tag=S.intl?(S.intl.type==="msi"?"MSI":"世界赛"):S.playoff?"季后赛":((S.homeLeague||"LPL")==="LDL"?"LDL":"联赛");
+  S.archive=(S.archive||[]);
+  S.archive.push({si:S.si,w:S.week,tag,opp:m.oppName,sc:m.sc.slice(),win:won,g:games,k,d,a,cs,dmg,rating});
+  if(S.archive.length>60) S.archive.shift();
+  S.stats=S.stats||{n:0,k:0,d:0,a:0,r:0};
+  S.stats.n++; S.stats.k+=k; S.stats.d+=d; S.stats.a+=a; S.stats.r+=rating;
+  m.myline={k,d,a,cs,dmg,rating};
+  S.log.push(`<div><span class="hi">个人数据</span> ${k}/${d}/${a} · 分均补刀 ${cs} · 伤害 ${dmg}% · 评分 <b>${rating.toFixed(2)}</b></div>`);
+}
+/* 我的页 · 比赛档案卡：生涯场均 + 最近八个系列赛 */
+function dataCard(){
+  if(!S.career||!S.stats||!S.stats.n) return "";
+  const st=S.stats, n=st.n;
+  const rows=(S.archive||[]).slice(-8).reverse();
+  return `<div class="card"><h2>比赛档案<em>${n} 个系列赛</em></h2>
+    <p class="note" style="margin:0 0 8px">生涯场均
+      <b>${q1(st.k/n)} / ${q1(st.d/n)} / ${q1(st.a/n)}</b> · 评分 <b>${(st.r/n).toFixed(2)}</b>
+      <span style="color:var(--ink-3)">——球探和试训谈判看的就是这几个数字。</span></p>
+    <div class="tw"><table><thead><tr><th></th><th>对手</th><th>比分</th><th>KDA</th><th>评分</th></tr></thead><tbody>
+    ${rows.map(x=>`<tr><td class="n">${SEASONS[x.si]?SEASONS[x.si].tag:""} ${x.tag}</td>
+      <td>${x.opp}</td><td class="n">${x.win?"":""}${x.sc[0]}−${x.sc[1]}</td>
+      <td class="n">${x.k}/${x.d}/${x.a}</td>
+      <td class="n" style="color:${x.rating>=1.1?'var(--cyan)':x.rating<0.85?'var(--red)':'inherit'}">${x.rating.toFixed(2)}</td></tr>`).join("")}
+    </tbody></table></div></div>`;
+}
+/* 本周页 · 心态气压条：只在开始起飞时出现，不占地方 */
+function tiltNote(){
+  const t=S.tilt||0;
+  if(t<40) return "";
+  const drag=tiltDrag();
+  return `<p class="note" style="color:${t>=60?'var(--red)':'var(--gold)'};margin:2px 0">
+    心态气压 <b>${Math.round(t)}</b>/100${drag?`——发挥正在被拖累（战力 −${drag.toFixed(1)}）`:"，再输就要影响发挥了"}。
+    <span style="color:var(--ink-3)">休息、心理课、或者赢一场都能泄压。</span></p>`;
 }
 function endMatch(){
   const m=S.match,won=m.sc[0]>m.sc[1];
@@ -2942,6 +3021,26 @@ function endMatch(){
   checkAch("match",ctx);
   if(won) checkAch("win",ctx);
   if(won&&ctx.intl&&ctx.oppLeague==="LCK") checkAch("beatlck",ctx);
+
+  // ---- 世界的回声（2026-08-31 竞品拆解移植）----
+  // 每个系列赛产出真实的个人数据进档案：球探、周报、试训看的都是这些数字
+  if(typeof synthSeriesStats==="function") synthSeriesStats(m,won,myPw,opPw);
+  // 宿敌账本：赢下有明星选手的队要被记住
+  if(typeof noteRivalBeat==="function") noteRivalBeat(m.opp.players,won);
+  // 心态气压：输球攒 Tilt，赢球泄压。0:2 被横扫压力翻倍。
+  S.tilt=clamp((S.tilt||0)+(won?-8:(swept||m.sc[0]===0?18:12)),0,100);
+  if(!won&&S.tilt>=60&&!S._tiltWarned){
+    S._tiltWarned=true;
+    pushEvent(`连着输球，<b>心态开始起飞</b>（Tilt ${Math.round(S.tilt)}）。<br>
+      <span style="color:var(--ink-3)">带着这种状态上场是要掉发挥的——休息、心理课、或者赢一场，都能把它压回去。</span>`,"bad","心态");
+  }
+  if(S.tilt<40) S._tiltWarned=false;
+  S.lastFightClock=S.evClock||0;                 // 竞技锐度：记住最后一场正赛在什么时候
+  // 大胜后的采访：说不说狠话，两周后见分晓（事件链）
+  if(won&&ctx.gap<-1&&rnd()<0.30&&typeof queueFollowUp==="function"){
+    queueFollowUp("bigTalk",2,{opp:m.oppName});
+    pushEvent(`赛后采访你上头了一句「<b>${m.oppName} 也就这样</b>」。话说出去就收不回来了——两周后见分晓。`,"info","舆论");
+  }
   // 赛后归因：用判定胜负的那套数，现场算一次存下来
   if(typeof attribute==='function'){
     try{ m.attr=attribute(myRoster(),m.opp,S.fatigue,SEASONS[S.si].fav); }catch(e){}
@@ -3061,6 +3160,11 @@ function benchWeek(){
        青训生要先在训练赛里打出来，教练才会把你写进去。`
     : `${S.team} ${won?"击败":"负于"} ${on}。<b>你在替补席上看完了整场</b>，没人提你的名字。`,
     won?"info":"bad", acad?"青训":"替补");
+  // 替补周世界也要转。原来 simWorld 只在你亲自打完比赛时跑，
+  // 坐板凳的赛段里其他队整周停摆——实测有队 7 周只攒了 0-4 场。
+  // 临时把本周对手挂在 S.match 上，防止它在模拟里被再打一场（双算）。
+  S.match={oppName:on};
+  simWorld();
   S.match=null; nextWeek();
 }
 
@@ -3075,6 +3179,8 @@ function nextWeek(){
     return;
   }
   S.week++; S.ap=apFor('season'); S.step="season"; S.match=null; addFat(-10);
+  if(S.assets&&S.assets.apt) addFat(-4);           // 电竞公寓：住得好，恢复就是快
+  if(typeof weeklyEcho==="function") weeklyEcho(); // 事件链/周报/商业机会的周节拍
   if(typeof injuryTick==="function") injuryTick();
   if(typeof rollInjury==="function") rollInjury("赛季中");
   if(typeof archiveWeek==="function") archiveWeek();
@@ -3300,7 +3406,8 @@ function endSeason(result,seed){
 }
 
 function viewOffseason(){
-  const champ=(S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"";
+  const champ=((S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"")
+    +((S.contentPick&&typeof contentCard==="function")?contentCard():"");
   if(S.off){
     const T=curTab(TABS_SEASON);
     const pops=`${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
@@ -3432,6 +3539,8 @@ function offNextWeek(){
   S.off.week++;
   S.ap=(S.off.next==="intl")?2:apFor("off");
   if(S.off.next==="intl"&&S.btk) S.btk.apWeek=2;
+  if(S.assets&&S.assets.apt) addFat(-4);
+  if(typeof weeklyEcho==="function") weeklyEcho();
   if(S.off.next!=="intl") addFat(-14);
   // 休赛期/间歇周也要结算突破进度——原来只有赛季周结算，
   // 玩家在休赛期连练三周操作，计数器纹丝不动。
@@ -3508,6 +3617,8 @@ function offPanel(){
           typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
       <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入${costStream()}</div></button>
+      <button class="act" data-do="content" ${S.ap<=0?'disabled style="opacity:.34"':''}>
+        <div class="t">做内容</div><div class="d">教学 / 高光 / 复盘 / 整活——同样一点，方向不同</div></button>
       <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
         <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
@@ -5147,6 +5258,106 @@ function rivalPlatform(club){
   const others=PLATFORMS.filter(x=>x!==club);
   return others[Math.floor(rnd()*others.length)]||PLATFORMS[0];
 }
+/* ================= 内容矩阵与商业阶梯（2026-08-31 竞品拆解移植） =================
+   「做内容」和直播共用行动点，但四种内容各有方向——同样一点，收益不同向。
+   商业底蕴（bizRep）是教学/复盘攒出来的长尾：每点给直播收入 +1%，封顶 +25%。 */
+const CONTENT_KINDS=[
+  {k:"teach", n:"教学视频",   d:"讲一手你最熟的英雄。涨得慢，但商业底蕴是长尾——每点直播收入 +1%",
+   run(){ addFans(3); S.heat=(S.heat||0)+2; S.bizRep=Math.min(25,(S.bizRep||0)+2);
+     return `教学视频发出去了。播放平稳，评论区在记笔记。<b>商业底蕴 +2</b>（现在 ${S.bizRep}/25）。`; }},
+  {k:"high",  n:"高光集锦",   d:"剪最近的操作。有比赛素材时爆发最强",
+   run(){ const has=(S.archive||[]).some(x=>x.si===S.si);
+     if(has){ S.heat=(S.heat||0)+10; addFans(5); return "正赛高光配上音乐，热度炸了一晚上。"; }
+     S.heat=(S.heat||0)+4; addFans(2);
+     return "没有正赛素材，剪的是排位——效果差点意思。<span style='color:var(--ink-3)'>打了比赛再剪，才是真高光。</span>"; }},
+  {k:"vod",   n:"赛事复盘",   d:"拆版本、拆比赛。涨的是职业圈的口碑",
+   run(){ if(typeof addStaff==="function") addStaff("coach",1.5);
+     addFans(2); S.bizRep=Math.min(25,(S.bizRep||0)+1);
+     return "复盘视频在职业圈小范围传开，教练组觉得你脑子清楚。<b>教练信任 +1.5</b>。"; }},
+  {k:"fun",   n:"娱乐整活",   d:"传播最快，职业口碑不涨反跌一点",
+   run(){ addFans(8); S.heat=(S.heat||0)+6;
+     if(typeof addStaff==="function") addStaff("coach",-0.5);
+     return "整活视频出圈了，粉丝哗哗地涨。教练看到了，没说话。"; }}
+];
+function doContent(k){
+  const C=CONTENT_KINDS.find(x=>x.k===k);
+  if(!C||S.ap<=0){ S.contentPick=null; render(); return; }
+  S.contentPick=null; S.ap--;
+  const txt=C.run();
+  S.contentN=(S.contentN||0)+1;
+  pushEvent(`<b>${C.n}</b>：${txt}`,"info","内容");
+  if(typeof checkAch==="function") checkAch("content");
+  render();
+}
+function contentCard(){
+  if(!S.contentPick) return "";
+  return `<div class="rankup"><div class="ru-inner ev-inner" style="max-width:520px">
+    <div class="ru-eyebrow">做内容 · 1 行动点</div>
+    <div class="ev-q">这一条做什么？</div>
+    <div class="ev-ctx">四种方向吃同一个点数，收益完全不同——想清楚这阶段缺什么。</div>
+    <div class="grid g2" style="margin-top:14px">${CONTENT_KINDS.map(c=>`
+      <button class="opt" data-content="${c.k}"><div class="t">${c.n}</div>
+      <div class="d">${c.d}</div></button>`).join("")}</div>
+    <div class="row" style="justify-content:flex-end;margin-top:10px">
+      <button class="btn ghost sm" id="contentcancel">这周不做了</button></div>
+  </div></div>`;
+}
+/* 商业阶梯：粉丝或威望到档，机会自己找上门（每年每档一次，周检查）。
+   现实里就是这样——解说、品牌、训练营都是「被邀请」，不是按钮。 */
+function bizWeek(){
+  if(!S.career||!S.team) return;
+  const cl=(typeof cloutOf==="function")?cloutOf():40;
+  const seen=S.bizDone=S.bizDone||{};
+  const tiers=[
+    {k:"cast", at:()=>S.fans>=260||cl>=55, run(){ addMoney("other",10); addFans(12); S.heat=(S.heat||0)+8;
+      pushEvent(`官方邀你做了一场<b>赛事二路解说</b>：出场费 <b>10 万</b>，圈内混了个脸熟。`,"good","商业"); }},
+    {k:"brand", at:()=>S.fans>=420||cl>=65, run(){ addMoney("other",30); addFans(15);
+      pushEvent(`<b>外设品牌拍摄</b>找上门：一天棚拍，<b>30 万</b>到账。你的脸出现在了电商详情页上。`,"good","商业"); }},
+    {k:"camp", at:()=>S.fans>=600, run(){ addMoney("other",45); addFat(10); addFans(20);
+      pushEvent(`你挂名的<b>青训训练营</b>开营：<b>45 万</b>入账，累是真累，但台下那些眼神你认得——几年前你也那样看着别人。`,"good","商业"); }}
+  ];
+  for(const t of tiers){
+    const key=t.k+S.si;
+    if(seen[key]||!t.at()) continue;
+    if(rnd()>=0.25) continue;                      // 到档也不立刻来，机会有自己的节奏
+    seen[key]=1; t.run();
+    if(typeof checkAch==="function") checkAch("biz");
+    break;
+  }
+}
+
+/* ================= 资产：钱的去处（2026-08-31 经济重锚下半场） =================
+   收入压实之后，钱要有「买了真的变强/变体面」的阶梯——冠军的千万收入不该只能看余额。
+   全部一次性买断，效果朴素、可叠加，走 120 局批测。 */
+const ASSETS=[
+  {k:"apt",    n:"电竞公寓",     cost:260, d:"离基地五分钟，睡得好。每周额外恢复 4 点疲劳"},
+  {k:"rehab",  n:"私人康复室",   cost:450, d:"手腕和颈椎的私人管家。每次休息多清 8 点疲劳"},
+  {k:"van",    n:"俱乐部保姆车", cost:380, d:"赶路不再是消耗。备战/出征周的恢复折减 0.45 → 0.55"},
+  {k:"station",n:"数据分析工作站",cost:600, d:"自己的复盘房。训练收益 +4%"}
+];
+function buyAsset(k){
+  const A=ASSETS.find(x=>x.k===k); if(!A) return;
+  S.assets=S.assets||{};
+  if(S.assets[k]||S.money<A.cost) return;
+  addMoney("other",-A.cost);
+  S.assets[k]=1;
+  pushEvent(`置办了<b>${A.n}</b>（${A.cost} 万）。${A.d}。<br>
+    <span style="color:var(--ink-3)">职业选手的钱，最后都变成了让自己打得更久的东西。</span>`,"big","资产");
+  if(typeof checkAch==="function") checkAch("asset");
+  render();
+}
+function assetsCard(){
+  if(!S.career) return "";
+  S.assets=S.assets||{};
+  return `<div class="card"><h2>资产<em>一次买断 · 永久生效</em></h2>
+    <div class="grid g2">${ASSETS.map(a=>{
+      const own=!!S.assets[a.k], can=S.money>=a.cost;
+      return `<button class="act" data-asset="${a.k}" ${own?'disabled style="opacity:.55"':(!can?'disabled style="opacity:.34"':'')}>
+        <div class="t">${a.n}${own?'<span class="tag g">已入手</span>':`<span class="tag">${a.cost} 万</span>`}</div>
+        <div class="d">${a.d}</div></button>`;}).join("")}
+    </div></div>`;
+}
+
 /* 俱乐部从你的直播收入里抽走多少 */
 function streamClubCut(){ return (S.streamDeal&&S.streamDeal.cut)||0; }
 function streamCut(){ return STREAM_CUTS[S.streamCutIdx||0].cut; }
@@ -5170,7 +5381,9 @@ function streamIncome(){
   // 直播是仅次于成就的第二大外快，不跟着缩的话「二线队员靠直播暴富」照样成立。
   const gift=Math.pow(f/40,1.22)*2.2*streamCut()*heatMul;
   const base=2+f*0.025;
-  return (base+gift)*originMul;
+  // 商业底蕴：教学/复盘攒出来的长尾，每点 +1%（封顶 25%）
+  const biz=1+Math.min(S.bizRep||0,25)/100;
+  return (base+gift)*originMul*biz;
 }
 /* 独家平台控流量，涨名气比全网直播慢 */
 /* 独家的代价原来是「平台控流量，直播涨名气变慢」（×0.7）。
@@ -5416,6 +5629,7 @@ function economyCards(){
   return financeCard()
     + streamDealCard()
     + ((typeof contractTerms==="function")?contractTerms():"")
+    + assetsCard()
     + shopCard()
     + prizeNote();
 }
@@ -5693,6 +5907,33 @@ const ACH_MORE=[
    r:{money:200,fame:40}},
   {id:"grandmaster", n:"国服第一", d:"排位打到国服前十。", tag:"经济",
    on:"rank", cond:()=>S.pre&&S.pre.rank>=95, r:{money:300,fame:110}},
+
+  /* ---------- 宿敌（2026-08-31 竞品拆解移植：交手账本读的是真实名单） ---------- */
+  {id:"star1", n:"第一滴血", d:"第一次在正式比赛里赢下带明星选手的队伍。", tag:"宿敌",
+   on:"match", cond:()=>typeof beatCount==="function"&&Object.keys(S.beatStars||{}).length>=1, r:{fame:30}},
+  {id:"beatfaker", n:"破神者", d:"三次战胜 Faker 所在的队伍。", tag:"宿敌",
+   on:"match", cond:()=>typeof beatCount==="function"&&beatCount("Faker")>=3, r:{fame:200,trust:10},
+   flavor:"至暗时刻的墙上有一块最硬的砖。你把它敲下来了三次。"},
+  {id:"beatchovy", n:"中路答卷", d:"三次战胜 Chovy 所在的队伍。", tag:"宿敌",
+   on:"match", cond:()=>typeof beatCount==="function"&&beatCount("Chovy")>=3, r:{fame:130}},
+  {id:"beatknight", n:"内战无敌手", d:"三次战胜 Knight 所在的队伍。", tag:"宿敌",
+   on:"match", cond:()=>typeof beatCount==="function"&&beatCount("Knight")>=3, r:{fame:90}},
+  {id:"star5", n:"名人册", d:"交手账本里写下 5 位明星选手的名字。", tag:"宿敌",
+   on:"match", cond:()=>Object.keys(S.beatStars||{}).length>=5, r:{fame:110},
+   flavor:"他们记不记得你不重要。账本记得。"},
+
+  /* ---------- 内容与商业 ---------- */
+  {id:"content10", n:"更新日历", d:"发布 10 条内容。", tag:"经济",
+   on:"content", cond:()=>(S.contentN||0)>=10, r:{fame:50}},
+  {id:"bizrep", n:"商业底蕴", d:"商业底蕴攒满 25 点。", tag:"经济",
+   on:"content", cond:()=>(S.bizRep||0)>=25, r:{fame:60}},
+  {id:"firstbiz", n:"第一单商务", d:"接到第一个商业邀约。", tag:"经济",
+   on:"biz", cond:()=>true, r:{fame:30}},
+  {id:"asset1", n:"置业", d:"买下第一件资产。", tag:"经济",
+   on:"asset", cond:()=>Object.keys(S.assets||{}).length>=1, r:{fame:20}},
+  {id:"asset4", n:"这就是生活", d:"四件资产全部入手。", tag:"经济",
+   on:"asset", cond:()=>typeof ASSETS!=="undefined"&&ASSETS.every(a=>(S.assets||{})[a.k]), r:{fame:80},
+   flavor:"职业选手的钱，最后都变成了让自己打得更久的东西。"},
 
   /* ---------- 收尾 ---------- */
   {id:"ach30", n:"收藏家", d:"解锁 30 项成就。", tag:"收尾",
@@ -10363,7 +10604,257 @@ function transferPage(){
     <div class="log">${S.txLog.slice().reverse().map(x=>`<div><span class="hi">${x.s}</span> ${x.text}</div>`).join("")}</div></div>`:"";
   const rules = `<p class="note" style="margin:4px 2px 0">规则：赛段中可以收意向、可以被接触，但<b>转会只在注册窗生效</b>——
     季中间歇（春→夏）和年底休赛期。LDL 注册的选手走升队通道随时可被母队调上一队。</p>`;
-  return contract + intentCard + actions + log + rules;
+  const scout = (typeof scoutCard==="function")?scoutCard():"";
+  return contract + scout + intentCard + actions + log + rules;
+}
+
+
+/* ================= 世界的回声 =================
+   2026-08-31 竞品拆解（无畏人生模拟器）拍板移植的机制层，内容全部 LOL 背景：
+   · 事件链——选择产生带倒计时的后续，到期兑现，不再选完就蒸发
+   · 天梯撞车——排位里撞到真实职业选手，打排位变成抽卡
+   · 宿敌记账——赢下带明星选手的队伍要被记住（成就在 achieve_more）
+   · 电竞周报——每隔几周把真实发生的事编辑成一期报纸，证据驱动，不虚构
+   · 球探观察卡——把「谁在看你、看了多少、多确信」画出来 */
+
+/* ---------- 一、事件链 ----------
+   评价过的竞品做法：后续事件带倒计时挂着、不会消失、到期自动兑现。
+   我们的版本故意做成非阻塞：到期直接结算并进大事记（机器人和托管都不会被卡住），
+   「悬而未决」列表挂在世界页，让玩家知道有事在路上。 */
+const FOLLOWUPS={
+  actorCase:{
+    n:"演员举报复核",
+    run(p){
+      if(rnd()<0.62){
+        const back=p&&p.rr?p.rr:2;
+        if(S.pre&&typeof S.pre.rank==="number") S.pre.rank=clamp(S.pre.rank+back*0.5,0,100);
+        pushEvent(`<b>演员案件复核通过</b>：那一局的对手被判定消极比赛，账号已封禁。
+          平台返还了你的段位分。<span style="color:var(--ink-3)">举报是有用的——偶尔。</span>`,"good","排位");
+      }else{
+        pushEvent(`演员举报的复核结果出来了：<b>证据不足，维持原判</b>。
+          <span style="color:var(--ink-3)">那把的分，就当喂了狗。</span>`,"info","排位");
+      }
+    }
+  },
+  rumorSpread:{
+    n:"转会流言发酵",
+    run(p){
+      const t=p&&p.team?p.team:"几家俱乐部";
+      S.heat=(S.heat||0)+14;
+      pushEvent(`当初看台上那一幕被拍到了——<b>「${t} 有意 ${meName()}」上了话题榜</b>。
+        热度涨了，经理的脸色没那么好看。`,"info","转会");
+      if(typeof addStaff==="function") addStaff("mgr",-2);
+    }
+  },
+  bigTalk:{
+    n:"赛后狠话的回旋镖",
+    run(p){
+      const opp=p&&p.opp?p.opp:"对手";
+      if((S.record&&S.record.l||0)>=2){
+        S.heat=(S.heat||0)+10;
+        pushEvent(`两周前你赛后放的狠话被翻出来了——你们最近战绩不好，
+          <b>「${opp} 记得你说过的话」</b>成了弹幕热梗。压力给到你这边。`,"bad","舆论");
+      }else{
+        addFans(6);
+        pushEvent(`你赛后那句狠话被剪进了赛区宣传片——<b>说到做到的人，说话就是有分量。</b>`,"good","舆论");
+      }
+    }
+  }
+};
+function queueFollowUp(id,weeks,payload){
+  if(!FOLLOWUPS[id]) return;
+  S.pendingEv=(S.pendingEv||[]);
+  S.pendingEv.push({id,due:(S.evClock||0)+Math.max(1,weeks),p:payload||null});
+  if(S.pendingEv.length>8) S.pendingEv.shift();
+}
+/* 每个游戏周走一格。所有「下一周」入口都调它（nextWeek/offNextWeek/preNextWeek）。 */
+function tickFollowUps(){
+  S.evClock=(S.evClock||0)+1;
+  if(!S.pendingEv||!S.pendingEv.length) return;
+  const due=S.pendingEv.filter(x=>x.due<=S.evClock);
+  S.pendingEv=S.pendingEv.filter(x=>x.due>S.evClock);
+  due.forEach(x=>{ try{ FOLLOWUPS[x.id]&&FOLLOWUPS[x.id].run(x.p); }catch(e){} });
+}
+/* 周节拍器：所有「进入下一周」的入口都敲一次。
+   事件链走表 → 周报编辑部攒稿 → 商业机会按门槛检查（bizWeek 在 shop.js）。 */
+function weeklyEcho(){
+  try{ tickFollowUps(); }catch(e){}
+  try{ pressTick(); }catch(e){}
+  try{ if(typeof bizWeek==="function") bizWeek(); }catch(e){}
+  // 心态气压每周自然回落一点——时间也是解药，只是慢
+  if(S.tilt) S.tilt=Math.max(0,q1(S.tilt-3));
+}
+function followUpCard(){
+  const q=(S.pendingEv||[]);
+  if(!q.length) return "";
+  return `<div class="card"><h2>悬而未决</h2>
+    ${q.map(x=>`<p class="note" style="margin:4px 0">· <b>${FOLLOWUPS[x.id]?FOLLOWUPS[x.id].n:x.id}</b>
+      —— ${Math.max(0,x.due-(S.evClock||0))} 周内见分晓</p>`).join("")}
+    <p class="note" style="color:var(--ink-3)">这些是此前的选择留下的尾巴，不会消失，到期自动兑现。</p></div>`;
+}
+
+/* ---------- 二、天梯撞车 ----------
+   排位路人局里撞到真实职业选手。打得好被记住，打崩了也是段子。 */
+function starPool(){
+  const out=[];
+  ["LPL","LCK"].forEach(lg=>{
+    (S.world&&S.world[lg]||[]).forEach(t=>{
+      (t.players||[]).forEach(q=>{
+        if(q.me||q.retired) return;
+        const v=avg(DIMS.map(d=>q.r[d]));
+        if(v>=60) out.push({id:q.id,team:t.name,lg,v});
+      });
+    });
+  });
+  return out;
+}
+function ladderEncounter(){
+  if(rnd()>=0.09) return;                       // 大多数排位夜什么都不会发生，这才像排位
+  const pool=starPool(); if(!pool.length) return;
+  const s=pool[Math.floor(rnd()*pool.length)];
+  const mySkill=(typeof soloSkill==="function")?soloSkill():avg(DIMS.map(d=>S.attrs[d]));
+  const p=clamp(0.5+(mySkill-s.v)/40,0.12,0.7);
+  const won=rnd()<p;
+  const pre=!S.career;
+  if(won){
+    if(pre&&S.pre){ S.pre.scoutSeen=(S.pre.scoutSeen||0)+2; }
+    addFans(pre?6:9); S.heat=(S.heat||0)+8;
+    const txt=`<b>天梯撞车</b>：这把路人局撞到了 <b>${s.team}</b> 的 <b>${s.id}</b>——而且你赢了对线。<br>
+      <span style="color:var(--cyan)">对局记录被拿去剪了视频${pre?"，球探的收藏夹里多了你一个 ID":""}。</span>`;
+    pushEvent(txt,"good","排位");
+    if(pre&&typeof preLog==="function") preLog(txt,"good");   // 职业前的主日志也要看得见
+  }else{
+    addFans(2);
+    const txt=`<b>天梯撞车</b>：撞到 <b>${s.team}</b> 的 <b>${s.id}</b>，被上了一课。<br>
+      <span style="color:var(--ink-3)">回放你看了三遍。差距就是练习的方向。</span>`;
+    pushEvent(txt,"info","排位");
+    if(pre&&typeof preLog==="function") preLog(txt,"info");
+  }
+  // 偶发事件链：疑似演员的局 → 两周后复核
+  if(!won&&rnd()<0.25){
+    queueFollowUp("actorCase",2,{rr:2});
+    pushEvent(`顺带一提：你这几把里有一局的队友操作可疑，你提交了<b>演员举报</b>——平台说复核要几天。`,"info","排位");
+  }
+}
+
+/* ---------- 三、宿敌记账 ----------
+   赢下名单里有明星选手的队，给每位明星记一笔。成就（击败 Faker×3 之类）读这本账。 */
+const RIVAL_STARS=["Faker","Chovy","Ruler","Deft","ShowMaker","Keria","Zeus","Gumayusi","Oner",
+  "Knight","JackeyLove","Bin","TheShy","Xiaohu","Viper","Zeka","Scout","GALA","Elk","Kanavi"];
+function noteRivalBeat(oppPlayers,won){
+  if(!won||!oppPlayers) return;
+  S.beatStars=S.beatStars||{};
+  oppPlayers.forEach(q=>{
+    if(q&&RIVAL_STARS.includes(q.id)){
+      S.beatStars[q.id]=(S.beatStars[q.id]||0)+1;
+      if(S.beatStars[q.id]===1)
+        pushEvent(`交手记录：第一次在正式比赛里赢下 <b>${q.id}</b> 所在的队。这本账开始记了。`,"info","宿敌");
+    }
+  });
+}
+function beatCount(name){ return (S.beatStars&&S.beatStars[name])||0; }
+
+/* ---------- 四、电竞周报 ----------
+   竞品的铁律照搬：只报道真实发生过的事，效果只在出刊时结算一次。
+   周报读两样：大事记（带 tag 的事实流水）和比赛档案（真实数据）。 */
+function pressTick(){
+  S.pressClock=(S.pressClock||0)+1;
+  const gap=S.career?3:4;                          // 职业前节奏慢，四周一期
+  if(S.pressClock%gap!==0) return;
+  pressIssue();
+}
+function pressIssue(){
+  const ptr=S.pressPtr||0;
+  const evs=(S.events||[]).slice(ptr);
+  S.pressPtr=(S.events||[]).length;
+  const heads=[];
+  const byTag={};
+  evs.forEach(e=>{ (byTag[e.tag]=byTag[e.tag]||[]).push(e); });
+  const strip=t=>String(t||"").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim();
+
+  // 赛事战况：本期打了几场，战绩说话
+  const played=(byTag["联赛"]||[]).length+(byTag["季后赛"]||[]).length;
+  if(S.career&&S.record&&(S.record.w+S.record.l)>0){
+    const g=S.record.w+S.record.l, wr=S.record.w/g;
+    heads.push({c:"赛事战况",t:`《${S.team} 本赛段 ${S.record.w} 胜 ${S.record.l} 负，${
+      wr>=0.65?"打进上半区的路已经清晰":wr>=0.45?"胜负手都攥在自己手里":"教练组开始复盘问题出在哪"}》`});
+  }
+  // 选手个人：比赛档案是证据
+  const arc=(S.archive||[]).slice(-Math.min(6,(S.archive||[]).length));
+  if(arc.length>=2){
+    const avgR=arc.reduce((a,x)=>a+x.rating,0)/arc.length;
+    if(avgR>=1.05){
+      heads.push({c:"选手个人",t:`《近期场均评分 ${avgR.toFixed(2)}：${meName()} 的名字开始出现在数据榜单上》`,
+        fx:()=>{ S.heat=(S.heat||0)+8; addFans(4); }});
+    }else if(avgR<0.85){
+      heads.push({c:"选手个人",t:`《数据网站没有为 ${meName()} 说话：近期场均评分 ${avgR.toFixed(2)}》`});
+    }
+  }
+  // 转会风声：只有真的有球探/意向事件才报
+  if((byTag["转会"]||[]).length){
+    heads.push({c:"转会风声",t:`《消息人士：${meName()} 的名字出现在至少一份引援名单上》`,
+      fx:()=>{ S.heat=(S.heat||0)+6; }});
+  }
+  // 舆论风波：连败才有得写
+  if(S.career&&S.record&&S.record.l>=3&&S.record.l>S.record.w){
+    heads.push({c:"舆论风波",t:`《${S.team} 的连败让评论区坐不住了》`});
+  }
+  // 排位/突破这类花边
+  const btk=(byTag["突破"]||[]).length;
+  if(btk) heads.push({c:"选手动态",t:`《训练房传来的消息：${meName()} 最近在某个环节上明显变强了》`});
+  const rank=(byTag["排位"]||[]).find(e=>strip(e.text).indexOf("撞车")>=0);
+  if(rank) heads.push({c:"趣味花边",t:`《路人局撞出职业味：一段天梯对局录像在小圈子里传开》`});
+  // 版本官方：垫底保证每期至少两条
+  if(heads.length<2) heads.push({c:"版本官方",t:`《版本「${SEASONS[S.si].ver}」当前的理解已趋于收敛，各队打法开始同质化》`});
+  if(heads.length<2) return;                       // 实在无事发生，这期就不出了（期号不占用）
+
+  S.pressN=(S.pressN||0)+1;
+  const issue={n:S.pressN,label:(typeof nowLabel==="function")?nowLabel():SEASONS[S.si].tag,
+    heads:heads.slice(0,4).map(h=>({c:h.c,t:h.t}))};
+  heads.slice(0,4).forEach(h=>{ try{ h.fx&&h.fx(); }catch(e){} });
+  S.pressIssues=(S.pressIssues||[]);
+  S.pressIssues.unshift(issue);
+  if(S.pressIssues.length>6) S.pressIssues.pop();
+  pushEvent(`<b>《电竞周报》第 ${issue.n} 期出刊</b>：${issue.heads[0].t}<br>
+    <span style="color:var(--ink-3)">完整版面在「世界」页。周报只写真实发生过的事。</span>`,"info","周报");
+}
+function pressCard(){
+  const list=S.pressIssues||[];
+  if(!list.length) return `<div class="card"><h2>电竞周报</h2>
+    <p class="note">编辑部正在收集素材——只报道真实发生的事，第一期很快出刊。</p></div>`;
+  const cur=list[0];
+  return `<div class="card"><h2>电竞周报<em>第 ${cur.n} 期 · ${cur.label}</em></h2>
+    ${cur.heads.map(h=>`<p style="margin:7px 0"><span class="tag">${h.c}</span>　${h.t}</p>`).join("")}
+    ${list.length>1?`<p class="note" style="margin-top:10px;color:var(--ink-3)">往期：${
+      list.slice(1).map(x=>`第${x.n}期`).join(" · ")}（${list.slice(1)[0].heads[0].t.slice(0,18)}…）</p>`:""}
+    <p class="note" style="color:var(--ink-3)">周报只使用真实比赛与行动证据，报道效果在出刊时结算一次。</p></div>`;
+}
+
+/* ---------- 五、球探观察卡 ----------
+   把「谁在看你、凭什么、多确信」画出来。数据全部来自已有系统：
+   proPerf（表现分）、scoutHeat（赛段关注）、比赛档案（样本与评分）。 */
+function scoutCard(){
+  if(!S.career||!S.team) return "";
+  const perf=proPerf()-buyoutDrag();
+  const tier=perf>=19?["豪门在盯你","var(--gold)"]:perf>=10?["中游俱乐部在看","var(--cyan)"]
+            :perf>=4?["次级球探记了你的名字","var(--ink-2)"]:["暂时没人看你","var(--ink-3)"];
+  const heat=Math.min(S.scoutHeat||0,6);
+  const arc=(S.archive||[]).filter(x=>x.si===S.si);
+  const n=arc.length;
+  const avgR=n?arc.reduce((a,x)=>a+x.rating,0)/n:0;
+  const conf=Math.min(92,n*12);
+  return `<div class="card"><h2>球探观察<em>${tier[0]}</em></h2>
+    <div class="attrs">
+      <div class="at wide"><div class="lb">赛段关注</div>
+        <div class="track"><div class="fill" style="width:${heat/6*100}%"></div></div>
+        <div class="vn mono"><b>${heat}</b>/6</div></div>
+      <div class="at wide"><div class="lb">表现分</div>
+        <div class="track"><div class="fill" style="width:${clamp(perf*2.5+25,0,100)}%;background:${tier[1]}"></div></div>
+        <div class="vn mono"><b>${perf.toFixed(0)}</b></div></div>
+    </div>
+    <p class="note">本赛季正赛样本 <b>${n}</b> 个系列赛${n?`，场均评分 <b>${avgR.toFixed(2)}</b>（置信度 ${conf}%）`:"——还没有能拿去谈的数据"}。<br>
+      <span style="color:var(--ink-3)">球探看的是样本：打得少，评分再高也只是「有潜力」；样本够了，数字才变成筹码。
+      看台上被记下的关注会在注册窗兑现成问询。</span></p></div>`;
 }
 
 
@@ -10513,7 +11004,7 @@ function pinbar(){
 let _lastBlock="";
 function blockSig(){
   return [S.rndEv&&"ev",S.locker&&"lk",S.signup&&"su",S.rankUp&&"ru",
-    S.cupResult&&"cr",S.cupMatch&&"cm",S.confirm&&"cf",S.rndResult&&"rr",S.intlChamp&&"ic",
+    S.cupResult&&"cr",S.cupMatch&&"cm",S.confirm&&"cf",S.rndResult&&"rr",S.intlChamp&&"ic",S.contentPick&&"cp",
     (S.achPop&&S.achPop.length)&&"ap",S.tryout&&"to",S.deal&&"dl",
     S.proOffer&&"po",S.streamOffer&&"so",
     (S.pre&&S.pre.invite&&S.pre.invite.pending)&&"iv"].filter(Boolean).join("|");
@@ -10687,6 +11178,11 @@ function bind(){
   const _cd=$("cupdone"); if(_cd) _cd.onclick=cupDismissMatch;
   const _cr=$("cupresok"); if(_cr) _cr.onclick=()=>{S.cupResult=null;render()};
   const _ic=$("intlchampok"); if(_ic) _ic.onclick=()=>{S.intlChamp=null;render()};
+  st.querySelectorAll("[data-content]").forEach(b=>b.onclick=()=>{
+    if(typeof doContent==="function") doContent(b.dataset.content); });
+  const _cc=$("contentcancel"); if(_cc) _cc.onclick=()=>{S.contentPick=null;render()};
+  st.querySelectorAll("[data-asset]").forEach(b=>b.onclick=()=>{
+    if(typeof buyAsset==="function") buyAsset(b.dataset.asset); });
   const _pp=$("prepgo"); if(_pp) _pp.onclick=prepGo;
   const _off=$("offnext"); if(_off) _off.onclick=offNextWeek;
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;

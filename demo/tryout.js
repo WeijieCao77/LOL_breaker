@@ -1242,5 +1242,6 @@ function transferPage(){
     <div class="log">${S.txLog.slice().reverse().map(x=>`<div><span class="hi">${x.s}</span> ${x.text}</div>`).join("")}</div></div>`:"";
   const rules = `<p class="note" style="margin:4px 2px 0">规则：赛段中可以收意向、可以被接触，但<b>转会只在注册窗生效</b>——
     季中间歇（春→夏）和年底休赛期。LDL 注册的选手走升队通道随时可被母队调上一队。</p>`;
-  return contract + intentCard + actions + log + rules;
+  const scout = (typeof scoutCard==="function")?scoutCard():"";
+  return contract + scout + intentCard + actions + log + rules;
 }

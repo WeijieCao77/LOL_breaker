@@ -224,6 +224,106 @@ function rivalPlatform(club){
   const others=PLATFORMS.filter(x=>x!==club);
   return others[Math.floor(rnd()*others.length)]||PLATFORMS[0];
 }
+/* ================= 内容矩阵与商业阶梯（2026-08-31 竞品拆解移植） =================
+   「做内容」和直播共用行动点，但四种内容各有方向——同样一点，收益不同向。
+   商业底蕴（bizRep）是教学/复盘攒出来的长尾：每点给直播收入 +1%，封顶 +25%。 */
+const CONTENT_KINDS=[
+  {k:"teach", n:"教学视频",   d:"讲一手你最熟的英雄。涨得慢，但商业底蕴是长尾——每点直播收入 +1%",
+   run(){ addFans(3); S.heat=(S.heat||0)+2; S.bizRep=Math.min(25,(S.bizRep||0)+2);
+     return `教学视频发出去了。播放平稳，评论区在记笔记。<b>商业底蕴 +2</b>（现在 ${S.bizRep}/25）。`; }},
+  {k:"high",  n:"高光集锦",   d:"剪最近的操作。有比赛素材时爆发最强",
+   run(){ const has=(S.archive||[]).some(x=>x.si===S.si);
+     if(has){ S.heat=(S.heat||0)+10; addFans(5); return "正赛高光配上音乐，热度炸了一晚上。"; }
+     S.heat=(S.heat||0)+4; addFans(2);
+     return "没有正赛素材，剪的是排位——效果差点意思。<span style='color:var(--ink-3)'>打了比赛再剪，才是真高光。</span>"; }},
+  {k:"vod",   n:"赛事复盘",   d:"拆版本、拆比赛。涨的是职业圈的口碑",
+   run(){ if(typeof addStaff==="function") addStaff("coach",1.5);
+     addFans(2); S.bizRep=Math.min(25,(S.bizRep||0)+1);
+     return "复盘视频在职业圈小范围传开，教练组觉得你脑子清楚。<b>教练信任 +1.5</b>。"; }},
+  {k:"fun",   n:"娱乐整活",   d:"传播最快，职业口碑不涨反跌一点",
+   run(){ addFans(8); S.heat=(S.heat||0)+6;
+     if(typeof addStaff==="function") addStaff("coach",-0.5);
+     return "整活视频出圈了，粉丝哗哗地涨。教练看到了，没说话。"; }}
+];
+function doContent(k){
+  const C=CONTENT_KINDS.find(x=>x.k===k);
+  if(!C||S.ap<=0){ S.contentPick=null; render(); return; }
+  S.contentPick=null; S.ap--;
+  const txt=C.run();
+  S.contentN=(S.contentN||0)+1;
+  pushEvent(`<b>${C.n}</b>：${txt}`,"info","内容");
+  if(typeof checkAch==="function") checkAch("content");
+  render();
+}
+function contentCard(){
+  if(!S.contentPick) return "";
+  return `<div class="rankup"><div class="ru-inner ev-inner" style="max-width:520px">
+    <div class="ru-eyebrow">做内容 · 1 行动点</div>
+    <div class="ev-q">这一条做什么？</div>
+    <div class="ev-ctx">四种方向吃同一个点数，收益完全不同——想清楚这阶段缺什么。</div>
+    <div class="grid g2" style="margin-top:14px">${CONTENT_KINDS.map(c=>`
+      <button class="opt" data-content="${c.k}"><div class="t">${c.n}</div>
+      <div class="d">${c.d}</div></button>`).join("")}</div>
+    <div class="row" style="justify-content:flex-end;margin-top:10px">
+      <button class="btn ghost sm" id="contentcancel">这周不做了</button></div>
+  </div></div>`;
+}
+/* 商业阶梯：粉丝或威望到档，机会自己找上门（每年每档一次，周检查）。
+   现实里就是这样——解说、品牌、训练营都是「被邀请」，不是按钮。 */
+function bizWeek(){
+  if(!S.career||!S.team) return;
+  const cl=(typeof cloutOf==="function")?cloutOf():40;
+  const seen=S.bizDone=S.bizDone||{};
+  const tiers=[
+    {k:"cast", at:()=>S.fans>=260||cl>=55, run(){ addMoney("other",10); addFans(12); S.heat=(S.heat||0)+8;
+      pushEvent(`官方邀你做了一场<b>赛事二路解说</b>：出场费 <b>10 万</b>，圈内混了个脸熟。`,"good","商业"); }},
+    {k:"brand", at:()=>S.fans>=420||cl>=65, run(){ addMoney("other",30); addFans(15);
+      pushEvent(`<b>外设品牌拍摄</b>找上门：一天棚拍，<b>30 万</b>到账。你的脸出现在了电商详情页上。`,"good","商业"); }},
+    {k:"camp", at:()=>S.fans>=600, run(){ addMoney("other",45); addFat(10); addFans(20);
+      pushEvent(`你挂名的<b>青训训练营</b>开营：<b>45 万</b>入账，累是真累，但台下那些眼神你认得——几年前你也那样看着别人。`,"good","商业"); }}
+  ];
+  for(const t of tiers){
+    const key=t.k+S.si;
+    if(seen[key]||!t.at()) continue;
+    if(rnd()>=0.25) continue;                      // 到档也不立刻来，机会有自己的节奏
+    seen[key]=1; t.run();
+    if(typeof checkAch==="function") checkAch("biz");
+    break;
+  }
+}
+
+/* ================= 资产：钱的去处（2026-08-31 经济重锚下半场） =================
+   收入压实之后，钱要有「买了真的变强/变体面」的阶梯——冠军的千万收入不该只能看余额。
+   全部一次性买断，效果朴素、可叠加，走 120 局批测。 */
+const ASSETS=[
+  {k:"apt",    n:"电竞公寓",     cost:260, d:"离基地五分钟，睡得好。每周额外恢复 4 点疲劳"},
+  {k:"rehab",  n:"私人康复室",   cost:450, d:"手腕和颈椎的私人管家。每次休息多清 8 点疲劳"},
+  {k:"van",    n:"俱乐部保姆车", cost:380, d:"赶路不再是消耗。备战/出征周的恢复折减 0.45 → 0.55"},
+  {k:"station",n:"数据分析工作站",cost:600, d:"自己的复盘房。训练收益 +4%"}
+];
+function buyAsset(k){
+  const A=ASSETS.find(x=>x.k===k); if(!A) return;
+  S.assets=S.assets||{};
+  if(S.assets[k]||S.money<A.cost) return;
+  addMoney("other",-A.cost);
+  S.assets[k]=1;
+  pushEvent(`置办了<b>${A.n}</b>（${A.cost} 万）。${A.d}。<br>
+    <span style="color:var(--ink-3)">职业选手的钱，最后都变成了让自己打得更久的东西。</span>`,"big","资产");
+  if(typeof checkAch==="function") checkAch("asset");
+  render();
+}
+function assetsCard(){
+  if(!S.career) return "";
+  S.assets=S.assets||{};
+  return `<div class="card"><h2>资产<em>一次买断 · 永久生效</em></h2>
+    <div class="grid g2">${ASSETS.map(a=>{
+      const own=!!S.assets[a.k], can=S.money>=a.cost;
+      return `<button class="act" data-asset="${a.k}" ${own?'disabled style="opacity:.55"':(!can?'disabled style="opacity:.34"':'')}>
+        <div class="t">${a.n}${own?'<span class="tag g">已入手</span>':`<span class="tag">${a.cost} 万</span>`}</div>
+        <div class="d">${a.d}</div></button>`;}).join("")}
+    </div></div>`;
+}
+
 /* 俱乐部从你的直播收入里抽走多少 */
 function streamClubCut(){ return (S.streamDeal&&S.streamDeal.cut)||0; }
 function streamCut(){ return STREAM_CUTS[S.streamCutIdx||0].cut; }
@@ -247,7 +347,9 @@ function streamIncome(){
   // 直播是仅次于成就的第二大外快，不跟着缩的话「二线队员靠直播暴富」照样成立。
   const gift=Math.pow(f/40,1.22)*2.2*streamCut()*heatMul;
   const base=2+f*0.025;
-  return (base+gift)*originMul;
+  // 商业底蕴：教学/复盘攒出来的长尾，每点 +1%（封顶 25%）
+  const biz=1+Math.min(S.bizRep||0,25)/100;
+  return (base+gift)*originMul*biz;
 }
 /* 独家平台控流量，涨名气比全网直播慢 */
 /* 独家的代价原来是「平台控流量，直播涨名气变慢」（×0.7）。
@@ -493,6 +595,7 @@ function economyCards(){
   return financeCard()
     + streamDealCard()
     + ((typeof contractTerms==="function")?contractTerms():"")
+    + assetsCard()
     + shopCard()
     + prizeNote();
 }
