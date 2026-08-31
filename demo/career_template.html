@@ -2819,6 +2819,16 @@ function offPanel(){
               <span style="color:var(--red)">经理会不高兴；没人接的话，更衣室也会知道你想走</span>`
             :`🔒 ${c.why}`}</div>
         </button>
+        ${(typeof canBuyout==="function")?(()=>{ const b=canBuyout();
+          const fee=(S.contract&&S.contract.buyout)||0;
+          return `<button class="act" id="doBuyout" ${(!b.ok||S.ap<=0)?'disabled style="opacity:.4"':''}>
+          <div class="t">买断合同</div>
+          <div class="d">${b.ok
+            ?`自己掏 <b style="color:var(--gold)">${fee} 万</b>解约，立刻成为自由身——
+              不用再等别人来挖，别的队也不必替你付这笔钱。<br>
+              <span style="color:var(--red)">经理 −18、教练 −10，全队信任 −12</span>`
+            :`🔒 ${b.why}`}</div>
+        </button>`;})():""}
       </div>`;})()}
     <div class="row"><button class="btn" id="offnext" ${S.ap>0?'disabled':''}>
       ${S.ap>0?`还剩 ${S.ap} 个行动点`
@@ -3551,6 +3561,11 @@ function bind(){
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;
   const _pn=$("pofno"); if(_pn) _pn.onclick=dropProOffer;
   const _at=$("askTransfer"); if(_at) _at.onclick=()=>askTransfer();
+  const _bo=$("doBuyout"); if(_bo) _bo.onclick=()=>askConfirm("买断合同？",
+    `自己掏 <b>${(S.contract&&S.contract.buyout)||0} 万</b>解约，立刻成为自由身。<br>
+     <span class="note">这笔钱不退。经理和教练会记着，更衣室也会知道。
+     好处是从此没人拦着你，别的队也不用替你付违约金。</span>`,
+    "掏钱走人", ()=>doBuyout());
   const _sy2=$("strmyes"); if(_sy2) _sy2.onclick=()=>signStreamDeal();
   const _sc2=$("strmclub"); if(_sc2) _sc2.onclick=()=>signStreamDeal("club");
   const _sr2=$("strmrival"); if(_sr2) _sr2.onclick=()=>signStreamDeal("rival");

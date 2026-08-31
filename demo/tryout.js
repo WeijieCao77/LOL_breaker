@@ -630,6 +630,7 @@ function proPerf(){
 }
 /* 违约金越高，越少有队愿意动你 */
 function buyoutDrag(){
+  if(S.freeAgent) return 0;      // 自由身：没人需要为你付违约金
   const b = (S.contract && S.contract.buyout) || 0;
   return b / 260;          // 900 万违约金 ≈ 拉低 3.5 分表现分
 }
@@ -791,6 +792,43 @@ function canAskTransfer(){
   if(S.proOffer||S.deal||S.tryout) return {ok:false,why:"手上还有没谈完的事"};
   return {ok:true};
 }
+/* ---------- 自行买断合同 ----------
+   玩家原话：「现在这个违约金是不是根本没有用到的地方，我根本没有自己解约跳槽的选项」。
+
+   违约金原来只在三个地方出现：影响别队来挖你的概率（buyoutDrag）、
+   买你的队要付这笔钱（signTransfer）、签约时可以谈低。
+   全是「别人怎么对你」——玩家自己一次也用不上它。
+   现在补上第三条路：<b>自己掏这笔钱把合同买断</b>，立刻成为自由身。
+   代价明码标价：钱、经理和教练的信任、更衣室的看法。
+   这也让签约时「压低违约金」那个选项第一次有了自己的意义。 */
+function canBuyout(){
+  if(!S.career||!S.team) return {ok:false,why:"还没签约"};
+  if(!S.off||S.off.next!=="year") return {ok:false,why:"只有休赛期能买断——赛季中走人是违约，俱乐部不会同意"};
+  if(S.proOffer||S.deal||S.tryout) return {ok:false,why:"手上还有没谈完的事"};
+  const fee=(S.contract&&S.contract.buyout)||0;
+  if(!fee) return {ok:false,why:"这份合同没有违约金条款"};
+  if(S.money<fee) return {ok:false,why:`要 ${fee} 万，你现在只有 ${Math.round(S.money)} 万`};
+  return {ok:true,fee};
+}
+function doBuyout(){
+  const c=canBuyout(); if(!c.ok||S.ap<=0) return;
+  S.ap--;
+  addMoney("other",-c.fee);
+  const old=S.team;
+  if(typeof addStaff==="function"){ addStaff("mgr",-18); addStaff("coach",-10); }
+  if(typeof addTrustAll==="function") addTrustAll(-12);
+  S.freeAgent=true;                       // 自由身：这个休赛期的报价会宽一档
+  S.askedTransfer=true;
+  pushEvent(`你自己掏了 <b>${c.fee} 万</b>，把和 <b>${old}</b> 的合同买断了。<br>
+    合同作废，你现在是<b>自由身</b>——不用再等别人来挖，也没人再替你付这笔钱。<br>
+    <span style="color:var(--red)">经理和教练都记着这一笔，更衣室也知道了。</span>`,"big","转会");
+  // 自由身不用别人付违约金，愿意谈的队会多一档
+  if(typeof rollProOffers==="function"){ S.offerYear=undefined; rollProOffers(); }
+  if(!S.proOffer) pushEvent(`消息放出去了，但这个休赛期暂时没有队来谈。
+    <span style="color:var(--ink-3)">自由身的好处是没人拦着你，坏处是也没人替你着急。</span>`,"info","转会");
+  render();
+}
+
 /* 有没有人接牌的把握，也摆给玩家看 */
 function askTransferOdds(){
   const perf=proPerf()-buyoutDrag();
