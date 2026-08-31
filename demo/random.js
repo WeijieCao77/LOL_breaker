@@ -69,11 +69,11 @@ const RANDOM_EVENTS=[
    q:()=>{ const u=S._upset||{};
      return `<b>${u.loser}</b> 输给了 <b>${u.winner}</b>，赛前没人看好${u.winner}。`; },
    ctx:"你把这场的回放看了两遍。这行没有理所当然的赢。",
-   a:[{t:"憋着一股劲，加练",e:()=>{addBuff("train",1.5,2,"憋着劲");addFat(6);
+   a:[{t:"憋着一股劲，加练", g:"grind",e:()=>{addBuff("train",1.5,2,"憋着劲");addFat(6);
         return "接下来两周你练得比谁都狠。"}},
-      {t:"发条动态点评两句",e:()=>{addFans(6);
+      {t:"发条动态点评两句", g:"show",e:()=>{addFans(6);
         return "转发不少，也有人说你自己都还没打上首发。"}},
-      {t:"关掉，睡了",e:()=>{addFat(-8);
+      {t:"关掉，睡了", g:"grind",e:()=>{addFat(-8);
         return "第二天状态还行。有些事跟你没关系。"}}]},
 
   {id:"scam", rec:2, w:2, when:()=>S.money>=60,
@@ -83,16 +83,16 @@ const RANDOM_EVENTS=[
           return "对方收了钱就把你拉黑了。这五十万买了个教训。"; }
         pay(50); S.pre&&(S.pre.scoutHint=1); addFans(14);
         return "居然是真的，你被安排去看了一场训练赛，认识了两个人。"}},
-      {t:"不理",e:()=>{return "你没回。第二天那个号就注销了。"}},
-      {t:"挂到网上",e:()=>{addFans(9);
+      {t:"不理", g:"grind",e:()=>{return "你没回。第二天那个号就注销了。"}},
+      {t:"挂到网上", g:"hard",e:()=>{addFans(9);
         return "帖子火了，不少人说自己也被骗过。"}}]},
 
   {id:"wrist", rec:0, w:2, when:()=>S.fatigue>=55,
    q:()=>`手腕开始疼。你已经连着几周高强度了。`,
    ctx:"忍一忍也能打，但你知道这东西会积累。",
-   a:[{t:"去医院看看", cost:25, e:()=>{pay(25);addFat(-30);addBuff("train",0.8,1,"休养中");
+   a:[{t:"去医院看看", g:"show", cost:25, e:()=>{pay(25);addFat(-30);addBuff("train",0.8,1,"休养中");
         return "医生说没大事，让你少练两天。"}},
-      {t:"贴个膏药接着练",e:()=>{addFat(10);
+      {t:"贴个膏药接着练", g:"grind",e:()=>{addFat(10);
         if(rnd()<0.3){ S.attrs.体质=Math.max(20,S.attrs.体质-1.5);
           return "疼了一整周。你的体质悄悄掉了一点。"; }
         return "扛过去了，这次运气不错。"}}]},
@@ -100,31 +100,37 @@ const RANDOM_EVENTS=[
   {id:"streamGift", rec:1, auto:false, when:()=>S.fans>=40,
    q:()=>`直播间来了个大哥，一口气刷了一堆礼物。`,
    ctx:"他要求你连麦陪他打两把。",
-   a:[{t:"陪打",e:()=>{addMoney("other",45);addFat(8);addFans(4);
+   a:[{t:"陪打", g:"warm",e:()=>{addMoney("other",45);addFat(8);addFans(4);
         return "他玩得很开心，还说下次再来。"}},
-      {t:"婉拒，正常直播",e:()=>{addMoney("other",12);addFans(6);
+      {t:"婉拒，正常直播", g:"grind",e:()=>{addMoney("other",12);addFans(6);
         return "弹幕觉得你挺有原则的。"}}]},
 
   {id:"oldFriend", rec:0, w:2, when:()=>true,
    q:()=>`初中同学约你出去吃饭，说好久没见了。`,
    ctx:"你已经三个月没出过门。",
-   a:[{t:"去", cost:8, e:()=>{addFat(-22);pay(8);addBuff("mood",1.2,2,"心情不错");
+   a:[{t:"去", g:"show", cost:8, e:()=>{addFat(-22);pay(8);addBuff("mood",1.2,2,"心情不错");
         return "聊了一晚上，回来的时候觉得轻松多了。"}},
-      {t:"不去，练",e:()=>{addFat(4);addBuff("train",1.15,1,"心无旁骛");
+      {t:"不去，练", g:"grind",e:()=>{addFat(4);addBuff("train",1.15,1,"心无旁骛");
         return "你把那顿饭的时间换成了两把排位。"}}]},
 
   {id:"proNews", rec:0, w:3, when:()=>!!S.world,
    q:()=>{ const lg="LPL";
      const ts=(S.world&&S.world[lg])||[];
      const t=ts[Math.floor(rnd()*ts.length)];
-     S._ev={t:t?t.name:"某支队"};
+     S._ev={t:t?t.name:"某支队", team:t};
      return `<b>${S._ev.t}</b> 官宣裁掉了首发选手，位置空出来了。`; },
    ctx:"消息底下全是「谁能顶上」。",
-   a:[{t:"给自己剪个集锦发过去",e:()=>{addFans(11);
+   /* 这条新闻要在世界里真的发生：那支队的名单确实变了，战力跟着变。
+      原来它只是弹一句话——说完什么也没发生，等于告诉玩家「这些字和你的世界无关」。 */
+   a:[{t:"给自己剪个集锦发过去", g:"show",e:()=>{addFans(11);
+        const ch=(typeof evRosterChange==="function")?evRosterChange(S._ev&&S._ev.team):null;
+        const tail=ch?`<br><span style="color:var(--ink-3)">${S._ev.t} 提上了新秀 <b>${ch.nr.id}</b>，${ch.out.id} 走了。</span>`:"";
         if(rnd()<0.35){ S.pre&&(S.pre.rank=clamp(S.pre.rank+2,0,100));
-          return "有个教练回了你一条：「继续打，我们看着。」"; }
-        return "石沉大海。但集锦本身涨了点关注。"}},
-      {t:"该干嘛干嘛",e:()=>{return "机会不是这么来的。你回去打排位了。"}}]},
+          return "有个教练回了你一条：「继续打，我们看着。」"+tail; }
+        return "石沉大海。但集锦本身涨了点关注。"+tail}},
+      {t:"该干嘛干嘛", g:"grind",e:()=>{
+        const ch=(typeof evRosterChange==="function")?evRosterChange(S._ev&&S._ev.team):null;
+        return "机会不是这么来的。你回去打排位了。"+(ch?`<br><span style="color:var(--ink-3)">几天后 ${S._ev.t} 提上了新秀 <b>${ch.nr.id}</b>。</span>`:"")}}]},
 
   /* ================= 梗与文化 =================
      这一类的共同点：它们是「圈子对你的二次创作」，所以门槛都挂在粉丝数上——
@@ -133,21 +139,25 @@ const RANDOM_EVENTS=[
   {id:"bible", rec:0, w:2, max:1, when:()=>S.fans>=800&&((S.career&&S.career.l)||0)>=6,
    q:()=>`你上个月赛后采访那句话，被人剪进了「LPL 圣经」合集。`,
    ctx:"播放量七位数，弹幕全是你的名字，但没一条是在夸你打得好。",
-   a:[{t:"自己转发，配一句「下次赢回来」",e:()=>{addFans(30);addBuff("mood",1.15,2,"心里踏实");
+   a:[{t:"自己转发，配一句「下次赢回来」", g:"show",e:()=>{addFans(30);addBuff("mood",1.15,2,"心里踏实");
         return "评论区风向当场就变了。玩得起的人，大家反而服。"}},
-      {t:"当没看见，闷头训练",e:()=>{addBuff("train",1.25,2,"憋着一口气");
+      {t:"当没看见，闷头训练", g:"grind",e:()=>{addBuff("train",1.25,2,"憋着一口气");
+        if(typeof addQuest==="function") addQuest({id:"bible",n:"把话咽下去",
+          d:"你说了不回应——那就得练出来给人看",kind:"train",need:6,due:3,
+          fans:40,okTxt:"三周后你的数据被同一批人拿去做了另一个合集。",
+          failTxt:"你既没回应，也没练。那条视频还在涨播放。",penFans:35});
         return "你把那条视频的链接删了，然后多打了两个小时训练赛。"}},
-      {t:"发长文澄清那句话的语境",e:()=>{addFans(12);addBuff("mood",0.88,2,"越描越黑");
+      {t:"发长文澄清那句话的语境", g:"show",e:()=>{addFans(12);addBuff("mood",0.88,2,"越描越黑");
         return "长文被截成了新的梗图。有些事越解释越热闹。"}}]},
 
   {id:"ghostcut", rec:0, w:2, when:()=>S.fans>=500,
    q:()=>`有人把你的一波操作做成了鬼畜，播放量比比赛正片还高。`,
    ctx:"作者在简介里 @ 了你，说「求本人不要生气」。",
-   a:[{t:"三连，评论「做得比我打得好」",e:()=>{addFans(26);
+   a:[{t:"三连，评论「做得比我打得好」", g:"show",e:()=>{addFans(26);
         return "作者激动坏了，又剪了三期。你的名字在鬼畜区挂了一整月。"}},
-      {t:"私信作者要授权，做成自己的直播片头",e:()=>{addFans(16);addMoney("other",-10);
+      {t:"私信作者要授权，做成自己的直播片头", g:"show",e:()=>{addFans(16);addMoney("other",-10);
         return "花了点小钱买断，片头一放弹幕就刷屏。这波你也算参与了创作。"}},
-      {t:"不理",e:()=>{addFans(5);
+      {t:"不理", g:"grind",e:()=>{addFans(5);
         return "热度自己散了。你连点开都没点开。"}}]},
 
   {id:"nickname", rec:0, w:2, max:1, when:()=>S.fans>=350&&!!S.team,
@@ -155,21 +165,25 @@ const RANDOM_EVENTS=[
      S._ev={d};
      return `解说在直播里给你起了个外号，取的是你${d}那一手。`; },
    ctx:"一晚上之后，弹幕已经没人叫你 ID 了。",
-   a:[{t:"认下来，直播间标题都改成外号",e:()=>{addFans(22);
+   a:[{t:"认下来，直播间标题都改成外号", g:"warm",e:()=>{addFans(22);
         return "外号比 ID 传得远。这行认脸也认梗。"}},
-      {t:"公开说不喜欢这个叫法",e:()=>{addFans(9);addBuff("mood",0.9,1,"有点烦");
+      {t:"公开说不喜欢这个叫法", g:"hard",e:()=>{addFans(9);addBuff("mood",0.9,1,"有点烦");
         return "你越说不喜欢，叫的人越多。"}}]},
 
   {id:"matchfix", rec:0, w:2, max:1, when:()=>!!S.team&&S.fans>=600&&((S.career&&S.career.l)||0)>=8,
    q:()=>`论坛有个帖子在扒你上一场的走位，说那波送得「太刻意」。`,
    ctx:"帖子底下已经有人在艾特反假赛的举报邮箱了。",
-   a:[{t:"逐帧录一期复盘，把那波讲透",e:()=>{addFat(12);addFans(34);
+   a:[{t:"逐帧录一期复盘，把那波讲透", g:"hard",e:()=>{addFat(12);addFans(34);
         if(typeof addStaff==="function") addStaff("mgr",5);
         return "你把决策链讲了二十分钟。原帖删了，俱乐部转发了你的视频。"}},
       {t:"交给俱乐部公关处理", cost:60, e:()=>{ if(!pay(60)) return "你手上没这个钱。";
         addFans(6);
         return "律师函发出去了，帖子没了。但「心虚」两个字也留在了评论区。"}},
-      {t:"不回应，用下一场说话",e:()=>{addBuff("train",1.3,2,"用成绩说话");
+      {t:"不回应，用下一场说话", g:"grind",e:()=>{addBuff("train",1.3,2,"用成绩说话");
+        if(typeof addQuest==="function") addQuest({id:"matchfix",n:"用下一场说话",
+          d:"传闻还挂在论坛上，只有赢球能压下去",kind:"win",need:2,due:3,
+          fans:60,mgr:6,trust:6,okTxt:"两场打完，帖子沉了——没人再提那波走位。",
+          failTxt:"传闻越传越像真的。",penFans:70,mgr:-8});
         return "你什么都没说。下一场的准备做得格外细。"}}]},
 
   /* ================= 人生 =================
@@ -181,68 +195,82 @@ const RANDOM_EVENTS=[
    a:[{t:"买一辆", cost:320, e:()=>{ if(!pay(320)) return "钱不够。再等等。";
         addBuff("mood",1.25,3,"人生第一辆车");addFans(14);
         return "提车那天你绕着基地开了两圈。有些东西不是必需品，是证明。"}},
-      {t:"再等等，先给家里换个房",e:()=>{addBuff("mood",1.1,2,"心里踏实");
+      {t:"再等等，先给家里换个房", g:"grind",e:()=>{addBuff("mood",1.1,2,"心里踏实");
         return "你把页面关了。这笔钱有更该去的地方。"}},
-      {t:"不买，钱留着",e:()=>{return "你连页面都没收藏。现在还不是时候。"}}]},
+      {t:"不买，钱留着", g:"grind",e:()=>{return "你连页面都没收藏。现在还不是时候。"}}]},
 
   {id:"parentsill", rec:2, w:2, max:1, when:()=>S.age>=20,
    q:()=>`家里打电话来，说父亲住院了，让你别担心，不用回。`,
    ctx:"「不用回」这三个字，你听了二十年了。",
-   a:[{t:"请假回家一趟", cost:40, e:()=>{pay(40);addFat(-10);
+   a:[{t:"请假回家一趟", g:"warm", cost:40, e:()=>{pay(40);addFat(-10);
         addBuff("train",0.85,2,"人不在状态");addBuff("mood",1.3,3,"回过家了");
         return "床边坐了三天。回来的时候训练落下了，但心里那块石头落了地。"}},
       {t:"打钱，不回", cost:150, e:()=>{ if(!pay(150)) return "你连这笔钱都拿不出来，只能干着急。";
         addBuff("mood",0.85,3,"心里挂着事");
         return "钱转过去了。之后每次训练走神，你都知道是为什么。"}},
-      {t:"每天视频半小时",e:()=>{addFat(5);addBuff("mood",1.1,2,"隔着屏幕也算陪");
+      {t:"每天视频半小时", g:"warm",e:()=>{addFat(5);addBuff("mood",1.1,2,"隔着屏幕也算陪");
         return "他嫌你浪费时间，但每次都提前十分钟等着。"}}]},
 
   {id:"hometown", rec:0, w:1, max:1, when:()=>S.fans>=1200,
    q:()=>`老家县城在主干道上挂了条横幅，上面是你的名字。`,
    ctx:"照片是你妈发来的，配文只有三个感叹号。",
-   a:[{t:"发微博谢谢家乡",e:()=>{addFans(24);addBuff("mood",1.2,2,"被看见了");
+   a:[{t:"发微博谢谢家乡", g:"show",e:()=>{addFans(24);addBuff("mood",1.2,2,"被看见了");
         return "本地号全转了。你妈把那条微博截图设成了头像。"}},
-      {t:"私下给母校捐一笔", cost:200, e:()=>{ if(!pay(200)) return "你想捐，但账上不够。";
+      {t:"私下给母校捐一笔", g:"show", cost:200, e:()=>{ if(!pay(200)) return "你想捐，但账上不够。";
         addFans(18);addBuff("mood",1.25,3,"做了件实事");
         return "学校新添了一间电竞教室。校长说，以前老师拿你当反面教材。"}}]},
 
   {id:"landlord", rec:0, w:1, when:()=>!S.team&&S.fans>=200,
    q:()=>`房东上门收租，看了你半天，问：「你是不是在网上那个打游戏的？」`,
    ctx:"他儿子在旁边猛点头。",
-   a:[{t:"承认，给他儿子签个名",e:()=>{addFans(8);addMoney("other",-0);
+   a:[{t:"承认，给他儿子签个名", g:"warm",e:()=>{addFans(8);addMoney("other",-0);
         return "这个月房租他给你抹了个零头。他儿子在班级群里吹了一星期。"}},
-      {t:"否认",e:()=>{return "他将信将疑地走了。你关上门，松了口气。"}}]},
+      {t:"否认", g:"grind",e:()=>{return "他将信将疑地走了。你关上门，松了口气。"}}]},
 
   /* ================= 行业 =================
      这一类的触发条件挂在「你已经是个有商业价值的人」上。 */
 
-  {id:"adshoot", rec:1, w:2, when:()=>S.fans>=900&&!!S.team,
+  {id:"adshoot", rec:2, w:2, when:()=>S.fans>=900&&!!S.team,
    q:()=>`一个外设品牌找过来，要拍一支 30 秒的广告。`,
    ctx:"报价不低，但拍摄要占掉你一整天。",
-   a:[{t:"接，认真拍",e:()=>{addFat(20);addMoney("other",180);addFans(28);
+   /* 广告不是拍完就完了：合同里写着要在直播里露出。
+      于是它给你留下一件有期限的事，这一周的行动点怎么花被它改变了。 */
+   a:[{t:"接，认真拍", g:"show",e:()=>{addFat(20);addMoney("other",180);addFans(28);
+        if(typeof addQuest==="function") addQuest({id:"adshoot",n:"品牌露出",
+          d:"合同要求你在直播里用他们的外设",kind:"stream",need:2,due:3,
+          money:120,fans:14,okTxt:"品牌方很满意，尾款结清。",
+          failTxt:"品牌方按合同扣了尾款。",penalty:90,mgr:-3});
         return "拍了一整天，导演让你重念了四十遍那句台词。钱到账很快。"}},
-      {t:"接，但压缩到半天",e:()=>{addFat(10);addMoney("other",95);addFans(12);
+      {t:"接，但压缩到半天", g:"show",e:()=>{addFat(10);addMoney("other",95);addFans(12);
+        if(typeof addQuest==="function") addQuest({id:"adshoot",n:"品牌露出",
+          d:"成片糙了点，品牌方盯得更紧",kind:"stream",need:2,due:2,
+          money:60,fans:8,okTxt:"总算糊弄过去了。",
+          failTxt:"品牌方本来就不满意，这下直接扣钱。",penalty:70,mgr:-4});
         return "成片有点糙，品牌方脸色一般。钱少拿了一半，时间省下来了。"}},
-      {t:"推掉，专心备战",e:()=>{addBuff("train",1.2,2,"心无旁骛");
+      {t:"推掉，专心备战", g:"grind",e:()=>{addBuff("train",1.2,2,"心无旁骛");
         return "经纪那边有点可惜。但这周的训练赛你一场没落。"}}]},
 
   {id:"variety", rec:1, w:1, max:1, when:()=>S.fans>=2000,
    q:()=>`一档综艺来邀请，说想请你去当嘉宾，聊聊「电竞选手的一天」。`,
    ctx:"录制在赛季中间，要飞一趟，来回三天。",
-   a:[{t:"去",e:()=>{addFat(28);addFans(70);addMoney("other",120);
+   a:[{t:"去", g:"show",e:()=>{addFat(28);addFans(70);addMoney("other",120);
         if(typeof addStaff==="function") addStaff("mgr",-5);
         return "节目播出后你破了圈，路人都认识你了。教练组对这三天没什么好脸色。"}},
-      {t:"不去，赛季中不折腾",e:()=>{ if(typeof addStaff==="function") addStaff("mgr",6);
+      {t:"不去，赛季中不折腾", g:"grind",e:()=>{ if(typeof addStaff==="function") addStaff("mgr",6);
         return "俱乐部很满意。机会以后还有，赛季只有这一次。"}}]},
 
   {id:"beef", rec:2, w:2, when:()=>S.fans>=700,
    q:()=>`另一个主播在直播里点了你的名，说你「就是运气好」。`,
    ctx:"切片已经传遍了，两边粉丝在评论区打起来了。",
-   a:[{t:"约他打一场表演赛",e:()=>{addFans(45);addFat(10);
-        return "约战当天两个直播间加起来百万人在看。谁赢的已经没人记得了，热度是真的。"}},
-      {t:"直播里回敬一句",e:()=>{addFans(26);addBuff("mood",0.85,2,"心态受影响");
+   a:[{t:"约他打一场表演赛", g:"hard",e:()=>{addFans(45);addFat(10);
+        // 这一架要在世界里留下人：对面成了你的宿敌，之后对上会接着这条线走
+        const t=(typeof evPickTeam==="function")?evPickTeam():null;
+        if(t&&typeof evMakeRival==="function") evMakeRival(t.name,"直播里那场约战");
+        return "约战当天两个直播间加起来百万人在看。谁赢的已经没人记得了，热度是真的。"
+          +(t?`<br><span style="color:var(--ink-3)">他后来签去了 <b>${t.name}</b>——这笔账还没完。</span>`:"")}},
+      {t:"直播里回敬一句", g:"hard",e:()=>{addFans(26);addBuff("mood",0.85,2,"心态受影响");
         return "骂战升级了。热度有了，心态也有点乱。"}},
-      {t:"完全不接",e:()=>{addFans(4);addBuff("train",1.15,2,"没别的事");
+      {t:"完全不接", g:"grind",e:()=>{addFans(4);addBuff("train",1.15,2,"没别的事");
         return "你连提都没提。三天后这事就没人说了。"}}]},
 
   {id:"platjump", rec:1, w:2, max:1, when:()=>!!S.streamDeal&&S.fans>=1200,
@@ -250,17 +278,17 @@ const RANDOM_EVENTS=[
      S._ev={p};
      return `另一家平台私下找你，开的价比 <b>${p}</b> 给你的高一截。`; },
    ctx:"合同还没到期。跳槽这事在这行不新鲜，但从来没有干净的。",
-   a:[{t:"违约跳槽", cost:200, e:()=>{ if(!pay(200)) return "违约金你付不起，这事只能作罢。";
+   a:[{t:"违约跳槽", g:"hard", cost:200, e:()=>{ if(!pay(200)) return "违约金你付不起，这事只能作罢。";
         if(S.streamDeal){ S.streamDeal.base=Math.round(S.streamDeal.base*1.35); }
         addFans(20);
         if(typeof addStaff==="function") addStaff("mgr",-10);
         return "违约金赔了，新合同的保底高了三成五。圈里传了一阵闲话，俱乐部也不太高兴。"}},
-      {t:"拿这份报价去找原平台谈",e:()=>{ if(rnd()<0.55){
+      {t:"拿这份报价去找原平台谈", g:"show",e:()=>{ if(rnd()<0.55){
           if(S.streamDeal) S.streamDeal.base=Math.round(S.streamDeal.base*1.18);
           return "原平台加了价——保底涨了一成八。谈判就是这么回事。"; }
         addBuff("mood",0.9,2,"谈崩了");
         return "对方一句「合同白纸黑字」把你顶了回来。你什么也没拿到。"}},
-      {t:"不动",e:()=>{ if(typeof addStaff==="function") addStaff("mgr",4);
+      {t:"不动", g:"grind",e:()=>{ if(typeof addStaff==="function") addStaff("mgr",4);
         return "你把消息删了。守约的人，路会长一点。"}}]},
 
   /* ================= 触发式：由真发生的事引出 ================= */
@@ -268,21 +296,24 @@ const RANDOM_EVENTS=[
   {id:"slump", rec:0, auto:false, when:()=>!!S.team,
    q:()=>`连败之后，更衣室安静得不像话。有人开始翻你的数据。`,
    ctx:"这种时候说什么都像找借口，但什么都不说更糟。",
-   a:[{t:"开个会，把问题摊开讲",e:()=>{ if(typeof addTrustAll==="function") addTrustAll(10);
+   a:[{t:"开个会，把问题摊开讲", g:"warm",e:()=>{ if(typeof addTrustAll==="function") addTrustAll(10);
         addFat(8);addBuff("mood",1.15,2,"话说开了");
         return "吵了两个小时，但走出会议室的时候，气氛终于松了。"}},
-      {t:"自己加练，用状态说话",e:()=>{addFat(14);addBuff("train",1.35,2,"闷头练");
+      {t:"自己加练，用状态说话", g:"grind",e:()=>{addFat(14);addBuff("train",1.35,2,"闷头练");
         return "你一个人在训练室待到凌晨。没人知道，但下周所有人都看见了。"}},
       {t:"跟教练要一次轮换",e:()=>{ if(typeof addStaff==="function") addStaff("coach",-6);
         addFat(-18);
+        // 真的坐板凳：benchedSplits 是别处在用的量（影响 proPerf、影响下放提议），
+        // 所以这一下是有后果的，不是一句台词
+        S.benchedSplits=(S.benchedSplits||0)+1;
         return "教练同意让你歇一场。他答应得太快了，这让你更慌。"}}]},
 
   {id:"afterchamp", rec:1, auto:false, when:()=>!!S.team,
    q:()=>`夺冠之后，庆功宴、采访、商务饭局一个接一个。`,
    ctx:"这是你打了那么多年想要的东西，但你已经三天没摸到鼠标了。",
-   a:[{t:"全程参加，该享受就享受",e:()=>{addFat(24);addFans(40);addMoney("other",60);
+   a:[{t:"全程参加，该享受就享受", g:"show",e:()=>{addFat(24);addFans(40);addMoney("other",60);
         return "你喝到了凌晨，也第一次感觉这行有回报。代价是身体透支了几天。"}},
-      {t:"露个面就回去训练",e:()=>{addFans(10);addBuff("train",1.25,2,"没飘");
+      {t:"露个面就回去训练", g:"show",e:()=>{addFans(10);addBuff("train",1.25,2,"没飘");
         if(typeof addStaff==="function") addStaff("coach",8);
         return "教练在群里发了张你独自训练的照片，配文只有两个字：不错。"}},
       {t:"全推了，直接休假",e:()=>{addFat(-35);
@@ -300,7 +331,7 @@ const RANDOM_EVENTS=[
   {id:"coachDM", rec:1, w:2, when:()=>(S.pre?S.pre.rank>=30:false),
    q:()=>`一个认证是「青训教练」的号加了你，问你想不想来试训。`,
    ctx:"这次头像和认证都对得上。",
-   a:[{t:"去",e:()=>{addFat(14);addFans(16);
+   a:[{t:"去", g:"show",e:()=>{addFat(14);addFans(16);
         if(S.pre) S.pre.tryoutSeen=1;
         return "打了一下午训练赛。教练说保持联系。"}},
       {t:"先问清楚条件",e:()=>{addFans(5);
@@ -309,19 +340,19 @@ const RANDOM_EVENTS=[
   {id:"teamDinner", rec:1, w:2, when:()=>!!S.team,
    q:()=>`队里聚餐，经理说想让大家放松放松。`,
    ctx:"你本来打算今晚加练的。",
-   a:[{t:"去，喝两杯",e:()=>{typeof addTrustAll==="function"&&addTrustAll(7);addFat(-14);
+   a:[{t:"去，喝两杯", g:"show",e:()=>{typeof addTrustAll==="function"&&addTrustAll(7);addFat(-14);
         typeof addSquad==="function"&&addSquad("syn",2.2);
         return "聊开了不少事。回去的路上气氛很好。"}},
-      {t:"留下加练",e:()=>{addBuff("train",1.3,1,"独自加练");
+      {t:"留下加练", g:"grind",e:()=>{addBuff("train",1.3,1,"独自加练");
         typeof addTrustAll==="function"&&addTrustAll(-4);
         return "你一个人练到很晚。有人觉得你不合群。"}}]},
 
   {id:"hater", rec:1, auto:false, when:()=>S.fans>=70,
    q:()=>`有个营销号剪了你的失误集锦，标题很难听。`,
    ctx:()=>`剪的正是你上一场没成的那几个操作。底下已经几千条了。`,
-   a:[{t:"回怼",e:()=>{addFans(14);addBuff("mood",0.85,2,"心态受影响");
+   a:[{t:"回怼", g:"hard",e:()=>{addFans(14);addBuff("mood",0.85,2,"心态受影响");
         return "热度上去了，但你自己也难受了两周。"}},
-      {t:"不看，专心打",e:()=>{addBuff("train",1.2,2,"用成绩说话");
+      {t:"不看，专心打", g:"grind",e:()=>{addBuff("train",1.2,2,"用成绩说话");
         return "你把手机扔一边，练得更狠了。"}},
       {t:"找公关处理", cost:40, e:()=>{pay(40);addFans(4);
         return "视频很快下架了。钱花得不冤。"}}]},
@@ -335,17 +366,17 @@ const RANDOM_EVENTS=[
   {id:"junior", rec:0, w:2, when:()=>(S.pre?S.pre.rank>=25:false),
    q:()=>`同分段一个小号加你好友，说很崇拜你，想跟你双排。`,
    ctx:"他打得不太行，但很热情。",
-   a:[{t:"带他两把",e:()=>{addFans(7);addFat(5);
+   a:[{t:"带他两把", g:"warm",e:()=>{addFans(7);addFat(5);
         if(rnd()<0.4) return "他把你们的对局发了出去，你涨了点粉。";
         return "输了两把，但他很开心。"}},
-      {t:"婉拒",e:()=>{return "你说最近在冲分。他表示理解。"}}]},
+      {t:"婉拒", g:"grind",e:()=>{return "你说最近在冲分。他表示理解。"}}]},
 
   /* ---------- 以下为定向触发：都由刚刚真的发生的事引出来 ---------- */
 
   {id:"skid", rec:0, auto:false, when:()=>!!S.team,
    q:()=>`连败之后，经理把你单独叫去办公室。`,
    ctx:()=>`他没发火，只是问你一句：「你觉得问题在哪？」`,
-   a:[{t:"是我的问题，我会调整",e:()=>{typeof addStaff==="function"&&addStaff("mgr",4);
+   a:[{t:"是我的问题，我会调整", g:"warm",e:()=>{typeof addStaff==="function"&&addStaff("mgr",4);
         addBuff("train",1.25,2,"憋着一口气");
         return "他点点头，说这话他信。你接下来两周练得很沉。"}},
       {t:"是体系问题，该换打法",e:()=>{typeof addSquad==="function"&&addSquad("tac",3.2);
@@ -358,9 +389,9 @@ const RANDOM_EVENTS=[
   {id:"bigWin", rec:0, auto:false, when:()=>!!S.team,
    q:()=>`赢下强队之后，官方采访点名要你。`,
    ctx:"镜头已经架好了，导播在倒计时。",
-   a:[{t:"把功劳给队友",e:()=>{typeof addTrustAll==="function"&&addTrustAll(9);addFans(8);
+   a:[{t:"把功劳给队友", g:"warm",e:()=>{typeof addTrustAll==="function"&&addTrustAll(9);addFans(8);
         return "队友在后台听到了。这句话比赢球本身更管用。"}},
-      {t:"放狠话，点名下一个对手",e:()=>{addFans(26);
+      {t:"放狠话，点名下一个对手", g:"hard",e:()=>{addFans(26);
         typeof noteGrudge==="function"&&0;
         return "热搜挂了一天。下一场对面打得格外凶。"}},
       {t:"照稿念，客套两句",e:()=>{addFans(3);
@@ -373,16 +404,16 @@ const RANDOM_EVENTS=[
         S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.6);
         addBuff("train",1.2,2,"重新学起");
         return "两周没打好，但手里多了三个能用的。"}},
-      {t:"找教练要针对性 BP",e:()=>{typeof addSquad==="function"&&addSquad("tac",3.6);
+      {t:"找教练要针对性 BP", g:"warm",e:()=>{typeof addSquad==="function"&&addSquad("tac",3.6);
         typeof addStaff==="function"&&addStaff("coach",2);
         return "教练给你留了保护位。这个版本你不至于难受。"}},
-      {t:"不管版本，硬打",e:()=>{addBuff("mood",0.9,2,"逆版本");
+      {t:"不管版本，硬打", g:"hard",e:()=>{addBuff("mood",0.9,2,"逆版本");
         return "你还在打上个版本的游戏。有几场很别扭。"}}]},
 
   {id:"exMate", rec:0, auto:false, when:()=>!!S.team,
    q:()=>`一起打了很久的队友被卖了，走之前来找你吃了顿饭。`,
    ctx:"他说下赛季可能就是对面了。",
-   a:[{t:"敬他一杯，好聚好散",e:()=>{addFat(-10);addBuff("mood",1.15,2,"心里踏实");
+   a:[{t:"敬他一杯，好聚好散", g:"warm",e:()=>{addFat(-10);addBuff("mood",1.15,2,"心里踏实");
         return "他说你是队里唯一送他的人。"}},
       {t:"问清楚俱乐部是怎么想的",e:()=>{typeof addStaff==="function"&&addStaff("mgr",-3);
         S.scoutHeat=(S.scoutHeat||0)+1;
@@ -391,7 +422,7 @@ const RANDOM_EVENTS=[
   {id:"airport", rec:0, w:1, when:()=>S.fans>=140,
    q:()=>`机场有人认出你，要求合影。`,
    ctx:"你正赶着登机，队友已经过安检了。",
-   a:[{t:"停下来合影",e:()=>{addFans(9);addFat(3);
+   a:[{t:"停下来合影", g:"show",e:()=>{addFans(9);addFat(3);
         return "对方发了微博，转发不少。"}},
       {t:"边走边说抱歉",e:()=>{addFans(-4);
         return "有人拍了背影，配文说你耍大牌。"}}]},
@@ -399,18 +430,18 @@ const RANDOM_EVENTS=[
   {id:"family", rec:0, w:2, when:()=>true,
    q:()=>`家里打电话，问你过年回不回去。`,
    ctx:"赛程排在那儿，你自己也说不准。",
-   a:[{t:"答应回去待两天",e:()=>{addFat(-18);addBuff("mood",1.2,2,"回了趟家");
+   a:[{t:"答应回去待两天", g:"warm",e:()=>{addFat(-18);addBuff("mood",1.2,2,"回了趟家");
         return "在家睡了两天，什么都没想。"}},
-      {t:"说今年怕是回不去",e:()=>{addBuff("train",1.15,2,"没别的事");
+      {t:"说今年怕是回不去", g:"show",e:()=>{addBuff("train",1.15,2,"没别的事");
         return "电话那头停了一下，说打好就行。"}}]},
 
   {id:"sponsor", rec:1, w:1, when:()=>!!S.team&&S.fans>=90,
    q:()=>`赞助商寄来一箱新外设，希望你直播时用一下。`,
    ctx:"东西不错，但手感和你现在用的不一样。",
-   a:[{t:"接了，直播时用",e:()=>{const n=40+Math.floor(rnd()*40);addMoney("other",n);
+   a:[{t:"接了，直播时用", g:"show",e:()=>{const n=40+Math.floor(rnd()*40);addMoney("other",n);
         addBuff("train",0.92,1,"手感在适应");
         return `到账 ${n} 万。手感别扭了几天。`}},
-      {t:"婉拒，手感要紧",e:()=>{typeof addStaff==="function"&&addStaff("mgr",-2);
+      {t:"婉拒，手感要紧", g:"grind",e:()=>{typeof addStaff==="function"&&addStaff("mgr",-2);
         return "商务那边不太高兴，但你的手感没受影响。"}}]}
 ];
 
@@ -479,6 +510,7 @@ function diffOf(a,b){
 function resolveRandom(i){
   const ev=S.rndEv; if(!ev) return;
   const before=snapshot();
+  if(typeof addTraitPt==="function") addTraitPt(ev.a[i].g);   // 这一次选择也算进你是什么样的人
   const txt=ev.a[i].e();
   const after=snapshot();
   S.rndEv=null; S._ev=null;

@@ -516,6 +516,8 @@ function powerCore(players,fatigue=0,verFav=null,team=null){
       v+=gearBonus("操作")*0.34+gearBonus("运营")*0.28+gearBonus("体质")*0.10+langBonus();
     }
     if(verFav&&verFav.includes(p.pos)) v+=1.5;
+    // 人物特质：刺头逆风时更稳，这一下真的进战力
+    if(p.me&&typeof traitMul==="function") v+=traitMul("clutch",true);
     // 能力 × 状态：同一个人，今年打成什么样是另一回事
     const fm=(typeof formMul==="function")?(p.me?myFormMul():formMul(p)):1;
     s+=v*fm*w; wt+=w; cmd=Math.max(cmd,r.指挥);
@@ -1253,6 +1255,7 @@ function advancePreWeek(){
   if(typeof rollInjury==='function') rollInjury('职业前');
   if(typeof tickBuffs==='function') tickBuffs();
   if(typeof fanWeek==='function') fanWeek();
+  if(typeof questWeek==='function') questWeek();
   simWorldPre();
   if(typeof tryRandomEvent==='function'&&rnd()<0.15) tryRandomEvent();   // 频率减半，太密会烦
   if(typeof saveGame==='function') saveGame('第'+P.week+'周');
@@ -1464,6 +1467,7 @@ function gain(d){
   const bonus=S.origin==="academy"?1.2:1.0;
   const coach=(S.buff&&S.buff.coach)?1.22:1;
   const tb=(typeof buffVal==='function')?buffVal('train')*buffVal('mood'):1;
+  const tt=(typeof traitMul==="function")?traitMul("train"):1;   // 劳模练得更快
   const ij=(typeof injuryTrainMul==='function')?injuryTrainMul():1;
   const ag=(S.ageCfg&&S.ageCfg.grow)||1;
   const bg=(S.bg&&S.bg.train)||1;
@@ -1474,7 +1478,7 @@ function gain(d){
   // 不能顺手多出 33% 的成长——签约后单次收益乘 0.8 对冲。
   // 职业前还是 6 点没动，不吃这个折扣。
   const apComp=S.career?0.80:1.00;
-  return apComp*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*ij;
+  return apComp*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*tt*ij;
 }
 /* 冲瓶颈状态条：正在冲操作瓶颈时，把规则和本周进度顶在行动区最上面。
    玩家原话：「我根本不知道要每周投入三个点」——规则不能只藏在按钮小字里。 */
@@ -1494,7 +1498,11 @@ function btkChaseNote(){
       :low?"":canFill?`　还差 <b>${3-op}</b> 点`
       :`　<span class="ct-bad">剩余行动点补不满了——这周连击会断</span>`}</div>`;
 }
-const addFat=n=>{S.fatigue=clamp(S.fatigue+n,0,100)};
+/* 特质会改「休息回多少体能」——劳模练得多，也累得久 */
+const addFat=n=>{
+  const rm=(n<0&&typeof traitMul==="function")?traitMul("rest"):1;
+  S.fatigue=clamp(S.fatigue+n*rm,0,100);
+};
 /* ---------- 名气拆成两层：粉丝与热度 ----------
 
    原来只有一个 S.fame，同时当曝光、当资产、当直播收入乘数。一个数字扛五件事，
@@ -1558,6 +1566,11 @@ function fanWeek(){
   // 那是「模型太慢」，不是「玩家不够格」，所以职业前单独给一档底速。
   let rate=(S.career?0.012:0.055)+clamp((S.heat||0)/9000,0,0.045);
   if(typeof fanContentMul==="function") rate*=fanContentMul();
+  // 人物特质在这里落地：粉丝是「朝天花板收敛」的，所以「涨粉 +18%」
+  // 改的是收敛速度，不是某一次事件的加值。
+  // （这条一开始接错了地方——接在早就被收敛模型换掉的 addFans 上，
+  //   replace 没匹配到又没写断言，于是效果整个丢了。教训留在这儿。）
+  if(typeof traitMul==="function") rate*=traitMul("fan");
   const gap=cap-(S.fans||0);
   // 天花板掉下来（比如去了外赛区、或者一直坐板凳），粉丝慢慢流失，不是断崖
   S.fans=Math.max(0,(S.fans||0)+gap*(gap>0?rate:0.02));
@@ -1815,6 +1828,7 @@ function viewSeason(){
   <div class="card">
     <h2>${sea.tag} ${SPLITS[S.split||0]} · 第 ${S.week}/${WEEKS} 周<em>剩余行动点 ${S.ap}</em></h2>
     ${typeof autoBar==="function"?autoBar():""}
+    ${typeof questCard==="function"?questCard():""}
     ${typeof btkChaseNote==="function"?btkChaseNote():""}
     <div class="ver">版本 <b>${sea.ver}</b> — 本赛季强调 <b>${sea.dim}</b>${
       sea.fav.includes(S.pos)?`，且<b>${POSN[S.pos]}是版本红利位</b>`:""}。
@@ -1951,6 +1965,7 @@ function attrCard(){
         <div class="bn">带 <b>·</b> 的是机械条件——肯这么练就一定拿得到，不看运气。</div></div>`;
     })()}
     ${typeof buffChips==="function"?buffChips():""}
+    ${typeof traitBar==="function"?traitBar():""}
     <p class="note">竖线是当前瓶颈，<b style="color:var(--gold)">↑</b> 是被经历顶开的部分（夺冠、进强队、跟老将同队都会让它松动）。绿数字是本赛季成长。适应力 ${Math.round(adaptOf())}（由天赋均衡度决定）·
       粉丝 ${fansText()}（${fanTier()}）· 热度 ${heatTier()} · 疲劳 ${Math.round(S.fatigue)}/100</p></div>`;
 }
@@ -2107,6 +2122,7 @@ function endMatch(){
   // 队友信任随胜负与你的表现变化
   addTrustAll(won?1.6:-3.2);
   if(won) noteRevenge(m.oppName);
+  if(won&&typeof questWin==="function") questWin();      // 事件留下的「赢 N 场」待办
   if(!won&&myPw-opPw>4) addTrustAll(-3);      // 该赢没赢，更衣室有意见
   syncTrust();
   // 成就上下文
@@ -2247,6 +2263,7 @@ function nextWeek(){
   if(typeof btkWeekEnd==="function") btkWeekEnd();
   if(typeof tickBuffs==='function') tickBuffs();
   if(typeof fanWeek==='function') fanWeek();
+  if(typeof questWeek==='function') questWeek();
   if(typeof tryRandomEvent==='function'&&rnd()<0.14) tryRandomEvent();
   if(typeof saveGame==='function') saveGame('S'+S.si+' 第'+S.week+'周');
   render();
@@ -2333,6 +2350,7 @@ function prepPanel(){
   <div class="card">
     <h2>${P.label}<em>剩余行动点 ${S.ap}</em></h2>
     ${typeof autoBar==="function"?autoBar():""}
+    ${typeof questCard==="function"?questCard():""}
     <div class="next">
       <div class="sd"><div class="nm">${meName()}</div>
         <div class="pw">${S.team}</div></div>
@@ -2367,6 +2385,13 @@ function endSeason(result,seed){
     if(typeof addMoney==='function') addMoney('home',-paid); else S.money-=paid;
     pushEvent(`往家里寄了 <b>${paid} 万</b>。`,"info","家用"); }
   trustDecay(); squadDecay(); checkBreakthrough();
+  // 关系崩到底的队友会走——这是更衣室里那些选择真正的出口
+  if(typeof checkMateExit==="function") checkMateExit();
+  // 话题人物的代价：教练每赛段都少信你一点
+  if(typeof traitMul==="function"){
+    const cp=traitMul("coachPer",true);
+    if(cp&&typeof addStaff==="function") addStaff("coach",cp);
+  }
   if(typeof streamClauseCheck==='function') streamClauseCheck();   // 独家合同的开播条款
   // 赛段打完先攒一次球探关注——转会不该只在休赛期那一瞬间才有动静
   if(typeof noteScoutInterest==='function') noteScoutInterest();
@@ -2572,6 +2597,7 @@ function offNextWeek(){
   flushBreakNews(S.off.week);
   if(typeof tickBuffs==='function') tickBuffs();
   if(typeof fanWeek==='function') fanWeek();
+  if(typeof questWeek==='function') questWeek();
   if(typeof tryRandomEvent==='function'&&rnd()<0.16) tryRandomEvent();
   if(typeof saveGame==='function') saveGame('休赛期第'+S.off.week+'周');
   render();
@@ -2893,6 +2919,7 @@ function actPanelPre(){
   <div class="card">
     <h2>第 ${P.week} 周<em>剩余行动点 ${P.ap}</em></h2>
     ${typeof autoBar==="function"?autoBar():""}
+    ${typeof questCard==="function"?questCard():""}
     <div class="ver">${(()=>{const sc=preScore();
       const near=sc/PRE_INVITE;
       // 说清楚「还早」是早在哪——两个赛事各自打没打，状态是分开的
@@ -3062,6 +3089,8 @@ function viewOffer(){
 /* __CLOUT_MODULE__ */
 
 /* __ROUTINE_MODULE__ */
+/* __TRAIT_MODULE__ */
+/* __QUEST_MODULE__ */
 /* __AUTO_MODULE__ */
 
 /* __NODES_MODULE__ */
@@ -3229,6 +3258,7 @@ function render(){
   _st.innerHTML = body
     + (typeof saveBar==="function"?saveBar():"")
     + (typeof achPopCard==="function"?achPopCard():"")
+    + (typeof traitUpCard==="function"?traitUpCard():"")
     + (typeof streamOfferCard==="function"?streamOfferCard():"")
     + (typeof confirmCard==="function"?confirmCard():"");
   if(_st.setAttribute) _st.setAttribute("data-zone", curZone());
@@ -3383,11 +3413,40 @@ function bind(){
   const _sr2=$("strmrival"); if(_sr2) _sr2.onclick=()=>signStreamDeal("rival");
   const _sn2=$("strmno"); if(_sn2) _sn2.onclick=declineStreamDeal;
   // ---- 托管 ----
-  const _aA=$("autoAll"); if(_aA) _aA.onclick=autoToggleAll;
+  const _aA=$("autoAll"); if(_aA) _aA.onclick=()=>{
+    if(!autoAllOn()){
+      askConfirm("一键全托管？",
+        `采购、商务、日常会按推荐自动处理——这些是杂事，交出去没什么可惜的。<br>
+         但它<b>也包含「生涯」</b>：试训、转会、合同、下放都不再问你。<br>
+         <span class="note">想只交杂事的话，点下面四格里的前三个就行。</span>`,
+        "全部交出去", ()=>{ autoToggleAll(); },
+        {t:"只交杂事", fn:()=>{ S.auto=S.auto||{}; ["buy","biz","daily"].forEach(k=>S.auto[k]=true);
+          S.auto.career=false;
+          pushEvent(`赛场外的杂事交给团队了：采购、商务、日常按推荐执行。
+            <b>生涯（试训/转会/合同）还是你自己定。</b>`,"info","托管"); render(); }});
+      return;
+    }
+    autoToggleAll(); };
   const _aN=$("autoNow"); if(_aN) _aN.onclick=autoOnce;
+  const _aB=$("autoBack"); if(_aB) _aB.onclick=()=>{ S.tab="act"; render(); };
   const _aO=$("autoOff"); if(_aO) _aO.onclick=()=>{ AUTO_KEYS.forEach(x=>{S.auto&&(S.auto[x.k]=false)}); render(); };
   st.querySelectorAll("[data-auto]").forEach(b=>b.onclick=()=>{
-    const k=b.dataset.auto; autoSet(k,!autoOn(k)); });
+    const k=b.dataset.auto;
+    /* 「生涯」那一档要单独确认。它会替你去试训、替你谈合同、替你签字——
+       玩家反馈过「打完城市争霸赛就自动上岸了」，就是误开了这一档：
+       打完杯赛触发试训邀请 -> 托管自动去 -> 自动谈 -> 自动签，全程没停。
+       那是它该有的行为，但绝不该是手滑点出来的。 */
+    if(k==="career" && !autoOn(k)){
+      askConfirm("把主线也交出去？",
+        `开了这一档，<b>试训、转会、合同、下放</b>全部由推荐自动决定——<br>
+         打完杯赛来了试训邀请，它会直接替你去、替你谈、替你签字。<br>
+         <span class="note">你还是在打比赛，但「去哪支队、签什么合同」不再问你。
+         这是这个游戏的主线，交出去基本等于看别人打。</span>`,
+        "交出去", ()=>{ autoSet(k,true); },
+        {t:"算了，我自己管", fn:()=>render()});
+      return;
+    }
+    autoSet(k,!autoOn(k)); });
   st.querySelectorAll("[data-reco]").forEach(b=>b.onclick=()=>{
     // 弹窗上的单次「按推荐」：不开托管，也能这一次偷个懒
     const k=b.dataset.reco;
@@ -3395,6 +3454,7 @@ function bind(){
     else if(k==="biz") autoBiz();
     else if(k==="career") autoCareerStep();
     render(); });
+  const _tu=$("traitok"); if(_tu) _tu.onclick=()=>{ S.traitUp=null; render(); };
   const _rtA=$("rtRepeat"); if(_rtA) _rtA.onclick=repeatLast;
   const _rtB=$("rtPlan");   if(_rtB) _rtB.onclick=runPlan;
   const _rtR=$("rtResume"); if(_rtR) _rtR.onclick=()=>{runActs(null,true);render();};

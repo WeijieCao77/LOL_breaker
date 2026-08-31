@@ -140,8 +140,15 @@ function startIntl(type,playerResult){
   const F=SEASONS[S.si];
   if(type==="msi"){
     const seeds={}; MAJOR.forEach(lg=>seeds[lg]=majorStandings(lg));
+    /* 玩家不一定在四大赛区。开放「小赛区当低谷退路」之后，
+       PCS/VCS/LJL 的联赛冠军真的会走到这一步，而 seeds[HL] 那时候是
+       undefined，下一行的 .filter 直接把整局打崩（实测 300 局命中 1 次）。
+       majorStandings 本身对任何联赛都成立，补上就行。 */
+    if(!seeds[HL]) seeds[HL]=majorStandings(HL)||[];
     if(playerResult==="champion") seeds[HL]=[S.team].concat(seeds[HL].filter(n=>n!==S.team));
     const field=MAJOR.flatMap(lg=>seeds[lg].slice(0,2));
+    // 小赛区的冠军也该有一张门票——现实里 MSI 本来就请赛区冠军
+    if(playerResult==="champion"&&field.indexOf(S.team)<0) field.push(S.team);
     // 2022 的 MSI 是小组赛+淘汰，2023 起才是双败
     return openIntl("msi",field,F.msi.mode==="groups"?"groups":"knockout");
   }

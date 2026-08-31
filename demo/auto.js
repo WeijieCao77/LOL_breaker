@@ -323,17 +323,29 @@ function autoCard(){
       <button class="btn ${all?"ghost":""}" id="autoAll">${all?"全部收回":"一键全托管"}</button>
       <button class="btn ghost" id="autoNow">现在就按推荐执行一次</button>
     </div>
+    <p class="note" style="margin:0 0 8px;color:var(--ink-3)">下面四格<b>点一下就是开关</b>，可以只交出去一部分。</p>
     <div class="autogrid">${AUTO_KEYS.map(x=>`
       <button class="autoitem ${autoOn(x.k)?"on":""}" data-auto="${x.k}">
-        <div class="t">${x.n}${autoOn(x.k)?'<span class="tag g">托管中</span>':""}</div>
+        <div class="t"><span class="sw">${autoOn(x.k)?"●":"○"}</span>${x.n}${
+          autoOn(x.k)?'<span class="tag g">托管中</span>':'<span class="tag">未托管</span>'}</div>
         <div class="d">${x.d}</div>
         ${x.warn?`<div class="d" style="color:var(--red)">这是主线——托管掉基本等于看别人打</div>`:""}
       </button>`).join("")}</div>
     <p class="note" style="margin-top:12px">推荐走的是<b>稳健路线</b>，不是最优解：
       不砸定制级外设、不赌高价独家、事件里选温和项。
       <b>自己管的上限比托管高</b>——这是「精简版能打、完整版有上限」的意思。</p>
+    ${autoAnyOn()?`<div class="ver" style="margin-top:10px">
+      <b>开了之后会怎样</b><br>
+      ${autoOn("daily")?"际遇和更衣室谈话不再弹窗问你，直接按推荐处理。<br>":""}
+      ${autoOn("biz")?"直播独家、杯赛报名自动决定。<br>":""}
+      ${autoOn("buy")?"有钱就自动添装备、买课、压疲劳。<br>":""}
+      ${autoOn("career")?'<span style="color:var(--red)">试训、转会、合同、下放也自动了——主线交出去了。</span><br>':""}
+      做过的每一件都会写进日志，<b>本周页顶部</b>也有一条「托管中」随时能收回。</div>`:""}
     ${(S.autoLog&&S.autoLog.length)?`<div class="ver" style="margin-top:10px">
       <b>托管最近做的事</b><br>${S.autoLog.slice(-8).join("　·　")}</div>`:""}
+    <div class="row" style="margin-top:12px">
+      <button class="btn ghost" id="autoBack">回到本周，接着打 →</button>
+    </div>
   </div>`;
 }
 /* 本周页顶部那条细条：托管开着的时候，让玩家一眼看见它替自己做了什么 */
@@ -343,7 +355,9 @@ function autoBar(){
   const names=AUTO_KEYS.filter(x=>autoOn(x.k)).map(x=>x.n).join("·");
   return `<div class="autobar">
     <span class="ab-k">托管中</span>
-    <span class="ab-t">${names}${log.length?`　—　最近：${log.join("、")}`:""}</span>
+    <span class="ab-t">${names}${log.length
+      ? `　—　最近：${log.join("、")}`
+      : `　—　这几类事不会再停下来问你，行动点还是你自己花`}</span>
     <button class="rt-x" id="autoOff">收回</button>
   </div>`;
 }

@@ -12,6 +12,8 @@
 function noteAct(kind, key){
   S.thisWeek = S.thisWeek || [];
   S.thisWeek.push({k: kind, v: key});
+  // 事件留下的待办靠这里统计进度——玩家每一次行动本来就从这儿过一遍
+  if(typeof questNote === "function") questNote(kind, key);
 }
 /* 一周结束时把它归档成「上回合」 */
 function archiveWeek(){
