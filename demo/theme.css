@@ -581,6 +581,29 @@ td .tlogo{margin-right:5px}
 .hud .hud-now{flex:1 1 210px;background:linear-gradient(180deg,rgba(201,169,97,.16),var(--panel))}
 /* 粉丝格里要塞下「档位名 + 粉丝数」，96px 的基准宽度会把它挤成两行半 */
 .hud .hud-fan{flex:1 1 148px}
+
+/* ---- 托管 ---- */
+.autogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.autoitem{text-align:left;padding:11px 13px;background:var(--panel-2);
+  border:1px solid var(--line);cursor:pointer;font:inherit;color:inherit;
+  transition:border-color .12s,background .12s}
+.autoitem:hover{border-color:var(--cyan-dim)}
+.autoitem .t{font-size:13.5px;font-weight:650;color:var(--ink);display:flex;align-items:center;gap:7px}
+.autoitem .d{font-size:11.5px;color:var(--ink-3);margin-top:3px;line-height:1.5}
+.autoitem.on{border-color:var(--cyan-dim);background:rgba(79,190,218,.10)}
+.autoitem.on .t{color:var(--cyan)}
+.autoitem:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+/* 本周页顶部那条：托管开着的时候一直在，让玩家一眼看见它替自己做了什么 */
+.autobar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:7px 12px;margin-bottom:10px;background:rgba(79,190,218,.09);
+  border-left:2px solid var(--cyan-dim);font-size:12px}
+.autobar .ab-k{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;
+  font-size:10px;letter-spacing:.14em;color:var(--cyan);flex:none}
+.autobar .ab-t{color:var(--ink-3);flex:1 1 200px}
+/* 弹窗上的单次「按推荐」：低调，不能抢主按钮的戏 */
+.recobtn{background:none;border:1px solid var(--line);color:var(--ink-3);
+  font:inherit;font-size:11.5px;padding:4px 10px;cursor:pointer}
+.recobtn:hover{border-color:var(--cyan-dim);color:var(--cyan)}
 .hud .hud-now .k{color:var(--gold)}
 .hud .hud-now .v{color:var(--gold-hi)}
 .hud .hud-now.urgent{background:linear-gradient(180deg,rgba(196,83,95,.22),var(--panel));

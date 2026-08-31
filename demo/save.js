@@ -258,9 +258,11 @@ function safeName(v){
 
 /* 通用确认框。用在那些「按下去就回不来」的操作上：
    自动推进、重开档、覆盖存档。 */
-function askConfirm(title, body, okText, fn, alt){
+function askConfirm(title, body, okText, fn, alt, tag){
   // alt 可选：{t:"按钮字", fn:()=>{}}，用在「同一件事、两种力度」的场合
-  S.confirm = { title, body, ok: okText || "确定", fn, alt };
+  // tag 可选：给托管认领用的。托管只接管打了标记的确认框——
+  //           「重开存档」这种也自动点掉就出大事了。
+  S.confirm = { title, body, ok: okText || "确定", fn, alt, tag };
   render();
 }
 function confirmCard(){

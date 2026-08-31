@@ -636,6 +636,14 @@ function noteScoutInterest(){
 /* 休赛期开始时兑现：有没有人来问 */
 function rollProOffers(){
   if(!S.career || S.proOffer || S.deal || S.tryout) return;
+  /* 一年只开一次窗口。
+     doOffseason() 有 `if(S.off) return` 的守卫，但 offNextWeek 在 MSI 结束、
+     世界赛结束这两个岔路上都会把 S.off 清掉再把 step 设回 "offseason"——
+     于是同一年里 doOffseason 会被重新进入两三次，每次都摇一遍报价。
+     实测人均 13 次问询、几乎每个赛段末都有队来问，玩家全接就是生涯换十支队。
+     转会窗口一年一个，这里就该一年一次。 */
+  if(S.offerYear===S.si) return;
+  S.offerYear=S.si;
   const perf = proPerf() - buyoutDrag();
   // 赛季里攒下的关注度直接折成概率：被盯了一年，转会期不该毫无动静
   const heat = Math.min(S.scoutHeat || 0, 6);
@@ -907,7 +915,8 @@ function offerSendDown(){
      打出来就调回一队。<b>合同不变。</b><br>
      <span class="note">留在一队也行：训练强度更高，但一场正赛都没有，热度会一直掉。</span>`,
     "去 LDL 打比赛", ()=>doSendDown(acad),
-    {t:"留在一队等机会", fn:()=>{ pushEvent(`你拒绝了下放，选择留在 <b>${S.team}</b> 等机会。`,"info","青训"); render(); }});
+    {t:"留在一队等机会", fn:()=>{ pushEvent(`你拒绝了下放，选择留在 <b>${S.team}</b> 等机会。`,"info","青训"); render(); }},
+    "senddown");
   return true;
 }
 function doSendDown(acad){

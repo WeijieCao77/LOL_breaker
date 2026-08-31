@@ -371,7 +371,10 @@ function streamOfferCard(){
         : `<button class="btn" id="strmyes">签 ${o.rival}</button>
            <button class="btn ghost" id="strmno">不签，自己闯</button>`}
     </div>
-    <p class="note">拒了这一档就不会再来；咖位再上一个大台阶，才会有更高的报价。</p></div></div>`;
+    <p class="note">拒了这一档就不会再来；咖位再上一个大台阶，才会有更高的报价。</p>
+    ${(typeof AUTO_KEYS!=="undefined")?`<div class="row" style="justify-content:flex-end">
+      <button class="recobtn" data-reco="biz" title="按推荐来：粉丝还有涨的空间就不签，贴着天花板了就签俱乐部的平台">按推荐</button>
+    </div>`:""}</div></div>`;
 }
 function buyGear(slot,tier){
   const g=GEAR[slot][tier];
@@ -419,7 +422,8 @@ function gearCard(){
 }
 /* 经济页 = 财务总览 -> 我的合同 -> 商城 -> 奖金标准（自上而下） */
 function economyCards(){
-  return financeCard()
+  return ((typeof autoCard==="function")?autoCard():"")
+    + financeCard()
     + ((typeof contractTerms==="function")?contractTerms():"")
     + shopCard()
     + prizeNote();

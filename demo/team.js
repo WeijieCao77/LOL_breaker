@@ -37,7 +37,7 @@ function syncTrust(){
 
 /* ---------- 更衣室事件 ---------- */
 const LOCKER=[
-  {id:"blame", when:()=>S.record.l>=2&&rnd()<0.5,
+  {id:"blame", rec:0, when:()=>S.record.l>=2&&rnd()<0.5,
    q:t=>`输球后复盘，<b>${t.id}</b> 说那波团是你先开的。`,
    ctx:"所有人都在看你怎么回。",
    a:[{t:"认下来，这波我的问题",e:(t)=>{addTrustAll(6);S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.8);
@@ -47,7 +47,7 @@ const LOCKER=[
       {t:"当场吵回去",e:(t)=>{addTrust(t.id,-20);addTrustAll(-6);addFans(3);
         return "更衣室炸了。第二天这段被爆料出去，上了热搜。"}}]},
 
-  {id:"resource", when:()=>rnd()<0.4,
+  {id:"resource", rec:2, when:()=>rnd()<0.4,
    q:t=>`<b>${t.id}</b> 想要更多资源，说这个版本该走他这边。`,
    ctx:"教练把决定权交给了你。",
    a:[{t:"让给他，我打辅助位",e:(t)=>{addTrust(t.id,14);addTrustAll(4);
@@ -57,7 +57,7 @@ const LOCKER=[
       {t:"看局势分，不预设",e:(t)=>{addTrust(t.id,3);addTrustAll(2);
         return "折中方案，没人特别满意，也没人不满意。"}}]},
 
-  {id:"rookie", when:()=>myRoster().some(p=>!p.me&&p.rookie)&&rnd()<0.5,
+  {id:"rookie", rec:0, when:()=>myRoster().some(p=>!p.me&&p.rookie)&&rnd()<0.5,
    q:t=>`新秀 <b>${t.id}</b> 连着几把打崩，训练室里一个人坐着。`,
    ctx:"你也从那个位置过来过。",
    a:[{t:"陪他加练两个小时",e:(t)=>{addTrust(t.id,18);addTrustAll(3);addFat(10);
@@ -67,7 +67,7 @@ const LOCKER=[
       {t:"让他自己扛过去",e:(t)=>{addTrust(t.id,-6);
         return "职业圈本来就是这样。他没说什么。"}}]},
 
-  {id:"veteran", when:()=>myRoster().some(p=>!p.me&&p.age>=27)&&rnd()<0.45,
+  {id:"veteran", rec:0, when:()=>myRoster().some(p=>!p.me&&p.age>=27)&&rnd()<0.45,
    q:t=>`老将 <b>${t.id}</b> 私下问你，是不是该退了。`,
    ctx:"他的操作确实在掉，但他还是队里最懂运营的人。",
    a:[{t:"你还能打，队里需要你",e:(t)=>{addTrust(t.id,16);addTrustAll(4);
@@ -76,7 +76,7 @@ const LOCKER=[
       {t:"实话说，你该考虑转型",e:(t)=>{addTrust(t.id,-10);
         return "他沉默了很久，说谢谢你的诚实。"}}]},
 
-  {id:"media", when:()=>S.fans>=100&&rnd()<0.35,
+  {id:"media", rec:0, when:()=>S.fans>=100&&rnd()<0.35,
    q:t=>`媒体想做你的专访，队里其他人一个都没约。`,
    ctx:"流量都在你身上，这未必是好事。",
    a:[{t:"接，顺便多提队友",e:(t)=>{addFans(12);addMoney("other",14);addTrustAll(5);
