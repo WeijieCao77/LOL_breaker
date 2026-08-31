@@ -337,7 +337,7 @@ const RANDOM_EVENTS=[
       {t:"先问清楚条件",e:()=>{addFans(5);
         return "对方说了些含糊的话。你没去成，但也没损失。"}}]},
 
-  {id:"teamDinner", rec:1, w:2, when:()=>!!S.team,
+  {id:"teamDinner", rec:1, w:2, when:()=>!!S.team&&(typeof teamTenure==="function"?teamTenure():99)>=4,
    q:()=>`队里聚餐，经理说想让大家放松放松。`,
    ctx:"你本来打算今晚加练的。",
    a:[{t:"去，喝两杯", g:"show",e:()=>{typeof addTrustAll==="function"&&addTrustAll(7);addFat(-14);
@@ -410,7 +410,7 @@ const RANDOM_EVENTS=[
       {t:"不管版本，硬打", g:"hard",e:()=>{addBuff("mood",0.9,2,"逆版本");
         return "你还在打上个版本的游戏。有几场很别扭。"}}]},
 
-  {id:"exMate", rec:0, auto:false, when:()=>!!S.team,
+  {id:"exMate", rec:0, auto:false, when:()=>!!S.team&&(typeof teamTenure==="function"?teamTenure():99)>=12,
    q:()=>`一起打了很久的队友被卖了，走之前来找你吃了顿饭。`,
    ctx:"他说下赛季可能就是对面了。",
    a:[{t:"敬他一杯，好聚好散", g:"warm",e:()=>{addFat(-10);addBuff("mood",1.15,2,"心里踏实");

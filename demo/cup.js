@@ -44,20 +44,39 @@
    注意：这里的数字和职业选手评分不是一把尺子——
    职业评分是在同位置同层级内做 z 标准化的（见 export_game.py），
    50 分意思是「该层级的平均水平」，不能跨系统直接比大小。      */
+/* 轮次要有名字。
+   玩家原话：「不要写第几轮第几轮，要写清楚小组赛，半决赛，决赛等等」。
+   「第 3 轮」既不知道离冠军还有多远，也不知道这一场有多重——
+   而「半决赛」这三个字自带分量。 */
 const CUPS={
   city:{ name:"城市争霸赛", rounds:4, gap:1, band:[43,52.5],
          prize:[0,25,70,180,420],
+         rn:["小组赛","八强赛","半决赛","决赛"],
          opps:["网吧联队","本地车队","大学生战队","市队"] },
   stream:{ name:"主播杯", rounds:3, gap:1, band:[47,55.5],
          prize:[0,60,180,520],
+         rn:["小组赛","半决赛","决赛"],
          opps:["百万粉丝队","退役选手队","冠军主播队"] },
   /* 全明星周末的娱乐表演赛（现实原型：LPL 全明星周末「主播对抗」）。
      邀请制看人气，免报名费，输了也有出场费——这是舞台，不是淘汰赛。
      主办方配明星队友，所以不动你的车队，胜负按个人发挥算。 */
   show:{ name:"全明星周末 · 主播表演赛", rounds:1, gap:1, band:[51,51],
          prize:[20,120],
+         rn:["表演赛"],
          opps:["明星联队"] }
 };
+
+/* 这一轮叫什么。round 从 1 开始；越界就退回「第 N 轮」，不让它崩。 */
+function cupRoundName(kind, round){
+  const C=CUPS[kind]; const i=(round||1)-1;
+  return (C&&C.rn&&C.rn[i]) ? C.rn[i] : `第 ${round} 轮`;
+}
+/* 走到第几轮＝走到哪一场（用来写「止步半决赛」这种） */
+function cupReachName(kind, reached){
+  const C=CUPS[kind]; if(!C) return `${reached} 轮`;
+  if(reached>=C.rounds) return "夺冠";
+  return `止步${cupRoundName(kind, reached+1)}`;
+}
 
 /* 业余队名：报名时玩家起的名字，没起就用选手 ID */
 function cupTeamName(){
@@ -75,12 +94,17 @@ const PUB_NAMES=["一刀","峡谷小","野区暴君","中路一霸","河道蟹",
 function drawCupMates(kind){
   const C=CUPS[kind]||CUPS.city;
   const [lo,hi]=C.band;
+  // 名字不重复：一次抽四个人，抽到重名的（「泉水指挥官36」和「泉水指挥官76」
+  // 同时在队里）看着像 bug
+  const pool=PUB_NAMES.slice();
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  let pi=0;
   S.pre.mates=POS.filter(p=>p.k!==S.pos).map(p=>{
     // 偏上沿抽：愿意跟你组队打比赛的路人，本来就是这个池子里想赢的那批
     const lvl=lo+(0.45+0.55*rnd())*(hi-lo);
     const r={};
     DIMS.forEach(d=>r[d]=clamp(Math.round(lvl+(rnd()*14-7)),25,75));
-    return {id:PUB_NAMES[Math.floor(rnd()*PUB_NAMES.length)]+(10+Math.floor(rnd()*90)),
+    return {id:(pool[pi++%pool.length])+(10+Math.floor(rnd()*90)),
             pos:p.k, age:16+Math.floor(rnd()*14), r};
   });
   // 临时车队：默契战术起点偏低，信任一般——这正是战队行动的用武之地
@@ -190,9 +214,9 @@ function cupPrep(k){
 function cupTick(){
   activeCups().forEach(c=>{
     const wait=c.nextWeek-S.pre.week;
-    if(wait===1) preLog(`<b>${c.name}</b> 第 ${c.round} 轮下周开打，对手 ${cupOppName(c.kind)}。`,"info");
+    if(wait===1) preLog(`<b>${c.name}</b> <b>${cupRoundName(c.kind,c.round)}</b>下周开打，对手 ${cupOppName(c.kind)}。`,"info");
     else if(wait<=0&&!c.due){ c.due=true;
-      preLog(`<b>${c.name}</b> 第 ${c.round} 轮就是本周——随时可以上场。`,"good"); }
+      preLog(`<b>${c.name}</b> <b>${cupRoundName(c.kind,c.round)}</b>就是本周——随时可以上场。`,"good"); }
     if(wait>0) c.due=false;
   });
 }
@@ -209,7 +233,7 @@ function forfeitCup(k){
   const c=cupOf(k), C=CUPS[k];
   if(!c||!c.alive) return;
   c.alive=false;
-  preLog(`<b>${C.name}</b> 第 ${c.round} 轮开赛时你没有出现。<b>按弃权处理。</b>`,"bad");
+  preLog(`<b>${C.name}</b> ${cupRoundName(k,c.round)}开赛时你没有出现。<b>按弃权处理。</b>`,"bad");
   cupPayout(k,false);
 }
 
@@ -271,7 +295,7 @@ function endCupMatch(){
   if(won){
     c.wins++;
     addFans(4+c.round*2);
-    preLog(`<b>${C.name}</b> 第 ${c.round} 轮：${m.sc[0]}:${m.sc[1]} 击败 ${m.opp}。`,"good");
+    preLog(`<b>${C.name}</b> ${cupRoundName(c.kind,c.round)}：${m.sc[0]}:${m.sc[1]} 击败 ${m.opp}。`,"good");
     // 这里原本会「每赢一轮就可能来邀请」，但那会把杯赛线整个短路：
     // 玩家在半决赛就签约走人，奖金、成就、决赛全都拿不到，
     // 职业赛胜率也从 66% 掉到 51%（签得太早，属性还没练起来）。
@@ -286,7 +310,7 @@ function endCupMatch(){
     }
   } else {
     c.alive=false;
-    preLog(`<b>${C.name}</b> 第 ${c.round} 轮：${m.sc[0]}:${m.sc[1]} 不敌 ${m.opp}，止步于此。`,"bad");
+    preLog(`<b>${C.name}</b> ${cupRoundName(c.kind,c.round)}：${m.sc[0]}:${m.sc[1]} 不敌 ${m.opp}，止步于此。`,"bad");
     cupPayout(k,false);
   }
   render();
@@ -377,7 +401,8 @@ function cupCard(){
              :d>-7?"对手比你强，得靠备战和决策去搏。"
              :"实力差得有点多——赢面很小，除非临场赌对。"}</p>
       ${S.pre.mates&&S.pre.mates.length?`<div class="oppinfo">${
-        S.pre.mates.map(m=>`<span class="chipx">${typeof avatarOf==="function"?avatarOf(m,18):""} ${m.id} <b>${POSN[m.pos]}</b></span>`).join("")}</div>
+        S.pre.mates.map(m=>`<span class="chipx">${typeof avatarOf==="function"?avatarOf(m,18):""} ${m.id} <b>${POSN[m.pos]}</b><i class="ovr">实力 ${
+          (typeof ovrOf==="function"?ovrOf(m):avg(DIMS.map(d=>m.r[d]))).toFixed(0)}</i></span>`).join("")}</div>
       <p class="note" style="margin-top:8px">备战就是练队：<b>「本周」里的战队行动</b>（训练赛/复盘/合练/双排）
         喂的默契与战术，直接乘在这支车队的战力上——去「战队」页看拆解。</p>`:""}
       ${wait<=0?`<div class="row"><button class="btn" data-cupgo="${k}">上场 →</button></div>`:""}</div>`;

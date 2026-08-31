@@ -246,7 +246,17 @@ function streamIncome(){
   return (base+gift)*originMul;
 }
 /* 独家平台控流量，涨名气比全网直播慢 */
-function streamFansMul(){ return S.streamDeal?0.7:1.0; }
+/* 独家的代价原来是「平台控流量，直播涨名气变慢」（×0.7）。
+   但玩家指出：签独家平台应该<b>帮你推流</b>才对——现实里也是这样，
+   独家主播会被摆在首页和推荐位。
+   所以代价换个地方承担：收入锁死在保底（人气再涨也不加钱），
+   而涨粉这边反过来<b>加成</b>。热度本身不再被压。 */
+function streamFansMul(){ return 1.0; }
+/* 平台推流：独家合同带来的涨粉加成，乘进 fanWeek 的收敛速率 */
+function streamPushMul(){
+  const d=S.streamDeal; if(!d) return 1;
+  return d.lvl>=2 ? 1.45 : 1.25;
+}
 
 /* 每次开播时结算「平台关系」：分成该升就升（发事件），独家该谈就谈（弹窗）。
    放在直播动作里而不是每周结算里——你和平台打交道的时机就是开播。 */
@@ -359,10 +369,14 @@ function streamOfferCard(){
         签字费 <b>${Math.round(o.sign*1.4)} 万</b>（抢人价）· 每播保底 <b>${net(0.40,1.15)} 万</b>（俱乐部抽 40%）<br>
         <span style="color:var(--red)">经理很不高兴，信任 −12。</span></span></div>
     </div>`:""}
-    <div class="ver" style="margin-top:10px"><b>不签</b><br><span class="note" style="margin:0">
+    <div class="ver" style="margin-top:10px"><b>签了以后</b><br><span class="note" style="margin:0">
+      旱涝保收：成绩低谷、热度掉下去，每播照样拿保底。平台还会把你摆在推荐位——
+      <b style="color:var(--cyan)">涨粉快 ${o.lvl>=2?45:25}%</b>。<br>
+      代价：<b>收入锁死在保底</b>，粉丝再涨也不加钱；每赛段至少播 ${need} 次，做不到赔钱。</span></div>
+    <div class="ver" style="margin-top:8px"><b>不签</b><br><span class="note" style="margin:0">
       收入跟着粉丝和热度浮动，分成档也会继续往上谈——打出名堂的话上限比保底高得多。
-      代价是没有下限，凉了就是真的凉；也没有开播条款捆着你。</span></div>
-    <p class="note" style="margin:10px 0 0">${hasClub?"两份独家合同都带":"独家合同带"}<b>开播条款</b>：每赛段至少播 ${need} 次，做不到要赔钱。</p>
+      代价是没有下限，凉了就是真的凉；也没有平台帮你推流。</span></div>
+    <p class="note" style="margin:10px 0 0">签完可以在<b>经济</b>页随时翻合约条款和它对你的影响。</p>
     <div class="row" style="justify-content:center">
       ${hasClub
         ? `<button class="btn" id="strmclub">签 ${o.club}</button>
@@ -376,6 +390,56 @@ function streamOfferCard(){
       <button class="recobtn" data-reco="biz" title="按推荐来：粉丝还有涨的空间就不签，贴着天花板了就签俱乐部的平台">按推荐</button>
     </div>`:""}</div></div>`;
 }
+/* ---------- 我的直播合约 ----------
+   玩家原话：「哪个地方能看到我签订的直播合约，包括合约内容，以及对我的影响」。
+   原来只有商城底部一行字。合约是一份真的合同，条款和影响都该摊开。 */
+function streamDealCard(){
+  const d=S.streamDeal;
+  const cut=STREAM_CUTS[S.streamCutIdx||0];
+  if(!d){
+    return `<div class="card"><h2>直播合约<em>自由身</em></h2>
+      <p class="note" style="margin:0 0 8px">你没有签任何平台的独家，收入跟着粉丝和热度走。</p>
+      <div class="ver">当前礼物分成 <b>${cut.n}</b>　·　每次直播约 <b>${Math.round(streamIncome())} 万</b><br>
+        <span style="color:var(--ink-3)">咖位上一个台阶，平台会主动上调分成；
+        再上一个大台阶，才会有人来谈独家。</span></div>
+      <p class="note" style="margin:8px 0 0">自由身的<b>上限更高</b>（收入随粉丝×热度浮动），
+        但<b>没有下限</b>——成绩凉了收入就跟着凉，也没有平台帮你推流。</p></div>`;
+  }
+  const originMul=S.origin==="streamer"?1.7:1.0;
+  const gross=Math.round(d.base*originMul);
+  const net=Math.round(gross*(1-(d.cut||0)));
+  const need=d.need||0, done=d.done||0;
+  const push=Math.round((streamPushMul()-1)*100);
+  return `<div class="card"><h2>直播合约<em>${d.plat||"平台"}</em></h2>
+    <div class="ver" style="margin:0 0 10px"><b>${d.n}</b>　·　签约方 <b>${d.plat||"平台"}</b>${
+      d.kind==="club"?`（${S.team} 的合作平台）`:d.kind==="rival"?`（不是你队的合作平台）`:""}</div>
+
+    <h3 style="font-size:14px">合约条款</h3>
+    <div class="scrolltable"><table class="terms">
+      <tr><td>每次直播保底</td><td class="mono"><b>${gross} 万</b></td></tr>
+      <tr><td>俱乐部抽成</td><td class="mono">${d.cut?`−${Math.round(d.cut*100)}%（<b>−${gross-net} 万</b>）`:"无"}</td></tr>
+      <tr><td>实际到手</td><td class="mono"><b style="color:var(--gold)">${net} 万</b> / 次</td></tr>
+      <tr><td>平台推流</td><td class="mono"><b style="color:var(--cyan)">涨粉 +${push}%</b></td></tr>
+      <tr><td>开播条款</td><td class="mono">每赛段至少 <b>${need}</b> 次${
+        need?`　本赛段已播 <b class="${done>=need?"":"ct-bad"}">${done}/${need}</b>`:""}</td></tr>
+    </table></div>
+
+    <h3 style="font-size:14px;margin-top:16px">这份合约对你的影响</h3>
+    <ul class="dealfx">
+      <li><b style="color:var(--cyan)">好处</b>：旱涝保收——成绩低谷、热度掉下去，每播照样 ${net} 万；
+        平台把你摆在推荐位，<b>涨粉快 ${push}%</b>。</li>
+      <li><b style="color:var(--red)">代价</b>：收入锁死在保底，<b>粉丝再涨也不加钱</b>；
+        自由身现在每播约 ${Math.round((()=>{const bak=S.streamDeal;S.streamDeal=null;
+          const v=streamIncome();S.streamDeal=bak;return v;})())} 万。</li>
+      <li><b style="color:var(--red)">义务</b>：每赛段播不够 ${need} 次要按合同赔钱。</li>
+      ${d.kind==="rival"?`<li><b style="color:var(--red)">队里的账</b>：你签的不是俱乐部的合作平台，
+        经理那边一直记着这笔。</li>`:d.kind==="club"?`<li><b style="color:var(--cyan)">队里的账</b>：
+        你签的正是俱乐部的合作平台，经理承你的情。</li>`:""}
+    </ul>
+    <p class="note" style="margin:8px 0 0">合约签了就不能反悔——只有咖位再上一个大台阶，
+      才会有更高的报价来谈。</p></div>`;
+}
+
 function buyGear(slot,tier){
   const g=GEAR[slot][tier];
   const cur=(S.gear&&S.gear[slot])||0;
@@ -423,6 +487,7 @@ function gearCard(){
 /* 经济页 = 财务总览 -> 我的合同 -> 商城 -> 奖金标准（自上而下） */
 function economyCards(){
   return financeCard()
+    + streamDealCard()
     + ((typeof contractTerms==="function")?contractTerms():"")
     + shopCard()
     + prizeNote();

@@ -146,8 +146,26 @@ function startIntl(type,playerResult){
        majorStandings 本身对任何联赛都成立，补上就行。 */
     if(!seeds[HL]) seeds[HL]=majorStandings(HL)||[];
     if(playerResult==="champion") seeds[HL]=[S.team].concat(seeds[HL].filter(n=>n!==S.team));
-    const field=MAJOR.flatMap(lg=>seeds[lg].slice(0,2));
-    // 小赛区的冠军也该有一张门票——现实里 MSI 本来就请赛区冠军
+    /* 名额：一个赛区派几支。
+       原来写死 slice(0,2)——每个大赛区两支，于是 MSI 小组赛里会出现
+       同赛区内战（玩家报的：LNG 在 MSI 小组赛遇到 ThunderTalk）。
+       现实里：2022 MSI 是 11 队、每个赛区只有春季赛冠军一支；
+       2023 起 LPL/LCK 才各拿两个名额。 */
+    const twoSeed = (F.msi&&F.msi.mode)!=="groups";      // 2022 那套＝每赛区一支
+    const field=[];
+    MAJOR.forEach(lg=>{
+      const n = twoSeed && (lg==="LPL"||lg==="LCK") ? 2 : 1;
+      field.push(...(seeds[lg]||[]).slice(0,n));
+    });
+    // 小赛区冠军也有票——MSI 本来就是各赛区冠军的舞台。
+    // 2022 的 11 队正好是「四大赛区各一 + 七个小赛区各一」。
+    if(!twoSeed){
+      (MINOR||[]).forEach(lg=>{
+        if(!S.world[lg]||!S.world[lg].length) return;
+        const r=majorStandings(lg);
+        if(r&&r[0]&&field.indexOf(r[0])<0) field.push(r[0]);
+      });
+    }
     if(playerResult==="champion"&&field.indexOf(S.team)<0) field.push(S.team);
     // 2022 的 MSI 是小组赛+淘汰，2023 起才是双败
     return openIntl("msi",field,F.msi.mode==="groups"?"groups":"knockout");

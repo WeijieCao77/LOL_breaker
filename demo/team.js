@@ -111,7 +111,7 @@ const LOCKER=[
       {t:"看局势分，不预设",e:(t)=>{addTrust(t.id,3);addTrustAll(2);
         return "折中方案，没人特别满意，也没人不满意。"}}]},
 
-  {id:"rookie", rec:0, when:()=>myRoster().some(p=>!p.me&&p.rookie)&&rnd()<0.5,
+  {id:"rookie", rec:0, when:()=>(typeof teamTenure==="function"?teamTenure():99)>=3&&myRoster().some(p=>!p.me&&p.rookie)&&rnd()<0.5,
    q:t=>`新秀 <b>${t.id}</b> 连着几把打崩，训练室里一个人坐着。`,
    ctx:"你也从那个位置过来过。",
    a:[{t:"陪他加练两个小时", g:"warm",e:(t)=>{addTrust(t.id,18);addTrustAll(3);addFat(10);
@@ -121,7 +121,7 @@ const LOCKER=[
       {t:"让他自己扛过去", g:"show",e:(t)=>{addTrust(t.id,-6);
         return "职业圈本来就是这样。他没说什么。"}}]},
 
-  {id:"veteran", rec:0, when:()=>myRoster().some(p=>!p.me&&p.age>=27)&&rnd()<0.45,
+  {id:"veteran", rec:0, when:()=>(typeof teamTenure==="function"?teamTenure():99)>=3&&myRoster().some(p=>!p.me&&p.age>=27)&&rnd()<0.45,
    q:t=>`老将 <b>${t.id}</b> 私下问你，是不是该退了。`,
    ctx:"他的操作确实在掉，但他还是队里最懂运营的人。",
    a:[{t:"你还能打，队里需要你", g:"warm",e:(t)=>{addTrust(t.id,16);addTrustAll(4);

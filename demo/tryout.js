@@ -537,16 +537,26 @@ function signDeal(){
       teamName=alt;
     }
   }
-  // 邀请是从 S.world 里挑的队名，签约时用的是新克隆的 world。
-  // 正常情况下名字一致，但万一对不上（老存档、数据换版），
-  // 不能让它崩在签约这一步——退回到一支中游队。
-  if(!toLDL && !P.world.LPL.some(t=>t.name===teamName)){
+  /* 队名到底属于哪个联赛——不能假设是 LPL。
+
+     玩家报的 bug：签了 Gen.G（LCK），进游戏却在 LNG Esports 打 LPL。
+     原因就是这里原来的两行：查队名只查 P.world.LPL，查不到就「退回一支中游队」
+     （LPL 第 7 名正好是 LNG），而 league 又被写死成 "LPL"——
+     于是每一份外赛区合同都被静默改写成了 LPL 第七名，还不吭声。
+     现在按队名在整个世界里找联赛，找不到才兜底，而且兜底要说出来。 */
+  let lg = toLDL ? "LDL" : (d.league || null);
+  if(!lg || !((P.world[lg]||[]).some(t=>t.name===teamName))){
+    lg = Object.keys(P.world).find(k=>(P.world[k]||[]).some(t=>t.name===teamName)) || null;
+  }
+  if(!lg){
     const rk=P.world.LPL.map(t=>({n:t.name,p:power(t)})).sort((a,b)=>b.p-a.p);
-    teamName=rk[Math.min(6,rk.length-1)].n;
+    const alt=rk[Math.min(6,rk.length-1)].n;
+    preLog(`合同上的 <b>${teamName}</b> 在这个赛季的名单里找不到了，
+      俱乐部把你转给了 <b>${alt}</b>。`,"info");
+    teamName=alt; lg="LPL";
   }
   const D = DEAL_TIERS[d.dealTier];
-  P.offers = [{ k:d.kind, team:teamName, t:D.n, d:"", note:"",
-                league: toLDL ? "LDL" : "LPL" }];
+  P.offers = [{ k:d.kind, team:teamName, t:D.n, d:"", note:"", league: lg }];
   addMoney("sign", d.sign);
   if(d.sign) preLog(`签字费 <b>${d.sign} 万</b>到账。`, "good");
   S.pendingContract = {
@@ -847,6 +857,7 @@ function signTransfer(){
   const t = (S.world[S.homeLeague||"LPL"]||[]).find(x=>x.name===S.team);
   if(t) t.players = t.players.map(q => q.pos===S.pos
     ? {id:S.name||"你", cn:"", pos:S.pos, age:S.age, r:S.attrs, me:true} : q);
+  if(typeof markTeamJoin==="function") markTeamJoin();   // 换了队，在队时长归零
   S.trust = {}; if(typeof initTrust==="function") initTrust();
   if(typeof syncTrust==="function") syncTrust();
   addMoney("sign", d.sign);
@@ -889,6 +900,7 @@ function checkPromote(){
   S.offerKind = "start"; S.understudy = null; S.promoted = true;
   pt.players = pt.players.map(q => q.pos === S.pos
     ? {id:S.name||"你", cn:"", pos:S.pos, age:S.age, r:S.attrs, me:true} : q);
+  if(typeof markTeamJoin==="function") markTeamJoin();   // 换了队，在队时长归零
   S.trust = {}; if(typeof initTrust === "function") initTrust();
   if(typeof syncTrust === "function") syncTrust();
   // 升上来是涨薪的，但还是队里最便宜的那个。
@@ -935,6 +947,7 @@ function doSendDown(acad){
   const t=myTeam();
   t.players=t.players.map(q=>q.pos===S.pos
     ? {id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true} : q);
+  if(typeof markTeamJoin==="function") markTeamJoin();   // 换了队，在队时长归零
   S.trust={}; if(typeof initTrust==="function") initTrust();
   if(typeof syncTrust==="function") syncTrust();
   if(typeof initRelations==="function") initRelations();

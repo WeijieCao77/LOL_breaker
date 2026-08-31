@@ -635,6 +635,25 @@ td .tlogo{margin-right:5px}
 .trait.on{border-style:solid;border-color:var(--gold);color:var(--gold-hi);
   background:rgba(201,169,97,.10);font-weight:600}
 
+/* ---- 直播合约：条款表 + 影响清单 ---- */
+.scrolltable{overflow-x:auto}
+table.terms{width:100%;border-collapse:collapse;font-size:13px}
+table.terms td{padding:7px 10px 7px 0;border-bottom:1px solid var(--line-soft,rgba(255,255,255,.06))}
+table.terms td:first-child{color:var(--ink-3);white-space:nowrap;width:9em}
+table.terms tr:last-child td{border-bottom:none}
+ul.dealfx{margin:0;padding-left:18px}
+ul.dealfx li{font-size:12.5px;line-height:1.7;color:var(--ink-2);margin-bottom:5px}
+ul.dealfx li::marker{color:var(--ink-3)}
+
+/* 实力数值必须和名字里的数字分得开。
+   路人网名本来就带数字（「峡谷小70」），新秀 ID 也带序号（「新秀林80」），
+   实力再直接贴在后面，玩家根本分不清哪个是哪个——
+   玩家原话：「这些名字后的数值是他们的实力还是 id 带的数字」。
+   所以实力一律加「实力」二字、走等宽、压低对比度，肉眼一眼分开。 */
+.ovr{font-style:normal;font-family:ui-monospace,"Cascadia Mono",Consolas,menlo,monospace;
+  font-size:10.5px;color:var(--ink-3);margin-left:7px;padding-left:7px;
+  border-left:1px solid var(--line);white-space:nowrap}
+
 /* ---- 托管页：每一档摊开写规则 ---- */
 .autoblk{border:1px solid var(--line);border-left:2px solid var(--line);
   padding:11px 13px;margin-bottom:9px;background:rgba(6,21,32,.4)}
@@ -1346,12 +1365,13 @@ function nowPhase(){
     return {tag:sea.tag,phase:n,detail:`${YW} · ${st}`,urgent:true};
   }
   if(S.playoff) return {tag:sea.tag,phase:SPLITS[S.split||0]+"季后赛",
-                        detail:`${YW} · 第 ${S.playoff.round} 轮`,urgent:true};
+                        detail:`${YW} · ${(typeof poRoundName==="function")?poRoundName(S.playoff.round):("第 "+S.playoff.round+" 轮")}`,urgent:true};
   if(S.step==="prep") return {tag:sea.tag,phase:"赛前备战",detail:YW,urgent:true};
   if(S.step==="offseason") return {tag:sea.tag,phase:(S.off&&S.off.label)||"休赛期",
     detail:S.off?`${YW} · 第 ${S.off.week}/${S.off.weeks} 周`:`${YW} · 赛季结算`,urgent:false};
   if(S.step==="end") return {tag:sea.tag,phase:"生涯结束",detail:"",urgent:false};
-  return {tag:sea.tag,phase:SPLITS[S.split||0],detail:`${YW} · 本阶段 ${S.week}/${WEEKS}`,
+  // 写清楚这是常规赛——「春季赛 第 3/7 周」看不出它和季后赛的区别
+  return {tag:sea.tag,phase:SPLITS[S.split||0]+"常规赛",detail:`${YW} · 第 ${S.week}/${WEEKS} 周`,
           urgent:S.week>=WEEKS-1};
 }
 function nowLabel(){ const n=nowPhase(); return `${n.tag} ${n.phase}${n.detail?" "+n.detail:""}`; }
@@ -1833,8 +1853,15 @@ function fanTier(v){
 }
 function nextMilestone(){ return PRE_MILESTONES.find(m=>m.open&&m.w>=S.pre.week); }
 
-function preNextWeek(){
-  const P=S.pre;
+/* 进入新的一周之后，这一周该发生的事立刻发生。
+
+   原来这段挂在 preNextWeek 里，用**自增之前**的周数去匹配里程碑：
+   于是第 8 周的城市争霸赛是在你「离开」第 8 周的那一下才弹出来，
+   而 HUD 那一整周都写着「城市争霸赛 第 8 周（就是本周）」。
+   玩家原话：「游戏显示本周，但是得等到我点击下一周才会弹出来」。
+   现在改成「进入这一周就触发」，报名弹完你还有整周的行动点可用。 */
+function fireWeekEvents(){
+  const P=S.pre; if(!P) return;
   const busyCup = (typeof activeCups==="function") && activeCups().length>0;
 
   // 被推迟的报名单独处理，不跟当周的里程碑抢——
@@ -1848,40 +1875,37 @@ function preNextWeek(){
     }
   }
 
-  let hit=PRE_MILESTONES.find(m=>m.w===P.week);
+  const hit=PRE_MILESTONES.find(m=>m.w===P.week);
   // 手上还有没打完的赛事，就别在这周开新的——两个赛程叠在一起，
   // 行动点根本不够分，备战也顾不过来
   if(hit&&hit.signup&&busyCup){
     P.deferSignup=hit.name;
     preLog(`<b>${hit.name}</b>开始报名了，但你手上的比赛还没打完——先打完再说。`,"info");
-    advancePreWeek(); return;
-  }
-  if(hit&&hit.signup){
+  } else if(hit&&hit.signup){
     if(!hit.need()){ hit.fail(); }
     else { S.signup=hit; render(); return; }     // 交给玩家决定报不报
   } else if(hit){ hit.need()?hit.run():hit.fail(); }
+
   // 够格就随时有人来谈；不够就打到年末的转会窗口再看。
-  // 这里原来还压了一条「第 13 周之前不算」的日期闸。删了：
-  // 转会窗口是给一线队队员的，还没打上职业的人什么时候被看上都正常。
-  // preScore 本身就是一道够高的能力闸（要么国服前列，要么杯赛走得深），
-  // 早期根本摸不到，不需要再拿日历兜一次底。
-  // 但比赛没打完不能来——试训邀请那条路已经加了这道闸，
-  // 这条老路径当时漏了，结果杯赛打到一半就弹出「进职业」。
-  const busy = (typeof activeCups==="function") && activeCups().length>0;
-  if(!busy && preScore()>=PRE_INVITE){
+  // 转会窗口是给一线队队员的，还没打上职业的人什么时候被看上都正常，
+  // 所以这里不看日历，只看 preScore 这道能力闸。
+  // 但比赛没打完不能来——杯赛打到一半弹「进职业」是最扫兴的。
+  if(!busyCup && preScore()>=PRE_INVITE){
     preLog(`俱乐部发来<b>正式试训邀请</b>。`,"big");
     makeOffers(); return;
   }
-  advancePreWeek(); return;
+  render();
 }
+/* 「下一周」：把这一周收尾，走到下一周，然后触发那一周的事 */
+function preNextWeek(){ advancePreWeek(); }
 /* 杯赛轮次到点提醒 */
 function cupTick(){
   if(typeof activeCups!=="function") return;
   activeCups().forEach(c=>{
     if(S.pre.week===c.nextWeek)
-      preLog(`<b>${c.name}</b> 第 ${c.round} 轮就在本周，对手 <b>${cupOppName(c.kind)}</b>。`,"big");
+      preLog(`<b>${c.name}</b> <b>${cupRoundName(c.kind,c.round)}</b>就在本周，对手 <b>${cupOppName(c.kind)}</b>。`,"big");
     else if(c.nextWeek-S.pre.week===1)
-      preLog(`${c.name} 第 ${c.round} 轮下周开打。`,"info");
+      preLog(`${c.name} ${cupRoundName(c.kind,c.round)}下周开打。`,"info");
   });
 }
 /* 报名弹窗处理完之后，继续把这一周走完 */
@@ -1923,7 +1947,9 @@ function advancePreWeek(){
       }
     }
   });
-  render();
+  // 走进了新的一周，这一周该发生的事就在这一刻发生——
+  // 不能等到玩家再点一次「下一周」
+  fireWeekEvents();
 }
 
 /* 只有一个「外界评价」维度：段位 + 名气 + 赛事成绩。
@@ -1999,6 +2025,17 @@ function acceptOffer(i){
     career:{w:0,l:0,titles:[],best:99},seasonAttr0:Object.assign({},S.attrs),
     buff:{},contract:(S.pendingContract||{years:2,left:2}),rivals:{},lockerSeen:[]
   });
+  /* 签约就离开业余赛季了——手上还没打完的杯赛必须有个交代。
+     原来它们会一直挂着 alive=true 到生涯结束（实测 104 次报名里 10 次这样），
+     玩家交了报名费、赛程还在，然后这件事就人间蒸发了。 */
+  if(typeof activeCups==="function"){
+    activeCups().forEach(c=>{
+      c.alive=false;
+      preLog(`你签了职业合同，<b>${c.name}</b>就不打了——报名费不退，
+        走到${(typeof cupRoundName==="function")?cupRoundName(c.kind,c.round):"这一轮"}为止。`,"info");
+    });
+  }
+  if(typeof markTeamJoin==="function") markTeamJoin();   // 在队时长从这里开始算
   initTrust(); initSquad(); initCapBonus(); initBtk();
   initStaff(); initRelations();
   S.winStreak=0; S.sweepStreak=0; S.lckBeaten=[]; S.retireSeen=0;
@@ -2044,6 +2081,15 @@ function joinTeam(){
 }
 
 function myTeam(){ return S.world[S.homeLeague||"LPL"].find(t=>t.name===S.team); }
+/* 在这支队待了多久（正式比赛场次）。
+   玩家原话：「刚加入职业队，哪来的队友被开除，这个事件抽取也要根据玩家的游玩进度走」。
+   「一起打了很久的队友被卖了」这种事件原来只判断 !!S.team——有队的第一周就能抽到。
+   换队之后也要归零：刚转会过去的人，队友同样都是刚认识的。 */
+function teamTenure(){
+  const g=((S.career&&(S.career.w+S.career.l))||0);
+  return Math.max(0, g-(S.teamSince||0));
+}
+function markTeamJoin(){ S.teamSince=((S.career&&(S.career.w+S.career.l))||0); }
 function myRoster(){ return myTeam().players; }
 
 function startSeason(first,split){
@@ -2225,6 +2271,8 @@ function fanWeek(){
   // （这条一开始接错了地方——接在早就被收敛模型换掉的 addFans 上，
   //   replace 没匹配到又没写断言，于是效果整个丢了。教训留在这儿。）
   if(typeof traitMul==="function") rate*=traitMul("fan");
+  // 平台推流：签了独家，平台把你摆在推荐位，粉丝沉淀得更快
+  if(typeof streamPushMul==="function") rate*=streamPushMul();
   const gap=cap-(S.fans||0);
   // 天花板掉下来（比如去了外赛区、或者一直坐板凳），粉丝慢慢流失，不是断崖
   S.fans=Math.max(0,(S.fans||0)+gap*(gap>0?rate:0.02));
@@ -2668,11 +2716,25 @@ function startMatch(bo,oppName){
      陈旧条目。这里在唯一的入口兜住：从当前联赛里挑一支真实存在的队顶上，
      并且把队名也改过来，免得界面显示一个不存在的对手。 */
   if(!opp){
-    const lg=(S.world&&S.world[S.homeLeague||"LPL"])||[];
-    opp=lg.find(t=>t.name!==S.team)||lg[0]||null;
+    /* 兜底要挑对池子。原来一律从「你自己的联赛」里挑一支顶上——
+       于是国际赛也会拿本赛区的队来填，MSI 小组赛里冒出同赛区对手
+       （玩家报的：LNG 在 MSI 小组赛遇到 ThunderTalk）。
+       国际赛就从这届的参赛名单里挑，联赛才从你的联赛里挑。 */
+    const inIntl = !!S.intl;
+    let pool=[];
+    if(inIntl){
+      const names=[].concat(S.intl.field||[], S.intl.direct||[], S.intl.queue||[])
+                    .filter(n=>n&&n!==S.team);
+      pool=names.map(n=>findTeam(n)).filter(Boolean);
+    }
+    if(!pool.length){
+      const lg=(S.world&&S.world[S.homeLeague||"LPL"])||[];
+      pool=lg.filter(t=>t.name!==S.team);
+    }
+    opp=pool[0]||null;
+    S._oppFix=(S._oppFix||0)+1;
     if(opp&&typeof pushEvent==="function")
-      pushEvent(`赛程里的 <b>${on}</b> 已经不在 ${S.homeLeague||"LPL"} 了，
-        本周对手改为 <b>${opp.name}</b>。`,"info","赛段");
+      pushEvent(`赛程里的 <b>${on}</b> 找不到了，本场对手改为 <b>${opp.name}</b>。`,"info","赛段");
   }
   const need=(typeof bo==="number")?bo:(bo?3:2);   // 1=BO1 2=BO3 3=BO5
   S.match={opp,oppName:(opp&&opp.name)||on,sc:[0,0],game:1,lines:[],node:null,swing:0,done:false,
@@ -2980,17 +3042,20 @@ function playoffOpp(round){
   const want = round===1 ? 4 : round===2 ? 1 : 0;   // 索引：5-6号 / 2-3号 / 榜首
   return (rk[Math.min(want, rk.length-1)]||rk[0]).n;
 }
+/* 季后赛这一轮叫什么。六队、三轮：首轮 → 半决赛 → 决赛。
+   玩家原话：「打一线比赛 lpl 也是常规赛，季后赛季后赛半决赛这些要写清楚」。 */
+function poRoundName(r){ return ["季后赛首轮","半决赛","决赛"][(r||1)-1] || `第 ${r} 轮`; }
 function playoffAdvance(){
   const won=S.match.sc[0]>S.match.sc[1];
   if(!won){ noteGrudge(S.match.oppName,S.playoff.round>=3?4:2,
-      `季后赛第 ${S.playoff.round} 轮被淘汰`);
+      `${poRoundName(S.playoff.round)}被淘汰`);
     S.playoff.alive=false; endSeason(S.playoff.round,S.playoff.seed); return; }
   S.playoff.beaten.push(S.match.oppName);
   S.playoff.round++;
   if(S.playoff.round>3){ endSeason("champion",S.playoff.seed); return; }
   const nm=playoffOpp(S.playoff.round);
   enterPrep("playoff", nm, true,
-    `季后赛第 ${S.playoff.round} 轮 · 赛前备战`);
+    `${poRoundName(S.playoff.round)} · 赛前备战`);
 }
 
 /* ---------- 淘汰赛之间的备战 ----------
@@ -3144,7 +3209,7 @@ function viewOffseason(){
   const ls=S.lastSeason,sea=SEASONS[S.si];
   const label=ls.result==="champion"?`<span class="tag g">LPL 冠军</span>`
     :ls.result===null?`常规赛第 ${ls.seed} 名 · 无缘季后赛`
-    :`季后赛第 ${ls.result} 轮出局（常规赛第 ${ls.seed}）`;
+    :`${(typeof poRoundName==="function")?poRoundName(ls.result):("季后赛第 "+ls.result+" 轮")}出局（常规赛第 ${ls.seed}）`;
   const last=S.si>=SEASONS.length-1;
   return `<div class="card">
     <h2>${sea.tag} ${sea.y} 赛季结算</h2>
@@ -3667,7 +3732,7 @@ function actPanelPre(){
     </div>`}
     ${(()=>{const due=(typeof dueCups==="function")?dueCups():[];
       return due.length?`<p class="note" style="color:var(--gold);margin-top:14px">
-        <b>${CUPS[due[0].kind].name}</b> 第 ${due[0].round} 轮就在本周，你还没上场——
+        <b>${CUPS[due[0].kind].name}</b> <b>${cupRoundName(due[0].kind,due[0].round)}</b>就在本周，你还没上场——
         直接进入下一周会按弃权处理。</p>`:"";})()}
     <div class="row"><button class="btn" id="prenext" ${P.ap>0?'disabled':''}>
       ${P.ap>0?`还剩 ${P.ap} 个行动点`
@@ -3703,7 +3768,7 @@ function viewPre(){
     +lockedCard("队友","签约职业战队后解锁完整版。",
       `<p class="note" style="margin:0">每个队友对你有独立的信任度，会因为你的选择涨落，也会影响全队发挥。</p>`):""}
   ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
-  ${T==="shop"?(typeof financeCard==="function"?financeCard():"")+gearCard()+shopCard()+(typeof prizeNote==="function"?prizeNote():"")
+  ${T==="shop"?(typeof financeCard==="function"?financeCard():"")+((typeof streamDealCard==="function")?streamDealCard():"")+gearCard()+shopCard()+(typeof prizeNote==="function"?prizeNote():"")
       +lockedCard("俱乐部资源","签约职业战队后解锁。",
         `<p class="note" style="margin:0">私教、理疗师、团队建设、舆论公关——
           进队之后才用得上，也才付得起。</p>`):""}
@@ -3717,7 +3782,7 @@ function viewOffer(){
   const P=S.pre;
   return `<div class="card">
     <h2>转会窗口 · 收到的试训邀请<em>综合评估 ${P.finalScore}</em></h2>
-    <h3>${rankFull(P.rank)} · ${fanTier()} · 城市赛 ${P.cityCup!==null?P.cityCup+" 轮":"未参赛"} · 主播杯 ${P.streamCup!==null?P.streamCup+" 轮":"未参赛"}</h3>
+    <h3>${rankFull(P.rank)} · ${fanTier()} · 城市赛 ${P.cityCup!==null?cupReachName("city",P.cityCup):"未参赛"} · 主播杯 ${P.streamCup!==null?cupReachName("stream",P.streamCup):"未参赛"}</h3>
     <p class="note">这段时间你做的每一件事，都变成了现在桌上的选项。
       <b>但这些只是试训机会，不是合同</b>——去了要评估四天，评级不够一样拿不到合同。
       档次越高的队，期望值也越高。</p>
@@ -3883,8 +3948,26 @@ function startIntl(type,playerResult){
        majorStandings 本身对任何联赛都成立，补上就行。 */
     if(!seeds[HL]) seeds[HL]=majorStandings(HL)||[];
     if(playerResult==="champion") seeds[HL]=[S.team].concat(seeds[HL].filter(n=>n!==S.team));
-    const field=MAJOR.flatMap(lg=>seeds[lg].slice(0,2));
-    // 小赛区的冠军也该有一张门票——现实里 MSI 本来就请赛区冠军
+    /* 名额：一个赛区派几支。
+       原来写死 slice(0,2)——每个大赛区两支，于是 MSI 小组赛里会出现
+       同赛区内战（玩家报的：LNG 在 MSI 小组赛遇到 ThunderTalk）。
+       现实里：2022 MSI 是 11 队、每个赛区只有春季赛冠军一支；
+       2023 起 LPL/LCK 才各拿两个名额。 */
+    const twoSeed = (F.msi&&F.msi.mode)!=="groups";      // 2022 那套＝每赛区一支
+    const field=[];
+    MAJOR.forEach(lg=>{
+      const n = twoSeed && (lg==="LPL"||lg==="LCK") ? 2 : 1;
+      field.push(...(seeds[lg]||[]).slice(0,n));
+    });
+    // 小赛区冠军也有票——MSI 本来就是各赛区冠军的舞台。
+    // 2022 的 11 队正好是「四大赛区各一 + 七个小赛区各一」。
+    if(!twoSeed){
+      (MINOR||[]).forEach(lg=>{
+        if(!S.world[lg]||!S.world[lg].length) return;
+        const r=majorStandings(lg);
+        if(r&&r[0]&&field.indexOf(r[0])<0) field.push(r[0]);
+      });
+    }
     if(playerResult==="champion"&&field.indexOf(S.team)<0) field.push(S.team);
     // 2022 的 MSI 是小组赛+淘汰，2023 起才是双败
     return openIntl("msi",field,F.msi.mode==="groups"?"groups":"knockout");
@@ -4342,7 +4425,7 @@ const LOCKER=[
       {t:"看局势分，不预设",e:(t)=>{addTrust(t.id,3);addTrustAll(2);
         return "折中方案，没人特别满意，也没人不满意。"}}]},
 
-  {id:"rookie", rec:0, when:()=>myRoster().some(p=>!p.me&&p.rookie)&&rnd()<0.5,
+  {id:"rookie", rec:0, when:()=>(typeof teamTenure==="function"?teamTenure():99)>=3&&myRoster().some(p=>!p.me&&p.rookie)&&rnd()<0.5,
    q:t=>`新秀 <b>${t.id}</b> 连着几把打崩，训练室里一个人坐着。`,
    ctx:"你也从那个位置过来过。",
    a:[{t:"陪他加练两个小时", g:"warm",e:(t)=>{addTrust(t.id,18);addTrustAll(3);addFat(10);
@@ -4352,7 +4435,7 @@ const LOCKER=[
       {t:"让他自己扛过去", g:"show",e:(t)=>{addTrust(t.id,-6);
         return "职业圈本来就是这样。他没说什么。"}}]},
 
-  {id:"veteran", rec:0, when:()=>myRoster().some(p=>!p.me&&p.age>=27)&&rnd()<0.45,
+  {id:"veteran", rec:0, when:()=>(typeof teamTenure==="function"?teamTenure():99)>=3&&myRoster().some(p=>!p.me&&p.age>=27)&&rnd()<0.45,
    q:t=>`老将 <b>${t.id}</b> 私下问你，是不是该退了。`,
    ctx:"他的操作确实在掉，但他还是队里最懂运营的人。",
    a:[{t:"你还能打，队里需要你", g:"warm",e:(t)=>{addTrust(t.id,16);addTrustAll(4);
@@ -4950,7 +5033,17 @@ function streamIncome(){
   return (base+gift)*originMul;
 }
 /* 独家平台控流量，涨名气比全网直播慢 */
-function streamFansMul(){ return S.streamDeal?0.7:1.0; }
+/* 独家的代价原来是「平台控流量，直播涨名气变慢」（×0.7）。
+   但玩家指出：签独家平台应该<b>帮你推流</b>才对——现实里也是这样，
+   独家主播会被摆在首页和推荐位。
+   所以代价换个地方承担：收入锁死在保底（人气再涨也不加钱），
+   而涨粉这边反过来<b>加成</b>。热度本身不再被压。 */
+function streamFansMul(){ return 1.0; }
+/* 平台推流：独家合同带来的涨粉加成，乘进 fanWeek 的收敛速率 */
+function streamPushMul(){
+  const d=S.streamDeal; if(!d) return 1;
+  return d.lvl>=2 ? 1.45 : 1.25;
+}
 
 /* 每次开播时结算「平台关系」：分成该升就升（发事件），独家该谈就谈（弹窗）。
    放在直播动作里而不是每周结算里——你和平台打交道的时机就是开播。 */
@@ -5063,10 +5156,14 @@ function streamOfferCard(){
         签字费 <b>${Math.round(o.sign*1.4)} 万</b>（抢人价）· 每播保底 <b>${net(0.40,1.15)} 万</b>（俱乐部抽 40%）<br>
         <span style="color:var(--red)">经理很不高兴，信任 −12。</span></span></div>
     </div>`:""}
-    <div class="ver" style="margin-top:10px"><b>不签</b><br><span class="note" style="margin:0">
+    <div class="ver" style="margin-top:10px"><b>签了以后</b><br><span class="note" style="margin:0">
+      旱涝保收：成绩低谷、热度掉下去，每播照样拿保底。平台还会把你摆在推荐位——
+      <b style="color:var(--cyan)">涨粉快 ${o.lvl>=2?45:25}%</b>。<br>
+      代价：<b>收入锁死在保底</b>，粉丝再涨也不加钱；每赛段至少播 ${need} 次，做不到赔钱。</span></div>
+    <div class="ver" style="margin-top:8px"><b>不签</b><br><span class="note" style="margin:0">
       收入跟着粉丝和热度浮动，分成档也会继续往上谈——打出名堂的话上限比保底高得多。
-      代价是没有下限，凉了就是真的凉；也没有开播条款捆着你。</span></div>
-    <p class="note" style="margin:10px 0 0">${hasClub?"两份独家合同都带":"独家合同带"}<b>开播条款</b>：每赛段至少播 ${need} 次，做不到要赔钱。</p>
+      代价是没有下限，凉了就是真的凉；也没有平台帮你推流。</span></div>
+    <p class="note" style="margin:10px 0 0">签完可以在<b>经济</b>页随时翻合约条款和它对你的影响。</p>
     <div class="row" style="justify-content:center">
       ${hasClub
         ? `<button class="btn" id="strmclub">签 ${o.club}</button>
@@ -5080,6 +5177,56 @@ function streamOfferCard(){
       <button class="recobtn" data-reco="biz" title="按推荐来：粉丝还有涨的空间就不签，贴着天花板了就签俱乐部的平台">按推荐</button>
     </div>`:""}</div></div>`;
 }
+/* ---------- 我的直播合约 ----------
+   玩家原话：「哪个地方能看到我签订的直播合约，包括合约内容，以及对我的影响」。
+   原来只有商城底部一行字。合约是一份真的合同，条款和影响都该摊开。 */
+function streamDealCard(){
+  const d=S.streamDeal;
+  const cut=STREAM_CUTS[S.streamCutIdx||0];
+  if(!d){
+    return `<div class="card"><h2>直播合约<em>自由身</em></h2>
+      <p class="note" style="margin:0 0 8px">你没有签任何平台的独家，收入跟着粉丝和热度走。</p>
+      <div class="ver">当前礼物分成 <b>${cut.n}</b>　·　每次直播约 <b>${Math.round(streamIncome())} 万</b><br>
+        <span style="color:var(--ink-3)">咖位上一个台阶，平台会主动上调分成；
+        再上一个大台阶，才会有人来谈独家。</span></div>
+      <p class="note" style="margin:8px 0 0">自由身的<b>上限更高</b>（收入随粉丝×热度浮动），
+        但<b>没有下限</b>——成绩凉了收入就跟着凉，也没有平台帮你推流。</p></div>`;
+  }
+  const originMul=S.origin==="streamer"?1.7:1.0;
+  const gross=Math.round(d.base*originMul);
+  const net=Math.round(gross*(1-(d.cut||0)));
+  const need=d.need||0, done=d.done||0;
+  const push=Math.round((streamPushMul()-1)*100);
+  return `<div class="card"><h2>直播合约<em>${d.plat||"平台"}</em></h2>
+    <div class="ver" style="margin:0 0 10px"><b>${d.n}</b>　·　签约方 <b>${d.plat||"平台"}</b>${
+      d.kind==="club"?`（${S.team} 的合作平台）`:d.kind==="rival"?`（不是你队的合作平台）`:""}</div>
+
+    <h3 style="font-size:14px">合约条款</h3>
+    <div class="scrolltable"><table class="terms">
+      <tr><td>每次直播保底</td><td class="mono"><b>${gross} 万</b></td></tr>
+      <tr><td>俱乐部抽成</td><td class="mono">${d.cut?`−${Math.round(d.cut*100)}%（<b>−${gross-net} 万</b>）`:"无"}</td></tr>
+      <tr><td>实际到手</td><td class="mono"><b style="color:var(--gold)">${net} 万</b> / 次</td></tr>
+      <tr><td>平台推流</td><td class="mono"><b style="color:var(--cyan)">涨粉 +${push}%</b></td></tr>
+      <tr><td>开播条款</td><td class="mono">每赛段至少 <b>${need}</b> 次${
+        need?`　本赛段已播 <b class="${done>=need?"":"ct-bad"}">${done}/${need}</b>`:""}</td></tr>
+    </table></div>
+
+    <h3 style="font-size:14px;margin-top:16px">这份合约对你的影响</h3>
+    <ul class="dealfx">
+      <li><b style="color:var(--cyan)">好处</b>：旱涝保收——成绩低谷、热度掉下去，每播照样 ${net} 万；
+        平台把你摆在推荐位，<b>涨粉快 ${push}%</b>。</li>
+      <li><b style="color:var(--red)">代价</b>：收入锁死在保底，<b>粉丝再涨也不加钱</b>；
+        自由身现在每播约 ${Math.round((()=>{const bak=S.streamDeal;S.streamDeal=null;
+          const v=streamIncome();S.streamDeal=bak;return v;})())} 万。</li>
+      <li><b style="color:var(--red)">义务</b>：每赛段播不够 ${need} 次要按合同赔钱。</li>
+      ${d.kind==="rival"?`<li><b style="color:var(--red)">队里的账</b>：你签的不是俱乐部的合作平台，
+        经理那边一直记着这笔。</li>`:d.kind==="club"?`<li><b style="color:var(--cyan)">队里的账</b>：
+        你签的正是俱乐部的合作平台，经理承你的情。</li>`:""}
+    </ul>
+    <p class="note" style="margin:8px 0 0">合约签了就不能反悔——只有咖位再上一个大台阶，
+      才会有更高的报价来谈。</p></div>`;
+}
+
 function buyGear(slot,tier){
   const g=GEAR[slot][tier];
   const cur=(S.gear&&S.gear[slot])||0;
@@ -5127,6 +5274,7 @@ function gearCard(){
 /* 经济页 = 财务总览 -> 我的合同 -> 商城 -> 奖金标准（自上而下） */
 function economyCards(){
   return financeCard()
+    + streamDealCard()
     + ((typeof contractTerms==="function")?contractTerms():"")
     + shopCard()
     + prizeNote();
@@ -6178,7 +6326,7 @@ const RANDOM_EVENTS=[
       {t:"先问清楚条件",e:()=>{addFans(5);
         return "对方说了些含糊的话。你没去成，但也没损失。"}}]},
 
-  {id:"teamDinner", rec:1, w:2, when:()=>!!S.team,
+  {id:"teamDinner", rec:1, w:2, when:()=>!!S.team&&(typeof teamTenure==="function"?teamTenure():99)>=4,
    q:()=>`队里聚餐，经理说想让大家放松放松。`,
    ctx:"你本来打算今晚加练的。",
    a:[{t:"去，喝两杯", g:"show",e:()=>{typeof addTrustAll==="function"&&addTrustAll(7);addFat(-14);
@@ -6251,7 +6399,7 @@ const RANDOM_EVENTS=[
       {t:"不管版本，硬打", g:"hard",e:()=>{addBuff("mood",0.9,2,"逆版本");
         return "你还在打上个版本的游戏。有几场很别扭。"}}]},
 
-  {id:"exMate", rec:0, auto:false, when:()=>!!S.team,
+  {id:"exMate", rec:0, auto:false, when:()=>!!S.team&&(typeof teamTenure==="function"?teamTenure():99)>=12,
    q:()=>`一起打了很久的队友被卖了，走之前来找你吃了顿饭。`,
    ctx:"他说下赛季可能就是对面了。",
    a:[{t:"敬他一杯，好聚好散", g:"warm",e:()=>{addFat(-10);addBuff("mood",1.15,2,"心里踏实");
@@ -7684,7 +7832,7 @@ function autoBiz(){
     } else {
       autoNote(`没报${m.name}（${m.need&&!m.need()?"门槛不够":"报名费占余额太多"}）`);
     }
-    advancePreWeek();
+    render();      // 报名发生在这一周的开头，答完这一周还没过完
     return true;
   }
   return false;
@@ -8064,20 +8212,39 @@ const NODES_MORE=[
    注意：这里的数字和职业选手评分不是一把尺子——
    职业评分是在同位置同层级内做 z 标准化的（见 export_game.py），
    50 分意思是「该层级的平均水平」，不能跨系统直接比大小。      */
+/* 轮次要有名字。
+   玩家原话：「不要写第几轮第几轮，要写清楚小组赛，半决赛，决赛等等」。
+   「第 3 轮」既不知道离冠军还有多远，也不知道这一场有多重——
+   而「半决赛」这三个字自带分量。 */
 const CUPS={
   city:{ name:"城市争霸赛", rounds:4, gap:1, band:[43,52.5],
          prize:[0,25,70,180,420],
+         rn:["小组赛","八强赛","半决赛","决赛"],
          opps:["网吧联队","本地车队","大学生战队","市队"] },
   stream:{ name:"主播杯", rounds:3, gap:1, band:[47,55.5],
          prize:[0,60,180,520],
+         rn:["小组赛","半决赛","决赛"],
          opps:["百万粉丝队","退役选手队","冠军主播队"] },
   /* 全明星周末的娱乐表演赛（现实原型：LPL 全明星周末「主播对抗」）。
      邀请制看人气，免报名费，输了也有出场费——这是舞台，不是淘汰赛。
      主办方配明星队友，所以不动你的车队，胜负按个人发挥算。 */
   show:{ name:"全明星周末 · 主播表演赛", rounds:1, gap:1, band:[51,51],
          prize:[20,120],
+         rn:["表演赛"],
          opps:["明星联队"] }
 };
+
+/* 这一轮叫什么。round 从 1 开始；越界就退回「第 N 轮」，不让它崩。 */
+function cupRoundName(kind, round){
+  const C=CUPS[kind]; const i=(round||1)-1;
+  return (C&&C.rn&&C.rn[i]) ? C.rn[i] : `第 ${round} 轮`;
+}
+/* 走到第几轮＝走到哪一场（用来写「止步半决赛」这种） */
+function cupReachName(kind, reached){
+  const C=CUPS[kind]; if(!C) return `${reached} 轮`;
+  if(reached>=C.rounds) return "夺冠";
+  return `止步${cupRoundName(kind, reached+1)}`;
+}
 
 /* 业余队名：报名时玩家起的名字，没起就用选手 ID */
 function cupTeamName(){
@@ -8095,12 +8262,17 @@ const PUB_NAMES=["一刀","峡谷小","野区暴君","中路一霸","河道蟹",
 function drawCupMates(kind){
   const C=CUPS[kind]||CUPS.city;
   const [lo,hi]=C.band;
+  // 名字不重复：一次抽四个人，抽到重名的（「泉水指挥官36」和「泉水指挥官76」
+  // 同时在队里）看着像 bug
+  const pool=PUB_NAMES.slice();
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  let pi=0;
   S.pre.mates=POS.filter(p=>p.k!==S.pos).map(p=>{
     // 偏上沿抽：愿意跟你组队打比赛的路人，本来就是这个池子里想赢的那批
     const lvl=lo+(0.45+0.55*rnd())*(hi-lo);
     const r={};
     DIMS.forEach(d=>r[d]=clamp(Math.round(lvl+(rnd()*14-7)),25,75));
-    return {id:PUB_NAMES[Math.floor(rnd()*PUB_NAMES.length)]+(10+Math.floor(rnd()*90)),
+    return {id:(pool[pi++%pool.length])+(10+Math.floor(rnd()*90)),
             pos:p.k, age:16+Math.floor(rnd()*14), r};
   });
   // 临时车队：默契战术起点偏低，信任一般——这正是战队行动的用武之地
@@ -8210,9 +8382,9 @@ function cupPrep(k){
 function cupTick(){
   activeCups().forEach(c=>{
     const wait=c.nextWeek-S.pre.week;
-    if(wait===1) preLog(`<b>${c.name}</b> 第 ${c.round} 轮下周开打，对手 ${cupOppName(c.kind)}。`,"info");
+    if(wait===1) preLog(`<b>${c.name}</b> <b>${cupRoundName(c.kind,c.round)}</b>下周开打，对手 ${cupOppName(c.kind)}。`,"info");
     else if(wait<=0&&!c.due){ c.due=true;
-      preLog(`<b>${c.name}</b> 第 ${c.round} 轮就是本周——随时可以上场。`,"good"); }
+      preLog(`<b>${c.name}</b> <b>${cupRoundName(c.kind,c.round)}</b>就是本周——随时可以上场。`,"good"); }
     if(wait>0) c.due=false;
   });
 }
@@ -8229,7 +8401,7 @@ function forfeitCup(k){
   const c=cupOf(k), C=CUPS[k];
   if(!c||!c.alive) return;
   c.alive=false;
-  preLog(`<b>${C.name}</b> 第 ${c.round} 轮开赛时你没有出现。<b>按弃权处理。</b>`,"bad");
+  preLog(`<b>${C.name}</b> ${cupRoundName(k,c.round)}开赛时你没有出现。<b>按弃权处理。</b>`,"bad");
   cupPayout(k,false);
 }
 
@@ -8291,7 +8463,7 @@ function endCupMatch(){
   if(won){
     c.wins++;
     addFans(4+c.round*2);
-    preLog(`<b>${C.name}</b> 第 ${c.round} 轮：${m.sc[0]}:${m.sc[1]} 击败 ${m.opp}。`,"good");
+    preLog(`<b>${C.name}</b> ${cupRoundName(c.kind,c.round)}：${m.sc[0]}:${m.sc[1]} 击败 ${m.opp}。`,"good");
     // 这里原本会「每赢一轮就可能来邀请」，但那会把杯赛线整个短路：
     // 玩家在半决赛就签约走人，奖金、成就、决赛全都拿不到，
     // 职业赛胜率也从 66% 掉到 51%（签得太早，属性还没练起来）。
@@ -8306,7 +8478,7 @@ function endCupMatch(){
     }
   } else {
     c.alive=false;
-    preLog(`<b>${C.name}</b> 第 ${c.round} 轮：${m.sc[0]}:${m.sc[1]} 不敌 ${m.opp}，止步于此。`,"bad");
+    preLog(`<b>${C.name}</b> ${cupRoundName(c.kind,c.round)}：${m.sc[0]}:${m.sc[1]} 不敌 ${m.opp}，止步于此。`,"bad");
     cupPayout(k,false);
   }
   render();
@@ -8397,7 +8569,8 @@ function cupCard(){
              :d>-7?"对手比你强，得靠备战和决策去搏。"
              :"实力差得有点多——赢面很小，除非临场赌对。"}</p>
       ${S.pre.mates&&S.pre.mates.length?`<div class="oppinfo">${
-        S.pre.mates.map(m=>`<span class="chipx">${typeof avatarOf==="function"?avatarOf(m,18):""} ${m.id} <b>${POSN[m.pos]}</b></span>`).join("")}</div>
+        S.pre.mates.map(m=>`<span class="chipx">${typeof avatarOf==="function"?avatarOf(m,18):""} ${m.id} <b>${POSN[m.pos]}</b><i class="ovr">实力 ${
+          (typeof ovrOf==="function"?ovrOf(m):avg(DIMS.map(d=>m.r[d]))).toFixed(0)}</i></span>`).join("")}</div>
       <p class="note" style="margin-top:8px">备战就是练队：<b>「本周」里的战队行动</b>（训练赛/复盘/合练/双排）
         喂的默契与战术，直接乘在这支车队的战力上——去「战队」页看拆解。</p>`:""}
       ${wait<=0?`<div class="row"><button class="btn" data-cupgo="${k}">上场 →</button></div>`:""}</div>`;
@@ -9288,16 +9461,26 @@ function signDeal(){
       teamName=alt;
     }
   }
-  // 邀请是从 S.world 里挑的队名，签约时用的是新克隆的 world。
-  // 正常情况下名字一致，但万一对不上（老存档、数据换版），
-  // 不能让它崩在签约这一步——退回到一支中游队。
-  if(!toLDL && !P.world.LPL.some(t=>t.name===teamName)){
+  /* 队名到底属于哪个联赛——不能假设是 LPL。
+
+     玩家报的 bug：签了 Gen.G（LCK），进游戏却在 LNG Esports 打 LPL。
+     原因就是这里原来的两行：查队名只查 P.world.LPL，查不到就「退回一支中游队」
+     （LPL 第 7 名正好是 LNG），而 league 又被写死成 "LPL"——
+     于是每一份外赛区合同都被静默改写成了 LPL 第七名，还不吭声。
+     现在按队名在整个世界里找联赛，找不到才兜底，而且兜底要说出来。 */
+  let lg = toLDL ? "LDL" : (d.league || null);
+  if(!lg || !((P.world[lg]||[]).some(t=>t.name===teamName))){
+    lg = Object.keys(P.world).find(k=>(P.world[k]||[]).some(t=>t.name===teamName)) || null;
+  }
+  if(!lg){
     const rk=P.world.LPL.map(t=>({n:t.name,p:power(t)})).sort((a,b)=>b.p-a.p);
-    teamName=rk[Math.min(6,rk.length-1)].n;
+    const alt=rk[Math.min(6,rk.length-1)].n;
+    preLog(`合同上的 <b>${teamName}</b> 在这个赛季的名单里找不到了，
+      俱乐部把你转给了 <b>${alt}</b>。`,"info");
+    teamName=alt; lg="LPL";
   }
   const D = DEAL_TIERS[d.dealTier];
-  P.offers = [{ k:d.kind, team:teamName, t:D.n, d:"", note:"",
-                league: toLDL ? "LDL" : "LPL" }];
+  P.offers = [{ k:d.kind, team:teamName, t:D.n, d:"", note:"", league: lg }];
   addMoney("sign", d.sign);
   if(d.sign) preLog(`签字费 <b>${d.sign} 万</b>到账。`, "good");
   S.pendingContract = {
@@ -9598,6 +9781,7 @@ function signTransfer(){
   const t = (S.world[S.homeLeague||"LPL"]||[]).find(x=>x.name===S.team);
   if(t) t.players = t.players.map(q => q.pos===S.pos
     ? {id:S.name||"你", cn:"", pos:S.pos, age:S.age, r:S.attrs, me:true} : q);
+  if(typeof markTeamJoin==="function") markTeamJoin();   // 换了队，在队时长归零
   S.trust = {}; if(typeof initTrust==="function") initTrust();
   if(typeof syncTrust==="function") syncTrust();
   addMoney("sign", d.sign);
@@ -9640,6 +9824,7 @@ function checkPromote(){
   S.offerKind = "start"; S.understudy = null; S.promoted = true;
   pt.players = pt.players.map(q => q.pos === S.pos
     ? {id:S.name||"你", cn:"", pos:S.pos, age:S.age, r:S.attrs, me:true} : q);
+  if(typeof markTeamJoin==="function") markTeamJoin();   // 换了队，在队时长归零
   S.trust = {}; if(typeof initTrust === "function") initTrust();
   if(typeof syncTrust === "function") syncTrust();
   // 升上来是涨薪的，但还是队里最便宜的那个。
@@ -9686,6 +9871,7 @@ function doSendDown(acad){
   const t=myTeam();
   t.players=t.players.map(q=>q.pos===S.pos
     ? {id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true} : q);
+  if(typeof markTeamJoin==="function") markTeamJoin();   // 换了队，在队时长归零
   S.trust={}; if(typeof initTrust==="function") initTrust();
   if(typeof syncTrust==="function") syncTrust();
   if(typeof initRelations==="function") initRelations();
@@ -9751,8 +9937,8 @@ function nextMatchCard(){
     </div>
     <div class="oppinfo">
       <span class="chipx">对面战绩 <b>${st.w}−${st.l}</b></span>
-      <span class="chipx">核心 <b>${star.id}</b>${star.cn?`（${star.cn}）`:""} ${POSN[star.pos]} ${ovrOf(star).toFixed(0)}${star.comeback?' · 复出':''}${star.rookie?' · 新秀':''}</span>
-      ${rival?`<span class="chipx">你的对位 <b>${rival.id}</b> ${ovrOf(rival).toFixed(0)}${rival.rookie?' · 新秀':''}</span>`:""}
+      <span class="chipx">核心 <b>${star.id}</b>${star.cn?`（${star.cn}）`:""} ${POSN[star.pos]}<i class="ovr">实力 ${ovrOf(star).toFixed(0)}</i>${star.comeback?' · 复出':''}${star.rookie?' · 新秀':''}</span>
+      ${rival?`<span class="chipx">你的对位 <b>${rival.id}</b><i class="ovr">实力 ${ovrOf(rival).toFixed(0)}</i>${rival.rookie?' · 新秀':''}</span>`:""}
     </div>
     <div class="gapbar ${V.k}">
       <div class="gv">${V.t}<span class="gd mono">${diff>=0?"+":""}${diff.toFixed(1)}</span></div>
@@ -9928,12 +10114,12 @@ function bind(){
     if(typeof addMoney==='function') addMoney('fee',-m.fee); else S.money-=m.fee;
     preLog(`交了 <b>${m.fee} 万</b>报名费，以「<b>${escapeHtml((S.pre&&S.pre.cupTeam)||meName())}</b>」的名义报了 ${m.name}。`,"info");
     enterCup(m.signup);   // 建赛程，第一场按 CUPS[kind].gap 排
-    advancePreWeek();
+    render();             // 报名发生在这一周的开头，答完这一周还没过完
   };
   const sn=$("signno"); if(sn) sn.onclick=()=>{
     const m=S.signup; S.signup=null;
     preLog(`没报 ${m.name}。省下的钱和体力，用在别处。`,"info");
-    advancePreWeek();
+    render();             // 同上：这一周才刚开始，别把它跳掉
   };
   st.querySelectorAll("[data-gear]").forEach(b=>b.onclick=()=>{
     const a=b.dataset.gear.split(":");buyGear(a[0],+a[1]);});
@@ -9975,7 +10161,7 @@ function bind(){
     if(due.length){
       const c=due[0], nm=CUPS[c.kind].name;
       askConfirm(`${nm}还没打`,
-        `<b>${nm}</b> 第 ${c.round} 轮就在本周，对手是 <b>${cupOppName(c.kind)}</b>，你还没上场。<br>
+        `<b>${nm}</b> <b>${cupRoundName(c.kind,c.round)}</b>就在本周，对手是 <b>${cupOppName(c.kind)}</b>，你还没上场。<br>
          直接进入下一周就是 <b style="color:var(--red)">弃权</b>——这届比赛到此为止，
          奖金按已经赢下的轮次结算。`,
         "去打这一场", ()=>startCupMatch(c.kind),

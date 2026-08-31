@@ -165,7 +165,7 @@ function autoBiz(){
     } else {
       autoNote(`没报${m.name}（${m.need&&!m.need()?"门槛不够":"报名费占余额太多"}）`);
     }
-    advancePreWeek();
+    render();      // 报名发生在这一周的开头，答完这一周还没过完
     return true;
   }
   return false;

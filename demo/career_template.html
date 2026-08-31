@@ -721,12 +721,13 @@ function nowPhase(){
     return {tag:sea.tag,phase:n,detail:`${YW} · ${st}`,urgent:true};
   }
   if(S.playoff) return {tag:sea.tag,phase:SPLITS[S.split||0]+"季后赛",
-                        detail:`${YW} · 第 ${S.playoff.round} 轮`,urgent:true};
+                        detail:`${YW} · ${(typeof poRoundName==="function")?poRoundName(S.playoff.round):("第 "+S.playoff.round+" 轮")}`,urgent:true};
   if(S.step==="prep") return {tag:sea.tag,phase:"赛前备战",detail:YW,urgent:true};
   if(S.step==="offseason") return {tag:sea.tag,phase:(S.off&&S.off.label)||"休赛期",
     detail:S.off?`${YW} · 第 ${S.off.week}/${S.off.weeks} 周`:`${YW} · 赛季结算`,urgent:false};
   if(S.step==="end") return {tag:sea.tag,phase:"生涯结束",detail:"",urgent:false};
-  return {tag:sea.tag,phase:SPLITS[S.split||0],detail:`${YW} · 本阶段 ${S.week}/${WEEKS}`,
+  // 写清楚这是常规赛——「春季赛 第 3/7 周」看不出它和季后赛的区别
+  return {tag:sea.tag,phase:SPLITS[S.split||0]+"常规赛",detail:`${YW} · 第 ${S.week}/${WEEKS} 周`,
           urgent:S.week>=WEEKS-1};
 }
 function nowLabel(){ const n=nowPhase(); return `${n.tag} ${n.phase}${n.detail?" "+n.detail:""}`; }
@@ -1208,8 +1209,15 @@ function fanTier(v){
 }
 function nextMilestone(){ return PRE_MILESTONES.find(m=>m.open&&m.w>=S.pre.week); }
 
-function preNextWeek(){
-  const P=S.pre;
+/* 进入新的一周之后，这一周该发生的事立刻发生。
+
+   原来这段挂在 preNextWeek 里，用**自增之前**的周数去匹配里程碑：
+   于是第 8 周的城市争霸赛是在你「离开」第 8 周的那一下才弹出来，
+   而 HUD 那一整周都写着「城市争霸赛 第 8 周（就是本周）」。
+   玩家原话：「游戏显示本周，但是得等到我点击下一周才会弹出来」。
+   现在改成「进入这一周就触发」，报名弹完你还有整周的行动点可用。 */
+function fireWeekEvents(){
+  const P=S.pre; if(!P) return;
   const busyCup = (typeof activeCups==="function") && activeCups().length>0;
 
   // 被推迟的报名单独处理，不跟当周的里程碑抢——
@@ -1223,40 +1231,37 @@ function preNextWeek(){
     }
   }
 
-  let hit=PRE_MILESTONES.find(m=>m.w===P.week);
+  const hit=PRE_MILESTONES.find(m=>m.w===P.week);
   // 手上还有没打完的赛事，就别在这周开新的——两个赛程叠在一起，
   // 行动点根本不够分，备战也顾不过来
   if(hit&&hit.signup&&busyCup){
     P.deferSignup=hit.name;
     preLog(`<b>${hit.name}</b>开始报名了，但你手上的比赛还没打完——先打完再说。`,"info");
-    advancePreWeek(); return;
-  }
-  if(hit&&hit.signup){
+  } else if(hit&&hit.signup){
     if(!hit.need()){ hit.fail(); }
     else { S.signup=hit; render(); return; }     // 交给玩家决定报不报
   } else if(hit){ hit.need()?hit.run():hit.fail(); }
+
   // 够格就随时有人来谈；不够就打到年末的转会窗口再看。
-  // 这里原来还压了一条「第 13 周之前不算」的日期闸。删了：
-  // 转会窗口是给一线队队员的，还没打上职业的人什么时候被看上都正常。
-  // preScore 本身就是一道够高的能力闸（要么国服前列，要么杯赛走得深），
-  // 早期根本摸不到，不需要再拿日历兜一次底。
-  // 但比赛没打完不能来——试训邀请那条路已经加了这道闸，
-  // 这条老路径当时漏了，结果杯赛打到一半就弹出「进职业」。
-  const busy = (typeof activeCups==="function") && activeCups().length>0;
-  if(!busy && preScore()>=PRE_INVITE){
+  // 转会窗口是给一线队队员的，还没打上职业的人什么时候被看上都正常，
+  // 所以这里不看日历，只看 preScore 这道能力闸。
+  // 但比赛没打完不能来——杯赛打到一半弹「进职业」是最扫兴的。
+  if(!busyCup && preScore()>=PRE_INVITE){
     preLog(`俱乐部发来<b>正式试训邀请</b>。`,"big");
     makeOffers(); return;
   }
-  advancePreWeek(); return;
+  render();
 }
+/* 「下一周」：把这一周收尾，走到下一周，然后触发那一周的事 */
+function preNextWeek(){ advancePreWeek(); }
 /* 杯赛轮次到点提醒 */
 function cupTick(){
   if(typeof activeCups!=="function") return;
   activeCups().forEach(c=>{
     if(S.pre.week===c.nextWeek)
-      preLog(`<b>${c.name}</b> 第 ${c.round} 轮就在本周，对手 <b>${cupOppName(c.kind)}</b>。`,"big");
+      preLog(`<b>${c.name}</b> <b>${cupRoundName(c.kind,c.round)}</b>就在本周，对手 <b>${cupOppName(c.kind)}</b>。`,"big");
     else if(c.nextWeek-S.pre.week===1)
-      preLog(`${c.name} 第 ${c.round} 轮下周开打。`,"info");
+      preLog(`${c.name} ${cupRoundName(c.kind,c.round)}下周开打。`,"info");
   });
 }
 /* 报名弹窗处理完之后，继续把这一周走完 */
@@ -1298,7 +1303,9 @@ function advancePreWeek(){
       }
     }
   });
-  render();
+  // 走进了新的一周，这一周该发生的事就在这一刻发生——
+  // 不能等到玩家再点一次「下一周」
+  fireWeekEvents();
 }
 
 /* 只有一个「外界评价」维度：段位 + 名气 + 赛事成绩。
@@ -1374,6 +1381,17 @@ function acceptOffer(i){
     career:{w:0,l:0,titles:[],best:99},seasonAttr0:Object.assign({},S.attrs),
     buff:{},contract:(S.pendingContract||{years:2,left:2}),rivals:{},lockerSeen:[]
   });
+  /* 签约就离开业余赛季了——手上还没打完的杯赛必须有个交代。
+     原来它们会一直挂着 alive=true 到生涯结束（实测 104 次报名里 10 次这样），
+     玩家交了报名费、赛程还在，然后这件事就人间蒸发了。 */
+  if(typeof activeCups==="function"){
+    activeCups().forEach(c=>{
+      c.alive=false;
+      preLog(`你签了职业合同，<b>${c.name}</b>就不打了——报名费不退，
+        走到${(typeof cupRoundName==="function")?cupRoundName(c.kind,c.round):"这一轮"}为止。`,"info");
+    });
+  }
+  if(typeof markTeamJoin==="function") markTeamJoin();   // 在队时长从这里开始算
   initTrust(); initSquad(); initCapBonus(); initBtk();
   initStaff(); initRelations();
   S.winStreak=0; S.sweepStreak=0; S.lckBeaten=[]; S.retireSeen=0;
@@ -1419,6 +1437,15 @@ function joinTeam(){
 }
 
 function myTeam(){ return S.world[S.homeLeague||"LPL"].find(t=>t.name===S.team); }
+/* 在这支队待了多久（正式比赛场次）。
+   玩家原话：「刚加入职业队，哪来的队友被开除，这个事件抽取也要根据玩家的游玩进度走」。
+   「一起打了很久的队友被卖了」这种事件原来只判断 !!S.team——有队的第一周就能抽到。
+   换队之后也要归零：刚转会过去的人，队友同样都是刚认识的。 */
+function teamTenure(){
+  const g=((S.career&&(S.career.w+S.career.l))||0);
+  return Math.max(0, g-(S.teamSince||0));
+}
+function markTeamJoin(){ S.teamSince=((S.career&&(S.career.w+S.career.l))||0); }
 function myRoster(){ return myTeam().players; }
 
 function startSeason(first,split){
@@ -1600,6 +1627,8 @@ function fanWeek(){
   // （这条一开始接错了地方——接在早就被收敛模型换掉的 addFans 上，
   //   replace 没匹配到又没写断言，于是效果整个丢了。教训留在这儿。）
   if(typeof traitMul==="function") rate*=traitMul("fan");
+  // 平台推流：签了独家，平台把你摆在推荐位，粉丝沉淀得更快
+  if(typeof streamPushMul==="function") rate*=streamPushMul();
   const gap=cap-(S.fans||0);
   // 天花板掉下来（比如去了外赛区、或者一直坐板凳），粉丝慢慢流失，不是断崖
   S.fans=Math.max(0,(S.fans||0)+gap*(gap>0?rate:0.02));
@@ -2043,11 +2072,25 @@ function startMatch(bo,oppName){
      陈旧条目。这里在唯一的入口兜住：从当前联赛里挑一支真实存在的队顶上，
      并且把队名也改过来，免得界面显示一个不存在的对手。 */
   if(!opp){
-    const lg=(S.world&&S.world[S.homeLeague||"LPL"])||[];
-    opp=lg.find(t=>t.name!==S.team)||lg[0]||null;
+    /* 兜底要挑对池子。原来一律从「你自己的联赛」里挑一支顶上——
+       于是国际赛也会拿本赛区的队来填，MSI 小组赛里冒出同赛区对手
+       （玩家报的：LNG 在 MSI 小组赛遇到 ThunderTalk）。
+       国际赛就从这届的参赛名单里挑，联赛才从你的联赛里挑。 */
+    const inIntl = !!S.intl;
+    let pool=[];
+    if(inIntl){
+      const names=[].concat(S.intl.field||[], S.intl.direct||[], S.intl.queue||[])
+                    .filter(n=>n&&n!==S.team);
+      pool=names.map(n=>findTeam(n)).filter(Boolean);
+    }
+    if(!pool.length){
+      const lg=(S.world&&S.world[S.homeLeague||"LPL"])||[];
+      pool=lg.filter(t=>t.name!==S.team);
+    }
+    opp=pool[0]||null;
+    S._oppFix=(S._oppFix||0)+1;
     if(opp&&typeof pushEvent==="function")
-      pushEvent(`赛程里的 <b>${on}</b> 已经不在 ${S.homeLeague||"LPL"} 了，
-        本周对手改为 <b>${opp.name}</b>。`,"info","赛段");
+      pushEvent(`赛程里的 <b>${on}</b> 找不到了，本场对手改为 <b>${opp.name}</b>。`,"info","赛段");
   }
   const need=(typeof bo==="number")?bo:(bo?3:2);   // 1=BO1 2=BO3 3=BO5
   S.match={opp,oppName:(opp&&opp.name)||on,sc:[0,0],game:1,lines:[],node:null,swing:0,done:false,
@@ -2355,17 +2398,20 @@ function playoffOpp(round){
   const want = round===1 ? 4 : round===2 ? 1 : 0;   // 索引：5-6号 / 2-3号 / 榜首
   return (rk[Math.min(want, rk.length-1)]||rk[0]).n;
 }
+/* 季后赛这一轮叫什么。六队、三轮：首轮 → 半决赛 → 决赛。
+   玩家原话：「打一线比赛 lpl 也是常规赛，季后赛季后赛半决赛这些要写清楚」。 */
+function poRoundName(r){ return ["季后赛首轮","半决赛","决赛"][(r||1)-1] || `第 ${r} 轮`; }
 function playoffAdvance(){
   const won=S.match.sc[0]>S.match.sc[1];
   if(!won){ noteGrudge(S.match.oppName,S.playoff.round>=3?4:2,
-      `季后赛第 ${S.playoff.round} 轮被淘汰`);
+      `${poRoundName(S.playoff.round)}被淘汰`);
     S.playoff.alive=false; endSeason(S.playoff.round,S.playoff.seed); return; }
   S.playoff.beaten.push(S.match.oppName);
   S.playoff.round++;
   if(S.playoff.round>3){ endSeason("champion",S.playoff.seed); return; }
   const nm=playoffOpp(S.playoff.round);
   enterPrep("playoff", nm, true,
-    `季后赛第 ${S.playoff.round} 轮 · 赛前备战`);
+    `${poRoundName(S.playoff.round)} · 赛前备战`);
 }
 
 /* ---------- 淘汰赛之间的备战 ----------
@@ -2519,7 +2565,7 @@ function viewOffseason(){
   const ls=S.lastSeason,sea=SEASONS[S.si];
   const label=ls.result==="champion"?`<span class="tag g">LPL 冠军</span>`
     :ls.result===null?`常规赛第 ${ls.seed} 名 · 无缘季后赛`
-    :`季后赛第 ${ls.result} 轮出局（常规赛第 ${ls.seed}）`;
+    :`${(typeof poRoundName==="function")?poRoundName(ls.result):("季后赛第 "+ls.result+" 轮")}出局（常规赛第 ${ls.seed}）`;
   const last=S.si>=SEASONS.length-1;
   return `<div class="card">
     <h2>${sea.tag} ${sea.y} 赛季结算</h2>
@@ -3042,7 +3088,7 @@ function actPanelPre(){
     </div>`}
     ${(()=>{const due=(typeof dueCups==="function")?dueCups():[];
       return due.length?`<p class="note" style="color:var(--gold);margin-top:14px">
-        <b>${CUPS[due[0].kind].name}</b> 第 ${due[0].round} 轮就在本周，你还没上场——
+        <b>${CUPS[due[0].kind].name}</b> <b>${cupRoundName(due[0].kind,due[0].round)}</b>就在本周，你还没上场——
         直接进入下一周会按弃权处理。</p>`:"";})()}
     <div class="row"><button class="btn" id="prenext" ${P.ap>0?'disabled':''}>
       ${P.ap>0?`还剩 ${P.ap} 个行动点`
@@ -3078,7 +3124,7 @@ function viewPre(){
     +lockedCard("队友","签约职业战队后解锁完整版。",
       `<p class="note" style="margin:0">每个队友对你有独立的信任度，会因为你的选择涨落，也会影响全队发挥。</p>`):""}
   ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
-  ${T==="shop"?(typeof financeCard==="function"?financeCard():"")+gearCard()+shopCard()+(typeof prizeNote==="function"?prizeNote():"")
+  ${T==="shop"?(typeof financeCard==="function"?financeCard():"")+((typeof streamDealCard==="function")?streamDealCard():"")+gearCard()+shopCard()+(typeof prizeNote==="function"?prizeNote():"")
       +lockedCard("俱乐部资源","签约职业战队后解锁。",
         `<p class="note" style="margin:0">私教、理疗师、团队建设、舆论公关——
           进队之后才用得上，也才付得起。</p>`):""}
@@ -3092,7 +3138,7 @@ function viewOffer(){
   const P=S.pre;
   return `<div class="card">
     <h2>转会窗口 · 收到的试训邀请<em>综合评估 ${P.finalScore}</em></h2>
-    <h3>${rankFull(P.rank)} · ${fanTier()} · 城市赛 ${P.cityCup!==null?P.cityCup+" 轮":"未参赛"} · 主播杯 ${P.streamCup!==null?P.streamCup+" 轮":"未参赛"}</h3>
+    <h3>${rankFull(P.rank)} · ${fanTier()} · 城市赛 ${P.cityCup!==null?cupReachName("city",P.cityCup):"未参赛"} · 主播杯 ${P.streamCup!==null?cupReachName("stream",P.streamCup):"未参赛"}</h3>
     <p class="note">这段时间你做的每一件事，都变成了现在桌上的选项。
       <b>但这些只是试训机会，不是合同</b>——去了要评估四天，评级不够一样拿不到合同。
       档次越高的队，期望值也越高。</p>
@@ -3175,8 +3221,8 @@ function nextMatchCard(){
     </div>
     <div class="oppinfo">
       <span class="chipx">对面战绩 <b>${st.w}−${st.l}</b></span>
-      <span class="chipx">核心 <b>${star.id}</b>${star.cn?`（${star.cn}）`:""} ${POSN[star.pos]} ${ovrOf(star).toFixed(0)}${star.comeback?' · 复出':''}${star.rookie?' · 新秀':''}</span>
-      ${rival?`<span class="chipx">你的对位 <b>${rival.id}</b> ${ovrOf(rival).toFixed(0)}${rival.rookie?' · 新秀':''}</span>`:""}
+      <span class="chipx">核心 <b>${star.id}</b>${star.cn?`（${star.cn}）`:""} ${POSN[star.pos]}<i class="ovr">实力 ${ovrOf(star).toFixed(0)}</i>${star.comeback?' · 复出':''}${star.rookie?' · 新秀':''}</span>
+      ${rival?`<span class="chipx">你的对位 <b>${rival.id}</b><i class="ovr">实力 ${ovrOf(rival).toFixed(0)}</i>${rival.rookie?' · 新秀':''}</span>`:""}
     </div>
     <div class="gapbar ${V.k}">
       <div class="gv">${V.t}<span class="gd mono">${diff>=0?"+":""}${diff.toFixed(1)}</span></div>
@@ -3352,12 +3398,12 @@ function bind(){
     if(typeof addMoney==='function') addMoney('fee',-m.fee); else S.money-=m.fee;
     preLog(`交了 <b>${m.fee} 万</b>报名费，以「<b>${escapeHtml((S.pre&&S.pre.cupTeam)||meName())}</b>」的名义报了 ${m.name}。`,"info");
     enterCup(m.signup);   // 建赛程，第一场按 CUPS[kind].gap 排
-    advancePreWeek();
+    render();             // 报名发生在这一周的开头，答完这一周还没过完
   };
   const sn=$("signno"); if(sn) sn.onclick=()=>{
     const m=S.signup; S.signup=null;
     preLog(`没报 ${m.name}。省下的钱和体力，用在别处。`,"info");
-    advancePreWeek();
+    render();             // 同上：这一周才刚开始，别把它跳掉
   };
   st.querySelectorAll("[data-gear]").forEach(b=>b.onclick=()=>{
     const a=b.dataset.gear.split(":");buyGear(a[0],+a[1]);});
@@ -3399,7 +3445,7 @@ function bind(){
     if(due.length){
       const c=due[0], nm=CUPS[c.kind].name;
       askConfirm(`${nm}还没打`,
-        `<b>${nm}</b> 第 ${c.round} 轮就在本周，对手是 <b>${cupOppName(c.kind)}</b>，你还没上场。<br>
+        `<b>${nm}</b> <b>${cupRoundName(c.kind,c.round)}</b>就在本周，对手是 <b>${cupOppName(c.kind)}</b>，你还没上场。<br>
          直接进入下一周就是 <b style="color:var(--red)">弃权</b>——这届比赛到此为止，
          奖金按已经赢下的轮次结算。`,
         "去打这一场", ()=>startCupMatch(c.kind),
