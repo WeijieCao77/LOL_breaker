@@ -962,26 +962,56 @@ const q1=v=>Math.round(v*10)/10;
 const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
 const mult=t=>0.40+t*0.16;
 const cap=t=>38+t*5;   // 天赋1->43(职业及格线)  天赋10->88(历史级)
-const CAP_MAX_BONUS=6;    // 经历最多能把天花板顶高这么多——天赋依然是主导
+/* 上限池分两个：机械/环境路径一个，里程碑经历一个。
+   原来只有一个 6 点的池，强队、老将、复盘这些「肯做就有」的来源先到先得，
+   等你真的捧起 MSI 奖杯，池子里只剩零头——玩家实测夺冠时刻只 +0.7，
+   一辈子最大的时刻拿到最小的数，这不对。
+   分池之后：机械路径刷得再满，也占不掉冠军该有的份量。 */
+const CAP_MECH_MAX=4;     // 机械/环境路径最多顶开这么多——肯练就拿得到的部分
+const CAP_MILE_MAX=5;     // 里程碑经历（夺冠这类一辈子没几次的时刻）单独一池
+const CAP_MAX_BONUS=CAP_MECH_MAX+CAP_MILE_MAX;   // 合计 9 = 1.8 个天赋点，天赋依然是主导
 
 /* 实际瓶颈 = 天赋上限 + 经历顶开的部分 */
 function capOf(d){
   return cap(S.talent[d])+((S.capBonus&&S.capBonus[d])||0);
 }
-function initCapBonus(){ S.capBonus={}; DIMS.forEach(d=>S.capBonus[d]=0); }
-/* 顶开瓶颈：同一个来源只算一次 */
-function breakthrough(d,n,reason,key){
+function initCapBonus(){ S.capBonus={}; S.capMile={}; DIMS.forEach(d=>{S.capBonus[d]=0;S.capMile[d]=0;}); }
+function capMileOf(d){ return (S.capMile&&S.capMile[d])||0; }
+/* 旧档没有 capMile：整个 capBonus 都按机械算（他们那 6 点本来就是单池攒的），
+   机械池视为已满、里程碑池从零开始——老玩家夺冠照样拿整份奖励。 */
+function capMechOf(d){ return Math.max(0,((S.capBonus&&S.capBonus[d])||0)-capMileOf(d)); }
+/* 顶开瓶颈：同一个来源只算一次。kind==="mile" 走里程碑池 */
+function breakthrough(d,n,reason,key,kind){
   if(!S.capBonus) initCapBonus();
   if(key){ S.capSeen=S.capSeen||{}; if(S.capSeen[key]) return; S.capSeen[key]=1; }
+  S.capMile=S.capMile||{};
   const before=S.capBonus[d];
-  // 递减：已经顶开越多，再往上越难。否则可重复的机械路径会把上限刷满。
-  const room=clamp(1-before/CAP_MAX_BONUS,0.12,1);
-  S.capBonus[d]=clamp(before+n*room,0,CAP_MAX_BONUS);
-  const got=(S.capBonus[d]-before).toFixed(1);
-  if(+got<=0) return;
+  let got;
+  if(kind==="mile"){
+    // 里程碑内部也递减，但保底 0.4：第二座奖杯依然要有份量
+    const mile=capMileOf(d);
+    const room=clamp(1-mile/CAP_MILE_MAX,0.4,1);
+    got=Math.max(0,Math.min(n*room,CAP_MILE_MAX-mile));
+    S.capMile[d]=q1(mile+got);
+  }else{
+    // 递减：已经顶开越多，再往上越难。否则可重复的机械路径会把池子刷穿。
+    const mech=capMechOf(d);
+    const room=clamp(1-mech/CAP_MECH_MAX,0.12,1);
+    got=Math.max(0,Math.min(n*room,CAP_MECH_MAX-mech));
+  }
+  S.capBonus[d]=q1(clamp(before+got,0,CAP_MAX_BONUS));
+  const gotS=(S.capBonus[d]-before).toFixed(1);
+  if(+gotS<=0){
+    // 里程碑撞上池满不能无声——「+0.0 的夺冠奖励」比没有更伤
+    if(kind==="mile")
+      pushEvent(`<b>瓶颈已在极限</b>　${reason}<br>
+        <span style="color:var(--ink-3)">${d}的上限已经被经历顶到头了——再往上的路，只属于天赋。</span>`,
+        "info","突破");
+    return;
+  }
   const c0=cap(S.talent[d])+before, c1=cap(S.talent[d])+S.capBonus[d];
   pushEvent(`<b>瓶颈松动</b>　${reason}<br>
-    <span style="color:var(--cyan)">${d}上限 ${c0.toFixed(1)} → <b>${c1.toFixed(1)}</b>（+${got}）</span>`,
+    <span style="color:var(--cyan)">${d}上限 ${c0.toFixed(1)} → <b>${c1.toFixed(1)}</b>（+${gotS}）</span>`,
     "big","突破");
   checkAch("break"); if(key===undefined) checkAch("breakauto");
 }
@@ -2213,7 +2243,8 @@ function gain(d){
 function btkChaseNote(){
   if(!S.attrs||typeof capOf!=="function") return "";
   if(S.attrs.操作<capOf("操作")-0.05) return "";
-  if(((S.capBonus&&S.capBonus.操作)||0)>=CAP_MAX_BONUS-0.01) return "";
+  // 操作没有里程碑来源，机械池满就是它的头
+  if((typeof capMechOf==="function"?capMechOf("操作"):((S.capBonus&&S.capBonus.操作)||0))>=CAP_MECH_MAX-0.01) return "";
   const b=S.btk||{}; const op=b.opThisWeek||0, st=clamp(b.opStreak||0,0,3);
   const ap=(S.step==="pre"&&S.pre)?S.pre.ap:(S.ap||0);
   const low=(b.apWeek!==undefined&&b.apWeek<3);
@@ -2344,7 +2375,9 @@ function costBits(bits){
 }
 const _eDn=n=>`体能<i class="dn">−${Math.round(n)}</i>`;
 const _eUp=n=>`体能<i class="up">+${Math.round(n)}</i>`;
-const _prepMul=()=>(S.step==="prep")?0.45:1;
+/* 备战是几天不是一周，出征周是赶路加时差——两种「压缩周」里
+   休息/排位的效果都按 0.45 折算，数值和 doAction 里保持一致 */
+const _prepMul=()=>(S.step==="prep"||(S.off&&S.off.next==="intl"))?0.45:1;
 /* 名气有阻尼，标注要写玩家真正拿到的那个数 */
 
 /* 职业前和赛季中是两套数值（训练 ×0.85、休息 +32、直播基数不同），
@@ -2443,10 +2476,11 @@ function doTrain(d){
 function doAction(k){
   if(S.ap<=0)return;
   if(typeof noteAct==="function") noteAct("do",k);
-  // 赛前备战是几天，不是一周：恢复和调整的量要按比例缩。
-  // 不缩的话，玩家能在每场淘汰赛前把疲劳清光、把状态拉满，
-  // 而这两样都是直接乘在战力上的——实测把 MSI 冠军率抬到 45%。
-  const prepMul = (S.step==="prep") ? 0.45 : 1;
+  // 赛前备战是几天，不是一周；出征周是赶路、时差、适应场馆。
+  // 两种「压缩周」的恢复和调整都按 0.45 缩，不缩的话玩家能在每场
+  // 淘汰赛前把疲劳清光、把状态拉满，而这两样都直接乘在战力上——
+  // 实测曾把 MSI 冠军率抬到 45%、世界赛 9% 抬到 25%。
+  const prepMul = (S.step==="prep"||(S.off&&S.off.next==="intl")) ? 0.45 : 1;
   if(k==="solo"){
     // 职业选手也要打排位保持手感。属性上和职业前一样是全面小涨，
     // 但真正的价值是状态——手感这东西不练会掉。
@@ -2503,7 +2537,7 @@ function autoStop(){
   // 待处理的试训邀请也是「需要你决定的事」，漏在这里的话
   // 「自动推进到下一件事」会直接冲过去，机会就这么没了。
   return !!(S.rndEv||S.rndResult||S.locker||S.signup||S.rankUp
-           ||S.cupResult||S.cupMatch||S.confirm||S.streamOffer
+           ||S.cupResult||S.cupMatch||S.confirm||S.streamOffer||S.intlChamp
            ||(S.pre&&S.pre.invite&&S.pre.invite.pending));
 }
 function autoRest(focus,weeks){
@@ -2551,7 +2585,8 @@ function tabContent(T){
 }
 function viewSeason(){
   const sea=SEASONS[S.si], T=curTab(TABS_SEASON);
-  if(T!=="act") return `${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
+  const champ=(S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"";
+  if(T!=="act") return `${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
     ${tabBar(TABS_SEASON)}
     ${tabContent(T)}`;
   const oppName=S.schedule[S.week-1];
@@ -2560,7 +2595,7 @@ function viewSeason(){
   const benched=isBenched();
   // 「本周」和其他标签同一套格式：标签栏在最上，内容在下。
   // 原来行动卡拼在标签栏上面，是六个标签里唯一的例外——没有理由。
-  return `${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
+  return `${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
   ${tabBar(TABS_SEASON)}
   <div class="card">
     <h2>${sea.tag} ${SPLITS[S.split||0]} · 第 ${S.week}/${WEEKS} 周<em>剩余行动点 ${S.ap}</em></h2>
@@ -2592,6 +2627,7 @@ function viewSeason(){
     <div class="row">
       <button class="btn" id="play" ${S.ap>0?'disabled':''}>
         ${S.ap>0?`还剩 ${S.ap} 个行动点`:(benched?`替补席观战第 ${S.week} 周 →`:`打第 ${S.week} 周 · vs ${oppName} →`)}</button>
+      ${typeof quickBtn==="function"?quickBtn():""}
       <button class="btn ghost sm" id="auto">自动推进到下一件事</button>
     </div>
     ${benched?(()=>{
@@ -2709,11 +2745,13 @@ function attrCard(){
       if(!hit.length||typeof BREAK_PATHS==="undefined") return "";
       return `<div class="breaks"><div class="bh">已经撞到瓶颈的维度 · 怎么破</div>${
         hit.map(d=>{const P=BREAK_PATHS[d];
-          const full=((S.capBonus&&S.capBonus[d])||0)>=CAP_MAX_BONUS;
+          const full=((S.capBonus&&S.capBonus[d])||0)>=CAP_MAX_BONUS-0.01;
+          const mechFull=(typeof capMechOf==="function"?capMechOf(d):0)>=CAP_MECH_MAX-0.01;
           return `<div class="brk ${full?'maxed':P.auto?'auto':'situ'}">
             <span class="bd">${d}</span>
-            <span class="bw">${full?"这一维已经推到极限了，天赋决定的终点就在这里。":P.how}</span>
-            <span class="bp mono">${full?"MAX":P.prog()}</span></div>`}).join("")}
+            <span class="bw">${full?"这一维已经推到极限了，天赋决定的终点就在这里。"
+              :mechFull?"机械路径已经刷满。再往上，要靠冠军这样的生涯时刻。":P.how}</span>
+            <span class="bp mono">${full?"MAX":mechFull?"里程碑":P.prog()}</span></div>`}).join("")}
         <div class="bn">带 <b>·</b> 的是机械条件——肯这么练就一定拿得到，不看运气。</div></div>`;
     })()}
     ${typeof buffChips==="function"?buffChips():""}
@@ -3105,11 +3143,12 @@ function playoffAdvance(){
    现在每轮之间插一个备战环节：2 个行动点，休息、复盘、找手感都行。 */
 function enterPrep(mode, opp, bo, label){
   S.prep={mode, opp, bo, label};
-  // 只给 1 点。给 2 点的时候玩家能在每场淘汰赛前连休两次、清掉 60+ 疲劳，
-  // 而疲劳是直接乘在战力上的——实测 MSI 冠军率被抬到 45%、世界冠军 25%。
-  // 赛前该有得选，但不该变成免费回血站。
-  S.ap=1;
-  if(S.btk) S.btk.apWeek=1;
+  // 2 点。当年压到 1 点是防「连休两次清 60+ 疲劳」——那是休息还没有
+  // 备战折减的年代。现在 doAction 里 prepMul=0.45，两次休息只清 ~27，
+  // 回血站开不起来；1 点的备战则退化成「点一下就上场」，没有决策可言。
+  // 改动照例过了 120 局 A/B：冠军率见提交说明。
+  S.ap=2;
+  if(S.btk) S.btk.apWeek=2;
   S.step="prep";
   render();
 }
@@ -3159,7 +3198,8 @@ function prepPanel(){
         <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${typeof squadActs==="function"?squadActs():""}
-    <div class="row"><button class="btn" id="prepgo">上场 →</button></div>
+    <div class="row"><button class="btn" id="prepgo">上场 →</button>
+      ${typeof quickBtn==="function"?quickBtn():""}</div>
     <p class="note">行动点没用完也可以直接上场。</p>
   </div>`;
 }
@@ -3218,7 +3258,7 @@ function endSeason(result,seed){
     checkAch("lgtitle");
     // 夺冠之后：庆功宴、采访、商务饭局——这也是选手人生的一部分
     if(typeof fireEvent==="function") fireEvent("afterchamp", 0.7);
-    breakthrough("心态",3.2,"捧过一次奖杯之后，大场面对你来说不一样了。","lgtitle");
+    breakthrough("心态",2.0,"捧过一次奖杯之后，大场面对你来说不一样了。","lgtitle","mile");
     pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${sp}冠军。</b>${
       S.split===0?"下一站 MSI。":"世界赛资格到手。"}`,"big","联赛冠军");
   }
@@ -3254,9 +3294,10 @@ function endSeason(result,seed){
 }
 
 function viewOffseason(){
+  const champ=(S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"";
   if(S.off){
     const T=curTab(TABS_SEASON);
-    const pops=`${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
+    const pops=`${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
     if(T!=="act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
     return `${pops}${tabBar(TABS_SEASON)}${offPanel()}`;
   }
@@ -3265,7 +3306,7 @@ function viewOffseason(){
     :ls.result===null?`常规赛第 ${ls.seed} 名 · 无缘季后赛`
     :`${(typeof poRoundName==="function")?poRoundName(ls.result):("季后赛第 "+ls.result+" 轮")}出局（常规赛第 ${ls.seed}）`;
   const last=S.si>=SEASONS.length-1;
-  return `<div class="card">
+  return `${champ}<div class="card">
     <h2>${sea.tag} ${sea.y} 赛季结算</h2>
     <h3>${S.team} — ${label}</h3>
     <p class="note">你的战绩 ${ls.rec.w}胜 ${ls.rec.l}负 · 生涯小分 ${S.career.w}−${S.career.l}
@@ -3294,12 +3335,13 @@ const OFF_WEEKS=3, MID_WEEKS=2;
    可那正是现实里休整、补短板的窗口。用同一套面板，只是去向不同。 */
 function enterBreak(next, weeks, label, note){
   S.off={week:1, weeks, next, label};
-  // 出征周是赶路、抽签、适应场馆——能自主安排的时间很少，
-  // 而且长途飞行和时差本身就不养人：体能不白回，想恢复就得
-  // 把仅有的行动点花在休息上。给满 3 点外加洗疲劳的话，
-  // 最强的队白拿 6 个行动点满血进世界赛，实测冠军率 9% -> 25%。
-  S.ap=(next==="intl")?1:apFor("off");
-  if(next==="intl"&&S.btk) S.btk.apWeek=1;
+  // 出征周是赶路、抽签、适应场馆——能自主安排的时间少，
+  // 而且长途飞行和时差本身就不养人：这里不自动洗疲劳（别的间歇会），
+  // 休息也按 0.45 折算（见 doAction 的 prepMul）。当年只给 1 点是因为
+  // 休息还没折减、给满 3 点等于满血进世界赛（实测冠军率 9% -> 25%）；
+  // 折减落地后 2 点最多清 ~27 疲劳，换来的是「练还是养」的真选择。
+  S.ap=(next==="intl")?2:apFor("off");
+  if(next==="intl"&&S.btk) S.btk.apWeek=2;
   S.step="offseason";
   if(next!=="intl") S.fatigue=Math.max(0,S.fatigue-20);
   pushEvent(note||`${label}（${weeks} 周）。没有比赛，正好把该补的补上。`,"info","间歇");
@@ -3376,7 +3418,8 @@ function offNextWeek(){
     finishOffseason(); return;
   }
   S.off.week++;
-  S.ap=(S.off.next==="intl")?1:apFor("off");
+  S.ap=(S.off.next==="intl")?2:apFor("off");
+  if(S.off.next==="intl"&&S.btk) S.btk.apWeek=2;
   if(S.off.next!=="intl") addFat(-14);
   // 休赛期/间歇周也要结算突破进度——原来只有赛季周结算，
   // 玩家在休赛期连练三周操作，计数器纹丝不动。
@@ -3489,7 +3532,8 @@ function offPanel(){
              :S.off.next==="wrap"?`世界赛落幕 · 赛季结算 →`
              :S.off.next==="intl"?`出征 ${S.pendingIntl&&S.pendingIntl.type==="msi"?"MSI":"世界赛"} →`
              :`开始 ${nx?nx.tag:"下"} 赛季 →`)
-            :`进入第 ${S.off.week+1} 周 →`)}</button></div>
+            :`进入第 ${S.off.week+1} 周 →`)}</button>
+      ${typeof quickBtn==="function"?quickBtn():""}</div>
   </div>`;
 }
 
@@ -4295,17 +4339,52 @@ function crownChampion(){
   // 记年份，供「双冠王 / 卫冕 / 三冠」判定
   const yk=I.type==="msi"?"msiYears":"worldsYears";
   S.career[yk]=(S.career[yk]||[]).concat([S.si]);
+  // 夺冠是里程碑经历，走独立的里程碑池——机械路径刷得再满也占不掉这份
+  const cap0={心态:(S.capBonus&&S.capBonus.心态)||0, 指挥:(S.capBonus&&S.capBonus.指挥)||0};
   if(typeof breakthrough==="function"){
-    breakthrough("心态",4.5,"你在世界最高的舞台上赢过一次。没有什么再能让你手抖。");
-    breakthrough("指挥",3.0,"拿过冠军的人说话，队友会听。");
+    if(I.type==="msi"){
+      breakthrough("心态",2.5,"你在国际赛场的最高领奖台上站过了。大场面再也吓不到你。",undefined,"mile");
+      breakthrough("指挥",2.5,"拿过冠军的人说话，队友会听。",undefined,"mile");
+    }else{
+      breakthrough("心态",3.5,"你在世界最高的舞台上赢过一次。没有什么再能让你手抖。",undefined,"mile");
+      breakthrough("指挥",3.0,"世界冠军做的每一个决定，队友都愿意跟。",undefined,"mile");
+    }
   }
+  const btkGain={心态:q1(((S.capBonus&&S.capBonus.心态)||0)-cap0.心态),
+                 指挥:q1(((S.capBonus&&S.capBonus.指挥)||0)-cap0.指挥)};
   const beatLCK=leagueOf(S.match.oppName)==="LCK";
   pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${name} 冠军！</b>${
     beatLCK?`决赛击败 LCK 的 ${S.match.oppName}——<b>至暗时刻的墙，被你砸开了一道口子。</b>`:""}`,
     "big",name);
+  // 夺冠那一刻的总结弹窗。奖金和突破一直都发（玩家插桩验证过），
+  // 缺的是「这一刻」本身——大事记里一行字撑不起一座奖杯。
+  S.intlChamp={type:I.type, name, tag:SEASONS[S.si].tag,
+    opp:S.match?S.match.oppName:"", beatLCK,
+    prize:(typeof PRIZE_MSI!=="undefined")?(I.type==="msi"?PRIZE_MSI.champion:PRIZE_W.champion):0,
+    nth:S.career[I.type], titles:S.career.titles.length, btkGain};
   S.intlResult=(S.intlResult||{}); S.intlResult[I.type]="champion";
   noteDepth("champion");
   S.intl=null; afterIntl();
+}
+/* 夺冠总结弹窗——和升段/杯赛结果同一套遮罩 */
+function intlChampCard(){
+  const c=S.intlChamp; if(!c) return "";
+  const g=c.btkGain||{};
+  const gtxt=["心态","指挥"].filter(d=>(g[d]||0)>0.05)
+    .map(d=>`${d}上限 <i class="up">+${g[d].toFixed(1)}</i>`).join("　");
+  return `<div class="rankup"><div class="ru-inner" style="max-width:460px">
+    <div class="ru-icon">${typeof gicon==="function"?gicon("cup",52):"🏆"}</div>
+    <div class="ru-eyebrow">${c.tag} ${c.name}</div>
+    <div class="ru-tier">冠军</div>
+    <div class="ru-txt">${c.beatLCK
+      ?`决赛击败 LCK 的 <b>${c.opp}</b>——至暗时刻的墙，被你砸开了一道口子。`
+      :`决赛击败 <b>${c.opp}</b>。这座奖杯从今天起写着你的名字。`}${
+      c.nth>=2?`<br>这是你的第 ${c.nth} 座${c.name}冠军。`:""}</div>
+    <div class="evres"><span class="er up">冠军奖金 <b>+${c.prize} 万</b></span>${
+      gtxt?`<span class="er">${gtxt}</span>`:""}</div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="intlchampok">${c.type==="msi"?"带着冠军回夏季赛 →":"这个赛季，到此为止了 →"}</button></div>
+  </div></div>`;
 }
 function finishIntl(stageText,kind){
   const I=S.intl, name=I.type==="msi"?"MSI":"世界赛";
@@ -7420,6 +7499,48 @@ function savePlan(){
 }
 function clearPlan(){ S.plan = null; render(); }
 
+/* ================= 一键安排 =================
+   把这周剩下的行动点按「最稳妥」的路数一键花掉：
+   累了就休息，没累就补最短的短板，全练满了就打排位保手感。
+
+   有意做得很笨——头疼医头，脚疼医脚：
+   不追瓶颈连击、不刷直播收入、不碰战队行动、不看下周对手。
+   它的上限就这么高。省的是手，不是脑子；想打出上限，自己安排。 */
+function quickPlan(){
+  if(S.step==="pre") return;   // 职业前的行动体系不同，这按钮不出现在那边
+  const acts={};
+  let done=0, guard=0;
+  while(S.ap>0&&guard++<12){
+    // 有事要玩家表态就停手，和「执行计划」同一条规矩
+    if(S.rndEv||S.locker||S.signup||S.rankUp||S.streamOffer||S.confirm) break;
+    const before=S.ap;
+    let name;
+    if(S.fatigue>55){ doAction("rest"); name="休息"; }
+    else{
+      const av=DIMS.filter(d=>S.attrs[d]<capOf(d))
+        .sort((a,b)=>S.attrs[a]-S.attrs[b]);
+      if(av.length){ doTrain(av[0]); name="练"+av[0]; }
+      else{ doAction("solo"); name="打排位"; }
+    }
+    if(S.ap===before) break;   // 没消耗点数说明卡住了，别死循环
+    acts[name]=(acts[name]||0)+1; done++;
+  }
+  if(done){
+    const txt=Object.entries(acts).map(([n,v])=>v>1?`${n}×${v}`:n).join("、");
+    pushEvent(`教练组替你安排了这周剩下的 ${done} 个行动点：<b>${txt}</b>。
+      <span style="color:var(--ink-3)">稳妥优先——他们不会替你冲瓶颈，也不会替你搞钱。</span>`,
+      "info","安排");
+  }
+  render();
+}
+/* 「一键安排」按钮，摆在推进按钮旁边。点数花完就让位，不占地方 */
+function quickBtn(){
+  if(!S.ap||S.ap<=0) return "";
+  return `<button class="btn ghost sm" id="quickap"
+    title="按最稳妥的路数花掉剩余行动点：累了休息、没累补短板、练无可练打排位。不追瓶颈、不刷钱——上限很低，赢在省事">
+    一键安排</button>`;
+}
+
 /* ---------- 界面 ---------- */
 function routineBar(){
   const ap = (S.step === "pre") ? (S.pre ? S.pre.ap : 0) : S.ap;
@@ -10143,7 +10264,7 @@ function pinbar(){
 let _lastBlock="";
 function blockSig(){
   return [S.rndEv&&"ev",S.locker&&"lk",S.signup&&"su",S.rankUp&&"ru",
-    S.cupResult&&"cr",S.cupMatch&&"cm",S.confirm&&"cf",S.rndResult&&"rr",
+    S.cupResult&&"cr",S.cupMatch&&"cm",S.confirm&&"cf",S.rndResult&&"rr",S.intlChamp&&"ic",
     (S.achPop&&S.achPop.length)&&"ap",S.tryout&&"to",S.deal&&"dl",
     S.proOffer&&"po",S.streamOffer&&"so",
     (S.pre&&S.pre.invite&&S.pre.invite.pending)&&"iv"].filter(Boolean).join("|");
@@ -10316,6 +10437,7 @@ function bind(){
   st.querySelectorAll("[data-cupnode]").forEach(b=>b.onclick=()=>resolveCupNode(+b.dataset.cupnode));
   const _cd=$("cupdone"); if(_cd) _cd.onclick=cupDismissMatch;
   const _cr=$("cupresok"); if(_cr) _cr.onclick=()=>{S.cupResult=null;render()};
+  const _ic=$("intlchampok"); if(_ic) _ic.onclick=()=>{S.intlChamp=null;render()};
   const _pp=$("prepgo"); if(_pp) _pp.onclick=prepGo;
   const _off=$("offnext"); if(_off) _off.onclick=offNextWeek;
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;
@@ -10381,6 +10503,7 @@ function bind(){
     render();
   };
   const _tu=$("traitok"); if(_tu) _tu.onclick=()=>{ S.traitUp=null; render(); };
+  const _qa=$("quickap"); if(_qa) _qa.onclick=()=>{ if(typeof quickPlan==="function") quickPlan(); };
   const _rtA=$("rtRepeat"); if(_rtA) _rtA.onclick=repeatLast;
   const _rtB=$("rtPlan");   if(_rtB) _rtB.onclick=runPlan;
   const _rtR=$("rtResume"); if(_rtR) _rtR.onclick=()=>{runActs(null,true);render();};

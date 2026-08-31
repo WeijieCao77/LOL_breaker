@@ -433,17 +433,52 @@ function crownChampion(){
   // 记年份，供「双冠王 / 卫冕 / 三冠」判定
   const yk=I.type==="msi"?"msiYears":"worldsYears";
   S.career[yk]=(S.career[yk]||[]).concat([S.si]);
+  // 夺冠是里程碑经历，走独立的里程碑池——机械路径刷得再满也占不掉这份
+  const cap0={心态:(S.capBonus&&S.capBonus.心态)||0, 指挥:(S.capBonus&&S.capBonus.指挥)||0};
   if(typeof breakthrough==="function"){
-    breakthrough("心态",4.5,"你在世界最高的舞台上赢过一次。没有什么再能让你手抖。");
-    breakthrough("指挥",3.0,"拿过冠军的人说话，队友会听。");
+    if(I.type==="msi"){
+      breakthrough("心态",2.5,"你在国际赛场的最高领奖台上站过了。大场面再也吓不到你。",undefined,"mile");
+      breakthrough("指挥",2.5,"拿过冠军的人说话，队友会听。",undefined,"mile");
+    }else{
+      breakthrough("心态",3.5,"你在世界最高的舞台上赢过一次。没有什么再能让你手抖。",undefined,"mile");
+      breakthrough("指挥",3.0,"世界冠军做的每一个决定，队友都愿意跟。",undefined,"mile");
+    }
   }
+  const btkGain={心态:q1(((S.capBonus&&S.capBonus.心态)||0)-cap0.心态),
+                 指挥:q1(((S.capBonus&&S.capBonus.指挥)||0)-cap0.指挥)};
   const beatLCK=leagueOf(S.match.oppName)==="LCK";
   pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${name} 冠军！</b>${
     beatLCK?`决赛击败 LCK 的 ${S.match.oppName}——<b>至暗时刻的墙，被你砸开了一道口子。</b>`:""}`,
     "big",name);
+  // 夺冠那一刻的总结弹窗。奖金和突破一直都发（玩家插桩验证过），
+  // 缺的是「这一刻」本身——大事记里一行字撑不起一座奖杯。
+  S.intlChamp={type:I.type, name, tag:SEASONS[S.si].tag,
+    opp:S.match?S.match.oppName:"", beatLCK,
+    prize:(typeof PRIZE_MSI!=="undefined")?(I.type==="msi"?PRIZE_MSI.champion:PRIZE_W.champion):0,
+    nth:S.career[I.type], titles:S.career.titles.length, btkGain};
   S.intlResult=(S.intlResult||{}); S.intlResult[I.type]="champion";
   noteDepth("champion");
   S.intl=null; afterIntl();
+}
+/* 夺冠总结弹窗——和升段/杯赛结果同一套遮罩 */
+function intlChampCard(){
+  const c=S.intlChamp; if(!c) return "";
+  const g=c.btkGain||{};
+  const gtxt=["心态","指挥"].filter(d=>(g[d]||0)>0.05)
+    .map(d=>`${d}上限 <i class="up">+${g[d].toFixed(1)}</i>`).join("　");
+  return `<div class="rankup"><div class="ru-inner" style="max-width:460px">
+    <div class="ru-icon">${typeof gicon==="function"?gicon("cup",52):"🏆"}</div>
+    <div class="ru-eyebrow">${c.tag} ${c.name}</div>
+    <div class="ru-tier">冠军</div>
+    <div class="ru-txt">${c.beatLCK
+      ?`决赛击败 LCK 的 <b>${c.opp}</b>——至暗时刻的墙，被你砸开了一道口子。`
+      :`决赛击败 <b>${c.opp}</b>。这座奖杯从今天起写着你的名字。`}${
+      c.nth>=2?`<br>这是你的第 ${c.nth} 座${c.name}冠军。`:""}</div>
+    <div class="evres"><span class="er up">冠军奖金 <b>+${c.prize} 万</b></span>${
+      gtxt?`<span class="er">${gtxt}</span>`:""}</div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="intlchampok">${c.type==="msi"?"带着冠军回夏季赛 →":"这个赛季，到此为止了 →"}</button></div>
+  </div></div>`;
 }
 function finishIntl(stageText,kind){
   const I=S.intl, name=I.type==="msi"?"MSI":"世界赛";

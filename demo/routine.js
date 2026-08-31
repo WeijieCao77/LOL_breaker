@@ -143,6 +143,48 @@ function savePlan(){
 }
 function clearPlan(){ S.plan = null; render(); }
 
+/* ================= 一键安排 =================
+   把这周剩下的行动点按「最稳妥」的路数一键花掉：
+   累了就休息，没累就补最短的短板，全练满了就打排位保手感。
+
+   有意做得很笨——头疼医头，脚疼医脚：
+   不追瓶颈连击、不刷直播收入、不碰战队行动、不看下周对手。
+   它的上限就这么高。省的是手，不是脑子；想打出上限，自己安排。 */
+function quickPlan(){
+  if(S.step==="pre") return;   // 职业前的行动体系不同，这按钮不出现在那边
+  const acts={};
+  let done=0, guard=0;
+  while(S.ap>0&&guard++<12){
+    // 有事要玩家表态就停手，和「执行计划」同一条规矩
+    if(S.rndEv||S.locker||S.signup||S.rankUp||S.streamOffer||S.confirm) break;
+    const before=S.ap;
+    let name;
+    if(S.fatigue>55){ doAction("rest"); name="休息"; }
+    else{
+      const av=DIMS.filter(d=>S.attrs[d]<capOf(d))
+        .sort((a,b)=>S.attrs[a]-S.attrs[b]);
+      if(av.length){ doTrain(av[0]); name="练"+av[0]; }
+      else{ doAction("solo"); name="打排位"; }
+    }
+    if(S.ap===before) break;   // 没消耗点数说明卡住了，别死循环
+    acts[name]=(acts[name]||0)+1; done++;
+  }
+  if(done){
+    const txt=Object.entries(acts).map(([n,v])=>v>1?`${n}×${v}`:n).join("、");
+    pushEvent(`教练组替你安排了这周剩下的 ${done} 个行动点：<b>${txt}</b>。
+      <span style="color:var(--ink-3)">稳妥优先——他们不会替你冲瓶颈，也不会替你搞钱。</span>`,
+      "info","安排");
+  }
+  render();
+}
+/* 「一键安排」按钮，摆在推进按钮旁边。点数花完就让位，不占地方 */
+function quickBtn(){
+  if(!S.ap||S.ap<=0) return "";
+  return `<button class="btn ghost sm" id="quickap"
+    title="按最稳妥的路数花掉剩余行动点：累了休息、没累补短板、练无可练打排位。不追瓶颈、不刷钱——上限很低，赢在省事">
+    一键安排</button>`;
+}
+
 /* ---------- 界面 ---------- */
 function routineBar(){
   const ap = (S.step === "pre") ? (S.pre ? S.pre.ap : 0) : S.ap;
