@@ -3263,8 +3263,13 @@ function actPanelPre(){
         // 谁能看到你：段位一把尺、曝光一把尺，取更严的那个。
         // 这条是新规则的说明书——玩家得知道该去练段位还是该去露脸。
         if(typeof rankCap!=="function"||typeof exposureCap!=="function") return "";
-        if(typeof inviteFloorOk==="function"&&!inviteFloorOk())
-          return `<br>试训邀请：<b style="color:var(--red)">连钻石都没到，还没有球探会看你</b>。`;
+        if(typeof inviteFloorOk==="function"&&!inviteFloorOk()){
+          // 门槛重锚后这句要跟着规则动态说——之前写死「连钻石都没到」，
+          // 钻石玩家看到它就是句胡话（玩家线上抓的）
+          const need=(typeof RANKS!=="undefined"&&RANKS[4])?RANKS[4].n:"宗师";
+          return `<br>试训邀请：<b style="color:var(--red)">还没有球探会看你</b>——段位门槛是<b>${need}</b>（你 ${rankFull(S.pre.rank)}），
+            或者用比赛履历敲门：<b>城市争霸赛 / 主播杯打进四强</b>，球探就会来。`;
+        }
         const rc=rankCap(), ec=exposureCap();
         const nm=t=>(typeof CLUB_TIERS!=="undefined"&&CLUB_TIERS[t])?CLUB_TIERS[t].n:t;
         const worse=(TIER_ORDER.indexOf(rc)<=TIER_ORDER.indexOf(ec))?"rank":"exp";
