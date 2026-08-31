@@ -21,7 +21,7 @@ const CLUB_TIERS = {
   top:   { n:"豪门",   expect:62, pay:[180,420], sign:[120,300], years:3, buyout:[900,2200] },
   mid:   { n:"中游",   expect:52, pay:[90,190],  sign:[40,120],  years:2, buyout:[350,900] },
   low:   { n:"弱队",   expect:44, pay:[55,110],  sign:[15,50],   years:2, buyout:[150,400] },
-  acad:  { n:"青训队", expect:36, pay:[18,42],   sign:[0,12],    years:2, buyout:[40,120] }
+  acad:  { n:"二队/青训", expect:36, pay:[18,42],   sign:[0,12],    years:2, buyout:[40,120] }
 };
 
 /* ---------- 试训的四个环节 ----------
@@ -231,7 +231,10 @@ function addInvite(tier, reason){
 function clubStanding(name){
   try{
     const lg = S.world && S.world.LPL; if(!lg) return null;
-    const bare = String(name).replace(/ 青训队$/,"");
+    // 二队队名是 EDG.Y 这种，还原母队要查 LDL 条目上的 parent，
+    // 不能再靠剥「青训队」后缀——那个后缀已经没有了
+    const ld = (S.world && S.world.LDL || []).find(t=>t.name===name);
+    const bare = ld ? ld.parent : String(name);
     const rk = lg.map(t=>({n:t.name, p:power(t)})).sort((a,b)=>b.p-a.p);
     const i = rk.findIndex(t=>t.n===bare);
     return i<0 ? null : { pos:i+1, of:rk.length, power:rk[i].p };
@@ -252,7 +255,10 @@ function pickClub(tier, league){
     const lo = clamp(Math.floor(fr[0]*n), 0, n-1);
     const hi = clamp(Math.ceil(fr[1]*n)-1, lo, n-1);
     const pick = rk[lo + Math.floor(rnd()*(hi-lo+1))];
-    return tier === "acad" ? pick.n + " 青训队" : pick.n;
+    // 青训档次给的是俱乐部的二队（LDL），队名走 EDG.Y 这套惯例
+    if(tier !== "acad") return pick.n;
+    const ld=(S.world&&S.world.LDL||[]).find(t=>t.parent===pick.n);
+    return ld ? ld.name : (typeof teamCode==="function"?teamCode(pick.n)+".Y":pick.n);
   }catch(e){ return null; }
 }
 /* 邀请卡：接受就进试训，拒绝就继续练。
@@ -483,7 +489,7 @@ function dealCard(){
     </div>
     <p class="note">签字费当场到账，年薪每个赛段结算一次。违约金越高，以后别队越难把你买走。<br>
       ${d.dealTier==="acad"
-        ?`<b>青训合同去的是 LDL 二队</b>——在青训队打首发攒数据，压过一队对位才升上去。`
+        ?`<b>青训合同去的是 LDL 二队</b>——在二队打首发攒数据，压过一队对位才升上去。`
         :d.dealTier==="sub"
         ?`<b>替补合同意味着板凳</b>——训练赛压过首发才轮得到你上场。`
         :""}
@@ -512,19 +518,22 @@ function signDeal(){
   const P = S.pre;
   if(!P.world)    P.world = cloneWorld();
   if(!P.baseline) P.baseline = leagueBaseline(P.world);
-  // 青训队的名字带后缀，签的其实是俱乐部本身
-  // 青训合同签进 LDL，队名保留「青训队」后缀——那不是装饰，是你真的在二队。
-  // 原来这里把后缀剥掉、按 LPL 签约，于是青训选手的对手是一队。
-  const toLDL = (d.dealTier === "acad") || /青训队$/.test(d.team);
-  let teamName = toLDL ? d.team : d.team.replace(/ 青训队$/, "");
-  if(toLDL && !/青训队$/.test(teamName)) teamName += " 青训队";   // 青训合同就该进青训队
+  // 青训合同签的是俱乐部，人注册在二队（LDL）名单上。
+  // 队名走 EDG.Y 这套真实惯例，所以判断「是不是去二队」不能再看后缀，
+  // 直接看合同档次，再去 LDL 名单里找这家俱乐部的二队。
+  const isLDLName = (P.world.LDL||[]).some(t=>t.name===d.team);
+  const toLDL = (d.dealTier === "acad") || isLDLName;
+  let teamName = d.team;
+  if(toLDL && !isLDLName){
+    const ld=(P.world.LDL||[]).find(t=>t.parent===d.team);
+    if(ld) teamName=ld.name;
+  }
   if(toLDL){
     const has=(P.world.LDL||[]).some(t=>t.name===teamName);
     if(!has && (P.world.LDL||[]).length){
-      // LDL 只收留了后十名俱乐部的青训——这家一队没有青训编制。
-      // 现实里俱乐部会把你推荐去合作的二队，这里也一样，但要说清楚。
+      // 这家一队没有二队编制。现实里俱乐部会把你推荐去合作的二队。
       const alt=P.world.LDL[0].name;
-      preLog(`${teamName.replace(/ 青训队$/,"")} 没有自己的青训编制，把你推荐去了 <b>${alt}</b>——合同照签，人去那边报到。`,"info");
+      preLog(`${d.team} 没有自己的二队编制，把你推荐去了 <b>${alt}</b>——合同照签，人去那边报到。`,"info");
       teamName=alt;
     }
   }
@@ -909,7 +918,7 @@ function offerSendDown(){
   if(S.promoted||!S.understudy||S.offerKind!=="sub") return false;
   const acad=(S.world.LDL||[]).find(t=>t.parent===S.team);
   if(!acad) return false;
-  askConfirm("俱乐部想把你下放到青训队",
+  askConfirm("俱乐部想把你下放到二队",
     `一队首发还是 <b>${S.understudy.id}</b>，你在替补席上拿不到一场正赛。<br>
      经理的方案：注册到 <b>${acad.name}</b> 打 LDL——有比赛打、有数据看，
      打出来就调回一队。<b>合同不变。</b><br>

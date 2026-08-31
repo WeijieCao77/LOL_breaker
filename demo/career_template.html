@@ -568,15 +568,38 @@ function cloneWorld(){
    青训队实力大致等于对应一队减 12。
    上调窗口 = 季中间歇 + 休赛期（见 checkPromote）；
    一队替补拿不到比赛时，休赛期俱乐部会提议下放（见 offerSendDown）。 */
+/* 战队简称。LDL 的二队队名用的是「简称 + 后缀」这套真实惯例
+   （EDG.Y、JDG.Y、TES.C 这种），不是「XX 青训队」——现实里没有
+   「青训队联赛」这回事，LDL 是正式的次级联赛，队伍有自己的队名。
+   说明：2022 赛季 LDL 的完整队名名单没能查到可核实的来源，
+   所以这里只套用命名惯例，不假装它是真实名单。 */
+const LPL_CODE={
+  "Royal Never Give Up":"RNG","JD Gaming":"JDG","Top Esports":"TES",
+  "Victory Five":"V5","EDward Gaming":"EDG","Weibo Gaming":"WBG",
+  "LNG Esports":"LNG","Bilibili Gaming":"BLG","Oh My God":"OMG",
+  "FunPlus Phoenix":"FPX","Rare Atom":"RA","Invictus Gaming":"IG",
+  "ThunderTalk Gaming":"TT","Anyone's Legend":"AL","LGD Gaming":"LGD",
+  "Ultra Prime":"UP","Team WE":"WE"
+};
+function teamCode(name){
+  if(LPL_CODE[name]) return LPL_CODE[name];
+  // 兜底：取每个词的首字母，最多三位
+  return String(name||"").split(/\s+/).map(x=>x[0]||"").join("").toUpperCase().slice(0,3)||"XX";
+}
 function buildLDL(w){
   const src=(w.LPL||[]);
   const rk=src.map(t=>({t,p:avg(t.players.map(q=>avg(DIMS.map(d=>q.r[d]))))}))
               .sort((a,b)=>b.p-a.p);
   return rk.map(({t,p})=>({
-    name:t.name+" 青训队", parent:t.name, logo:t.logo,
+    name:teamCode(t.name)+".Y", parent:t.name, logo:t.logo,
     syn:Math.max(20,(t.syn===undefined?50:t.syn)-10),
     tac:Math.max(20,(t.tac===undefined?50:t.tac)-10),
-    players:POS.map(x=>Object.assign(makeRookie(x.k,p-12),{lg:"LDL",form:52,retired:false}))
+    /* 二队坐着的是正经选手，不是靶子。
+       原来是 parent−12（均值 ~40），而玩家打完一整个业余赛季就有 45+，
+       签进去当周就把对位顶掉了——「青训生靠训练赛争取上场机会」这一段
+       等于不存在。LDL 真实水平离一队没那么远，−3 才对得上：
+       二队坐着的人和签约时的你在同一档，谁上得看训练赛。 */
+    players:POS.map(x=>Object.assign(makeRookie(x.k,p-3),{lg:"LDL",form:52,retired:false}))
   }));
 }
 
@@ -1332,13 +1355,19 @@ function acceptOffer(i){
   const world=P.world;
   const team=world[lgKey].find(t=>t.name===of.team);
   const incumbent=team.players.find(q=>q.pos===S.pos);
-  if(of.k!=="sub"){
+  /* 青训生不是「二队首发」，是「还没被写进名单的人」。
+     现实里青训是身份不是队伍：LDL 是正式的次级联赛，而青训生一个赛季只能
+     以青训生身份代表一支队；要正式上场，得先被注册进名单。教练看的是训练赛。
+     所以签青训合同进 LDL 的人一律先当替补，靠 isBenched() 那条
+     「训练赛数据压过对位才首发」打上去——那条机制本来就在，只是从来没被青训用上。 */
+  const asSub = (of.k==="sub") || (lgKey==="LDL");
+  if(!asSub){
     team.players=team.players.map(q=>q.pos===S.pos
       ? {id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true} : q);
   }
   S=Object.assign({},S,{
     step:"season",age:S.age,world,baseline:P.baseline,team:of.team,homeLeague:lgKey,offerKind:of.k,
-    understudy:of.k==="sub"?incumbent:null, promoted:of.k!=="sub",
+    understudy:asSub?incumbent:null, promoted:!asSub,
     // si 保持不动。原来写死 si:0，于是在职业前多打一年（已经到 S13）
     // 的人一签约就被扔回 S12，整条时间线倒流。
     week:1,ap:AP,record:{w:0,l:0},gameRec:{w:0,l:0},
@@ -1857,8 +1886,17 @@ function viewSeason(){
         ${S.ap>0?`还剩 ${S.ap} 个行动点`:(benched?`替补席观战第 ${S.week} 周 →`:`打第 ${S.week} 周 · vs ${oppName} →`)}</button>
       <button class="btn ghost sm" id="auto">自动推进到下一件事</button>
     </div>
-    ${benched?`<p class="note" style="color:var(--loss)">你还在替补席。首发是 <b>${S.understudy.id}</b>（综合 ${avg(DIMS.map(d=>S.understudy.r[d])).toFixed(0)}，你 ${avg(DIMS.map(d=>S.attrs[d])).toFixed(0)}）。
-      <b>练到压过他，才轮得到你上场。</b></p>`:""}
+    ${benched?(()=>{
+      const him=avg(DIMS.map(d=>S.understudy.r[d])), me=avg(DIMS.map(d=>S.attrs[d]));
+      const gap=(him-2-me);
+      const acad=(S.homeLeague||"LPL")==="LDL";
+      return `<p class="note" style="color:var(--loss)">${acad
+        ? `<b>你还是青训生，没被写进 ${S.team} 的 LDL 名单。</b>
+           这个位置现在是 <b>${S.understudy.id}</b>（综合 ${him.toFixed(0)}，你 ${me.toFixed(0)}）。`
+        : `你还在替补席。首发是 <b>${S.understudy.id}</b>（综合 ${him.toFixed(0)}，你 ${me.toFixed(0)}）。`}
+        <br><b>教练看的是训练赛数据：练到压过他，才轮得到你。</b>${
+        gap>0?`还差 <b>${gap.toFixed(1)}</b> 点综合。`:`你已经够了——下周就该轮到你。`}</p>`;
+    })():""}
     ${opp?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${power(opp,0,sea.fav).toFixed(1)}）
       vs 你队 ${power(myRoster(),S.fatigue,sea.fav).toFixed(1)}</p>`:""}
   </div>
@@ -2225,7 +2263,10 @@ function isBenched(){
     const t=myTeam();
     t.players=t.players.map(q=>q===inc
       ? {id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true} : q);
-    pushEvent(`训练赛数据压过 <b>${inc.id}</b>，教练组决定让你首发。<b>你终于上场了。</b>`,"big","转正");
+    pushEvent((S.homeLeague||"LPL")==="LDL"
+      ? `训练赛数据压过 <b>${inc.id}</b>，教练把你<b>写进了 ${S.team} 的 LDL 名单</b>。
+         <b>你终于能打正式比赛了。</b>`
+      : `训练赛数据压过 <b>${inc.id}</b>，教练组决定让你首发。<b>你终于上场了。</b>`,"big","转正");
     checkAch("promote");
     return false;
   }
@@ -2242,7 +2283,12 @@ function benchWeek(){
   S.standings[S.homeLeague||"LPL"][S.team][won?"w":"l"]++;
   S.standings[S.homeLeague||"LPL"][on][won?"l":"w"]++;
   addFans(-1.5);      // 不上场，热度在掉
-  pushEvent(`${S.team} ${won?"击败":"负于"} ${on}。<b>你在替补席上看完了整场</b>，没人提你的名字。`,won?"info":"bad","替补");
+  const acad=(S.homeLeague||"LPL")==="LDL";
+  pushEvent(acad
+    ? `${S.team} ${won?"击败":"负于"} ${on}。<b>你不在这周的名单里</b>——
+       青训生要先在训练赛里打出来，教练才会把你写进去。`
+    : `${S.team} ${won?"击败":"负于"} ${on}。<b>你在替补席上看完了整场</b>，没人提你的名字。`,
+    won?"info":"bad", acad?"青训":"替补");
   S.match=null; nextWeek();
 }
 
