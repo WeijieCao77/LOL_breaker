@@ -623,6 +623,12 @@ td .tlogo{margin-right:5px}
 .trait.on{border-style:solid;border-color:var(--gold);color:var(--gold-hi);
   background:rgba(201,169,97,.10);font-weight:600}
 
+/* ---- 改名 ---- */
+.renamer{display:flex;align-items:center;gap:8px;margin:0 0 14px;flex-wrap:wrap}
+.renamer .rn-k{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;
+  font-size:10px;letter-spacing:.16em;color:var(--ink-3);flex:none}
+.renamer input{flex:1 1 140px;min-width:120px;margin:0;padding:6px 10px;font-size:13px}
+
 /* ---- 直播合约：条款表 + 影响清单 ---- */
 .scrolltable{overflow-x:auto}
 table.terms{width:100%;border-collapse:collapse;font-size:13px}

@@ -244,6 +244,12 @@ const TOTAL_TALENT=20, WEEKS=7;   // 一个赛段 7 周 x 2 赛段 x 5 赛季 = 
 /* 胜率对实力差的敏感度：刻意压低。
    真实电竞里最强的队面对全联盟也只能拿下六成上下，不是碾压——
    数值只决定每局胜率，不保证结果。SPREAD 越大越接近这个事实。 */
+/* 真实赛季胜率进战力的权重。LEC 的 wr 跨度 0.19–0.68，
+   个人数据只反映五个人的账面，配合/教练/BP/版本理解全在 wr 里。
+   权重给到 28：LPL 的 wr 跨度 0.27–0.68，折成 ±5.7 分，
+   足以让「真实成绩好的队」稳稳排在前面——玩家报的
+   「RA 拿 S12 世界赛冠军」正是因为这一项以前完全没有参与战力。 */
+const WR_WEIGHT=28;
 const SPREAD=13.5;   // 赛程加长后，单场的确定性要再降一点，否则优势会滚起来
 /* 行动力按「实际有多少事可做」给，不是固定值：
    赛季中要打比赛、体能吃紧，能安排的事其实少；
@@ -323,8 +329,9 @@ function breakthrough(d,n,reason,key){
   S.capBonus[d]=clamp(before+n*room,0,CAP_MAX_BONUS);
   const got=(S.capBonus[d]-before).toFixed(1);
   if(+got<=0) return;
+  const c0=cap(S.talent[d])+before, c1=cap(S.talent[d])+S.capBonus[d];
   pushEvent(`<b>瓶颈松动</b>　${reason}<br>
-    <span style="color:var(--cyan)">${d}上限 ${cap(S.talent[d])+before} → ${cap(S.talent[d])+S.capBonus[d]}</span>`,
+    <span style="color:var(--cyan)">${d}上限 ${c0.toFixed(1)} → <b>${c1.toFixed(1)}</b>（+${got}）</span>`,
     "big","突破");
   checkAch("break"); if(key===undefined) checkAch("breakauto");
 }
@@ -529,7 +536,14 @@ function powerCore(players,fatigue=0,verFav=null,team=null){
   const tac=mine?(typeof squadOf==="function"?squadOf("tac"):50):(team&&team.tac!==undefined?team.tac:50);
   const rm=(mine&&typeof relMod==='function')?relMod():1;
   const sq=(1+(syn-50)/950)*(1+(tac-50)/1100)*rm;
-  return (s/wt+dynastyBonus(players))*(1+(cmd-55)/520)*(1-clamp(fatigue,0,100)*0.0022)*tm*sq;
+  /* 队伍强度不只是五个人的均值。
+     配合、教练、BP、版本理解——这些个人数据里都没有，但真实赛季胜率捕捉得到。
+     数据里本来就带着每支队的 wr（LEC 2022：G2 68% / Excel 49% / BDS 19%），
+     一直没有任何地方用过它：于是 Excel 靠个人数据被排到 LEC 第 4、拿了世界赛名额，
+     而现实里他们是中下游。玩家原话：「一线联赛的队伍实力包括外赛区的队伍实力
+     要重新设计思考」——这就是那个缺口。 */
+  const wrAdj = (team && team.wr!==undefined) ? (team.wr-0.5)*WR_WEIGHT : 0;
+  return (s/wt+dynastyBonus(players)+wrAdj)*(1+(cmd-55)/520)*(1-clamp(fatigue,0,100)*0.0022)*tm*sq;
 }
 
 /* ================= 世界 ================= */
@@ -545,6 +559,7 @@ function cloneWorld(){
   Object.keys(DATA.leagues).forEach(lg=>{
     w[lg]=DATA.leagues[lg].map(t=>({
       name:t.name,
+      wr:(t.wr===undefined?0.5:t.wr),     // 真实赛季胜率，进战力（见 powerCore）
       syn:t.syn===undefined?50:t.syn,     // 从真实战绩反推，见 export_game.py
       tac:t.tac===undefined?50:t.tac, logo:t.logo,
       players:t.players.map(p=>({
@@ -805,6 +820,11 @@ function ageWorld(){
     });
   });
 
+  // 历史胜率每年向 50% 回归一截：三年前的战绩不该一直替今天的队说话
+  Object.keys(S.world).forEach(lg=>S.world[lg].forEach(t=>{
+    if(t.wr===undefined) t.wr=0.5;
+    t.wr=0.5+(t.wr-0.5)*0.72;
+  }));
   // 阵容没动的队，默契自然回升——稳定本身就是一种实力。
   // 强队还会像玩家一样主动经营（他们也有教练组），所以水位更高：
   // 不给这条，只有玩家能把默契练到 68，NPC 永远卡在 50，等于白送优势。
@@ -993,8 +1013,10 @@ function viewCreate(){
       ad>62?"很均衡，版本怎么变你都能跟上，但没有一招鲜。":
       ad>45?"有侧重也有兜底，逆版本时会难受一阵但缓得过来。":
       "高度专精。顺版本能炸，逆版本会被针对到怀疑人生。"}</div>
-    <div class="row"><button class="btn" id="go" ${(left!==0||!S.bgPick)?'disabled':''}>
-      ${left!==0?`还需分配 ${left} 点`:(S.bgPick?'确认，看看我的起点 →':'先选一个出身')}</button></div>
+    <div class="row"><button class="btn" id="go" ${(left!==0||!S.bgPick||!(S.name||"").trim())?'disabled':''}>
+      ${left!==0?`还需分配 ${left} 点`
+        :!(S.name||"").trim()?'先给自己起个 ID'
+        :(S.bgPick?'确认，看看我的起点 →':'先选一个出身')}</button></div>
   </div>`;
 }
 
@@ -1866,16 +1888,22 @@ function autoRest(focus,weeks){
   render();
 }
 
-function viewSeason(){
-  const sea=SEASONS[S.si], T=curTab(TABS_SEASON);
-  if(T!=="act") return `${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
-    ${tabBar(TABS_SEASON)}
-    ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
+/* 非「本周」标签的内容。赛季和休赛期共用同一份——
+   原来休赛期没有标签栏，把财务总览和商城直接拼在行动卡下面，
+   于是「所有栏目合到一起了」。玩家报的就是这个。 */
+function tabContent(T){
+  return `${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
     ${T==="team"?squadCard()+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
     ${T==="shop"?(typeof economyCards==="function"?economyCards():shopCard()):""}
     ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
     ${T==="world"?standingsCard()+rivalCard()+newsCard()+eventsCard():""}
     ${T==="ach"?achCard():""}`;
+}
+function viewSeason(){
+  const sea=SEASONS[S.si], T=curTab(TABS_SEASON);
+  if(T!=="act") return `${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
+    ${tabBar(TABS_SEASON)}
+    ${tabContent(T)}`;
   const oppName=S.schedule[S.week-1];
   const opp=S.world[S.homeLeague||"LPL"].find(t=>t.name===oppName);
   const fit=versionFit();
@@ -2010,6 +2038,12 @@ function fatigueBar(){
 }
 function attrCard(){
   return `<div class="card"><h2>你的属性<em>${S.age} 岁 · ${POSN[S.pos]}</em></h2>
+    <div class="renamer">
+      <span class="rn-k">ID</span>
+      <input type="text" id="rename" maxlength="12" value="${escapeHtml(S.name||"")}"
+        placeholder="给自己起个 ID">
+      <button class="btn ghost sm" id="renameok">改名</button>
+    </div>
     <div class="attrs">${DIMS.map(d=>{
       const c=capOf(d),v=S.attrs[d],d0=(S.seasonAttr0||{})[d]??v,g=v-d0;
       const cb=(S.capBonus&&S.capBonus[d])||0;
@@ -2435,12 +2469,21 @@ function prepGo(){
   if(P.mode==="intl"){ S.step="match"; startMatch(P.bo, P.opp); return; }
   S.step="match"; startMatch(true, P.opp);
 }
+/* 备战也要有标签栏。
+   玩家原话：「现在栏目不见了，根本看不见队友的数据，这个是个巨大的问题」。
+   赛前备战恰恰是最该翻队友状态、翻对手、翻默契的时候，
+   而这一屏原来什么导航都没有——只能上场或者干等。 */
+function viewPrep(){
+  const T=curTab(TABS_SEASON);
+  const pops=`${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
+  if(T!=="act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
+  return `${pops}${tabBar(TABS_SEASON)}${prepPanel()}`;
+}
 function prepPanel(){
   const P=S.prep; if(!P) return "";
   const oppT=(S.world[S.homeLeague||"LPL"]||[]).find(t=>t.name===P.opp)
           || Object.values(S.world).flat().find(t=>t.name===P.opp);
-  return `${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
-  <div class="card">
+  return `<div class="card">
     <h2>${P.label}<em>剩余行动点 ${S.ap}</em></h2>
     ${typeof autoBar==="function"?autoBar():""}
     ${typeof questCard==="function"?questCard():""}
@@ -2561,7 +2604,12 @@ function endSeason(result,seed){
 }
 
 function viewOffseason(){
-  if(S.off) return offPanel();
+  if(S.off){
+    const T=curTab(TABS_SEASON);
+    const pops=`${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
+    if(T!=="act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
+    return `${pops}${tabBar(TABS_SEASON)}${offPanel()}`;
+  }
   const ls=S.lastSeason,sea=SEASONS[S.si];
   const label=ls.result==="champion"?`<span class="tag g">LPL 冠军</span>`
     :ls.result===null?`常规赛第 ${ls.seed} 名 · 无缘季后赛`
@@ -2729,8 +2777,7 @@ function offPanel(){
   if(S.tryout) return tryoutCard();
   if(S.deal)   return dealCard();
   const nx=SEASONS[S.si+1];
-  return `${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
-  ${typeof proOfferCard==="function"?proOfferCard():""}
+  return `${typeof proOfferCard==="function"?proOfferCard():""}
   <div class="card">
     <h2>${S.off.label||"休赛期"}<em>第 ${S.off.week}/${S.off.weeks} 周 · 剩余行动点 ${S.ap}</em></h2>
     <p class="note">没有比赛要打。${S.off.next==="playoff"
@@ -2783,10 +2830,7 @@ function offPanel(){
              :S.off.next==="intl"?`出征 ${S.pendingIntl&&S.pendingIntl.type==="msi"?"MSI":"世界赛"} →`
              :`开始 ${nx?nx.tag:"下"} 赛季 →`)
             :`进入第 ${S.off.week+1} 周 →`)}</button></div>
-  </div>
-  ${typeof financeCard==="function"?financeCard():""}
-  ${typeof shopCard==="function"?shopCard():""}
-  ${eventsCard()}`;
+  </div>`;
 }
 
 /* ================= 结局 ================= */
@@ -3347,7 +3391,7 @@ function render(){
     : S.step==="pre"?viewPre()
     : S.step==="offer"?viewOffer()
     : S.step==="season"?viewSeason()
-    : S.step==="prep"?prepPanel()
+    : S.step==="prep"?viewPrep()
     : S.step==="match"?viewMatch()
     : S.step==="offseason"?viewOffseason() : viewEnd();
   const _st=$("stage");
@@ -3425,7 +3469,10 @@ function bind(){
     const d=b.dataset.dec;if(S.talent[d]>0){S.talent[d]--;render()}});
   const nm=$("nm"); if(nm) nm.oninput=e=>{S.name=safeName(e.target.value)};
   const go=$("go"); if(go) go.onclick=()=>{
-    S.name=(nm&&safeName(nm.value))||"无名"; S.showStart=true; render(); };
+    /* 输入框可能因为重渲染而拿不到值（换一批出身、调天赋都会重画这一页）。
+       oninput 已经把名字存进 S.name 了，这里要以「非空者优先」，
+       不能拿一个空的 input 把它盖成「无名」——玩家报过名字莫名其妙没了。 */
+    S.name=safeName((nm&&nm.value)||S.name||"")||"无名"; S.showStart=true; render(); };
   const sg=$("startgo"); if(sg) sg.onclick=()=>{ S.showStart=false; startPre(); };
   st.querySelectorAll("[data-prolg]").forEach(b=>b.onclick=()=>{S.proLg=b.dataset.prolg;render()});
   st.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render()});
@@ -3550,6 +3597,14 @@ function bind(){
     else if(k==="biz") autoBiz();
     else if(k==="career") autoCareerStep();
     render(); });
+  const _rn=$("renameok");
+  if(_rn) _rn.onclick=()=>{
+    const el=$("rename"); const v=el?safeName(el.value):"";
+    if(!v){ return; }
+    const old=S.name; S.name=v;
+    pushEvent(`比赛服上的名字换了：<b>${escapeHtml(old||"无名")}</b> → <b>${escapeHtml(v)}</b>。`,"info","赛段");
+    render();
+  };
   const _tu=$("traitok"); if(_tu) _tu.onclick=()=>{ S.traitUp=null; render(); };
   const _rtA=$("rtRepeat"); if(_rtA) _rtA.onclick=repeatLast;
   const _rtB=$("rtPlan");   if(_rtB) _rtB.onclick=runPlan;
