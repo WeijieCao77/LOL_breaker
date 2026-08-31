@@ -409,7 +409,7 @@ function simOtherSwiss(){
     if(n===S.team) return;
     const r=I.swiss[n]; if(!r||r[0]>=3||r[1]>=3) return;
     // 强队更容易赢
-    const q=clamp((pw(n)-55)/22+0.5,0.15,0.85);
+    const q=clamp((pw(n)-70)/22+0.5,0.15,0.85);
     r[rnd()<q?0:1]++;
   });
 }

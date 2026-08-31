@@ -482,6 +482,7 @@ function snapshot(){
   if(S.pre) o.rank=S.pre.rank;
   if(typeof avgTrust==="function"&&S.trust) o.trust=avgTrust();
   if(S.squad){ o.syn=S.squad.syn; o.tac=S.squad.tac; }
+  if(S.staff){ o.coach=S.staff.coach; o.mgr=S.staff.mgr; }   // 更衣室事件常动这两个
   o.buffs=(S.tbuff||[]).map(b=>b.k).join(",");
   return o;
 }
@@ -498,6 +499,8 @@ function diffOf(a,b){
   num("体力",-a.fat,-b.fat);                 // 存的是疲劳，显示成体力要取反
   if(a.rank!==undefined) num("段位分",a.rank,b.rank);
   if(a.trust!==undefined) num("士气",a.trust,b.trust);
+  if(a.coach!==undefined) num("教练信任",a.coach,b.coach);
+  if(a.mgr!==undefined) num("经理信任",a.mgr,b.mgr);
   if(a.syn!==undefined){ num("默契",a.syn,b.syn); num("战术",a.tac,b.tac); }
   DIMS.forEach(d=>num(d,a["a_"+d],b["a_"+d]));
   // 新拿到的临时增益

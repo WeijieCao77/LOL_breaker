@@ -129,6 +129,7 @@ function loadGame() {
     fixLegacyFame(S);
     fixLegacyForeignAch(S);
     fixLegacyAcadTier(S);
+    fixScaleV2(S);
     // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
     // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
     if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
@@ -177,6 +178,41 @@ function fixLegacyAcadTier(s) {
     if (!c || c.clubTier !== "acad" || c.tier === "acad") return;
     c.tier = "acad";
     if (s.pendingContract && s.pendingContract.clubTier === "acad") s.pendingContract.tier = "acad";
+  } catch (e) {}
+}
+
+/* 统一实力标尺迁移（2026-09-02，scaleVer 2）：
+   世界整体 +15 并按赛区定锚，玩家属性 +15 保持相对位置。
+   旧档的天梯读数会按新曲线自然校正（hold 回落/爬分门槛都走新函数）。
+   属性超过新天花板的压回 capOf——老满级档会损失一点，事件里说明白。 */
+function fixScaleV2(s) {
+  try {
+    if (s.scaleVer >= 2) return;
+    s.scaleVer = 2;
+    [s.world, s.pre && s.pre.world].filter(Boolean).forEach(w => {
+      Object.keys(w).forEach(lg => {
+        if (lg !== "LDL" && typeof REGION_SYN !== "undefined") {
+          (w[lg] || []).forEach(t => {
+            t.syn = (t.syn === undefined ? 50 : t.syn) + (REGION_SYN[lg] || 0);
+            t.tac = (t.tac === undefined ? 50 : t.tac) + (REGION_SYN[lg] || 0);
+          });
+        }
+        // LDL 没有赛区锚，按「LPL−6」的位置钉住
+        if (typeof anchorLeague === "function")
+          anchorLeague(lg, w[lg], lg === "LDL" ? 59 : undefined);
+      });
+    });
+    if (s.attrs) DIMS.forEach(d => { s.attrs[d] = q1((s.attrs[d] || 40) + 15); });
+    if (s.understudy && s.understudy.r) DIMS.forEach(d => { s.understudy.r[d] = q1(clamp((s.understudy.r[d] || 50) + 13, 30, 96)); });
+    if (s.seasonAttr0) DIMS.forEach(d => { if (s.seasonAttr0[d] !== undefined) s.seasonAttr0[d] = q1(s.seasonAttr0[d] + 15); });
+    // 属性压回新天花板（capOf 读的是 s——loadGame 里 S 已指向它）
+    if (s.attrs && typeof capOf === "function") {
+      DIMS.forEach(d => { try { s.attrs[d] = Math.min(s.attrs[d], capOf(d)); } catch (e) {} });
+    }
+    if (s.career && s.world && typeof leagueBaseline === "function") s.baseline = leagueBaseline(s.world);
+    (s.events = s.events || []).push({ s: "更正", w: s.week || 0, tone: "info", tag: "版本",
+      text: `<b>数值标尺统一</b>：全世界与你的属性整体 +15，赛区分层落地（LCK 66.5 / LPL 65 / 外卡 54-58），
+        天梯换算改用新曲线（钻石45 · 大师55 · 宗师60 · 王者65）。你的相对实力没变，数字更像人话了。` });
   } catch (e) {}
 }
 

@@ -22,11 +22,14 @@
    · pay 对齐限薪令后的现实：青训 5–30 万/年，豪门明星 200–800 万/年。
      注意 pay 是「每赛段」发的（一年春夏两次），所以表里的数是年表 ÷2。
      首测踩过这个坑：按年表直填，钱中位直接飙到 2356 万。 */
+/* 统一标尺（2026-09-02）：expect 对齐各档的真实水位——
+   青训 59≈LDL 首发 / 弱队 65≈王者(LPL平均) / 中游 71≈国服前100 / 豪门 79≈国服前10。
+   宗师(60)的人在二队试训评 B，履历通道进来的（~55）评 C 拿青训约——各得其所。 */
 const CLUB_TIERS = {
-  top:   { n:"豪门",   expect:68, pay:[100,400], sign:[60,150], years:3, buyout:[900,2200] },
-  mid:   { n:"中游",   expect:58, pay:[45,130],  sign:[20,60],  years:2, buyout:[350,900] },
-  low:   { n:"弱队",   expect:50, pay:[20,60],   sign:[8,25],   years:2, buyout:[150,400] },
-  acad:  { n:"二队/青训", expect:42, pay:[3,15],    sign:[0,4],    years:2, buyout:[40,120] }
+  top:   { n:"豪门",   expect:79, pay:[100,400], sign:[60,150], years:3, buyout:[900,2200] },
+  mid:   { n:"中游",   expect:71, pay:[45,130],  sign:[20,60],  years:2, buyout:[350,900] },
+  low:   { n:"弱队",   expect:65, pay:[20,60],   sign:[8,25],   years:2, buyout:[150,400] },
+  acad:  { n:"二队/青训", expect:59, pay:[3,15],    sign:[0,4],    years:2, buyout:[40,120] }
 };
 
 /* ---------- 试训的四个环节 ----------
@@ -653,8 +656,11 @@ function afterTryout(){
 function proPerf(){
   if(!S.career) return -99;
   const me = avg(DIMS.map(d=>S.attrs[d]));
-  const base = (S.baseline && S.baseline[S.homeLeague||"LPL"]) || 50;
-  let v = (me - base) * 1.5;                       // 个人水平相对联赛
+  const base = (S.baseline && S.baseline[S.homeLeague||"LPL"]) || 65;
+  // 统一标尺校准：世界 +15 压缩了「我−联赛」的差值（旧尺强玩家 +25，新尺 +5-8），
+  // 系数不跟着放大，转会梯子就断了——实测机器人生涯转会从 5 次掉到 1.9 次，
+  // 一辈子困在弱队拿头撞 88 分的明星队。3.0 是把梯子接回原高度。
+  let v = (me - base) * 3.0;                       // 个人水平相对联赛
   const g = S.record ? (S.record.w + S.record.l) : 0;
   if(g >= 3) v += ((S.record.w / g) - 0.5) * 20;   // 这个赛段的战绩
   v += ((S.career.titles || []).length) * 4;
@@ -692,6 +698,8 @@ function noteScoutInterest(){
     S.txIntents = (S.txIntents||[]).filter(x=>x.team!==t);
     S.txIntents.push({ team:t, tier, si:S.si, league: inLDL?"LPL":(S.homeLeague||"LPL") });
     if(S.txIntents.length>4) S.txIntents.shift();
+    // 看台上那一幕会发酵：几周后可能上话题榜（事件链——之前定义了却忘了接线）
+    if(typeof queueFollowUp==="function"&&rnd()<0.35) queueFollowUp("rumorSpread",3,{team:t});
   }
   pushEvent(`${who}球探出现在你们这场的看台上。<br>
     <span style="color:var(--ink-3)">赛段中不能转会，但意向记进了「转会」栏——注册窗一开就能谈。</span>`, "good", "转会");
@@ -719,10 +727,19 @@ function rollProOffers(wnd){
   // 保底：打得确实好，却连着两个窗没有任何人来问，说不过去
   const dry = S.offerDry || 0;
   if(perf >= 13 && dry >= 2) p = Math.max(p, 0.92);
+  /* 冠军保送（玩家实测：世界冠军滚进了封顶概率外那 12% 的空窗）——
+     当年拿了世界赛/MSI 冠军的人「没人来问」在现实里不存在，这不归骰子管；
+     联赛冠军也几乎必有电话。 */
+  const intlChampYear = ((S.career&&S.career.worldsYears)||[]).includes(S.si)
+                     || ((S.career&&S.career.msiYears)||[]).includes(S.si);
+  const lgChampYear = ((S.career&&S.career.lgYears)||[]).includes(S.si);
+  if(intlChampYear) p = 1;
+  else if(lgChampYear) p = Math.max(p, 0.96);
   S.scoutHeat = 0;
   if(rnd() >= p){ S.offerDry = dry + 1; return; }
   S.offerDry = 0;
   let tier = perf >= 19 ? "top" : perf >= 10 ? "mid" : "low";
+  if(intlChampYear) tier = "top";       // 抬着奖杯进转会期，来的只会是豪门
   // 外赛区也在同步运转，也会来挖人。
   const abroad = pickForeign(perf);
   let league = abroad || "LPL";
@@ -1184,7 +1201,7 @@ function promoteCard(){
   return `<div class="card"><h2>升队通道<em>母队 ${typeof teamLogo==="function"?teamLogo(pname,18):""} ${pname}</em></h2>
     <p class="note" style="margin:0 0 10px">合同签给的是俱乐部，你现在注册在二队名单。
       升队窗口：<b>季中间歇</b> 和 <b>休赛期</b>——到点自动核查，达标就调上去。<br>
-      <span style="color:var(--ink-3)">评分口径：50＝LPL 同位置平均。四十多不是路人，是一线下游首发。</span></p>
+      <span style="color:var(--ink-3)">评分口径：65＝LPL 平均（王者线），77+ 是国服前十的明星，88+ 天梯已经量不动。</span></p>
     <div class="attrs">
       <div class="at wide"><div class="lb">你</div>
         <div class="track"><div class="fill" style="width:${clamp(me,0,100)}%"></div></div>

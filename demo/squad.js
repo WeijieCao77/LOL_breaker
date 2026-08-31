@@ -89,7 +89,7 @@ function squadWeights(players,fatigue,team){
     {k:"tac", n:"战术", v:mine?squadOf("tac"):50, mult:1+((mine?squadOf("tac"):50)-50)/1100},
     {k:"mor", n:"士气", v:mine&&typeof avgTrust==="function"?avgTrust():50,
      mult:1+(((mine&&typeof avgTrust==="function")?avgTrust():50)-50)/380},
-    {k:"cmd", n:"指挥", v:cmd, mult:1+(cmd-55)/520},
+    {k:"cmd", n:"指挥", v:cmd, mult:1+(cmd-68)/520},
     {k:"fit", n:"体能", v:100-clamp(fatigue,0,100), mult:1-clamp(fatigue,0,100)*0.0022}
   ];
 }
@@ -161,7 +161,7 @@ function teamPowerOf(name){
 function myPower(){
   return power(myRoster(),S.fatigue,SEASONS[S.si].fav)+versionFit();
 }
-const GAP_WINDOW=7.5;
+const GAP_WINDOW=12;   // 统一标尺：战力差放大后封顶窗口等比放宽（原 7.5）
 function gapVerdict(diff){
   if(diff>=GAP_WINDOW)  return {k:"crush", t:"实力碾压", d:"正常打就能赢，别浪。"};
   if(diff>=3)           return {k:"edge",  t:"占优",     d:"稳住节奏就行。"};
@@ -178,11 +178,11 @@ function gapVerdict(diff){
    上限就抬一点。临场决策在劣势局里永远算数，只是救不回天堑。 */
 function clampWinProb(p,diff){
   if(diff<=-GAP_WINDOW){
-    const cap=clamp(0.20+(diff+GAP_WINDOW)*0.018,0.03,0.20);
+    const cap=clamp(0.20+(diff+GAP_WINDOW)*0.011,0.03,0.20);
     return Math.min(p,cap);
   }
   if(diff>=GAP_WINDOW){
-    const floor=clamp(0.80+(diff-GAP_WINDOW)*0.018,0.80,0.97);
+    const floor=clamp(0.80+(diff-GAP_WINDOW)*0.011,0.80,0.97);
     return Math.max(p,floor);
   }
   return p;

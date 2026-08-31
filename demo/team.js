@@ -158,8 +158,21 @@ function tryLockerEvent(){
 function resolveLocker(i){
   const {ev,target}=S.locker;
   if(typeof addTraitPt==="function") addTraitPt(ev.a[i].g);   // 这一次选择也算进你是什么样的人
+  /* 玩家原话：「选择后不告诉我有什么改变」——效果全是暗改。
+     现在和际遇一样：快照前后差异，弹结果卡摊开给你看。 */
+  const before=(typeof snapshot==="function")?snapshot():null;
+  const t0=(typeof trustOf==="function"&&target)?trustOf(target.id):null;
   const txt=ev.a[i].e(target);
   pushEvent(`更衣室：${txt}`,"info","更衣室");
+  if(before&&typeof diffOf==="function"){
+    S.rndResult={choice:ev.a[i].t,txt,diff:diffOf(before,snapshot())};
+  }
+  /* 更衣室的选择要留回声（接进事件链）：对这个人好不好，他过几周会记得。 */
+  if(typeof queueFollowUp==="function"&&target&&t0!==null&&typeof trustOf==="function"){
+    const dt=trustOf(target.id)-t0;
+    if(dt>=2&&rnd()<0.5)  queueFollowUp("lockerEcho",2,{who:target.id,good:true});
+    if(dt<=-2&&rnd()<0.5) queueFollowUp("lockerEcho",2,{who:target.id,good:false});
+  }
   S.locker=null; render();
 }
 

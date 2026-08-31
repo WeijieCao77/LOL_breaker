@@ -35,6 +35,23 @@ const FOLLOWUPS={
       if(typeof addStaff==="function") addStaff("mgr",-2);
     }
   },
+  lockerEcho:{
+    n:"更衣室的回声",
+    run(p){
+      const who=(p&&p.who)||"队友";
+      if(p&&p.good){
+        if(typeof addTrustAll==="function") addTrustAll(2);
+        if(typeof trustOf==="function"&&typeof S.trust==="object"&&S.trust[who]!==undefined)
+          S.trust[who]=q1(clamp(S.trust[who]+4,0,100));
+        pushEvent(`<b>${who}</b> 记着那天更衣室里你的做法——训练赛里他开始主动配合你的节奏，
+          这种事队里人都看在眼里。<span style="color:var(--cyan)">全队信任 +2，${who} +4</span>`,"good","更衣室");
+      }else{
+        if(typeof addTrustAll==="function") addTrustAll(-2);
+        pushEvent(`那天你在更衣室的做法，<b>${who}</b> 私下跟别人提过——气氛有点变了。
+          <span style="color:var(--red)">全队信任 −2</span>`,"bad","更衣室");
+      }
+    }
+  },
   bigTalk:{
     n:"赛后狠话的回旋镖",
     run(p){
@@ -173,7 +190,7 @@ function starPool(){
       (t.players||[]).forEach(q=>{
         if(q.me||q.retired) return;
         const v=avg(DIMS.map(d=>q.r[d]));
-        if(v>=60) out.push({id:q.id,team:t.name,lg,v});
+        if(v>=72) out.push({id:q.id,team:t.name,lg,v});   // 统一标尺：72+ 才算撞到「明星」
       });
     });
   });
