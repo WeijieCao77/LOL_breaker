@@ -267,6 +267,9 @@ const SPREAD=13.5;   // 赛程加长后，单场的确定性要再降一点，�
    不是成长速度——签约后的训练收益同步乘 0.8（见 gain），
    每周训练总量 4×0.8=3.2 对 3×1.0=3.0，只多 7%。
    改完照例跑 120 局对比冠军率，通胀就回调。 */
+/* 版本戳：印在存档栏右下角。玩家对不上这个号，就是开了旧页面——
+   「改了但看不到」的一半原因是没有任何地方能验证版本。 */
+const GAME_VER="v20260901 · 回声";
 const AP_SEASON=4, AP_PRE=6, AP_OFF=4, AP_HURT=2;
 function apFor(phase){
   const v=S&&S.injury?AP_HURT:phase==="pre"?AP_PRE:phase==="off"?AP_OFF:AP_SEASON;
@@ -520,7 +523,8 @@ function versionFit(){
   const rel=(S.attrs[d]-bar)/12;                // 你在该维度相对联赛的水平
   const posBonus=sea.fav.includes(S.pos)?1.6:0;
   const cushion=adaptOf()/100;                  // 适应力缓冲逆版本
-  return (rel*2.2+posBonus+(rel<0?rel*-1*cushion*1.4:0))*2.0;
+  const mini=(typeof miniPatchAdj==="function")?miniPatchAdj():0;   // 赛季中热修的小刀
+  return (rel*2.2+posBonus+(rel<0?rel*-1*cushion*1.4:0))*2.0+mini;
 }
 
 /* LCK 的统治力逐年变化——S12 起步、S14 顶峰、S16 才松动。
@@ -1088,6 +1092,7 @@ function rankFull(v){
   return cur.n+DIV[d];
 }
 function startPre(){
+  S.patchSeen=(typeof GAME_VER!=="undefined")?GAME_VER:1;   // 新开局不弹更新说明
   const o=ORIGIN[S.origin], A=AGES[S.ageIdx], B=bgOf(S.bgPick);
   const attrs={};
   DIMS.forEach(d=>attrs[d]=Math.min(
@@ -1899,6 +1904,7 @@ function autoStop(){
   // 「自动推进到下一件事」会直接冲过去，机会就这么没了。
   return !!(S.rndEv||S.rndResult||S.locker||S.signup||S.rankUp
            ||S.cupResult||S.cupMatch||S.confirm||S.streamOffer||S.intlChamp||S.contentPick
+           ||S.promoteDeal||S.patchNote
            ||(S.pre&&S.pre.invite&&S.pre.invite.pending));
 }
 function autoRest(focus,weeks){
@@ -1937,8 +1943,8 @@ function autoRest(focus,weeks){
    原来休赛期没有标签栏，把财务总览和商城直接拼在行动卡下面，
    于是「所有栏目合到一起了」。玩家报的就是这个。 */
 function tabContent(T){
-  return `${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+(typeof dataCard==="function"?dataCard():"")+gearCard():""}
-    ${T==="team"?squadCard()+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
+  return `${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+(typeof dataCard==="function"?dataCard():"")+(typeof careerCard==="function"?careerCard():"")+gearCard():""}
+    ${T==="team"?squadCard()+(typeof roleCard==="function"?roleCard():"")+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
     ${T==="shop"?(typeof economyCards==="function"?economyCards():shopCard()):""}
     ${T==="tx"?(typeof transferPage==="function"?transferPage():""):""}
     ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
@@ -1951,7 +1957,9 @@ function tabContent(T){
 function viewSeason(){
   const sea=SEASONS[S.si], T=curTab(TABS_SEASON);
   const champ=((S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"")
-    +((S.contentPick&&typeof contentCard==="function")?contentCard():"");
+    +((S.contentPick&&typeof contentCard==="function")?contentCard():"")
+    +((S.promoteDeal&&typeof promoteDealCard==="function")?promoteDealCard():"")
+    +((S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():"");
   if(T!=="act") return `${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
     ${tabBar(TABS_SEASON)}
     ${tabContent(T)}`;
@@ -1969,7 +1977,9 @@ function viewSeason(){
     ${typeof questCard==="function"?questCard():""}
     ${typeof btkChaseNote==="function"?btkChaseNote():""}
     <div class="ver">版本 <b>${sea.ver}</b> — 本赛季强调 <b>${sea.dim}</b>${
-      sea.fav.includes(S.pos)?`，且<b>${POSN[S.pos]}是版本红利位</b>`:""}。
+      sea.fav.includes(S.pos)?`，且<b>${POSN[S.pos]}是版本红利位</b>`:""}。${
+      S.miniPatch?`<br>热修 <b>${sea.tag}.${S.miniPatch.n}</b>：<b>${S.miniPatch.dim}</b>权重${S.miniPatch.up?"↑":"↓"}${
+        (typeof miniPatchAdj==="function"&&Math.abs(miniPatchAdj())>=0.15)?`（对你${miniPatchAdj()>0?"有利":"不利"}）`:""}。`:""}
       你的版本相性：<b>${fit>=1.5?"顺风":fit>=-0.5?"中性":"逆版本"}</b>
       <span style="color:var(--ink-3)">（你的${sea.dim} ${S.attrs[sea.dim].toFixed(0)} · ${
         S.homeLeague||"LPL"}均值 ${leagueDimAvg(sea.dim).toFixed(0)}——顺逆是和同行比出来的）</span></div>
@@ -2626,7 +2636,8 @@ function prepGo(){
    而这一屏原来什么导航都没有——只能上场或者干等。 */
 function viewPrep(){
   const T=curTab(TABS_SEASON);
-  const pops=`${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
+  const pops=`${(S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():""}${
+    S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
   if(T!=="act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
   return `${pops}${tabBar(TABS_SEASON)}${prepPanel()}`;
 }
@@ -2757,7 +2768,9 @@ function endSeason(result,seed){
 
 function viewOffseason(){
   const champ=((S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"")
-    +((S.contentPick&&typeof contentCard==="function")?contentCard():"");
+    +((S.contentPick&&typeof contentCard==="function")?contentCard():"")
+    +((S.promoteDeal&&typeof promoteDealCard==="function")?promoteDealCard():"")
+    +((S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():"");
   if(S.off){
     const T=curTab(TABS_SEASON);
     const pops=`${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
@@ -2881,6 +2894,11 @@ function offNextWeek(){
       // 季中间歇也是注册窗口：LDL 打得好，夏季赛能直接调上一队——
       // 现实里升降就是跟着转会/注册窗走的，不用等到年底
       if(typeof checkPromote==="function") checkPromote();
+      if(S.promoteDeal){
+        // 调令没批完不开赛：赛程是按你所在的队排的，先表态再进夏季赛
+        S.off={week:1,weeks:1,next:"summer",label:"季中注册窗 · 调令待决"};
+        S.ap=0; render(); return;
+      }
       startSeason(false,1); return;
     }
     if(nx==="playoff"){ startPlayoff(); return; }         // 休整结束 -> 季后赛
@@ -2910,6 +2928,7 @@ function offNextWeek(){
 function finishOffseason(){
   S.si++; S.age++;
   S.yearBase=0;              // 新的一年，全年计数从头开始
+  S.miniPatch=null; S.patchClock=0;   // 新版本年，热修编号从 .1 重数
   const news=ageWorld();
   // 玩家自己的年龄曲线
   const base=ageCurve(S.age);
@@ -3547,6 +3566,7 @@ let _lastBlock="";
 function blockSig(){
   return [S.rndEv&&"ev",S.locker&&"lk",S.signup&&"su",S.rankUp&&"ru",
     S.cupResult&&"cr",S.cupMatch&&"cm",S.confirm&&"cf",S.rndResult&&"rr",S.intlChamp&&"ic",S.contentPick&&"cp",
+    S.promoteDeal&&"pd",S.patchNote&&"pn",
     (S.achPop&&S.achPop.length)&&"ap",S.tryout&&"to",S.deal&&"dl",
     S.proOffer&&"po",S.streamOffer&&"so",
     (S.pre&&S.pre.invite&&S.pre.invite.pending)&&"iv"].filter(Boolean).join("|");
@@ -3725,6 +3745,12 @@ function bind(){
   const _cc=$("contentcancel"); if(_cc) _cc.onclick=()=>{S.contentPick=null;render()};
   st.querySelectorAll("[data-asset]").forEach(b=>b.onclick=()=>{
     if(typeof buyAsset==="function") buyAsset(b.dataset.asset); });
+  const _pok=$("promoteok"); if(_pok) _pok.onclick=()=>{ if(typeof acceptPromote==="function") acceptPromote(); };
+  const _pask=$("promoteask"); if(_pask) _pask.onclick=()=>{ if(typeof askPromoteRaise==="function") askPromoteRaise(); };
+  const _pno=$("promoteno"); if(_pno) _pno.onclick=()=>{ if(typeof declinePromote==="function") declinePromote(); };
+  const _pat=$("patchok"); if(_pat) _pat.onclick=()=>{
+    S.patchNote=null; S.patchSeen=(typeof GAME_VER!=="undefined")?GAME_VER:1;
+    if(typeof saveGame==="function") saveGame("更新说明已读"); render(); };
   const _pp=$("prepgo"); if(_pp) _pp.onclick=prepGo;
   const _off=$("offnext"); if(_off) _off.onclick=offNextWeek;
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;

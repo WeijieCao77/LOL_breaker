@@ -23,6 +23,18 @@
   --z-auto:#8FA0B4;   /* 托管 · 冷灰——它是模式开关，不是内容，不该抢任何一个域的色 */
 
   --pin-h:0px;        /* 属性条实测高度，由 render() 写入，给标签栏定位用 */
+
+  /* ---- 幽灵变量别名区 ----
+     模板和模块里散落着一批老主题时代的变量名（--win/--surface/--bar-2……），
+     引用了但从没定义过——浏览器不报错，只是那块直接没颜色。
+     玩家抓的实例：升队通道里一队对位的 bar 是透明的。
+     全部在这里落地成现役色，别名和现役名可以混用；新代码请直接用现役名。 */
+  --paper:var(--panel); --surface:var(--panel); --surface-2:var(--panel-2);
+  --line-soft:var(--line); --shadow:rgba(0,0,0,.45);
+  --gold-bg:rgba(201,169,97,.12);
+  --bar:var(--cyan); --bar-2:#B5945A;            /* 对照条：你＝青，对方＝哑金 */
+  --win:var(--cyan); --loss:var(--red);
+  --win-bg:rgba(79,190,218,.14); --loss-bg:rgba(196,83,95,.16);
 }
 /* 当前功能域：#stage 上的标记决定这一页用哪个身份色 */
 #stage{--zone:var(--z-act)}
@@ -756,7 +768,7 @@ ul.dealfx li::marker{color:var(--ink-3)}
 /* 计划被打断后的续跑行——比其他两行显眼一点 */
 .rt-resume{padding:7px 9px;border:1px solid rgba(201,169,97,.42);
   background:rgba(201,169,97,.09)}
-.rt-resume .rt-txt{color:var(--ink-1)}
+.rt-resume .rt-txt{color:var(--ink)}
 
 /* ---- 存档 ---- */
 .savebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;

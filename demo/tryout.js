@@ -320,11 +320,16 @@ function inviteCard(){
 }
 
 /* ---------- 二、试训过程 ---------- */
+/* 试训模板（2026-09-01 P2）：按咖位裁流程。
+   新人走完整四天；职业转会免掉单排考核——你的比赛数据就是考核；
+   明星（表现分 ≥15）根本不用试训，rollProOffers 里直接开价。 */
 function startTryout(tier, team, expect){
-  S.tryout = { tier, team, expect, day:0, score:0, lines:[], fat:0, done:false };
+  S.tryout = { tier, team, expect, day:0, score:0, lines:[], fat:0, done:false,
+               days:[0,1,2,3] };
   render();
 }
-function tryoutDay(){ return TRYOUT_DAYS[S.tryout.day]; }
+function tryoutDays(t){ return (t&&t.days)||[0,1,2,3]; }
+function tryoutDay(){ const t=S.tryout; return TRYOUT_DAYS[tryoutDays(t)[t.day]]; }
 /* 体质差的人，后面几天会明显掉状态——这是体质在这里的意义 */
 function tryoutFatiguePenalty(){
   const t = S.tryout;
@@ -332,19 +337,21 @@ function tryoutFatiguePenalty(){
   return t.day * Math.max(0, (52 - stamina)) * 0.055;
 }
 function resolveTryoutDay(i){
-  const t = S.tryout, D = TRYOUT_DAYS[t.day], opt = D.a[i];
+  const t = S.tryout, D = TRYOUT_DAYS[tryoutDays(t)[t.day]], opt = D.a[i];
   const v = S.attrs[opt.dim] - tryoutFatiguePenalty();
   const p = clamp(0.22 + (v/100)*0.62, 0.08, 0.92);
   const ok = rnd() < p;
   // 成败对称。原来失败只扣 0.85 倍，四个环节累下来整体偏正，
   // 结果刚够门槛的人也有三成概率拿 A+——评级就没意义了。
-  const delta = (ok ? 1 : -1) * opt.risk * 4.2;
+  // 短流程试训（职业转会 3 天）按天数归一：每天的分量放大到总期望和四天一致，
+  // 否则流程越短评级越低，「免考核」反而变成惩罚。
+  const delta = (ok ? 1 : -1) * opt.risk * 4.2 * (4/tryoutDays(t).length);
   t.score += delta;
   t.lines.push(`<div><span class="hi">${D.n.split(" · ")[1]}</span> ${opt.t} — ${
     ok ? '<span class="w">教练点了头</span>' : '<span class="l">没打动他们</span>'
   }　<b style="color:${delta>0?'var(--cyan)':'var(--red)'}">${delta>0?"+":""}${delta.toFixed(1)}</b></div>`);
   t.day++;
-  if(t.day >= TRYOUT_DAYS.length) endTryout();
+  if(t.day >= tryoutDays(t).length) endTryout();
   else render();
 }
 /* 最终评级：四天的表现 + 你的底子，一起对上这家的期望 */
@@ -393,7 +400,9 @@ function tryoutCard(){
   }
   const D = tryoutDay();
   const pen = tryoutFatiguePenalty();
-  return `<div class="card"><h2>${D.n}<em>${t.team} · 第 ${t.day+1}/4 天</em></h2>
+  return `<div class="card"><h2>${D.n}<em>${t.team} · 第 ${t.day+1}/${tryoutDays(t).length} 天${
+      t.pro?" · 职业转会试训":""}</em></h2>
+    ${t.pro&&t.day===0?`<p class="note" style="color:var(--cyan);margin:0 0 6px">打过职业的人不用再考单排——你的比赛数据顶掉了第一天。</p>`:""}
     <p class="note" style="margin:0 0 12px">${D.ctx}</p>
     ${pen>1?`<p class="note" style="color:var(--red)">连着几天下来你已经有点撑不住了，
       发挥打了折扣（−${pen.toFixed(1)}）。<b>体质在这种时候才看得出来。</b></p>`:""}
@@ -813,8 +822,10 @@ function takeProOffer(){
   const o = S.proOffer; if(!o) return;
   S.proOffer = null;
   if(o.direct){ makeProDeal(o.tier, o.team, "A", o.league); return; }
+  // 职业转会试训是简化流程：免单排考核，三个环节
   S.tryout = { tier:o.tier, team:o.team, expect:CLUB_TIERS[o.tier].expect,
-               day:0, score:0, lines:[], fat:0, done:false, pro:true, league:o.league };
+               day:0, score:0, lines:[], fat:0, done:false, pro:true, league:o.league,
+               days:[1,2,3] };
   render();
 }
 function dropProOffer(){
@@ -1004,6 +1015,7 @@ function parentClub(){
 }
 function checkPromote(){
   if((S.homeLeague || "LPL") !== "LDL") return false;
+  if(S.promoteDeal) return true;                        // 已有调令在桌上，等玩家表态
   const pname = parentClub(); if(!pname) return false;
   const pt = (S.world.LPL || []).find(t => t.name === pname); if(!pt) return false;
   const inc = pt.players.find(q => q.pos === S.pos); if(!inc) return false;
@@ -1015,31 +1027,102 @@ function checkPromote(){
   const ok = (me >= him + 1) || (me >= him - 3 && wr >= 0.75);
   if(!ok) return false;
 
+  /* 2026-09-01 玩家点的机制修正：升队不再无声地工资 ×2.4——
+     上调要重签合同。俱乐部先给一份「一队标准」的调薪提案（就是原来那套数），
+     你可以接受、拿数据争取更高、或者留在二队再打一个窗口。 */
+  const st = clubStanding(pname);
+  const clubTier = st ? (st.pos <= 4 ? "top" : st.pos <= 10 ? "mid" : "low") : "mid";
+  S.promoteDeal = {
+    team: pname, from: S.team, incumbent: inc.id, clubTier,
+    gap: q1(me - him), wr: g >= 3 ? Math.round(wr * 100) : null,
+    salary: Math.round((S.contract && S.contract.salary || 8) * 2.4),
+    buyout: Math.round((S.contract && S.contract.buyout || 60) * 3),
+    asked: false
+  };
+  pushEvent(`<b>${pname}</b> 的调令到了：一队想把你从 <b>${S.team}</b> 调上去，
+    随调令来的还有一份<b>重签的合同</b>——数字看完再签字。`, "big", "升队");
+  return true;
+}
+/* 争取更高薪的把握：压过对位多少 + LDL 战绩 + 比赛档案里的评分 */
+function promoteRaiseOdds(){
+  const d = S.promoteDeal; if(!d) return 0;
+  const arc = (S.archive||[]).filter(x => x.si === S.si);
+  const avgR = arc.length ? arc.reduce((a,x)=>a+x.rating,0)/arc.length : 1;
+  return clamp(0.35 + d.gap*0.06 + ((d.wr||50)-50)*0.006 + (avgR-1)*0.5, 0.10, 0.85);
+}
+function askPromoteRaise(){
+  const d = S.promoteDeal; if(!d || d.asked) return;
+  d.asked = true;
+  const p = promoteRaiseOdds();
+  if(rnd() < p){
+    const T = CLUB_TIERS[d.clubTier] || CLUB_TIERS.mid;
+    d.salary = Math.max(Math.round(d.salary*1.35), Math.round(T.pay[0]*0.8));
+    pushEvent(`经纪人把你的 LDL 数据拍在了桌上——俱乐部认了：<b>年薪提到 ${d.salary} 万/赛段</b>。`,"good","升队");
+  }else{
+    if(typeof addStaff==="function") addStaff("mgr",-4);
+    pushEvent(`你要了更高的数，管理层没接：「一队还没打过一场，先证明再谈」。<b>原提案不变</b>，经理记了一笔。`,"info","升队");
+  }
+  render();
+}
+function acceptPromote(){
+  const d = S.promoteDeal; if(!d) return;
+  S.promoteDeal = null;
+  const pt = (S.world.LPL || []).find(t => t.name === d.team);
+  if(!pt){ pushEvent(`调令出了变故：${d.team} 的名单动了，这个窗口先作罢。`,"bad","升队"); render(); return; }
   const old = S.team;
-  S.team = pname; S.homeLeague = "LPL";
+  S.team = d.team; S.homeLeague = "LPL";
   S.offerKind = "start"; S.understudy = null; S.promoted = true;
   pt.players = pt.players.map(q => q.pos === S.pos
     ? {id:S.name||"你", cn:"", pos:S.pos, age:S.age, r:S.attrs, me:true} : q);
   if(typeof markTeamJoin==="function") markTeamJoin();   // 换了队，在队时长归零
   S.trust = {}; if(typeof initTrust === "function") initTrust();
   if(typeof syncTrust === "function") syncTrust();
-  // 升上来是涨薪的，但还是队里最便宜的那个。
-  // 合同也要跟着走：签约主体是俱乐部，注册名单从二队换到一队，
-  // 条款按一队标准转正——俱乐部档次按母队真实排名定，别一律写「中游」。
   if(S.contract){
-    S.contract.salary = Math.round((S.contract.salary || 40) * 2.4);
-    S.contract.buyout = Math.round((S.contract.buyout || 60) * 3);
+    S.contract.salary = d.salary;
+    S.contract.buyout = d.buyout;
     S.contract.tier = "sub";
-    S.contract.team = pname;
-    const st = clubStanding(pname);
-    S.contract.clubTier = st ? (st.pos <= 4 ? "top" : st.pos <= 10 ? "mid" : "low") : "mid";
+    S.contract.team = d.team;
+    S.contract.clubTier = d.clubTier;
   }
   S.rosterSig = myRoster().map(x => x.id).sort().join("|");
-  pushEvent(`<b>${pname}</b> 把你从 <b>${old}</b> 调上了一队。
-    ${inc.id} 让出了首发位——你在 LDL 打的那些比赛，有人一直在看。`, "big", "升队");
-  if(typeof txNote==="function") txNote(`${old} → <b>${pname}</b>（升上一队）`);
+  pushEvent(`<b>${d.team}</b> 把你从 <b>${old}</b> 调上了一队，新合同：年薪 <b>${d.salary} 万/赛段</b> · 违约金 ${d.buyout} 万。
+    ${d.incumbent} 让出了首发位——你在 LDL 打的那些比赛，有人一直在看。`, "big", "升队");
+  if(typeof txNote==="function") txNote(`${old} → <b>${d.team}</b>（升上一队 · 年薪 ${d.salary} 万/赛段）`);
   if(typeof checkAch === "function") checkAch("promote");
-  return true;
+  render();
+}
+function declinePromote(){
+  const d = S.promoteDeal; if(!d) return;
+  S.promoteDeal = null;
+  if(typeof addStaff==="function") addStaff("mgr",-3);
+  pushEvent(`你按下了调令：<b>这个窗口先留在 ${S.team}</b>，把首发位和数据攥在手里。<br>
+    <span style="color:var(--ink-3)">下个窗口达标的话，调令还会再来——但一队的位置不会永远空着。</span>`,"info","升队");
+  render();
+}
+function promoteDealCard(){
+  const d = S.promoteDeal; if(!d) return "";
+  const p = promoteRaiseOdds();
+  const arc = (S.archive||[]).filter(x=>x.si===S.si);
+  const avgR = arc.length ? (arc.reduce((a,x)=>a+x.rating,0)/arc.length).toFixed(2) : "—";
+  return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left">
+    <div class="ru-icon" style="text-align:center">${typeof gicon==="function"?gicon("transfer",52):""}</div>
+    <div class="ru-eyebrow" style="text-align:center">升队调令 · 重签合同</div>
+    <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:12px">${
+      typeof teamLogo==="function"?teamLogo(d.team,22):""} <b>${d.team}</b></div>
+    <p class="note" style="margin:0 0 10px">一队${POSN[S.pos]} <b>${d.incumbent}</b> 让位。你的底气：
+      综合压过对位 <b>${d.gap>0?"+":""}${d.gap}</b>${d.wr!==null?` · LDL 胜率 <b>${d.wr}%</b>`:""} · 本赛季场均评分 <b>${avgR}</b></p>
+    <div class="grid g2" style="margin:10px 0">
+      <div class="ver"><div class="k">新年薪</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${d.salary}<small> 万/赛段</small></div></div>
+      <div class="ver"><div class="k">新违约金</div><div class="v mono" style="font-size:20px">${d.buyout}<small> 万</small></div></div>
+    </div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="promoteok">签字上一队 →</button>
+      ${d.asked?"":`<button class="btn ghost" id="promoteask">拿数据要更高（把握 ${(p*100).toFixed(0)}%）</button>`}
+      <button class="btn ghost sm" id="promoteno">这窗口留在二队</button>
+    </div>
+    <p class="note" style="margin-top:8px">要价失败提案不变、经理不快；按下调令则下个窗口重新核查——
+      <span style="color:var(--red)">一队的位置不会永远空着</span>。</p>
+  </div></div>`;
 }
 
 /* ---------- 下放：一队替补去 LDL 打比赛 ----------

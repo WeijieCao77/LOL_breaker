@@ -64,14 +64,96 @@ function tickFollowUps(){
   S.pendingEv=S.pendingEv.filter(x=>x.due>S.evClock);
   due.forEach(x=>{ try{ FOLLOWUPS[x.id]&&FOLLOWUPS[x.id].run(x.p); }catch(e){} });
 }
+/* ---------- 滚动小版本（2026-09-01 P2） ----------
+   大版本一年一换（SEASONS），但现实里赛季中每两三周就有热修。
+   小补丁只动一个维度的权重（±，很轻），5–8 周一刀——
+   「版本答案」不再是赛季初定终身。 */
+function miniPatchTick(){
+  if(!S.career) return;                       // 职业前不用被版本折腾
+  S.patchClock=(S.patchClock||0)+1;
+  if(S.patchClock<(S.patchNext||6)) return;
+  S.patchClock=0; S.patchNext=5+Math.floor(rnd()*4);
+  const d=DIMS[Math.floor(rnd()*DIMS.length)];
+  const up=rnd()<0.5;
+  S.miniPatch={dim:d, up, n:((S.miniPatch&&S.miniPatch.n)||0)+1};
+  const themes={操作:"对线强度英雄",运营:"资源与节奏刷新",心态:"翻盘机制",指挥:"开团手段",体质:"场均时长"};
+  pushEvent(`<b>版本热修 ${SEASONS[S.si].tag}.${S.miniPatch.n}</b>：${themes[d]||d}${up?"加强":"削弱"}，
+    <b>${d}</b>的权重${up?"略升":"略降"}。<span style="color:var(--ink-3)">大版本没换，小刀也割肉——强项对上刀口的这几周好好利用。</span>`,
+    "info","版本");
+}
+/* 小补丁对版本相性的修正：吃你该维度相对联赛的水平，方向看这刀朝哪。
+   幅度刻意压轻（±0.35 封顶）：冠军概率是十几个胜率连乘出来的，
+   单方面加在玩家头上的对称噪声也会净亏——首测 ±0.8 把 MSI 打掉了一截。 */
+function miniPatchAdj(){
+  const mp=S.miniPatch; if(!mp||!S.career) return 0;
+  const rel=(S.attrs[mp.dim]-(typeof leagueDimAvg==="function"?leagueDimAvg(mp.dim):50))/12;
+  return clamp(rel*(mp.up?0.25:-0.25),-0.35,0.35);
+}
+
 /* 周节拍器：所有「进入下一周」的入口都敲一次。
-   事件链走表 → 周报编辑部攒稿 → 商业机会按门槛检查（bizWeek 在 shop.js）。 */
+   事件链走表 → 周报编辑部攒稿 → 商业机会按门槛检查（bizWeek 在 shop.js）→ 版本热修。 */
 function weeklyEcho(){
   try{ tickFollowUps(); }catch(e){}
   try{ pressTick(); }catch(e){}
   try{ if(typeof bizWeek==="function") bizWeek(); }catch(e){}
+  try{ miniPatchTick(); }catch(e){}
   // 心态气压每周自然回落一点——时间也是解药，只是慢
   if(S.tilt) S.tilt=Math.max(0,q1(S.tilt-3));
+}
+
+/* ---------- 队内身份仪表（2026-09-01 P2） ----------
+   首发竞争和教练/经理信任一直在系统里算，但从没画出来。
+   竞争度：有对位竞争者时看你俩的差距；坐稳首发看你在队里的相对水平。 */
+function roleCard(){
+  if(!S.career||!S.team) return "";
+  const me=avg(DIMS.map(d=>S.attrs[d]));
+  const acad=(S.homeLeague||"LPL")==="LDL";
+  let role, comp, compTxt;
+  if(!S.promoted&&S.understudy){
+    const him=avg(DIMS.map(d=>S.understudy.r[d]));
+    role=acad?"青训生 · 还没进名单":"替补 · 在抢首发";
+    comp=clamp(50+(me-(him-2))*8,2,98);
+    compTxt=`对位 <b>${S.understudy.id}</b>（${him.toFixed(1)}），压过他才轮到你`;
+  }else{
+    const mates=myRoster().filter(p=>!p.me);
+    const tavg=mates.length?avg(mates.map(p=>avg(DIMS.map(d=>p.r[d])))):me;
+    role=S.offerKind==="core"?"核心首发":"首发";
+    comp=clamp(55+(me-tavg)*6,5,98);
+    compTxt=comp>=70?"位置很稳，队伍围绕你打":comp>=45?"位置稳固，但别松懈":"你是队里最薄的一环——教练在看替补名单";
+  }
+  const ct=(typeof coachTrust==="function")?coachTrust():50;
+  const mt=(typeof mgrTrust==="function")?mgrTrust():50;
+  const bar=(label,v,color,txt)=>`<div class="at wide"><div class="lb">${label}</div>
+    <div class="track"><div class="fill" style="width:${v}%;${color?`background:${color}`:""}"></div></div>
+    <div class="vn mono"><b>${Math.round(v)}</b></div></div>
+    ${txt?`<p class="note" style="margin:2px 0 8px">${txt}</p>`:""}`;
+  return `<div class="card"><h2>队内身份<em>${role}</em></h2>
+    <div class="attrs">
+      ${bar("首发竞争",comp,comp<45?"var(--red)":null,compTxt)}
+      ${bar("教练信任",ct,ct<35?"var(--red)":null,ct>=70?"教练在关键局也会把牌给你":ct<35?"排兵布阵时你的名字开始被犹豫":null)}
+      ${bar("经理信任",mt,mt<35?"var(--red)":null,mt<35?"续约和转会的桌上，这个数字都在":null)}
+    </div></div>`;
+}
+
+/* ---------- 生涯一览（2026-09-01 P2，玩家点名：用总结的口吻随时给评语） ----------
+   结局系统本来只在五年打完时说话。现在随时可以问它一句：
+   「如果今天挂靴，故事讲到哪了？」评语直接用 ending() 的判词——同一把尺子。 */
+function careerCard(){
+  if(!S.career) return "";
+  let e=null; try{ e=(typeof ending==="function")?ending():null; }catch(err){}
+  const st=S.stats||{n:0};
+  const titles=(S.career.titles||[]);
+  const left=SEASONS.length-1-S.si;
+  return `<div class="card"><h2>生涯一览<em>如果今天挂靴</em></h2>
+    ${e?`<h3 style="margin:4px 0 2px">「${e.n}」</h3>
+    <p class="note" style="margin:0 0 10px">${e.d}</p>`:""}
+    <div class="tw"><table><tbody>
+      <tr><td>生涯战绩</td><td class="n">${S.career.w}−${S.career.l}${st.n?` · 场均评分 ${(st.r/st.n).toFixed(2)}`:""}</td></tr>
+      <tr><td>冠军</td><td>${titles.length?titles.join("、"):"还没有"}</td></tr>
+      <tr><td>转会轨迹</td><td>${(S.txLog&&S.txLog.length)?S.txLog.length+" 站":"一队待到底"}</td></tr>
+      <tr><td>剩下的时间</td><td class="n">${left>0?left+" 个赛季":"这是最后一年"} · ${S.age} 岁</td></tr>
+    </tbody></table></div>
+    <p class="note" style="color:var(--ink-3)">评语和五年后的结局用同一把尺子——现在不满意，就去改写它。</p></div>`;
 }
 function followUpCard(){
   const q=(S.pendingEv||[]);
@@ -217,6 +299,33 @@ function pressCard(){
     ${list.length>1?`<p class="note" style="margin-top:10px;color:var(--ink-3)">往期：${
       list.slice(1).map(x=>`第${x.n}期`).join(" · ")}（${list.slice(1)[0].heads[0].t.slice(0,18)}…）</p>`:""}
     <p class="note" style="color:var(--ink-3)">周报只使用真实比赛与行动证据，报道效果在出刊时结算一次。</p></div>`;
+}
+
+/* ---------- 更新说明卡 ----------
+   老存档第一次进新版本时弹一次，把新功能和入口指清楚。
+   新开局不弹（东西本来就在眼前）。 */
+function patchNoteCard(){
+  if(!S.patchNote) return "";
+  const rows=[
+    ["电竞周报","「世界」页——每 3 周出刊，头条全是你真实打出来的事"],
+    ["悬而未决","「世界」页——选择留下的尾巴带倒计时，到期兑现"],
+    ["比赛档案","「我的」页——每个系列赛的 KDA/评分，球探看的就是它"],
+    ["球探观察","「转会」页——谁在看你、样本多少、多确信"],
+    ["做内容","「本周」行动——教学/高光/复盘/整活四个方向"],
+    ["资产","「经济」页——公寓/康复室/保姆车/工作站，钱的去处"],
+    ["天梯撞车","打排位随机触发——撞到 Faker 们的路人局"],
+    ["宿敌成就","「成就」页新增——三胜 Faker 队＝破神者"],
+    ["心态气压","连败时「本周」页出红条，休息/心理课/赢球泄压"],
+    ["升队谈薪","二队上调不再无声涨薪——调令来了要重签合同"]
+  ];
+  return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">
+    <div class="ru-eyebrow" style="text-align:center">本次更新 · ${typeof GAME_VER!=="undefined"?GAME_VER:""}</div>
+    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:10px">世界开始回应你了</div>
+    ${rows.map(x=>`<p style="margin:6px 0"><b style="color:var(--gold-hi)">${x[0]}</b>
+      <span class="note">${x[1]}</span></p>`).join("")}
+    <div class="row" style="justify-content:center;margin-top:12px">
+      <button class="btn" id="patchok">知道了，开打 →</button></div>
+  </div></div>`;
 }
 
 /* ---------- 五、球探观察卡 ----------

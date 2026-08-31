@@ -35,6 +35,18 @@
   --z-auto:#8FA0B4;   /* 托管 · 冷灰——它是模式开关，不是内容，不该抢任何一个域的色 */
 
   --pin-h:0px;        /* 属性条实测高度，由 render() 写入，给标签栏定位用 */
+
+  /* ---- 幽灵变量别名区 ----
+     模板和模块里散落着一批老主题时代的变量名（--win/--surface/--bar-2……），
+     引用了但从没定义过——浏览器不报错，只是那块直接没颜色。
+     玩家抓的实例：升队通道里一队对位的 bar 是透明的。
+     全部在这里落地成现役色，别名和现役名可以混用；新代码请直接用现役名。 */
+  --paper:var(--panel); --surface:var(--panel); --surface-2:var(--panel-2);
+  --line-soft:var(--line); --shadow:rgba(0,0,0,.45);
+  --gold-bg:rgba(201,169,97,.12);
+  --bar:var(--cyan); --bar-2:#B5945A;            /* 对照条：你＝青，对方＝哑金 */
+  --win:var(--cyan); --loss:var(--red);
+  --win-bg:rgba(79,190,218,.14); --loss-bg:rgba(196,83,95,.16);
 }
 /* 当前功能域：#stage 上的标记决定这一页用哪个身份色 */
 #stage{--zone:var(--z-act)}
@@ -768,7 +780,7 @@ ul.dealfx li::marker{color:var(--ink-3)}
 /* 计划被打断后的续跑行——比其他两行显眼一点 */
 .rt-resume{padding:7px 9px;border:1px solid rgba(201,169,97,.42);
   background:rgba(201,169,97,.09)}
-.rt-resume .rt-txt{color:var(--ink-1)}
+.rt-resume .rt-txt{color:var(--ink)}
 
 /* ---- 存档 ---- */
 .savebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
@@ -917,6 +929,9 @@ const SPREAD=13.5;   // 赛程加长后，单场的确定性要再降一点，�
    不是成长速度——签约后的训练收益同步乘 0.8（见 gain），
    每周训练总量 4×0.8=3.2 对 3×1.0=3.0，只多 7%。
    改完照例跑 120 局对比冠军率，通胀就回调。 */
+/* 版本戳：印在存档栏右下角。玩家对不上这个号，就是开了旧页面——
+   「改了但看不到」的一半原因是没有任何地方能验证版本。 */
+const GAME_VER="v20260901 · 回声";
 const AP_SEASON=4, AP_PRE=6, AP_OFF=4, AP_HURT=2;
 function apFor(phase){
   const v=S&&S.injury?AP_HURT:phase==="pre"?AP_PRE:phase==="off"?AP_OFF:AP_SEASON;
@@ -1170,7 +1185,8 @@ function versionFit(){
   const rel=(S.attrs[d]-bar)/12;                // 你在该维度相对联赛的水平
   const posBonus=sea.fav.includes(S.pos)?1.6:0;
   const cushion=adaptOf()/100;                  // 适应力缓冲逆版本
-  return (rel*2.2+posBonus+(rel<0?rel*-1*cushion*1.4:0))*2.0;
+  const mini=(typeof miniPatchAdj==="function")?miniPatchAdj():0;   // 赛季中热修的小刀
+  return (rel*2.2+posBonus+(rel<0?rel*-1*cushion*1.4:0))*2.0+mini;
 }
 
 /* LCK 的统治力逐年变化——S12 起步、S14 顶峰、S16 才松动。
@@ -1738,6 +1754,7 @@ function rankFull(v){
   return cur.n+DIV[d];
 }
 function startPre(){
+  S.patchSeen=(typeof GAME_VER!=="undefined")?GAME_VER:1;   // 新开局不弹更新说明
   const o=ORIGIN[S.origin], A=AGES[S.ageIdx], B=bgOf(S.bgPick);
   const attrs={};
   DIMS.forEach(d=>attrs[d]=Math.min(
@@ -2549,6 +2566,7 @@ function autoStop(){
   // 「自动推进到下一件事」会直接冲过去，机会就这么没了。
   return !!(S.rndEv||S.rndResult||S.locker||S.signup||S.rankUp
            ||S.cupResult||S.cupMatch||S.confirm||S.streamOffer||S.intlChamp||S.contentPick
+           ||S.promoteDeal||S.patchNote
            ||(S.pre&&S.pre.invite&&S.pre.invite.pending));
 }
 function autoRest(focus,weeks){
@@ -2587,8 +2605,8 @@ function autoRest(focus,weeks){
    原来休赛期没有标签栏，把财务总览和商城直接拼在行动卡下面，
    于是「所有栏目合到一起了」。玩家报的就是这个。 */
 function tabContent(T){
-  return `${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+(typeof dataCard==="function"?dataCard():"")+gearCard():""}
-    ${T==="team"?squadCard()+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
+  return `${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+(typeof dataCard==="function"?dataCard():"")+(typeof careerCard==="function"?careerCard():"")+gearCard():""}
+    ${T==="team"?squadCard()+(typeof roleCard==="function"?roleCard():"")+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
     ${T==="shop"?(typeof economyCards==="function"?economyCards():shopCard()):""}
     ${T==="tx"?(typeof transferPage==="function"?transferPage():""):""}
     ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
@@ -2601,7 +2619,9 @@ function tabContent(T){
 function viewSeason(){
   const sea=SEASONS[S.si], T=curTab(TABS_SEASON);
   const champ=((S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"")
-    +((S.contentPick&&typeof contentCard==="function")?contentCard():"");
+    +((S.contentPick&&typeof contentCard==="function")?contentCard():"")
+    +((S.promoteDeal&&typeof promoteDealCard==="function")?promoteDealCard():"")
+    +((S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():"");
   if(T!=="act") return `${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
     ${tabBar(TABS_SEASON)}
     ${tabContent(T)}`;
@@ -2619,7 +2639,9 @@ function viewSeason(){
     ${typeof questCard==="function"?questCard():""}
     ${typeof btkChaseNote==="function"?btkChaseNote():""}
     <div class="ver">版本 <b>${sea.ver}</b> — 本赛季强调 <b>${sea.dim}</b>${
-      sea.fav.includes(S.pos)?`，且<b>${POSN[S.pos]}是版本红利位</b>`:""}。
+      sea.fav.includes(S.pos)?`，且<b>${POSN[S.pos]}是版本红利位</b>`:""}。${
+      S.miniPatch?`<br>热修 <b>${sea.tag}.${S.miniPatch.n}</b>：<b>${S.miniPatch.dim}</b>权重${S.miniPatch.up?"↑":"↓"}${
+        (typeof miniPatchAdj==="function"&&Math.abs(miniPatchAdj())>=0.15)?`（对你${miniPatchAdj()>0?"有利":"不利"}）`:""}。`:""}
       你的版本相性：<b>${fit>=1.5?"顺风":fit>=-0.5?"中性":"逆版本"}</b>
       <span style="color:var(--ink-3)">（你的${sea.dim} ${S.attrs[sea.dim].toFixed(0)} · ${
         S.homeLeague||"LPL"}均值 ${leagueDimAvg(sea.dim).toFixed(0)}——顺逆是和同行比出来的）</span></div>
@@ -3276,7 +3298,8 @@ function prepGo(){
    而这一屏原来什么导航都没有——只能上场或者干等。 */
 function viewPrep(){
   const T=curTab(TABS_SEASON);
-  const pops=`${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
+  const pops=`${(S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():""}${
+    S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
   if(T!=="act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
   return `${pops}${tabBar(TABS_SEASON)}${prepPanel()}`;
 }
@@ -3407,7 +3430,9 @@ function endSeason(result,seed){
 
 function viewOffseason(){
   const champ=((S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"")
-    +((S.contentPick&&typeof contentCard==="function")?contentCard():"");
+    +((S.contentPick&&typeof contentCard==="function")?contentCard():"")
+    +((S.promoteDeal&&typeof promoteDealCard==="function")?promoteDealCard():"")
+    +((S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():"");
   if(S.off){
     const T=curTab(TABS_SEASON);
     const pops=`${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
@@ -3531,6 +3556,11 @@ function offNextWeek(){
       // 季中间歇也是注册窗口：LDL 打得好，夏季赛能直接调上一队——
       // 现实里升降就是跟着转会/注册窗走的，不用等到年底
       if(typeof checkPromote==="function") checkPromote();
+      if(S.promoteDeal){
+        // 调令没批完不开赛：赛程是按你所在的队排的，先表态再进夏季赛
+        S.off={week:1,weeks:1,next:"summer",label:"季中注册窗 · 调令待决"};
+        S.ap=0; render(); return;
+      }
       startSeason(false,1); return;
     }
     if(nx==="playoff"){ startPlayoff(); return; }         // 休整结束 -> 季后赛
@@ -3560,6 +3590,7 @@ function offNextWeek(){
 function finishOffseason(){
   S.si++; S.age++;
   S.yearBase=0;              // 新的一年，全年计数从头开始
+  S.miniPatch=null; S.patchClock=0;   // 新版本年，热修编号从 .1 重数
   const news=ageWorld();
   // 玩家自己的年龄曲线
   const base=ageCurve(S.age);
@@ -9209,6 +9240,9 @@ function loadGame() {
     fixStaleRank(S);
     if (!S.ledger && typeof initLedger === "function") initLedger();   // 老档没有流水：从下一笔开始记
     fixLegacyFame(S);
+    // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
+    // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
+    if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
     S.tab = "act";
     // 读档落在比赛中途会尴尬——回到本周界面
     if (S.step === "match") S.step = S.pre && !S.career ? "pre" : "season";
@@ -9277,6 +9311,8 @@ function saveBar() {
     <button class="rt-x" id="saveexp">导出</button>
     <button class="rt-x" id="saveimp">导入</button>
     <button class="rt-x" id="saverst">重开</button>
+    <span class="sb-t" style="margin-left:auto;opacity:.65" title="对不上这个号，说明你开的是旧版本页面">${
+      typeof GAME_VER!=="undefined"?GAME_VER:""}</span>
   </div>`;
 }
 function exportSave() {
@@ -9682,11 +9718,16 @@ function inviteCard(){
 }
 
 /* ---------- 二、试训过程 ---------- */
+/* 试训模板（2026-09-01 P2）：按咖位裁流程。
+   新人走完整四天；职业转会免掉单排考核——你的比赛数据就是考核；
+   明星（表现分 ≥15）根本不用试训，rollProOffers 里直接开价。 */
 function startTryout(tier, team, expect){
-  S.tryout = { tier, team, expect, day:0, score:0, lines:[], fat:0, done:false };
+  S.tryout = { tier, team, expect, day:0, score:0, lines:[], fat:0, done:false,
+               days:[0,1,2,3] };
   render();
 }
-function tryoutDay(){ return TRYOUT_DAYS[S.tryout.day]; }
+function tryoutDays(t){ return (t&&t.days)||[0,1,2,3]; }
+function tryoutDay(){ const t=S.tryout; return TRYOUT_DAYS[tryoutDays(t)[t.day]]; }
 /* 体质差的人，后面几天会明显掉状态——这是体质在这里的意义 */
 function tryoutFatiguePenalty(){
   const t = S.tryout;
@@ -9694,19 +9735,21 @@ function tryoutFatiguePenalty(){
   return t.day * Math.max(0, (52 - stamina)) * 0.055;
 }
 function resolveTryoutDay(i){
-  const t = S.tryout, D = TRYOUT_DAYS[t.day], opt = D.a[i];
+  const t = S.tryout, D = TRYOUT_DAYS[tryoutDays(t)[t.day]], opt = D.a[i];
   const v = S.attrs[opt.dim] - tryoutFatiguePenalty();
   const p = clamp(0.22 + (v/100)*0.62, 0.08, 0.92);
   const ok = rnd() < p;
   // 成败对称。原来失败只扣 0.85 倍，四个环节累下来整体偏正，
   // 结果刚够门槛的人也有三成概率拿 A+——评级就没意义了。
-  const delta = (ok ? 1 : -1) * opt.risk * 4.2;
+  // 短流程试训（职业转会 3 天）按天数归一：每天的分量放大到总期望和四天一致，
+  // 否则流程越短评级越低，「免考核」反而变成惩罚。
+  const delta = (ok ? 1 : -1) * opt.risk * 4.2 * (4/tryoutDays(t).length);
   t.score += delta;
   t.lines.push(`<div><span class="hi">${D.n.split(" · ")[1]}</span> ${opt.t} — ${
     ok ? '<span class="w">教练点了头</span>' : '<span class="l">没打动他们</span>'
   }　<b style="color:${delta>0?'var(--cyan)':'var(--red)'}">${delta>0?"+":""}${delta.toFixed(1)}</b></div>`);
   t.day++;
-  if(t.day >= TRYOUT_DAYS.length) endTryout();
+  if(t.day >= tryoutDays(t).length) endTryout();
   else render();
 }
 /* 最终评级：四天的表现 + 你的底子，一起对上这家的期望 */
@@ -9755,7 +9798,9 @@ function tryoutCard(){
   }
   const D = tryoutDay();
   const pen = tryoutFatiguePenalty();
-  return `<div class="card"><h2>${D.n}<em>${t.team} · 第 ${t.day+1}/4 天</em></h2>
+  return `<div class="card"><h2>${D.n}<em>${t.team} · 第 ${t.day+1}/${tryoutDays(t).length} 天${
+      t.pro?" · 职业转会试训":""}</em></h2>
+    ${t.pro&&t.day===0?`<p class="note" style="color:var(--cyan);margin:0 0 6px">打过职业的人不用再考单排——你的比赛数据顶掉了第一天。</p>`:""}
     <p class="note" style="margin:0 0 12px">${D.ctx}</p>
     ${pen>1?`<p class="note" style="color:var(--red)">连着几天下来你已经有点撑不住了，
       发挥打了折扣（−${pen.toFixed(1)}）。<b>体质在这种时候才看得出来。</b></p>`:""}
@@ -10175,8 +10220,10 @@ function takeProOffer(){
   const o = S.proOffer; if(!o) return;
   S.proOffer = null;
   if(o.direct){ makeProDeal(o.tier, o.team, "A", o.league); return; }
+  // 职业转会试训是简化流程：免单排考核，三个环节
   S.tryout = { tier:o.tier, team:o.team, expect:CLUB_TIERS[o.tier].expect,
-               day:0, score:0, lines:[], fat:0, done:false, pro:true, league:o.league };
+               day:0, score:0, lines:[], fat:0, done:false, pro:true, league:o.league,
+               days:[1,2,3] };
   render();
 }
 function dropProOffer(){
@@ -10366,6 +10413,7 @@ function parentClub(){
 }
 function checkPromote(){
   if((S.homeLeague || "LPL") !== "LDL") return false;
+  if(S.promoteDeal) return true;                        // 已有调令在桌上，等玩家表态
   const pname = parentClub(); if(!pname) return false;
   const pt = (S.world.LPL || []).find(t => t.name === pname); if(!pt) return false;
   const inc = pt.players.find(q => q.pos === S.pos); if(!inc) return false;
@@ -10377,31 +10425,102 @@ function checkPromote(){
   const ok = (me >= him + 1) || (me >= him - 3 && wr >= 0.75);
   if(!ok) return false;
 
+  /* 2026-09-01 玩家点的机制修正：升队不再无声地工资 ×2.4——
+     上调要重签合同。俱乐部先给一份「一队标准」的调薪提案（就是原来那套数），
+     你可以接受、拿数据争取更高、或者留在二队再打一个窗口。 */
+  const st = clubStanding(pname);
+  const clubTier = st ? (st.pos <= 4 ? "top" : st.pos <= 10 ? "mid" : "low") : "mid";
+  S.promoteDeal = {
+    team: pname, from: S.team, incumbent: inc.id, clubTier,
+    gap: q1(me - him), wr: g >= 3 ? Math.round(wr * 100) : null,
+    salary: Math.round((S.contract && S.contract.salary || 8) * 2.4),
+    buyout: Math.round((S.contract && S.contract.buyout || 60) * 3),
+    asked: false
+  };
+  pushEvent(`<b>${pname}</b> 的调令到了：一队想把你从 <b>${S.team}</b> 调上去，
+    随调令来的还有一份<b>重签的合同</b>——数字看完再签字。`, "big", "升队");
+  return true;
+}
+/* 争取更高薪的把握：压过对位多少 + LDL 战绩 + 比赛档案里的评分 */
+function promoteRaiseOdds(){
+  const d = S.promoteDeal; if(!d) return 0;
+  const arc = (S.archive||[]).filter(x => x.si === S.si);
+  const avgR = arc.length ? arc.reduce((a,x)=>a+x.rating,0)/arc.length : 1;
+  return clamp(0.35 + d.gap*0.06 + ((d.wr||50)-50)*0.006 + (avgR-1)*0.5, 0.10, 0.85);
+}
+function askPromoteRaise(){
+  const d = S.promoteDeal; if(!d || d.asked) return;
+  d.asked = true;
+  const p = promoteRaiseOdds();
+  if(rnd() < p){
+    const T = CLUB_TIERS[d.clubTier] || CLUB_TIERS.mid;
+    d.salary = Math.max(Math.round(d.salary*1.35), Math.round(T.pay[0]*0.8));
+    pushEvent(`经纪人把你的 LDL 数据拍在了桌上——俱乐部认了：<b>年薪提到 ${d.salary} 万/赛段</b>。`,"good","升队");
+  }else{
+    if(typeof addStaff==="function") addStaff("mgr",-4);
+    pushEvent(`你要了更高的数，管理层没接：「一队还没打过一场，先证明再谈」。<b>原提案不变</b>，经理记了一笔。`,"info","升队");
+  }
+  render();
+}
+function acceptPromote(){
+  const d = S.promoteDeal; if(!d) return;
+  S.promoteDeal = null;
+  const pt = (S.world.LPL || []).find(t => t.name === d.team);
+  if(!pt){ pushEvent(`调令出了变故：${d.team} 的名单动了，这个窗口先作罢。`,"bad","升队"); render(); return; }
   const old = S.team;
-  S.team = pname; S.homeLeague = "LPL";
+  S.team = d.team; S.homeLeague = "LPL";
   S.offerKind = "start"; S.understudy = null; S.promoted = true;
   pt.players = pt.players.map(q => q.pos === S.pos
     ? {id:S.name||"你", cn:"", pos:S.pos, age:S.age, r:S.attrs, me:true} : q);
   if(typeof markTeamJoin==="function") markTeamJoin();   // 换了队，在队时长归零
   S.trust = {}; if(typeof initTrust === "function") initTrust();
   if(typeof syncTrust === "function") syncTrust();
-  // 升上来是涨薪的，但还是队里最便宜的那个。
-  // 合同也要跟着走：签约主体是俱乐部，注册名单从二队换到一队，
-  // 条款按一队标准转正——俱乐部档次按母队真实排名定，别一律写「中游」。
   if(S.contract){
-    S.contract.salary = Math.round((S.contract.salary || 40) * 2.4);
-    S.contract.buyout = Math.round((S.contract.buyout || 60) * 3);
+    S.contract.salary = d.salary;
+    S.contract.buyout = d.buyout;
     S.contract.tier = "sub";
-    S.contract.team = pname;
-    const st = clubStanding(pname);
-    S.contract.clubTier = st ? (st.pos <= 4 ? "top" : st.pos <= 10 ? "mid" : "low") : "mid";
+    S.contract.team = d.team;
+    S.contract.clubTier = d.clubTier;
   }
   S.rosterSig = myRoster().map(x => x.id).sort().join("|");
-  pushEvent(`<b>${pname}</b> 把你从 <b>${old}</b> 调上了一队。
-    ${inc.id} 让出了首发位——你在 LDL 打的那些比赛，有人一直在看。`, "big", "升队");
-  if(typeof txNote==="function") txNote(`${old} → <b>${pname}</b>（升上一队）`);
+  pushEvent(`<b>${d.team}</b> 把你从 <b>${old}</b> 调上了一队，新合同：年薪 <b>${d.salary} 万/赛段</b> · 违约金 ${d.buyout} 万。
+    ${d.incumbent} 让出了首发位——你在 LDL 打的那些比赛，有人一直在看。`, "big", "升队");
+  if(typeof txNote==="function") txNote(`${old} → <b>${d.team}</b>（升上一队 · 年薪 ${d.salary} 万/赛段）`);
   if(typeof checkAch === "function") checkAch("promote");
-  return true;
+  render();
+}
+function declinePromote(){
+  const d = S.promoteDeal; if(!d) return;
+  S.promoteDeal = null;
+  if(typeof addStaff==="function") addStaff("mgr",-3);
+  pushEvent(`你按下了调令：<b>这个窗口先留在 ${S.team}</b>，把首发位和数据攥在手里。<br>
+    <span style="color:var(--ink-3)">下个窗口达标的话，调令还会再来——但一队的位置不会永远空着。</span>`,"info","升队");
+  render();
+}
+function promoteDealCard(){
+  const d = S.promoteDeal; if(!d) return "";
+  const p = promoteRaiseOdds();
+  const arc = (S.archive||[]).filter(x=>x.si===S.si);
+  const avgR = arc.length ? (arc.reduce((a,x)=>a+x.rating,0)/arc.length).toFixed(2) : "—";
+  return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left">
+    <div class="ru-icon" style="text-align:center">${typeof gicon==="function"?gicon("transfer",52):""}</div>
+    <div class="ru-eyebrow" style="text-align:center">升队调令 · 重签合同</div>
+    <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:12px">${
+      typeof teamLogo==="function"?teamLogo(d.team,22):""} <b>${d.team}</b></div>
+    <p class="note" style="margin:0 0 10px">一队${POSN[S.pos]} <b>${d.incumbent}</b> 让位。你的底气：
+      综合压过对位 <b>${d.gap>0?"+":""}${d.gap}</b>${d.wr!==null?` · LDL 胜率 <b>${d.wr}%</b>`:""} · 本赛季场均评分 <b>${avgR}</b></p>
+    <div class="grid g2" style="margin:10px 0">
+      <div class="ver"><div class="k">新年薪</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${d.salary}<small> 万/赛段</small></div></div>
+      <div class="ver"><div class="k">新违约金</div><div class="v mono" style="font-size:20px">${d.buyout}<small> 万</small></div></div>
+    </div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="promoteok">签字上一队 →</button>
+      ${d.asked?"":`<button class="btn ghost" id="promoteask">拿数据要更高（把握 ${(p*100).toFixed(0)}%）</button>`}
+      <button class="btn ghost sm" id="promoteno">这窗口留在二队</button>
+    </div>
+    <p class="note" style="margin-top:8px">要价失败提案不变、经理不快；按下调令则下个窗口重新核查——
+      <span style="color:var(--red)">一队的位置不会永远空着</span>。</p>
+  </div></div>`;
 }
 
 /* ---------- 下放：一队替补去 LDL 打比赛 ----------
@@ -10675,14 +10794,96 @@ function tickFollowUps(){
   S.pendingEv=S.pendingEv.filter(x=>x.due>S.evClock);
   due.forEach(x=>{ try{ FOLLOWUPS[x.id]&&FOLLOWUPS[x.id].run(x.p); }catch(e){} });
 }
+/* ---------- 滚动小版本（2026-09-01 P2） ----------
+   大版本一年一换（SEASONS），但现实里赛季中每两三周就有热修。
+   小补丁只动一个维度的权重（±，很轻），5–8 周一刀——
+   「版本答案」不再是赛季初定终身。 */
+function miniPatchTick(){
+  if(!S.career) return;                       // 职业前不用被版本折腾
+  S.patchClock=(S.patchClock||0)+1;
+  if(S.patchClock<(S.patchNext||6)) return;
+  S.patchClock=0; S.patchNext=5+Math.floor(rnd()*4);
+  const d=DIMS[Math.floor(rnd()*DIMS.length)];
+  const up=rnd()<0.5;
+  S.miniPatch={dim:d, up, n:((S.miniPatch&&S.miniPatch.n)||0)+1};
+  const themes={操作:"对线强度英雄",运营:"资源与节奏刷新",心态:"翻盘机制",指挥:"开团手段",体质:"场均时长"};
+  pushEvent(`<b>版本热修 ${SEASONS[S.si].tag}.${S.miniPatch.n}</b>：${themes[d]||d}${up?"加强":"削弱"}，
+    <b>${d}</b>的权重${up?"略升":"略降"}。<span style="color:var(--ink-3)">大版本没换，小刀也割肉——强项对上刀口的这几周好好利用。</span>`,
+    "info","版本");
+}
+/* 小补丁对版本相性的修正：吃你该维度相对联赛的水平，方向看这刀朝哪。
+   幅度刻意压轻（±0.35 封顶）：冠军概率是十几个胜率连乘出来的，
+   单方面加在玩家头上的对称噪声也会净亏——首测 ±0.8 把 MSI 打掉了一截。 */
+function miniPatchAdj(){
+  const mp=S.miniPatch; if(!mp||!S.career) return 0;
+  const rel=(S.attrs[mp.dim]-(typeof leagueDimAvg==="function"?leagueDimAvg(mp.dim):50))/12;
+  return clamp(rel*(mp.up?0.25:-0.25),-0.35,0.35);
+}
+
 /* 周节拍器：所有「进入下一周」的入口都敲一次。
-   事件链走表 → 周报编辑部攒稿 → 商业机会按门槛检查（bizWeek 在 shop.js）。 */
+   事件链走表 → 周报编辑部攒稿 → 商业机会按门槛检查（bizWeek 在 shop.js）→ 版本热修。 */
 function weeklyEcho(){
   try{ tickFollowUps(); }catch(e){}
   try{ pressTick(); }catch(e){}
   try{ if(typeof bizWeek==="function") bizWeek(); }catch(e){}
+  try{ miniPatchTick(); }catch(e){}
   // 心态气压每周自然回落一点——时间也是解药，只是慢
   if(S.tilt) S.tilt=Math.max(0,q1(S.tilt-3));
+}
+
+/* ---------- 队内身份仪表（2026-09-01 P2） ----------
+   首发竞争和教练/经理信任一直在系统里算，但从没画出来。
+   竞争度：有对位竞争者时看你俩的差距；坐稳首发看你在队里的相对水平。 */
+function roleCard(){
+  if(!S.career||!S.team) return "";
+  const me=avg(DIMS.map(d=>S.attrs[d]));
+  const acad=(S.homeLeague||"LPL")==="LDL";
+  let role, comp, compTxt;
+  if(!S.promoted&&S.understudy){
+    const him=avg(DIMS.map(d=>S.understudy.r[d]));
+    role=acad?"青训生 · 还没进名单":"替补 · 在抢首发";
+    comp=clamp(50+(me-(him-2))*8,2,98);
+    compTxt=`对位 <b>${S.understudy.id}</b>（${him.toFixed(1)}），压过他才轮到你`;
+  }else{
+    const mates=myRoster().filter(p=>!p.me);
+    const tavg=mates.length?avg(mates.map(p=>avg(DIMS.map(d=>p.r[d])))):me;
+    role=S.offerKind==="core"?"核心首发":"首发";
+    comp=clamp(55+(me-tavg)*6,5,98);
+    compTxt=comp>=70?"位置很稳，队伍围绕你打":comp>=45?"位置稳固，但别松懈":"你是队里最薄的一环——教练在看替补名单";
+  }
+  const ct=(typeof coachTrust==="function")?coachTrust():50;
+  const mt=(typeof mgrTrust==="function")?mgrTrust():50;
+  const bar=(label,v,color,txt)=>`<div class="at wide"><div class="lb">${label}</div>
+    <div class="track"><div class="fill" style="width:${v}%;${color?`background:${color}`:""}"></div></div>
+    <div class="vn mono"><b>${Math.round(v)}</b></div></div>
+    ${txt?`<p class="note" style="margin:2px 0 8px">${txt}</p>`:""}`;
+  return `<div class="card"><h2>队内身份<em>${role}</em></h2>
+    <div class="attrs">
+      ${bar("首发竞争",comp,comp<45?"var(--red)":null,compTxt)}
+      ${bar("教练信任",ct,ct<35?"var(--red)":null,ct>=70?"教练在关键局也会把牌给你":ct<35?"排兵布阵时你的名字开始被犹豫":null)}
+      ${bar("经理信任",mt,mt<35?"var(--red)":null,mt<35?"续约和转会的桌上，这个数字都在":null)}
+    </div></div>`;
+}
+
+/* ---------- 生涯一览（2026-09-01 P2，玩家点名：用总结的口吻随时给评语） ----------
+   结局系统本来只在五年打完时说话。现在随时可以问它一句：
+   「如果今天挂靴，故事讲到哪了？」评语直接用 ending() 的判词——同一把尺子。 */
+function careerCard(){
+  if(!S.career) return "";
+  let e=null; try{ e=(typeof ending==="function")?ending():null; }catch(err){}
+  const st=S.stats||{n:0};
+  const titles=(S.career.titles||[]);
+  const left=SEASONS.length-1-S.si;
+  return `<div class="card"><h2>生涯一览<em>如果今天挂靴</em></h2>
+    ${e?`<h3 style="margin:4px 0 2px">「${e.n}」</h3>
+    <p class="note" style="margin:0 0 10px">${e.d}</p>`:""}
+    <div class="tw"><table><tbody>
+      <tr><td>生涯战绩</td><td class="n">${S.career.w}−${S.career.l}${st.n?` · 场均评分 ${(st.r/st.n).toFixed(2)}`:""}</td></tr>
+      <tr><td>冠军</td><td>${titles.length?titles.join("、"):"还没有"}</td></tr>
+      <tr><td>转会轨迹</td><td>${(S.txLog&&S.txLog.length)?S.txLog.length+" 站":"一队待到底"}</td></tr>
+      <tr><td>剩下的时间</td><td class="n">${left>0?left+" 个赛季":"这是最后一年"} · ${S.age} 岁</td></tr>
+    </tbody></table></div>
+    <p class="note" style="color:var(--ink-3)">评语和五年后的结局用同一把尺子——现在不满意，就去改写它。</p></div>`;
 }
 function followUpCard(){
   const q=(S.pendingEv||[]);
@@ -10828,6 +11029,33 @@ function pressCard(){
     ${list.length>1?`<p class="note" style="margin-top:10px;color:var(--ink-3)">往期：${
       list.slice(1).map(x=>`第${x.n}期`).join(" · ")}（${list.slice(1)[0].heads[0].t.slice(0,18)}…）</p>`:""}
     <p class="note" style="color:var(--ink-3)">周报只使用真实比赛与行动证据，报道效果在出刊时结算一次。</p></div>`;
+}
+
+/* ---------- 更新说明卡 ----------
+   老存档第一次进新版本时弹一次，把新功能和入口指清楚。
+   新开局不弹（东西本来就在眼前）。 */
+function patchNoteCard(){
+  if(!S.patchNote) return "";
+  const rows=[
+    ["电竞周报","「世界」页——每 3 周出刊，头条全是你真实打出来的事"],
+    ["悬而未决","「世界」页——选择留下的尾巴带倒计时，到期兑现"],
+    ["比赛档案","「我的」页——每个系列赛的 KDA/评分，球探看的就是它"],
+    ["球探观察","「转会」页——谁在看你、样本多少、多确信"],
+    ["做内容","「本周」行动——教学/高光/复盘/整活四个方向"],
+    ["资产","「经济」页——公寓/康复室/保姆车/工作站，钱的去处"],
+    ["天梯撞车","打排位随机触发——撞到 Faker 们的路人局"],
+    ["宿敌成就","「成就」页新增——三胜 Faker 队＝破神者"],
+    ["心态气压","连败时「本周」页出红条，休息/心理课/赢球泄压"],
+    ["升队谈薪","二队上调不再无声涨薪——调令来了要重签合同"]
+  ];
+  return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">
+    <div class="ru-eyebrow" style="text-align:center">本次更新 · ${typeof GAME_VER!=="undefined"?GAME_VER:""}</div>
+    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:10px">世界开始回应你了</div>
+    ${rows.map(x=>`<p style="margin:6px 0"><b style="color:var(--gold-hi)">${x[0]}</b>
+      <span class="note">${x[1]}</span></p>`).join("")}
+    <div class="row" style="justify-content:center;margin-top:12px">
+      <button class="btn" id="patchok">知道了，开打 →</button></div>
+  </div></div>`;
 }
 
 /* ---------- 五、球探观察卡 ----------
@@ -11005,6 +11233,7 @@ let _lastBlock="";
 function blockSig(){
   return [S.rndEv&&"ev",S.locker&&"lk",S.signup&&"su",S.rankUp&&"ru",
     S.cupResult&&"cr",S.cupMatch&&"cm",S.confirm&&"cf",S.rndResult&&"rr",S.intlChamp&&"ic",S.contentPick&&"cp",
+    S.promoteDeal&&"pd",S.patchNote&&"pn",
     (S.achPop&&S.achPop.length)&&"ap",S.tryout&&"to",S.deal&&"dl",
     S.proOffer&&"po",S.streamOffer&&"so",
     (S.pre&&S.pre.invite&&S.pre.invite.pending)&&"iv"].filter(Boolean).join("|");
@@ -11183,6 +11412,12 @@ function bind(){
   const _cc=$("contentcancel"); if(_cc) _cc.onclick=()=>{S.contentPick=null;render()};
   st.querySelectorAll("[data-asset]").forEach(b=>b.onclick=()=>{
     if(typeof buyAsset==="function") buyAsset(b.dataset.asset); });
+  const _pok=$("promoteok"); if(_pok) _pok.onclick=()=>{ if(typeof acceptPromote==="function") acceptPromote(); };
+  const _pask=$("promoteask"); if(_pask) _pask.onclick=()=>{ if(typeof askPromoteRaise==="function") askPromoteRaise(); };
+  const _pno=$("promoteno"); if(_pno) _pno.onclick=()=>{ if(typeof declinePromote==="function") declinePromote(); };
+  const _pat=$("patchok"); if(_pat) _pat.onclick=()=>{
+    S.patchNote=null; S.patchSeen=(typeof GAME_VER!=="undefined")?GAME_VER:1;
+    if(typeof saveGame==="function") saveGame("更新说明已读"); render(); };
   const _pp=$("prepgo"); if(_pp) _pp.onclick=prepGo;
   const _off=$("offnext"); if(_off) _off.onclick=offNextWeek;
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;

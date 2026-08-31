@@ -127,6 +127,9 @@ function loadGame() {
     fixStaleRank(S);
     if (!S.ledger && typeof initLedger === "function") initLedger();   // 老档没有流水：从下一笔开始记
     fixLegacyFame(S);
+    // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
+    // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
+    if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
     S.tab = "act";
     // 读档落在比赛中途会尴尬——回到本周界面
     if (S.step === "match") S.step = S.pre && !S.career ? "pre" : "season";
@@ -195,6 +198,8 @@ function saveBar() {
     <button class="rt-x" id="saveexp">导出</button>
     <button class="rt-x" id="saveimp">导入</button>
     <button class="rt-x" id="saverst">重开</button>
+    <span class="sb-t" style="margin-left:auto;opacity:.65" title="对不上这个号，说明你开的是旧版本页面">${
+      typeof GAME_VER!=="undefined"?GAME_VER:""}</span>
   </div>`;
 }
 function exportSave() {
