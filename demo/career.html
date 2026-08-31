@@ -956,6 +956,11 @@ const SPREAD=13.5;   // 赛程加长后，单场的确定性要再降一点，�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260901c", at:"2026-09-01 晚间", items:[
+    "背景音乐重做：每个赛季一首原创主题曲（S12–S16 调性、速度、旋律动机各不相同），赛季一换歌就换",
+    "比赛进行中鼓点加密——打比赛和逛菜单不再是同一首歌的强度",
+    "音量与亮度上调：不再是「训练室深夜空调声」，但依然不抢戏（S 赛官方主题曲有版权，公开部署不能内嵌，这五首是照那个路子原创的）"
+  ]},
   {v:"v20260901b", at:"2026-09-01 下午", items:[
     "新增按键音效与背景音乐：动作卡轻响、推进键确认音、夺冠/升段有琶音；音乐是很轻的氛围垫",
     "右下角新增浮窗：音效、音乐分别开关（记住你的选择），📜 打开本更新日志",
@@ -11196,8 +11201,8 @@ function audioCtx() {
     if (!AC) return null;
     AU.ctx = new AC();
     AU.master = AU.ctx.createGain(); AU.master.gain.value = 1; AU.master.connect(AU.ctx.destination);
-    AU.bgmGain = AU.ctx.createGain(); AU.bgmGain.gain.value = 0.045;   // 背景乐整体就这么轻
-    const lp = AU.ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1600;
+    AU.bgmGain = AU.ctx.createGain(); AU.bgmGain.gain.value = 0.07;    // 有存在感，但仍在人声之下
+    const lp = AU.ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 3400;
     AU.bgmGain.connect(lp); lp.connect(AU.master);
     AU._bgmOut = AU.bgmGain;
     if (AU.bgm) bgmStart();
@@ -11235,41 +11240,99 @@ function sfxPlay(kind) {
   }
 }
 
-/* ---------- 背景音乐：程序生成的氛围垫 ----------
-   D 小调四个和弦轮转，每 8 秒一换，柔起柔收；上面偶尔飘一颗五声音阶的拨弦。
-   没有节拍、没有鼓点——它是训练室深夜的空调声，不是主角。 */
-const BGM_CHORDS = [
-  [146.8, 174.6, 220.0],          // Dm
-  [116.5, 146.8, 174.6],          // Bb
-  [174.6, 220.0, 261.6],          // F
-  [130.8, 164.8, 196.0]           // C
+/* ---------- 背景音乐：每个赛季一首原创主题曲 ----------
+   玩家反馈第一版氛围垫「太沉太静，不像电竞」。真 S 赛主题曲有版权、
+   进不了公开部署，所以照赛事主题曲的路子自己写：鼓点、贝斯线、
+   上行琶音、英雄和弦——S12 到 S16 各一首，调性/速度/动机都不同，
+   赛季一换歌就换；打比赛时（step==="match"）叠一层镲片提强度。
+   全部 WebAudio 逐小节合成，midi 记谱，一个引擎放五首。 */
+const MF = m => 440 * Math.pow(2, (m - 69) / 12);   // midi -> 频率
+/* 每首：bpm / 四小节和弦进行（midi 三和音）/ 主题动机（音+拍长，四小节一次） */
+const BGM_THEMES = [
+  { bpm: 112, name: "S12",                              // A 小调 · 上行的开局之年
+    prog: [[57,60,64],[53,57,60],[48,52,55],[55,59,62]],           // Am F C G
+    hook: [[76,1],[79,1],[81,2],[79,1],[76,1],[72,2]] },
+  { bpm: 120, name: "S13",                              // D 多利亚 · 打野的节奏感
+    prog: [[50,53,57],[48,52,55],[55,59,62],[46,50,53]],           // Dm C G Bb
+    hook: [[74,0.5],[77,0.5],[79,1],[74,0.5],[72,0.5],[74,2]] },
+  { bpm: 100, name: "S14",                              // E 小调 · 沉重的单带
+    prog: [[52,55,59],[48,52,55],[50,54,57],[47,50,54]],           // Em C D Bm
+    hook: [[76,2],[79,2],[78,1],[74,1],[76,4]] },
+  { bpm: 126, name: "S15",                              // 升 F 小调 · 无畏的冲刺
+    prog: [[54,57,61],[50,54,57],[57,61,64],[52,56,59]],           // F#m D A E
+    hook: [[78,0.5],[81,0.5],[85,1],[83,0.5],[81,0.5],[78,1],[81,2]] },
+  { bpm: 116, name: "S16",                              // C 小调 · 最后一年，最重的一首
+    prog: [[48,51,55],[44,48,51],[51,55,58],[46,50,53]],           // Cm Ab Eb Bb
+    hook: [[84,1],[82,1],[79,1],[75,1],[77,1],[79,3]] }
 ];
-const BGM_PLUCK = [293.7, 349.2, 392.0, 440.0, 523.3];   // D 小调五声
-function bgmChord(t0) {
-  const notes = BGM_CHORDS[AU.bgmStep % BGM_CHORDS.length];
-  notes.forEach((f, i) => {
-    const c = AU.ctx, o = c.createOscillator(), g = c.createGain();
-    o.type = i === 0 ? "sine" : "triangle"; o.frequency.value = f;
-    g.gain.setValueAtTime(0.0001, t0);
-    g.gain.linearRampToValueAtTime(0.30 / (i + 1), t0 + 2.5);   // 慢慢浮起来
-    g.gain.linearRampToValueAtTime(0.0001, t0 + 8.4);           // 和下一个和弦交叉
-    o.connect(g); g.connect(AU._bgmOut);
-    o.start(t0); o.stop(t0 + 8.6);
-  });
-  if (Math.random() < 0.6) {      // 偶尔一颗拨弦，位置随机
-    const f = BGM_PLUCK[Math.floor(Math.random() * BGM_PLUCK.length)];
-    tone(f, t0 + 1.5 + Math.random() * 5, 1.6, "triangle", 0.05, AU._bgmOut);
+function bgmTheme() {
+  try { const i = (typeof S !== "undefined" && S && S.si) || 0; return BGM_THEMES[clampI(i, 0, 4)]; }
+  catch (e) { return BGM_THEMES[0]; }
+}
+function clampI(v, a, b) { return Math.max(a, Math.min(b, v | 0)); }
+/* 打击乐：鼓是掉频正弦，镲是高通白噪 */
+function kick(t0, peak) {
+  const c = AU.ctx, o = c.createOscillator(), g = c.createGain();
+  o.type = "sine";
+  o.frequency.setValueAtTime(130, t0);
+  o.frequency.exponentialRampToValueAtTime(44, t0 + 0.12);
+  g.gain.setValueAtTime(peak, t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+  o.connect(g); g.connect(AU._bgmOut); o.start(t0); o.stop(t0 + 0.2);
+}
+function hat(t0, peak) {
+  const c = AU.ctx;
+  if (!AU._noise) {
+    const buf = c.createBuffer(1, c.sampleRate * 0.05, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    AU._noise = buf;
+  }
+  const src = c.createBufferSource(); src.buffer = AU._noise;
+  const hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 6500;
+  const g = c.createGain();
+  g.gain.setValueAtTime(peak, t0);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.04);
+  src.connect(hp); hp.connect(g); g.connect(AU._bgmOut); src.start(t0);
+}
+/* 排一小节（4 拍）：鼓 + 贝斯八分 + 和弦垫 + 琶音；每 4 小节唱一遍动机 */
+function bgmBar(t0) {
+  const th = bgmTheme(), spb = 60 / th.bpm, bar = AU.bgmStep % 4;
+  const tri = th.prog[bar];
+  const inMatch = (typeof S !== "undefined" && S && S.step === "match");
+  // 鼓：1、3 重踩；比赛中 2、4 补镲
+  kick(t0, 0.5); kick(t0 + 2 * spb, 0.42);
+  for (let b = 0; b < 4; b++) {
+    hat(t0 + b * spb + spb / 2, inMatch ? 0.10 : 0.05);
+    if (inMatch) hat(t0 + b * spb, 0.07);
+  }
+  // 贝斯：根音八分，隔一个跳八度，往前走的感觉就是它给的
+  for (let i = 0; i < 8; i++) {
+    const f = MF(tri[0] - 12 + (i % 4 === 2 ? 12 : 0));
+    tone(f, t0 + i * spb / 2, spb * 0.42, "sawtooth", 0.10);
+  }
+  // 和弦垫：整小节铺住
+  tri.forEach((m, i) => tone(MF(m), t0, spb * 4 * 0.98, i ? "triangle" : "sine", 0.05));
+  // 琶音：八分上行循环（三和音+八度），电竞主题曲的闪光层
+  const arp = [tri[0] + 12, tri[1] + 12, tri[2] + 12, tri[0] + 24];
+  for (let i = 0; i < 8; i++)
+    tone(MF(arp[i % 4]), t0 + i * spb / 2, spb * 0.5, "triangle", 0.045);
+  // 动机：每四小节的第一小节唱一遍——每个赛季只属于它自己的那句
+  if (bar === 0) {
+    let tt = t0;
+    th.hook.forEach(([m, beats]) => { tone(MF(m), tt, beats * spb * 0.92, "square", 0.035); tt += beats * spb; });
   }
   AU.bgmStep++;
+  return spb * 4;
 }
 function bgmStart() {
   if (AU.bgmTimer || !AU.ctx) return;
   let next = AU.ctx.currentTime + 0.1;
-  bgmChord(next); next += 8;
+  next += bgmBar(next);
   AU.bgmTimer = setInterval(() => {
     if (!AU.ctx || !AU.bgm) return;
-    if (AU.ctx.currentTime > next - 1.5) { bgmChord(next); next += 8; }
-  }, 500);
+    if (AU.ctx.currentTime > next - 0.8) next += bgmBar(next);
+  }, 200);
 }
 function bgmStop() {
   if (AU.bgmTimer) { clearInterval(AU.bgmTimer); AU.bgmTimer = null; }
