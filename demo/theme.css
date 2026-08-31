@@ -770,6 +770,23 @@ ul.dealfx li::marker{color:var(--ink-3)}
   background:rgba(201,169,97,.09)}
 .rt-resume .rt-txt{color:var(--ink)}
 
+/* ---- 右下角浮窗（声音开关 + 更新日志）与作者栏 ---- */
+.audiofab{position:fixed;right:14px;bottom:14px;z-index:60;display:flex;flex-direction:column;gap:8px}
+.audiofab button{
+  width:38px;height:38px;border-radius:50%;font-size:16px;line-height:1;
+  background:rgba(14,42,62,.92);border:1px solid var(--line-hot);color:var(--gold-hi);
+  box-shadow:0 2px 10px rgba(0,0,0,.45);
+}
+.audiofab button:hover{border-color:var(--gold)}
+.audiofab button.off{opacity:.45;border-color:var(--line)}
+.credits{
+  text-align:center;color:var(--ink-3);font-size:12px;letter-spacing:.05em;
+  padding:26px 0 18px;border-top:1px solid var(--line);margin-top:34px;
+}
+.credits b{color:var(--gold);letter-spacing:.12em}
+.credits .pig{color:var(--gold-hi);font-weight:650}
+.credits em{font-style:normal;display:block;margin-top:4px;opacity:.65;font-family:ui-monospace,Consolas,monospace}
+
 /* ---- 存档 ---- */
 .savebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
   margin:18px 0 4px;padding:9px 12px;border:1px solid var(--line);

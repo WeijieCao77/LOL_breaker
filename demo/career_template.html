@@ -199,6 +199,11 @@ input[type=text]{background:var(--surface-2);border:1px solid var(--line);border
   <div id="hud" class="hud hide"></div>
   <div id="pin" class="pinbar hide"></div>
   <div id="stage"></div>
+  <!-- 作者栏：常驻页面最底部，和游戏内容分开（stage 每次重画，它不动） -->
+  <footer class="credits">
+    <b>破局者</b> · LOL 电竞生涯模拟　——　<span class="pig">猪之家</span> 出品
+    <em id="credit-ver"></em>
+  </footer>
 </div>
 
 <script>
@@ -267,9 +272,20 @@ const SPREAD=13.5;   // 赛程加长后，单场的确定性要再降一点，�
    不是成长速度——签约后的训练收益同步乘 0.8（见 gain），
    每周训练总量 4×0.8=3.2 对 3×1.0=3.0，只多 7%。
    改完照例跑 120 局对比冠军率，通胀就回调。 */
-/* 版本戳：印在存档栏右下角。玩家对不上这个号，就是开了旧页面——
-   「改了但看不到」的一半原因是没有任何地方能验证版本。 */
-const GAME_VER="v20260901 · 回声";
+/* ---------- 更新日志 ----------
+   每次上线在数组头部加一条：改了什么、什么时候上的。
+   三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
+   存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
+const CHANGELOG=[
+  {v:"v20260901b", at:"2026-09-01 下午", items:[
+    "新增按键音效与背景音乐：动作卡轻响、推进键确认音、夺冠/升段有琶音；音乐是很轻的氛围垫",
+    "右下角新增浮窗：音效、音乐分别开关（记住你的选择），📜 打开本更新日志",
+    "页面底部加入作者栏：猪之家出品",
+    "修复：青训合同不再显示「核心首发」；「远走他乡」不再把 LDL 当外赛区（老档自动更正）"
+  ]}
+];
+/* 版本戳：印在存档栏和作者栏。玩家对不上这个号，就是开了旧页面。 */
+const GAME_VER=CHANGELOG[0].v+" · 回声";
 const AP_SEASON=4, AP_PRE=6, AP_OFF=4, AP_HURT=2;
 function apFor(phase){
   const v=S&&S.injury?AP_HURT:phase==="pre"?AP_PRE:phase==="off"?AP_OFF:AP_SEASON;
@@ -3424,6 +3440,8 @@ function viewOffer(){
 
 /* __PRESS_MODULE__ */
 
+/* __AUDIO_MODULE__ */
+
 /* ================= 侧栏 ================= */
 function formBar(team){
   const f=S.teamForm[team]||[];
@@ -3872,4 +3890,5 @@ function bind(){
 
 let S=null;
 screenCreate();
+if(typeof audioInit==="function") audioInit();   // 声音、作者栏版本号、更新日志浮窗
 </script>

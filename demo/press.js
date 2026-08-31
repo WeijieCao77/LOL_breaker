@@ -304,25 +304,17 @@ function pressCard(){
 /* ---------- 更新说明卡 ----------
    老存档第一次进新版本时弹一次，把新功能和入口指清楚。
    新开局不弹（东西本来就在眼前）。 */
+/* 老档读档时弹最新一条更新（内容来自模板里的 CHANGELOG，只维护一处）。
+   完整历史在右下角 📜 浮窗。 */
 function patchNoteCard(){
   if(!S.patchNote) return "";
-  const rows=[
-    ["电竞周报","「世界」页——每 3 周出刊，头条全是你真实打出来的事"],
-    ["悬而未决","「世界」页——选择留下的尾巴带倒计时，到期兑现"],
-    ["比赛档案","「我的」页——每个系列赛的 KDA/评分，球探看的就是它"],
-    ["球探观察","「转会」页——谁在看你、样本多少、多确信"],
-    ["做内容","「本周」行动——教学/高光/复盘/整活四个方向"],
-    ["资产","「经济」页——公寓/康复室/保姆车/工作站，钱的去处"],
-    ["天梯撞车","打排位随机触发——撞到 Faker 们的路人局"],
-    ["宿敌成就","「成就」页新增——三胜 Faker 队＝破神者"],
-    ["心态气压","连败时「本周」页出红条，休息/心理课/赢球泄压"],
-    ["升队谈薪","二队上调不再无声涨薪——调令来了要重签合同"]
-  ];
+  const cur=(typeof CHANGELOG!=="undefined"&&CHANGELOG[0])?CHANGELOG[0]:null;
+  if(!cur) return "";
   return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">
-    <div class="ru-eyebrow" style="text-align:center">本次更新 · ${typeof GAME_VER!=="undefined"?GAME_VER:""}</div>
-    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:10px">世界开始回应你了</div>
-    ${rows.map(x=>`<p style="margin:6px 0"><b style="color:var(--gold-hi)">${x[0]}</b>
-      <span class="note">${x[1]}</span></p>`).join("")}
+    <div class="ru-eyebrow" style="text-align:center">本次更新 · ${cur.v}</div>
+    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:10px">上线：${cur.at}</div>
+    ${cur.items.map(x=>`<p class="note" style="margin:6px 0">· ${x}</p>`).join("")}
+    <p class="note" style="color:var(--ink-3);margin-top:10px">往期更新在右下角 📜 里，随时能翻。</p>
     <div class="row" style="justify-content:center;margin-top:12px">
       <button class="btn" id="patchok">知道了，开打 →</button></div>
   </div></div>`;

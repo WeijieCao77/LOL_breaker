@@ -782,6 +782,23 @@ ul.dealfx li::marker{color:var(--ink-3)}
   background:rgba(201,169,97,.09)}
 .rt-resume .rt-txt{color:var(--ink)}
 
+/* ---- 右下角浮窗（声音开关 + 更新日志）与作者栏 ---- */
+.audiofab{position:fixed;right:14px;bottom:14px;z-index:60;display:flex;flex-direction:column;gap:8px}
+.audiofab button{
+  width:38px;height:38px;border-radius:50%;font-size:16px;line-height:1;
+  background:rgba(14,42,62,.92);border:1px solid var(--line-hot);color:var(--gold-hi);
+  box-shadow:0 2px 10px rgba(0,0,0,.45);
+}
+.audiofab button:hover{border-color:var(--gold)}
+.audiofab button.off{opacity:.45;border-color:var(--line)}
+.credits{
+  text-align:center;color:var(--ink-3);font-size:12px;letter-spacing:.05em;
+  padding:26px 0 18px;border-top:1px solid var(--line);margin-top:34px;
+}
+.credits b{color:var(--gold);letter-spacing:.12em}
+.credits .pig{color:var(--gold-hi);font-weight:650}
+.credits em{font-style:normal;display:block;margin-top:4px;opacity:.65;font-family:ui-monospace,Consolas,monospace}
+
 /* ---- 存档 ---- */
 .savebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
   margin:18px 0 4px;padding:9px 12px;border:1px solid var(--line);
@@ -861,6 +878,11 @@ ul.dealfx li::marker{color:var(--ink-3)}
   <div id="hud" class="hud hide"></div>
   <div id="pin" class="pinbar hide"></div>
   <div id="stage"></div>
+  <!-- 作者栏：常驻页面最底部，和游戏内容分开（stage 每次重画，它不动） -->
+  <footer class="credits">
+    <b>破局者</b> · LOL 电竞生涯模拟　——　<span class="pig">猪之家</span> 出品
+    <em id="credit-ver"></em>
+  </footer>
 </div>
 
 <script>
@@ -929,9 +951,20 @@ const SPREAD=13.5;   // 赛程加长后，单场的确定性要再降一点，�
    不是成长速度——签约后的训练收益同步乘 0.8（见 gain），
    每周训练总量 4×0.8=3.2 对 3×1.0=3.0，只多 7%。
    改完照例跑 120 局对比冠军率，通胀就回调。 */
-/* 版本戳：印在存档栏右下角。玩家对不上这个号，就是开了旧页面——
-   「改了但看不到」的一半原因是没有任何地方能验证版本。 */
-const GAME_VER="v20260901 · 回声";
+/* ---------- 更新日志 ----------
+   每次上线在数组头部加一条：改了什么、什么时候上的。
+   三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
+   存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
+const CHANGELOG=[
+  {v:"v20260901b", at:"2026-09-01 下午", items:[
+    "新增按键音效与背景音乐：动作卡轻响、推进键确认音、夺冠/升段有琶音；音乐是很轻的氛围垫",
+    "右下角新增浮窗：音效、音乐分别开关（记住你的选择），📜 打开本更新日志",
+    "页面底部加入作者栏：猪之家出品",
+    "修复：青训合同不再显示「核心首发」；「远走他乡」不再把 LDL 当外赛区（老档自动更正）"
+  ]}
+];
+/* 版本戳：印在存档栏和作者栏。玩家对不上这个号，就是开了旧页面。 */
+const GAME_VER=CHANGELOG[0].v+" · 回声";
 const AP_SEASON=4, AP_PRE=6, AP_OFF=4, AP_HURT=2;
 function apFor(phase){
   const v=S&&S.injury?AP_HURT:phase==="pre"?AP_PRE:phase==="off"?AP_OFF:AP_SEASON;
@@ -11082,25 +11115,17 @@ function pressCard(){
 /* ---------- 更新说明卡 ----------
    老存档第一次进新版本时弹一次，把新功能和入口指清楚。
    新开局不弹（东西本来就在眼前）。 */
+/* 老档读档时弹最新一条更新（内容来自模板里的 CHANGELOG，只维护一处）。
+   完整历史在右下角 📜 浮窗。 */
 function patchNoteCard(){
   if(!S.patchNote) return "";
-  const rows=[
-    ["电竞周报","「世界」页——每 3 周出刊，头条全是你真实打出来的事"],
-    ["悬而未决","「世界」页——选择留下的尾巴带倒计时，到期兑现"],
-    ["比赛档案","「我的」页——每个系列赛的 KDA/评分，球探看的就是它"],
-    ["球探观察","「转会」页——谁在看你、样本多少、多确信"],
-    ["做内容","「本周」行动——教学/高光/复盘/整活四个方向"],
-    ["资产","「经济」页——公寓/康复室/保姆车/工作站，钱的去处"],
-    ["天梯撞车","打排位随机触发——撞到 Faker 们的路人局"],
-    ["宿敌成就","「成就」页新增——三胜 Faker 队＝破神者"],
-    ["心态气压","连败时「本周」页出红条，休息/心理课/赢球泄压"],
-    ["升队谈薪","二队上调不再无声涨薪——调令来了要重签合同"]
-  ];
+  const cur=(typeof CHANGELOG!=="undefined"&&CHANGELOG[0])?CHANGELOG[0]:null;
+  if(!cur) return "";
   return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">
-    <div class="ru-eyebrow" style="text-align:center">本次更新 · ${typeof GAME_VER!=="undefined"?GAME_VER:""}</div>
-    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:10px">世界开始回应你了</div>
-    ${rows.map(x=>`<p style="margin:6px 0"><b style="color:var(--gold-hi)">${x[0]}</b>
-      <span class="note">${x[1]}</span></p>`).join("")}
+    <div class="ru-eyebrow" style="text-align:center">本次更新 · ${cur.v}</div>
+    <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:10px">上线：${cur.at}</div>
+    ${cur.items.map(x=>`<p class="note" style="margin:6px 0">· ${x}</p>`).join("")}
+    <p class="note" style="color:var(--ink-3);margin-top:10px">往期更新在右下角 📜 里，随时能翻。</p>
     <div class="row" style="justify-content:center;margin-top:12px">
       <button class="btn" id="patchok">知道了，开打 →</button></div>
   </div></div>`;
@@ -11131,6 +11156,217 @@ function scoutCard(){
     <p class="note">本赛季正赛样本 <b>${n}</b> 个系列赛${n?`，场均评分 <b>${avgR.toFixed(2)}</b>（置信度 ${conf}%）`:"——还没有能拿去谈的数据"}。<br>
       <span style="color:var(--ink-3)">球探看的是样本：打得少，评分再高也只是「有潜力」；样本够了，数字才变成筹码。
       看台上被记下的关注会在注册窗兑现成问询。</span></p></div>`;
+}
+
+
+/* ================= 声音 =================
+   2026-09-01 玩家要的：按键反馈音 + 很轻的背景音乐 + 右下角开关浮窗。
+
+   约束与取舍：
+   · 发行物是单文件，塞 MP3 体积直接翻倍——全部用 WebAudio 现场合成，
+     零资产、零请求，Hextech 的「叮」本来就该是合成器味。
+   · 音效不是每个按钮都响：只挂三类——花行动点的动作卡（轻嗒）、
+     推进周期的主按钮（双音确认）、庆祝弹窗出现的瞬间（三音琶音）。
+     标签栏、小工具按钮一概不响，响多了就是噪音。
+   · 浏览器要求用户先有手势才准出声：AudioContext 在第一次点击时才建。
+   · 开关存 localStorage（不进存档）——音量偏好是设备的事，不是生涯的事。 */
+
+const AUDIO_KEY = "pjz_audio";
+const AU = {
+  ctx: null, master: null, bgmGain: null,
+  sfx: true, bgm: true,           // 默认都开；音乐本来就压得很轻
+  bgmTimer: null, bgmStep: 0
+};
+
+function audioPrefs() {
+  try {
+    const raw = localStorage.getItem(AUDIO_KEY);
+    if (raw) { const p = JSON.parse(raw); AU.sfx = p.sfx !== false; AU.bgm = p.bgm !== false; }
+  } catch (e) {}
+}
+function audioSave() {
+  try { localStorage.setItem(AUDIO_KEY, JSON.stringify({ sfx: AU.sfx, bgm: AU.bgm })); } catch (e) {}
+}
+
+/* 上下文只建一次，且必须在用户手势里建（自动播放策略） */
+function audioCtx() {
+  if (AU.ctx) { if (AU.ctx.state === "suspended") { try { AU.ctx.resume(); } catch (e) {} } return AU.ctx; }
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    AU.ctx = new AC();
+    AU.master = AU.ctx.createGain(); AU.master.gain.value = 1; AU.master.connect(AU.ctx.destination);
+    AU.bgmGain = AU.ctx.createGain(); AU.bgmGain.gain.value = 0.045;   // 背景乐整体就这么轻
+    const lp = AU.ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1600;
+    AU.bgmGain.connect(lp); lp.connect(AU.master);
+    AU._bgmOut = AU.bgmGain;
+    if (AU.bgm) bgmStart();
+  } catch (e) { AU.ctx = null; }
+  return AU.ctx;
+}
+
+/* 一个音：freq，起止时刻，波形，峰值。全部指数衰减，不留尾巴 */
+function tone(freq, t0, dur, type, peak, dest) {
+  const c = AU.ctx; if (!c) return;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = type || "sine"; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(peak, t0 + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(dest || AU.master);
+  o.start(t0); o.stop(t0 + dur + 0.05);
+}
+
+/* 三种音效：tick 轻嗒 / confirm 双音确认 / chime 庆祝琶音 */
+function sfxPlay(kind) {
+  if (!AU.sfx) return;
+  const c = audioCtx(); if (!c) return;
+  const t = c.currentTime;
+  if (kind === "tick") {
+    tone(720, t, 0.06, "triangle", 0.05);
+  } else if (kind === "confirm") {
+    tone(523, t, 0.09, "sine", 0.07);
+    tone(784, t + 0.07, 0.12, "sine", 0.06);
+  } else if (kind === "chime") {
+    tone(523, t, 0.5, "sine", 0.07);
+    tone(659, t + 0.09, 0.5, "sine", 0.06);
+    tone(988, t + 0.18, 0.7, "sine", 0.05);
+    tone(1976, t + 0.18, 0.35, "sine", 0.02);   // 一点泛音，才有「叮」的金属感
+  }
+}
+
+/* ---------- 背景音乐：程序生成的氛围垫 ----------
+   D 小调四个和弦轮转，每 8 秒一换，柔起柔收；上面偶尔飘一颗五声音阶的拨弦。
+   没有节拍、没有鼓点——它是训练室深夜的空调声，不是主角。 */
+const BGM_CHORDS = [
+  [146.8, 174.6, 220.0],          // Dm
+  [116.5, 146.8, 174.6],          // Bb
+  [174.6, 220.0, 261.6],          // F
+  [130.8, 164.8, 196.0]           // C
+];
+const BGM_PLUCK = [293.7, 349.2, 392.0, 440.0, 523.3];   // D 小调五声
+function bgmChord(t0) {
+  const notes = BGM_CHORDS[AU.bgmStep % BGM_CHORDS.length];
+  notes.forEach((f, i) => {
+    const c = AU.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = i === 0 ? "sine" : "triangle"; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(0.30 / (i + 1), t0 + 2.5);   // 慢慢浮起来
+    g.gain.linearRampToValueAtTime(0.0001, t0 + 8.4);           // 和下一个和弦交叉
+    o.connect(g); g.connect(AU._bgmOut);
+    o.start(t0); o.stop(t0 + 8.6);
+  });
+  if (Math.random() < 0.6) {      // 偶尔一颗拨弦，位置随机
+    const f = BGM_PLUCK[Math.floor(Math.random() * BGM_PLUCK.length)];
+    tone(f, t0 + 1.5 + Math.random() * 5, 1.6, "triangle", 0.05, AU._bgmOut);
+  }
+  AU.bgmStep++;
+}
+function bgmStart() {
+  if (AU.bgmTimer || !AU.ctx) return;
+  let next = AU.ctx.currentTime + 0.1;
+  bgmChord(next); next += 8;
+  AU.bgmTimer = setInterval(() => {
+    if (!AU.ctx || !AU.bgm) return;
+    if (AU.ctx.currentTime > next - 1.5) { bgmChord(next); next += 8; }
+  }, 500);
+}
+function bgmStop() {
+  if (AU.bgmTimer) { clearInterval(AU.bgmTimer); AU.bgmTimer = null; }
+}
+
+/* ---------- 挂钩 ----------
+   事件委托一只耳朵听全场：按「按钮长什么样」决定响不响——
+   .act/.opt 是花点数和做选择（嗒），.btn 是推进和签字（确认）。
+   .tab/.rt-x 这类小件不配拥有声音。 */
+function audioClickHandler(ev) {
+  try {
+    const b = ev.target && ev.target.closest ? ev.target.closest("button") : null;
+    audioCtx();                                    // 第一次手势顺便把上下文建了
+    if (!b || b.disabled) return;
+    const cl = b.classList;
+    if (!cl) return;
+    if (cl.contains("act") || cl.contains("opt")) sfxPlay("tick");
+    else if (cl.contains("btn") && !cl.contains("ghost")) sfxPlay("confirm");
+  } catch (e) {}
+}
+/* 庆祝时刻：render 的阻塞签名里第一次出现这些键，就叮一声。
+   （升段 ru / 国际赛夺冠 ic / 成就 ap / 升队调令 pd） */
+function audioMoment(sig, last) {
+  try {
+    if (!AU.sfx || !AU.ctx) return;
+    ["ru", "ic", "ap", "pd"].forEach(k => {
+      if (sig.indexOf(k) >= 0 && (last || "").indexOf(k) < 0) sfxPlay("chime");
+    });
+  } catch (e) {}
+}
+
+/* ---------- 更新日志浮窗 ----------
+   点 📜 弹全部历史（CHANGELOG 在模板里维护，每次上线加一条）。
+   遮罩直接挂 body，不走 render——创建页也能看。 */
+function showChangelog() {
+  try {
+    if (document.getElementById("chlog")) return;
+    const log = (typeof CHANGELOG !== "undefined") ? CHANGELOG : [];
+    const wrap = document.createElement("div");
+    wrap.id = "chlog"; wrap.className = "rankup";
+    wrap.innerHTML = `<div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">
+      <div class="ru-eyebrow" style="text-align:center">更新日志</div>
+      ${log.map(e => `<h3 style="margin:14px 0 4px">${e.v}<span class="note" style="font-weight:400">　上线：${e.at}</span></h3>
+        ${e.items.map(x => `<p class="note" style="margin:4px 0">· ${x}</p>`).join("")}`).join("")}
+      <p class="note" style="color:var(--ink-3);margin-top:12px">从 v20260901b 起记录，此前的更新不补。</p>
+      <div class="row" style="justify-content:center;margin-top:10px">
+        <button class="btn" id="chlogok">关闭</button></div></div>`;
+    document.body.appendChild(wrap);
+    wrap.querySelector("#chlogok").onclick = () => wrap.remove();
+    wrap.onclick = (e) => { if (e.target === wrap) wrap.remove(); };
+  } catch (e) {}
+}
+
+/* ---------- 右下角浮窗 ----------
+   挂在 #stage 外面：render() 每次重写 stage，浮窗不能跟着死。
+   📜 更新日志永远在；两个声音钮只在浏览器支持 WebAudio 时出现。 */
+function audioFab(hasAudio) {
+  const fab = document.createElement("div");
+  fab.className = "audiofab";
+  fab.innerHTML = (hasAudio ? `
+    <button id="aud-sfx" aria-label="音效开关" title="按键音效"></button>
+    <button id="aud-bgm" aria-label="音乐开关" title="背景音乐"></button>` : "") + `
+    <button id="aud-log" aria-label="更新日志" title="更新日志">📜</button>`;
+  document.body.appendChild(fab);
+  fab.querySelector("#aud-log").onclick = (e) => { e.stopPropagation(); showChangelog(); };
+  if (!hasAudio) return;
+  const paint = () => {
+    const s = fab.querySelector("#aud-sfx"), m = fab.querySelector("#aud-bgm");
+    s.textContent = AU.sfx ? "🔊" : "🔇";
+    m.textContent = AU.bgm ? "♫" : "♪";
+    s.classList.toggle("off", !AU.sfx);
+    m.classList.toggle("off", !AU.bgm);
+  };
+  fab.querySelector("#aud-sfx").onclick = (e) => {
+    e.stopPropagation();
+    AU.sfx = !AU.sfx; audioSave(); paint();
+    if (AU.sfx) sfxPlay("confirm");               // 开的瞬间给一声，立刻知道开了
+  };
+  fab.querySelector("#aud-bgm").onclick = (e) => {
+    e.stopPropagation();
+    AU.bgm = !AU.bgm; audioSave(); paint();
+    if (AU.bgm) { audioCtx(); bgmStart(); } else bgmStop();
+  };
+  paint();
+}
+
+function audioInit() {
+  try {
+    if (typeof window === "undefined" || !document.body || !document.body.appendChild) return;
+    // 作者栏版本号
+    const cv = document.getElementById("credit-ver");
+    if (cv && typeof GAME_VER !== "undefined") cv.textContent = GAME_VER;
+    const hasAudio = !!(window.AudioContext || window.webkitAudioContext);
+    audioPrefs();
+    audioFab(hasAudio);
+    if (hasAudio) document.addEventListener("click", audioClickHandler, true);
+  } catch (e) {}
 }
 
 
@@ -11582,6 +11818,7 @@ function bind(){
 
 let S=null;
 screenCreate();
+if(typeof audioInit==="function") audioInit();   // 声音、作者栏版本号、更新日志浮窗
 </script>
 
 </body>
