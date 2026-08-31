@@ -245,8 +245,12 @@ function pickClub(tier, league){
     const lg = (S.world && S.world[key]) ? S.world[key] : null;
     if(!lg || !lg.length) return null;
     const rk = lg.map(t=>({n:t.name, p:power(t)})).sort((a,b)=>b.p-a.p);
-    const seg = { top:[0,3], mid:[4,10], low:[11,rk.length-1], acad:[11,rk.length-1] }[tier];
-    const lo = Math.min(seg[0], rk.length-1), hi = Math.min(seg[1], rk.length-1);
+    // 分段按联赛规模缩放。原来是写死的 [0,3]/[4,10]/[11,n-1]，那是照 LPL 的 17 队画的；
+    // 放到只有 4 队的小赛区上，三个档位会全部塌到最后一名那支队。
+    const n = rk.length;
+    const fr = { top:[0,0.25], mid:[0.25,0.65], low:[0.65,1], acad:[0.65,1] }[tier] || [0.25,0.65];
+    const lo = clamp(Math.floor(fr[0]*n), 0, n-1);
+    const hi = clamp(Math.ceil(fr[1]*n)-1, lo, n-1);
     const pick = rk[lo + Math.floor(rnd()*(hi-lo+1))];
     return tier === "acad" ? pick.n + " 青训队" : pick.n;
   }catch(e){ return null; }
@@ -663,12 +667,36 @@ function rollProOffers(){
    原来 langBonus() 只在「已经身处 LCK」时给 +2.6，
    而去外赛区的唯一入口是年末报价里 score>=92 那条——
    于是韩语课基本是买不回本的。 */
+/* 小赛区不是背景板，是低谷时的退路。
+   现实里打不上 LPL 首发的选手大量流向 PCS / VCS / LJL —— 那边给的是首发位。
+   原来外赛区只有「往上」一条路（打得好 → LCK/LEC/LCS），
+   于是七个小赛区在整局里从不与玩家发生任何关系。现在有两个方向：
+     往上：已经证明过自己的人，豪门赛区来追
+     往外：在国内坐板凳、或者一直卡在二队的人，小赛区愿意给首发
+   代价写在别处：外赛区的粉丝天花板打八折（国内热度接不住），
+   语言不通会影响默契。 */
+const MINOR_LEAGUES=["PCS","VCS","LJL","LLA","CBLOL","LCO","TCL"];
+/* 是不是真的卡住了——这是「退路」该不该出现的判据 */
+function inRut(perf){
+  return (S.benchedSplits||0)>=1 || (S.homeLeague||"LPL")==="LDL" || perf<3;
+}
 function pickForeign(perf){
-  if((S.homeLeague||"LPL")!=="LPL") return null;      // 已经在外面了
-  if(perf < 12) return null;                          // 没证明过自己，人家不会跨国来找
+  const here=S.homeLeague||"LPL";
+  if(here!=="LPL"&&here!=="LDL") return null;          // 已经在外面了
   const opts=[];
   const kr = (typeof hasCourse==="function") && hasCourse("kr");
   const en = (typeof hasCourse==="function") && hasCourse("en");
+  if(perf < 12){
+    // 往外：没证明过自己，豪门赛区不会来；但卡住了的话，小赛区会
+    if(!inRut(perf)) return null;
+    MINOR_LEAGUES.forEach(lg=>{ if(S.world[lg]&&S.world[lg].length) opts.push({lg,w:1}); });
+    if(!opts.length) return null;
+    if(rnd() >= 0.26) return null;
+    const tot0=opts.reduce((a,o)=>a+o.w,0);
+    let r0=rnd()*tot0;
+    for(const o of opts){ if((r0-=o.w)<=0) return o.lg; }
+    return null;
+  }
   if(S.world.LCK) opts.push({lg:"LCK", w: kr ? 1.8 : 1.0});
   if(S.world.LEC) opts.push({lg:"LEC", w: en ? 1.5 : 0.9});
   if(S.world.LCS) opts.push({lg:"LCS", w: en ? 1.3 : 0.8});

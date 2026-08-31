@@ -123,7 +123,11 @@ const SPEND=[
    合同里那个数字必须真的算数，否则谈判就是假的。 */
 function salaryOf(){
   const c=S.contract||{};
-  const bonus=Math.round(S.fans*0.20)+(S.career.leagueTitles||0)*14
+  // 粉丝的尺度在「名气拆成粉丝＋热度」之后变了：同一个测试口径下
+  // 老的名气中位 1092、新的粉丝中位 4871，系数不跟着调就等于每赛段白发几百万。
+  // 0.045 是标定出来的——让薪资浮动的中位贡献仍然是 ~218 万，和改之前一致。
+  // 封顶也补上：粉丝没有上界，薪资浮动不能跟着没有上界。
+  const bonus=Math.round(Math.min(S.fans,6000)*0.045)+(S.career.leagueTitles||0)*14
     +((S.career.msi||0)+(S.career.worlds||0))*36;
   if(c.salary!==undefined) return Math.round(c.salary+bonus);
   // 老存档或没走谈判流程的情况，退回旧算法

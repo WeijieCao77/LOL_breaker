@@ -198,11 +198,38 @@ const STREAM_DEALS=[
   {lvl:1, at:95,  sign:100, base:26, n:"平台独家（B 级）"},
   {lvl:2, at:260, sign:350, base:62, n:"平台独家（S 级）"}
 ];
+/* ---------- 平台归属：个人签约与俱乐部签约互相影响 ----------
+
+   原来这里是「你 vs 平台」的二选一，俱乐部完全不参与——把三方博弈做成了两方。
+   现实里恰好相反：LPL 俱乐部普遍与某个平台有整体合作，选手的直播权归属
+   是写进选手合同的；个人要签平台通常得俱乐部点头，俱乐部还要抽成。
+   顶级选手的个人直播合同金额甚至能超过战队年薪，所以这件事值得做成一个选择。
+
+   于是独家谈判变成三选一：
+     · 签俱乐部的合作平台 —— 签字费打折、抽成低，经理承你的情
+     · 签别家平台         —— 平台抢人所以出价高，但抽成高、经理不高兴
+     · 不签               —— 收入随粉丝×热度浮动，上限最高、下限也最低      */
+const PLATFORMS=["虎牙","斗鱼","B 站","快手"];
+/* 一家俱乐部跟哪个平台合作。按队名定死——同一局里不会变，换队才会变。 */
+function clubPlatform(name){
+  const n=String(name===undefined?(S.team||""):name);
+  if(!n) return null;
+  let h=0; for(let i=0;i<n.length;i++) h=(h*31+n.charCodeAt(i))|0;
+  return PLATFORMS[Math.abs(h)%PLATFORMS.length];
+}
+/* 来抢人的那家（一定不是俱乐部合作的那家） */
+function rivalPlatform(club){
+  const others=PLATFORMS.filter(x=>x!==club);
+  return others[Math.floor(rnd()*others.length)]||PLATFORMS[0];
+}
+/* 俱乐部从你的直播收入里抽走多少 */
+function streamClubCut(){ return (S.streamDeal&&S.streamDeal.cut)||0; }
 function streamCut(){ return STREAM_CUTS[S.streamCutIdx||0].cut; }
 /* 直播打赏：名气越高，礼物越多 —— 这是主播出身的主要变现路径 */
 function streamIncome(){
   const originMul=S.origin==="streamer"?1.7:1.0;
-  if(S.streamDeal) return S.streamDeal.base*originMul;   // 独家：合同价，旱涝保收
+  // 独家：合同价，旱涝保收——但俱乐部那一刀先扣掉
+  if(S.streamDeal) return S.streamDeal.base*originMul*(1-streamClubCut());
   // 名气进礼物公式要封顶：pow(f/40,1.22) 无上界，生涯后期名气过千时
   // 一次直播能到两百多万，比世界赛夺冠还值钱——实测有整局挣到五亿的。
   // 封在 600（「顶流」之上），不签独家的上限 ~135/次，
@@ -211,7 +238,9 @@ function streamIncome(){
   // 这就是「礼物 = f(粉丝基数) × g(当下热度)」——赢球那几周直播特别值钱，
   // 冷下来之后同样的粉丝掉一半收入，直播因此有了「趁热打铁」这个决策。
   const f=Math.min(Math.max(S.fans||0,0),600);
-  const heatMul=clamp(0.55+(S.heat||0)/260,0.55,1.9);
+  // 以常态热度（实测中位约 400）为 1.0 上下浮动。原来 /260 让中位就顶到
+  // 上限 1.9，等于给直播收入整体加了 90%，那不是「趁热打铁」，是通胀。
+  const heatMul=clamp(0.45+(S.heat||0)/730,0.45,1.7);
   const gift=Math.pow(f/40,1.22)*4.4*streamCut()*heatMul;
   const base=4+f*0.05;
   return (base+gift)*originMul;
@@ -243,51 +272,105 @@ function checkStreamBiz(){
     if(S.streamOfferSeen[d.lvl]) continue;
     if(S.streamDeal&&S.streamDeal.lvl>=d.lvl) continue;
     S.streamOfferSeen[d.lvl]=1;
-    S.streamOffer={lvl:d.lvl,sign:d.sign,base:d.base,n:d.n};
+    const club=clubPlatform();
+    S.streamOffer={lvl:d.lvl,sign:d.sign,base:d.base,n:d.n,
+                   club, rival:rivalPlatform(club)};
     break;
   }
 }
-function signStreamDeal(){
+/* kind: "club" = 签俱乐部的合作平台，"rival" = 签来抢人的那家，
+   不传 = 老的两选一路径（职业前没有俱乐部时就是这条）。 */
+function signStreamDeal(kind){
   const o=S.streamOffer; if(!o) return;
   S.streamOffer=null;
-  S.streamDeal={lvl:o.lvl,base:o.base,n:o.n};
-  addMoney("sign",o.sign);
-  pushEvent(`和平台签下<b>${o.n}</b>：签字费 <b>${o.sign} 万</b>到账，此后每次直播保底 <b>${o.base} 万</b>。<br>
-    <span style="color:var(--ink-3)">代价写在合同里：收入锁死在保底，人气再涨也不加钱；平台控流量，直播涨名气也会变慢。</span>`,"big","直播");
+  const hasClub=!!(o.club&&S.team);
+  if(!hasClub) kind=null;
+  const plat = kind==="club" ? o.club : kind==="rival" ? o.rival : (o.club||"平台");
+  const sign = Math.round(o.sign*(kind==="club"?0.8:kind==="rival"?1.4:1));
+  const base = Math.round(o.base*(kind==="rival"?1.15:1));
+  const cut  = kind==="club"?0.20:kind==="rival"?0.40:0;
+  S.streamDeal={lvl:o.lvl,base,n:o.n,plat,cut,kind:kind||"solo",
+                need:o.lvl>=2?3:2, done:0};
+  addMoney("sign",sign);
+  const originMul=S.origin==="streamer"?1.7:1.0;
+  const net=Math.round(base*originMul*(1-cut));
+  let extra="";
+  if(kind==="club"){
+    if(typeof addStaff==="function") addStaff("mgr",6);
+    extra=`俱乐部乐见其成——你签的正是 <b>${S.team}</b> 的合作平台，
+      经理那边记你一笔。平台方按约定抽走 <b>20%</b> 给俱乐部。`;
+  } else if(kind==="rival"){
+    if(typeof addStaff==="function") addStaff("mgr",-12);
+    extra=`<b>${o.rival}</b> 是来抢人的，所以价开得高。但你的直播权写在队里的合同上——
+      俱乐部照样抽 <b>40%</b>，而且<b>经理很不高兴</b>。`;
+  }
+  pushEvent(`和 <b>${plat}</b> 签下<b>${o.n}</b>：签字费 <b>${sign} 万</b>到账，
+    此后每次直播保底 <b>${net} 万</b>（已扣俱乐部分成）。${extra?"<br>"+extra:""}<br>
+    <span style="color:var(--ink-3)">代价写在合同里：收入锁死在保底，粉丝再涨也不加钱；
+    平台控流量，直播涨热度也会变慢。另外合同有开播条款——每赛段至少播
+    <b>${S.streamDeal.need}</b> 次，做不到要赔钱。</span>`,"big","直播");
   render();
 }
 function declineStreamDeal(){
   const o=S.streamOffer; if(!o) return;
   S.streamOffer=null;
-  pushEvent(`拒绝了平台的<b>${o.n}</b>。收入继续跟着人气浮动——上限是你自己挣的，下限也是。`,"info","直播");
+  pushEvent(`拒绝了<b>${o.n}</b>。收入继续跟着粉丝和热度浮动——上限是你自己挣的，下限也是。`,"info","直播");
   render();
 }
-/* 独家签约弹窗：两条路各有各的道理，摆开了让玩家选 */
+/* 开播条款：每赛段结算时查一次。做不到就按合同赔钱。
+   这条是为了让「直播」不再是一个纯收益按钮——签了独家就欠了工时。 */
+function streamClauseCheck(){
+  const d=S.streamDeal; if(!d||!d.need) return;
+  const done=d.done||0;
+  if(done>=d.need){ d.done=0; return; }
+  const miss=d.need-done;
+  const fine=Math.round(d.base*miss*1.2);
+  d.done=0;
+  if(typeof addMoney==="function") addMoney("other",-Math.min(fine,Math.max(0,S.money)));
+  pushEvent(`<b>${d.plat||"平台"}</b> 发来对账单：这个赛段的开播条款是 ${d.need} 次，
+    你只播了 ${done} 次。按合同赔 <b>${fine} 万</b>。<br>
+    <span style="color:var(--ink-3)">独家合同不是白拿的——保底的另一面是工时。</span>`,"bad","直播");
+}
+/* 独家签约弹窗：三条路各有各的道理，摆开了让玩家选 */
 function streamOfferCard(){
   const o=S.streamOffer; if(!o) return "";
   const now=Math.round(streamIncome());
   const originMul=S.origin==="streamer"?1.7:1.0;
-  const locked=Math.round(o.base*originMul);
-  return `<div class="rankup"><div class="ru-inner" style="max-width:540px;text-align:left;max-height:86vh;overflow-y:auto">
+  const hasClub=!!(o.club&&S.team);
+  const net=(cut,mul)=>Math.round(o.base*(mul||1)*originMul*(1-cut));
+  const need=o.lvl>=2?3:2;
+  return `<div class="rankup"><div class="ru-inner" style="max-width:600px;text-align:left;max-height:86vh;overflow-y:auto">
     <div class="ru-icon" style="text-align:center">${typeof gicon==="function"?gicon("stream",52):""}</div>
     <div class="ru-eyebrow" style="text-align:center">平台来谈独家了</div>
     <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:12px">${o.n}</div>
-    <p class="note" style="margin:0 0 10px">你的人气到了「${fanTier()}」，平台的商务带着合同上门：
-      签字费 <b style="color:var(--gold)">${o.sign} 万</b>，此后每次直播保底 <b style="color:var(--gold)">${locked} 万</b>
-      （你现在每次直播约 ${now} 万）。</p>
-    <div class="grid g2">
-      <div class="ver"><b>签独家</b><br><span class="note" style="margin:0">签字费到手、收入旱涝保收，成绩低谷也饿不着。<br>
-        但收入锁死在保底，人气再涨也不加钱；平台控流量，<b>直播涨名气变慢</b>。</span></div>
-      <div class="ver"><b>不签</b><br><span class="note" style="margin:0">收入跟着人气浮动，分成档也会继续往上谈——
-        打出名堂的话上限比保底高得多。<br>代价是没有下限，凉了就是真的凉。</span></div>
-    </div>
+    <p class="note" style="margin:0 0 10px">你的咖位到了「${fanTier()}」，商务带着合同上门。
+      ${hasClub?`麻烦的是有两份：<b>${S.team}</b> 的合作平台是 <b>${o.club}</b>，
+        而 <b>${o.rival}</b> 也想把你抢过去。<b>直播权写在你的队内合同上</b>——
+        签谁、俱乐部抽多少，是三方的事，不是你和平台两个人的事。`
+        :`你现在没有队，签不签只跟你自己有关。`}
+      你现在每次直播约 <b>${now} 万</b>。</p>
+    ${hasClub?`<div class="grid g2">
+      <div class="ver"><b>签 ${o.club}</b>（俱乐部的合作平台）<br><span class="note" style="margin:0">
+        签字费 <b>${Math.round(o.sign*0.8)} 万</b>（打了折）· 每播保底 <b>${net(0.20)} 万</b>（俱乐部抽 20%）<br>
+        <span style="color:var(--cyan)">经理承你的情，信任 +6。</span></span></div>
+      <div class="ver"><b>签 ${o.rival}</b>（来抢人的）<br><span class="note" style="margin:0">
+        签字费 <b>${Math.round(o.sign*1.4)} 万</b>（抢人价）· 每播保底 <b>${net(0.40,1.15)} 万</b>（俱乐部抽 40%）<br>
+        <span style="color:var(--red)">经理很不高兴，信任 −12。</span></span></div>
+    </div>`:""}
+    <div class="ver" style="margin-top:10px"><b>不签</b><br><span class="note" style="margin:0">
+      收入跟着粉丝和热度浮动，分成档也会继续往上谈——打出名堂的话上限比保底高得多。
+      代价是没有下限，凉了就是真的凉；也没有开播条款捆着你。</span></div>
+    <p class="note" style="margin:10px 0 0">两份独家合同都带<b>开播条款</b>：每赛段至少播 ${need} 次，做不到要赔钱。</p>
     <div class="row" style="justify-content:center">
-      <button class="btn" id="strmyes">签独家</button>
-      <button class="btn ghost" id="strmno">不签，自己闯</button>
+      ${hasClub
+        ? `<button class="btn" id="strmclub">签 ${o.club}</button>
+           <button class="btn" id="strmrival">签 ${o.rival}</button>
+           <button class="btn ghost" id="strmno">不签，自己闯</button>`
+        : `<button class="btn" id="strmyes">签独家</button>
+           <button class="btn ghost" id="strmno">不签，自己闯</button>`}
     </div>
-    <p class="note">拒了这一档就不会再来；人气再上一个大台阶，才会有更高的报价。</p></div></div>`;
+    <p class="note">拒了这一档就不会再来；咖位再上一个大台阶，才会有更高的报价。</p></div></div>`;
 }
-
 function buyGear(slot,tier){
   const g=GEAR[slot][tier];
   const cur=(S.gear&&S.gear[slot])||0;

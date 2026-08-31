@@ -1635,6 +1635,7 @@ function preAct(k,dim){
     addFans(pop*m*(typeof streamFansMul==="function"?streamFansMul():1));
     if(typeof addMoney==='function') addMoney('stream',gift); else S.money+=gift;
     addFat(4); checkAch("stream");
+    if(S.streamDeal) S.streamDeal.done=(S.streamDeal.done||0)+1;   // 开播条款按次数记
     if(typeof checkStreamBiz==="function") checkStreamBiz();   // 分成上调、独家谈约都在开播时发生
     if(gift>=50&&!P.bigGift){P.bigGift=true;
       preLog(`直播间刷起了礼物，这一场进账 <b>${Math.round(gift)} 万</b>。`,"good");}
@@ -1699,12 +1700,14 @@ function scoutTier(){
        :r<0.82?"有俱乐部在打听":r<1?"已经有人在联系你了":"随时可以谈签约";
 }
 /* 咖位用人话说，别甩数字——没人知道「粉丝 137」是什么概念。
-   档位按实测的粉丝分布重排（120 局：p2 614 / p25 1121 / p50 1536 /
-   p75 2141 / p98 4759）。旧表最高档是 850，而实测中位 2539——
-   九个档只有最高那一档被用到，后四档等于不存在。 */
+   档位按实测的粉丝分布重排（120 局，机器人已修：p5 2103 / p25 3255 /
+   p50 4850 / p75 6348 / p85 6923 / p97 8465）。机器人接近满配打法
+   （MSI 夺冠率 85%），所以它的 p85 就是「门面」这一档该在的位置。
+   旧表最高档是 850，而当时实测中位 2539——九个档只有最高那一档被用到。 */
 const FAN_TIERS=[
-  [0,"无人问津"],[45,"直播间几十个人"],[120,"小主播"],[320,"有固定观众"],
-  [750,"平台头部"],[1400,"全网知名"],[2400,"出圈到路人都认识"],[4200,"这个项目的门面"]
+  [0,"无人问津"],[45,"直播间几十个人"],[120,"小主播"],[350,"有固定观众"],
+  [900,"平台头部"],[2000,"全网知名"],[3500,"出圈到路人都认识"],[5500,"现象级"],
+  [8000,"这个项目的门面"]
 ];
 function fanTier(v){
   v=(v===undefined)?S.fans:v;
@@ -2108,7 +2111,7 @@ function heatTier(){
    「全网知名」≈270 万、「门面」≈2000 万——都是现实里对得上的量级。 */
 function fansWan(v){
   v=(v===undefined)?(S.fans||0):v;
-  return Math.pow(Math.max(0,v),1.83)/2120;
+  return Math.pow(Math.max(0,v),1.548)/551;
 }
 function fansText(v){
   const w=fansWan(v);
@@ -2263,6 +2266,7 @@ function doAction(k){
     addFans(4.5*m*(typeof streamFansMul==="function"?streamFansMul():1));
     if(typeof addMoney==='function') addMoney('stream',streamIncome()); else S.money+=streamIncome();
     addFat(5);
+    if(S.streamDeal) S.streamDeal.done=(S.streamDeal.done||0)+1;   // 开播条款按次数记
     if(typeof checkStreamBiz==="function") checkStreamBiz();
     // 榜一大哥只会在你真的开播的时候出现，不该每周瞎摇
     if(typeof fireEvent==="function") fireEvent("streamGift",0.20);}
@@ -2508,9 +2512,21 @@ const NODES=[
 
 function startMatch(bo,oppName){
   const on=oppName||S.schedule[S.week-1];
-  const opp=findTeam(on);
+  let opp=findTeam(on);
+  /* 赛程里的队名在当前世界里找不到，findTeam 就返回 null——而 m.opp.players
+     在 gameWinP / playGame / endMatch 里有六七处是不设防的，一路带下去就是
+     整局崩掉（实测 100 局命中 1 次）。跨赛区转会和赛季换代都可能留下这种
+     陈旧条目。这里在唯一的入口兜住：从当前联赛里挑一支真实存在的队顶上，
+     并且把队名也改过来，免得界面显示一个不存在的对手。 */
+  if(!opp){
+    const lg=(S.world&&S.world[S.homeLeague||"LPL"])||[];
+    opp=lg.find(t=>t.name!==S.team)||lg[0]||null;
+    if(opp&&typeof pushEvent==="function")
+      pushEvent(`赛程里的 <b>${on}</b> 已经不在 ${S.homeLeague||"LPL"} 了，
+        本周对手改为 <b>${opp.name}</b>。`,"info","赛段");
+  }
   const need=(typeof bo==="number")?bo:(bo?3:2);   // 1=BO1 2=BO3 3=BO5
-  S.match={opp,oppName:on,sc:[0,0],game:1,lines:[],node:null,swing:0,done:false,
+  S.match={opp,oppName:(opp&&opp.name)||on,sc:[0,0],game:1,lines:[],node:null,swing:0,done:false,
            need,bo5:need>=3};
   S.step="match"; nextGame();
 }
@@ -2652,6 +2668,8 @@ function endMatch(){
     if((m.nodeFails||0) > 0) fireEvent("hater", won?0.10:0.22);
     // 强队爆冷是 simWorld 真的模拟出来的，不是编的
     if(S._upset) fireEvent("upset", 0.55);
+    // 连败拖长了就不只是「经理找你谈」了——更衣室开始翻你的数据
+    if(!won && (S.record.l||0) >= 5) fireEvent("slump", 0.35);
   }
   render();
 }
@@ -2878,6 +2896,7 @@ function endSeason(result,seed){
     if(typeof addMoney==='function') addMoney('home',-paid); else S.money-=paid;
     pushEvent(`往家里寄了 <b>${paid} 万</b>。`,"info","家用"); }
   trustDecay(); squadDecay(); checkBreakthrough();
+  if(typeof streamClauseCheck==='function') streamClauseCheck();   // 独家合同的开播条款
   // 赛段打完先攒一次球探关注——转会不该只在休赛期那一瞬间才有动静
   if(typeof noteScoutInterest==='function') noteScoutInterest();
   // 天梯不守就掉：段位分向「当前实力守得住的位置」回落。
@@ -2915,6 +2934,8 @@ function endSeason(result,seed){
     S.career.lgYears=(S.career.lgYears||[]).concat([S.si]);
     S.career.lgStreak=(S.career.lgStreak||0)+1;
     checkAch("lgtitle");
+    // 夺冠之后：庆功宴、采访、商务饭局——这也是选手人生的一部分
+    if(typeof fireEvent==="function") fireEvent("afterchamp", 0.7);
     breakthrough("心态",3.2,"捧过一次奖杯之后，大场面对你来说不一样了。","lgtitle");
     pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${sp}冠军。</b>${
       S.split===0?"下一站 MSI。":"世界赛资格到手。"}`,"big","联赛冠军");
@@ -4152,7 +4173,11 @@ const SPEND=[
    合同里那个数字必须真的算数，否则谈判就是假的。 */
 function salaryOf(){
   const c=S.contract||{};
-  const bonus=Math.round(S.fans*0.20)+(S.career.leagueTitles||0)*14
+  // 粉丝的尺度在「名气拆成粉丝＋热度」之后变了：同一个测试口径下
+  // 老的名气中位 1092、新的粉丝中位 4871，系数不跟着调就等于每赛段白发几百万。
+  // 0.045 是标定出来的——让薪资浮动的中位贡献仍然是 ~218 万，和改之前一致。
+  // 封顶也补上：粉丝没有上界，薪资浮动不能跟着没有上界。
+  const bonus=Math.round(Math.min(S.fans,6000)*0.045)+(S.career.leagueTitles||0)*14
     +((S.career.msi||0)+(S.career.worlds||0))*36;
   if(c.salary!==undefined) return Math.round(c.salary+bonus);
   // 老存档或没走谈判流程的情况，退回旧算法
@@ -4641,11 +4666,38 @@ const STREAM_DEALS=[
   {lvl:1, at:95,  sign:100, base:26, n:"平台独家（B 级）"},
   {lvl:2, at:260, sign:350, base:62, n:"平台独家（S 级）"}
 ];
+/* ---------- 平台归属：个人签约与俱乐部签约互相影响 ----------
+
+   原来这里是「你 vs 平台」的二选一，俱乐部完全不参与——把三方博弈做成了两方。
+   现实里恰好相反：LPL 俱乐部普遍与某个平台有整体合作，选手的直播权归属
+   是写进选手合同的；个人要签平台通常得俱乐部点头，俱乐部还要抽成。
+   顶级选手的个人直播合同金额甚至能超过战队年薪，所以这件事值得做成一个选择。
+
+   于是独家谈判变成三选一：
+     · 签俱乐部的合作平台 —— 签字费打折、抽成低，经理承你的情
+     · 签别家平台         —— 平台抢人所以出价高，但抽成高、经理不高兴
+     · 不签               —— 收入随粉丝×热度浮动，上限最高、下限也最低      */
+const PLATFORMS=["虎牙","斗鱼","B 站","快手"];
+/* 一家俱乐部跟哪个平台合作。按队名定死——同一局里不会变，换队才会变。 */
+function clubPlatform(name){
+  const n=String(name===undefined?(S.team||""):name);
+  if(!n) return null;
+  let h=0; for(let i=0;i<n.length;i++) h=(h*31+n.charCodeAt(i))|0;
+  return PLATFORMS[Math.abs(h)%PLATFORMS.length];
+}
+/* 来抢人的那家（一定不是俱乐部合作的那家） */
+function rivalPlatform(club){
+  const others=PLATFORMS.filter(x=>x!==club);
+  return others[Math.floor(rnd()*others.length)]||PLATFORMS[0];
+}
+/* 俱乐部从你的直播收入里抽走多少 */
+function streamClubCut(){ return (S.streamDeal&&S.streamDeal.cut)||0; }
 function streamCut(){ return STREAM_CUTS[S.streamCutIdx||0].cut; }
 /* 直播打赏：名气越高，礼物越多 —— 这是主播出身的主要变现路径 */
 function streamIncome(){
   const originMul=S.origin==="streamer"?1.7:1.0;
-  if(S.streamDeal) return S.streamDeal.base*originMul;   // 独家：合同价，旱涝保收
+  // 独家：合同价，旱涝保收——但俱乐部那一刀先扣掉
+  if(S.streamDeal) return S.streamDeal.base*originMul*(1-streamClubCut());
   // 名气进礼物公式要封顶：pow(f/40,1.22) 无上界，生涯后期名气过千时
   // 一次直播能到两百多万，比世界赛夺冠还值钱——实测有整局挣到五亿的。
   // 封在 600（「顶流」之上），不签独家的上限 ~135/次，
@@ -4654,7 +4706,9 @@ function streamIncome(){
   // 这就是「礼物 = f(粉丝基数) × g(当下热度)」——赢球那几周直播特别值钱，
   // 冷下来之后同样的粉丝掉一半收入，直播因此有了「趁热打铁」这个决策。
   const f=Math.min(Math.max(S.fans||0,0),600);
-  const heatMul=clamp(0.55+(S.heat||0)/260,0.55,1.9);
+  // 以常态热度（实测中位约 400）为 1.0 上下浮动。原来 /260 让中位就顶到
+  // 上限 1.9，等于给直播收入整体加了 90%，那不是「趁热打铁」，是通胀。
+  const heatMul=clamp(0.45+(S.heat||0)/730,0.45,1.7);
   const gift=Math.pow(f/40,1.22)*4.4*streamCut()*heatMul;
   const base=4+f*0.05;
   return (base+gift)*originMul;
@@ -4686,51 +4740,105 @@ function checkStreamBiz(){
     if(S.streamOfferSeen[d.lvl]) continue;
     if(S.streamDeal&&S.streamDeal.lvl>=d.lvl) continue;
     S.streamOfferSeen[d.lvl]=1;
-    S.streamOffer={lvl:d.lvl,sign:d.sign,base:d.base,n:d.n};
+    const club=clubPlatform();
+    S.streamOffer={lvl:d.lvl,sign:d.sign,base:d.base,n:d.n,
+                   club, rival:rivalPlatform(club)};
     break;
   }
 }
-function signStreamDeal(){
+/* kind: "club" = 签俱乐部的合作平台，"rival" = 签来抢人的那家，
+   不传 = 老的两选一路径（职业前没有俱乐部时就是这条）。 */
+function signStreamDeal(kind){
   const o=S.streamOffer; if(!o) return;
   S.streamOffer=null;
-  S.streamDeal={lvl:o.lvl,base:o.base,n:o.n};
-  addMoney("sign",o.sign);
-  pushEvent(`和平台签下<b>${o.n}</b>：签字费 <b>${o.sign} 万</b>到账，此后每次直播保底 <b>${o.base} 万</b>。<br>
-    <span style="color:var(--ink-3)">代价写在合同里：收入锁死在保底，人气再涨也不加钱；平台控流量，直播涨名气也会变慢。</span>`,"big","直播");
+  const hasClub=!!(o.club&&S.team);
+  if(!hasClub) kind=null;
+  const plat = kind==="club" ? o.club : kind==="rival" ? o.rival : (o.club||"平台");
+  const sign = Math.round(o.sign*(kind==="club"?0.8:kind==="rival"?1.4:1));
+  const base = Math.round(o.base*(kind==="rival"?1.15:1));
+  const cut  = kind==="club"?0.20:kind==="rival"?0.40:0;
+  S.streamDeal={lvl:o.lvl,base,n:o.n,plat,cut,kind:kind||"solo",
+                need:o.lvl>=2?3:2, done:0};
+  addMoney("sign",sign);
+  const originMul=S.origin==="streamer"?1.7:1.0;
+  const net=Math.round(base*originMul*(1-cut));
+  let extra="";
+  if(kind==="club"){
+    if(typeof addStaff==="function") addStaff("mgr",6);
+    extra=`俱乐部乐见其成——你签的正是 <b>${S.team}</b> 的合作平台，
+      经理那边记你一笔。平台方按约定抽走 <b>20%</b> 给俱乐部。`;
+  } else if(kind==="rival"){
+    if(typeof addStaff==="function") addStaff("mgr",-12);
+    extra=`<b>${o.rival}</b> 是来抢人的，所以价开得高。但你的直播权写在队里的合同上——
+      俱乐部照样抽 <b>40%</b>，而且<b>经理很不高兴</b>。`;
+  }
+  pushEvent(`和 <b>${plat}</b> 签下<b>${o.n}</b>：签字费 <b>${sign} 万</b>到账，
+    此后每次直播保底 <b>${net} 万</b>（已扣俱乐部分成）。${extra?"<br>"+extra:""}<br>
+    <span style="color:var(--ink-3)">代价写在合同里：收入锁死在保底，粉丝再涨也不加钱；
+    平台控流量，直播涨热度也会变慢。另外合同有开播条款——每赛段至少播
+    <b>${S.streamDeal.need}</b> 次，做不到要赔钱。</span>`,"big","直播");
   render();
 }
 function declineStreamDeal(){
   const o=S.streamOffer; if(!o) return;
   S.streamOffer=null;
-  pushEvent(`拒绝了平台的<b>${o.n}</b>。收入继续跟着人气浮动——上限是你自己挣的，下限也是。`,"info","直播");
+  pushEvent(`拒绝了<b>${o.n}</b>。收入继续跟着粉丝和热度浮动——上限是你自己挣的，下限也是。`,"info","直播");
   render();
 }
-/* 独家签约弹窗：两条路各有各的道理，摆开了让玩家选 */
+/* 开播条款：每赛段结算时查一次。做不到就按合同赔钱。
+   这条是为了让「直播」不再是一个纯收益按钮——签了独家就欠了工时。 */
+function streamClauseCheck(){
+  const d=S.streamDeal; if(!d||!d.need) return;
+  const done=d.done||0;
+  if(done>=d.need){ d.done=0; return; }
+  const miss=d.need-done;
+  const fine=Math.round(d.base*miss*1.2);
+  d.done=0;
+  if(typeof addMoney==="function") addMoney("other",-Math.min(fine,Math.max(0,S.money)));
+  pushEvent(`<b>${d.plat||"平台"}</b> 发来对账单：这个赛段的开播条款是 ${d.need} 次，
+    你只播了 ${done} 次。按合同赔 <b>${fine} 万</b>。<br>
+    <span style="color:var(--ink-3)">独家合同不是白拿的——保底的另一面是工时。</span>`,"bad","直播");
+}
+/* 独家签约弹窗：三条路各有各的道理，摆开了让玩家选 */
 function streamOfferCard(){
   const o=S.streamOffer; if(!o) return "";
   const now=Math.round(streamIncome());
   const originMul=S.origin==="streamer"?1.7:1.0;
-  const locked=Math.round(o.base*originMul);
-  return `<div class="rankup"><div class="ru-inner" style="max-width:540px;text-align:left;max-height:86vh;overflow-y:auto">
+  const hasClub=!!(o.club&&S.team);
+  const net=(cut,mul)=>Math.round(o.base*(mul||1)*originMul*(1-cut));
+  const need=o.lvl>=2?3:2;
+  return `<div class="rankup"><div class="ru-inner" style="max-width:600px;text-align:left;max-height:86vh;overflow-y:auto">
     <div class="ru-icon" style="text-align:center">${typeof gicon==="function"?gicon("stream",52):""}</div>
     <div class="ru-eyebrow" style="text-align:center">平台来谈独家了</div>
     <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:12px">${o.n}</div>
-    <p class="note" style="margin:0 0 10px">你的人气到了「${fanTier()}」，平台的商务带着合同上门：
-      签字费 <b style="color:var(--gold)">${o.sign} 万</b>，此后每次直播保底 <b style="color:var(--gold)">${locked} 万</b>
-      （你现在每次直播约 ${now} 万）。</p>
-    <div class="grid g2">
-      <div class="ver"><b>签独家</b><br><span class="note" style="margin:0">签字费到手、收入旱涝保收，成绩低谷也饿不着。<br>
-        但收入锁死在保底，人气再涨也不加钱；平台控流量，<b>直播涨名气变慢</b>。</span></div>
-      <div class="ver"><b>不签</b><br><span class="note" style="margin:0">收入跟着人气浮动，分成档也会继续往上谈——
-        打出名堂的话上限比保底高得多。<br>代价是没有下限，凉了就是真的凉。</span></div>
-    </div>
+    <p class="note" style="margin:0 0 10px">你的咖位到了「${fanTier()}」，商务带着合同上门。
+      ${hasClub?`麻烦的是有两份：<b>${S.team}</b> 的合作平台是 <b>${o.club}</b>，
+        而 <b>${o.rival}</b> 也想把你抢过去。<b>直播权写在你的队内合同上</b>——
+        签谁、俱乐部抽多少，是三方的事，不是你和平台两个人的事。`
+        :`你现在没有队，签不签只跟你自己有关。`}
+      你现在每次直播约 <b>${now} 万</b>。</p>
+    ${hasClub?`<div class="grid g2">
+      <div class="ver"><b>签 ${o.club}</b>（俱乐部的合作平台）<br><span class="note" style="margin:0">
+        签字费 <b>${Math.round(o.sign*0.8)} 万</b>（打了折）· 每播保底 <b>${net(0.20)} 万</b>（俱乐部抽 20%）<br>
+        <span style="color:var(--cyan)">经理承你的情，信任 +6。</span></span></div>
+      <div class="ver"><b>签 ${o.rival}</b>（来抢人的）<br><span class="note" style="margin:0">
+        签字费 <b>${Math.round(o.sign*1.4)} 万</b>（抢人价）· 每播保底 <b>${net(0.40,1.15)} 万</b>（俱乐部抽 40%）<br>
+        <span style="color:var(--red)">经理很不高兴，信任 −12。</span></span></div>
+    </div>`:""}
+    <div class="ver" style="margin-top:10px"><b>不签</b><br><span class="note" style="margin:0">
+      收入跟着粉丝和热度浮动，分成档也会继续往上谈——打出名堂的话上限比保底高得多。
+      代价是没有下限，凉了就是真的凉；也没有开播条款捆着你。</span></div>
+    <p class="note" style="margin:10px 0 0">两份独家合同都带<b>开播条款</b>：每赛段至少播 ${need} 次，做不到要赔钱。</p>
     <div class="row" style="justify-content:center">
-      <button class="btn" id="strmyes">签独家</button>
-      <button class="btn ghost" id="strmno">不签，自己闯</button>
+      ${hasClub
+        ? `<button class="btn" id="strmclub">签 ${o.club}</button>
+           <button class="btn" id="strmrival">签 ${o.rival}</button>
+           <button class="btn ghost" id="strmno">不签，自己闯</button>`
+        : `<button class="btn" id="strmyes">签独家</button>
+           <button class="btn ghost" id="strmno">不签，自己闯</button>`}
     </div>
-    <p class="note">拒了这一档就不会再来；人气再上一个大台阶，才会有更高的报价。</p></div></div>`;
+    <p class="note">拒了这一档就不会再来；咖位再上一个大台阶，才会有更高的报价。</p></div></div>`;
 }
-
 function buyGear(slot,tier){
   const g=GEAR[slot][tier];
   const cur=(S.gear&&S.gear[slot])||0;
@@ -5617,6 +5725,169 @@ const RANDOM_EVENTS=[
           return "有个教练回了你一条：「继续打，我们看着。」"; }
         return "石沉大海。但集锦本身涨了点关注。"}},
       {t:"该干嘛干嘛",e:()=>{return "机会不是这么来的。你回去打排位了。"}}]},
+
+  /* ================= 梗与文化 =================
+     这一类的共同点：它们是「圈子对你的二次创作」，所以门槛都挂在粉丝数上——
+     没人认识你，就没人拿你做梗。 */
+
+  {id:"bible", w:2, max:1, when:()=>S.fans>=800&&((S.career&&S.career.l)||0)>=6,
+   q:()=>`你上个月赛后采访那句话，被人剪进了「LPL 圣经」合集。`,
+   ctx:"播放量七位数，弹幕全是你的名字，但没一条是在夸你打得好。",
+   a:[{t:"自己转发，配一句「下次赢回来」",e:()=>{addFans(30);addBuff("mood",1.15,2,"心里踏实");
+        return "评论区风向当场就变了。玩得起的人，大家反而服。"}},
+      {t:"当没看见，闷头训练",e:()=>{addBuff("train",1.25,2,"憋着一口气");
+        return "你把那条视频的链接删了，然后多打了两个小时训练赛。"}},
+      {t:"发长文澄清那句话的语境",e:()=>{addFans(12);addBuff("mood",0.88,2,"越描越黑");
+        return "长文被截成了新的梗图。有些事越解释越热闹。"}}]},
+
+  {id:"ghostcut", w:2, when:()=>S.fans>=500,
+   q:()=>`有人把你的一波操作做成了鬼畜，播放量比比赛正片还高。`,
+   ctx:"作者在简介里 @ 了你，说「求本人不要生气」。",
+   a:[{t:"三连，评论「做得比我打得好」",e:()=>{addFans(26);
+        return "作者激动坏了，又剪了三期。你的名字在鬼畜区挂了一整月。"}},
+      {t:"私信作者要授权，做成自己的直播片头",e:()=>{addFans(16);addMoney("other",-10);
+        return "花了点小钱买断，片头一放弹幕就刷屏。这波你也算参与了创作。"}},
+      {t:"不理",e:()=>{addFans(5);
+        return "热度自己散了。你连点开都没点开。"}}]},
+
+  {id:"nickname", w:2, max:1, when:()=>S.fans>=350&&!!S.team,
+   q:()=>{ const d=DIMS.reduce((a,b)=>S.attrs[a]>=S.attrs[b]?a:b);
+     S._ev={d};
+     return `解说在直播里给你起了个外号，取的是你${d}那一手。`; },
+   ctx:"一晚上之后，弹幕已经没人叫你 ID 了。",
+   a:[{t:"认下来，直播间标题都改成外号",e:()=>{addFans(22);
+        return "外号比 ID 传得远。这行认脸也认梗。"}},
+      {t:"公开说不喜欢这个叫法",e:()=>{addFans(9);addBuff("mood",0.9,1,"有点烦");
+        return "你越说不喜欢，叫的人越多。"}}]},
+
+  {id:"matchfix", w:2, max:1, when:()=>!!S.team&&S.fans>=600&&((S.career&&S.career.l)||0)>=8,
+   q:()=>`论坛有个帖子在扒你上一场的走位，说那波送得「太刻意」。`,
+   ctx:"帖子底下已经有人在艾特反假赛的举报邮箱了。",
+   a:[{t:"逐帧录一期复盘，把那波讲透",e:()=>{addFat(12);addFans(34);
+        if(typeof addStaff==="function") addStaff("mgr",5);
+        return "你把决策链讲了二十分钟。原帖删了，俱乐部转发了你的视频。"}},
+      {t:"交给俱乐部公关处理", cost:60, e:()=>{ if(!pay(60)) return "你手上没这个钱。";
+        addFans(6);
+        return "律师函发出去了，帖子没了。但「心虚」两个字也留在了评论区。"}},
+      {t:"不回应，用下一场说话",e:()=>{addBuff("train",1.3,2,"用成绩说话");
+        return "你什么都没说。下一场的准备做得格外细。"}}]},
+
+  /* ================= 人生 =================
+     这一类不吃战绩，吃的是你有多少钱、多大年纪、离家多远。 */
+
+  {id:"firstcar", w:2, max:1, when:()=>S.money>=400&&S.age>=19,
+   q:()=>`驾照到手快一年了，你第一次认真翻起了买车的页面。`,
+   ctx:"队里年纪比你大的都开了车。你算了算账，买得起。",
+   a:[{t:"买一辆", cost:320, e:()=>{ if(!pay(320)) return "钱不够。再等等。";
+        addBuff("mood",1.25,3,"人生第一辆车");addFans(14);
+        return "提车那天你绕着基地开了两圈。有些东西不是必需品，是证明。"}},
+      {t:"再等等，先给家里换个房",e:()=>{addBuff("mood",1.1,2,"心里踏实");
+        return "你把页面关了。这笔钱有更该去的地方。"}},
+      {t:"不买，钱留着",e:()=>{return "你连页面都没收藏。现在还不是时候。"}}]},
+
+  {id:"parentsill", w:2, max:1, when:()=>S.age>=20,
+   q:()=>`家里打电话来，说父亲住院了，让你别担心，不用回。`,
+   ctx:"「不用回」这三个字，你听了二十年了。",
+   a:[{t:"请假回家一趟", cost:40, e:()=>{pay(40);addFat(-10);
+        addBuff("train",0.85,2,"人不在状态");addBuff("mood",1.3,3,"回过家了");
+        return "床边坐了三天。回来的时候训练落下了，但心里那块石头落了地。"}},
+      {t:"打钱，不回", cost:150, e:()=>{ if(!pay(150)) return "你连这笔钱都拿不出来，只能干着急。";
+        addBuff("mood",0.85,3,"心里挂着事");
+        return "钱转过去了。之后每次训练走神，你都知道是为什么。"}},
+      {t:"每天视频半小时",e:()=>{addFat(5);addBuff("mood",1.1,2,"隔着屏幕也算陪");
+        return "他嫌你浪费时间，但每次都提前十分钟等着。"}}]},
+
+  {id:"hometown", w:1, max:1, when:()=>S.fans>=1200,
+   q:()=>`老家县城在主干道上挂了条横幅，上面是你的名字。`,
+   ctx:"照片是你妈发来的，配文只有三个感叹号。",
+   a:[{t:"发微博谢谢家乡",e:()=>{addFans(24);addBuff("mood",1.2,2,"被看见了");
+        return "本地号全转了。你妈把那条微博截图设成了头像。"}},
+      {t:"私下给母校捐一笔", cost:200, e:()=>{ if(!pay(200)) return "你想捐，但账上不够。";
+        addFans(18);addBuff("mood",1.25,3,"做了件实事");
+        return "学校新添了一间电竞教室。校长说，以前老师拿你当反面教材。"}}]},
+
+  {id:"landlord", w:1, when:()=>!S.team&&S.fans>=200,
+   q:()=>`房东上门收租，看了你半天，问：「你是不是在网上那个打游戏的？」`,
+   ctx:"他儿子在旁边猛点头。",
+   a:[{t:"承认，给他儿子签个名",e:()=>{addFans(8);addMoney("other",-0);
+        return "这个月房租他给你抹了个零头。他儿子在班级群里吹了一星期。"}},
+      {t:"否认",e:()=>{return "他将信将疑地走了。你关上门，松了口气。"}}]},
+
+  /* ================= 行业 =================
+     这一类的触发条件挂在「你已经是个有商业价值的人」上。 */
+
+  {id:"adshoot", w:2, when:()=>S.fans>=900&&!!S.team,
+   q:()=>`一个外设品牌找过来，要拍一支 30 秒的广告。`,
+   ctx:"报价不低，但拍摄要占掉你一整天。",
+   a:[{t:"接，认真拍",e:()=>{addFat(20);addMoney("other",180);addFans(28);
+        return "拍了一整天，导演让你重念了四十遍那句台词。钱到账很快。"}},
+      {t:"接，但压缩到半天",e:()=>{addFat(10);addMoney("other",95);addFans(12);
+        return "成片有点糙，品牌方脸色一般。钱少拿了一半，时间省下来了。"}},
+      {t:"推掉，专心备战",e:()=>{addBuff("train",1.2,2,"心无旁骛");
+        return "经纪那边有点可惜。但这周的训练赛你一场没落。"}}]},
+
+  {id:"variety", w:1, max:1, when:()=>S.fans>=2000,
+   q:()=>`一档综艺来邀请，说想请你去当嘉宾，聊聊「电竞选手的一天」。`,
+   ctx:"录制在赛季中间，要飞一趟，来回三天。",
+   a:[{t:"去",e:()=>{addFat(28);addFans(70);addMoney("other",120);
+        if(typeof addStaff==="function") addStaff("mgr",-5);
+        return "节目播出后你破了圈，路人都认识你了。教练组对这三天没什么好脸色。"}},
+      {t:"不去，赛季中不折腾",e:()=>{ if(typeof addStaff==="function") addStaff("mgr",6);
+        return "俱乐部很满意。机会以后还有，赛季只有这一次。"}}]},
+
+  {id:"beef", w:2, when:()=>S.fans>=700,
+   q:()=>`另一个主播在直播里点了你的名，说你「就是运气好」。`,
+   ctx:"切片已经传遍了，两边粉丝在评论区打起来了。",
+   a:[{t:"约他打一场表演赛",e:()=>{addFans(45);addFat(10);
+        return "约战当天两个直播间加起来百万人在看。谁赢的已经没人记得了，热度是真的。"}},
+      {t:"直播里回敬一句",e:()=>{addFans(26);addBuff("mood",0.85,2,"心态受影响");
+        return "骂战升级了。热度有了，心态也有点乱。"}},
+      {t:"完全不接",e:()=>{addFans(4);addBuff("train",1.15,2,"没别的事");
+        return "你连提都没提。三天后这事就没人说了。"}}]},
+
+  {id:"platjump", w:2, max:1, when:()=>!!S.streamDeal&&S.fans>=1200,
+   q:()=>{ const p=(S.streamDeal&&S.streamDeal.plat)||"平台";
+     S._ev={p};
+     return `另一家平台私下找你，开的价比 <b>${p}</b> 给你的高一截。`; },
+   ctx:"合同还没到期。跳槽这事在这行不新鲜，但从来没有干净的。",
+   a:[{t:"违约跳槽", cost:200, e:()=>{ if(!pay(200)) return "违约金你付不起，这事只能作罢。";
+        if(S.streamDeal){ S.streamDeal.base=Math.round(S.streamDeal.base*1.35); }
+        addFans(20);
+        if(typeof addStaff==="function") addStaff("mgr",-10);
+        return "违约金赔了，新合同的保底高了三成五。圈里传了一阵闲话，俱乐部也不太高兴。"}},
+      {t:"拿这份报价去找原平台谈",e:()=>{ if(rnd()<0.55){
+          if(S.streamDeal) S.streamDeal.base=Math.round(S.streamDeal.base*1.18);
+          return "原平台加了价——保底涨了一成八。谈判就是这么回事。"; }
+        addBuff("mood",0.9,2,"谈崩了");
+        return "对方一句「合同白纸黑字」把你顶了回来。你什么也没拿到。"}},
+      {t:"不动",e:()=>{ if(typeof addStaff==="function") addStaff("mgr",4);
+        return "你把消息删了。守约的人，路会长一点。"}}]},
+
+  /* ================= 触发式：由真发生的事引出 ================= */
+
+  {id:"slump", auto:false, when:()=>!!S.team,
+   q:()=>`连败之后，更衣室安静得不像话。有人开始翻你的数据。`,
+   ctx:"这种时候说什么都像找借口，但什么都不说更糟。",
+   a:[{t:"开个会，把问题摊开讲",e:()=>{ if(typeof addTrustAll==="function") addTrustAll(10);
+        addFat(8);addBuff("mood",1.15,2,"话说开了");
+        return "吵了两个小时，但走出会议室的时候，气氛终于松了。"}},
+      {t:"自己加练，用状态说话",e:()=>{addFat(14);addBuff("train",1.35,2,"闷头练");
+        return "你一个人在训练室待到凌晨。没人知道，但下周所有人都看见了。"}},
+      {t:"跟教练要一次轮换",e:()=>{ if(typeof addStaff==="function") addStaff("coach",-6);
+        addFat(-18);
+        return "教练同意让你歇一场。他答应得太快了，这让你更慌。"}}]},
+
+  {id:"afterchamp", auto:false, when:()=>!!S.team,
+   q:()=>`夺冠之后，庆功宴、采访、商务饭局一个接一个。`,
+   ctx:"这是你打了那么多年想要的东西，但你已经三天没摸到鼠标了。",
+   a:[{t:"全程参加，该享受就享受",e:()=>{addFat(24);addFans(40);addMoney("other",60);
+        return "你喝到了凌晨，也第一次感觉这行有回报。代价是身体透支了几天。"}},
+      {t:"露个面就回去训练",e:()=>{addFans(10);addBuff("train",1.25,2,"没飘");
+        if(typeof addStaff==="function") addStaff("coach",8);
+        return "教练在群里发了张你独自训练的照片，配文只有两个字：不错。"}},
+      {t:"全推了，直接休假",e:()=>{addFat(-35);
+        if(typeof addStaff==="function") addStaff("mgr",-7);
+        return "你睡了三天。商务那边的电话打了十几个，一个没接。"}}]},
 
   {id:"laptop", w:1, when:()=>true,
    q:()=>`电脑半夜蓝屏了，硬盘可能坏了。`,
@@ -7759,8 +8030,12 @@ function pickClub(tier, league){
     const lg = (S.world && S.world[key]) ? S.world[key] : null;
     if(!lg || !lg.length) return null;
     const rk = lg.map(t=>({n:t.name, p:power(t)})).sort((a,b)=>b.p-a.p);
-    const seg = { top:[0,3], mid:[4,10], low:[11,rk.length-1], acad:[11,rk.length-1] }[tier];
-    const lo = Math.min(seg[0], rk.length-1), hi = Math.min(seg[1], rk.length-1);
+    // 分段按联赛规模缩放。原来是写死的 [0,3]/[4,10]/[11,n-1]，那是照 LPL 的 17 队画的；
+    // 放到只有 4 队的小赛区上，三个档位会全部塌到最后一名那支队。
+    const n = rk.length;
+    const fr = { top:[0,0.25], mid:[0.25,0.65], low:[0.65,1], acad:[0.65,1] }[tier] || [0.25,0.65];
+    const lo = clamp(Math.floor(fr[0]*n), 0, n-1);
+    const hi = clamp(Math.ceil(fr[1]*n)-1, lo, n-1);
     const pick = rk[lo + Math.floor(rnd()*(hi-lo+1))];
     return tier === "acad" ? pick.n + " 青训队" : pick.n;
   }catch(e){ return null; }
@@ -8177,12 +8452,36 @@ function rollProOffers(){
    原来 langBonus() 只在「已经身处 LCK」时给 +2.6，
    而去外赛区的唯一入口是年末报价里 score>=92 那条——
    于是韩语课基本是买不回本的。 */
+/* 小赛区不是背景板，是低谷时的退路。
+   现实里打不上 LPL 首发的选手大量流向 PCS / VCS / LJL —— 那边给的是首发位。
+   原来外赛区只有「往上」一条路（打得好 → LCK/LEC/LCS），
+   于是七个小赛区在整局里从不与玩家发生任何关系。现在有两个方向：
+     往上：已经证明过自己的人，豪门赛区来追
+     往外：在国内坐板凳、或者一直卡在二队的人，小赛区愿意给首发
+   代价写在别处：外赛区的粉丝天花板打八折（国内热度接不住），
+   语言不通会影响默契。 */
+const MINOR_LEAGUES=["PCS","VCS","LJL","LLA","CBLOL","LCO","TCL"];
+/* 是不是真的卡住了——这是「退路」该不该出现的判据 */
+function inRut(perf){
+  return (S.benchedSplits||0)>=1 || (S.homeLeague||"LPL")==="LDL" || perf<3;
+}
 function pickForeign(perf){
-  if((S.homeLeague||"LPL")!=="LPL") return null;      // 已经在外面了
-  if(perf < 12) return null;                          // 没证明过自己，人家不会跨国来找
+  const here=S.homeLeague||"LPL";
+  if(here!=="LPL"&&here!=="LDL") return null;          // 已经在外面了
   const opts=[];
   const kr = (typeof hasCourse==="function") && hasCourse("kr");
   const en = (typeof hasCourse==="function") && hasCourse("en");
+  if(perf < 12){
+    // 往外：没证明过自己，豪门赛区不会来；但卡住了的话，小赛区会
+    if(!inRut(perf)) return null;
+    MINOR_LEAGUES.forEach(lg=>{ if(S.world[lg]&&S.world[lg].length) opts.push({lg,w:1}); });
+    if(!opts.length) return null;
+    if(rnd() >= 0.26) return null;
+    const tot0=opts.reduce((a,o)=>a+o.w,0);
+    let r0=rnd()*tot0;
+    for(const o of opts){ if((r0-=o.w)<=0) return o.lg; }
+    return null;
+  }
   if(S.world.LCK) opts.push({lg:"LCK", w: kr ? 1.8 : 1.0});
   if(S.world.LEC) opts.push({lg:"LEC", w: en ? 1.5 : 0.9});
   if(S.world.LCS) opts.push({lg:"LCS", w: en ? 1.3 : 0.8});
@@ -8744,7 +9043,9 @@ function bind(){
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;
   const _pn=$("pofno"); if(_pn) _pn.onclick=dropProOffer;
   const _at=$("askTransfer"); if(_at) _at.onclick=()=>askTransfer();
-  const _sy2=$("strmyes"); if(_sy2) _sy2.onclick=signStreamDeal;
+  const _sy2=$("strmyes"); if(_sy2) _sy2.onclick=()=>signStreamDeal();
+  const _sc2=$("strmclub"); if(_sc2) _sc2.onclick=()=>signStreamDeal("club");
+  const _sr2=$("strmrival"); if(_sr2) _sr2.onclick=()=>signStreamDeal("rival");
   const _sn2=$("strmno"); if(_sn2) _sn2.onclick=declineStreamDeal;
   const _rtA=$("rtRepeat"); if(_rtA) _rtA.onclick=repeatLast;
   const _rtB=$("rtPlan");   if(_rtB) _rtB.onclick=runPlan;

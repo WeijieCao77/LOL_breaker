@@ -1087,6 +1087,7 @@ function preAct(k,dim){
     addFans(pop*m*(typeof streamFansMul==="function"?streamFansMul():1));
     if(typeof addMoney==='function') addMoney('stream',gift); else S.money+=gift;
     addFat(4); checkAch("stream");
+    if(S.streamDeal) S.streamDeal.done=(S.streamDeal.done||0)+1;   // 开播条款按次数记
     if(typeof checkStreamBiz==="function") checkStreamBiz();   // 分成上调、独家谈约都在开播时发生
     if(gift>=50&&!P.bigGift){P.bigGift=true;
       preLog(`直播间刷起了礼物，这一场进账 <b>${Math.round(gift)} 万</b>。`,"good");}
@@ -1151,12 +1152,14 @@ function scoutTier(){
        :r<0.82?"有俱乐部在打听":r<1?"已经有人在联系你了":"随时可以谈签约";
 }
 /* 咖位用人话说，别甩数字——没人知道「粉丝 137」是什么概念。
-   档位按实测的粉丝分布重排（120 局：p2 614 / p25 1121 / p50 1536 /
-   p75 2141 / p98 4759）。旧表最高档是 850，而实测中位 2539——
-   九个档只有最高那一档被用到，后四档等于不存在。 */
+   档位按实测的粉丝分布重排（120 局，机器人已修：p5 2103 / p25 3255 /
+   p50 4850 / p75 6348 / p85 6923 / p97 8465）。机器人接近满配打法
+   （MSI 夺冠率 85%），所以它的 p85 就是「门面」这一档该在的位置。
+   旧表最高档是 850，而当时实测中位 2539——九个档只有最高那一档被用到。 */
 const FAN_TIERS=[
-  [0,"无人问津"],[45,"直播间几十个人"],[120,"小主播"],[320,"有固定观众"],
-  [750,"平台头部"],[1400,"全网知名"],[2400,"出圈到路人都认识"],[4200,"这个项目的门面"]
+  [0,"无人问津"],[45,"直播间几十个人"],[120,"小主播"],[350,"有固定观众"],
+  [900,"平台头部"],[2000,"全网知名"],[3500,"出圈到路人都认识"],[5500,"现象级"],
+  [8000,"这个项目的门面"]
 ];
 function fanTier(v){
   v=(v===undefined)?S.fans:v;
@@ -1560,7 +1563,7 @@ function heatTier(){
    「全网知名」≈270 万、「门面」≈2000 万——都是现实里对得上的量级。 */
 function fansWan(v){
   v=(v===undefined)?(S.fans||0):v;
-  return Math.pow(Math.max(0,v),1.83)/2120;
+  return Math.pow(Math.max(0,v),1.548)/551;
 }
 function fansText(v){
   const w=fansWan(v);
@@ -1715,6 +1718,7 @@ function doAction(k){
     addFans(4.5*m*(typeof streamFansMul==="function"?streamFansMul():1));
     if(typeof addMoney==='function') addMoney('stream',streamIncome()); else S.money+=streamIncome();
     addFat(5);
+    if(S.streamDeal) S.streamDeal.done=(S.streamDeal.done||0)+1;   // 开播条款按次数记
     if(typeof checkStreamBiz==="function") checkStreamBiz();
     // 榜一大哥只会在你真的开播的时候出现，不该每周瞎摇
     if(typeof fireEvent==="function") fireEvent("streamGift",0.20);}
@@ -1960,9 +1964,21 @@ const NODES=[
 
 function startMatch(bo,oppName){
   const on=oppName||S.schedule[S.week-1];
-  const opp=findTeam(on);
+  let opp=findTeam(on);
+  /* 赛程里的队名在当前世界里找不到，findTeam 就返回 null——而 m.opp.players
+     在 gameWinP / playGame / endMatch 里有六七处是不设防的，一路带下去就是
+     整局崩掉（实测 100 局命中 1 次）。跨赛区转会和赛季换代都可能留下这种
+     陈旧条目。这里在唯一的入口兜住：从当前联赛里挑一支真实存在的队顶上，
+     并且把队名也改过来，免得界面显示一个不存在的对手。 */
+  if(!opp){
+    const lg=(S.world&&S.world[S.homeLeague||"LPL"])||[];
+    opp=lg.find(t=>t.name!==S.team)||lg[0]||null;
+    if(opp&&typeof pushEvent==="function")
+      pushEvent(`赛程里的 <b>${on}</b> 已经不在 ${S.homeLeague||"LPL"} 了，
+        本周对手改为 <b>${opp.name}</b>。`,"info","赛段");
+  }
   const need=(typeof bo==="number")?bo:(bo?3:2);   // 1=BO1 2=BO3 3=BO5
-  S.match={opp,oppName:on,sc:[0,0],game:1,lines:[],node:null,swing:0,done:false,
+  S.match={opp,oppName:(opp&&opp.name)||on,sc:[0,0],game:1,lines:[],node:null,swing:0,done:false,
            need,bo5:need>=3};
   S.step="match"; nextGame();
 }
@@ -2104,6 +2120,8 @@ function endMatch(){
     if((m.nodeFails||0) > 0) fireEvent("hater", won?0.10:0.22);
     // 强队爆冷是 simWorld 真的模拟出来的，不是编的
     if(S._upset) fireEvent("upset", 0.55);
+    // 连败拖长了就不只是「经理找你谈」了——更衣室开始翻你的数据
+    if(!won && (S.record.l||0) >= 5) fireEvent("slump", 0.35);
   }
   render();
 }
@@ -2330,6 +2348,7 @@ function endSeason(result,seed){
     if(typeof addMoney==='function') addMoney('home',-paid); else S.money-=paid;
     pushEvent(`往家里寄了 <b>${paid} 万</b>。`,"info","家用"); }
   trustDecay(); squadDecay(); checkBreakthrough();
+  if(typeof streamClauseCheck==='function') streamClauseCheck();   // 独家合同的开播条款
   // 赛段打完先攒一次球探关注——转会不该只在休赛期那一瞬间才有动静
   if(typeof noteScoutInterest==='function') noteScoutInterest();
   // 天梯不守就掉：段位分向「当前实力守得住的位置」回落。
@@ -2367,6 +2386,8 @@ function endSeason(result,seed){
     S.career.lgYears=(S.career.lgYears||[]).concat([S.si]);
     S.career.lgStreak=(S.career.lgStreak||0)+1;
     checkAch("lgtitle");
+    // 夺冠之后：庆功宴、采访、商务饭局——这也是选手人生的一部分
+    if(typeof fireEvent==="function") fireEvent("afterchamp", 0.7);
     breakthrough("心态",3.2,"捧过一次奖杯之后，大场面对你来说不一样了。","lgtitle");
     pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${sp}冠军。</b>${
       S.split===0?"下一站 MSI。":"世界赛资格到手。"}`,"big","联赛冠军");
@@ -3330,7 +3351,9 @@ function bind(){
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;
   const _pn=$("pofno"); if(_pn) _pn.onclick=dropProOffer;
   const _at=$("askTransfer"); if(_at) _at.onclick=()=>askTransfer();
-  const _sy2=$("strmyes"); if(_sy2) _sy2.onclick=signStreamDeal;
+  const _sy2=$("strmyes"); if(_sy2) _sy2.onclick=()=>signStreamDeal();
+  const _sc2=$("strmclub"); if(_sc2) _sc2.onclick=()=>signStreamDeal("club");
+  const _sr2=$("strmrival"); if(_sr2) _sr2.onclick=()=>signStreamDeal("rival");
   const _sn2=$("strmno"); if(_sn2) _sn2.onclick=declineStreamDeal;
   const _rtA=$("rtRepeat"); if(_rtA) _rtA.onclick=repeatLast;
   const _rtB=$("rtPlan");   if(_rtB) _rtB.onclick=runPlan;

@@ -43,10 +43,10 @@ try {
   new Function(code + "\n;globalThis.__api={S:()=>S,SEASONS,SPLITS,DIMS,AGES,BACKGROUNDS,ACHIEVEMENTS,RANKS,"
     + "GEAR,SLOTS,COURSES,RELAX,SPEND,screenCreate,startPre,preAct,preNextWeek,acceptOffer,"
     + "doTrain,doAction,startMatch,resolveNode,playGame,nextWeek,doOffseason,offNextWeek,prepGo,enterPrep,finishOffseason,OFF_WEEKS,isBenched,benchWeek,"
-    + "resolveLocker,ending,cap,rankFull,nowLabel,nowPhase,yearWeek,yearTotal,rankIcon,fanTier,scoutTier,preScore,hasAch,fanCap,fanFill,fansWan,fansText,fanWeek,addFans,heatTier,fanToNext,"
+    + "resolveLocker,ending,cap,rankFull,nowLabel,nowPhase,yearWeek,yearTotal,rankIcon,fanTier,scoutTier,preScore,hasAch,pickClub,fanCap,fanFill,fansWan,fansText,fanWeek,addFans,heatTier,fanToNext,"
     + "buyGear,buyCourse,buyRelax,gearBonus,streamIncome,drawBackgrounds,advancePreWeek,capOf,"
     + "soloSkill,soloWinP,rankReq,doSquad,SQUAD_ACTS,squadOf,PRE_MILESTONES,nextMilestone,"
-    + "askTransfer,canAskTransfer,askTransferOdds,checkStreamBiz,signStreamDeal,declineStreamDeal,worldsSlot,spectateIntl,startIntl,startPlayoff,endSeason,"
+    + "askTransfer,canAskTransfer,askTransferOdds,checkStreamBiz,signStreamDeal,declineStreamDeal,clubPlatform,streamClauseCheck,worldsSlot,spectateIntl,startIntl,startPlayoff,endSeason,"
     + "resolveRandom,btkNote,BREAK_PATHS,sweepBreakthroughs,btkWeekEnd,breakthrough,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,proPerf,rollProOffers,checkPromote,parentClub,buildLDL,takeProOffer,dropProOffer,makeProDeal,signTransfer,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,dueCups,forfeitCup,cupOppName,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,tryoutSkill,checkTryoutInvite,checkRankInvite,addInvite,startTryout,resolveTryoutDay,tryoutGrade,endTryout,makeDeal,askDeal,signDeal,dropDeal,declineDeal,afterTryout,dealLeverage,CLUB_TIERS,DEAL_TIERS,TIER_RANK,rankCap,pickForeign,makeProDeal,buyoutDrag,canInvite,fitTier,exposureCap,exposureScore,inviteFloorOk,PRE_MILESTONES,nextMilestone,PRE_EARLIEST,preNextWeek,TRYOUT_DAYS,DEAL_ASKS,salaryOf,contractCheck,consumeOffer,preNextYear,setS:(v)=>{S=v}};")();
 } catch (e) {
   console.error("脚本解析失败:", e.message);
@@ -75,8 +75,12 @@ function playOne(opts) {
     S = A.S();
     if (S.rankUp) { rankUps++; S.rankUp = null; continue; }
     if (S.rndEv) { A.resolveRandom(0); continue; }
-    if (S.streamOffer) {                  // 平台独家：轮流签/不签，两条路都要测到
-      (guard % 2 ? A.signStreamDeal() : A.declineStreamDeal()); continue;
+    if (S.streamOffer) {                  // 平台独家：三条路轮着走，都要测到
+      const pick = guard % 3;
+      if (pick === 0) A.declineStreamDeal();
+      else if (pick === 1) A.signStreamDeal("club");
+      else A.signStreamDeal("rival");
+      continue;
     }
     if (S.signup) {                       // 报名弹窗：钱够就报
       const mm = S.signup; S.signup = null;
@@ -115,7 +119,12 @@ function playOne(opts) {
       // 还一次价再签——要测到谈判分支
       if (d.asks < 1) { A.askDeal(A.DEAL_ASKS[dealPick++ % A.DEAL_ASKS.length].k); continue; }
       deals.push({ salary:d.salary, sign:d.sign, years:d.years, buyout:d.buyout, grade:d.grade });
-      A.signDeal();
+      // 转会合同必须走 signTransfer——界面上就是这么分派的
+      // （career_template.html：(S.deal&&S.deal.transfer) ? signTransfer() : signDeal()）。
+      // 这里原来无条件调 signDeal，把下面 offseason 分支里那句正确的分派整个遮蔽了，
+      // 于是机器人从来没换过赛区：实测 30 局发出 136 次外赛区报价，0 局在外赛区结束。
+      // 那是这个测试脚本的 bug，不是游戏的 bug。
+      if (d.transfer) A.signTransfer(); else A.signDeal();
       continue;
     }
     if (S.step === "pre") {
