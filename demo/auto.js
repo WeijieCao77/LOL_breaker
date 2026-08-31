@@ -313,37 +313,90 @@ function autoOnce(){
 }
 
 /* ---------- 界面 ---------- */
-/* 经济页顶部那张卡。开关摆开，代价也写在脸上。 */
-function autoCard(){
-  const all=autoAllOn();
-  return `<div class="card"><h2>托管<em>${autoAnyOn()?"已开启":"未开启"}</em></h2>
-    <p class="note" style="margin:0 0 12px">赛场外的杂事可以整包交出去，
-      <b>随时可以再收回来</b>——同一个存档里来回切，不用重开。</p>
-    <div class="row" style="margin:0 0 12px">
+/* 托管是独立栏目，不塞在经济里——它换的是玩法，不是一页内容。
+   这一页要把三件事说到底：它替你决定什么、按什么规则决定、它不碰什么。
+   托管最怕的是黑箱：玩家不知道刚才那下是谁做的、为什么这么做。 */
+
+/* 每一档到底按什么规则决定——摊开写，一条不藏 */
+const AUTO_RULES={
+  buy:[
+    "先留 250 万安全余额（够一次报名费和几次理疗），超出的才花",
+    "体能掉到 30 以下 → 买「每万块回体能最多」的那一项",
+    "团队投入按固定顺序：私教 → 理疗师 → 团队建设 → 舆论公关",
+    "外设只升到<b>职业级</b>；定制级要余额超过 3000 万才碰",
+    "课程只买现在用得上的：心态最低买运动心理、运营最低买复盘方法、队友信任低买沟通表达",
+    "语言课只在人已经在外赛区、或手上就有外赛区报价时买（不赌以后）"
+  ],
+  biz:[
+    "直播独家：粉丝离天花板还远（不到六成）就<b>不签</b>——自由身上限更高",
+    "已经贴着天花板了，签<b>俱乐部的合作平台</b>：抽成低，经理还承你的情",
+    "<b>永远不签来抢人的那家</b>：经理 −12 换 15% 保底，不值",
+    "杯赛报名：够门槛、且报名费不超过余额四成就报"
+  ],
+  daily:[
+    "每条事件都预先标了推荐项，优先「有明确收益、没有长期代价」的那一个",
+    "涉及心态和队友关系的，选温和项（不吵架、不放狠话）",
+    "推荐项要花钱而余额不够时，自动退到第一个不花钱的选项",
+    "<b>注意</b>：事件的选择会累积成人物特质，托管替你选＝特质也由它决定"
+  ],
+  career:[
+    "试训邀请：离对方期望值差 4 分以内就去",
+    "转会问询：对方队战力比现在这支强就接",
+    "合同：还一次价（要求加薪），然后签",
+    "下放二队：连着两个赛段没打上首发就接受"
+  ]
+};
+
+function autoPage(){
+  const all=autoAllOn(), any=autoAnyOn();
+  return `<div class="card"><h2>托管<em>${any?"已开启":"未开启"}</em></h2>
+    <p class="note" style="margin:0 0 6px"><b>这是「精简版」和「完整版」的开关。</b></p>
+    <p class="note" style="margin:0 0 12px">赛场外的杂事——买东西、谈商务、处理各种弹窗——
+      可以整包交给团队按推荐处理。<b>随时可以再收回来</b>，同一个存档里来回切，不用重开。
+      玩腻了细节就托管，想回来管就关掉。</p>
+    <div class="row" style="margin:0 0 4px">
       <button class="btn ${all?"ghost":""}" id="autoAll">${all?"全部收回":"一键全托管"}</button>
       <button class="btn ghost" id="autoNow">现在就按推荐执行一次</button>
     </div>
-    <p class="note" style="margin:0 0 8px;color:var(--ink-3)">下面四格<b>点一下就是开关</b>，可以只交出去一部分。</p>
-    <div class="autogrid">${AUTO_KEYS.map(x=>`
-      <button class="autoitem ${autoOn(x.k)?"on":""}" data-auto="${x.k}">
-        <div class="t"><span class="sw">${autoOn(x.k)?"●":"○"}</span>${x.n}${
-          autoOn(x.k)?'<span class="tag g">托管中</span>':'<span class="tag">未托管</span>'}</div>
-        <div class="d">${x.d}</div>
-        ${x.warn?`<div class="d" style="color:var(--red)">这是主线——托管掉基本等于看别人打</div>`:""}
-      </button>`).join("")}</div>
-    <p class="note" style="margin-top:12px">推荐走的是<b>稳健路线</b>，不是最优解：
+    <p class="note" style="margin:0 0 14px;color:var(--ink-3)">
+      「执行一次」不改开关，只是把当下该做的事按推荐做掉——不想长期托管也能用。</p>
+
+    <h3>四档，可以只交出去一部分</h3>
+    <p class="note" style="margin:0 0 10px">下面每一格<b>点一下就是开关</b>。</p>
+    ${AUTO_KEYS.map(x=>`
+      <div class="autoblk ${autoOn(x.k)?"on":""}">
+        <button class="autohd" data-auto="${x.k}">
+          <span class="sw">${autoOn(x.k)?"●":"○"}</span>
+          <b>${x.n}</b>
+          <span class="tag ${autoOn(x.k)?"g":""}">${autoOn(x.k)?"托管中":"未托管"}</span>
+          <span class="autohd-d">${x.d}</span>
+        </button>
+        ${x.warn?`<p class="note" style="margin:6px 0 0;color:var(--red)">
+          <b>这是这个游戏的主线。</b>交出去之后「去哪支队、签什么合同」不再问你——
+          你还在打比赛，但基本等于看别人打。</p>`:""}
+        <div class="autorules"><div class="arh">按这些规则决定</div>
+          <ul>${(AUTO_RULES[x.k]||[]).map(r=>`<li>${r}</li>`).join("")}</ul></div>
+      </div>`).join("")}
+
+    <h3>它不碰的东西</h3>
+    <p class="note" style="margin:0 0 10px">托管只管赛场外。下面这些永远是你自己的：
+      <b>行动点怎么花</b>（练什么、打不打排位、直播还是休息）、
+      <b>比赛里的每一个决策点</b>、<b>要不要冲瓶颈</b>、<b>战队行动</b>。
+      比赛还是你在打。</p>
+
+    <h3>代价</h3>
+    <p class="note" style="margin:0 0 10px">托管<b>不收任何费用</b>——你要的就是省心，
+      再收你钱等于惩罚这种玩法。代价只有一个，而且是隐性的：
+      <b>推荐永远走稳健路线，不是最优解。</b>
       不砸定制级外设、不赌高价独家、事件里选温和项。
-      <b>自己管的上限比托管高</b>——这是「精简版能打、完整版有上限」的意思。</p>
-    ${autoAnyOn()?`<div class="ver" style="margin-top:10px">
-      <b>开了之后会怎样</b><br>
-      ${autoOn("daily")?"际遇和更衣室谈话不再弹窗问你，直接按推荐处理。<br>":""}
-      ${autoOn("biz")?"直播独家、杯赛报名自动决定。<br>":""}
-      ${autoOn("buy")?"有钱就自动添装备、买课、压疲劳。<br>":""}
-      ${autoOn("career")?'<span style="color:var(--red)">试训、转会、合同、下放也自动了——主线交出去了。</span><br>':""}
-      做过的每一件都会写进日志，<b>本周页顶部</b>也有一条「托管中」随时能收回。</div>`:""}
-    ${(S.autoLog&&S.autoLog.length)?`<div class="ver" style="margin-top:10px">
-      <b>托管最近做的事</b><br>${S.autoLog.slice(-8).join("　·　")}</div>`:""}
-    <div class="row" style="margin-top:12px">
+      手动玩的人可以做托管不会做的事，所以<b>自己管的上限比托管高</b>——
+      这就是「精简版能打、完整版有上限」的意思。</p>
+
+    ${(S.autoLog&&S.autoLog.length)?`<h3>托管做过的事</h3>
+      <div class="ver">${S.autoLog.slice(-14).join("　·　")}</div>`:
+      `<p class="note" style="color:var(--ink-3)">还没有托管记录。开了之后，
+       它做的每一件事都会记在这里，也会写进日志。</p>`}
+    <div class="row" style="margin-top:14px">
       <button class="btn ghost" id="autoBack">回到本周，接着打 →</button>
     </div>
   </div>`;

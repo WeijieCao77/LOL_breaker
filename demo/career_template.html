@@ -1844,6 +1844,7 @@ function viewSeason(){
     ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
     ${T==="team"?squadCard()+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
     ${T==="shop"?(typeof economyCards==="function"?economyCards():shopCard()):""}
+    ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
     ${T==="world"?standingsCard()+rivalCard()+newsCard()+eventsCard():""}
     ${T==="ach"?achCard():""}`;
   const oppName=S.schedule[S.week-1];
@@ -2928,7 +2929,8 @@ const TABS_PRE=[
   {k:"world",n:"世界", z:"world"},
   {k:"shop", n:"经济", z:"money"},
   {k:"ach",  n:"成就", z:"rec"},
-  {k:"log",  n:"日志", z:"rec"}
+  {k:"log",  n:"日志", z:"rec"},
+  {k:"auto", n:"托管", z:"auto", sep:true}
 ];
 const TABS_SEASON=[
   {k:"act",  n:"本周", z:"act"},
@@ -2936,12 +2938,13 @@ const TABS_SEASON=[
   {k:"team", n:"队伍", z:"team"},
   {k:"world",n:"世界", z:"world"},
   {k:"shop", n:"经济", z:"money"},
-  {k:"ach",  n:"成就", z:"rec"}
+  {k:"ach",  n:"成就", z:"rec"},
+  {k:"auto", n:"托管", z:"auto", sep:true}
 ];
 function tabBar(list){
   const cur=curTab(list);
   return `<div class="tabs">${list.map(t=>
-    `<button class="tab z-${t.z||"act"} ${t.k===cur?'on':''}" data-tab="${t.k}">${t.n}${
+    `<button class="tab z-${t.z||"act"} ${t.sep?"sep":""} ${t.k===cur?'on':''}" data-tab="${t.k}">${t.n}${
       t.k==="ach"?`<span class="tcount">${ACHIEVEMENTS.filter(a=>hasAch(a.id)).length}</span>`:""}</button>`
   ).join("")}</div>`;
 }
@@ -3074,7 +3077,8 @@ function viewPre(){
          你的个人数值只是基础战力的一部分——五个人怎么变成一支队，是另一半。</p>`)
     +lockedCard("队友","签约职业战队后解锁完整版。",
       `<p class="note" style="margin:0">每个队友对你有独立的信任度，会因为你的选择涨落，也会影响全队发挥。</p>`):""}
-  ${T==="shop"?((typeof autoCard==="function")?autoCard():"")+(typeof financeCard==="function"?financeCard():"")+gearCard()+shopCard()+(typeof prizeNote==="function"?prizeNote():"")
+  ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
+  ${T==="shop"?(typeof financeCard==="function"?financeCard():"")+gearCard()+shopCard()+(typeof prizeNote==="function"?prizeNote():"")
       +lockedCard("俱乐部资源","签约职业战队后解锁。",
         `<p class="note" style="margin:0">私教、理疗师、团队建设、舆论公关——
           进队之后才用得上，也才付得起。</p>`):""}

@@ -32,6 +32,7 @@
   --z-world:#8B93D9;  /* 世界 · 蓝紫——你影响不了的外部世界，用冷色 */
   --z-money:#D89B4A;  /* 经济 · 琥珀——商城、合同、收入 */
   --z-rec:#7E93A6;    /* 记录 · 灰蓝——成就与日志，是查阅不是操作，刻意压低 */
+  --z-auto:#8FA0B4;   /* 托管 · 冷灰——它是模式开关，不是内容，不该抢任何一个域的色 */
 
   --pin-h:0px;        /* 属性条实测高度，由 render() 写入，给标签栏定位用 */
 }
@@ -41,6 +42,7 @@
 #stage[data-zone="team"]{--zone:var(--z-team)}
 #stage[data-zone="world"]{--zone:var(--z-world)}
 #stage[data-zone="money"]{--zone:var(--z-money)}
+#stage[data-zone="auto"]{--zone:var(--z-auto)}
 #stage[data-zone="rec"]{--zone:var(--z-rec)}
 *{box-sizing:border-box}
 html{background:var(--void)}
@@ -479,7 +481,10 @@ td .tlogo{margin-right:5px}
 /* 固定住。原来是 static，翻到第三屏想换页得先滚回顶部——
    而属性条反倒是 sticky 的，两者的角色正好反了。
    top 用实测的属性条高度，避免写死一个在手机上会错位的数。 */
-.tabs{display:flex;gap:2px;margin-bottom:16px;background:var(--line);
+/* 手机上标签栏换行，不横向滚动。
+   加了「托管」之后是 7 栏，横滚会把最后一栏推到屏幕外——
+   一个「要单独存在、要玩家找得到」的开关躲在看不见的地方，等于没做。 */
+.tabs{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:16px;background:var(--line);
   border:1px solid var(--line);overflow-x:auto;
   position:sticky;top:var(--pin-h,0px);z-index:30;
   scrollbar-width:none;
@@ -496,6 +501,11 @@ td .tlogo{margin-right:5px}
 .tab.z-act{--tz:var(--z-act)}   .tab.z-me{--tz:var(--z-me)}
 .tab.z-team{--tz:var(--z-team)} .tab.z-world{--tz:var(--z-world)}
 .tab.z-money{--tz:var(--z-money)} .tab.z-rec{--tz:var(--z-rec)}
+.tab.z-auto{--tz:var(--z-auto)}
+/* 托管跟内容栏目之间隔一条：它换的是玩法，不是换一页内容 */
+.tab.sep{margin-top:10px;border-top:1px solid var(--line)}
+@media(max-width:900px){.tab.sep{margin-top:0;border-top:none;
+  background:linear-gradient(180deg,rgba(143,160,180,.12),rgba(6,21,32,.9))}}
 .tab.on{color:var(--tz,var(--gold-hi))}
 .tcount{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:10px;margin-left:6px;
   padding:1px 6px;background:rgba(6,21,32,.7);color:var(--gold);border-radius:99px}
@@ -624,6 +634,24 @@ td .tlogo{margin-right:5px}
 /* 已经成型的特质：实线、金色——它是你身上的东西，不是进度条 */
 .trait.on{border-style:solid;border-color:var(--gold);color:var(--gold-hi);
   background:rgba(201,169,97,.10);font-weight:600}
+
+/* ---- 托管页：每一档摊开写规则 ---- */
+.autoblk{border:1px solid var(--line);border-left:2px solid var(--line);
+  padding:11px 13px;margin-bottom:9px;background:rgba(6,21,32,.4)}
+.autoblk.on{border-left-color:var(--z-auto);background:rgba(143,160,180,.09)}
+.autohd{display:flex;align-items:center;gap:9px;flex-wrap:wrap;width:100%;
+  background:none;border:0;padding:0;font:inherit;color:var(--ink);cursor:pointer;text-align:left}
+.autohd b{font-size:14.5px}
+.autohd .sw{font-size:13px;color:var(--ink-3);flex:none}
+.autoblk.on .autohd .sw{color:var(--z-auto)}
+.autohd-d{font-size:11.5px;color:var(--ink-3);flex:1 1 100%}
+.autohd:focus-visible{outline:2px solid var(--z-auto);outline-offset:3px}
+.autorules{margin-top:8px;padding-top:8px;border-top:1px solid var(--line-soft,rgba(255,255,255,.06))}
+.autorules .arh{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;
+  font-size:10px;letter-spacing:.14em;color:var(--ink-3);margin-bottom:5px}
+.autorules ul{margin:0;padding-left:17px}
+.autorules li{font-size:12px;color:var(--ink-2);line-height:1.65;margin-bottom:3px}
+.autorules li::marker{color:var(--ink-3)}
 
 /* ---- 事件留下的待办 ---- */
 .qrow{display:grid;grid-template-columns:1fr 120px auto;gap:12px;align-items:center;
@@ -2441,6 +2469,7 @@ function viewSeason(){
     ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
     ${T==="team"?squadCard()+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
     ${T==="shop"?(typeof economyCards==="function"?economyCards():shopCard()):""}
+    ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
     ${T==="world"?standingsCard()+rivalCard()+newsCard()+eventsCard():""}
     ${T==="ach"?achCard():""}`;
   const oppName=S.schedule[S.week-1];
@@ -3525,7 +3554,8 @@ const TABS_PRE=[
   {k:"world",n:"世界", z:"world"},
   {k:"shop", n:"经济", z:"money"},
   {k:"ach",  n:"成就", z:"rec"},
-  {k:"log",  n:"日志", z:"rec"}
+  {k:"log",  n:"日志", z:"rec"},
+  {k:"auto", n:"托管", z:"auto", sep:true}
 ];
 const TABS_SEASON=[
   {k:"act",  n:"本周", z:"act"},
@@ -3533,12 +3563,13 @@ const TABS_SEASON=[
   {k:"team", n:"队伍", z:"team"},
   {k:"world",n:"世界", z:"world"},
   {k:"shop", n:"经济", z:"money"},
-  {k:"ach",  n:"成就", z:"rec"}
+  {k:"ach",  n:"成就", z:"rec"},
+  {k:"auto", n:"托管", z:"auto", sep:true}
 ];
 function tabBar(list){
   const cur=curTab(list);
   return `<div class="tabs">${list.map(t=>
-    `<button class="tab z-${t.z||"act"} ${t.k===cur?'on':''}" data-tab="${t.k}">${t.n}${
+    `<button class="tab z-${t.z||"act"} ${t.sep?"sep":""} ${t.k===cur?'on':''}" data-tab="${t.k}">${t.n}${
       t.k==="ach"?`<span class="tcount">${ACHIEVEMENTS.filter(a=>hasAch(a.id)).length}</span>`:""}</button>`
   ).join("")}</div>`;
 }
@@ -3671,7 +3702,8 @@ function viewPre(){
          你的个人数值只是基础战力的一部分——五个人怎么变成一支队，是另一半。</p>`)
     +lockedCard("队友","签约职业战队后解锁完整版。",
       `<p class="note" style="margin:0">每个队友对你有独立的信任度，会因为你的选择涨落，也会影响全队发挥。</p>`):""}
-  ${T==="shop"?((typeof autoCard==="function")?autoCard():"")+(typeof financeCard==="function"?financeCard():"")+gearCard()+shopCard()+(typeof prizeNote==="function"?prizeNote():"")
+  ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
+  ${T==="shop"?(typeof financeCard==="function"?financeCard():"")+gearCard()+shopCard()+(typeof prizeNote==="function"?prizeNote():"")
       +lockedCard("俱乐部资源","签约职业战队后解锁。",
         `<p class="note" style="margin:0">私教、理疗师、团队建设、舆论公关——
           进队之后才用得上，也才付得起。</p>`):""}
@@ -5094,8 +5126,7 @@ function gearCard(){
 }
 /* 经济页 = 财务总览 -> 我的合同 -> 商城 -> 奖金标准（自上而下） */
 function economyCards(){
-  return ((typeof autoCard==="function")?autoCard():"")
-    + financeCard()
+  return financeCard()
     + ((typeof contractTerms==="function")?contractTerms():"")
     + shopCard()
     + prizeNote();
@@ -7801,37 +7832,90 @@ function autoOnce(){
 }
 
 /* ---------- 界面 ---------- */
-/* 经济页顶部那张卡。开关摆开，代价也写在脸上。 */
-function autoCard(){
-  const all=autoAllOn();
-  return `<div class="card"><h2>托管<em>${autoAnyOn()?"已开启":"未开启"}</em></h2>
-    <p class="note" style="margin:0 0 12px">赛场外的杂事可以整包交出去，
-      <b>随时可以再收回来</b>——同一个存档里来回切，不用重开。</p>
-    <div class="row" style="margin:0 0 12px">
+/* 托管是独立栏目，不塞在经济里——它换的是玩法，不是一页内容。
+   这一页要把三件事说到底：它替你决定什么、按什么规则决定、它不碰什么。
+   托管最怕的是黑箱：玩家不知道刚才那下是谁做的、为什么这么做。 */
+
+/* 每一档到底按什么规则决定——摊开写，一条不藏 */
+const AUTO_RULES={
+  buy:[
+    "先留 250 万安全余额（够一次报名费和几次理疗），超出的才花",
+    "体能掉到 30 以下 → 买「每万块回体能最多」的那一项",
+    "团队投入按固定顺序：私教 → 理疗师 → 团队建设 → 舆论公关",
+    "外设只升到<b>职业级</b>；定制级要余额超过 3000 万才碰",
+    "课程只买现在用得上的：心态最低买运动心理、运营最低买复盘方法、队友信任低买沟通表达",
+    "语言课只在人已经在外赛区、或手上就有外赛区报价时买（不赌以后）"
+  ],
+  biz:[
+    "直播独家：粉丝离天花板还远（不到六成）就<b>不签</b>——自由身上限更高",
+    "已经贴着天花板了，签<b>俱乐部的合作平台</b>：抽成低，经理还承你的情",
+    "<b>永远不签来抢人的那家</b>：经理 −12 换 15% 保底，不值",
+    "杯赛报名：够门槛、且报名费不超过余额四成就报"
+  ],
+  daily:[
+    "每条事件都预先标了推荐项，优先「有明确收益、没有长期代价」的那一个",
+    "涉及心态和队友关系的，选温和项（不吵架、不放狠话）",
+    "推荐项要花钱而余额不够时，自动退到第一个不花钱的选项",
+    "<b>注意</b>：事件的选择会累积成人物特质，托管替你选＝特质也由它决定"
+  ],
+  career:[
+    "试训邀请：离对方期望值差 4 分以内就去",
+    "转会问询：对方队战力比现在这支强就接",
+    "合同：还一次价（要求加薪），然后签",
+    "下放二队：连着两个赛段没打上首发就接受"
+  ]
+};
+
+function autoPage(){
+  const all=autoAllOn(), any=autoAnyOn();
+  return `<div class="card"><h2>托管<em>${any?"已开启":"未开启"}</em></h2>
+    <p class="note" style="margin:0 0 6px"><b>这是「精简版」和「完整版」的开关。</b></p>
+    <p class="note" style="margin:0 0 12px">赛场外的杂事——买东西、谈商务、处理各种弹窗——
+      可以整包交给团队按推荐处理。<b>随时可以再收回来</b>，同一个存档里来回切，不用重开。
+      玩腻了细节就托管，想回来管就关掉。</p>
+    <div class="row" style="margin:0 0 4px">
       <button class="btn ${all?"ghost":""}" id="autoAll">${all?"全部收回":"一键全托管"}</button>
       <button class="btn ghost" id="autoNow">现在就按推荐执行一次</button>
     </div>
-    <p class="note" style="margin:0 0 8px;color:var(--ink-3)">下面四格<b>点一下就是开关</b>，可以只交出去一部分。</p>
-    <div class="autogrid">${AUTO_KEYS.map(x=>`
-      <button class="autoitem ${autoOn(x.k)?"on":""}" data-auto="${x.k}">
-        <div class="t"><span class="sw">${autoOn(x.k)?"●":"○"}</span>${x.n}${
-          autoOn(x.k)?'<span class="tag g">托管中</span>':'<span class="tag">未托管</span>'}</div>
-        <div class="d">${x.d}</div>
-        ${x.warn?`<div class="d" style="color:var(--red)">这是主线——托管掉基本等于看别人打</div>`:""}
-      </button>`).join("")}</div>
-    <p class="note" style="margin-top:12px">推荐走的是<b>稳健路线</b>，不是最优解：
+    <p class="note" style="margin:0 0 14px;color:var(--ink-3)">
+      「执行一次」不改开关，只是把当下该做的事按推荐做掉——不想长期托管也能用。</p>
+
+    <h3>四档，可以只交出去一部分</h3>
+    <p class="note" style="margin:0 0 10px">下面每一格<b>点一下就是开关</b>。</p>
+    ${AUTO_KEYS.map(x=>`
+      <div class="autoblk ${autoOn(x.k)?"on":""}">
+        <button class="autohd" data-auto="${x.k}">
+          <span class="sw">${autoOn(x.k)?"●":"○"}</span>
+          <b>${x.n}</b>
+          <span class="tag ${autoOn(x.k)?"g":""}">${autoOn(x.k)?"托管中":"未托管"}</span>
+          <span class="autohd-d">${x.d}</span>
+        </button>
+        ${x.warn?`<p class="note" style="margin:6px 0 0;color:var(--red)">
+          <b>这是这个游戏的主线。</b>交出去之后「去哪支队、签什么合同」不再问你——
+          你还在打比赛，但基本等于看别人打。</p>`:""}
+        <div class="autorules"><div class="arh">按这些规则决定</div>
+          <ul>${(AUTO_RULES[x.k]||[]).map(r=>`<li>${r}</li>`).join("")}</ul></div>
+      </div>`).join("")}
+
+    <h3>它不碰的东西</h3>
+    <p class="note" style="margin:0 0 10px">托管只管赛场外。下面这些永远是你自己的：
+      <b>行动点怎么花</b>（练什么、打不打排位、直播还是休息）、
+      <b>比赛里的每一个决策点</b>、<b>要不要冲瓶颈</b>、<b>战队行动</b>。
+      比赛还是你在打。</p>
+
+    <h3>代价</h3>
+    <p class="note" style="margin:0 0 10px">托管<b>不收任何费用</b>——你要的就是省心，
+      再收你钱等于惩罚这种玩法。代价只有一个，而且是隐性的：
+      <b>推荐永远走稳健路线，不是最优解。</b>
       不砸定制级外设、不赌高价独家、事件里选温和项。
-      <b>自己管的上限比托管高</b>——这是「精简版能打、完整版有上限」的意思。</p>
-    ${autoAnyOn()?`<div class="ver" style="margin-top:10px">
-      <b>开了之后会怎样</b><br>
-      ${autoOn("daily")?"际遇和更衣室谈话不再弹窗问你，直接按推荐处理。<br>":""}
-      ${autoOn("biz")?"直播独家、杯赛报名自动决定。<br>":""}
-      ${autoOn("buy")?"有钱就自动添装备、买课、压疲劳。<br>":""}
-      ${autoOn("career")?'<span style="color:var(--red)">试训、转会、合同、下放也自动了——主线交出去了。</span><br>':""}
-      做过的每一件都会写进日志，<b>本周页顶部</b>也有一条「托管中」随时能收回。</div>`:""}
-    ${(S.autoLog&&S.autoLog.length)?`<div class="ver" style="margin-top:10px">
-      <b>托管最近做的事</b><br>${S.autoLog.slice(-8).join("　·　")}</div>`:""}
-    <div class="row" style="margin-top:12px">
+      手动玩的人可以做托管不会做的事，所以<b>自己管的上限比托管高</b>——
+      这就是「精简版能打、完整版有上限」的意思。</p>
+
+    ${(S.autoLog&&S.autoLog.length)?`<h3>托管做过的事</h3>
+      <div class="ver">${S.autoLog.slice(-14).join("　·　")}</div>`:
+      `<p class="note" style="color:var(--ink-3)">还没有托管记录。开了之后，
+       它做的每一件事都会记在这里，也会写进日志。</p>`}
+    <div class="row" style="margin-top:14px">
       <button class="btn ghost" id="autoBack">回到本周，接着打 →</button>
     </div>
   </div>`;

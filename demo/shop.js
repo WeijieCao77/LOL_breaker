@@ -422,8 +422,7 @@ function gearCard(){
 }
 /* 经济页 = 财务总览 -> 我的合同 -> 商城 -> 奖金标准（自上而下） */
 function economyCards(){
-  return ((typeof autoCard==="function")?autoCard():"")
-    + financeCard()
+  return financeCard()
     + ((typeof contractTerms==="function")?contractTerms():"")
     + shopCard()
     + prizeNote();

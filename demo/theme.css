@@ -20,6 +20,7 @@
   --z-world:#8B93D9;  /* 世界 · 蓝紫——你影响不了的外部世界，用冷色 */
   --z-money:#D89B4A;  /* 经济 · 琥珀——商城、合同、收入 */
   --z-rec:#7E93A6;    /* 记录 · 灰蓝——成就与日志，是查阅不是操作，刻意压低 */
+  --z-auto:#8FA0B4;   /* 托管 · 冷灰——它是模式开关，不是内容，不该抢任何一个域的色 */
 
   --pin-h:0px;        /* 属性条实测高度，由 render() 写入，给标签栏定位用 */
 }
@@ -29,6 +30,7 @@
 #stage[data-zone="team"]{--zone:var(--z-team)}
 #stage[data-zone="world"]{--zone:var(--z-world)}
 #stage[data-zone="money"]{--zone:var(--z-money)}
+#stage[data-zone="auto"]{--zone:var(--z-auto)}
 #stage[data-zone="rec"]{--zone:var(--z-rec)}
 *{box-sizing:border-box}
 html{background:var(--void)}
@@ -467,7 +469,10 @@ td .tlogo{margin-right:5px}
 /* 固定住。原来是 static，翻到第三屏想换页得先滚回顶部——
    而属性条反倒是 sticky 的，两者的角色正好反了。
    top 用实测的属性条高度，避免写死一个在手机上会错位的数。 */
-.tabs{display:flex;gap:2px;margin-bottom:16px;background:var(--line);
+/* 手机上标签栏换行，不横向滚动。
+   加了「托管」之后是 7 栏，横滚会把最后一栏推到屏幕外——
+   一个「要单独存在、要玩家找得到」的开关躲在看不见的地方，等于没做。 */
+.tabs{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:16px;background:var(--line);
   border:1px solid var(--line);overflow-x:auto;
   position:sticky;top:var(--pin-h,0px);z-index:30;
   scrollbar-width:none;
@@ -484,6 +489,11 @@ td .tlogo{margin-right:5px}
 .tab.z-act{--tz:var(--z-act)}   .tab.z-me{--tz:var(--z-me)}
 .tab.z-team{--tz:var(--z-team)} .tab.z-world{--tz:var(--z-world)}
 .tab.z-money{--tz:var(--z-money)} .tab.z-rec{--tz:var(--z-rec)}
+.tab.z-auto{--tz:var(--z-auto)}
+/* 托管跟内容栏目之间隔一条：它换的是玩法，不是换一页内容 */
+.tab.sep{margin-top:10px;border-top:1px solid var(--line)}
+@media(max-width:900px){.tab.sep{margin-top:0;border-top:none;
+  background:linear-gradient(180deg,rgba(143,160,180,.12),rgba(6,21,32,.9))}}
 .tab.on{color:var(--tz,var(--gold-hi))}
 .tcount{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:10px;margin-left:6px;
   padding:1px 6px;background:rgba(6,21,32,.7);color:var(--gold);border-radius:99px}
@@ -612,6 +622,24 @@ td .tlogo{margin-right:5px}
 /* 已经成型的特质：实线、金色——它是你身上的东西，不是进度条 */
 .trait.on{border-style:solid;border-color:var(--gold);color:var(--gold-hi);
   background:rgba(201,169,97,.10);font-weight:600}
+
+/* ---- 托管页：每一档摊开写规则 ---- */
+.autoblk{border:1px solid var(--line);border-left:2px solid var(--line);
+  padding:11px 13px;margin-bottom:9px;background:rgba(6,21,32,.4)}
+.autoblk.on{border-left-color:var(--z-auto);background:rgba(143,160,180,.09)}
+.autohd{display:flex;align-items:center;gap:9px;flex-wrap:wrap;width:100%;
+  background:none;border:0;padding:0;font:inherit;color:var(--ink);cursor:pointer;text-align:left}
+.autohd b{font-size:14.5px}
+.autohd .sw{font-size:13px;color:var(--ink-3);flex:none}
+.autoblk.on .autohd .sw{color:var(--z-auto)}
+.autohd-d{font-size:11.5px;color:var(--ink-3);flex:1 1 100%}
+.autohd:focus-visible{outline:2px solid var(--z-auto);outline-offset:3px}
+.autorules{margin-top:8px;padding-top:8px;border-top:1px solid var(--line-soft,rgba(255,255,255,.06))}
+.autorules .arh{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;
+  font-size:10px;letter-spacing:.14em;color:var(--ink-3);margin-bottom:5px}
+.autorules ul{margin:0;padding-left:17px}
+.autorules li{font-size:12px;color:var(--ink-2);line-height:1.65;margin-bottom:3px}
+.autorules li::marker{color:var(--ink-3)}
 
 /* ---- 事件留下的待办 ---- */
 .qrow{display:grid;grid-template-columns:1fr 120px auto;gap:12px;align-items:center;
