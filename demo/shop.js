@@ -272,7 +272,7 @@ function checkStreamBiz(){
     if(S.streamOfferSeen[d.lvl]) continue;
     if(S.streamDeal&&S.streamDeal.lvl>=d.lvl) continue;
     S.streamOfferSeen[d.lvl]=1;
-    const club=clubPlatform();
+    const club=clubPlatform();            // 没签约时为 null，卡片会走「自由身」那一版
     S.streamOffer={lvl:d.lvl,sign:d.sign,base:d.base,n:d.n,
                    club, rival:rivalPlatform(club)};
     break;
@@ -285,7 +285,9 @@ function signStreamDeal(kind){
   S.streamOffer=null;
   const hasClub=!!(o.club&&S.team);
   if(!hasClub) kind=null;
-  const plat = kind==="club" ? o.club : kind==="rival" ? o.rival : (o.club||"平台");
+  // 职业前没有俱乐部，就没有「俱乐部的合作平台」这回事——
+  // 直接用来谈的那一家，别显示成一个叫「平台」的平台。
+  const plat = kind==="club" ? o.club : kind==="rival" ? o.rival : (o.club||o.rival||PLATFORMS[0]);
   const sign = Math.round(o.sign*(kind==="club"?0.8:kind==="rival"?1.4:1));
   const base = Math.round(o.base*(kind==="rival"?1.15:1));
   const cut  = kind==="club"?0.20:kind==="rival"?0.40:0;
@@ -347,7 +349,7 @@ function streamOfferCard(){
       ${hasClub?`麻烦的是有两份：<b>${S.team}</b> 的合作平台是 <b>${o.club}</b>，
         而 <b>${o.rival}</b> 也想把你抢过去。<b>直播权写在你的队内合同上</b>——
         签谁、俱乐部抽多少，是三方的事，不是你和平台两个人的事。`
-        :`你现在没有队，签不签只跟你自己有关。`}
+        :`来谈的是 <b>${o.rival}</b>。你现在没有队，签不签只跟你自己有关——没人抽你的成。`}
       你现在每次直播约 <b>${now} 万</b>。</p>
     ${hasClub?`<div class="grid g2">
       <div class="ver"><b>签 ${o.club}</b>（俱乐部的合作平台）<br><span class="note" style="margin:0">
@@ -360,13 +362,13 @@ function streamOfferCard(){
     <div class="ver" style="margin-top:10px"><b>不签</b><br><span class="note" style="margin:0">
       收入跟着粉丝和热度浮动，分成档也会继续往上谈——打出名堂的话上限比保底高得多。
       代价是没有下限，凉了就是真的凉；也没有开播条款捆着你。</span></div>
-    <p class="note" style="margin:10px 0 0">两份独家合同都带<b>开播条款</b>：每赛段至少播 ${need} 次，做不到要赔钱。</p>
+    <p class="note" style="margin:10px 0 0">${hasClub?"两份独家合同都带":"独家合同带"}<b>开播条款</b>：每赛段至少播 ${need} 次，做不到要赔钱。</p>
     <div class="row" style="justify-content:center">
       ${hasClub
         ? `<button class="btn" id="strmclub">签 ${o.club}</button>
            <button class="btn" id="strmrival">签 ${o.rival}</button>
            <button class="btn ghost" id="strmno">不签，自己闯</button>`
-        : `<button class="btn" id="strmyes">签独家</button>
+        : `<button class="btn" id="strmyes">签 ${o.rival}</button>
            <button class="btn ghost" id="strmno">不签，自己闯</button>`}
     </div>
     <p class="note">拒了这一档就不会再来；咖位再上一个大台阶，才会有更高的报价。</p></div></div>`;
