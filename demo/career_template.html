@@ -665,12 +665,14 @@ function buildLDL(w){
     syn:Math.max(20,(t.syn===undefined?50:t.syn)-10),
     tac:Math.max(20,(t.tac===undefined?50:t.tac)-10),
     /* 二队坐着的是正经选手，不是靶子。
-       原来是 parent−12（均值 ~40），而玩家打完一整个业余赛季就有 45+，
-       签进去当周就把对位顶掉了——「青训生靠训练赛争取上场机会」这一段
-       等于不存在。LDL 真实水平离一队没那么远，−3 才对得上。
-       再加一道下限 56（2026-08-31 实力重锚）：现实里 LDL 首发也是宗师往上，
-       钻石实力（~48）在二队照样坐板凳——「一般宗师才能打上职业」。 */
-    players:POS.map(x=>Object.assign(makeRookie(x.k,Math.max(p-3,56)),{lg:"LDL",form:52,retired:false}))
+       原来是 parent−12（均值 ~40），玩家签进去当周就把对位顶掉；
+       后来加了写死的下限 56，又闹出反向笑话：UP 这种弱队全队平均才 47
+       （真实数据、50=LPL 位置平均），它的二队新秀反而 56——儿子比爹强
+       （玩家线上抓的倒挂）。
+       现在下限跟着母队走：max(p−3, 47) 但永远不超过 p−1——
+       强队青训依然是宗师级门神，弱队青训跟弱队一样菜，但依然让
+       钻石实力（~48）有得打、没得躺。 */
+    players:POS.map(x=>Object.assign(makeRookie(x.k,Math.min(Math.max(p-3,47),p-1)),{lg:"LDL",form:52,retired:false}))
   }));
 }
 

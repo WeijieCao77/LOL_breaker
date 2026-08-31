@@ -1183,7 +1183,8 @@ function promoteCard(){
   const ok1=me>=him+1;
   return `<div class="card"><h2>升队通道<em>母队 ${typeof teamLogo==="function"?teamLogo(pname,18):""} ${pname}</em></h2>
     <p class="note" style="margin:0 0 10px">合同签给的是俱乐部，你现在注册在二队名单。
-      升队窗口：<b>季中间歇</b> 和 <b>休赛期</b>——到点自动核查，达标就调上去。</p>
+      升队窗口：<b>季中间歇</b> 和 <b>休赛期</b>——到点自动核查，达标就调上去。<br>
+      <span style="color:var(--ink-3)">评分口径：50＝LPL 同位置平均。四十多不是路人，是一线下游首发。</span></p>
     <div class="attrs">
       <div class="at wide"><div class="lb">你</div>
         <div class="track"><div class="fill" style="width:${clamp(me,0,100)}%"></div></div>
