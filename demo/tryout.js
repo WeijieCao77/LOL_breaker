@@ -1001,6 +1001,9 @@ function signTransfer(){
     fee?`对方付了 <b>${fee} 万</b>违约金。`:""}年薪 ${d.salary} 万，${d.years} 个赛段。`,
     "big", "转会");
   if(typeof checkAch==="function") checkAch("transfer", {to:d.team});
+  // 转会也是签约——「远走他乡」这类 on:"sign" 的成就原来只在首签触发，
+  // 真转会出国反而拿不到（修误发 LDL 的同时抓出来的反向漏洞）
+  if(typeof checkAch==="function") checkAch("sign");
   if(typeof txNote==="function") txNote(`${old} → <b>${d.team}</b>${(d.league&&d.league!==oldLg)?`（${d.league}）`:""}，年薪 ${d.salary} 万${fee?`，转会费 ${fee} 万`:""}`);
   S.deal = null; render();
 }

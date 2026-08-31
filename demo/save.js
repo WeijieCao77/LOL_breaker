@@ -127,6 +127,7 @@ function loadGame() {
     fixStaleRank(S);
     if (!S.ledger && typeof initLedger === "function") initLedger();   // 老档没有流水：从下一笔开始记
     fixLegacyFame(S);
+    fixLegacyForeignAch(S);
     // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
     // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
     if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
@@ -147,6 +148,24 @@ function fixLegacyFame(s) {
   if (s.fans === undefined) s.fans = s.fame || 0;
   delete s.fame;
   if (s.heat === undefined) s.heat = Math.min(260, (s.fans || 0) * 0.12);
+}
+
+/* 「远走他乡」误发回收：旧判定把 LDL 当成外赛区，签国内青训也发这个成就。
+   证据法回收——现在人在国内（LPL/LDL），且转会轨迹里从没出现过跨赛区标记
+   （txNote 只在联赛变化时写「（LCK）」这类括号），就判为误发。
+   徽章收回、奖励不追（几十万就当误发的签约红包），以后真出国还能重新拿。 */
+function fixLegacyForeignAch(s) {
+  try {
+    if (!s.ach || !s.ach.foreign) return;
+    const hl = s.homeLeague || "LPL";
+    if (hl !== "LPL" && hl !== "LDL") return;          // 现在就在外赛区，拿得对
+    const marks = /（(LCK|LEC|LCS|PCS|VCS|LJL|LLA|CBLOL|LCO|TCL|LPL)）/;
+    if ((s.txLog || []).some(x => marks.test(x.text || ""))) return;   // 有跨赛区轨迹，拿得对
+    delete s.ach.foreign;
+    if (s.achLog) s.achLog = s.achLog.filter(x => x.id !== "foreign");
+    (s.events = s.events || []).push({ s: "更正", w: s.week || 0, tone: "info", tag: "成就",
+      text: `更正：<b>「远走他乡」</b>发错了——你签的是国内俱乐部的青训体系，LDL 不是外赛区。徽章收回，奖励不追；哪天真去了外赛区，它还会亮。` });
+  } catch (e) {}
 }
 
 /* 存档时间的人话 */
