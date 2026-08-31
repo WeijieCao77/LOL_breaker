@@ -38,11 +38,13 @@ function ledgerRotate(){
 }
 function _ledgerSum(o){ return Object.values(o||{}).reduce((a,b)=>a+b,0); }
 
-/* ---------- 赛事奖金表（稳健档，到档就发、取最高档、每次都发） ---------- */
+/* ---------- 赛事奖金表（稳健档，到档就发、取最高档、每次都发） ----------
+   2026-08-31 经济重锚：LPL 冠军 200 万本来就贴现实，不动；
+   国际赛按「个人分成」口径下调 ~30%，LDL 减半——次级联赛的钱就是少。 */
 const PRIZE_PO    ={champion:200, runner:80, semi:40};
-const PRIZE_PO_LDL={champion:40,  runner:15, semi:0};
-const PRIZE_MSI   ={main:60, knock:150, final:250, champion:500};
-const PRIZE_W     ={playin:40, main:80, knock:150, semi:250, final:400, champion:800};
+const PRIZE_PO_LDL={champion:20,  runner:8,  semi:0};
+const PRIZE_MSI   ={main:40, knock:100, final:180, champion:350};
+const PRIZE_W     ={playin:30, main:60, knock:100, semi:180, final:280, champion:550};
 
 /* ---------- 财务总览卡 ---------- */
 function financeCard(){
@@ -97,51 +99,51 @@ const TIER_N=["入门","进阶","职业","定制"];
 const GEAR={
   mouse:[
     {n:"雷蛇 DeathAdder Essential", cost:0,   t:0, e:{操作:0}},
-    {n:"罗技 G102",                cost:60,  t:1, e:{操作:0.8}},
-    {n:"罗技 G Pro X Superlight",  cost:260, t:2, e:{操作:1.9}},
-    {n:"罗技 G PRO 2 Lightspeed",  cost:640, t:3, e:{操作:1.7}}
+    {n:"罗技 G102",                cost:30,  t:1, e:{操作:0.8}},
+    {n:"罗技 G Pro X Superlight",  cost:130, t:2, e:{操作:1.9}},
+    {n:"罗技 G PRO 2 Lightspeed",  cost:320, t:3, e:{操作:1.7}}
   ],
   kb:[
     {n:"杂牌薄膜键盘",              cost:0,   t:0, e:{操作:0}},
-    {n:"罗技 G512",                cost:70,  t:1, e:{操作:0.7}},
-    {n:"罗技 G Pro X TKL RAPID",   cost:280, t:2, e:{操作:1.7}},
-    {n:"Wooting 60HE",             cost:620, t:3, e:{操作:2.9}}
+    {n:"罗技 G512",                cost:35,  t:1, e:{操作:0.7}},
+    {n:"罗技 G Pro X TKL RAPID",   cost:140, t:2, e:{操作:1.7}},
+    {n:"Wooting 60HE",             cost:310, t:3, e:{操作:2.9}}
   ],
   mon:[
     {n:"公司发的 60Hz 屏",          cost:0,   t:0, e:{运营:0}},
-    {n:"AOC 24G2 144Hz",           cost:90,  t:1, e:{运营:0.8}},
-    {n:"ZOWIE XL2546K 240Hz",      cost:330, t:2, e:{运营:1.8}},
-    {n:"Alienware AW2524H 500Hz",  cost:760, t:3, e:{运营:3.1}}
+    {n:"AOC 24G2 144Hz",           cost:45,  t:1, e:{运营:0.8}},
+    {n:"ZOWIE XL2546K 240Hz",      cost:165, t:2, e:{运营:1.8}},
+    {n:"Alienware AW2524H 500Hz",  cost:380, t:3, e:{运营:3.1}}
   ],
   hs:[
     {n:"路边买的耳麦",              cost:0,   t:0, e:{运营:0}},
-    {n:"HyperX Cloud II",          cost:80,  t:1, e:{运营:0.7}},
-    {n:"罗技 G Pro X",             cost:250, t:2, e:{运营:1.5}},
-    {n:"拜亚 DT1990 Pro + 声卡",    cost:700, t:3, e:{运营:2.6}}
+    {n:"HyperX Cloud II",          cost:40,  t:1, e:{运营:0.7}},
+    {n:"罗技 G Pro X",             cost:125, t:2, e:{运营:1.5}},
+    {n:"拜亚 DT1990 Pro + 声卡",    cost:350, t:3, e:{运营:2.6}}
   ],
   chair:[
     {n:"宿舍的旧转椅",              cost:0,   t:0, e:{体质:0}},
-    {n:"DXRacer 电竞椅",           cost:100, t:1, e:{体质:0.9}},
-    {n:"Secretlab TITAN Evo",      cost:340, t:2, e:{体质:1.9}},
-    {n:"Herman Miller Embody",     cost:820, t:3, e:{体质:3.3}}
+    {n:"DXRacer 电竞椅",           cost:50,  t:1, e:{体质:0.9}},
+    {n:"Secretlab TITAN Evo",      cost:170, t:2, e:{体质:1.9}},
+    {n:"Herman Miller Embody",     cost:410, t:3, e:{体质:3.3}}
   ]
 };
 
 /* 课程：一次性买断，永久生效 */
 const COURSES=[
-  {k:"kr",   n:"韩语课",       cost:300, d:"看得懂韩援的沟通，去 LCK 打球不再是聋子"},
-  {k:"en",   n:"英语课",       cost:240, d:"LEC / LCS 的更衣室能听懂了"},
-  {k:"psy",  n:"运动心理课",   cost:380, d:"心态训练效率提升"},
-  {k:"vod",  n:"复盘方法课",   cost:360, d:"运营训练效率提升"},
-  {k:"comm", n:"沟通表达课",   cost:280, d:"队友信任涨得更快"}
+  {k:"kr",   n:"韩语课",       cost:150, d:"看得懂韩援的沟通，去 LCK 打球不再是聋子"},
+  {k:"en",   n:"英语课",       cost:120, d:"LEC / LCS 的更衣室能听懂了"},
+  {k:"psy",  n:"运动心理课",   cost:190, d:"心态训练效率提升"},
+  {k:"vod",  n:"复盘方法课",   cost:180, d:"运营训练效率提升"},
+  {k:"comm", n:"沟通表达课",   cost:140, d:"队友信任涨得更快"}
 ];
 
 /* 放松：花钱换体力，不占行动点 */
 const RELAX=[
-  {k:"massage", n:"按摩 90 分钟", cost:25,  fat:-18, d:"当天就能缓过来"},
-  {k:"physio2", n:"专业理疗",     cost:55,  fat:-34, d:"手腕和肩颈都做一遍"},
-  {k:"hotpot",  n:"约队友吃火锅", cost:45,  fat:-22, trust:7, d:"体力和关系一起补"},
-  {k:"trip",    n:"短途度假",     cost:130, fat:-60, d:"彻底断网两天"}
+  {k:"massage", n:"按摩 90 分钟", cost:12,  fat:-18, d:"当天就能缓过来"},
+  {k:"physio2", n:"专业理疗",     cost:28,  fat:-34, d:"手腕和肩颈都做一遍"},
+  {k:"hotpot",  n:"约队友吃火锅", cost:22,  fat:-22, trust:7, d:"体力和关系一起补"},
+  {k:"trip",    n:"短途度假",     cost:65,  fat:-60, d:"彻底断网两天"}
 ];
 
 function initShop(){
@@ -195,8 +197,8 @@ const STREAM_CUTS=[
   {at:260, cut:0.88, n:"顶流分成（88%）"}
 ];
 const STREAM_DEALS=[
-  {lvl:1, at:95,  sign:100, base:26, n:"平台独家（B 级）"},
-  {lvl:2, at:260, sign:350, base:62, n:"平台独家（S 级）"}
+  {lvl:1, at:95,  sign:50,  base:13, n:"平台独家（B 级）"},
+  {lvl:2, at:260, sign:175, base:31, n:"平台独家（S 级）"}
 ];
 /* ---------- 平台归属：个人签约与俱乐部签约互相影响 ----------
 
@@ -241,8 +243,10 @@ function streamIncome(){
   // 以常态热度（实测中位约 400）为 1.0 上下浮动。原来 /260 让中位就顶到
   // 上限 1.9，等于给直播收入整体加了 90%，那不是「趁热打铁」，是通胀。
   const heatMul=clamp(0.45+(S.heat||0)/730,0.45,1.7);
-  const gift=Math.pow(f/40,1.22)*4.4*streamCut()*heatMul;
-  const base=4+f*0.05;
+  // 2026-08-31 经济重锚：整体 ÷2。生涯钱中位的目标从 ~1700 万压到 600–900 万，
+  // 直播是仅次于成就的第二大外快，不跟着缩的话「二线队员靠直播暴富」照样成立。
+  const gift=Math.pow(f/40,1.22)*2.2*streamCut()*heatMul;
+  const base=2+f*0.025;
   return (base+gift)*originMul;
 }
 /* 独家平台控流量，涨名气比全网直播慢 */

@@ -99,12 +99,23 @@ const ACHIEVEMENTS=[
 function initAch(){ S.ach={}; S.achLog=[]; }
 function hasAch(id){ return !!(S.ach&&S.ach[id]); }
 
+/* 成就现金全面缩水（2026-08-31 玩家拍板：改发荣誉为主）。
+   原来 40+ 个成就带 150–3000 万现金，是全游戏最大的通胀源——
+   二线队员随手解锁几个就一赛段 +600 万。成就的本体是荣誉：
+   名气照发，现金只留象征值。连锁大成就（≥1000）÷10（它们的现实
+   价值是商业价值，走名气变现），其余 ÷5 并封顶 120。
+   奖励表里的 money 保持原值，折算只在这一个发放口。 */
+function achCash(m){
+  if(!m) return 0;
+  return m>=1000 ? Math.round(m/10) : Math.min(Math.round(m/5), 120);
+}
 function applyAchReward(r){
   if(!r) return [];
   const out=[];
   if(r.fat){ addFat(r.fat); out.push(`体力 +${-r.fat}`); }
-  if(r.money){ if(typeof addMoney==="function") addMoney("ach",r.money); else S.money+=r.money;
-    out.push(`奖金 ${r.money} 万`); }
+  const cash=achCash(r.money);
+  if(cash){ if(typeof addMoney==="function") addMoney("ach",cash); else S.money+=cash;
+    out.push(`奖金 ${cash} 万`); }
   if(r.fame){ addFans(r.fame); out.push(`名气 +${r.fame}`); }
   if(r.trust&&typeof addTrustAll==="function"){ addTrustAll(r.trust); out.push(`士气 ${r.trust>0?"+":""}${r.trust}`); }
   return out;

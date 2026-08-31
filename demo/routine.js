@@ -180,9 +180,8 @@ function quickPlan(){
 /* 「一键安排」按钮，摆在推进按钮旁边。点数花完就让位，不占地方 */
 function quickBtn(){
   if(!S.ap||S.ap<=0) return "";
-  return `<button class="btn ghost sm" id="quickap"
-    title="按最稳妥的路数花掉剩余行动点：累了休息、没累补短板、练无可练打排位。不追瓶颈、不刷钱——上限很低，赢在省事">
-    一键安排</button>`;
+  return `<button class="btn ghost sm" id="quickap" aria-label="一键安排"
+    title="按最稳妥的路数花掉剩余行动点：累了休息、没累补短板、练无可练打排位。不追瓶颈、不刷钱——上限很低，赢在省事">一键安排</button>`;
 }
 
 /* ---------- 界面 ---------- */

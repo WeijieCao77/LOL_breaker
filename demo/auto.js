@@ -55,7 +55,7 @@ function autoLogClear(){ S.autoLog=[]; }
 /* ---------- 一、采购 ----------
    先留出安全余额：手上永远得有下一次报名费和几次理疗的钱，
    不然托管会把你花到打不起比赛。 */
-const AUTO_RESERVE=250;
+const AUTO_RESERVE=120;   // 经济重锚后水位整体下移，安全余额跟着降
 function autoCash(){ return (S.money||0)-AUTO_RESERVE; }
 
 /* 外设槽位排序：先武装自己最强的那一维——托管不替玩家改打法，

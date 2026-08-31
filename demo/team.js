@@ -164,14 +164,15 @@ function resolveLocker(i){
 }
 
 /* ---------- 合同与经济 ---------- */
+/* 2026-08-31 经济重锚：收入侧全面缩水，支出跟着 ÷2——买得起，但要取舍 */
 const SPEND=[
-  {k:"coach",n:"请私教",cost:120,d:"下个赛段训练收益提升",
+  {k:"coach",n:"请私教",cost:60,d:"下个赛段训练收益提升",
    run:()=>{S.buff.coach=1;}},
-  {k:"physio",n:"理疗师",cost:85,d:"疲劳恢复更快，状态更稳",
+  {k:"physio",n:"理疗师",cost:42,d:"疲劳恢复更快，状态更稳",
    run:()=>{S.buff.physio=1;addFat(-25);}},
-  {k:"team",n:"团队建设",cost:110,d:"全队信任提升",
+  {k:"team",n:"团队建设",cost:55,d:"全队信任提升",
    run:()=>{addTrustAll(16);}},
-  {k:"pr",n:"舆论公关",cost:70,d:"压下负面，人气回升",
+  {k:"pr",n:"舆论公关",cost:35,d:"压下负面，人气回升",
    run:()=>{addFans(14);}}
 ];
 /* 薪资 = 谈出来的年薪 + 人气与荣誉带来的浮动。
@@ -182,8 +183,10 @@ function salaryOf(){
   // 老的名气中位 1092、新的粉丝中位 4871，系数不跟着调就等于每赛段白发几百万。
   // 0.045 是标定出来的——让薪资浮动的中位贡献仍然是 ~218 万，和改之前一致。
   // 封顶也补上：粉丝没有上界，薪资浮动不能跟着没有上界。
-  const bonus=Math.round(Math.min(S.fans,6000)*0.045)+(S.career.leagueTitles||0)*14
-    +((S.career.msi||0)+(S.career.worlds||0))*36;
+  // 2026-08-31 经济重锚：浮动收窄到原来的约 1/4——
+  // 名气与荣誉的钱主要走合同谈判和奖金，不再靠每赛段自动加薪。
+  const bonus=Math.round(Math.min(S.fans,6000)*0.012)+(S.career.leagueTitles||0)*6
+    +((S.career.msi||0)+(S.career.worlds||0))*14;
   if(c.salary!==undefined) return Math.round(c.salary+bonus);
   // 老存档或没走谈判流程的情况，退回旧算法
   const kindMul={sub:1.25,start:1.0,core:0.85,foreign:1.15}[S.offerKind]||1;

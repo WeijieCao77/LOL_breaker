@@ -642,9 +642,10 @@ function buildLDL(w){
     /* 二队坐着的是正经选手，不是靶子。
        原来是 parent−12（均值 ~40），而玩家打完一整个业余赛季就有 45+，
        签进去当周就把对位顶掉了——「青训生靠训练赛争取上场机会」这一段
-       等于不存在。LDL 真实水平离一队没那么远，−3 才对得上：
-       二队坐着的人和签约时的你在同一档，谁上得看训练赛。 */
-    players:POS.map(x=>Object.assign(makeRookie(x.k,p-3),{lg:"LDL",form:52,retired:false}))
+       等于不存在。LDL 真实水平离一队没那么远，−3 才对得上。
+       再加一道下限 56（2026-08-31 实力重锚）：现实里 LDL 首发也是宗师往上，
+       钻石实力（~48）在二队照样坐板凳——「一般宗师才能打上职业」。 */
+    players:POS.map(x=>Object.assign(makeRookie(x.k,Math.max(p-3,56)),{lg:"LDL",form:52,retired:false}))
   }));
 }
 
@@ -1200,7 +1201,7 @@ function preAct(k,dim){
 
 /* 职业前的时间节点：都有明确门槛和倒计时 */
 const PRE_MILESTONES=[
-  {w:8, name:"城市争霸赛", tag:"赛事", open:true, signup:"city", fee:35, prize:[0,25,70,180,420],
+  {w:8, name:"城市争霸赛", tag:"赛事", open:true, signup:"city", fee:8, prize:[0,2,8,20,50],
    need:()=>S.pre.rank>=RANKS[2].at, needTxt:"钻石及以上",
    cur:()=>rankFull(S.pre.rank),
    desc:"市级公开赛，报名要钻石。职业队球探常来看台",
@@ -1212,7 +1213,7 @@ const PRE_MILESTONES=[
    desc:"有人开始注意到你了",
    run:()=>preLog("有个自称 <b>战队青训教练</b> 的人加了你好友，问你有没有想过打职业。","good"),
    fail:()=>{}},
-  {w:14, name:"主播杯", tag:"赛事", open:true, vague:true, signup:"stream", fee:60, prize:[0,60,180,520],
+  {w:14, name:"主播杯", tag:"赛事", open:true, vague:true, signup:"stream", fee:15, prize:[0,10,30,80],
    need:()=>S.fans>=60, needTxt:"邀请制 · 看人气",
    cur:()=>fanTier(),
    desc:"邀请制，名气不够连门都进不去",
@@ -1929,6 +1930,7 @@ function tabContent(T){
   return `${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+gearCard():""}
     ${T==="team"?squadCard()+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
     ${T==="shop"?(typeof economyCards==="function"?economyCards():shopCard()):""}
+    ${T==="tx"?(typeof transferPage==="function"?transferPage():""):""}
     ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
     ${T==="world"?standingsCard()+rivalCard()+newsCard()+eventsCard():""}
     ${T==="ach"?achCard():""}`;
@@ -2241,7 +2243,8 @@ function endMatch(){
     if(st&&st[m.oppName]) st[m.oppName][won?"l":"w"]++;
   }
   addFans(won?7:-2.5); addFat(13);
-  const purse=won?9:4;
+  // 出场费按联赛分级：LDL 的钱就是 LDL 的钱（经济重锚）
+  const purse=(S.homeLeague||"LPL")==="LDL"?(won?2:1):(won?9:4);
   if(typeof addMoney==='function') addMoney('match',purse); else S.money+=purse;
   S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+(won?0.5:1.1));
   S.log.push(`<div>${SEASONS[S.si].tag} 第${S.week}周 vs ${m.oppName} <b>${m.sc[0]}:${m.sc[1]}</b> ${won?'<span class="w">胜</span>':'<span class="l">负</span>'}　<span class="hi">${won?"胜场奖金":"出场费"} +${purse} 万</span></div>`);
@@ -2698,6 +2701,12 @@ function enterBreak(next, weeks, label, note){
   S.step="offseason";
   if(next!=="intl") S.fatigue=Math.max(0,S.fatigue-20);
   pushEvent(note||`${label}（${weeks} 周）。没有比赛，正好把该补的补上。`,"info","间歇");
+  // 季中注册窗（2026-08-31 玩家拍板的双窗制）：春季赛打完，转会市场开门。
+  // 赛段里攒的意向在这里兑现——LDL 打半年打得好，夏季赛就能上一线。
+  if(next==="summer"&&S.career){
+    S.askedTransfer=false;
+    if(typeof rollProOffers==="function") rollProOffers("mid");
+  }
   render();
 }
 /* ---------- 间歇期的分周新闻 ----------
@@ -2853,29 +2862,10 @@ function offPanel(){
         <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${typeof squadActs==="function"?squadActs():""}
-    ${(()=>{ if(!S.career||S.off.next!=="year"||typeof canAskTransfer!=="function") return "";
-      const c=canAskTransfer(), p=askTransferOdds();
-      return `<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">转会窗口</h3>
-      <div class="grid g2">
-        <button class="act" id="askTransfer" ${(!c.ok||S.ap<=0)?'disabled style="opacity:.4"':''}>
-          <div class="t">主动挂牌</div>
-          <div class="d">${c.ok
-            ?`让经纪人放消息说你想走。有人接的把握 <b style="color:${
-                p>=0.5?'var(--cyan)':p>=0.25?'var(--gold)':'var(--red)'}">${(p*100).toFixed(0)}%</b><br>
-              <span style="color:var(--red)">经理会不高兴；没人接的话，更衣室也会知道你想走</span>`
-            :`🔒 ${c.why}`}</div>
-        </button>
-        ${(typeof canBuyout==="function")?(()=>{ const b=canBuyout();
-          const fee=(S.contract&&S.contract.buyout)||0;
-          return `<button class="act" id="doBuyout" ${(!b.ok||S.ap<=0)?'disabled style="opacity:.4"':''}>
-          <div class="t">买断合同</div>
-          <div class="d">${b.ok
-            ?`自己掏 <b style="color:var(--gold)">${fee} 万</b>解约，立刻成为自由身——
-              不用再等别人来挖，别的队也不必替你付这笔钱。<br>
-              <span style="color:var(--red)">经理 −18、教练 −10，全队信任 −12</span>`
-            :`🔒 ${b.why}`}</div>
-        </button>`;})():""}
-      </div>`;})()}
+    ${(()=>{ if(!S.career||typeof txWindowOpen!=="function"||!txWindowOpen()) return "";
+      // 挂牌/买断/接触都住进「转会」栏了——这里只提醒窗口开着
+      return `<p class="note" style="margin-top:14px"><b style="color:var(--gold)">${txWindowName()}开着。</b>
+        挂牌、买断、主动接触都在<b>「转会」栏</b>——想动就趁现在。</p>`;})()}
     <div class="row"><button class="btn" id="offnext" ${S.ap>0?'disabled':''}>
       ${S.ap>0?`还剩 ${S.ap} 个行动点`
         :(S.off.week>=S.off.weeks
@@ -3084,6 +3074,7 @@ const TABS_SEASON=[
   {k:"me",   n:"我的", z:"me"},
   {k:"team", n:"队伍", z:"team"},
   {k:"world",n:"世界", z:"world"},
+  {k:"tx",   n:"转会", z:"money"},   // 试训邀请/报价/挂牌/接触/合同——2026-08-31 玩家点名独立成栏
   {k:"shop", n:"经济", z:"money"},
   {k:"ach",  n:"成就", z:"rec"},
   {k:"auto", n:"托管", z:"auto", sep:true}
@@ -3621,6 +3612,8 @@ function bind(){
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;
   const _pn=$("pofno"); if(_pn) _pn.onclick=dropProOffer;
   const _at=$("askTransfer"); if(_at) _at.onclick=()=>askTransfer();
+  st.querySelectorAll("[data-approach]").forEach(b=>b.onclick=()=>{
+    if(typeof approachTeam==="function") approachTeam(b.dataset.approach); });
   const _bo=$("doBuyout"); if(_bo) _bo.onclick=()=>askConfirm("买断合同？",
     `自己掏 <b>${(S.contract&&S.contract.buyout)||0} 万</b>解约，立刻成为自由身。<br>
      <span class="note">这笔钱不退。经理和教练会记着，更衣室也会知道。
