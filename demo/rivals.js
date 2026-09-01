@@ -33,6 +33,7 @@ function noteRevenge(teamName){
   r.beat++; r.heat=Math.max(0,r.heat-4);
   pushEvent(`<b>${S.team}</b> 击败 ${teamName}。<b>${foe.id}</b> 这一次输给了你——${
     r.beat>=r.lost?"这笔账算平了。":"但账还没算完。"}`,"big","宿敌");
+  if(r.beat>=r.lost&&typeof checkAch==="function") checkAch("revenge");   // 审计：钩子缺失
 }
 function topRival(){
   ensureRivals();

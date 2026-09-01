@@ -9,14 +9,19 @@
 
 const ACH_MORE=[
   /* ---------- 荣誉进阶 ---------- */
+  /* 审计修复（2026-09-03）：这四条原来挂在 worlds 钩子上，而 checkAch("worlds")
+     从未被调用——全部是死成就。改挂 crown（任一冠军入账后触发的共用钩子），
+     条件写成完整集合判定，先拿哪座后拿哪座都能正确点亮。 */
   {id:"double", n:"双冠王", d:"同一年拿下 MSI 与世界赛。", tag:"荣誉",
-   on:"worlds", cond:()=>((S.career.msiYears||[]).includes(S.si)), r:{money:2000,fame:200,fat:-90}},
+   on:"crown", cond:()=>((S.career.msiYears||[]).includes(S.si))&&((S.career.worldsYears||[]).includes(S.si)),
+   r:{money:2000,fame:200,fat:-90}},
   {id:"backtoback", n:"卫冕", d:"连续两年拿下世界冠军。", tag:"荣誉",
    on:"worlds", cond:()=>((S.career.worldsYears||[]).includes(S.si-1)), r:{money:2500,fame:240,fat:-90}},
   {id:"slam", n:"大满贯", d:"生涯集齐联赛、MSI、世界赛冠军。", tag:"荣誉",
-   on:"worlds", cond:()=>(S.career.leagueTitles||0)>=1&&(S.career.msi||0)>=1, r:{money:1800,fame:180}},
+   on:"crown", cond:()=>(S.career.leagueTitles||0)>=1&&(S.career.msi||0)>=1&&(S.career.worlds||0)>=1,
+   r:{money:1800,fame:180}},
   {id:"treble", n:"三冠", d:"同一年拿下联赛、MSI 和世界赛。", tag:"荣誉",
-   on:"worlds", cond:()=>((S.career.msiYears||[]).includes(S.si))&&((S.career.lgYears||[]).includes(S.si)),
+   on:"crown", cond:()=>((S.career.msiYears||[]).includes(S.si))&&((S.career.worldsYears||[]).includes(S.si))&&((S.career.lgYears||[]).includes(S.si)),
    r:{money:3000,fame:300,fat:-99}},
   {id:"lg3", n:"三连霸", d:"连续三个赛段拿下联赛冠军。", tag:"荣誉",
    on:"lgtitle", cond:()=>(S.career.lgStreak||0)>=3, r:{money:600,fame:90}},
@@ -114,7 +119,8 @@ const ACH_MORE=[
   {id:"rich", n:"存款过千万", d:"账上攒到 1000 万。", tag:"经济",
    on:"money", cond:()=>S.money>=1000, r:{fame:30}},
   {id:"allcourse", n:"全都学了", d:"把所有课程都修完。", tag:"经济",
-   on:"course", cond:()=>typeof COURSES!=="undefined"&&COURSES.every(c=>(S.courses||[]).includes(c.k)),
+   // 审计修复：S.courses 是对象不是数组，原来的 includes 永远抛错
+   on:"course", cond:()=>typeof COURSES!=="undefined"&&COURSES.every(c=>S.courses&&S.courses[c.k]),
    r:{money:200,fame:40}},
   {id:"grandmaster", n:"国服第一", d:"排位打到国服前十。", tag:"经济",
    on:"rank", cond:()=>S.pre&&S.pre.rank>=95, r:{money:300,fame:110}},

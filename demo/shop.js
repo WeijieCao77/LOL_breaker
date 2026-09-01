@@ -557,6 +557,7 @@ function buyGear(slot,tier){
   if(tier<=cur||S.money<g.cost) return;
   addMoney("gear",-g.cost); S.gear[slot]=tier;
   pushEvent(`换上了 <b>${g.n}</b>（${TIER_N[tier]}级${SLOTS.find(s=>s.k===slot).n}）。`,"good","装备");
+  if(typeof checkAch==="function") checkAch("gear");   // 审计：装备到位的钩子缺失
   render();
 }
 function buyCourse(k){
@@ -564,6 +565,7 @@ function buyCourse(k){
   if(!c||hasCourse(k)||S.money<c.cost) return;
   addMoney("course",-c.cost); S.courses[k]=1;
   pushEvent(`报了 <b>${c.n}</b>。${c.d}`,"good","课程");
+  if(typeof checkAch==="function") checkAch("course");   // 审计：语言/全修成就的钩子缺失
   render();
 }
 function buyRelax(k){

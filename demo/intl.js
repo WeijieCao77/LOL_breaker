@@ -245,6 +245,7 @@ function openIntl(type,field,stage){
   field.forEach(n=>S.intl.swiss[n]=[0,0]);
   if(typeof breakthrough==="function")
     breakthrough("运营",2.0,"见过国际赛场的强度，回头看联赛都慢了半拍。","intl"+S.si);
+  if(typeof checkAch==="function") checkAch("intl");   // 走出国门（审计：钩子缺失）
   pushEvent(`<b>${S.team}</b> 进入 ${name}${
     stage==="swiss"?" 瑞士轮":stage==="groups"?" 小组赛":""}。${
     type==="worlds"?"这是全年最后一次机会。":""}`,"big",name);
@@ -570,6 +571,9 @@ function crownChampion(){
   // 记年份，供「双冠王 / 卫冕 / 三冠」判定
   const yk=I.type==="msi"?"msiYears":"worldsYears";
   S.career[yk]=(S.career[yk]||[]).concat([S.si]);
+  // 荣誉成就钩子（审计修复）：checkAch("msi"/"worlds") 从未被调用过——
+  // 世界冠军/MSI 冠军以及挂在它们身上的双冠王/卫冕/大满贯/三冠全是死成就
+  if(typeof checkAch==="function"){ checkAch(I.type==="msi"?"msi":"worlds"); checkAch("crown"); }
   // 夺冠是里程碑经历，走独立的里程碑池——机械路径刷得再满也占不掉这份
   const cap0={心态:(S.capBonus&&S.capBonus.心态)||0, 指挥:(S.capBonus&&S.capBonus.指挥)||0};
   if(typeof breakthrough==="function"){

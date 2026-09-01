@@ -968,6 +968,12 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260903e", at:"2026-09-03", items:[
+    "重大修复：机械突破（连练操作/复盘 6 次/休息计满/翻盘 3 场）原来只查计数、从不查你是否真的顶着瓶颈——操作 80/上限 92 随便练三周也弹突破＋成就（玩家实锤）。现在必须真的站在上限上才兑现；夺冠/强队/老将这类「经历松动上限」不受影响",
+    "成就系统全量审计：世界冠军、MSI 冠军、走出国门的钩子从未被调用（双冠王/卫冕/大满贯/三冠全是死成就）——全部接活，且大满贯/双冠/三冠改为集合判定，先拿哪座都能点亮；「这笔账算平了」「装备到位」「语言不是问题」「全都学了」四个死钩子接活；「全都学了」的判定类型错误修复；「榜一大哥」不再在职业前零薪水时误触；「苦练出真章」不再被夺冠里程碑误发",
+    "休息改为 1 点（玩家拍板）：单次恢复按碎片档同尺折算（体能 −17 起、心态 +0.35）——每点买到的恢复量不变，想大休就连点两次；体质突破门槛同尺折算 6→12 次",
+    "点数标注统一：所有行动按钮的点数一律标在标题行，1 点也标"
+  ]},
   {v:"v20260903d", at:"2026-09-03", items:[
     "创建界面不再替你预选：位置和起始年龄默认全空，每一个选择都由你自己按下去；开局按钮会依次提示还缺什么（ID → 位置 → 年龄 → 出身 → 天赋）"
   ]},
@@ -1063,7 +1069,7 @@ const AP_SEASON=8, AP_PRE=12, AP_OFF=8, AP_HURT=4;
    中 2 = 半天（专项训练 / 直播一开就是四小时 / 做内容 / 真歇半天 / 合练 / 复盘 / 杯赛备战）；
    重 3 = 训练赛——整个下午连打，最耗神。
    预算同步翻倍：起步强度净中性，体感是「能做的事变多、轻的真的轻」。 */
-const AP_COST={train:2,solo:1,stream:2,content:2,rest:2,scrim:3,vod:2,drill:2,duo:1,cupprep:2};
+const AP_COST={train:2,solo:1,stream:2,content:2,rest:1,scrim:3,vod:2,drill:2,duo:1,cupprep:2};   // rest=1：玩家拍板「一个行动点休息比较合理」
 function apCost(k){ return AP_COST[k]||1; }
 function apTag(k){ return `<i class="apc">${apCost(k)}点</i>`; }
 function apFor(phase){
@@ -1197,7 +1203,9 @@ function breakthrough(d,n,reason,key,kind){
   pushEvent(`<b>瓶颈松动</b>　${reason}<br>
     <span style="color:var(--cyan)">${d}上限 ${c0.toFixed(1)} → <b>${c1.toFixed(1)}</b>（+${gotS}）</span>`,
     "big","突破");
-  checkAch("break"); if(key===undefined) checkAch("breakauto");
+  checkAch("break");
+  // 纯机械成就只认机械路径：夺冠类里程碑（mile）也走 key=undefined，原来会误发「苦练出真章」
+  if(key===undefined&&kind!=="mile") checkAch("breakauto");
 }
 /* ---------- 突破路径 ----------
    每一维都有明确的破法。前三条是机械的：肯这么练就一定拿得到。
@@ -1216,11 +1224,12 @@ const BREAK_PATHS={
         auto:true, gain:2.0,
         prog:()=>`${clamp(S.btk&&S.btk.vod||0,0,6)}/6 次`,
         done:()=>(S.btk&&S.btk.vod||0)>=6 },
-  体质:{ how:"一个赛段里休息满 6 次，并且这个赛段一场不缺",
+  体质:{ how:"一个赛段里休息满 12 次，并且这个赛段一场不缺",
+        // 休息改 1 点碎片档后次数翻倍可得：6→12，真实投入量和原来完全一样
         by:"rest", act:"休息",
         auto:true, gain:1.6,
-        prog:()=>`${clamp(S.btk&&S.btk.rest||0,0,6)}/6 次`,
-        done:()=>(S.btk&&S.btk.rest||0)>=6 },
+        prog:()=>`${clamp(S.btk&&S.btk.rest||0,0,12)}/12 次`,
+        done:()=>(S.btk&&S.btk.rest||0)>=12 },
   心态:{ how:"在落后的局面里赢下 3 场，或者拿一次冠军",
         by:"play", act:"在比赛里翻盘",
         auto:true, gain:3.0, sweep:true, key:"cb3",
@@ -1249,12 +1258,15 @@ function btkPathDead(d){
     return "这条路的收益已经拿过一次——再往上要靠<b>冠军</b>这样的里程碑";
   return null;
 }
+/* 机械磨练路径的公共闸：不顶着瓶颈就不存在「顶开」这回事。
+   玩家实锤：操作 80/92 随便练三周也弹突破+成就——路径只查计数从不查你在不在瓶颈上。 */
+function btkAtCap(d){ return S.attrs&&typeof capOf==="function"&&S.attrs[d]>=capOf(d)-0.05; }
 function btkNote(d,n){ S.btk=S.btk||{opStreak:0,opThisWeek:0,vod:0,rest:0};
   if(d==="op") S.btk.opThisWeek+=n;
   else S.btk[d]=(S.btk[d]||0)+n;
   /* 复盘攒满当场兑现。原来拖到赛段结算才发，玩家看着 6/6 毫无动静
      以为坏了（线上报的）；机械池满时也不再静默发 0，直说到头了。 */
-  if(d==="vod"&&S.btk.vod>=6&&typeof BREAK_PATHS!=="undefined"){
+  if(d==="vod"&&S.btk.vod>=6&&typeof BREAK_PATHS!=="undefined"&&btkAtCap("运营")){
     const dead=btkPathDead("运营");
     if(dead) pushEvent(`战术复盘做满 6 次——但${dead}。这个计数不再有意义。`,"info","突破");
     else breakthrough("运营",BREAK_PATHS.运营.gain,"整个赛段泡在录像里，你看比赛的方式变了。");
@@ -1271,7 +1283,7 @@ function sweepBreakthroughs(){
   DIMS.forEach(d=>{
     const P=BREAK_PATHS[d];
     if(!P||!P.sweep||!P.gain||!P.done) return;
-    try{ if(P.done()) breakthrough(d,P.gain,P.reason||"条件达成了。",P.key||("path_"+d)); }
+    try{ if(P.done()&&btkAtCap(d)) breakthrough(d,P.gain,P.reason||"条件达成了。",P.key||("path_"+d)); }
     catch(e){}
   });
 }
@@ -1307,14 +1319,14 @@ function btkWeekEnd(){
       pushEvent(`冲击操作瓶颈<b>断了</b>：这周只练了 ${invested}/3 次，连续周数清零。要连着 3 周、每周至少练 3 次操作。`,"bad","突破");
   }
   const P=BREAK_PATHS.操作;
-  if(P.done()){ breakthrough("操作",P.gain,"连着三周把行动点全砸在操作上，手感磨出来了。");
+  if(P.done()&&btkAtCap("操作")){ breakthrough("操作",P.gain,"连着三周把行动点全砸在操作上，手感磨出来了。");
     S.btk.opStreak=0; }
 }
 /* 每赛段结算：运营与体质 */
 function btkSplitEnd(){
   S.btk=S.btk||{opStreak:0,opThisWeek:0,vod:0,rest:0};
-  if(BREAK_PATHS.运营.done()) breakthrough("运营",BREAK_PATHS.运营.gain,"整个赛段泡在录像里，你看比赛的方式变了。");
-  if(BREAK_PATHS.体质.done()&&S.record.w+S.record.l>=WEEKS)
+  if(BREAK_PATHS.运营.done()&&btkAtCap("运营")) breakthrough("运营",BREAK_PATHS.运营.gain,"整个赛段泡在录像里，你看比赛的方式变了。");
+  if(BREAK_PATHS.体质.done()&&btkAtCap("体质")&&S.record.w+S.record.l>=WEEKS)
     breakthrough("体质",BREAK_PATHS.体质.gain,"这个赛段你把作息守住了，身体给了回报。");
   S.btk.vod=0; S.btk.rest=0;
 }
@@ -2147,7 +2159,7 @@ function preAct(k,dim){
     if(dim==="操作"&&typeof btkNote==="function") btkNote("op",1);   // 到瓶颈也要能攒突破进度
     if(S.attrs[dim]<c) S.attrs[dim]=Math.min(c,S.attrs[dim]+gain(dim)*0.85);
     addFat(9);
-  } else { addFat(-32); S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.5); }
+  } else { addFat(-18); S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.3); }   // 1 点碎片休息 ×0.55
   P.ap-=_c; render();
 }
 
@@ -2524,15 +2536,15 @@ function trainBtn(d, ap, attr){
   return { dead, trainable,
     dis: (ap<apCost("train")||dead),
     style: trainable?'style="border-color:var(--gold)"':'',
-    title: `练${d}${trainable?' <span class="tag">冲击瓶颈</span>':''}`,
+    title: `练${d} ${apTag("train")}${trainable?' <span class="tag">冲击瓶颈</span>':''}`,
     // tip 挂在按钮 title 上：鼠标悬停就能看到完整规则/突破路径
     tip: (done&&P)?P.how:(done?"已到天赋上限":DIM_DESC[d]),
     desc: deadWhy   ? `已达瓶颈 · ${deadWhy}`
-        : trainable ? `<b>连续 3 周、每周练满 3 次</b>可破上限　${P.prog?P.prog():""}${costTrain(d)}${apTag("train")}`
+        : trainable ? `<b>连续 3 周、每周练满 3 次</b>可破上限　${P.prog?P.prog():""}${costTrain(d)}`
         : locked    ? `已达瓶颈 · 突破要做<b>战术复盘</b>，签约战队后才有`
         : dead      ? `已达瓶颈 · 突破靠<b>${P&&P.act?P.act:"别的途径"}</b>${
                        P&&P.auto&&P.prog?`　${P.prog()}`:""}`
-        : DIM_HINT[d]+costTrain(d)+apTag("train") };
+        : DIM_HINT[d]+costTrain(d) };
 }
 function gain(d){
   const t=S.talent[d],c=cap(t),room=clamp(1-(S.attrs[d]/c),0,1);
@@ -2771,8 +2783,8 @@ function costStream(){
     `<i class="up">+${Math.round(inc)}</i>万`]);
 }
 function costRest(){
-  if(_isPre()) return costBits([_eUp(32), `心态<i class="up">+0.5</i>`]);
-  const v=-((S.buff&&S.buff.physio)?-42:-30)*((S.bg&&S.bg.rest)||1)*_prepMul();
+  if(_isPre()) return costBits([_eUp(18), `心态<i class="up">+0.3</i>`]);
+  const v=-((S.buff&&S.buff.physio)?-23:-17)*((S.bg&&S.bg.rest)||1)*_prepMul();
   return costBits([_eUp(v)]);
 }
 
@@ -2836,11 +2848,11 @@ function doAction(k){
     // 榜一大哥只会在你真的开播的时候出现，不该每周瞎摇
     if(typeof fireEvent==="function") fireEvent("streamGift",0.20);}
   else{ if(typeof btkNote==="function") btkNote("rest",1);
-    addFat(((S.buff&&S.buff.physio)?-42:-30)*((S.bg&&S.bg.rest)||1)*prepMul);
-    if(S.assets&&S.assets.rehab) addFat(-8*prepMul);        // 私人康复室
-    S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.6*prepMul);
+    addFat(((S.buff&&S.buff.physio)?-23:-17)*((S.bg&&S.bg.rest)||1)*prepMul);   // 1 点碎片休息：效果 ×0.55
+    if(S.assets&&S.assets.rehab) addFat(-4.5*prepMul);      // 私人康复室（×0.55）
+    S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.35*prepMul);
     // 休息也是泄压阀：心理课让它更管用
-    if(S.tilt) S.tilt=Math.max(0,q1(S.tilt-(10+(typeof hasCourse==="function"&&hasCourse("psy")?6:0))*prepMul));}
+    if(S.tilt) S.tilt=Math.max(0,q1(S.tilt-(6+(typeof hasCourse==="function"&&hasCourse("psy")?3:0))*prepMul));}
   S.ap-=apCost(k);render();
 }
 /* 自动推进 —— 推到「下一件需要你拿主意的事」就停。
@@ -3317,8 +3329,7 @@ function endMatch(){
     S.lckBeaten=S.lckBeaten||[];
     if(!S.lckBeaten.includes(m.oppName)) S.lckBeaten.push(m.oppName);
   }
-  checkAch("match",{won,metLegend});
-  if(won) checkAch("win",{won,metLegend});
+  // 薄 ctx 的重复调用已并入下方完整 ctx（metLegend 进 ctx），同一场不再查两遍
 
   // 你自己的大事
   const me=S.name||"你", star=m.opp.players.filter(q=>q.pos===S.pos)[0];
@@ -3348,6 +3359,7 @@ function endMatch(){
     // 点名类成就（对位 Faker 等）要看真实名单，不能拿联赛当替身——
     // 玩家在国际赛碰到 BRION 这种 LCK 队也弹「被注视」，文案直接穿帮
     oppIds:(m.opp&&m.opp.players?m.opp.players:[]).map(q=>q&&q.id).filter(Boolean),
+    metLegend,
     laneWon:!!(star&&avg(DIMS.map(d=>S.attrs[d]))>=ovrOf(star)),
     nodeFails:m.nodeFails||0,
     lostFirstTwo:m.need>=3&&m.firstTwoLost};
@@ -3726,7 +3738,7 @@ function endSeason(result,seed){
     S.career.leagueTitles=(S.career.leagueTitles||0)+1;
     S.career.lgYears=(S.career.lgYears||[]).concat([S.si]);
     S.career.lgStreak=(S.career.lgStreak||0)+1;
-    checkAch("lgtitle");
+    checkAch("lgtitle"); checkAch("crown");
     // 夺冠之后：庆功宴、采访、商务饭局——这也是选手人生的一部分
     if(typeof fireEvent==="function") fireEvent("afterchamp", 0.7);
     breakthrough("心态",2.0,"捧过一次奖杯之后，大场面对你来说不一样了。","lgtitle","mile");
@@ -4298,7 +4310,7 @@ function actPanelPre(){
     ${fatigueBar()}
     <div class="grid g5">
       <button class="act" data-pre="rank" ${P.ap<apCost("solo")?'disabled style="opacity:.34"':''}>
-        <div class="t">打排位</div><div class="d">${(()=>{const p=soloWinP();
+        <div class="t">打排位 ${apTag("solo")}</div><div class="d">${(()=>{const p=soloWinP();
           return p>=0.66?"这个分段你打得动":p>=0.5?"五五开，能上但不稳":
                  p>=0.34?"打得挺吃力，容易掉":"实力不够，硬打只会掉分"})()}${costSolo()}</div></button>
       <button class="act" data-pre="stream" ${P.ap<apCost("stream")?'disabled style="opacity:.34"':''}>
@@ -4637,6 +4649,7 @@ function openIntl(type,field,stage){
   field.forEach(n=>S.intl.swiss[n]=[0,0]);
   if(typeof breakthrough==="function")
     breakthrough("运营",2.0,"见过国际赛场的强度，回头看联赛都慢了半拍。","intl"+S.si);
+  if(typeof checkAch==="function") checkAch("intl");   // 走出国门（审计：钩子缺失）
   pushEvent(`<b>${S.team}</b> 进入 ${name}${
     stage==="swiss"?" 瑞士轮":stage==="groups"?" 小组赛":""}。${
     type==="worlds"?"这是全年最后一次机会。":""}`,"big",name);
@@ -4962,6 +4975,9 @@ function crownChampion(){
   // 记年份，供「双冠王 / 卫冕 / 三冠」判定
   const yk=I.type==="msi"?"msiYears":"worldsYears";
   S.career[yk]=(S.career[yk]||[]).concat([S.si]);
+  // 荣誉成就钩子（审计修复）：checkAch("msi"/"worlds") 从未被调用过——
+  // 世界冠军/MSI 冠军以及挂在它们身上的双冠王/卫冕/大满贯/三冠全是死成就
+  if(typeof checkAch==="function"){ checkAch(I.type==="msi"?"msi":"worlds"); checkAch("crown"); }
   // 夺冠是里程碑经历，走独立的里程碑池——机械路径刷得再满也占不掉这份
   const cap0={心态:(S.capBonus&&S.capBonus.心态)||0, 指挥:(S.capBonus&&S.capBonus.指挥)||0};
   if(typeof breakthrough==="function"){
@@ -5364,6 +5380,7 @@ function noteRevenge(teamName){
   r.beat++; r.heat=Math.max(0,r.heat-4);
   pushEvent(`<b>${S.team}</b> 击败 ${teamName}。<b>${foe.id}</b> 这一次输给了你——${
     r.beat>=r.lost?"这笔账算平了。":"但账还没算完。"}`,"big","宿敌");
+  if(r.beat>=r.lost&&typeof checkAch==="function") checkAch("revenge");   // 审计：钩子缺失
 }
 function topRival(){
   ensureRivals();
@@ -6136,6 +6153,7 @@ function buyGear(slot,tier){
   if(tier<=cur||S.money<g.cost) return;
   addMoney("gear",-g.cost); S.gear[slot]=tier;
   pushEvent(`换上了 <b>${g.n}</b>（${TIER_N[tier]}级${SLOTS.find(s=>s.k===slot).n}）。`,"good","装备");
+  if(typeof checkAch==="function") checkAch("gear");   // 审计：装备到位的钩子缺失
   render();
 }
 function buyCourse(k){
@@ -6143,6 +6161,7 @@ function buyCourse(k){
   if(!c||hasCourse(k)||S.money<c.cost) return;
   addMoney("course",-c.cost); S.courses[k]=1;
   pushEvent(`报了 <b>${c.n}</b>。${c.d}`,"good","课程");
+  if(typeof checkAch==="function") checkAch("course");   // 审计：语言/全修成就的钩子缺失
   render();
 }
 function buyRelax(k){
@@ -6350,14 +6369,19 @@ function bgEffects(b){
 
 const ACH_MORE=[
   /* ---------- 荣誉进阶 ---------- */
+  /* 审计修复（2026-09-03）：这四条原来挂在 worlds 钩子上，而 checkAch("worlds")
+     从未被调用——全部是死成就。改挂 crown（任一冠军入账后触发的共用钩子），
+     条件写成完整集合判定，先拿哪座后拿哪座都能正确点亮。 */
   {id:"double", n:"双冠王", d:"同一年拿下 MSI 与世界赛。", tag:"荣誉",
-   on:"worlds", cond:()=>((S.career.msiYears||[]).includes(S.si)), r:{money:2000,fame:200,fat:-90}},
+   on:"crown", cond:()=>((S.career.msiYears||[]).includes(S.si))&&((S.career.worldsYears||[]).includes(S.si)),
+   r:{money:2000,fame:200,fat:-90}},
   {id:"backtoback", n:"卫冕", d:"连续两年拿下世界冠军。", tag:"荣誉",
    on:"worlds", cond:()=>((S.career.worldsYears||[]).includes(S.si-1)), r:{money:2500,fame:240,fat:-90}},
   {id:"slam", n:"大满贯", d:"生涯集齐联赛、MSI、世界赛冠军。", tag:"荣誉",
-   on:"worlds", cond:()=>(S.career.leagueTitles||0)>=1&&(S.career.msi||0)>=1, r:{money:1800,fame:180}},
+   on:"crown", cond:()=>(S.career.leagueTitles||0)>=1&&(S.career.msi||0)>=1&&(S.career.worlds||0)>=1,
+   r:{money:1800,fame:180}},
   {id:"treble", n:"三冠", d:"同一年拿下联赛、MSI 和世界赛。", tag:"荣誉",
-   on:"worlds", cond:()=>((S.career.msiYears||[]).includes(S.si))&&((S.career.lgYears||[]).includes(S.si)),
+   on:"crown", cond:()=>((S.career.msiYears||[]).includes(S.si))&&((S.career.worldsYears||[]).includes(S.si))&&((S.career.lgYears||[]).includes(S.si)),
    r:{money:3000,fame:300,fat:-99}},
   {id:"lg3", n:"三连霸", d:"连续三个赛段拿下联赛冠军。", tag:"荣誉",
    on:"lgtitle", cond:()=>(S.career.lgStreak||0)>=3, r:{money:600,fame:90}},
@@ -6455,7 +6479,8 @@ const ACH_MORE=[
   {id:"rich", n:"存款过千万", d:"账上攒到 1000 万。", tag:"经济",
    on:"money", cond:()=>S.money>=1000, r:{fame:30}},
   {id:"allcourse", n:"全都学了", d:"把所有课程都修完。", tag:"经济",
-   on:"course", cond:()=>typeof COURSES!=="undefined"&&COURSES.every(c=>(S.courses||[]).includes(c.k)),
+   // 审计修复：S.courses 是对象不是数组，原来的 includes 永远抛错
+   on:"course", cond:()=>typeof COURSES!=="undefined"&&COURSES.every(c=>S.courses&&S.courses[c.k]),
    r:{money:200,fame:40}},
   {id:"grandmaster", n:"国服第一", d:"排位打到国服前十。", tag:"经济",
    on:"rank", cond:()=>S.pre&&S.pre.rank>=95, r:{money:300,fame:110}},
@@ -6576,7 +6601,8 @@ const ACHIEVEMENTS=[
 
   {id:"gift_rain", secret:true, n:"榜一大哥", tag:"梗",
    d:"一场直播的礼物收入超过了你半个赛段的薪水。",
-   on:"stream", cond:()=>streamIncome()>=salaryOf()*0.5,
+   // 审计修复：职业前 salaryOf()=0，任何一次开播都会触发——要有真实薪水才有对比
+   on:"stream", cond:()=>S.career&&salaryOf()>0&&streamIncome()>=salaryOf()*0.5,
    flavor:"榜一大哥在公屏上打了一行字：别打职业了，直播吧。",
    r:{money:60,fame:14}},
 

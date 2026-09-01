@@ -80,7 +80,8 @@ const ACHIEVEMENTS=[
 
   {id:"gift_rain", secret:true, n:"榜一大哥", tag:"梗",
    d:"一场直播的礼物收入超过了你半个赛段的薪水。",
-   on:"stream", cond:()=>streamIncome()>=salaryOf()*0.5,
+   // 审计修复：职业前 salaryOf()=0，任何一次开播都会触发——要有真实薪水才有对比
+   on:"stream", cond:()=>S.career&&salaryOf()>0&&streamIncome()>=salaryOf()*0.5,
    flavor:"榜一大哥在公屏上打了一行字：别打职业了，直播吧。",
    r:{money:60,fame:14}},
 
