@@ -404,7 +404,7 @@ function intlAdvance(){
      入围赛、淘汰赛早就走备战了，唯独这条路被跳过，没有理由。 */
   I.round++;
   enterPrep("intl", nextIntlOpp(), intlBoNeed(),
-    `${name}${I.stage==="groups"?"小组赛":"瑞士轮"}第 ${I.round} 轮 · 赛前备战`);
+    `${name}${I.stage==="groups"?"小组赛":"瑞士轮"}第 ${I.round} 轮（${I.record.join("-")}${intlStakes()}）· 赛前备战`);
 }
 
 /* 其余队伍的瑞士轮战绩推进 */
@@ -547,8 +547,17 @@ function intlStageName(){
   const I=S.intl; if(!I) return "";
   const n=I.type==="msi"?"MSI":"世界赛";
   if(I.stage==="playin") return n+" 入围赛";
-  if(I.stage==="groups") return n+" 小组赛 "+I.record.join("-");
-  if(I.stage==="swiss")  return n+" 瑞士轮 "+I.record.join("-");
-  if(I.double) return n+" "+(I.losses?"败者组":"胜者组")+" 第"+(I.wins+I.losses+1)+"场";
+  if(I.stage==="groups") return n+" 小组赛 "+I.record.join("-")+intlStakes();
+  if(I.stage==="swiss")  return n+" 瑞士轮 "+I.record.join("-")+intlStakes();
+  if(I.double) return n+" "+(I.losses?"败者组":"胜者组")+" 第"+(I.wins+I.losses+1)+"场"+(I.losses?" · 再输回家":"");
   return n+" "+(I.knockRound>=3?"决赛":I.knockRound===2?"半决赛":"八强");
+}
+/* 瑞士轮/小组赛这一场押着什么——玩家原话：0-2 的 BO3 看不出是生死局 */
+function intlStakes(){
+  const I=S.intl; if(!I||!I.record) return "";
+  const [w,l]=I.record;
+  if(w===2&&l===2) return " · 生死局：赢了晋级，输了回家";
+  if(l===2) return " · 生死局：再输就淘汰";
+  if(w===2) return " · 晋级局：赢了进八强";
+  return "";
 }
