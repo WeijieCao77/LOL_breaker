@@ -247,8 +247,8 @@ const CONTENT_KINDS=[
 ];
 function doContent(k){
   const C=CONTENT_KINDS.find(x=>x.k===k);
-  if(!C||S.ap<=0){ S.contentPick=null; render(); return; }
-  S.contentPick=null; S.ap--;
+  if(!C||S.ap<((typeof apCost==="function")?apCost("content"):1)){ S.contentPick=null; render(); return; }
+  S.contentPick=null; S.ap-=(typeof apCost==="function")?apCost("content"):1;
   // 玩家原话：「点了也不告诉我发生了什么」——和际遇/更衣室一样，
   // 快照前后差异弹结果卡，数字摊开
   const before=(typeof snapshot==="function")?snapshot():null;

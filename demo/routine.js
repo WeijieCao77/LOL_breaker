@@ -166,7 +166,11 @@ function quickPlan(){
       if(av.length){ doTrain(av[0]); name="练"+av[0]; }
       else{ doAction("solo"); name="打排位"; }
     }
-    if(S.ap===before) break;   // 没消耗点数说明卡住了，别死循环
+    if(S.ap===before){
+      // 异化点数：剩 1 点付不起 2 点的行动——用 1 点的排位收尾，别浪费
+      doAction("solo"); name="打排位";
+      if(S.ap===before) break;   // 连排位都花不出去，真卡住了
+    }
     acts[name]=(acts[name]||0)+1; done++;
   }
   if(done){

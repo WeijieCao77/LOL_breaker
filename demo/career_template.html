@@ -283,6 +283,11 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260903b", at:"2026-09-03", items:[
+    "行动点重做：轻重分层＋异化点数（玩家拍板）。每周精力翻倍（赛季 8 点、职业前 12、休赛 8、备战/出征/伤 4），行动按现实时间精力定价：排位/双排/发简历 1 点（碎片时间）、训练/直播/做内容/休息/合练/复盘 2 点（半天）、训练赛 3 点（整个下午连打）",
+    "每个行动按钮都标了点数；一键安排/执行计划/托管认识新价格，剩 1 点会自动用排位收尾不浪费",
+    "冲击操作瓶颈的说法从「每周投 3 点」改为「每周练满 3 次」（每次 2 点）——投入占比和过去完全一样，备战/出征周照旧暂停不清零"
+  ]},
   {v:"v20260903a", at:"2026-09-03", items:[
     "全游戏用语电竞化（玩家点名）：我们做的是 LOL 不是足球篮球——「球探」全部改为青训教练/教练组/俱乐部（按语境），「球队」改「战队」，「球探观察」卡改名「俱乐部关注」"
   ]},
@@ -359,7 +364,15 @@ const CHANGELOG=[
 ];
 /* 版本戳：印在存档栏和作者栏。玩家对不上这个号，就是开了旧页面。 */
 const GAME_VER=CHANGELOG[0].v+" · 回声";
-const AP_SEASON=4, AP_PRE=6, AP_OFF=4, AP_HURT=2;
+const AP_SEASON=8, AP_PRE=12, AP_OFF=8, AP_HURT=4;
+/* 异化点数（2026-09-03 玩家拍板）：按现实时间精力定价。
+   轻 1 = 碎片时间（排位几把 / 双排 / 发简历）；
+   中 2 = 半天（专项训练 / 直播一开就是四小时 / 做内容 / 真歇半天 / 合练 / 复盘 / 杯赛备战）；
+   重 3 = 训练赛——整个下午连打，最耗神。
+   预算同步翻倍：起步强度净中性，体感是「能做的事变多、轻的真的轻」。 */
+const AP_COST={train:2,solo:1,stream:2,content:2,rest:2,scrim:3,vod:2,drill:2,duo:1,cupprep:2};
+function apCost(k){ return AP_COST[k]||1; }
+function apTag(k){ return `<i class="apc">${apCost(k)}点</i>`; }
 function apFor(phase){
   const v=S&&S.injury?AP_HURT:phase==="pre"?AP_PRE:phase==="off"?AP_OFF:AP_SEASON;
   // 顺手记下这一周实际发了多少点——冲瓶颈的周结算要用真实预算来审判，
@@ -579,14 +592,15 @@ function btkWeekEnd(){
   // 审判用这一周「实际发放」的预算（apFor/enterPrep/出征周都会记录）。
   // 玩家实测抓出来的冤案：季后赛备战、出征这些 1 点的段落，把仅有的
   // 点全投操作也凑不满 3，下一次结算却按整周审判——连击被无声清零。
-  const budget=(S.btk.apWeek!==undefined)?S.btk.apWeek:3;
+  const budget=(S.btk.apWeek!==undefined)?S.btk.apWeek:6;
   const invested=S.btk.opThisWeek, was=S.btk.opStreak;
   const chasing=S.attrs&&S.attrs.操作>=capOf("操作")-0.05;
-  if(budget<3){
-    // 行动点不足 3 的周（受伤 / 备战 / 出征）：暂停，不计数也绝不清零
+  // 异化点数后练一次操作 = 2 点，「练满 3 次」要 6 点预算——
+  // 备战/出征/受伤（4 点）的周照旧按暂停处理，不计数也绝不清零
+  if(budget<6){
     S.btk.opThisWeek=0;
     if(chasing&&was>0)
-      pushEvent(`这段时间行动点不足 3 点，冲击操作瓶颈<b>按暂停处理</b>——连续 ${was}/3 周保留。`,"info","突破");
+      pushEvent(`这段时间精力预算不足，冲击操作瓶颈<b>按暂停处理</b>——连续 ${was}/3 周保留。`,"info","突破");
     return;
   }
   if(invested>=3) S.btk.opStreak++;
@@ -594,10 +608,10 @@ function btkWeekEnd(){
   S.btk.opThisWeek=0;
   if(chasing){
     if(invested>=3&&S.btk.opStreak<3)
-      pushEvent(`冲击操作瓶颈：本周投满 ${invested} 点，连续 <b>${S.btk.opStreak}/3 周</b>。`,"good","突破");
+      pushEvent(`冲击操作瓶颈：本周练满 ${invested} 次，连续 <b>${S.btk.opStreak}/3 周</b>。`,"good","突破");
     // 断了必须说——默默清零就是「练了却没计入」的体感来源
     else if(invested<3&&(was>0||invested>0))
-      pushEvent(`冲击操作瓶颈<b>断了</b>：这周只投了 ${invested}/3 点，连续周数清零。要连着 3 周、每周至少 3 点。`,"bad","突破");
+      pushEvent(`冲击操作瓶颈<b>断了</b>：这周只练了 ${invested}/3 次，连续周数清零。要连着 3 周、每周至少练 3 次操作。`,"bad","突破");
   }
   const P=BREAK_PATHS.操作;
   if(P.done()){ breakthrough("操作",P.gain,"连着三周把行动点全砸在操作上，手感磨出来了。");
@@ -1378,25 +1392,29 @@ function soloWinP(){
 /* 一次「打排位」= 3 把，赢了涨输了掉 */
 function rankStep(){ return clamp(2.6-S.pre.rank*0.012,1.1,2.6); }
 function preAct(k,dim){
-  const P=S.pre; if(P.ap<=0) return;
+  const P=S.pre;
+  const _c=(typeof apCost==="function")?apCost(k==="rank"?"solo":k):2;
+  if(P.ap<_c) return;
   if(typeof noteAct==="function") noteAct(k==="train"?"train":"pre",k==="train"?dim:k);
   if(k==="rank"){
     const beforeT=rankName(P.rank), beforeF=rankFull(P.rank);
-    const p=soloWinP(), step=rankStep();
+    // 异化点数配平：1 点＝几把排位，单次涨跌 ×0.55（12 点预算下可刷，不配平会通胀）
+    const lightMul=0.50;
+    const p=soloWinP(), step=rankStep()*lightMul;
     let w=0,l=0;
     for(let i=0;i<3;i++){
       if(rnd()<p){ w++; P.rank=clamp(P.rank+step,0,100); }
       else { l++; P.rank=clamp(P.rank-step*0.82,0,100); }
     }
-    addFat(8);
+    addFat(4);
     // 排位打多了本身就会变强，而且是全面的——一局排位里对线、
     // 运营、心态、指挥、体力都在用，只是每一样都不如专项训练练得深。
     // （这也让「冲分」和「训练」不再是纯粹互抢行动点的关系。）
-    rankGain(w);
-    if(typeof ladderEncounter==="function") ladderEncounter();   // 天梯撞车
+    rankGain(w,lightMul);
+    if(typeof ladderEncounter==="function") ladderEncounter(0.50);   // 天梯撞车：按场次折算
 
     const afterT=rankName(P.rank), afterF=rankFull(P.rank);
-    addFans(w*0.5);      // 赢下来的分才带来关注
+    addFans(w*0.25);      // 赢下来的分才带来关注
     P.lastQ={w,l,p}; checkAch("rank");
     const up=RANKS.findIndex(r=>r.n===afterT)>RANKS.findIndex(r=>r.n===beforeT);
     if(afterT!==beforeT&&up){
@@ -1433,7 +1451,7 @@ function preAct(k,dim){
     if(S.attrs[dim]<c) S.attrs[dim]=Math.min(c,S.attrs[dim]+gain(dim)*0.85);
     addFat(9);
   } else { addFat(-32); S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.5); }
-  P.ap--; render();
+  P.ap-=_c; render();
 }
 
 /* 业余赛的老实现（报名即出结果）已经删掉——
@@ -1782,10 +1800,13 @@ function startSeason(first,split){
    定标：主项（操作）约为专项训练的一半。第一版给到 75%，那样排位
    单项就快赶上专项、还外送四项，等于没人会去训练了。 */
 const RANK_GAIN = { 操作:0.105, 运营:0.080, 心态:0.055, 指挥:0.035, 体质:0.025 };
-function rankGain(wins){
+function rankGain(wins, mul){
   const w = wins || 0;
+  // mul：会话规模折算（异化点数后 1 点＝几把）。基项原来不缩放，
+  // 12 次半场会话的「保底」是 6 次全场的两倍——属性通胀的总源头（批测抓的）。
+  const m = mul || 1;
   DIMS.forEach(d=>{
-    const g = RANK_GAIN[d] * (1 + w*0.22);
+    const g = RANK_GAIN[d] * (1 + w*0.22) * m;
     S.attrs[d] = Math.min(capOf(d), S.attrs[d] + g);
   });
 }
@@ -1804,17 +1825,17 @@ function trainBtn(d, ap, attr){
   const dead = done && !trainable;
   const locked = dead && !deadWhy && P && P.by==="squad" && !S.squad;   // 职业前根本没有战队行动
   return { dead, trainable,
-    dis: (ap<=0||dead),
+    dis: (ap<apCost("train")||dead),
     style: trainable?'style="border-color:var(--gold)"':'',
     title: `练${d}${trainable?' <span class="tag">冲击瓶颈</span>':''}`,
     // tip 挂在按钮 title 上：鼠标悬停就能看到完整规则/突破路径
     tip: (done&&P)?P.how:(done?"已到天赋上限":DIM_DESC[d]),
     desc: deadWhy   ? `已达瓶颈 · ${deadWhy}`
-        : trainable ? `<b>连续 3 周、每周投满 3 点</b>可破上限　${P.prog?P.prog():""}${costTrain(d)}`
+        : trainable ? `<b>连续 3 周、每周练满 3 次</b>可破上限　${P.prog?P.prog():""}${costTrain(d)}${apTag("train")}`
         : locked    ? `已达瓶颈 · 突破要做<b>战术复盘</b>，签约战队后才有`
         : dead      ? `已达瓶颈 · 突破靠<b>${P&&P.act?P.act:"别的途径"}</b>${
                        P&&P.auto&&P.prog?`　${P.prog()}`:""}`
-        : DIM_HINT[d]+costTrain(d) };
+        : DIM_HINT[d]+costTrain(d)+apTag("train") };
 }
 function gain(d){
   const t=S.talent[d],c=cap(t),room=clamp(1-(S.attrs[d]/c),0,1);
@@ -1845,14 +1866,14 @@ function btkChaseNote(){
   if((typeof capMechOf==="function"?capMechOf("操作"):((S.capBonus&&S.capBonus.操作)||0))>=CAP_MECH_MAX-0.01) return "";
   const b=S.btk||{}; const op=b.opThisWeek||0, st=clamp(b.opStreak||0,0,3);
   const ap=(S.step==="pre"&&S.pre)?S.pre.ap:(S.ap||0);
-  const low=(b.apWeek!==undefined&&b.apWeek<3);
-  const canFill=op>=3||ap>=(3-op);
+  const low=(b.apWeek!==undefined&&b.apWeek<6);
+  const canFill=op>=3||ap>=(3-op)*apCost("train");
   return `<div class="chase ${op>=3?'ok':(low||canFill)?'':'warn'}">
-    <b>冲击操作瓶颈</b>　规则：<b>连续 3 周、每周投满 3 点「练操作」</b>${
-      low?"（本周点数不足 3，自动暂停、不断连击）":""}<br>
-    本周已投 <b>${op}/3</b> 点 · 已连续 <b>${st}/3</b> 周${
+    <b>冲击操作瓶颈</b>　规则：<b>连续 3 周、每周练满 3 次「练操作」</b>（每次 ${apCost("train")} 点）${
+      low?"（本周精力预算不足，自动暂停、不断连击）":""}<br>
+    本周已练 <b>${op}/3</b> 次 · 已连续 <b>${st}/3</b> 周${
       op>=3?`　<span class="ct-ok">本周已达标</span>`
-      :low?"":canFill?`　还差 <b>${3-op}</b> 点`
+      :low?"":canFill?`　还差 <b>${3-op}</b> 次`
       :`　<span class="ct-bad">剩余行动点补不满了——这周连击会断</span>`}</div>`;
 }
 /* 特质会改「休息回多少体能」——劳模练得多，也累得久 */
@@ -2059,7 +2080,7 @@ function costRest(){
 }
 
 function doTrain(d){
-  if(S.ap<=0) return;
+  if(S.ap<apCost("train")) return;
   const capped = S.attrs[d] >= capOf(d);
   // 到了瓶颈也必须能练。
   // 突破操作的条件是「连续 3 周把至少 3 个行动点投在操作上」，
@@ -2069,10 +2090,10 @@ function doTrain(d){
   if(!capped) S.attrs[d]=Math.min(capOf(d),S.attrs[d]+gain(d));
   if(typeof noteAct==='function') noteAct('train',d);
   checkAch("train");
-  addFat(9); S.ap--; render();
+  addFat(9); S.ap-=apCost("train"); render();
 }
 function doAction(k){
-  if(S.ap<=0)return;
+  if(S.ap<apCost(k))return;
   // 做内容：先选方向再扣点（弹窗里选，doContent 真正结算）
   if(k==="content"){ S.contentPick=true; render(); return; }
   if(typeof noteAct==="function") noteAct("do",k);
@@ -2084,27 +2105,30 @@ function doAction(k){
   if(k==="solo"){
     // 职业选手也要打排位保持手感。属性上和职业前一样是全面小涨，
     // 但真正的价值是状态——手感这东西不练会掉。
+    // 异化点数配平：1 点＝碎片时间来几把，单次收益 ×0.55——
+    // 不然 1 点行动在 8 点预算下可刷，批测把 MSI 从 13 抬到 23（实测）。
+    const lightMul=0.50;
     const w=1+Math.floor(rnd()*3);
-    if(typeof rankGain==="function") rankGain(w);
+    if(typeof rankGain==="function") rankGain(w,lightMul);
     // 段位也要跟着动。原来赛季里段位是个冻住的死数字，
     // 进职业之后就再也不变了——但职业选手照样在天梯上。
     if(S.pre&&S.pre.rank!==undefined&&typeof soloWinP==="function"){
       const st=(typeof rankStep==="function")?rankStep():2;
       for(let i=0;i<3;i++){
-        if(rnd()<soloWinP()) S.pre.rank=clamp(S.pre.rank+st*prepMul,0,100);
-        else S.pre.rank=clamp(S.pre.rank-st*0.82*prepMul,0,100);
+        if(rnd()<soloWinP()) S.pre.rank=clamp(S.pre.rank+st*prepMul*lightMul,0,100);
+        else S.pre.rank=clamp(S.pre.rank-st*0.82*prepMul*lightMul,0,100);
       }
       if(typeof checkAch==="function") checkAch("rank");   // 生涯里冲到国服前十也该解锁
     }
     if(S.form!==undefined){
       const before=S.form;
       // 往「不错」的方向拉，但越接近上限拉得越慢；不可能靠排位刷到爆表
-      S.form=q1(clamp(S.form+((68-S.form)*0.11+1.2)*prepMul,25,95));
+      S.form=q1(clamp(S.form+((68-S.form)*0.11+1.2)*prepMul*lightMul,25,95));
       if(Math.round(S.form)>Math.round(before))
-        pushEvent(`打了一晚上排位，手感回来一些（状态 ${Math.round(before)} → ${Math.round(S.form)}）。`,"info","排位");
+        pushEvent(`打了几把排位，手感回来一些（状态 ${Math.round(before)} → ${Math.round(S.form)}）。`,"info","排位");
     }
-    addFat(7*prepMul);
-    if(typeof ladderEncounter==="function") ladderEncounter();   // 天梯撞车：排位夜的抽卡
+    addFat(4*prepMul);
+    if(typeof ladderEncounter==="function") ladderEncounter(0.50);   // 天梯撞车：按场次折算
   }
   else if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
     addFans(4.5*m*(typeof streamFansMul==="function"?streamFansMul():1));
@@ -2120,7 +2144,7 @@ function doAction(k){
     S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.6*prepMul);
     // 休息也是泄压阀：心理课让它更管用
     if(S.tilt) S.tilt=Math.max(0,q1(S.tilt-(10+(typeof hasCourse==="function"&&hasCourse("psy")?6:0))*prepMul));}
-  S.ap--;render();
+  S.ap-=apCost(k);render();
 }
 /* 自动推进 —— 推到「下一件需要你拿主意的事」就停。
 
@@ -2231,15 +2255,15 @@ function viewSeason(){
       ${DIMS.map(d=>{const b=trainBtn(d,S.ap);
         return `<button class="act" data-train="${d}" title="${b.tip||''}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
-      <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">打排位</div><div class="d">五项小涨 + 找回手感${
+      <button class="act" data-do="solo" ${S.ap<apCost("solo")?'disabled style="opacity:.34"':''}>
+        <div class="t">打排位 ${apTag("solo")}</div><div class="d">五项小涨 + 找回手感${
           typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
-      <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入${costStream()}</div></button>
-      <button class="act" data-do="content" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">做内容</div><div class="d">教学 / 高光 / 复盘 / 整活——同样一点，方向不同</div></button>
-      <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
+      <button class="act" data-do="stream" ${S.ap<apCost("stream")?'disabled style="opacity:.34"':''}>
+        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播 ${apTag("stream")}</div><div class="d">涨人气与收入${costStream()}</div></button>
+      <button class="act" data-do="content" ${S.ap<apCost("content")?'disabled style="opacity:.34"':''}>
+        <div class="t">做内容 ${apTag("content")}</div><div class="d">教学 / 高光 / 复盘 / 整活——同样一点，方向不同</div></button>
+      <button class="act" data-do="rest" ${S.ap<apCost("rest")?'disabled style="opacity:.34"':''}>
+        <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
     <div class="row">
@@ -2578,7 +2602,7 @@ function endMatch(){
   }
   // 国际赛更耗人：赛会制连轴、长途、时差——18 对联赛周的 13。
   // 这是给「小组赛也有备战轮」配的数值面（玩家规矩：结构定死，平衡只动数值）。
-  addFans(won?7:-2.5); addFat(S.intl?18:13);
+  addFans(won?7:-2.5); addFat(S.intl?20:13);
   // 世界线张力：你在场，这个联赛就在被你改写（国际赛另有淘汰/夺冠注入）
   if(!S.intl&&typeof wlAdd==="function") wlAdd(S.homeLeague||"LPL",0.03*wlInfluence());
   // 出场费按联赛分级：LDL 的钱就是 LDL 的钱（经济重锚）
@@ -2892,12 +2916,10 @@ function playoffAdvance(){
    现在每轮之间插一个备战环节：2 个行动点，休息、复盘、找手感都行。 */
 function enterPrep(mode, opp, bo, label){
   S.prep={mode, opp, bo, label};
-  // 2 点。当年压到 1 点是防「连休两次清 60+ 疲劳」——那是休息还没有
-  // 备战折减的年代。现在 doAction 里 prepMul=0.45，两次休息只清 ~27，
-  // 回血站开不起来；1 点的备战则退化成「点一下就上场」，没有决策可言。
-  // 改动照例过了 120 局 A/B：冠军率见提交说明。
-  S.ap=2;
-  if(S.btk) S.btk.apWeek=2;
+  // 异化点数后 4 点（≈原 2 点的强度：主流行动都是 2 点一件）。
+  // 休息的备战折减（prepMul 0.45）不变——回血站照旧开不起来。
+  S.ap=4;
+  if(S.btk) S.btk.apWeek=4;
   S.step="prep";
   render();
 }
@@ -2941,11 +2963,11 @@ function prepPanel(){
       ${DIMS.map(d=>{const b=trainBtn(d,S.ap);
         return `<button class="act" data-train="${d}" title="${b.tip||''}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
-      <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">打排位</div><div class="d">找回手感${
+      <button class="act" data-do="solo" ${S.ap<apCost("solo")?'disabled style="opacity:.34"':''}>
+        <div class="t">打排位 ${apTag("solo")}</div><div class="d">找回手感${
           typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
-      <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
+      <button class="act" data-do="rest" ${S.ap<apCost("rest")?'disabled style="opacity:.34"':''}>
+        <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${typeof squadActs==="function"?squadActs():""}
     <div class="row"><button class="btn" id="prepgo">上场 →</button>
@@ -3101,8 +3123,8 @@ function enterBreak(next, weeks, label, note){
   // 休息也按 0.45 折算（见 doAction 的 prepMul）。当年只给 1 点是因为
   // 休息还没折减、给满 3 点等于满血进世界赛（实测冠军率 9% -> 25%）；
   // 折减落地后 2 点最多清 ~27 疲劳，换来的是「练还是养」的真选择。
-  S.ap=(next==="intl")?2:apFor("off");
-  if(next==="intl"&&S.btk) S.btk.apWeek=2;
+  S.ap=(next==="intl")?4:apFor("off");
+  if(next==="intl"&&S.btk) S.btk.apWeek=4;
   S.step="offseason";
   if(next!=="intl") S.fatigue=Math.max(0,S.fatigue-20);
   pushEvent(note||`${label}（${weeks} 周）。没有比赛，正好把该补的补上。`,"info","间歇");
@@ -3191,7 +3213,7 @@ function offNextWeek(){
   }
   S.off.week++;
   S.ap=(S.off.next==="intl")?2:apFor("off");
-  if(S.off.next==="intl"&&S.btk) S.btk.apWeek=2;
+  if(S.off.next==="intl"&&S.btk) S.btk.apWeek=4;
   if(S.assets&&S.assets.apt) addFat(-4);
   if(typeof weeklyEcho==="function") weeklyEcho();
   if(S.off.next!=="intl") addFat(-14);
@@ -3266,15 +3288,15 @@ function offPanel(){
       ${DIMS.map(d=>{const b=trainBtn(d,S.ap);
         return `<button class="act" data-train="${d}" title="${b.tip||''}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
-      <button class="act" data-do="solo" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">打排位</div><div class="d">五项小涨 + 找回手感${
+      <button class="act" data-do="solo" ${S.ap<apCost("solo")?'disabled style="opacity:.34"':''}>
+        <div class="t">打排位 ${apTag("solo")}</div><div class="d">五项小涨 + 找回手感${
           typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
-      <button class="act" data-do="stream" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入${costStream()}</div></button>
-      <button class="act" data-do="content" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">做内容</div><div class="d">教学 / 高光 / 复盘 / 整活——同样一点，方向不同</div></button>
-      <button class="act" data-do="rest" ${S.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">休息</div><div class="d">清疲劳，护状态${costRest()}</div></button>
+      <button class="act" data-do="stream" ${S.ap<apCost("stream")?'disabled style="opacity:.34"':''}>
+        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播 ${apTag("stream")}</div><div class="d">涨人气与收入${costStream()}</div></button>
+      <button class="act" data-do="content" ${S.ap<apCost("content")?'disabled style="opacity:.34"':''}>
+        <div class="t">做内容 ${apTag("content")}</div><div class="d">教学 / 高光 / 复盘 / 整活——同样一点，方向不同</div></button>
+      <button class="act" data-do="rest" ${S.ap<apCost("rest")?'disabled style="opacity:.34"':''}>
+        <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${typeof squadActs==="function"?squadActs():""}
     ${(()=>{ if(!S.career||typeof txWindowOpen!=="function"||!txWindowOpen()) return "";
@@ -3578,17 +3600,17 @@ function actPanelPre(){
     ${typeof btkChaseNote==="function"?btkChaseNote():""}
     ${fatigueBar()}
     <div class="grid g5">
-      <button class="act" data-pre="rank" ${P.ap<=0?'disabled style="opacity:.34"':''}>
+      <button class="act" data-pre="rank" ${P.ap<apCost("solo")?'disabled style="opacity:.34"':''}>
         <div class="t">打排位</div><div class="d">${(()=>{const p=soloWinP();
           return p>=0.66?"这个分段你打得动":p>=0.5?"五五开，能上但不稳":
                  p>=0.34?"打得挺吃力，容易掉":"实力不够，硬打只会掉分"})()}${costSolo()}</div></button>
-      <button class="act" data-pre="stream" ${P.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播</div><div class="d">涨人气与收入${costStream()}</div></button>
+      <button class="act" data-pre="stream" ${P.ap<apCost("stream")?'disabled style="opacity:.34"':''}>
+        <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播 ${apTag("stream")}</div><div class="d">涨人气与收入${costStream()}</div></button>
       ${DIMS.map(d=>{const b=trainBtn(d,P.ap);
         return `<button class="act" data-pretrain="${d}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
         <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
-      <button class="act" data-pre="rest" ${P.ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">休息</div><div class="d">清疲劳${costRest()}</div></button>
+      <button class="act" data-pre="rest" ${P.ap<apCost("rest")?'disabled style="opacity:.34"':''}>
+        <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳${costRest()}</div></button>
     </div>
     ${typeof routineBar==="function"?routineBar():""}
     ${(S.pre.mates&&S.pre.mates.length&&typeof squadActs==="function")?squadActs()

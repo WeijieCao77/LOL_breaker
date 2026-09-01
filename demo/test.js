@@ -140,12 +140,16 @@ function playOne(opts) {
       if (due) { cupMatches++; A.startCupMatch(due.kind); continue; }
       if (S.pre.ap > 0) {
         // 备战改成真的练队：赛前两周做战队行动（默契/战术直接乘进赛事战力）
+        const _b = S.pre.ap;
         const soon = A.activeCups().find(c => c.nextWeek - S.pre.week <= 2);
         if (soon && S.fatigue < 70 && S.pre.mates && S.pre.mates.length) {
           preps++; A.doSquad(["scrim", "vod", "drill", "duo"][preps % 4]);
         }
         else if (S.fatigue > 75) A.preAct("rest");
         else A.preAct(S.pre.week % 4 === 0 ? "stream" : "rank");
+        // 异化点数后剩 1 点付不起 2 点行动：落到 1 点的排位，别空转
+        if (S.pre.ap === _b) A.preAct("rank");
+        if (S.pre.ap === _b) S.pre.ap = 0;
       } else { const w = S.pre.week; A.preNextWeek(); if (A.S().pre && A.S().pre.week < w) preYears++; }
     } else if (S.step === "offer") {
       // 年末报价现在也只是试训机会
@@ -157,18 +161,24 @@ function playOne(opts) {
     } else if (S.step === "season") {
       for (const x of A.SPEND) if (S.money >= x.cost && !(S.buff && S.buff[x.k])) { S.money -= x.cost; x.run(); break; }
       if (S.ap > 0) {
+        const _b = S.ap;
         const av = A.DIMS.filter(d => S.attrs[d] < A.capOf(d));
         if (S.fatigue > 70) A.doAction("rest");
         else if (av.length) A.doTrain(av[0]);
         else A.doAction("stream");
+        if (S.ap === _b) A.doAction("solo");   // 剩 1 点：打排位收尾
+        if (S.ap === _b) S.ap = 0;
       } else { A.isBenched() ? A.benchWeek() : A.startMatch(false); }
     } else if (S.step === "prep") {
       // 淘汰赛之间的备战：把行动点用掉再上场
       if (S.ap > 0) {
+        const _b = S.ap;
         const av = A.DIMS.filter(d => S.attrs[d] < A.capOf(d));
         if (S.fatigue > 55) A.doAction("rest");
         else if (av.length) A.doTrain(av[0]);
         else A.doAction("solo");
+        if (S.ap === _b) A.doAction("solo");
+        if (S.ap === _b) S.ap = 0;
       } else A.prepGo();
     } else if (S.step === "match") {
       if (S.match.node) A.resolveNode(1);
@@ -182,10 +192,13 @@ function playOne(opts) {
       if (S.tryout) { const t=S.tryout; if(t.done) A.afterTryout(); else A.resolveTryoutDay(1); continue; }
       if (S.deal) { if(S.deal.transfer) A.signTransfer(); else A.signDeal(); continue; }
       if (S.ap > 0) {
+        const _b = S.ap;
         const av = A.DIMS.filter(d => S.attrs[d] < A.capOf(d));
         if (S.fatigue > 70) A.doAction("rest");
         else if (av.length) A.doTrain(av[0]);
         else A.doAction("solo");
+        if (S.ap === _b) A.doAction("solo");
+        if (S.ap === _b) S.ap = 0;
       } else A.offNextWeek();
     }
   }

@@ -203,11 +203,12 @@ function cupMyPower(k){
    并且真的落到属性上——运营和指挥会涨，在试训和职业赛里一样有用。  */
 function cupPrep(k){
   const c=cupOf(k);
-  if(S.pre.ap<=0||!c||!c.alive) return;
+  const cost=(typeof apCost==="function")?apCost("cupprep"):1;
+  if(S.pre.ap<cost||!c||!c.alive) return;
   c.prep++;
   S.pre.cupPrep=(S.pre.cupPrep||0)+1;
   addFat(11);
-  S.pre.ap--;
+  S.pre.ap-=cost;
   // 练配合这件事本身会长本事，所以给一点真实的属性成长（受天赋瓶颈约束）
   const g1=Math.min(0.34,Math.max(0,capOf("运营")-S.attrs.运营));
   const g2=Math.min(0.26,Math.max(0,capOf("指挥")-S.attrs.指挥));

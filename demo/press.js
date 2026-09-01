@@ -196,8 +196,10 @@ function starPool(){
   });
   return out;
 }
-function ladderEncounter(){
-  if(rnd()>=0.09) return;                       // 大多数排位夜什么都不会发生，这才像排位
+function ladderEncounter(mul){
+  // 异化点数配平：1 点排位＝几把，撞车概率也按场次折算（不然轻行动可刷，
+  // 撞车率翻倍 → 曝光通胀 → 转会均值 3.55 飙到 5.09，批测抓的）
+  if(rnd()>=0.09*(mul||1)) return;              // 大多数排位夜什么都不会发生，这才像排位
   const pool=starPool(); if(!pool.length) return;
   const s=pool[Math.floor(rnd()*pool.length)];
   const mySkill=(typeof soloSkill==="function")?soloSkill():avg(DIMS.map(d=>S.attrs[d]));

@@ -110,15 +110,18 @@ function squadBreakdown(players,fatigue,verFav,team){
 /* sum 是给按钮上那行成本标注用的，就写在效果旁边——
    分开放两处，改了数值忘了改文案是迟早的事。 */
 const SQUAD_ACTS=[
+  /* 异化点数配平（2026-09-03）：训练赛 3 点＝整个下午，收益 ×1.5 对齐单点价值；
+     双排 1 点＝碎片时间，收益 ×0.55——同一把尺：每点买到的东西一样多，
+     区别在「一次投入的大小」和疲劳的形状。 */
   {k:"scrim", n:"训练赛", d:"和别的队打，最接近实战",
-   sum:["默契 +3.4","战术 +3.0","信任 +1.2","有几率摩擦"],
-   fat:16, run:()=>{ addSquad("syn",3.4); addSquad("tac",3.0);
-     if(typeof addTrustAll==="function") addTrustAll(1.2);
+   sum:["默契 +5.1","战术 +4.5","信任 +1.8","有几率摩擦"],
+   fat:20, run:()=>{ addSquad("syn",5.1); addSquad("tac",4.5);
+     if(typeof addTrustAll==="function") addTrustAll(1.8);
      if(rnd()<0.28&&S.team){
        const bad=myRoster().filter(p=>!p.me);
        const t=bad[Math.floor(rnd()*bad.length)];
        if(t){ pushEvent(`训练赛里暴露了问题：<b>${t.id}</b> 的处理方式和队伍对不上，复盘会开到半夜。`,"info","训练赛");
-         addSquad("tac",1.6); addTrust(t.id,-2); }
+         addSquad("tac",2.4); addTrust(t.id,-2); }
      }}},
   {k:"vod", n:"战术复盘", d:"逐帧过录像，把上一场的问题挖出来",
    sum:["战术 +4.2","运营 +0.35","攒运营突破"],
@@ -130,25 +133,27 @@ const SQUAD_ACTS=[
    fat:13, run:()=>{ addSquad("syn",4.4);
      if(typeof addTrustAll==="function") addTrustAll(1.8); }},
   {k:"duo", n:"队友双排", d:"排位里带一带，练默契也拉近关系",
-   sum:["默契 +2.2","信任 +3.4","操作 +0.25"],
-   fat:7,  run:()=>{ addSquad("syn",2.2);
-     if(typeof addTrustAll==="function") addTrustAll(3.4);
-     S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.25); }}
+   sum:["默契 +1.2","信任 +1.9","操作 +0.14"],
+   fat:4,  run:()=>{ addSquad("syn",1.2);
+     if(typeof addTrustAll==="function") addTrustAll(1.9);
+     S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.14); }}
 ];
 /* 职业前的车队也用这套行动：训练赛/复盘/合练/双排喂的是同一组
    默契与战术池（S.squad），只是行动点从 S.pre.ap 扣。 */
 function doSquad(k){
   const inPre=!S.career&&S.pre;
   const ap=inPre?S.pre.ap:S.ap;
-  if(ap<=0) return;
   const a=SQUAD_ACTS.find(x=>x.k===k); if(!a) return;
+  // 异化点数：训练赛 3（整个下午连打），双排 1（约几把），其余 2
+  const cost=(typeof apCost==="function")?apCost(k):1;
+  if(ap<cost) return;
   a.run(); addFat(a.fat);
   if(inPre){
-    S.pre.ap--;
+    S.pre.ap-=cost;
     // 车队一起练过的场次是硬积累：除了默契战术池，还直接落一点
     // 赛事战力（沿用 cupPrep 通道，和旧「备战」的量级对齐）
     S.pre.cupPrep=(S.pre.cupPrep||0)+0.5;
-  } else S.ap--;
+  } else S.ap-=cost;
   if(typeof noteAct==="function") noteAct("squad",a.k);
   render();
 }
@@ -230,8 +235,8 @@ function squadActs(){
   return `<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队${
     (!S.career&&S.pre&&typeof cupTeamName==="function")?`<span class="tag g">${cupTeamName()}</span>`:""}</h3>
     <div class="grid g5">${SQUAD_ACTS.map(a=>`
-      <button class="act" data-squad="${a.k}" ${ap<=0?'disabled style="opacity:.34"':''}>
-        <div class="t">${a.n}</div><div class="d">${a.d}${
+      <button class="act" data-squad="${a.k}" ${ap<((typeof apCost==="function")?apCost(a.k):1)?'disabled style="opacity:.34"':''}>
+        <div class="t">${a.n} ${(typeof apTag==="function")?apTag(a.k):""}</div><div class="d">${a.d}${
           (typeof costBits==="function")
             ? costBits([`体能<i class="dn">−${a.fat}</i>`]
                 .concat((a.sum||[]).map(x=>x.replace(/\s*([+−-][0-9.]+)/,'<i class="up">$1</i>'))))
