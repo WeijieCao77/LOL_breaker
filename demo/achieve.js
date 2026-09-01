@@ -66,7 +66,9 @@ const ACHIEVEMENTS=[
 
   {id:"faker_stare", secret:true, n:"被注视", tag:"梗",
    d:"在国际赛场上对位过那个所有中单都要面对的名字。",
-   on:"match", cond:(c)=>S.pos==="mid"&&c.intl&&c.oppLeague==="LCK",
+   /* 原条件是「国际赛 + 对面是 LCK」——碰到 BRION 也弹「你想起了他」，
+      玩家抓的穿帮。点名的成就就点名查：对面名单里真的有 Faker 才算。 */
+   on:"match", cond:(c)=>S.pos==="mid"&&c.intl&&(c.oppIds||[]).includes("Faker"),
    flavor:"赛后握手的时候，你想起了十年前在电视上看他的那个下午。",
    r:{fat:-18,fame:26}},
 
@@ -121,7 +123,7 @@ function applyAchReward(r){
   return out;
 }
 
-/* ctx 给条件用：{won, bo5, myScore, oppScore, gap, intl, oppLeague, laneWon, nodeFails, lostFirstTwo} */
+/* ctx 给条件用：{won, bo5, myScore, oppScore, gap, intl, oppLeague, oppIds, laneWon, nodeFails, lostFirstTwo} */
 /* 扩充条目在 achieve_more.js，构建时拼进来 */
 if(typeof ACH_MORE!=="undefined") ACHIEVEMENTS.push(...ACH_MORE);
 

@@ -283,6 +283,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260902h", at:"2026-09-02", items:[
+    "修复成就「被注视」：原来国际赛碰到任何 LCK 队都会弹（打 BRION 也「想起了他」）——现在点名查对面名单里真的有 Faker 才触发"
+  ]},
   {v:"v20260902g", at:"2026-09-02", items:[
     "转会栏从开局就有：没上岸也能看「圈内关注度」阶梯（45 青训看得到你 / 110 中游 / 190 豪门），还能毛遂自荐——把简历投给任一档俱乐部，每两周一轮、花 1 行动点，回信率很低但不是零（拿到回信＝一次真试训）",
     "外赛区一线队的球探现在也看城市争霸赛和主播杯：走得深可能收到跨国试训邀请（VCS/PCS 这些缺人的赛区来得最勤，LCK 最挑剔）；外赛区次级联赛不会跨国发邀请——签了跨国合同就是出海打职业",
@@ -2596,6 +2599,9 @@ function endMatch(){
   const ctx={won, bo5:m.need>=3, myScore:m.sc[0], oppScore:m.sc[1],
     gap:+(myPw-opPw).toFixed(2), intl:!!S.intl,
     oppLeague:(typeof leagueOf==="function")?leagueOf(m.oppName):"LPL",
+    // 点名类成就（对位 Faker 等）要看真实名单，不能拿联赛当替身——
+    // 玩家在国际赛碰到 BRION 这种 LCK 队也弹「被注视」，文案直接穿帮
+    oppIds:(m.opp&&m.opp.players?m.opp.players:[]).map(q=>q&&q.id).filter(Boolean),
     laneWon:!!(star&&avg(DIMS.map(d=>S.attrs[d]))>=ovrOf(star)),
     nodeFails:m.nodeFails||0,
     lostFirstTwo:m.need>=3&&m.firstTwoLost};
@@ -2752,6 +2758,9 @@ function benchWeek(){
   S.benchedThisSplit=true;
   const on=S.schedule[S.week-1], sea=SEASONS[S.si];
   const opp=S.world[S.homeLeague||"LPL"].find(t=>t.name===on);
+  // 赛程名对不上世界名单（罕见边界，批测撞到过一次）：跳过这周的模拟，
+  // 别让整局崩掉——比崩溃更重要的是把周推进走完
+  if(!opp){ S.match=null; nextWeek(); return; }
   const p=1/(1+Math.exp(-(power(myRoster(),0,sea.fav)-power(opp,0,sea.fav))/SPREAD));
   const w1=rnd()<p, w2=rnd()<p, won=(w1&&w2)||((w1||w2)&&rnd()<p);
   S.standings[S.homeLeague||"LPL"][S.team][won?"w":"l"]++;
