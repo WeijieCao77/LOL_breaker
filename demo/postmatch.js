@@ -107,7 +107,74 @@ function reviewAdvice(m){
   return {personal,team};
 }
 
-/* 赛后面板 */
+/* ---------- 拆解卡的零件：现场版和档案回放共用同一套渲染 ---------- */
+function pmRowsHtml(rows){
+  return `<div class="pmrows">${rows.map(r=>{
+    const w=clamp(Math.abs(r.v)/6*100,4,100);
+    return `<div class="pmr ${r.v>=0?'up':'dn'}">
+      <span class="pn">${r.n}</span>
+      <span class="pbar"><i style="width:${w}%"></i></span>
+      <span class="pv mono">${r.v>=0?"+":""}${r.v.toFixed(1)}</span>
+      <span class="pf">${r.fix}</span></div>`;
+  }).join("")}</div>`;
+}
+/* 临场账本：每个节点的成功率与结果、以及「高赢面还是输了」的说法 */
+function pmNodesHtml(nodes,luck){
+  if((!nodes||!nodes.length)&&(!luck||!luck.length)) return "";
+  return `<div class="review"><div class="rv-h">临场账本 · 概率与骰子</div>
+    ${(nodes||[]).map(n=>`<div class="rv-i">
+      <span class="rq">第${n.g}局「${n.t}」（吃${n.dim} · 成功率 ${n.p}%）</span>
+      <span class="rh">${n.ok?'<span class="w">成了</span>':'<span class="l">没成</span>'} · 赢面 ${n.d>=0?"+":""}${n.d} 个百分点</span></div>`).join("")}
+    ${(luck||[]).map(l=>`<p class="note" style="margin:6px 0 0">${l}</p>`).join("")}
+  </div>`;
+}
+function pmAdviceHtml(adv,won,rows){
+  if(won){
+    const tops=rows.filter(r=>r.v>=0.4).slice(0,2).map(r=>r.n);
+    return tops.length?`<div class="review win"><div class="rv-h">复盘</div>
+      <p class="note" style="margin:6px 0 0">这场赢在<b>${tops.join("、")}</b>。别松——优势项每赛段都在向 50 回归，要一直喂。</p></div>`:"";
+  }
+  if(!adv||(!adv.personal.length&&!adv.team.length))
+    return `<div class="review"><div class="rv-h">复盘</div>
+      <p class="note" style="margin:6px 0 0">各项都没明显吃亏——这场输在概率上。数值只决定每回合胜率，不保证结果。</p></div>`;
+  const li=x=>`<div class="rv-i"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
+  return `<div class="review"><div class="rv-h">复盘 · 这场输在哪，明天练什么</div>
+    ${adv.personal.length?`<div class="rv-g"><b>个人</b>${adv.personal.map(li).join("")}</div>`:""}
+    ${adv.team.length?`<div class="rv-g"><b>团队</b>${adv.team.map(li).join("")}</div>`:""}
+  </div>`;
+}
+/* 「90% 也翻车」的说法（玩家点名要的）：先认骰子，再给镜头。
+   锅只甩给真实存在的数——那局你自己节点失手就点你自己；
+   队友状态系数全队最低且确实拉胯才点队友；都不占，就承认是概率。
+   在 endMatch 现场算好存成文字：回放时队友状态早变了，不能重算。 */
+function pmLuckLines(m){
+  const out=[];
+  (m.gameLog||[]).forEach(g=>{
+    if(!g.win&&g.p>=70){
+      const ownFail=(m.nodeLog||[]).find(n=>n.g===g.g&&!n.ok);
+      let tail;
+      if(ownFail) tail=`那波「${ownFail.t}」是你自己没打成——账本上面记着。`;
+      else{
+        let worst=null;
+        try{
+          myRoster().filter(p=>!p.me).forEach(p=>{
+            const f=formMul(p);
+            if(!worst||f<worst.f) worst={id:p.id,f};
+          });
+        }catch(e){}
+        tail=(worst&&worst.f<0.97)
+          ?`回放里 <b>${worst.id}</b> 慢了半拍（状态系数 ${worst.f.toFixed(2)}，全队最低）——不过 ${g.p}% 本来也保不了底。`
+          :`没什么可甩的——${g.p}% 就是十次里还要输一次，这次骰子背。`;
+      }
+      out.push(`第${g.g}局赢面 <b>${g.p}%</b> 还是丢了：${tail}`);
+    }
+    if(g.win&&g.p<=30)
+      out.push(`第${g.g}局赢面只有 <b>${g.p}%</b> 却拿下了——运气也是实力的一部分，但别指望它常来。`);
+  });
+  return out;
+}
+
+/* 赛后面板（现场版）：比赛结束后独立成一屏，看完才能「继续」 */
 function postMatchCard(){
   const m=S.match;
   if(!m||!m.done||!m.attr) return "";
@@ -116,7 +183,7 @@ function postMatchCard(){
   const diff=myTotal-opTotal;
   // 账面 vs 结果：不一致就直说
   const upset=(won&&diff<-1.5)||(!won&&diff>1.5);
-  return `<div class="card"><h2>赛后拆解<em>${won?"胜":"负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
+  return `<div class="card"><h2>赛后拆解 · vs ${m.oppName}<em>${won?"胜":"负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
     <div class="pm-head">
       <span>综合 <b>${myTotal.toFixed(1)}</b> vs <b>${opTotal.toFixed(1)}</b></span>
       <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>
@@ -124,31 +191,31 @@ function postMatchCard(){
     ${upset?`<div class="pm-upset">${won
       ? "账面上你是劣势——这场是打出来的，不是数值给的。节点决策和运气都站在了你这边。"
       : "账面上你占优，还是输了。数值只决定每回合的胜率，不保证结果——看看状态、体能，剩下的是运气。"}</div>`:""}
-    <div class="pmrows">${rows.map(r=>{
-      const w=clamp(Math.abs(r.v)/6*100,4,100);
-      return `<div class="pmr ${r.v>=0?'up':'dn'}">
-        <span class="pn">${r.n}</span>
-        <span class="pbar"><i style="width:${w}%"></i></span>
-        <span class="pv mono">${r.v>=0?"+":""}${r.v.toFixed(1)}</span>
-        <span class="pf">${r.fix}</span></div>`;
-    }).join("")}</div>
-    ${(()=>{
-      const R=reviewAdvice(m);
-      if(!R) return "";
-      if(won){
-        const tops=rows.filter(r=>r.v>=0.4).slice(0,2).map(r=>r.n);
-        return tops.length?`<div class="review win"><div class="rv-h">复盘</div>
-          <p class="note" style="margin:6px 0 0">这场赢在<b>${tops.join("、")}</b>。别松——优势项每赛段都在向 50 回归，要一直喂。</p></div>`:"";
-      }
-      if(!R.personal.length&&!R.team.length)
-        return `<div class="review"><div class="rv-h">复盘</div>
-          <p class="note" style="margin:6px 0 0">各项都没明显吃亏——这场输在概率上。数值只决定每回合胜率，不保证结果。</p></div>`;
-      const li=x=>`<div class="rv-i"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
-      return `<div class="review"><div class="rv-h">复盘 · 这场输在哪，明天练什么</div>
-        ${R.personal.length?`<div class="rv-g"><b>个人</b>${R.personal.map(li).join("")}</div>`:""}
-        ${R.team.length?`<div class="rv-g"><b>团队</b>${R.team.map(li).join("")}</div>`:""}
-      </div>`;
-    })()}
-    <p class="note">这些就是模拟器判胜负时用的数，不是事后编的解释。按影响从大到小排。</p>
+    ${pmRowsHtml(rows)}
+    ${pmNodesHtml(m.nodeLog,m.luck)}
+    ${pmAdviceHtml(reviewAdvice(m),won,rows)}
+    <p class="note">这些就是模拟器判胜负时用的数，不是事后编的解释。按影响从大到小排。<br>
+      点过「继续」也不丢：<b>我的 → 比赛档案</b>里能回看最近 12 场的拆解。</p>
   </div>`;
+}
+
+/* 档案回放：用当时存下来的归因和账本，不重算（重算就不是那场比赛了） */
+function pmReplayCard(){
+  const x=(S.archive||[])[S.pmView];
+  if(!x||!x.pm) return "";
+  const pm=x.pm, diff=pm.my-pm.op, won=x.win;
+  const seaTag=SEASONS[x.si]?SEASONS[x.si].tag:"";
+  return `<div class="rankup"><div class="ru-inner" style="max-width:560px;max-height:86vh;overflow-y:auto;text-align:left">
+    <div class="ru-eyebrow">比赛档案 · 拆解回放</div>
+    <h2 style="margin:0 0 6px">${seaTag} ${x.tag} · vs ${x.opp}<em style="float:right">${won?"胜":"负"} ${x.sc[0]}:${x.sc[1]}</em></h2>
+    <div class="pm-head">
+      <span>综合 <b>${pm.my.toFixed(1)}</b> vs <b>${pm.op.toFixed(1)}</b></span>
+      <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>
+    </div>
+    ${pmRowsHtml(pm.rows)}
+    ${pmNodesHtml(pm.nodes,pm.luck)}
+    ${pmAdviceHtml(pm.adv,won,pm.rows)}
+    <div class="row" style="justify-content:center;margin-top:10px">
+      <button class="btn" id="pmclose">关闭</button></div>
+  </div></div>`;
 }

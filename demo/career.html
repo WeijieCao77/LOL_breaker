@@ -957,6 +957,12 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260902b", at:"2026-09-02", items:[
+    "赛后拆解独立成一屏（照 Val Manager）：比赛结束先看拆解，看完才有「继续」——不会再一键点过去就没了",
+    "拆解新增「临场账本」：每个临场选择当时的成功率、成没成、动了几个百分点的赢面，全记在案",
+    "「赢面 90% 还是输了」现在会给说法：你自己节点失手就点你，队友状态全队最低就点他（附真实系数），都不占就承认骰子背",
+    "拆解进比赛档案：「我的 → 比赛档案」可回看最近 12 场的完整拆解"
+  ]},
   {v:"v20260902a", at:"2026-09-01 深夜", items:[
     "数值大统一：从路人到世界第一只有一把尺子——钻石45、大师55、宗师60（职业门槛）、王者65（=LPL平均）、国服前十77；Faker 档 88-90，天梯从 81 起量不动",
     "赛区分层落地：LCK 66.5+王朝曲线（S16 归零）、LPL 65、LEC 63、LCS 61.5、外卡 54-58；风格各异——LCK 赢在运营纪律和默契，LPL 枪最利，VCS 莽是天赋",
@@ -2773,7 +2779,8 @@ function autoRest(focus,weeks){
    原来休赛期没有标签栏，把财务总览和商城直接拼在行动卡下面，
    于是「所有栏目合到一起了」。玩家报的就是这个。 */
 function tabContent(T){
-  return `${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+(typeof dataCard==="function"?dataCard():"")+(typeof careerCard==="function"?careerCard():"")+gearCard():""}
+  return `${T==="me"&&S.pmView!=null&&typeof pmReplayCard==="function"?pmReplayCard():""}
+    ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+(typeof dataCard==="function"?dataCard():"")+(typeof careerCard==="function"?careerCard():"")+gearCard():""}
     ${T==="team"?squadCard()+(typeof roleCard==="function"?roleCard():"")+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
     ${T==="shop"?(typeof economyCards==="function"?economyCards():shopCard()):""}
     ${T==="tx"?(typeof transferPage==="function"?transferPage():""):""}
@@ -3073,6 +3080,8 @@ function resolveNode(ai){
   if(!ok){ m.nodeFails=(m.nodeFails||0)+1;
     (m.failDims=m.failDims||[]).push(opt.dim); }   // 复盘要知道输在哪个维度上
   const d=Math.round(now*100)-Math.round(was*100);
+  // 拆解要的账本：这个选择当时的成功率、结果、动了几个百分点的赢面
+  (m.nodeLog=m.nodeLog||[]).push({g:m.game,t:opt.t,dim:opt.dim,p:Math.round(p*100),ok,d});
   m.lines.push(`<div><span class="hi">第${m.game}局</span> ${opt.t} — ${ok
     ?`<span class="w">成了</span>`:`<span class="l">没成</span>`}　<span class="${
       d>0?'w':d<0?'l':''}">赢面 ${Math.round(was*100)}% → ${Math.round(now*100)}%</span></div>`);
@@ -3091,6 +3100,8 @@ function playGame(){
   p=clampWinProb(p, my-op);
   const win=rnd()<p;
   if(win){m.sc[0]++;S.gameRec.w++;S.career.w++}else{m.sc[1]++;S.gameRec.l++;S.career.l++}
+  // 拆解要的账本：这一局开打时的赢面和结果——「90% 也输了」要能对上号
+  (m.gameLog=m.gameLog||[]).push({g:m.game,p:Math.round(p*100),win});
   m.lines.push(`<div>第${m.game}局 ${win?'<span class="w">胜</span>':'<span class="l">负</span>'}</div>`);
   if(m.game===2&&m.sc[1]===2) m.firstTwoLost=true;
   m.game++; m.swing*=0.4; nextGame();
@@ -3131,16 +3142,17 @@ function synthSeriesStats(m,won,myPw,opPw){
 function dataCard(){
   if(!S.career||!S.stats||!S.stats.n) return "";
   const st=S.stats, n=st.n;
-  const rows=(S.archive||[]).slice(-8).reverse();
+  const rows=(S.archive||[]).map((x,i)=>({x,i})).slice(-8).reverse();
   return `<div class="card"><h2>比赛档案<em>${n} 个系列赛</em></h2>
     <p class="note" style="margin:0 0 8px">生涯场均
       <b>${q1(st.k/n)} / ${q1(st.d/n)} / ${q1(st.a/n)}</b> · 评分 <b>${(st.r/n).toFixed(2)}</b>
       <span style="color:var(--ink-3)">——球探和试训谈判看的就是这几个数字。</span></p>
-    <div class="tw"><table><thead><tr><th></th><th>对手</th><th>比分</th><th>KDA</th><th>评分</th></tr></thead><tbody>
-    ${rows.map(x=>`<tr><td class="n">${SEASONS[x.si]?SEASONS[x.si].tag:""} ${x.tag}</td>
+    <div class="tw"><table><thead><tr><th></th><th>对手</th><th>比分</th><th>KDA</th><th>评分</th><th></th></tr></thead><tbody>
+    ${rows.map(({x,i})=>`<tr><td class="n">${SEASONS[x.si]?SEASONS[x.si].tag:""} ${x.tag}</td>
       <td>${x.opp}</td><td class="n">${x.win?"":""}${x.sc[0]}−${x.sc[1]}</td>
       <td class="n">${x.k}/${x.d}/${x.a}</td>
-      <td class="n" style="color:${x.rating>=1.1?'var(--cyan)':x.rating<0.85?'var(--red)':'inherit'}">${x.rating.toFixed(2)}</td></tr>`).join("")}
+      <td class="n" style="color:${x.rating>=1.1?'var(--cyan)':x.rating<0.85?'var(--red)':'inherit'}">${x.rating.toFixed(2)}</td>
+      <td class="n">${x.pm?`<button class="act" data-pmv="${i}" style="padding:2px 10px;font-size:12px">拆解</button>`:""}</td></tr>`).join("")}
     </tbody></table></div></div>`;
 }
 /* 本周页 · 心态气压条：只在开始起飞时出现，不占地方 */
@@ -3233,7 +3245,23 @@ function endMatch(){
   }
   // 赛后归因：用判定胜负的那套数，现场算一次存下来
   if(typeof attribute==='function'){
-    try{ m.attr=attribute(myRoster(),m.opp,S.fatigue,SEASONS[S.si].fav); }catch(e){}
+    try{
+      m.attr=attribute(myRoster(),m.opp,S.fatigue,SEASONS[S.si].fav);
+      // 「90% 也翻车」的说法要现场算：回放时队友状态早变了
+      if(typeof pmLuckLines==="function") m.luck=pmLuckLines(m);
+      // 拆解写进比赛档案：点过「继续」也能在「我的 → 比赛档案」回看。
+      // 只留最近 12 场的拆解正文（KDA 行照旧留 60 场），存档别撑大。
+      if(m.attr&&S.archive&&S.archive.length){
+        const row=S.archive[S.archive.length-1];
+        if(row.opp===m.oppName&&row.sc[0]===m.sc[0]&&row.sc[1]===m.sc[1]){
+          row.pm={rows:m.attr.rows,my:m.attr.myTotal,op:m.attr.opTotal,
+                  adv:(typeof reviewAdvice==="function")?reviewAdvice(m):null,
+                  nodes:m.nodeLog||[],luck:m.luck||[]};
+          let keep=0;
+          for(let i=S.archive.length-1;i>=0;i--) if(S.archive[i].pm&&++keep>12) delete S.archive[i].pm;
+        }
+      }
+    }catch(e){}
   }
   if(typeof rollInjury==='function'&&S.fatigue>55) rollInjury('赛后');
   simWorld(); m.done=true;
@@ -3295,6 +3323,12 @@ function simWorld(){
 }
 function viewMatch(){
   const m=S.match,sea=SEASONS[S.si];
+  // 赛后拆解独立成一屏（照 Val Manager）：比分页点「赛后拆解」进来，看完才有「继续」。
+  // 原来拆解卡排在「继续」按钮底下，玩家点了继续就再也看不到了。
+  if(m.done&&m.pmSeen&&m.attr&&typeof postMatchCard==="function"){
+    return `${postMatchCard()}
+    <div class="row"><button class="btn" id="next">继续 →</button></div>`;
+  }
   const my=power(myRoster(),S.fatigue,sea.fav)+versionFit(),op=power(m.opp.players,0,sea.fav);
   return `<div class="card">
     <h2>${sea.tag} ${S.intl?intlStageName():S.playoff?"季后赛":"第 "+S.week+" 周"}<em>${
@@ -3309,9 +3343,9 @@ function viewMatch(){
         <div class="t">${a.t}</div><div class="d">吃 <b>${a.dim}</b> · ${a.risk>0.8?'高风险高回报':'稳健'}</div>
       </button>`).join("")}</div></div>`:""}
     ${m.lines.length?`<div class="log">${m.lines.slice().reverse().join("")}</div>`:""}
-    ${m.done?`<div class="row"><button class="btn" id="next">继续 →</button></div>`:""}
-  </div>
-  ${m.done&&typeof postMatchCard==="function"?postMatchCard():""}`;
+    ${m.done?`<div class="row"><button class="btn" id="${m.attr?'pmgo':'next'}">${
+      m.attr?'赛后拆解 →':'继续 →'}</button></div>`:""}
+  </div>`;
 }
 
 /* 替补：不是等几周，而是要自己抢下首发位 */
@@ -7394,7 +7428,74 @@ function reviewAdvice(m){
   return {personal,team};
 }
 
-/* 赛后面板 */
+/* ---------- 拆解卡的零件：现场版和档案回放共用同一套渲染 ---------- */
+function pmRowsHtml(rows){
+  return `<div class="pmrows">${rows.map(r=>{
+    const w=clamp(Math.abs(r.v)/6*100,4,100);
+    return `<div class="pmr ${r.v>=0?'up':'dn'}">
+      <span class="pn">${r.n}</span>
+      <span class="pbar"><i style="width:${w}%"></i></span>
+      <span class="pv mono">${r.v>=0?"+":""}${r.v.toFixed(1)}</span>
+      <span class="pf">${r.fix}</span></div>`;
+  }).join("")}</div>`;
+}
+/* 临场账本：每个节点的成功率与结果、以及「高赢面还是输了」的说法 */
+function pmNodesHtml(nodes,luck){
+  if((!nodes||!nodes.length)&&(!luck||!luck.length)) return "";
+  return `<div class="review"><div class="rv-h">临场账本 · 概率与骰子</div>
+    ${(nodes||[]).map(n=>`<div class="rv-i">
+      <span class="rq">第${n.g}局「${n.t}」（吃${n.dim} · 成功率 ${n.p}%）</span>
+      <span class="rh">${n.ok?'<span class="w">成了</span>':'<span class="l">没成</span>'} · 赢面 ${n.d>=0?"+":""}${n.d} 个百分点</span></div>`).join("")}
+    ${(luck||[]).map(l=>`<p class="note" style="margin:6px 0 0">${l}</p>`).join("")}
+  </div>`;
+}
+function pmAdviceHtml(adv,won,rows){
+  if(won){
+    const tops=rows.filter(r=>r.v>=0.4).slice(0,2).map(r=>r.n);
+    return tops.length?`<div class="review win"><div class="rv-h">复盘</div>
+      <p class="note" style="margin:6px 0 0">这场赢在<b>${tops.join("、")}</b>。别松——优势项每赛段都在向 50 回归，要一直喂。</p></div>`:"";
+  }
+  if(!adv||(!adv.personal.length&&!adv.team.length))
+    return `<div class="review"><div class="rv-h">复盘</div>
+      <p class="note" style="margin:6px 0 0">各项都没明显吃亏——这场输在概率上。数值只决定每回合胜率，不保证结果。</p></div>`;
+  const li=x=>`<div class="rv-i"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
+  return `<div class="review"><div class="rv-h">复盘 · 这场输在哪，明天练什么</div>
+    ${adv.personal.length?`<div class="rv-g"><b>个人</b>${adv.personal.map(li).join("")}</div>`:""}
+    ${adv.team.length?`<div class="rv-g"><b>团队</b>${adv.team.map(li).join("")}</div>`:""}
+  </div>`;
+}
+/* 「90% 也翻车」的说法（玩家点名要的）：先认骰子，再给镜头。
+   锅只甩给真实存在的数——那局你自己节点失手就点你自己；
+   队友状态系数全队最低且确实拉胯才点队友；都不占，就承认是概率。
+   在 endMatch 现场算好存成文字：回放时队友状态早变了，不能重算。 */
+function pmLuckLines(m){
+  const out=[];
+  (m.gameLog||[]).forEach(g=>{
+    if(!g.win&&g.p>=70){
+      const ownFail=(m.nodeLog||[]).find(n=>n.g===g.g&&!n.ok);
+      let tail;
+      if(ownFail) tail=`那波「${ownFail.t}」是你自己没打成——账本上面记着。`;
+      else{
+        let worst=null;
+        try{
+          myRoster().filter(p=>!p.me).forEach(p=>{
+            const f=formMul(p);
+            if(!worst||f<worst.f) worst={id:p.id,f};
+          });
+        }catch(e){}
+        tail=(worst&&worst.f<0.97)
+          ?`回放里 <b>${worst.id}</b> 慢了半拍（状态系数 ${worst.f.toFixed(2)}，全队最低）——不过 ${g.p}% 本来也保不了底。`
+          :`没什么可甩的——${g.p}% 就是十次里还要输一次，这次骰子背。`;
+      }
+      out.push(`第${g.g}局赢面 <b>${g.p}%</b> 还是丢了：${tail}`);
+    }
+    if(g.win&&g.p<=30)
+      out.push(`第${g.g}局赢面只有 <b>${g.p}%</b> 却拿下了——运气也是实力的一部分，但别指望它常来。`);
+  });
+  return out;
+}
+
+/* 赛后面板（现场版）：比赛结束后独立成一屏，看完才能「继续」 */
 function postMatchCard(){
   const m=S.match;
   if(!m||!m.done||!m.attr) return "";
@@ -7403,7 +7504,7 @@ function postMatchCard(){
   const diff=myTotal-opTotal;
   // 账面 vs 结果：不一致就直说
   const upset=(won&&diff<-1.5)||(!won&&diff>1.5);
-  return `<div class="card"><h2>赛后拆解<em>${won?"胜":"负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
+  return `<div class="card"><h2>赛后拆解 · vs ${m.oppName}<em>${won?"胜":"负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
     <div class="pm-head">
       <span>综合 <b>${myTotal.toFixed(1)}</b> vs <b>${opTotal.toFixed(1)}</b></span>
       <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>
@@ -7411,33 +7512,33 @@ function postMatchCard(){
     ${upset?`<div class="pm-upset">${won
       ? "账面上你是劣势——这场是打出来的，不是数值给的。节点决策和运气都站在了你这边。"
       : "账面上你占优，还是输了。数值只决定每回合的胜率，不保证结果——看看状态、体能，剩下的是运气。"}</div>`:""}
-    <div class="pmrows">${rows.map(r=>{
-      const w=clamp(Math.abs(r.v)/6*100,4,100);
-      return `<div class="pmr ${r.v>=0?'up':'dn'}">
-        <span class="pn">${r.n}</span>
-        <span class="pbar"><i style="width:${w}%"></i></span>
-        <span class="pv mono">${r.v>=0?"+":""}${r.v.toFixed(1)}</span>
-        <span class="pf">${r.fix}</span></div>`;
-    }).join("")}</div>
-    ${(()=>{
-      const R=reviewAdvice(m);
-      if(!R) return "";
-      if(won){
-        const tops=rows.filter(r=>r.v>=0.4).slice(0,2).map(r=>r.n);
-        return tops.length?`<div class="review win"><div class="rv-h">复盘</div>
-          <p class="note" style="margin:6px 0 0">这场赢在<b>${tops.join("、")}</b>。别松——优势项每赛段都在向 50 回归，要一直喂。</p></div>`:"";
-      }
-      if(!R.personal.length&&!R.team.length)
-        return `<div class="review"><div class="rv-h">复盘</div>
-          <p class="note" style="margin:6px 0 0">各项都没明显吃亏——这场输在概率上。数值只决定每回合胜率，不保证结果。</p></div>`;
-      const li=x=>`<div class="rv-i"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
-      return `<div class="review"><div class="rv-h">复盘 · 这场输在哪，明天练什么</div>
-        ${R.personal.length?`<div class="rv-g"><b>个人</b>${R.personal.map(li).join("")}</div>`:""}
-        ${R.team.length?`<div class="rv-g"><b>团队</b>${R.team.map(li).join("")}</div>`:""}
-      </div>`;
-    })()}
-    <p class="note">这些就是模拟器判胜负时用的数，不是事后编的解释。按影响从大到小排。</p>
+    ${pmRowsHtml(rows)}
+    ${pmNodesHtml(m.nodeLog,m.luck)}
+    ${pmAdviceHtml(reviewAdvice(m),won,rows)}
+    <p class="note">这些就是模拟器判胜负时用的数，不是事后编的解释。按影响从大到小排。<br>
+      点过「继续」也不丢：<b>我的 → 比赛档案</b>里能回看最近 12 场的拆解。</p>
   </div>`;
+}
+
+/* 档案回放：用当时存下来的归因和账本，不重算（重算就不是那场比赛了） */
+function pmReplayCard(){
+  const x=(S.archive||[])[S.pmView];
+  if(!x||!x.pm) return "";
+  const pm=x.pm, diff=pm.my-pm.op, won=x.win;
+  const seaTag=SEASONS[x.si]?SEASONS[x.si].tag:"";
+  return `<div class="rankup"><div class="ru-inner" style="max-width:560px;max-height:86vh;overflow-y:auto;text-align:left">
+    <div class="ru-eyebrow">比赛档案 · 拆解回放</div>
+    <h2 style="margin:0 0 6px">${seaTag} ${x.tag} · vs ${x.opp}<em style="float:right">${won?"胜":"负"} ${x.sc[0]}:${x.sc[1]}</em></h2>
+    <div class="pm-head">
+      <span>综合 <b>${pm.my.toFixed(1)}</b> vs <b>${pm.op.toFixed(1)}</b></span>
+      <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>
+    </div>
+    ${pmRowsHtml(pm.rows)}
+    ${pmNodesHtml(pm.nodes,pm.luck)}
+    ${pmAdviceHtml(pm.adv,won,pm.rows)}
+    <div class="row" style="justify-content:center;margin-top:10px">
+      <button class="btn" id="pmclose">关闭</button></div>
+  </div></div>`;
 }
 
 
@@ -12105,6 +12206,11 @@ function bind(){
   };
   st.querySelectorAll("[data-node]").forEach(b=>b.onclick=()=>resolveNode(+b.dataset.node));
   const nx=$("next"); if(nx) nx.onclick=nextWeek;
+  // 赛后拆解一屏（照 Val Manager）：比分页 → 拆解页 → 下一周
+  const pg=$("pmgo"); if(pg) pg.onclick=()=>{S.match.pmSeen=true;render();scrollTo(0,0);};
+  // 比赛档案里的拆解回放
+  st.querySelectorAll("[data-pmv]").forEach(b=>b.onclick=()=>{S.pmView=+b.dataset.pmv;render()});
+  const pc=$("pmclose"); if(pc) pc.onclick=()=>{S.pmView=null;render()};
   const of=$("off"); if(of) of.onclick=doOffseason;
   st.querySelectorAll("[data-ef]").forEach(b=>b.onclick=()=>{S.evFilter=b.dataset.ef;render()});
   const ag=$("again"); if(ag) ag.onclick=screenCreate;
