@@ -82,22 +82,35 @@ function checkTryoutInvite(kind, reached, champion){
   if(kind === "stream" && tier !== "top") tier = tier === "acad" ? "low" : "mid";
   const why = `${C.name}${champion ? "夺冠" : `走到第 ${reached+1} 轮`}`;
   // 兑现时机：整届打完之后。这会儿可能还有别的赛事在跑，那就先排队。
-  queueInvite(fitTier(tier), why);
+  queueInvite(fitTier(tier), why, pickForeignScout(champion));
+}
+/* 外赛区一线也翻中国的草根赛场（玩家定的边界：外赛区次级联赛不跨国发邀请，
+   但一线队的球探真的会来看争霸赛/主播杯）。越缺人的赛区来得越勤——
+   LCK 不缺天才，VCS/PCS/LJL 缺的就是便宜能打的年轻人。 */
+function pickForeignScout(champion){
+  if(rnd() >= (champion ? 0.20 : 0.10)) return null;
+  const W={VCS:5,PCS:4,LJL:3,LCO:3,CBLOL:2,LLA:2,TCL:2,LEC:1.2,LCS:1.2,LCK:0.6};
+  const pool=Object.keys(W).filter(k=>S.world&&S.world[k]&&S.world[k].length);
+  if(!pool.length) return null;
+  let sum=0; pool.forEach(k=>sum+=W[k]);
+  let x=rnd()*sum;
+  for(const k of pool){ x-=W[k]; if(x<=0) return k; }
+  return pool[pool.length-1];
 }
 /* 发不出去就排队，等条件满足（赛程打完 / 冷却过了）再发。
    之前是直接丢弃，等于「打完城市赛那次机会白攒了」。 */
-function queueInvite(tier, reason){
+function queueInvite(tier, reason, lg){
   const P = S.pre; if(!P) return;
-  if(canInvite(tier)){ addInvite(tier, reason); return; }
+  if(canInvite(tier)){ addInvite(tier, reason, lg); return; }
   P.inviteQ = P.inviteQ || [];
-  if(P.inviteQ.length < 3) P.inviteQ.push({tier, reason});
+  if(P.inviteQ.length < 3) P.inviteQ.push({tier, reason, lg});
 }
 function flushInviteQ(){
   const P = S.pre; if(!P || !P.inviteQ || !P.inviteQ.length) return;
   if(!canInvite(P.inviteQ[0].tier)) return;
   const q = P.inviteQ.shift();
   // 排队期间你的水平可能变了，档次按现在重新判一次
-  addInvite(fitTier(q.tier), q.reason);
+  addInvite(fitTier(q.tier), q.reason, q.lg);
 }
 /* 段位或人气到了也会有人来问——不是只有比赛这一条路 */
 function checkRankInvite(){
@@ -233,16 +246,19 @@ function checkFanInvite(){
     }
   }
 }
-function addInvite(tier, reason){
+function addInvite(tier, reason, lg){
   const P = S.pre; if(!P) return;
   if(!canInvite(tier)) return;
+  // 外赛区没有跨国的次级邀请：来的必是一线队，档次至少从「弱队」起
+  if(lg && lg !== "LPL" && tier === "acad") tier = "low";
   const T = CLUB_TIERS[tier];
-  const team = pickClub(tier);
+  const team = pickClub(tier, lg || undefined);
   if(!team) return;
-  P.invite = { tier, team, reason, pending:true, week:P.week, expect:T.expect };
+  P.invite = { tier, team, league: lg || null, reason, pending:true, week:P.week, expect:T.expect };
   P.inviteCd = P.week + 2;
   P.inviteN = (P.inviteN || 0) + 1;
-  preLog(`<b>${team}</b> 看了你的比赛录像——${reason}。<b>他们邀请你去队里试训。</b>`, "big");
+  preLog(`<b>${team}</b>${lg&&lg!=="LPL"?`（${lg} 赛区）`:""} 看了你的比赛录像——${reason}。<b>他们邀请你去队里试训。</b>${
+    lg&&lg!=="LPL"?`<br><span style="color:var(--ink-3)">跨国邀请：签了就是出海打职业。</span>`:""}`, "big");
   if(typeof render === "function") render();
 }
 /* 这家队在联赛里到底排第几。
@@ -297,9 +313,16 @@ function inviteCard(){
   const me = tryoutSkill(), gap = me - iv.expect;
   return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">
     <div class="ru-icon" style="text-align:center">${typeof gicon==="function"?gicon("scout",52):""}</div>
-    <div class="ru-eyebrow" style="text-align:center">试训邀请 · ${T.n}</div>
+    <div class="ru-eyebrow" style="text-align:center">试训邀请 · ${T.n}${iv.league&&iv.league!=="LPL"?` · ${iv.league} 赛区`:""}</div>
     <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:12px">${
       typeof teamLogo==="function"?teamLogo(iv.team,22):""} <b>${iv.team}</b>${(()=>{
+      if(iv.league&&iv.league!=="LPL"){
+        try{
+          const rk=(S.world[iv.league]||[]).map(t=>({n:t.name,p:power(t)})).sort((a,b)=>b.p-a.p);
+          const i=rk.findIndex(t=>t.n===iv.team);
+          return i>=0?`<span class="tag">${iv.league} 第 ${i+1}/${rk.length} · 战力 ${rk[i].p.toFixed(1)}</span>`:"";
+        }catch(e){ return ""; }
+      }
       const st=clubStanding(iv.team);
       return st?`<span class="tag">LPL 第 ${st.pos}/${st.of} · 战力 ${st.power.toFixed(1)}</span>`:"";
     })()}</div>
@@ -1388,4 +1411,75 @@ function transferPage(){
     季中间歇（春→夏）和年底休赛期。LDL 注册的选手走升队通道随时可被母队调上一队。</p>`;
   const scout = (typeof scoutCard==="function")?scoutCard():"";
   return contract + scout + intentCard + actions + log + rules;
+}
+
+/* ---------- 职业前的「转会」页（2026-09-02 玩家点名）----------
+   还没上岸这一页也在：看得到谁能看到你（关注度阶梯），
+   也能毛遂自荐——把简历投给俱乐部。成功率很低，但门是开的。 */
+function selfRecOdds(tier){
+  const base={acad:0.15,low:0.08,mid:0.035,top:0.012}[tier]||0.05;
+  const T=CLUB_TIERS[tier], me=tryoutSkill();
+  let p=base + Math.min(exposureScore(),240)*0.0009 + clamp((me-T.expect)*0.012,-0.05,0.10);
+  if(!inviteFloorOk()) p*=0.35;   // 宗师不到、履历空白：简历大多石沉大海
+  return clamp(p,0.01,0.45);
+}
+function canSelfRec(){
+  const P=S.pre; if(!P) return {ok:false,why:"已经是职业选手了"};
+  if(P.invite&&P.invite.pending) return {ok:false,why:"手上已有一份试训邀请，先处理它"};
+  if(typeof activeCups==="function"&&activeCups().length) return {ok:false,why:"正在打杯赛——打完这届再投"};
+  if(P.selfRecCd&&P.week<P.selfRecCd) return {ok:false,why:`刚投过一轮，第 ${P.selfRecCd} 周起可再投`};
+  if((P.ap||0)<=0) return {ok:false,why:"本周行动点用完了"};
+  return {ok:true};
+}
+function selfRecommend(tier){
+  const c=canSelfRec(); if(!c.ok) return;
+  const P=S.pre, T=CLUB_TIERS[tier];
+  P.ap--; P.selfRecCd=P.week+2;
+  const p=selfRecOdds(tier);
+  if(rnd()<p){
+    const team=pickClub(tier);
+    if(team){
+      P.invite={tier,team,league:null,reason:"毛遂自荐",pending:true,week:P.week,expect:T.expect};
+      P.inviteN=(P.inviteN||0)+1;
+      preLog(`你把集锦和战绩打包发给了几家${T.n}俱乐部——<b>${team}</b> 回了消息：<b>来试训吧。</b>`,"big");
+      S.rndResult={choice:`毛遂自荐 · ${T.n}`,
+        txt:`<b>${team}</b> 回复了：愿意给你一次试训机会。<br>
+          <span style="color:var(--ink-3)">机会只有一次——试训场上见真章。</span>`,
+        diff:[{n:"结果",v:"获得试训",good:true},{n:"行动点",v:"-1",good:false}]};
+    }
+  }else{
+    const why=!inviteFloorOk()?"段位不到宗师、比赛履历也还空白——没人打开你的附件"
+      :exposureScore()<45?"圈内关注度太低，简历排在几百份后面"
+      :"这几家最近不缺人。数据再涨涨，或者等球探自己找上门";
+    preLog(`你把简历投给了几家${T.n}俱乐部——没有回音。${why}。`,"info");
+    S.rndResult={choice:`毛遂自荐 · ${T.n}`,
+      txt:`没有回音。${why}。<br><span style="color:var(--ink-3)">两周后可以再投一轮。</span>`,
+      diff:[{n:"结果",v:"石沉大海",good:false},{n:"行动点",v:"-1",good:false}]};
+    if(rnd()<0.3) P.scoutSeen=(P.scoutSeen||0)+1;   // 投出去的简历不是全无痕迹
+  }
+  if(typeof render==="function") render();
+}
+function preTransferPage(){
+  const P=S.pre; if(!P) return "";
+  const expo=exposureScore();
+  const ladder=[[45,"青训/二队球探看得到你"],[110,"中游俱乐部看得到你"],[190,"豪门看得到你"]];
+  const expCard=`<div class="card"><h2>圈内关注度<em>${Math.round(expo)}</em></h2>
+    <div class="tw"><table><tbody>${ladder.map(([at,txt])=>`<tr>
+      <td class="n">${at}</td><td>${txt}</td>
+      <td class="n" style="color:${expo>=at?'var(--cyan)':'var(--ink-3)'}">${expo>=at?"✓ 已达到":"未达到"}</td></tr>`).join("")}
+    </tbody></table></div>
+    <p class="note">关注度＝名气 + 杯赛走多深 + 打过多少场有人看的比赛。
+      周报报不报你、哪一档俱乐部来找你，都看这个数；段位（${typeof rankFull==="function"?rankFull(P.rank):P.rank}）是另一把尺子——值不值得看。</p></div>`;
+  const c=canSelfRec();
+  const recCard=`<div class="card"><h2>毛遂自荐<em>每两周一轮 · 花 1 行动点</em></h2>
+    ${c.ok?"":`<p class="note" style="color:var(--red)">🔒 ${c.why}</p>`}
+    <div class="grid g2">${TIER_ORDER.slice().reverse().map(k=>{const T=CLUB_TIERS[k],p=selfRecOdds(k);
+      return `<button class="act" data-selfrec="${k}" ${c.ok?"":'disabled style="opacity:.4"'}>
+        <div class="t">${T.n}</div>
+        <div class="d">期望 ${T.expect} · 回信率 <b style="color:${p>=0.2?'var(--cyan)':p>=0.08?'var(--gold)':'var(--red)'}">${(p*100).toFixed(0)}%</b></div></button>`;}).join("")}</div>
+    <p class="note">没上岸也可以敲门：把排位战绩和杯赛集锦发过去。回信率看关注度、段位和你离这一档期望的差距——很低，但不是零。
+      ${P.invite&&P.invite.pending?`<br><b style="color:var(--gold)">手上有一份 ${P.invite.team} 的试训邀请（回「本周」页处理）。</b>`:""}</p></div>`;
+  const rules=`<p class="note" style="margin:4px 2px 0">外赛区规则：外赛区<b>一线队</b>的球探会看城市争霸赛和主播杯——走得深可能收到跨国邀请（VCS/PCS 这些缺人的赛区来得最勤）；
+    外赛区的<b>次级联赛不会跨国发邀请</b>。签约后这一页换成职业版：意向、挂牌、买断、主动接触。</p>`;
+  return expCard+recCard+rules;
 }

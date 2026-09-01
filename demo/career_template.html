@@ -283,6 +283,11 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260902g", at:"2026-09-02", items:[
+    "转会栏从开局就有：没上岸也能看「圈内关注度」阶梯（45 青训看得到你 / 110 中游 / 190 豪门），还能毛遂自荐——把简历投给任一档俱乐部，每两周一轮、花 1 行动点，回信率很低但不是零（拿到回信＝一次真试训）",
+    "外赛区一线队的球探现在也看城市争霸赛和主播杯：走得深可能收到跨国试训邀请（VCS/PCS 这些缺人的赛区来得最勤，LCK 最挑剔）；外赛区次级联赛不会跨国发邀请——签了跨国合同就是出海打职业",
+    "试训邀请卡会标注来邀请的赛区与该队在当地联赛的排名"
+  ]},
   {v:"v20260902f", at:"2026-09-02", items:[
     "LDL 二队全部换上真实名单：17 家 LPL 俱乐部的二队用 2022 LDL 春季赛真实首发（Leaguepedia 出场数据裁定主力，如 EDG.Y 的 Solokill/Monki/0909/Leave/Xiamu、UP.A 的 xiaocaobao）——和主联赛同一口径：2022 真实快照＋逐年老化；只换名字，数值仍锚母队",
     "老存档自动迁移：二队里还叫「新秀×」的占位名换成真名，你自己和已换过的人不动"
@@ -3438,6 +3443,7 @@ const TABS_PRE=[
   {k:"act",  n:"本周", z:"act"},
   {k:"squad",n:"战队", z:"team"},
   {k:"world",n:"世界", z:"world"},
+  {k:"tx",   n:"转会", z:"money"},
   {k:"shop", n:"经济", z:"money"},
   {k:"ach",  n:"成就", z:"rec"},
   {k:"log",  n:"日志", z:"rec"},
@@ -3582,6 +3588,7 @@ function viewPre(){
   ${T==="act"&&!S.cupMatch?(typeof pressCard==="function"?pressCard():""):""}
   ${T==="act"&&!S.cupMatch?(typeof injuryCard==="function"?injuryCard():"")+attrCard():""}
   ${T==="world"?scheduleCard()+proCard()+eventsCard():""}
+  ${T==="tx"?(typeof preTransferPage==="function"?preTransferPage():""):""}
   ${T==="squad"&&S.pre.mates&&S.pre.mates.length&&typeof preSquadCard==="function"?preSquadCard():""}
   ${T==="squad"&&!(S.pre.mates&&S.pre.mates.length)?lockedCard("战队实力","报名城市争霸赛或主播杯，抽到车队后解锁；签约职业战队后是完整版。",
       `<p>加入战队后，这里会显示：</p>
@@ -4125,6 +4132,7 @@ function bind(){
   const pg=$("pmgo"); if(pg) pg.onclick=()=>{S.match.pmSeen=true;render();scrollStageTop();};
   // 比赛档案里的拆解回放
   st.querySelectorAll("[data-pmv]").forEach(b=>b.onclick=()=>{S.pmView=+b.dataset.pmv;render()});
+  st.querySelectorAll("[data-selfrec]").forEach(b=>b.onclick=()=>selfRecommend(b.dataset.selfrec));
   const pc=$("pmclose"); if(pc) pc.onclick=()=>{S.pmView=null;render()};
   const of=$("off"); if(of) of.onclick=doOffseason;
   st.querySelectorAll("[data-ef]").forEach(b=>b.onclick=()=>{S.evFilter=b.dataset.ef;render()});
