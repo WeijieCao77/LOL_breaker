@@ -399,7 +399,12 @@ function intlAdvance(){
     pushEvent(`八强对阵抽签：你们抽到了 <b>${nextIntlOpp()}</b>（${leagueOf(nextIntlOpp())}）。淘汰赛全部 BO5。`,"info",name);
     enterPrep("intl", nextIntlOpp(), 3, `${name}八强 · 赛前备战`); return;
   }
-  I.round++; S.step="match"; startMatch(intlBoNeed(),nextIntlOpp());
+  /* 瑞士轮/小组赛的下一轮也要过「赛前备战」——原来这里直接 startMatch，
+     一场接一场，疲劳每场 +13 却没有任何恢复窗口（玩家报的就是这个）。
+     入围赛、淘汰赛早就走备战了，唯独这条路被跳过，没有理由。 */
+  I.round++;
+  enterPrep("intl", nextIntlOpp(), intlBoNeed(),
+    `${name}${I.stage==="groups"?"小组赛":"瑞士轮"}第 ${I.round} 轮 · 赛前备战`);
 }
 
 /* 其余队伍的瑞士轮战绩推进 */

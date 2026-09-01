@@ -962,6 +962,10 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260902i", at:"2026-09-02", items:[
+    "世界赛/MSI 小组赛（含瑞士轮）两场之间现在有「赛前备战」了——能休息、能合练、能看录像，不再一场接一场连轴转（入围赛和淘汰赛本来就有，唯独小组赛被跳过）",
+    "配套数值面：国际赛系列赛的疲劳消耗 13→18（赛会制连轴＋长途，本来就比联赛周耗人）；120 局批测：MSI 12.5% / 世界赛 17.5%，与基线同带，第一年国际冠军依旧 0%"
+  ]},
   {v:"v20260902h", at:"2026-09-02", items:[
     "修复成就「被注视」：原来国际赛碰到任何 LCK 队都会弹（打 BRION 也「想起了他」）——现在点名查对面名单里真的有 Faker 才触发"
   ]},
@@ -3234,7 +3238,9 @@ function endMatch(){
     if(st&&st[S.team]) st[S.team][won?"w":"l"]++;
     if(st&&st[m.oppName]) st[m.oppName][won?"l":"w"]++;
   }
-  addFans(won?7:-2.5); addFat(13);
+  // 国际赛更耗人：赛会制连轴、长途、时差——18 对联赛周的 13。
+  // 这是给「小组赛也有备战轮」配的数值面（玩家规矩：结构定死，平衡只动数值）。
+  addFans(won?7:-2.5); addFat(S.intl?18:13);
   // 出场费按联赛分级：LDL 的钱就是 LDL 的钱（经济重锚）
   const purse=(S.homeLeague||"LPL")==="LDL"?(won?2:1):(won?9:4);
   if(typeof addMoney==='function') addMoney('match',purse); else S.money+=purse;
@@ -4724,7 +4730,12 @@ function intlAdvance(){
     pushEvent(`八强对阵抽签：你们抽到了 <b>${nextIntlOpp()}</b>（${leagueOf(nextIntlOpp())}）。淘汰赛全部 BO5。`,"info",name);
     enterPrep("intl", nextIntlOpp(), 3, `${name}八强 · 赛前备战`); return;
   }
-  I.round++; S.step="match"; startMatch(intlBoNeed(),nextIntlOpp());
+  /* 瑞士轮/小组赛的下一轮也要过「赛前备战」——原来这里直接 startMatch，
+     一场接一场，疲劳每场 +13 却没有任何恢复窗口（玩家报的就是这个）。
+     入围赛、淘汰赛早就走备战了，唯独这条路被跳过，没有理由。 */
+  I.round++;
+  enterPrep("intl", nextIntlOpp(), intlBoNeed(),
+    `${name}${I.stage==="groups"?"小组赛":"瑞士轮"}第 ${I.round} 轮 · 赛前备战`);
 }
 
 /* 其余队伍的瑞士轮战绩推进 */
