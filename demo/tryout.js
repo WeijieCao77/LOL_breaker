@@ -78,7 +78,9 @@ function checkTryoutInvite(kind, reached, champion){
   const p = clamp(0.10 + depth*0.50 + (champion?0.30:0) + seen*0.045, 0.05, 0.96);
   if(rnd() >= p) return;
 
-  let tier = champion ? "mid" : depth >= 0.75 ? "low" : "acad";
+  // 主播杯是邀请制、全圈看着打——夺冠的邀请直接是豪门档
+  //（能不能签下来另说：豪门期望 79，评级说话）
+  let tier = champion ? (kind==="stream" ? "top" : "mid") : depth >= 0.75 ? "low" : "acad";
   if(kind === "stream" && tier !== "top") tier = tier === "acad" ? "low" : "mid";
   const why = `${C.name}${champion ? "夺冠" : `走到第 ${reached+1} 轮`}`;
   // 兑现时机：整届打完之后。这会儿可能还有别的赛事在跑，那就先排队。
@@ -180,11 +182,15 @@ function exposureCap(){
 }
 
 /* 履历通道：比赛打出来的资格，段位不够也作数。
-   城市赛/主播杯走到四强 → 青训教练会看；杯赛冠军级 → 中游也来问。 */
+   走到四强 → 青训教练会看；单项夺冠 → 中游来问；双料冠军 → 豪门也翻你的录像。
+   （原阈值写的 6/5，而 cityCup/streamCup 上限只有 4/3——履历通道的
+    中游以上在数学上永远够不着，玩家点的「入口太极端」一半就极端在这。） */
 function resumeCap(){
   const P = S.pre; if(!P) return "none";
-  if((P.cityCup||0) >= 6 || (P.streamCup||0) >= 5) return "mid";
-  if((P.cityCup||0) >= 4 || (P.streamCup||0) >= 3) return "acad";
+  const cc=(P.cityCup||0), sc=(P.streamCup||0);
+  if(cc >= 4 && sc >= 3) return "top";      // 双料冠军：圈子没法装看不见
+  if(cc >= 4 || sc >= 3) return "mid";
+  if(cc >= 3 || sc >= 2) return "acad";
   return "none";
 }
 /* 但门是有槛的：天梯不到宗师、比赛里也没打出名堂，没有俱乐部会浪费四天看你。
@@ -584,11 +590,20 @@ function signDeal(){
   // 队名走 EDG.Y 这套真实惯例，所以判断「是不是去二队」不能再看后缀，
   // 直接看合同档次，再去 LDL 名单里找这家俱乐部的二队。
   const isLDLName = (P.world.LDL||[]).some(t=>t.name===d.team);
-  const toLDL = (d.dealTier === "acad") || isLDLName;
+  let toLDL = (d.dealTier === "acad") || isLDLName;
   let teamName = d.team;
   if(toLDL && !isLDLName){
     const ld=(P.world.LDL||[]).find(t=>t.parent===d.team);
     if(ld) teamName=ld.name;
+    else{
+      /* 这家俱乐部不在 LPL 青训体系（LCK/外赛区）：现实里他们会把看上的
+         新人签成替补养在一队，而不是外派给别家的二队——
+         「Gen.G 看上你、你却去了国内某青训队」是玩家点名的极端案例。 */
+      d.dealTier = "sub";
+      d.kind = DEAL_TIERS.sub.k;   // 合同类型跟着变：替补进队，不顶掉位置上那个人
+      toLDL = false;
+      preLog(`${d.team} 没有 LDL 编制——他们把你注册成<b>一队替补</b>，跟队训练，等一个上场的机会。`,"info");
+    }
   }
   if(toLDL){
     const has=(P.world.LDL||[]).some(t=>t.name===teamName);

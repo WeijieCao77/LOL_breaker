@@ -968,6 +968,11 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260903c", at:"2026-09-03", items:[
+    "天才路线不再被焊死（玩家点名「别做得这么极端」）：主播杯夺冠的试训邀请直接是豪门档；履历通道修好数学 bug（原阈值 6/5 超过杯赛轮次上限 4/3，中游以上永远够不着）——现在单项杯赛冠军=中游看你、双料冠军=豪门也翻你的录像",
+    "LCK/外赛区俱乐部的 C 评级改为留队替补合同（原来会把你外派去国内某青训队——Gen.G 看上你你却去了别家二队）；想首发还得真的压过位置上那个人，五人游戏不变",
+    "验证：构造实验里 58 均值新秀首发 S12 的 T1 → LCK 冠军 ~36%、世界赛 ~24%——加入强队冠军概率就是高，引擎从来没有年份墙；极端的只是入口，现已放开成「窄但存在」"
+  ]},
   {v:"v20260903b", at:"2026-09-03", items:[
     "行动点重做：轻重分层＋异化点数（玩家拍板）。每周精力翻倍（赛季 8 点、职业前 12、休赛 8、备战/出征/伤 4），行动按现实时间精力定价：排位/双排/发简历 1 点（碎片时间）、训练/直播/做内容/休息/合练/复盘 2 点（半天）、训练赛 3 点（整个下午连打）",
     "每个行动按钮都标了点数；一键安排/执行计划/托管认识新价格，剩 1 点会自动用排位收尾不浪费",
@@ -10169,7 +10174,9 @@ function checkTryoutInvite(kind, reached, champion){
   const p = clamp(0.10 + depth*0.50 + (champion?0.30:0) + seen*0.045, 0.05, 0.96);
   if(rnd() >= p) return;
 
-  let tier = champion ? "mid" : depth >= 0.75 ? "low" : "acad";
+  // 主播杯是邀请制、全圈看着打——夺冠的邀请直接是豪门档
+  //（能不能签下来另说：豪门期望 79，评级说话）
+  let tier = champion ? (kind==="stream" ? "top" : "mid") : depth >= 0.75 ? "low" : "acad";
   if(kind === "stream" && tier !== "top") tier = tier === "acad" ? "low" : "mid";
   const why = `${C.name}${champion ? "夺冠" : `走到第 ${reached+1} 轮`}`;
   // 兑现时机：整届打完之后。这会儿可能还有别的赛事在跑，那就先排队。
@@ -10271,11 +10278,15 @@ function exposureCap(){
 }
 
 /* 履历通道：比赛打出来的资格，段位不够也作数。
-   城市赛/主播杯走到四强 → 青训教练会看；杯赛冠军级 → 中游也来问。 */
+   走到四强 → 青训教练会看；单项夺冠 → 中游来问；双料冠军 → 豪门也翻你的录像。
+   （原阈值写的 6/5，而 cityCup/streamCup 上限只有 4/3——履历通道的
+    中游以上在数学上永远够不着，玩家点的「入口太极端」一半就极端在这。） */
 function resumeCap(){
   const P = S.pre; if(!P) return "none";
-  if((P.cityCup||0) >= 6 || (P.streamCup||0) >= 5) return "mid";
-  if((P.cityCup||0) >= 4 || (P.streamCup||0) >= 3) return "acad";
+  const cc=(P.cityCup||0), sc=(P.streamCup||0);
+  if(cc >= 4 && sc >= 3) return "top";      // 双料冠军：圈子没法装看不见
+  if(cc >= 4 || sc >= 3) return "mid";
+  if(cc >= 3 || sc >= 2) return "acad";
   return "none";
 }
 /* 但门是有槛的：天梯不到宗师、比赛里也没打出名堂，没有俱乐部会浪费四天看你。
@@ -10675,11 +10686,20 @@ function signDeal(){
   // 队名走 EDG.Y 这套真实惯例，所以判断「是不是去二队」不能再看后缀，
   // 直接看合同档次，再去 LDL 名单里找这家俱乐部的二队。
   const isLDLName = (P.world.LDL||[]).some(t=>t.name===d.team);
-  const toLDL = (d.dealTier === "acad") || isLDLName;
+  let toLDL = (d.dealTier === "acad") || isLDLName;
   let teamName = d.team;
   if(toLDL && !isLDLName){
     const ld=(P.world.LDL||[]).find(t=>t.parent===d.team);
     if(ld) teamName=ld.name;
+    else{
+      /* 这家俱乐部不在 LPL 青训体系（LCK/外赛区）：现实里他们会把看上的
+         新人签成替补养在一队，而不是外派给别家的二队——
+         「Gen.G 看上你、你却去了国内某青训队」是玩家点名的极端案例。 */
+      d.dealTier = "sub";
+      d.kind = DEAL_TIERS.sub.k;   // 合同类型跟着变：替补进队，不顶掉位置上那个人
+      toLDL = false;
+      preLog(`${d.team} 没有 LDL 编制——他们把你注册成<b>一队替补</b>，跟队训练，等一个上场的机会。`,"info");
+    }
   }
   if(toLDL){
     const has=(P.world.LDL||[]).some(t=>t.name===teamName);
