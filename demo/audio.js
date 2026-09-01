@@ -13,14 +13,15 @@
 const AUDIO_KEY = "pjz_audio";
 const AU = {
   ctx: null, master: null, bgmGain: null,
-  sfx: true, bgm: true,           // 默认都开；音乐本来就压得很轻
+  sfx: true, bgm: false,          // 音效默认开；音乐默认关，想听的自己点 ♪（玩家定的）
   bgmTimer: null, bgmStep: 0
 };
 
 function audioPrefs() {
   try {
     const raw = localStorage.getItem(AUDIO_KEY);
-    if (raw) { const p = JSON.parse(raw); AU.sfx = p.sfx !== false; AU.bgm = p.bgm !== false; }
+    // bgm 用 === true：没存过偏好的一律当「关」，和上面的默认值一致
+    if (raw) { const p = JSON.parse(raw); AU.sfx = p.sfx !== false; AU.bgm = p.bgm === true; }
   } catch (e) {}
 }
 function audioSave() {
