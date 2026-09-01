@@ -968,6 +968,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260903d", at:"2026-09-03", items:[
+    "创建界面不再替你预选：位置和起始年龄默认全空，每一个选择都由你自己按下去；开局按钮会依次提示还缺什么（ID → 位置 → 年龄 → 出身 → 天赋）"
+  ]},
   {v:"v20260903c", at:"2026-09-03", items:[
     "天才路线不再被焊死（玩家点名「别做得这么极端」）：主播杯夺冠的试训邀请直接是豪门档；履历通道修好数学 bug（原阈值 6/5 超过杯赛轮次上限 4/3，中游以上永远够不着）——现在单项杯赛冠军=中游看你、双料冠军=豪门也翻你的录像",
     "LCK/外赛区俱乐部的 C 评级改为留队替补合同（原来会把你外派去国内某青训队——Gen.G 看上你你却去了别家二队）；想首发还得真的压过位置上那个人，五人游戏不变",
@@ -1907,7 +1910,8 @@ function ageWorld(){
 
 /* ================= 捏人 ================= */
 function screenCreate(){
-  S={step:"create", name:"", pos:"mid", origin:"academy", ageIdx:1,
+  // 位置和年龄不给默认值（玩家点名）：开局的每一个选择都该是玩家自己按下去的
+  S={step:"create", name:"", pos:null, origin:"academy", ageIdx:null,
        bgPick:null, bgOffer:drawBackgrounds(),
        talent:{操作:0,运营:0,心态:0,指挥:0,体质:0}};
   render();
@@ -1966,7 +1970,7 @@ function viewCreate(){
         <div class="t">${b.n}</div>
         <div class="d">${b.d}</div>
       </button>`).join("")}</div>
-    <p class="note">你现在 ${AGES[S.ageIdx].a} 岁，还没有战队。先用半年时间打上分、攒人气、被人看见——然后才谈签约。
+    <p class="note">${S.ageIdx!=null?`你现在 ${AGES[S.ageIdx].a} 岁，还没有战队。`:"你还没有战队。"}先用半年时间打上分、攒人气、被人看见——然后才谈签约。
       18–21 岁是成长期，22–24 岁巅峰，25 岁起属性会真的往下掉——只有 21 岁出道会在生涯末尝到它。</p>
   </div>
 
@@ -1986,10 +1990,13 @@ function viewCreate(){
       ad>62?"很均衡，版本怎么变你都能跟上，但没有一招鲜。":
       ad>45?"有侧重也有兜底，逆版本时会难受一阵但缓得过来。":
       "高度专精。顺版本能炸，逆版本会被针对到怀疑人生。"}</div>
-    <div class="row"><button class="btn" id="go" ${(left!==0||!S.bgPick||!(S.name||"").trim())?'disabled':''}>
-      ${left!==0?`还需分配 ${left} 点`
-        :!(S.name||"").trim()?'先给自己起个 ID'
-        :(S.bgPick?'确认，看看我的起点 →':'先选一个出身')}</button></div>
+    <div class="row"><button class="btn" id="go" ${(left!==0||!S.pos||S.ageIdx==null||!S.bgPick||!(S.name||"").trim())?'disabled':''}>
+      ${!(S.name||"").trim()?'先给自己起个 ID'
+        :!S.pos?'先选一个位置'
+        :S.ageIdx==null?'先选起始年龄'
+        :!S.bgPick?'先选一个出身'
+        :left!==0?`还需分配 ${left} 点天赋`
+        :'确认，看看我的起点 →'}</button></div>
   </div>`;
 }
 
