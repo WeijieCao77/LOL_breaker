@@ -130,6 +130,7 @@ function loadGame() {
     fixLegacyForeignAch(S);
     fixLegacyAcadTier(S);
     fixScaleV2(S);
+    fixLdlNames(S);
     // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
     // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
     if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
@@ -141,6 +142,24 @@ function loadGame() {
   } catch (e) {
     return false;
   }
+}
+
+/* LDL 真名迁移（2022 LDL 春季赛真实首发，见模板里的 LDL_ROSTER）：
+   老档二队还坐着「新秀林3」这类占位名——只把仍是占位名的位置换成真名，
+   玩家自己、已升队/已替换的真名选手一律不碰（改名只是皮肤，数值零变化）。 */
+function fixLdlNames(s) {
+  try {
+    if (typeof LDL_ROSTER === "undefined" || !s.world || !s.world.LDL) return;
+    s.world.LDL.forEach(t => {
+      const R = LDL_ROSTER[typeof teamCode === "function" ? teamCode(t.parent || "") : ""];
+      if (!R) return;
+      (t.players || []).forEach(p => {
+        if (p.me || !/^新秀/.test(String(p.id))) return;
+        const real = R.find(q => q.pos === p.pos);
+        if (real) p.id = real.id;
+      });
+    });
+  } catch (e) {}
 }
 
 /* 名气拆成粉丝＋热度之前的老档：只有 S.fame。

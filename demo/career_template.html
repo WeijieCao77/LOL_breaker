@@ -283,6 +283,10 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260902f", at:"2026-09-02", items:[
+    "LDL 二队全部换上真实名单：17 家 LPL 俱乐部的二队用 2022 LDL 春季赛真实首发（Leaguepedia 出场数据裁定主力，如 EDG.Y 的 Solokill/Monki/0909/Leave/Xiamu、UP.A 的 xiaocaobao）——和主联赛同一口径：2022 真实快照＋逐年老化；只换名字，数值仍锚母队",
+    "老存档自动迁移：二队里还叫「新秀×」的占位名换成真名，你自己和已换过的人不动"
+  ]},
   {v:"v20260902e", at:"2026-09-02", items:[
     "转会意向不再无限挂着：注册窗（季中/年底）一开当场见分晓——要么兑现成正式问询，要么明说「没递表，意向作废」；转会栏会记下上个窗的结果",
     "修复：MSI 夺冠回国直接开夏季赛，把季中注册窗整个跳过了——冠军反而是全联盟唯一没有转会窗的人；现在冠军也过窗",
@@ -804,6 +808,29 @@ function teamCode(name){
   // 兜底：取每个词的首字母，最多三位
   return String(name||"").split(/\s+/).map(x=>x[0]||"").join("").toUpperCase().slice(0,3)||"XX";
 }
+/* 2022 LDL 春季赛真实首发（Leaguepedia）。
+   主联赛就是「2022 真实数据快照＋逐年老化」，二队用同一口径：只借名字，
+   数值仍走 buildLDL 的母队锚定带（零平衡影响）。缺数据的俱乐部回落占位名。
+   外赛区没有次级联赛建模——试训邀请只出自 LPL/LDL（pickClub 联赛写死）。 */
+const LDL_ROSTER={
+  EDG:[{id:"Solokill",pos:"top"},{id:"Monki",pos:"jng"},{id:"0909",pos:"mid"},{id:"Leave",pos:"bot"},{id:"Xiamu",pos:"sup"}],
+  TES:[{id:"Aspire",pos:"top"},{id:"eight",pos:"jng"},{id:"Novice",pos:"mid"},{id:"Ylaht",pos:"bot"},{id:"Cerasus",pos:"sup"}],
+  BLG:[{id:"Myths",pos:"top"},{id:"can",pos:"jng"},{id:"pinz",pos:"mid"},{id:"Rise",pos:"bot"},{id:"Jwei",pos:"sup"}],
+  JDG:[{id:"unravel",pos:"top"},{id:"Xiao17",pos:"jng"},{id:"Insulator",pos:"mid"},{id:"TuT",pos:"bot"},{id:"Feather",pos:"sup"}],
+  RNG:[{id:"Xiaoxu",pos:"top"},{id:"lovely",pos:"jng"},{id:"Tangyuan",pos:"mid"},{id:"Asura",pos:"bot"},{id:"Mysun",pos:"sup"}],
+  WBG:[{id:"Decade",pos:"top"},{id:"Maggie",pos:"jng"},{id:"forse",pos:"mid"},{id:"Shark",pos:"bot"},{id:"Wuy",pos:"sup"}],
+  AL:[{id:"Overture",pos:"top"},{id:"icecoKe",pos:"jng"},{id:"Harder",pos:"mid"},{id:"Michi",pos:"bot"},{id:"Kaixuan",pos:"sup"}],
+  TT:[{id:"xiao7",pos:"top"},{id:"Youxin",pos:"jng"},{id:"Sky",pos:"mid"},{id:"bat",pos:"bot"},{id:"Mmy",pos:"sup"}],
+  RA:[{id:"torch",pos:"top"},{id:"Yesjun",pos:"jng"},{id:"DOING",pos:"mid"},{id:"Such",pos:"bot"},{id:"Parac",pos:"sup"}],
+  UP:[{id:"Hery",pos:"top"},{id:"yekai",pos:"jng"},{id:"xiaocaobao",pos:"mid"},{id:"rat",pos:"bot"},{id:"Missia",pos:"sup"}],
+  LGD:[{id:"Rumiki",pos:"top"},{id:"Fatfish",pos:"jng"},{id:"haichao",pos:"mid"},{id:"RanL",pos:"bot"},{id:"minghai",pos:"sup"}],
+  LNG:[{id:"Clever9",pos:"top"},{id:"Darwin",pos:"jng"},{id:"Vergil",pos:"mid"},{id:"Uneasy",pos:"bot"},{id:"yawang",pos:"sup"}],
+  V5:[{id:"Invincible",pos:"top"},{id:"pzx",pos:"jng"},{id:"Dream",pos:"mid"},{id:"Kepler",pos:"bot"},{id:"Jerry",pos:"sup"}],
+  OMG:[{id:"Munian",pos:"top"},{id:"Mori",pos:"jng"},{id:"Steel",pos:"mid"},{id:"2y1",pos:"bot"},{id:"Guang",pos:"sup"}],
+  FPX:[{id:"Kartis",pos:"top"},{id:"haoye",pos:"jng"},{id:"Qing",pos:"mid"},{id:"Xingye",pos:"bot"},{id:"Lele",pos:"sup"}],
+  WE:[{id:"Demon",pos:"top"},{id:"Yanxiang",pos:"jng"},{id:"xqw",pos:"mid"},{id:"yhp",pos:"bot"},{id:"Fahai",pos:"sup"}],
+  IG:[{id:"YSKM",pos:"top"},{id:"Beige",pos:"jng"},{id:"xzy",pos:"mid"},{id:"xiaoyueji",pos:"bot"},{id:"Mitsuki",pos:"sup"}]
+};
 function buildLDL(w){
   const src=(w.LPL||[]);
   const rk=src.map(t=>({t,p:avg(t.players.map(q=>avg(DIMS.map(d=>q.r[d]))))}))
@@ -820,7 +847,13 @@ function buildLDL(w){
        统一标尺版：母队−8～−4、下限 55（LPL 均值 65 → LDL 57–61，
        大师到王者边缘）——强队青训≈王者边的门神，弱队青训跟弱队一样菜，
        宗师实力（60）有得打、没得躺。 */
-    players:POS.map(x=>Object.assign(makeRookie(x.k,Math.min(Math.max(p-8,55),p-4)),{lg:"LDL",form:52,retired:false}))
+    players:POS.map(x=>{
+      const pl=Object.assign(makeRookie(x.k,Math.min(Math.max(p-8,55),p-4)),{lg:"LDL",form:52,retired:false});
+      const R=LDL_ROSTER[teamCode(t.name)];
+      const real=R&&R.find(q=>q.pos===x.k);
+      if(real) pl.id=real.id;               // 真名上身；数值不动
+      return pl;
+    })
   }));
 }
 
