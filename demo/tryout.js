@@ -736,7 +736,22 @@ function rollProOffers(wnd){
   if(intlChampYear) p = 1;
   else if(lgChampYear) p = Math.max(p, 0.96);
   S.scoutHeat = 0;
-  if(rnd() >= p){ S.offerDry = dry + 1; return; }
+  const wname = wnd==="mid" ? "季中注册窗" : "年底注册窗";
+  /* 注册窗是意向的到期日：要么兑现成正式问询，要么当场作废——
+     不许静默留着（玩家实测：WE 的意向挂了一整年，谁也没来，谁也没说一声）。 */
+  const settle = txt => {
+    const names = intents.map(x=>x.team).join("、");
+    S.txIntents = [];
+    S.txWndNote = { w:wname, si:S.si, txt };
+    if(intents.length)
+      pushEvent(`${wname}关上了：看台上那几家（<b>${names}</b>）终究没有递表。<b>意向作废。</b><br>
+        <span style="color:var(--ink-3)">${txt}</span>`,"info","转会");
+  };
+  if(rnd() >= p){
+    S.offerDry = dry + 1;
+    settle(`球探的兴趣没能说服管理层。继续打，数据是唯一会替你说话的东西。`);
+    return;
+  }
   S.offerDry = 0;
   let tier = perf >= 19 ? "top" : perf >= 10 ? "mid" : "low";
   if(intlChampYear) tier = "top";       // 抬着奖杯进转会期，来的只会是豪门
@@ -745,7 +760,11 @@ function rollProOffers(wnd){
   let league = abroad || "LPL";
   // LDL 选手的出路是一线：数据够（表现分 ≥10）一线来谈；不够就继续攒
   if(inLDL && !abroad){
-    if(perf < 10 && !S.freeAgent){ S.offerDry = dry + 1; return; }
+    if(perf < 10 && !S.freeAgent){
+      S.offerDry = dry + 1;
+      settle(`二队的数据还没到一线的门槛（表现分 ${Math.round(perf)}，要 10）。`);
+      return;
+    }
     tier = perf >= 16 ? "mid" : "low";
     league = "LPL";
   }
@@ -755,7 +774,8 @@ function rollProOffers(wnd){
   if(iv && !abroad && iv.team !== S.team){ team = iv.team; tier = iv.tier; league = iv.league||league; }
   if(!team) team = pickClub(tier, league);
   S.txIntents = [];
-  if(!team || team === S.team) return;
+  if(!team || team === S.team){ S.txWndNote={w:wname,si:S.si,txt:"这个窗没有合适的下家。"}; return; }
+  S.txWndNote = { w:wname, si:S.si, txt:`<b>${team}</b> 递了正式问询。` };
   // 看得够清楚就不用再试训了
   const direct = perf >= 15;
   S.proOffer = { team, tier, league, perf: Math.round(perf), direct,
@@ -1261,12 +1281,17 @@ function approachTeam(name){
   S.ap--; S.approachKey = approachKey();
   const p = approachOdds(tg.tier);
   const fee = S.freeAgent ? 0 : ((S.contract&&S.contract.buyout)||0);
+  /* 结果必须弹出来（玩家原话：只在世界日志里写一行，根本不知道发生了什么）。
+     复用际遇结果卡：它是遮罩，躲不开。 */
   if(rnd() >= p){
     const why = fee>500 && rnd()<0.5
       ? `你的违约金（${fee} 万）把他们劝退了`
       : rnd()<0.5 ? `他们这个位置刚续约，暂时不动` : `他们想先看看你接下来几场的比赛`;
     pushEvent(`经纪人去接触了 <b>${name}</b>——对方婉拒：${why}。<br>
       <span style="color:var(--ink-3)">自荐被拒不丢人，丢人的是数据。继续打。</span>`,"info","转会");
+    S.rndResult = { choice:`主动接触 · ${name}`,
+      txt:`对方<b>婉拒</b>了：${why}。<br><span style="color:var(--ink-3)">自荐被拒不丢人，丢人的是数据。继续打。</span>`,
+      diff:[{n:"结果",v:"婉拒",good:false},{n:"行动点",v:"-1",good:false}] };
     render(); return;
   }
   if(typeof txWindowOpen==="function" && txWindowOpen()){
@@ -1274,11 +1299,18 @@ function approachTeam(name){
     S.proOffer = { team:tg.team, tier:tg.tier, league:tg.league,
                    perf:Math.round(proPerf()), direct:false, buyout:fee, asked:true };
     pushEvent(`经纪人去接触了 <b>${name}</b>——<b>他们愿意谈</b>。注册窗开着，现在就能走流程。`,"big","转会");
+    S.rndResult = { choice:`主动接触 · ${name}`,
+      txt:`<b>他们愿意谈。</b>注册窗开着，正式问询已经摆上桌——接下来走试训/谈约流程。`,
+      diff:[{n:"结果",v:"愿意谈",good:true},{n:"正式问询",v:name,good:true}] };
   } else {
     S.txIntents = (S.txIntents||[]).filter(x=>x.team!==tg.team);
     S.txIntents.push({ team:tg.team, tier:tg.tier, si:S.si, league:tg.league, asked:true });
     pushEvent(`经纪人去接触了 <b>${name}</b>——<b>他们有兴趣</b>，但赛段中不能转会。<br>
       意向记进了「转会」栏，注册窗一开就谈。`,"big","转会");
+    S.rndResult = { choice:`主动接触 · ${name}`,
+      txt:`<b>他们有兴趣。</b>赛段中不能转会——意向已记进「转会」栏，
+        下个注册窗（季中间歇 / 年底休赛期）当场见分晓：要么递表，要么作废。`,
+      diff:[{n:"结果",v:"有兴趣",good:true},{n:"意向",v:"已入册",good:true}] };
   }
   render();
 }
@@ -1317,8 +1349,9 @@ function transferPage(){
       <thead><tr><th>球队</th><th>档次</th><th>记录于</th></tr></thead>
       <tbody>${intentRows}</tbody></table></div>
       <p class="note">${wnd?"窗口开着——这些意向会在近期兑现成正式问询。"
-        :"赛段中不能转会。这些队在等注册窗（季中间歇 / 年底休赛期），到时候意向会兑现成正式问询。"}</p>`
+        :"赛段中不能转会。这些队在等注册窗（季中间歇 / 年底休赛期）——<b>窗一开当场见分晓</b>：要么递表，要么作废，不会一直挂着。"}</p>`
       :`<p class="note">目前没有在桌上的意向。${perf>=10?"你的表现有人在看，赛段里球探会来。":"先把表现分打上去——没有数据，谁也不会来。"}</p>`}
+    ${S.txWndNote?`<p class="note" style="color:var(--ink-3)">上个${S.txWndNote.w}（${SEASONS[S.txWndNote.si]?SEASONS[S.txWndNote.si].tag:""}）：${S.txWndNote.txt}</p>`:""}
     ${S.proOffer?`<p class="note" style="color:var(--gold)">有一份正式问询等你处理（见弹窗/本周页）。</p>`:""}</div>`;
   /* 主动行动 */
   const askC = canAskTransfer(), p = askTransferOdds();

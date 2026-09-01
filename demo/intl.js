@@ -521,7 +521,11 @@ function afterIntl(){
       queueBreakNews(2,ev.text,ev.tone,ev.tag);      // 间歇结束时揭晓
       return;
     }
-    startSeason(false,1); return;
+    // 冠军也要回国过季中注册窗——原来这里直接 startSeason，
+    // 于是 MSI 冠军成了全联盟唯一没有季中转会窗的人（玩家撞见的就是它的邻居 bug）。
+    enterBreak("summer",1,"季中间歇",
+      `捧着奖杯回国。夏季赛开始前，<b>季中注册窗开着</b>——冠军的电话只会更多。`);
+    return;
   }
   if(wrap){
     enterBreak("wrap",2,"世界赛 · 你出局之后",
