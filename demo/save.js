@@ -131,6 +131,7 @@ function loadGame() {
     fixLegacyAcadTier(S);
     fixScaleV2(S);
     fixLdlNames(S);
+    fixWl(S);
     // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
     // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
     if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
@@ -159,6 +160,18 @@ function fixLdlNames(s) {
         if (real) p.id = real.id;
       });
     });
+  } catch (e) {}
+}
+
+/* 世界线张力（v20260902 系）：老档没有 S.wl。
+   粗估当前联赛的张力 = 打过的赛段数 × 0.21（周注入的近似），其余联赛 0——
+   老玩家在自己联赛留下的痕迹不该被读档抹掉。 */
+function fixWl(s) {
+  try {
+    if (s.wl || !s.career) return;
+    const splits = (s.si || 0) * 2 + (s.split || 0) + 1;
+    s.wl = {};
+    s.wl[s.homeLeague || "LPL"] = Math.min(1, +(0.21 * splits).toFixed(3));
   } catch (e) {}
 }
 

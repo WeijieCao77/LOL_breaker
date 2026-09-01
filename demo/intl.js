@@ -33,8 +33,13 @@ function winProb(a,b){ return 1/(1+Math.exp(-(pw(a)-pw(b))/SPREAD)); }
 function simBo(a,b,need){ let x=0,y=0,p=winProb(a,b); while(x<need&&y<need){ rnd()<p?x++:y++; } return x>y?a:b; }
 
 /* ---------- 赛区名额 ---------- */
-/* 小赛区没有联赛积分榜，直接按战力取冠军 */
+/* 小赛区没有联赛积分榜，直接按战力取冠军。
+   世界线张力闸：当年史实代表在库里且张力没起来，就按史实（GAM、DFM 这些） */
 function minorChampion(lg){
+  try{
+    const WC=(typeof WORLDS_CANON!=="undefined"&&WORLDS_CANON[S.si])?WORLDS_CANON[S.si][lg]:null;
+    if(WC&&WC.length&&(S.world[lg]||[]).some(t=>t.name===WC[0])&&rnd()>=wlOf(lg)) return WC[0];
+  }catch(e){}
   return S.world[lg].slice().sort((a,b)=>power(b.players)-power(a.players))[0].name;
 }
 /* 大赛区季后赛：前四打两轮，返回排名 [冠,亚,季,殿]。
@@ -51,7 +56,15 @@ function majorStandings(lg){
   const champ=simBo(w1,w2,3);
   const runner=(champ===w1)?w2:w1;
   const rest=rk.filter(n=>n!==champ&&n!==runner);
-  const res=[champ,runner,rest[0],rest[1]];
+  let res=[champ,runner,rest[0],rest[1]];
+  // 世界线张力闸：史实上这个赛段的联赛冠军若已知、在场、不是你的队，
+  // 按 1−wl 概率收束成史实（LEAGUE_CANON 由史实数据层提供；缺数据就自由模拟）
+  try{
+    const LC=(typeof LEAGUE_CANON!=="undefined")?LEAGUE_CANON:null;
+    const cn=LC&&LC[lg]&&LC[lg][S.si]?LC[lg][S.si][S.split||0]:null;
+    if(cn&&cn!==S.team&&rk.includes(cn)&&rnd()>=wlOf(lg))
+      res=[cn].concat(res.filter(n=>n!==cn)).slice(0,4);
+  }catch(e){}
   S.poCache[key]=res.slice();
   return res;
 }
@@ -80,6 +93,18 @@ function buildWorldsField(playerResult,cfg){
   const HL=S.homeLeague||"LPL";
   const seeds={};
   MAJOR.forEach(lg=>{ seeds[lg]=majorStandings(lg); });
+  // 世界线张力闸：逐赛区按 1−wl 概率用史实出线名单（映射到库内存在的队，
+  // 缺席位由模拟排名补齐）；你自己打出来的名额在下面的 mySlot 逻辑里，永远真实
+  try{
+    if(typeof WORLDS_CANON!=="undefined"&&WORLDS_CANON[S.si]){
+      MAJOR.forEach(lg=>{
+        const hist=(WORLDS_CANON[S.si][lg]||[])
+          .filter(n=>n!==S.team&&(S.world[lg]||[]).some(t=>t.name===n));
+        if(hist.length&&rnd()>=wlOf(lg))
+          seeds[lg]=hist.concat((seeds[lg]||[]).filter(n=>!hist.includes(n)));
+      });
+    }
+  }catch(e){}
 
   // 世界赛资格看季后赛走到哪，不是看常规赛排名（见 worldsSlot）。
   let mySlot=worldsSlot(playerResult);
@@ -151,6 +176,17 @@ function startIntl(type,playerResult){
        同赛区内战（玩家报的：LNG 在 MSI 小组赛遇到 ThunderTalk）。
        现实里：2022 MSI 是 11 队、每个赛区只有春季赛冠军一支；
        2023 起 LPL/LCK 才各拿两个名额。 */
+    // 世界线张力闸：MSI 名单逐赛区按 1−wl 概率用史实（你打出来的名额永远真实）
+    try{
+      if(typeof MSI_CANON!=="undefined"&&MSI_CANON[S.si]){
+        Object.keys(MSI_CANON[S.si]).forEach(lg=>{
+          const hist=(MSI_CANON[S.si][lg]||[])
+            .filter(n=>n!==S.team&&(S.world[lg]||[]).some(t=>t.name===n));
+          if(hist.length&&rnd()>=wlOf(lg))
+            seeds[lg]=hist.concat((seeds[lg]||[]).filter(n=>!hist.includes(n)));
+        });
+      }
+    }catch(e){}
     const twoSeed = (F.msi&&F.msi.mode)!=="groups";      // 2022 那套＝每赛区一支
     const field=[];
     MAJOR.forEach(lg=>{
@@ -162,8 +198,14 @@ function startIntl(type,playerResult){
     if(!twoSeed){
       (MINOR||[]).forEach(lg=>{
         if(!S.world[lg]||!S.world[lg].length) return;
-        const r=majorStandings(lg);
-        if(r&&r[0]&&field.indexOf(r[0])<0) field.push(r[0]);
+        let cand=null;
+        // 小赛区代表也过张力闸：史实代表在库里且没被扰动就按史实
+        try{
+          const h=(typeof MSI_CANON!=="undefined"&&MSI_CANON[S.si])?(MSI_CANON[S.si][lg]||[]):[];
+          if(h.length&&h[0]!==S.team&&(S.world[lg]||[]).some(t=>t.name===h[0])&&rnd()>=wlOf(lg)) cand=h[0];
+        }catch(e){}
+        if(!cand){ const r=majorStandings(lg); cand=r&&r[0]; }
+        if(cand&&field.indexOf(cand)<0) field.push(cand);
       });
     }
     if(playerResult==="champion"&&field.indexOf(S.team)<0) field.push(S.team);
@@ -181,7 +223,7 @@ function startIntl(type,playerResult){
     enterPrep("intl", S.intl.queue[0], cfg.playin.bo, "世界赛入围赛首战 · 赛前备战");
     return true;
   }
-  qual=simPlayIn(playin).slice(0,cfg.playin.take);
+  qual=canonQual(playin,simPlayIn(playin).slice(0,cfg.playin.take));
   const field=direct.concat(qual);
   if(qual.length) pushEvent(`入围赛结束（${cfg.playin.teams} 队争 ${cfg.playin.take} 个名额），<b>${qual.join("、")}</b> 晋级正赛。`,"info","世界赛");
   return openIntl("worlds",field,cfg.main);
@@ -288,6 +330,77 @@ function simEventStaged(field,stage){
   const two=step(four);
   return {eight,four,two,champ:step(two)[0]};
 }
+/* ---------- 世界线收束（2026-09-02 玩家定调）----------
+   「在我没加入/被淘汰的时候，联赛按历史发展；因我而变，且随影响力逐渐变大。」
+   S12-S15 的国际冠军是史实剧本：世界赛 DRX、T1、T1、T1（LCK 四连，至暗时刻的本体），
+   MSI RNG、JDG、GEN、GEN。S16 没有剧本——那一年留给你，或留给至暗延续。
+   收束条件：正主还活在名单里、而且不是被你亲手打掉的。
+   偏转不靠开关，靠你的行为本身：你顶掉正主名额、你在淘汰赛干掉正主、
+   你自己打进决赛（决赛永远真打）——影响力越大，偏得越多，这正是要的曲线。 */
+/* 史实数据层（Leaguepedia 逐条取证，gen-canon.js 生成——队名已映射到库内 2022 快照，
+   库里不存在的席位不写、回落自由模拟）。si 0-3 = S12-S15；S16 无剧本。 */
+const WORLDS_CANON={"0":{"LCK":["Gen.G","T1","Dplus Kia","Kiwoom DRX"],"LPL":["JD Gaming","Top Esports","EDward Gaming","Royal Never Give Up"],"LEC":["G2 Esports","Rogue","Fnatic","MAD Lions KOI"],"LCS":["100 Thieves","Cloud9","Evil Geniuses"],"VCS":["GAM Esports","Saigon Buffalo"],"PCS":["CTBC Flying Oyster"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Isurus"],"LCO":["Chiefs Esports Club"],"TCL":["İstanbul Wildcats"]},"1":{"LCK":["Gen.G","T1","KT Rolster","Dplus Kia"],"LPL":["JD Gaming","Bilibili Gaming","LNG Esports","Weibo Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI","Team BDS"],"LCS":["Cloud9","Team Liquid"],"VCS":["GAM Esports","Team Secret"],"PCS":["PSG Talon","CTBC Flying Oyster"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Movistar R7"]},"2":{"LCK":["Hanwha Life Esports","Gen.G","Dplus Kia","T1"],"LPL":["Bilibili Gaming","Top Esports","LNG Esports","Weibo Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI"],"LCS":["FlyQuest","Team Liquid","100 Thieves"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"LJL":["Fukuoka SoftBank HAWKS gaming"],"CBLOL":["paiN Gaming"],"LLA":["Movistar R7"]},"3":{"LCK":["Gen.G","Hanwha Life Esports","KT Rolster","T1"],"LPL":["Anyone's Legend","Bilibili Gaming","Top Esports","Invictus Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI"],"LCS":["FlyQuest","100 Thieves"],"PCS":["CTBC Flying Oyster","PSG Talon"],"VCS":["Team Secret"]}};
+const MSI_CANON={"0":{"LCK":["T1"],"LPL":["Royal Never Give Up"],"LEC":["G2 Esports"],"LCS":["Evil Geniuses"],"PCS":["PSG Talon"],"VCS":["Saigon Buffalo"],"LJL":["DetonatioN FocusMe"],"CBLOL":["RED Canids"],"LLA":["Team Aze"],"LCO":["ORDER"],"TCL":["İstanbul Wildcats"]},"1":{"LCK":["Gen.G","T1"],"LPL":["JD Gaming","Bilibili Gaming"],"LEC":["G2 Esports","MAD Lions KOI"],"LCS":["Cloud9","Golden Guardians"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Movistar R7"]},"2":{"LCK":["Gen.G","T1"],"LPL":["Bilibili Gaming","Top Esports"],"LEC":["G2 Esports","Fnatic"],"LCS":["Team Liquid","FlyQuest"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"CBLOL":["LOUD"],"LLA":["Estral Esports"]},"3":{"LCK":["Gen.G","T1"],"LPL":["Bilibili Gaming","Anyone's Legend"],"LEC":["G2 Esports","MAD Lions KOI"],"LCS":["FlyQuest"],"CBLOL":["FURIA"],"PCS":["CTBC Flying Oyster"],"VCS":["GAM Esports"]}};
+const LEAGUE_CANON={"LCK":{"0":["T1","Gen.G"],"1":["Gen.G","Gen.G"],"2":["Gen.G","Hanwha Life Esports"],"3":["Gen.G","Gen.G"]},"LEC":{"0":["G2 Esports","Rogue"],"1":["MAD Lions KOI","G2 Esports"],"2":["G2 Esports","G2 Esports"],"3":["MAD Lions KOI","G2 Esports"]},"LCS":{"0":["Evil Geniuses","Cloud9"],"1":["Cloud9",null],"2":["Team Liquid","FlyQuest"]},"LPL":{"0":["Royal Never Give Up","JD Gaming"],"1":["JD Gaming","JD Gaming"],"2":["Bilibili Gaming","Bilibili Gaming"],"3":["Top Esports","Bilibili Gaming"]}};
+const INTL_CANON={
+  worlds:{0:"Kiwoom DRX",1:"T1",2:"T1",3:"T1"},
+  msi:{0:"Royal Never Give Up",1:"JD Gaming",2:"Gen.G",3:"Gen.G"}
+};
+/* ---------- 世界线张力（2026-09-03 玩家拍板：均衡档）----------
+   一个变量管全部：wl[联赛] ∈ [0,1]，0=完全按史实，1=完全活模拟。
+   注入：你在联赛打一周正赛 +0.03×影响力；国际赛淘汰某赛区的队 +0.10×影响力；
+        夺国际冠军全联赛 +0.10。影响力 = 1+冠军×0.4+名气档×0.15，封顶 3。
+   弛豫：赛段末，你不在的联赛 wl×0.6——世界线自愈，尽量弹回原时间线。
+   消费：所有模拟出口统一 P(按史实)=1−wl；你亲自打的比赛永远真打。
+   没有任何 if(第几年)/if(哪个赛区) 特判——转会出海、直接出道外赛区、
+   首年进王朝队，全部由同一个场自然处理。 */
+function wlOf(lg){ return (S.wl&&S.wl[lg])||0; }
+function wlAdd(lg,amt){ if(!lg||!amt) return; S.wl=S.wl||{}; S.wl[lg]=clamp((S.wl[lg]||0)+amt,0,1); }
+function wlInfluence(){
+  const titles=(S.career&&S.career.titles)?S.career.titles.length:0;
+  let fi=0; try{ FAN_TIERS.forEach((t,i)=>{ if((S.fans||0)>=t[0]) fi=i; }); }catch(e){}
+  return clamp(1+titles*0.4+fi*0.15,1,3);
+}
+/* 赛段末弛豫：你不在的联赛往史实弹回 */
+function wlRelax(){
+  const HL=S.homeLeague||"LPL";
+  Object.keys(S.wl||{}).forEach(lg=>{ if(lg!==HL) S.wl[lg]=+(S.wl[lg]*0.6).toFixed(3); });
+}
+function canonChamp(type){
+  const t=INTL_CANON[type==="msi"?"msi":"worlds"];
+  return (t&&t[S.si])||null;
+}
+/* 模拟出的冠军过一道史实闸门：正主在场、没被你亲手打掉，按 1−wl 概率收束。
+   注意用 koWins（你赢下的淘汰赛对手）而不是 beaten——beaten 是「交过手」，
+   输给 T1 也会进去，拿它判会让刚赢了你的正主反而不夺冠。 */
+function convergeChamp(type,field,simmed){
+  const canon=canonChamp(type);
+  if(!canon) return simmed;
+  if(!(field||[]).includes(canon)) return simmed;                // 正主不在场：世界线已被扰动
+  if(S.intl&&(S.intl.koWins||[]).includes(canon)) return simmed; // 被你亲手打掉的正主不能诈尸
+  if(rnd()<wlOf(leagueOf(canon))) return simmed;                 // 张力越高，史实越拉不回来
+  return canon;
+}
+/* 分周播报的名单也要跟着收束——不能「四强没有 T1，决赛 T1 捧杯」 */
+function convergeStaged(type,field,st){
+  const c=convergeChamp(type,field,st.champ);
+  if(c===st.champ) return st;
+  if(!st.eight.includes(c)) st.eight[st.eight.length-1]=c;
+  if(!st.four.includes(c))  st.four[st.four.length-1]=c;
+  if(!st.two.includes(c))   st.two[st.two.length-1]=c;
+  st.champ=c;
+  return st;
+}
+/* 入围赛的史实闸：正主历史上就是从入围赛杀上来的（S12 的 DRX），
+   模拟把他挡在门外世界线就断了——按 1−wl 把他放进晋级席 */
+function canonQual(playin,qual){
+  try{
+    const c=canonChamp("worlds");
+    if(c&&(playin||[]).includes(c)&&!(qual||[]).includes(c)&&rnd()>=wlOf(leagueOf(c)))
+      return [c].concat(qual.slice(0,Math.max(0,qual.length-1)));
+  }catch(e){}
+  return qual;
+}
 /* 冠军播报——围观和亲历淘汰共用一句 */
 function intlChampEvent(name,champ){
   const lck=leagueOf(champ)==="LCK";
@@ -306,16 +419,27 @@ function spectateIntl(type){
   if(spec){ field=spec.field; stage=spec.stage; }
   else if(type==="msi"){
     const seeds={}; MAJOR.forEach(lg=>seeds[lg]=majorStandings(lg));
+    // 围观的 MSI 也过世界线张力闸（和亲历版同一套史实）
+    try{
+      if(typeof MSI_CANON!=="undefined"&&MSI_CANON[S.si]){
+        MAJOR.forEach(lg=>{
+          const hist=(MSI_CANON[S.si][lg]||[])
+            .filter(n=>n!==S.team&&(S.world[lg]||[]).some(t=>t.name===n));
+          if(hist.length&&rnd()>=wlOf(lg))
+            seeds[lg]=hist.concat((seeds[lg]||[]).filter(n=>!hist.includes(n)));
+        });
+      }
+    }catch(e){}
     field=MAJOR.flatMap(lg=>seeds[lg].slice(0,2));
     stage=F.msi.mode==="groups"?"groups":"knockout";
   }else{
     const cfg=F.worlds;
     const {direct,playin}=buildWorldsField(null,cfg);
-    field=direct.concat(simPlayIn(playin).slice(0,cfg.playin.take));
+    field=direct.concat(canonQual(playin,simPlayIn(playin).slice(0,cfg.playin.take)));
     stage=cfg.main;
   }
   const name=type==="msi"?"MSI":"世界赛";
-  const st=simEventStaged(field,stage);
+  const st=convergeStaged(type,field,simEventStaged(field,stage));
   const ev=intlChampEvent(name,st.champ);
   if(type==="msi"){
     enterBreak("summer",MID_WEEKS,"季中间歇 · MSI 进行中",
@@ -345,7 +469,8 @@ function intlAdvance(){
     if(I.record[1]>=2){ finishIntl(`入围赛出局`,"playin"); return; }
     if(I.record[0]>=2){
       const take=(I.cfg&&I.cfg.playin.take)||4;
-      const qual=[S.team].concat(simPlayIn(I.field.filter(n=>n!==S.team)).slice(0,take-1));
+      const qual=[S.team].concat(canonQual(I.field.filter(n=>n!==S.team),
+        simPlayIn(I.field.filter(n=>n!==S.team)).slice(0,take-1)));
       S.cameFromPlayin=true;
       pushEvent(`<b>${S.team}</b> 从入围赛杀进正赛。`,"good",name);
       const field=I.direct.concat(qual);
@@ -358,6 +483,11 @@ function intlAdvance(){
   /* --- 淘汰赛 --- */
   if(I.stage==="knockout"){
     I.beaten=(I.beaten||[]).concat([S.match.oppName]);
+    if(won){
+      // 真正被你打掉的才进 koWins（beaten 是「交过手」，含赢了你的）
+      (I.koWins=I.koWins||[]).push(S.match.oppName);
+      wlAdd(leagueOf(S.match.oppName),0.10*wlInfluence());   // 你掐断了这个赛区一截世界线
+    }
     if(I.double){
       /* MSI：8 队双败。输一场掉败者组，输两场淘汰；
          胜者组一路赢 3 场夺冠，走过败者组则需要 4 场。 */
@@ -427,6 +557,8 @@ function noteDepth(kind){
 }
 function crownChampion(){
   const I=S.intl, name=I.type==="msi"?"MSI":"世界赛";
+  // 世界线张力：国际冠军让全世界都开始围着你转
+  try{ Object.keys(S.world).forEach(lg=>wlAdd(lg,0.10)); }catch(e){}
   // 冠军奖金每次都发——不是一次性成就（那边只发首冠纪念）
   if(typeof addMoney==="function"&&typeof PRIZE_MSI!=="undefined"){
     const amt=I.type==="msi"?PRIZE_MSI.champion:PRIZE_W.champion;
@@ -505,9 +637,10 @@ function finishIntl(stageText,kind){
     const ev=intlChampEvent(name,S.match.oppName);
     pushEvent(ev.text,ev.tone,ev.tag);
   }else{
-    const base=((I.stage==="knockout"?(I.knockField||I.field):I.field)||[]).filter(n=>n!==S.team);
+    const base=((I.stage==="knockout"?(I.knockField||I.field):I.field)||[])
+      .filter(n=>n!==S.team&&!(I.koWins||[]).includes(n));   // 被你亲手打掉的不参加收尾模拟
     if(base.length){
-      const champ=simWholeEvent(base,I.stage==="knockout"?"knockout":I.stage);
+      const champ=convergeChamp(I.type,base,simWholeEvent(base,I.stage==="knockout"?"knockout":I.stage));
       if(champ) S._intlWrap={name,champ};
     }
   }

@@ -283,6 +283,17 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260902l", at:"2026-09-03", items:[
+    "世界线张力系统上线（玩家拍板的通用机制，无任何写死特判）：每个联赛一个张力值，0=完全按真实历史走、1=完全因你而变。你在哪打球哪里就被你改写；国际赛淘汰谁、夺冠，张力注入都不同；你离开的联赛每赛段往史实弹回",
+    "史实数据层：S12-S15 四届世界赛/MSI 的完整参赛名单与冠军、LPL/LCK/LEC/LCS 各赛段冠军，全部按 Leaguepedia 逐条取证接入——无干预时 S12 世界赛就是 DRX 从入围赛杀上来夺冠、S13-S15 T1 三连、MSI RNG/JDG/GEN/GEN，联赛冠军也照史实",
+    "影响力随生涯放大：同一件事，无名新秀和三冠王掀起的涟漪不同；直接出道外赛区则 LPL 五年全程按史实走。你亲自打的每一场比赛永远真打——正典永不替你赢，也永不拦你赢",
+    "S16 没有剧本：最后一年留给你，或留给至暗延续"
+  ]},
+  {v:"v20260902k", at:"2026-09-02", items:[
+    "世界线收束：你不干预时，国际赛按真实历史走——S12 世界赛 DRX 夺冠、S13-S15 T1 三连（LCK 王朝就是要你来破的局）；MSI 依史实 RNG/JDG/GEN/GEN。此前你小组赛回家 TES 却替你捧了杯，游戏初衷都没了",
+    "世界线因你而偏，且随影响力变大：你顶掉正主的名额、在淘汰赛亲手打掉正主、或自己打进决赛（决赛永远真打）——历史才会改写；S16 没有剧本，那一年留给你",
+    "分周播报同步收束：不会再出现「四强没有 T1、决赛 T1 捧杯」的自相矛盾"
+  ]},
   {v:"v20260902j", at:"2026-09-02", items:[
     "瑞士轮/小组赛标题标注利害关系：2 负显示「生死局：再输就淘汰」、2 胜显示「晋级局：赢了进八强」、2-2 是「赢了晋级，输了回家」；备战屏同步标注——0-2 的 BO3 不再看不出分量"
   ]},
@@ -2565,6 +2576,8 @@ function endMatch(){
   // 国际赛更耗人：赛会制连轴、长途、时差——18 对联赛周的 13。
   // 这是给「小组赛也有备战轮」配的数值面（玩家规矩：结构定死，平衡只动数值）。
   addFans(won?7:-2.5); addFat(S.intl?18:13);
+  // 世界线张力：你在场，这个联赛就在被你改写（国际赛另有淘汰/夺冠注入）
+  if(!S.intl&&typeof wlAdd==="function") wlAdd(S.homeLeague||"LPL",0.03*wlInfluence());
   // 出场费按联赛分级：LDL 的钱就是 LDL 的钱（经济重锚）
   const purse=(S.homeLeague||"LPL")==="LDL"?(won?2:1):(won?9:4);
   if(typeof addMoney==='function') addMoney('match',purse); else S.money+=purse;
@@ -2940,6 +2953,8 @@ function prepPanel(){
 
 function endSeason(result,seed){
   payday();
+  // 世界线张力弛豫：你不在的联赛，每个赛段往史实弹回 ×0.6
+  if(typeof wlRelax==="function") wlRelax();
   const up=(S.bg&&S.bg.upkeep)||0;
   if(up){ const paid=Math.min(up,Math.max(0,S.money));
     if(typeof addMoney==='function') addMoney('home',-paid); else S.money-=paid;
