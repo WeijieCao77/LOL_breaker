@@ -85,7 +85,7 @@ function checkTryoutInvite(kind, reached, champion){
   queueInvite(fitTier(tier), why, pickForeignScout(champion));
 }
 /* 外赛区一线也翻中国的草根赛场（玩家定的边界：外赛区次级联赛不跨国发邀请，
-   但一线队的球探真的会来看争霸赛/主播杯）。越缺人的赛区来得越勤——
+   但一线队的教练组真的会来看争霸赛/主播杯）。越缺人的赛区来得越勤——
    LCK 不缺天才，VCS/PCS/LJL 缺的就是便宜能打的年轻人。 */
 function pickForeignScout(champion){
   if(rnd() >= (champion ? 0.20 : 0.10)) return null;
@@ -160,7 +160,7 @@ function fitTier(tier){
 
    段位说明你值不值得看，曝光说明谁看得到你——这是两件事。
    一线队不会因为天梯排名去签一个没有任何比赛数据、没有任何曝光的人，
-   那是次级联赛球探干的活。原来排位打到王者就直接触发豪门邀请，
+   那是青训教练干的活。原来排位打到王者就直接触发豪门邀请，
    于是「没直播、没打争霸赛，IG 来找我试训」这种事就会发生。
 
    能被看见的途径：打过的比赛（有数据）、杯赛走得多深、名气。 */
@@ -180,7 +180,7 @@ function exposureCap(){
 }
 
 /* 履历通道：比赛打出来的资格，段位不够也作数。
-   城市赛/主播杯走到四强 → 青训球探会看；杯赛冠军级 → 中游也来问。 */
+   城市赛/主播杯走到四强 → 青训教练会看；杯赛冠军级 → 中游也来问。 */
 function resumeCap(){
   const P = S.pre; if(!P) return "none";
   if((P.cityCup||0) >= 6 || (P.streamCup||0) >= 5) return "mid";
@@ -204,10 +204,10 @@ function inviteFloorOk(){
 
    原来这里是一张写死的周表（青训第 9 周、豪门第 15 周）。那等于告诉玩家
    「几月几号之前你再强也没人要」，而现实里恰恰相反：转会窗口是给一线队
-   队员用的，一个还没打上职业的人，任何时候都可能被球探私信。
+   队员用的，一个还没打上职业的人，任何时候都可能被俱乐部私信。
 
    所以周表整个删掉，换成两把尺子——玩家自己的两项，和队伍的档次一一对应：
-     · 段位：你值不值得看。青训球探在天梯上就能翻到你，豪门要国服前列。
+     · 段位：你值不值得看。青训教练在天梯上就能翻到你，豪门要国服前列。
      · 曝光：谁看得到你（exposureScore：人气 + 杯赛走多深 + 打过多少场）。
    两把尺子各自算出「最高能被哪一档看到」，取更严的那个。
    于是「弱队早、强队晚」自然发生，而不是靠日期硬卡。 */
@@ -699,7 +699,7 @@ function buyoutDrag(){
   const b = (S.contract && S.contract.buyout) || 0;
   return b / 260;          // 900 万违约金 ≈ 拉低 3.5 分表现分
 }
-/* ---------- 赛季中的球探关注 ----------
+/* ---------- 赛季中的俱乐部关注 ----------
    原来「有没有人来挖你」全年只有休赛期那一个瞬间掷一次骰子——
    赛季里打得再好也听不到任何风声，到了转会期要么有要么没有，
    玩家的实际体感就是「进了队之后再没人理过我」。
@@ -724,7 +724,7 @@ function noteScoutInterest(){
     // 看台上那一幕会发酵：几周后可能上话题榜（事件链——之前定义了却忘了接线）
     if(typeof queueFollowUp==="function"&&rnd()<0.35) queueFollowUp("rumorSpread",3,{team:t});
   }
-  pushEvent(`${who}球探出现在你们这场的看台上。<br>
+  pushEvent(`${who}教练组的人出现在你们这场的看台上。<br>
     <span style="color:var(--ink-3)">赛段中不能转会，但意向记进了「转会」栏——注册窗一开就能谈。</span>`, "good", "转会");
 }
 
@@ -772,7 +772,7 @@ function rollProOffers(wnd){
   };
   if(rnd() >= p){
     S.offerDry = dry + 1;
-    settle(`球探的兴趣没能说服管理层。继续打，数据是唯一会替你说话的东西。`);
+    settle(`教练组的兴趣没能说服管理层。继续打，数据是唯一会替你说话的东西。`);
     return;
   }
   S.offerDry = 0;
@@ -1369,11 +1369,11 @@ function transferPage(){
       <td class="n">${SEASONS[x.si]?SEASONS[x.si].tag:""}</td></tr>`).join("") : "";
   const intentCard = `<div class="card"><h2>转会意向<em>${wnd?txWindowName()+" · 开着":"注册窗未开"}</em></h2>
     ${intents.length?`<div class="tw"><table>
-      <thead><tr><th>球队</th><th>档次</th><th>记录于</th></tr></thead>
+      <thead><tr><th>战队</th><th>档次</th><th>记录于</th></tr></thead>
       <tbody>${intentRows}</tbody></table></div>
       <p class="note">${wnd?"窗口开着——这些意向会在近期兑现成正式问询。"
         :"赛段中不能转会。这些队在等注册窗（季中间歇 / 年底休赛期）——<b>窗一开当场见分晓</b>：要么递表，要么作废，不会一直挂着。"}</p>`
-      :`<p class="note">目前没有在桌上的意向。${perf>=10?"你的表现有人在看，赛段里球探会来。":"先把表现分打上去——没有数据，谁也不会来。"}</p>`}
+      :`<p class="note">目前没有在桌上的意向。${perf>=10?"你的表现有人在看，赛段里就会有俱乐部来问。":"先把表现分打上去——没有数据，谁也不会来。"}</p>`}
     ${S.txWndNote?`<p class="note" style="color:var(--ink-3)">上个${S.txWndNote.w}（${SEASONS[S.txWndNote.si]?SEASONS[S.txWndNote.si].tag:""}）：${S.txWndNote.txt}</p>`:""}
     ${S.proOffer?`<p class="note" style="color:var(--gold)">有一份正式问询等你处理（见弹窗/本周页）。</p>`:""}</div>`;
   /* 主动行动 */
@@ -1450,7 +1450,7 @@ function selfRecommend(tier){
   }else{
     const why=!inviteFloorOk()?"段位不到宗师、比赛履历也还空白——没人打开你的附件"
       :exposureScore()<45?"圈内关注度太低，简历排在几百份后面"
-      :"这几家最近不缺人。数据再涨涨，或者等球探自己找上门";
+      :"这几家最近不缺人。数据再涨涨，或者等俱乐部自己找上门";
     preLog(`你把简历投给了几家${T.n}俱乐部——没有回音。${why}。`,"info");
     S.rndResult={choice:`毛遂自荐 · ${T.n}`,
       txt:`没有回音。${why}。<br><span style="color:var(--ink-3)">两周后可以再投一轮。</span>`,
@@ -1462,7 +1462,7 @@ function selfRecommend(tier){
 function preTransferPage(){
   const P=S.pre; if(!P) return "";
   const expo=exposureScore();
-  const ladder=[[45,"青训/二队球探看得到你"],[110,"中游俱乐部看得到你"],[190,"豪门看得到你"]];
+  const ladder=[[45,"青训教练看得到你"],[110,"中游俱乐部看得到你"],[190,"豪门看得到你"]];
   const expCard=`<div class="card"><h2>圈内关注度<em>${Math.round(expo)}</em></h2>
     <div class="tw"><table><tbody>${ladder.map(([at,txt])=>`<tr>
       <td class="n">${at}</td><td>${txt}</td>
@@ -1479,7 +1479,7 @@ function preTransferPage(){
         <div class="d">期望 ${T.expect} · 回信率 <b style="color:${p>=0.2?'var(--cyan)':p>=0.08?'var(--gold)':'var(--red)'}">${(p*100).toFixed(0)}%</b></div></button>`;}).join("")}</div>
     <p class="note">没上岸也可以敲门：把排位战绩和杯赛集锦发过去。回信率看关注度、段位和你离这一档期望的差距——很低，但不是零。
       ${P.invite&&P.invite.pending?`<br><b style="color:var(--gold)">手上有一份 ${P.invite.team} 的试训邀请（回「本周」页处理）。</b>`:""}</p></div>`;
-  const rules=`<p class="note" style="margin:4px 2px 0">外赛区规则：外赛区<b>一线队</b>的球探会看城市争霸赛和主播杯——走得深可能收到跨国邀请（VCS/PCS 这些缺人的赛区来得最勤）；
+  const rules=`<p class="note" style="margin:4px 2px 0">外赛区规则：外赛区<b>一线队</b>的教练组会看城市争霸赛和主播杯——走得深可能收到跨国邀请（VCS/PCS 这些缺人的赛区来得最勤）；
     外赛区的<b>次级联赛不会跨国发邀请</b>。签约后这一页换成职业版：意向、挂牌、买断、主动接触。</p>`;
   return expCard+recCard+rules;
 }

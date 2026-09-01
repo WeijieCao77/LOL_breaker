@@ -283,6 +283,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260903a", at:"2026-09-03", items:[
+    "全游戏用语电竞化（玩家点名）：我们做的是 LOL 不是足球篮球——「球探」全部改为青训教练/教练组/俱乐部（按语境），「球队」改「战队」，「球探观察」卡改名「俱乐部关注」"
+  ]},
   {v:"v20260902l", at:"2026-09-03", items:[
     "世界线张力系统上线（玩家拍板的通用机制，无任何写死特判）：每个联赛一个张力值，0=完全按真实历史走、1=完全因你而变。你在哪打球哪里就被你改写；国际赛淘汰谁、夺冠，张力注入都不同；你离开的联赛每赛段往史实弹回",
     "史实数据层：S12-S15 四届世界赛/MSI 的完整参赛名单与冠军、LPL/LCK/LEC/LCS 各赛段冠军，全部按 Leaguepedia 逐条取证接入——无干预时 S12 世界赛就是 DRX 从入围赛杀上来夺冠、S13-S15 T1 三连、MSI RNG/JDG/GEN/GEN，联赛冠军也照史实",
@@ -306,7 +309,7 @@ const CHANGELOG=[
   ]},
   {v:"v20260902g", at:"2026-09-02", items:[
     "转会栏从开局就有：没上岸也能看「圈内关注度」阶梯（45 青训看得到你 / 110 中游 / 190 豪门），还能毛遂自荐——把简历投给任一档俱乐部，每两周一轮、花 1 行动点，回信率很低但不是零（拿到回信＝一次真试训）",
-    "外赛区一线队的球探现在也看城市争霸赛和主播杯：走得深可能收到跨国试训邀请（VCS/PCS 这些缺人的赛区来得最勤，LCK 最挑剔）；外赛区次级联赛不会跨国发邀请——签了跨国合同就是出海打职业",
+    "外赛区一线队的教练组现在也看城市争霸赛和主播杯：走得深可能收到跨国试训邀请（VCS/PCS 这些缺人的赛区来得最勤，LCK 最挑剔）；外赛区次级联赛不会跨国发邀请——签了跨国合同就是出海打职业",
     "试训邀请卡会标注来邀请的赛区与该队在当地联赛的排名"
   ]},
   {v:"v20260902f", at:"2026-09-02", items:[
@@ -1442,7 +1445,7 @@ const PRE_MILESTONES=[
   {w:8, name:"城市争霸赛", tag:"赛事", open:true, signup:"city", fee:8, prize:[0,2,8,20,50],
    need:()=>S.pre.rank>=RANKS[2].at, needTxt:"钻石及以上",
    cur:()=>rankFull(S.pre.rank),
-   desc:"市级公开赛，报名要钻石。职业队球探常来看台",
+   desc:"市级公开赛，报名要钻石。职业俱乐部的青训教练常来看台",
    run:()=>enterCup("city"),
    fail:()=>preLog("城市争霸赛报名截止了——<b>段位不够，你连报名资格都没有</b>。","bad")},
   {w:9, name:"青训教练私信", tag:"人脉", open:false,
@@ -1457,11 +1460,11 @@ const PRE_MILESTONES=[
    desc:"邀请制，名气不够连门都进不去",
    run:()=>enterCup("stream"),
    fail:()=>preLog("主播杯是邀请制。<b>你的人气还不够，没收到邀请</b>。","bad")},
-  {w:15, name:"球探到场", tag:"人脉", open:false,
+  {w:15, name:"青训教练到场", tag:"人脉", open:false,
    need:()=>preScore()>=62, needTxt:"—",
    cur:()=>"—",
    desc:"俱乐部开始正式评估你",
-   run:()=>preLog("两家俱乐部的球探同时出现在你的直播间。<b>试训邀请快来了。</b>","big"),
+   run:()=>preLog("两家俱乐部的青训教练同时出现在你的直播间。<b>试训邀请快来了。</b>","big"),
    fail:()=>{}},
   {w:17, name:"全明星周末 · 主播表演赛", tag:"赛事", open:true, vague:true, signup:"show", fee:0,
    need:()=>S.fans>=95, needTxt:"邀请制 · 大主播才有请柬",
@@ -1512,7 +1515,7 @@ function fireWeekEvents(){
   const busyCup = (typeof activeCups==="function") && activeCups().length>0;
 
   // 被推迟的报名单独处理，不跟当周的里程碑抢——
-  // 否则同一周只要还有别的里程碑（比如「球探到场」），补发就被挡住了
+  // 否则同一周只要还有别的里程碑（比如「青训教练到场」），补发就被挡住了
   if(P.deferSignup && !busyCup){
     const d=PRE_MILESTONES.find(m=>m.name===P.deferSignup);
     P.deferSignup=null;
@@ -2515,7 +2518,7 @@ function autoMatch(){
 }
 /* ---------- 个人数据与比赛档案（2026-08-31 竞品拆解移植）----------
    每个系列赛合成一份可信的个人数据：KDA、分均补刀、伤害占比、评分。
-   球探、周报、试训谈判看的都是这些数字——「都是用比赛衡量的」。
+   教练组、周报、试训谈判看的都是这些数字——「都是用比赛衡量的」。
    合成口径：以你和对手的真实战力差、临场节点成败为骨架，按位置画像摆数。 */
 const POS_STATLINE={top:[3.1,2.7,4.9,8.3,0.24],jng:[2.8,2.5,7.6,6.2,0.18],
   mid:[4.1,2.5,5.2,8.8,0.28],bot:[5.0,2.3,4.4,9.4,0.30],sup:[1.0,2.9,9.8,1.6,0.10]};
@@ -2546,7 +2549,7 @@ function dataCard(){
   return `<div class="card"><h2>比赛档案<em>${n} 个系列赛</em></h2>
     <p class="note" style="margin:0 0 8px">生涯场均
       <b>${q1(st.k/n)} / ${q1(st.d/n)} / ${q1(st.a/n)}</b> · 评分 <b>${(st.r/n).toFixed(2)}</b>
-      <span style="color:var(--ink-3)">——球探和试训谈判看的就是这几个数字。</span></p>
+      <span style="color:var(--ink-3)">——教练组和试训谈判看的就是这几个数字。</span></p>
     <div class="tw"><table><thead><tr><th></th><th>对手</th><th>比分</th><th>KDA</th><th>评分</th><th></th></tr></thead><tbody>
     ${rows.map(({x,i})=>`<tr><td class="n">${SEASONS[x.si]?SEASONS[x.si].tag:""} ${x.tag}</td>
       <td>${x.opp}</td><td class="n">${x.win?"":""}${x.sc[0]}−${x.sc[1]}</td>
@@ -2632,7 +2635,7 @@ function endMatch(){
   if(won&&ctx.intl&&ctx.oppLeague==="LCK") checkAch("beatlck",ctx);
 
   // ---- 世界的回声（2026-08-31 竞品拆解移植）----
-  // 每个系列赛产出真实的个人数据进档案：球探、周报、试训看的都是这些数字
+  // 每个系列赛产出真实的个人数据进档案：教练组、周报、试训看的都是这些数字
   if(typeof synthSeriesStats==="function") synthSeriesStats(m,won,myPw,opPw);
   // 宿敌账本：赢下有明星选手的队要被记住
   if(typeof noteRivalBeat==="function") noteRivalBeat(m.opp.players,won);
@@ -2968,7 +2971,7 @@ function endSeason(result,seed){
     if(cp&&typeof addStaff==="function") addStaff("coach",cp);
   }
   if(typeof streamClauseCheck==='function') streamClauseCheck();   // 独家合同的开播条款
-  // 赛段打完先攒一次球探关注——转会不该只在休赛期那一瞬间才有动静
+  // 赛段打完先攒一次俱乐部关注——转会不该只在休赛期那一瞬间才有动静
   if(typeof noteScoutInterest==='function') noteScoutInterest();
   // 天梯不守就掉：段位分向「当前实力守得住的位置」回落。
   // 爬分是带下行阻尼的随机游走，运气好的连胜能把峰值冲到实力线上方
@@ -3430,7 +3433,7 @@ const RANKUP_TXT={
   "宗师":"排行榜上开始出现你见过的名字。",
   "王者":"你站到了这个服务器的顶端。剩下的问题是——有没有人愿意给你一个位置。",
   "国服前 100":"每一把都有人在录你的视频。",
-  "国服前 10":"职业队的球探不可能看不见你了。"
+  "国服前 10":"职业俱乐部不可能看不见你了。"
 };
 /* 赛事报名：要花钱，也可能白花。 */
 function signupCard(){
@@ -3550,8 +3553,8 @@ function actPanelPre(){
           // 门槛重锚后这句要跟着规则动态说——之前写死「连钻石都没到」，
           // 钻石玩家看到它就是句胡话（玩家线上抓的）
           const need=(typeof RANKS!=="undefined"&&RANKS[4])?RANKS[4].n:"宗师";
-          return `<br>试训邀请：<b style="color:var(--red)">还没有球探会看你</b>——段位门槛是<b>${need}</b>（你 ${rankFull(S.pre.rank)}），
-            或者用比赛履历敲门：<b>城市争霸赛 / 主播杯打进四强</b>，球探就会来。`;
+          return `<br>试训邀请：<b style="color:var(--red)">还没有俱乐部会看你</b>——段位门槛是<b>${need}</b>（你 ${rankFull(S.pre.rank)}），
+            或者用比赛履历敲门：<b>城市争霸赛 / 主播杯打进四强</b>，青训教练就会来。`;
         }
         const rc=rankCap(), ec=exposureCap();
         const nm=t=>(typeof CLUB_TIERS!=="undefined"&&CLUB_TIERS[t])?CLUB_TIERS[t].n:t;

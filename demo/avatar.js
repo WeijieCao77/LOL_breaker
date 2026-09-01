@@ -84,7 +84,7 @@ const GICONS={
   stream:(c)=>`<rect x="8" y="16" width="30" height="24" rx="5" fill="none" stroke="${c}" stroke-width="4"/>
     <path d="M38 24l14-7v22l-14-7z" fill="none" stroke="${c}" stroke-width="4" stroke-linejoin="round"/>
     <circle cx="16" cy="24" r="3.4" fill="${c}"/>`,
-  /* 试训 / 球探来信 */
+  /* 试训 / 俱乐部来信 */
   scout:(c)=>`<rect x="8" y="14" width="48" height="34" rx="4" fill="none" stroke="${c}" stroke-width="4"/>
     <path d="M10 18l22 17 22-17" fill="none" stroke="${c}" stroke-width="4" stroke-linejoin="round"/>`,
   /* 转会：双向箭头 */

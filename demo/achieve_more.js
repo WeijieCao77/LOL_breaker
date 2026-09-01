@@ -107,7 +107,7 @@ const ACH_MORE=[
    on:"splitend", cond:()=>S.si>=SEASONS.length-1, r:{money:300,fame:50}},
   // LDL 是国内二级联赛，不是外赛区——这个判定写在 LDL 存在之前，
   // 玩家签 UP 青训被误发了「远走他乡」（线上抓的）
-  {id:"foreign", n:"远走他乡", d:"签下一支外赛区球队。", tag:"世界",
+  {id:"foreign", n:"远走他乡", d:"签下一支外赛区战队。", tag:"世界",
    on:"sign", cond:()=>(S.homeLeague&&S.homeLeague!=="LPL"&&S.homeLeague!=="LDL"), r:{money:300,fame:80}},
 
   /* ---------- 经济与收藏 ---------- */

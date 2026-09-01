@@ -297,7 +297,7 @@ function endCupMatch(){
   const m=S.cupMatch, k=m.kind, c=cupOf(k), C=CUPS[k];
   const won=m.sc[0]>m.sc[1];
   m.done=true;
-  // 打得越多，被球探看到的次数越多。累积在这里，但兑现要等整届打完——
+  // 打得越多，被俱乐部看到的次数越多。累积在这里，但兑现要等整届打完——
   // 赛程进行中发邀请会把比赛线整个短路（试过：玩家半决赛就签约走人）。
   S.pre.scoutSeen = (S.pre.scoutSeen||0) + 1;
   if(won){

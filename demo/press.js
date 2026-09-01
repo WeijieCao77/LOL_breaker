@@ -4,7 +4,7 @@
    · 天梯撞车——排位里撞到真实职业选手，打排位变成抽卡
    · 宿敌记账——赢下带明星选手的队伍要被记住（成就在 achieve_more）
    · 电竞周报——每隔几周把真实发生的事编辑成一期报纸，证据驱动，不虚构
-   · 球探观察卡——把「谁在看你、看了多少、多确信」画出来 */
+   · 俱乐部关注卡——把「谁在看你、看了多少、多确信」画出来 */
 
 /* ---------- 一、事件链 ----------
    评价过的竞品做法：后续事件带倒计时挂着、不会消失、到期自动兑现。
@@ -208,7 +208,7 @@ function ladderEncounter(){
     if(pre&&S.pre){ S.pre.scoutSeen=(S.pre.scoutSeen||0)+2; }
     addFans(pre?6:9); S.heat=(S.heat||0)+8;
     const txt=`<b>天梯撞车</b>：这把路人局撞到了 <b>${s.team}</b> 的 <b>${s.id}</b>——而且你赢了对线。<br>
-      <span style="color:var(--cyan)">对局记录被拿去剪了视频${pre?"，球探的收藏夹里多了你一个 ID":""}。</span>`;
+      <span style="color:var(--cyan)">对局记录被拿去剪了视频${pre?"，青训教练的收藏夹里多了你的 ID":""}。</span>`;
     pushEvent(txt,"good","排位");
     if(pre&&typeof preLog==="function") preLog(txt,"good");   // 职业前的主日志也要看得见
   }else{
@@ -389,20 +389,20 @@ function patchNoteCard(){
   </div></div>`;
 }
 
-/* ---------- 五、球探观察卡 ----------
+/* ---------- 五、俱乐部关注卡 ----------
    把「谁在看你、凭什么、多确信」画出来。数据全部来自已有系统：
    proPerf（表现分）、scoutHeat（赛段关注）、比赛档案（样本与评分）。 */
 function scoutCard(){
   if(!S.career||!S.team) return "";
   const perf=proPerf()-buyoutDrag();
   const tier=perf>=19?["豪门在盯你","var(--gold)"]:perf>=10?["中游俱乐部在看","var(--cyan)"]
-            :perf>=4?["次级球探记了你的名字","var(--ink-2)"]:["暂时没人看你","var(--ink-3)"];
+            :perf>=4?["青训教练记下了你的名字","var(--ink-2)"]:["暂时没人看你","var(--ink-3)"];
   const heat=Math.min(S.scoutHeat||0,6);
   const arc=(S.archive||[]).filter(x=>x.si===S.si);
   const n=arc.length;
   const avgR=n?arc.reduce((a,x)=>a+x.rating,0)/n:0;
   const conf=Math.min(92,n*12);
-  return `<div class="card"><h2>球探观察<em>${tier[0]}</em></h2>
+  return `<div class="card"><h2>俱乐部关注<em>${tier[0]}</em></h2>
     <div class="attrs">
       <div class="at wide"><div class="lb">赛段关注</div>
         <div class="track"><div class="fill" style="width:${heat/6*100}%"></div></div>
@@ -412,6 +412,6 @@ function scoutCard(){
         <div class="vn mono"><b>${perf.toFixed(0)}</b></div></div>
     </div>
     <p class="note">本赛季正赛样本 <b>${n}</b> 个系列赛${n?`，场均评分 <b>${avgR.toFixed(2)}</b>（置信度 ${conf}%）`:"——还没有能拿去谈的数据"}。<br>
-      <span style="color:var(--ink-3)">球探看的是样本：打得少，评分再高也只是「有潜力」；样本够了，数字才变成筹码。
+      <span style="color:var(--ink-3)">教练组看的是样本：打得少，评分再高也只是「有潜力」；样本够了，数字才变成筹码。
       看台上被记下的关注会在注册窗兑现成问询。</span></p></div>`;
 }
