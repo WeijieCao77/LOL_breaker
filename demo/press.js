@@ -244,67 +244,117 @@ function beatCount(name){ return (S.beatStars&&S.beatStars[name])||0; }
 
 /* ---------- 四、电竞周报 ----------
    竞品的铁律照搬：只报道真实发生过的事，效果只在出刊时结算一次。
-   周报读两样：大事记（带 tag 的事实流水）和比赛档案（真实数据）。 */
+   2026-09-02 重做（玩家点名）：周报是真的行业周报，游戏第一周就存在——
+   圈子不会等你出道才开始运转。你上不上版面，看「圈内关注度」：
+   关注度太低时行业版照出，只在末尾一行小字说圈子还没注意到你；
+   爬上来之后你的新闻才逐渐见报（杯赛、直播、选择、天梯……）。 */
 function pressTick(){
   S.pressClock=(S.pressClock||0)+1;
   const gap=S.career?3:4;                          // 职业前节奏慢，四周一期
   if(S.pressClock%gap!==0) return;
   pressIssue();
 }
+/* 圈内关注度：报不报你就看它。职业前用曝光分（名气＋杯赛轮次＋被看过的比赛）；
+   签了职业队你就是圈内人，天然在版面上。 */
+function pressGate(){
+  if(S.career) return {tier:2,expo:999};
+  const e=(typeof exposureScore==="function")?exposureScore():0;
+  return {tier:e>=110?2:e>=45?1:0,expo:e};
+}
+/* 行业版面：只读真实世界状态。有它在，报纸每期都有东西可登。 */
+function pressWorldHeads(){
+  const out=[]; const sea=SEASONS[S.si];
+  // 明星观察：全联盟综合最高的那批人轮着报——读的是真实数值
+  try{
+    const pool=starPool().sort((a,b)=>b.v-a.v).slice(0,5);
+    if(pool.length){
+      const s=pool[(S.pressN||0)%pool.length];
+      out.push({c:"明星观察",t:`《${s.lg} 强度榜：${s.team} 的 ${s.id} 被数据网站放在全联盟第一梯队》`});
+    }
+  }catch(e){}
+  // 赛区格局：两大赛区纸面最强的队，真实战力算出来的
+  try{
+    const topOf=lg=>{ let best=null,bv=-1;
+      ((S.world&&S.world[lg])||[]).forEach(t=>{ const v=power(t.players,0,sea.fav); if(v>bv){bv=v;best=t;} });
+      return best?{n:best.name,v:bv}:null; };
+    const a=topOf("LPL"), b=topOf("LCK");
+    if(a&&b) out.push({c:"赛区格局",t:b.v>=a.v
+      ?`《纸面强度：LPL 这边 ${a.n} 领跑，但 LCK 的 ${b.n} 仍压在所有人头上——至暗时刻还没翻篇》`
+      :`《纸面强度：${a.n} 的账面已经压过 LCK 的 ${b.n}——但账面从来不发奖杯》`});
+  }catch(e){}
+  out.push({c:"版本官方",t:`《版本「${sea.ver}」当前的理解已趋于收敛，各队打法开始同质化》`});
+  return out;
+}
 function pressIssue(){
   const ptr=S.pressPtr||0;
   const evs=(S.events||[]).slice(ptr);
   S.pressPtr=(S.events||[]).length;
-  const heads=[];
   const byTag={};
   evs.forEach(e=>{ (byTag[e.tag]=byTag[e.tag]||[]).push(e); });
   const strip=t=>String(t||"").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim();
+  const gate=pressGate();
+  const my=[];                                     // 关于你的稿子（能不能上版看关注度）
 
-  // 赛事战况：本期打了几场，战绩说话
-  const played=(byTag["联赛"]||[]).length+(byTag["季后赛"]||[]).length;
-  if(S.career&&S.record&&(S.record.w+S.record.l)>0){
-    const g=S.record.w+S.record.l, wr=S.record.w/g;
-    heads.push({c:"赛事战况",t:`《${S.team} 本赛段 ${S.record.w} 胜 ${S.record.l} 负，${
-      wr>=0.65?"打进上半区的路已经清晰":wr>=0.45?"胜负手都攥在自己手里":"教练组开始复盘问题出在哪"}》`});
-  }
-  // 选手个人：比赛档案是证据
-  const arc=(S.archive||[]).slice(-Math.min(6,(S.archive||[]).length));
-  if(arc.length>=2){
-    const avgR=arc.reduce((a,x)=>a+x.rating,0)/arc.length;
-    if(avgR>=1.05){
-      heads.push({c:"选手个人",t:`《近期场均评分 ${avgR.toFixed(2)}：${meName()} 的名字开始出现在数据榜单上》`,
-        fx:()=>{ S.heat=(S.heat||0)+8; addFans(4); }});
-    }else if(avgR<0.85){
-      heads.push({c:"选手个人",t:`《数据网站没有为 ${meName()} 说话：近期场均评分 ${avgR.toFixed(2)}》`});
+  if(S.career){
+    // ---- 职业期：老版面照旧 ----
+    if(S.record&&(S.record.w+S.record.l)>0){
+      const g=S.record.w+S.record.l, wr=S.record.w/g;
+      my.push({c:"赛事战况",t:`《${S.team} 本赛段 ${S.record.w} 胜 ${S.record.l} 负，${
+        wr>=0.65?"打进上半区的路已经清晰":wr>=0.45?"胜负手都攥在自己手里":"教练组开始复盘问题出在哪"}》`});
     }
-  }
-  // 转会风声：只有真的有球探/意向事件才报
-  if((byTag["转会"]||[]).length){
-    heads.push({c:"转会风声",t:`《消息人士：${meName()} 的名字出现在至少一份引援名单上》`,
+    const arc=(S.archive||[]).slice(-Math.min(6,(S.archive||[]).length));
+    if(arc.length>=2){
+      const avgR=arc.reduce((a,x)=>a+x.rating,0)/arc.length;
+      if(avgR>=1.05) my.push({c:"选手个人",t:`《近期场均评分 ${avgR.toFixed(2)}：${meName()} 的名字开始出现在数据榜单上》`,
+        fx:()=>{ S.heat=(S.heat||0)+8; addFans(4); }});
+      else if(avgR<0.85) my.push({c:"选手个人",t:`《数据网站没有为 ${meName()} 说话：近期场均评分 ${avgR.toFixed(2)}》`});
+    }
+    if((byTag["转会"]||[]).length) my.push({c:"转会风声",t:`《消息人士：${meName()} 的名字出现在至少一份引援名单上》`,
       fx:()=>{ S.heat=(S.heat||0)+6; }});
+    if(S.record&&S.record.l>=3&&S.record.l>S.record.w) my.push({c:"舆论风波",t:`《${S.team} 的连败让评论区坐不住了》`});
+    if((byTag["突破"]||[]).length) my.push({c:"选手动态",t:`《训练房传来的消息：${meName()} 最近在某个环节上明显变强了》`});
+    if((byTag["排位"]||[]).find(e=>strip(e.text).indexOf("撞车")>=0))
+      my.push({c:"趣味花边",t:`《路人局撞出职业味：一段天梯对局录像在小圈子里传开》`});
+  }else if(S.pre){
+    // ---- 职业前：素材从真实进度里来（杯赛/日志不进大事记，直接读状态差） ----
+    const P=S.pre;
+    const PP=S.pressPre=S.pressPre||{cc:0,sc:0};
+    const cc=P.cityCup||0, sc2=P.streamCup||0;
+    if(cc>PP.cc) my.push({c:"草根赛场",t:cc>=4
+      ?`《城市争霸赛爆出黑马：${meName()} 一路杀进了淘汰赛深处》`
+      :`《城市争霸赛的路人名单里，${meName()} 这个 ID 开始被人记住》`,
+      fx:()=>{ addFans(3); S.heat=(S.heat||0)+4; }});
+    if(sc2>PP.sc) my.push({c:"主播杯",t:`《主播杯赛场边的弹幕都在问：${meName()} 是从哪儿冒出来的》`,
+      fx:()=>{ addFans(3); }});
+    PP.cc=cc; PP.sc=sc2;
+    if((byTag["直播"]||[]).length||(byTag["内容"]||[]).length)
+      my.push({c:"直播间",t:`《切片传起来了：${meName()} 直播间的一段名场面被剪了出去》`,fx:()=>{ addFans(2); }});
+    if((byTag["排位"]||[]).some(e=>strip(e.text).indexOf("撞车")>=0))
+      my.push({c:"天梯风云",t:`《路人局撞出职业味：${meName()} 的一段天梯录像被做成了对比视频》`});
+    if((byTag["际遇"]||[]).length)
+      my.push({c:"圈内小道",t:`《${meName()} 最近的一个选择，在小圈子里被讨论了几句》`});
   }
-  // 舆论风波：连败才有得写
-  if(S.career&&S.record&&S.record.l>=3&&S.record.l>S.record.w){
-    heads.push({c:"舆论风波",t:`《${S.team} 的连败让评论区坐不住了》`});
-  }
-  // 排位/突破这类花边
-  const btk=(byTag["突破"]||[]).length;
-  if(btk) heads.push({c:"选手动态",t:`《训练房传来的消息：${meName()} 最近在某个环节上明显变强了》`});
-  const rank=(byTag["排位"]||[]).find(e=>strip(e.text).indexOf("撞车")>=0);
-  if(rank) heads.push({c:"趣味花边",t:`《路人局撞出职业味：一段天梯对局录像在小圈子里传开》`});
-  // 版本官方：垫底保证每期至少两条
-  if(heads.length<2) heads.push({c:"版本官方",t:`《版本「${SEASONS[S.si].ver}」当前的理解已趋于收敛，各队打法开始同质化》`});
-  if(heads.length<2) return;                       // 实在无事发生，这期就不出了（期号不占用）
+
+  // 关注度放行：职业期全上；职业前 45 分见报一条、110 分两条，不够就一条没有
+  const quota=S.career?4:(gate.tier===2?2:gate.tier);
+  const mine=my.slice(0,quota);
+  const heads=mine.slice();
+  // 行业版面补齐到至少三条——你不上版，报纸也照常出
+  pressWorldHeads().forEach(h=>{ if(heads.length<(S.career?4:3)) heads.push(h); });
+  if(heads.length<2) return;                       // 理论上到不了这，留个保险
 
   S.pressN=(S.pressN||0)+1;
   const issue={n:S.pressN,label:(typeof nowLabel==="function")?nowLabel():SEASONS[S.si].tag,
-    heads:heads.slice(0,4).map(h=>({c:h.c,t:h.t}))};
+    heads:heads.slice(0,4).map(h=>({c:h.c,t:h.t})),
+    // 职业前且这期没有你：记下关注度，卡片上写一行小字
+    noMe:(!S.career&&mine.length===0)?Math.round(gate.expo):null};
   heads.slice(0,4).forEach(h=>{ try{ h.fx&&h.fx(); }catch(e){} });
   S.pressIssues=(S.pressIssues||[]);
   S.pressIssues.unshift(issue);
   if(S.pressIssues.length>6) S.pressIssues.pop();
-  pushEvent(`<b>《电竞周报》第 ${issue.n} 期出刊</b>：${issue.heads[0].t}<br>
-    <span style="color:var(--ink-3)">完整版面在「世界」页。周报只写真实发生过的事。</span>`,"info","周报");
+  const note=`<b>《电竞周报》第 ${issue.n} 期出刊</b>：${issue.heads[0].t}`;
+  pushEvent(`${note}<br><span style="color:var(--ink-3)">完整版面在「本周」页。周报只写真实发生过的事。</span>`,"info","周报");
+  if(!S.career&&typeof preLog==="function") preLog(note,"info");
 }
 function pressCard(){
   const list=S.pressIssues||[];
@@ -313,6 +363,8 @@ function pressCard(){
   const cur=list[0];
   return `<div class="card"><h2>电竞周报<em>第 ${cur.n} 期 · ${cur.label}</em></h2>
     ${cur.heads.map(h=>`<p style="margin:7px 0"><span class="tag">${h.c}</span>　${h.t}</p>`).join("")}
+    ${cur.noMe!=null?`<p class="note" style="margin-top:8px;color:var(--ink-3)">本期没有你的名字——圈子还没注意到 ${meName()}
+      （圈内关注度 <b>${cur.noMe}</b>，到 45 会开始有人写你）。打杯赛、涨粉、多打有人看的比赛，都算数。</p>`:""}
     ${list.length>1?`<p class="note" style="margin-top:10px;color:var(--ink-3)">往期：${
       list.slice(1).map(x=>`第${x.n}期`).join(" · ")}（${list.slice(1)[0].heads[0].t.slice(0,18)}…）</p>`:""}
     <p class="note" style="color:var(--ink-3)">周报只使用真实比赛与行动证据，报道效果在出刊时结算一次。</p></div>`;

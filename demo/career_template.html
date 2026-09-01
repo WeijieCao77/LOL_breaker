@@ -232,8 +232,11 @@ const ORIGIN={
     base:{操作:59,运营:55,心态:45,指挥:48,体质:53},fame:14,
     perk:"科班底子：训练收益 +20%"}
 };
-/* 出道年龄：小的起点低但成长窗口长，大的起点高但更早撞上衰退。
-   本作只跑到 2026——17 岁出道那年结束时 22 岁仍在涨，20 岁出道结束时 25 岁已开始掉。 */
+/* 出道年龄：小的起点低但成长快，大的起点高但成长慢。
+   衰退（ageCurve）从 25 岁起真的扣属性——五个赛季里只有 21 岁出道够得着它：
+   S16 那年他 25。17-20 岁出道整个生涯都在巅峰窗口里，文案不许再吓唬他们。
+   （玩家指出过：只能选到 20 岁又说 25 岁下滑，等于永远不会下滑——对，
+    所以要么别写，要么给一个真会下滑的选项。两个都做了。） */
 const AGES=[
   {a:17,n:"17 岁",d:"手最快的年纪，也最沉不住气",
    mod:{操作:+3,运营:-3,心态:-3,指挥:-4,体质:+2}, grow:1.10, note:"成长最快，收尾时正当打"},
@@ -241,7 +244,9 @@ const AGES=[
   {a:19,n:"19 岁",d:"多打了一年，脑子清楚一些",
    mod:{操作:-2,运营:+2,心态:+2,指挥:+3,体质:-1}, grow:0.95, note:"起点更高，成长稍慢"},
   {a:20,n:"20 岁",d:"起步晚，但想得明白",
-   mod:{操作:-4,运营:+4,心态:+4,指挥:+6,体质:-2}, grow:0.88, note:"开局最强，收尾时已在下滑"}
+   mod:{操作:-4,运营:+4,心态:+4,指挥:+6,体质:-2}, grow:0.88, note:"开局强，五年都在巅峰窗口里收官"},
+  {a:21,n:"21 岁",d:"大器晚成，几乎没有试错时间",
+   mod:{操作:-6,运营:+6,心态:+6,指挥:+8,体质:-3}, grow:0.82, note:"起点最高——但最后一年 25 岁，衰退是真的会来"}
 ];
 const TOTAL_TALENT=20, WEEKS=7;   // 一个赛段 7 周 x 2 赛段 x 5 赛季 = 70 周
 /* 节点模板扩到 34 个之后，加长赛季不会变重复——
@@ -278,6 +283,12 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260902d", at:"2026-09-02", items:[
+    "电竞周报重做：从游戏第一周就出刊——它是圈子的周报，不是你的粉丝号。没签约时报的是明星动向、赛区格局、版本风向；你的关注度不够时版面上没有你，只有一行小字「圈子还没注意到你」——打杯赛、涨粉、被人看到比赛，关注度够 45 你的新闻才开始见报（城市争霸赛、主播杯、直播切片、天梯撞车都算素材）",
+    "修好「点按钮页面弹回顶部」：际遇结果、成就、确认框这些居中弹窗不再把页面拽到最上面；真正需要看顶部的场合也只滚到内容区顶部，不再对着横幅发呆",
+    "「下一场打谁」的赛程预告从本周页最底下搬到最上面",
+    "新增 21 岁出道：起点五档最高、成长最慢，而且 S16 那年 25 岁——衰退这次是真的会来；20 岁出道的文案也改诚实了：你整个生涯都在巅峰窗口里"
+  ]},
   {v:"v20260902c", at:"2026-09-02", items:[
     "背景音乐改为默认关闭——想听的点右下角 ♪ 打开，你的选择会被记住；按键音效照旧默认开"
   ]},
@@ -1185,7 +1196,7 @@ function viewCreate(){
         <div class="d">${b.d}</div>
       </button>`).join("")}</div>
     <p class="note">你现在 ${AGES[S.ageIdx].a} 岁，还没有战队。先用半年时间打上分、攒人气、被人看见——然后才谈签约。
-      18–21 岁是成长期，22–24 岁巅峰，25 岁后开始下滑。</p>
+      18–21 岁是成长期，22–24 岁巅峰，25 岁起属性会真的往下掉——只有 21 岁出道会在生涯末尝到它。</p>
   </div>
 
   <div class="card">
@@ -2131,6 +2142,7 @@ function viewSeason(){
   // 原来行动卡拼在标签栏上面，是六个标签里唯一的例外——没有理由。
   return `${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
   ${tabBar(TABS_SEASON)}
+  ${nextMatchCard()}
   <div class="card">
     <h2>${sea.tag} ${SPLITS[S.split||0]} · 第 ${S.week}/${WEEKS} 周<em>剩余行动点 ${S.ap}</em></h2>
     ${typeof autoBar==="function"?autoBar():""}
@@ -2184,7 +2196,7 @@ function viewSeason(){
       vs 你队 ${power(myRoster(),S.fatigue,sea.fav).toFixed(1)}</p>`:""}
   </div>
   ${typeof pressCard==="function"?pressCard():""}
-  ${(typeof injuryCard==="function"?injuryCard():"")+nextMatchCard()}`;
+  ${typeof injuryCard==="function"?injuryCard():""}`;
 }
 
 /* 和际遇一样改成遮罩——更衣室是要你表态的，藏在行动卡下面等于没有 */
@@ -3529,6 +3541,7 @@ function viewPre(){
   ${S.cupMatch?cupMatchCard():""}
   ${T==="act"&&!S.cupMatch?actPanelPre():""}
   ${T==="act"&&!S.cupMatch?(typeof cupCard==="function"?cupCard():""):""}
+  ${T==="act"&&!S.cupMatch?(typeof pressCard==="function"?pressCard():""):""}
   ${T==="act"&&!S.cupMatch?(typeof injuryCard==="function"?injuryCard():"")+attrCard():""}
   ${T==="world"?scheduleCard()+proCard()+eventsCard():""}
   ${T==="squad"&&S.pre.mates&&S.pre.mates.length&&typeof preSquadCard==="function"?preSquadCard():""}
@@ -3760,17 +3773,28 @@ function pinbar(){
   +`<span class="pv dim"><i>体能</i><b>${100-Math.round(S.fatigue)}</b></span>`
   +(S.form!==undefined&&S.career?`<span class="pv dim"><i>状态</i><b>${Math.round(myForm())}</b></span>`:"");
 }
-/* 新的阻塞项（际遇、邀请、报名……）出现时把页面拉回顶部。
+/* 新的内联阻塞卡出现时把内容区拉到可见位置。
    玩家原话：「新的事件有时候会在下面，我不滑动都看不见」。
-   遮罩类弹窗本来就在屏幕中央，这条管的是内联卡片。 */
+   注意只统计真正内联的卡——际遇/结果/夺冠/确认这些全是悬浮居中的遮罩，
+   跟滚动位置无关，原来把它们也算进来，玩家点个按钮页面就弹回顶部，
+   还得自己滑回去（玩家报的就是这个）。 */
 let _lastBlock="";
 function blockSig(){
-  return [S.rndEv&&"ev",S.locker&&"lk",S.signup&&"su",S.rankUp&&"ru",
-    S.cupResult&&"cr",S.cupMatch&&"cm",S.confirm&&"cf",S.rndResult&&"rr",S.intlChamp&&"ic",S.contentPick&&"cp",
-    S.promoteDeal&&"pd",S.patchNote&&"pn",
-    (S.achPop&&S.achPop.length)&&"ap",S.tryout&&"to",S.deal&&"dl",
+  return [S.cupMatch&&"cm",
+    S.tryout&&"to",S.deal&&"dl",
     S.proOffer&&"po",S.streamOffer&&"so",
     (S.pre&&S.pre.invite&&S.pre.invite.pending)&&"iv"].filter(Boolean).join("|");
+}
+/* 滚到内容区顶部（属性条下面一点），而不是页面绝对顶部——
+   页面顶部还有横幅，跳过去反而看不见内容，又得往下滑。 */
+function scrollStageTop(){
+  try{
+    const st=$("stage"); if(!st||!st.getBoundingClientRect) return;
+    const pin=$("pin");
+    const ph=(pin&&pin.getBoundingClientRect)?pin.getBoundingClientRect().height:0;
+    const y=st.getBoundingClientRect().top+(window.scrollY||window.pageYOffset||0)-ph-6;
+    window.scrollTo(0,Math.max(0,y));
+  }catch(e){}
 }
 let _renderLock=0;
 function render(){
@@ -3812,9 +3836,7 @@ function render(){
   }
   bind();
   const sig=blockSig();
-  if(sig&&sig!==_lastBlock&&typeof window!=="undefined"&&window.scrollTo){
-    try{ window.scrollTo(0,0); }catch(e){}
-  }
+  if(sig&&sig!==_lastBlock&&typeof window!=="undefined"&&window.scrollTo) scrollStageTop();
   _lastBlock=sig;
 }
 function bind(){
@@ -4062,7 +4084,7 @@ function bind(){
   st.querySelectorAll("[data-node]").forEach(b=>b.onclick=()=>resolveNode(+b.dataset.node));
   const nx=$("next"); if(nx) nx.onclick=nextWeek;
   // 赛后拆解一屏（照 Val Manager）：比分页 → 拆解页 → 下一周
-  const pg=$("pmgo"); if(pg) pg.onclick=()=>{S.match.pmSeen=true;render();scrollTo(0,0);};
+  const pg=$("pmgo"); if(pg) pg.onclick=()=>{S.match.pmSeen=true;render();scrollStageTop();};
   // 比赛档案里的拆解回放
   st.querySelectorAll("[data-pmv]").forEach(b=>b.onclick=()=>{S.pmView=+b.dataset.pmv;render()});
   const pc=$("pmclose"); if(pc) pc.onclick=()=>{S.pmView=null;render()};
