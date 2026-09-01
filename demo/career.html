@@ -968,6 +968,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260903g", at:"2026-09-04", items:[
+    "修复「推到赛季结束只打了一场」：异化点数后剩 1 点付不起 2 点训练时，自动推进在原地死转卡死页面（刷新后只剩自动存档那一周）——现在剩 1 点会用排位收尾，一路推到底；中途弹事件交还给你的行为不变"
+  ]},
   {v:"v20260903f", at:"2026-09-04", items:[
     "转会窗口不再关窗那天批发报价（玩家点名）：窗口=最后 4 周的一段时间，邀请一家一家来——弱队先动手、中游跟上、豪门压哨、外赛区最后一刻越洋来电；每周最多一家，谈完手上这家下一家才来",
     "随时够格随时来的路也一样改成单家来谈＋冷却；窗口最后一周手上还有没处理的邀请，会先让你表态再翻年"
@@ -2960,6 +2963,7 @@ function autoRest(focus,weeks){
     if(autoStop()) break;
     while(S.ap>0){
       if(autoStop()) break;
+      const _b=S.ap;
       const av=DIMS.filter(d=>S.attrs[d]<capOf(d));
       const fbp=(typeof BREAK_PATHS!=="undefined")?BREAK_PATHS[focus]:null;
       if(S.fatigue>70) doAction("rest");
@@ -2968,6 +2972,10 @@ function autoRest(focus,weeks){
       else if(fbp&&fbp.by==="train"&&S.attrs[focus]>=capOf(focus)) doTrain(focus);
       else if(av.length) doTrain(av[0]);
       else doAction("stream");
+      // 异化点数：剩 1 点付不起 2 点的行动会原地死转（玩家实测「只打了一场就停」
+      // ——其实是这里卡死、刷新后只剩自动存档那一周）。1 点用排位收尾。
+      if(S.ap===_b) doAction("solo");
+      if(S.ap===_b) break;
     }
     if(autoStop()||S.ap>0) break;      // 有事，或者一个点都没推动
     startMatch(); autoMatch();

@@ -1,0 +1,42 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:1080px;height:1440px;overflow:hidden;position:relative;
+  background:
+    radial-gradient(900px 700px at -10% -10%, rgba(40,120,150,.2), transparent 60%),
+    linear-gradient(168deg,#0b1320 0%,#0e1a2c 46%,#091019 100%);
+  font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:#e8eef7}
+.grid{position:absolute;inset:0;opacity:.05;
+  background-image:linear-gradient(#5aa 1px,transparent 1px),linear-gradient(90deg,#5aa 1px,transparent 1px);
+  background-size:72px 72px}
+.frame{position:absolute;inset:34px;border:1px solid rgba(201,169,97,.4);
+  clip-path:polygon(46px 0,100% 0,100% calc(100% - 46px),calc(100% - 46px) 100%,0 100%,0 46px)}
+.inner{position:absolute;inset:0;padding:100px 92px;display:flex;flex-direction:column}
+.eyebrow{font-size:30px;letter-spacing:.5em;color:#c9a961;margin-bottom:20px}
+h1{font-size:88px;font-weight:900;margin-bottom:64px}
+h1 .g{color:#c9a961}
+.path{display:flex;flex-direction:column;gap:0;position:relative;flex:1}
+.step{display:flex;align-items:flex-start;gap:36px;position:relative;padding-bottom:52px}
+.dot{width:34px;height:34px;border:4px solid #c9a961;background:#0e1a2c;transform:rotate(45deg);margin-top:10px;flex-shrink:0}
+.step:not(:last-child) .dot::after{content:"";position:absolute;left:15px;top:52px;bottom:6px;width:3px;background:linear-gradient(rgba(201,169,97,.6),rgba(201,169,97,.12))}
+.st{font-size:48px;font-weight:800;margin-bottom:8px}
+.sd{font-size:32px;color:#9fb3cc;line-height:1.6}
+.sd b{color:#5bc6cf}
+.last .st{color:#c9a961}
+.foot{display:flex;align-items:baseline;justify-content:space-between;border-top:1px solid rgba(120,150,180,.25);padding-top:40px}
+.url{font-size:56px;font-weight:900;color:#c9a961}
+.free{font-size:30px;color:#9fb3cc}
+</style></head><body>
+<div class="grid"></div><div class="frame"></div>
+<div class="inner">
+  <div class="eyebrow">你的成名之路</div>
+  <h1>没有人生来<span class="g">首发</span></h1>
+  <div class="path">
+    <div class="step"><div class="dot"></div><div><div class="st">网吧联队 · 城市争霸赛</div><div class="sd">交得起报名费就能打。打得深，<b>青训教练会出现在看台上</b></div></div></div>
+    <div class="step"><div class="dot"></div><div><div class="st">直播间 · 主播杯</div><div class="sd">粉丝和热度也是履历。<b>主播杯夺冠，豪门直接来电</b></div></div></div>
+    <div class="step"><div class="dot"></div><div><div class="st">青训生 · LDL 二队</div><div class="sd">先坐替补，<b>训练赛数据压过对位</b>才有名单位置</div></div></div>
+    <div class="step"><div class="dot"></div><div><div class="st">LPL 首发 · 转会市场</div><div class="sd">数据是唯一会替你说话的东西。<b>强队的合同要自己挣</b></div></div></div>
+    <div class="step last"><div class="dot"></div><div><div class="st">世界赛 · 破局者</div><div class="sd">别的赛区照着真实历史走——<b>历史改写的那一笔，得你亲手落</b></div></div></div>
+  </div>
+  <div class="foot"><div class="url">poxiao.lol</div><div class="free">手机电脑浏览器直接玩</div></div>
+</div>
+</body></html>
