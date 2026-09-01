@@ -968,6 +968,10 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260903f", at:"2026-09-04", items:[
+    "转会窗口不再关窗那天批发报价（玩家点名）：窗口=最后 4 周的一段时间，邀请一家一家来——弱队先动手、中游跟上、豪门压哨、外赛区最后一刻越洋来电；每周最多一家，谈完手上这家下一家才来",
+    "随时够格随时来的路也一样改成单家来谈＋冷却；窗口最后一周手上还有没处理的邀请，会先让你表态再翻年"
+  ]},
   {v:"v20260903e", at:"2026-09-03", items:[
     "重大修复：机械突破（连练操作/复盘 6 次/休息计满/翻盘 3 场）原来只查计数、从不查你是否真的顶着瓶颈——操作 80/上限 92 随便练三周也弹突破＋成就（玩家实锤）。现在必须真的站在上限上才兑现；夺冠/强队/老将这类「经历松动上限」不受影响",
     "成就系统全量审计：世界冠军、MSI 冠军、走出国门的钩子从未被调用（双冠王/卫冕/大满贯/三冠全是死成就）——全部接活，且大满贯/双冠/三冠改为集合判定，先拿哪座都能点亮；「这笔账算平了」「装备到位」「语言不是问题」「全都学了」四个死钩子接活；「全都学了」的判定类型错误修复；「榜一大哥」不再在职业前零薪水时误触；「苦练出真章」不再被夺冠里程碑误发",
@@ -2199,10 +2203,15 @@ const PRE_MILESTONES=[
    desc:"年度盛典的娱乐表演赛（现实里就是全明星周末的主播对抗）。不打职业的大主播，一年就这一次主舞台",
    run:()=>enterCup("show"),
    fail:()=>preLog("全明星周末开幕了，<b>请柬没有来</b>——那个舞台看的是人气。","info")},
-  {w:PRE_YEAR, name:"转会窗口", tag:"机会", open:true, dateOnly:true,
+  {w:PRE_YEAR-3, name:"转会窗口开启", tag:"机会", open:true, dateOnly:true,
    need:()=>true, needTxt:"年度机会",
    cur:()=>"—",
-   desc:"年末各队定人。这次没签也不要紧，明年还有——只是你又老了一岁",
+   desc:"各队开始定人：弱队先动手，中游跟上，豪门压哨。邀请一家一家来",
+   run:()=>{}, fail:()=>{}},
+  {w:PRE_YEAR, name:"转会窗口关闭", tag:"机会", open:true, dateOnly:true,
+   need:()=>true, needTxt:"年度机会",
+   cur:()=>"—",
+   desc:"这周结束窗口就关。没签也不要紧，明年还有——只是你又老了一岁",
    run:()=>{}, fail:()=>{}}
 ];
 /* 隐性指标只给感觉，不给数字——不然玩游戏就变成刷数值 */
@@ -2263,13 +2272,15 @@ function fireWeekEvents(){
     else { S.signup=hit; render(); return; }     // 交给玩家决定报不报
   } else if(hit){ hit.need()?hit.run():hit.fail(); }
 
-  // 够格就随时有人来谈；不够就打到年末的转会窗口再看。
-  // 转会窗口是给一线队队员的，还没打上职业的人什么时候被看上都正常，
-  // 所以这里不看日历，只看 preScore 这道能力闸。
-  // 但比赛没打完不能来——杯赛打到一半弹「进职业」是最扫兴的。
-  if(!busyCup && preScore()>=PRE_INVITE){
-    preLog(`俱乐部发来<b>正式试训邀请</b>。`,"big");
-    makeOffers(); return;
+  // 够格就随时有人来谈；不够就等转会窗口。
+  // 玩家点名：不许一天批发一摞报价——随时够格也是「一家来谈」，
+  // 处理完这家、过了冷却，下一家才来。
+  if(!busyCup && preScore()>=PRE_INVITE && !(P.invite&&P.invite.pending)
+     && P.week>=(P.earlyCd||0)){
+    P.earlyCd=P.week+3;
+    const s=preScore();
+    const pick=wndPickOffer(s>=92?"foreign":s>=70?"sub":"start");
+    if(pick){ wndDeliver(pick, "你的名字已经在圈里传开——不用等窗口"); render(); return; }
   }
   render();
 }
@@ -2289,8 +2300,15 @@ function cupTick(){
 function advancePreWeek(){
   const P=S.pre;
   if(P.week>=PRE_YEAR){
-    if(preScore()>=PRE_INVITE*0.82){ preLog(`转会窗口开了，有队伍愿意和你谈。`,"good"); makeOffers(); return; }
-    preLog(`转会窗口关了，<b>没有一家找你</b>。明年再来。`,"bad");
+    // 窗口在最后一周关闭。手上还挂着没处理的邀请就先别翻年——
+    // 报价是流程里一家家来的（玩家点名），不是关窗那天批发的
+    if(P.invite&&P.invite.pending){
+      preLog(`转会窗口<b>今天就关</b>——先把手上 <b>${P.invite.team}</b> 的邀请处理了。`,"big");
+      render(); return;
+    }
+    preLog(((P.wndGiven&&Object.keys(P.wndGiven).length)
+      ? `转会窗口关了。来谈过的机会都过去了——`
+      : `转会窗口关了，<b>没有一家找你</b>。`)+`明年再来。`,"bad");
     preNextYear(); return;
   }
   if(typeof archiveWeek==='function') archiveWeek();
@@ -2298,6 +2316,7 @@ function advancePreWeek(){
   if(typeof weeklyEcho==="function") weeklyEcho();
   if(typeof injuryTick==='function') injuryTick();
   if(typeof cupTick==='function') cupTick();
+  if(typeof wndOfferTick==='function') wndOfferTick();   // 转会窗口滴灌：一周最多一家
   if(typeof checkRankInvite==='function') checkRankInvite();
   // 突破进度也要在职业前结算。原来 btkWeekEnd 只在赛季的 nextWeek 里调，
   // 职业前那条「连续 3 周投操作」的提示就永远是 0/3——提示让你做的事做了也不算数。
@@ -2351,6 +2370,61 @@ function preNextYear(){
   preLog(`<b>${SEASONS[S.si].tag} ${SEASONS[S.si].y} 赛季开始</b>，你 ${S.age} 岁了。
     上一年没能签约，这一年从头再来——但世界已经往前走了一年。`,"hi");
   render();
+}
+/* ---------- 转会窗口滴灌（2026-09-04 玩家点名）----------
+   窗口是最后 4 周的一段时间，不是关窗那天的一次批发：
+   弱队最先动手，中游跟上，豪门压哨，外赛区最后一刻才来电——
+   每周最多一家，走现成的试训邀请弹窗；错过的档位每周补试，直到关窗。 */
+const WND_OPEN=PRE_YEAR-3;
+function wndPickOffer(kind){
+  const rk=S.world.LPL.map(t=>({n:t.name,p:power(t)})).sort((a,b)=>b.p-a.p);
+  if(kind==="core")  return {kind,tier:"low", team:rk[rk.length-1-Math.floor(rnd()*4)].n,
+    label:"弱队想把全队资源押在你身上"};
+  if(kind==="start") return {kind,tier:"mid", team:rk[6+Math.floor(rnd()*4)].n,
+    label:"中游俱乐部缺一个首发"};
+  if(kind==="sub")   return {kind,tier:"top", team:rk[Math.floor(rnd()*3)].n,
+    label:"豪门想签你进替补席培养"};
+  if(kind==="foreign"){
+    const lg=rnd()<0.5?"LCK":"LEC";
+    const pool=(S.world[lg]||[]);
+    if(!pool.length) return null;
+    const ft=pool[Math.floor(rnd()*Math.min(4,pool.length))];
+    return {kind,tier:"top", team:ft.name, league:lg, label:lg+" 的队伍越洋来电"};
+  }
+  return null;
+}
+function wndDeliver(o,why){
+  const P=S.pre; if(!P||!o) return false;
+  const T=CLUB_TIERS[o.tier];
+  P.invite={tier:o.tier, team:o.team, league:o.league||null,
+            reason:why||o.label, pending:true, week:P.week, expect:T.expect};
+  P.inviteN=(P.inviteN||0)+1;
+  preLog(`<b>${o.team}</b>${o.league?`（${o.league} 赛区）`:""}发来试训邀请——${o.label}。`,"big");
+  return true;
+}
+function wndOfferTick(){
+  const P=S.pre; if(!P) return;
+  if(P.week<WND_OPEN||P.week>PRE_YEAR) return;
+  if(P.week===WND_OPEN&&!P.wndOpened){
+    P.wndOpened=1;
+    preLog(`<b>转会窗口开启</b>：接下来 ${PRE_YEAR-WND_OPEN+1} 周，各队陆续定人。
+      够格的话，邀请会一家一家来——豪门向来压哨。`,"hi");
+  }
+  if(P.invite&&P.invite.pending) return;          // 一次只谈一家，谈完下一家才来
+  if(typeof activeCups==="function"&&activeCups().length) return;  // 打着比赛不搅局
+  P.wndGiven=P.wndGiven||{};
+  const score=preScore();
+  const ladder=[
+    {wk:WND_OPEN,   k:"core",   ok:score>=PRE_INVITE*0.82},
+    {wk:WND_OPEN+1, k:"start",  ok:score>=32},
+    {wk:WND_OPEN+2, k:"sub",    ok:score>=70},
+    {wk:PRE_YEAR,   k:"foreign",ok:score>=92}
+  ];
+  for(const r of ladder){
+    if(P.week<r.wk||P.wndGiven[r.k]||!r.ok) continue;
+    const o=wndPickOffer(r.k);
+    if(o&&wndDeliver(o)){ P.wndGiven[r.k]=1; break; }   // 每周最多一家
+  }
 }
 function makeOffers(forced){
   const P=S.pre, score=preScore();
