@@ -968,6 +968,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260903i", at:"2026-09-04", items:[
+    "主动接触全赛区开放（玩家点名）：转会页新增赛区筛选栏，LPL/LCK/LEC/LCS 到各外卡联赛的任何一线队都能去敲门，跨赛区谈成就是出海；档位改按该联赛内真实排位分（此前身在 LCK 时全员被误标成「中游 3%」——连 T1 都是）"
+  ]},
   {v:"v20260903h", at:"2026-09-04", items:[
     "游戏更名「破晓」：标题、页面标签、作者栏、存档文件名全部与域名 poxiao.lol 统一——至暗时刻之后的那个词。结局「破局者」保留：破晓是这个游戏的名字，破局者是你在故事里挣来的称号"
   ]},
@@ -11512,14 +11515,30 @@ function canApproach(){
   return {ok:true};
 }
 /* 可以去接触谁：LDL 选手向上够 LPL，一线选手够同联赛的其他队 */
-function approachTargets(){
-  const inLDL=(S.homeLeague||"LPL")==="LDL";
-  const lg = inLDL ? "LPL" : (S.homeLeague||"LPL");
-  return (S.world[lg]||[]).filter(t=>t.name!==S.team).map(t=>{
-    const st = (typeof clubStanding==="function") ? clubStanding(t.name) : null;
-    const tier = st ? (st.pos<=4?"top":st.pos<=10?"mid":"low") : "mid";
-    return { team:t.name, tier, league:lg };
+/* 主动接触的联赛筛选（玩家点名：加入 LCK 也要能接触其他赛区）。
+   原来只列本联赛，而且 clubStanding 只认 LPL——身在 LCK 时全员
+   查无此队、被兜底成「中游 3%」（T1 都是中游，玩家截图抓的）。
+   现在：任意主联赛可选，档位按该联赛内战力排位分（前 25% 豪门、
+   65% 中游、其余弱队，与 pickClub 同一把尺）。 */
+function approachLeagues(){
+  const HL=(S.homeLeague||"LPL")==="LDL"?"LPL":(S.homeLeague||"LPL");
+  const all=Object.keys(S.world||{}).filter(k=>k!=="LDL"&&(S.world[k]||[]).length);
+  return [HL].concat(all.filter(k=>k!==HL));
+}
+function approachTargets(lgPick){
+  const lgs=approachLeagues();
+  let lg = lgPick || S.txLgPick || lgs[0];
+  if(!lgs.includes(lg)) lg=lgs[0];
+  const rows=(S.world[lg]||[]).map(t=>({t,p:power(t)})).sort((a,b)=>b.p-a.p);
+  const n=rows.length;
+  const out=[];
+  rows.forEach((x,i)=>{
+    if(x.t.name===S.team) return;
+    const pos=i+1;
+    const tier = pos<=Math.max(1,Math.round(n*0.25))?"top":pos<=Math.round(n*0.65)?"mid":"low";
+    out.push({ team:x.t.name, tier, league:lg });
   });
+  return out;
 }
 function approachOdds(tier){
   const perf = proPerf() - buyoutDrag()*2;
@@ -11623,7 +11642,11 @@ function transferPage(){
             <span style="color:var(--red)">经理 −18、教练 −10，全队信任 −12</span>`
           :`🔒 ${buyC.why}`}</div></button>
     </div>
-    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">主动接触　<span style="font-weight:400">每赛段 1 次 · 花 1 个行动点${ca.ok?"":` · 🔒 ${ca.why}`}</span></h3>
+    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">主动接触<span style="font-weight:400">每赛段 1 次 · 花 1 个行动点${ca.ok?"":` · 🔒 ${ca.why}`}</span></h3>
+    <div class="row" style="flex-wrap:wrap;gap:6px;margin:0 0 10px">${approachLeagues().map(l=>{
+      const on=l===(S.txLgPick||approachLeagues()[0]);
+      return `<button class="btn ghost sm" data-txlg="${l}" ${on?'style="border-color:var(--gold);color:var(--gold)"':''}>${l}</button>`;
+    }).join("")}</div>
     <div class="grid g5">${targets.map(t=>{
       const po = approachOdds(t.tier);
       return `<button class="act" data-approach="${t.team}" ${!ca.ok?'disabled style="opacity:.4"':''}
@@ -11631,8 +11654,9 @@ function transferPage(){
         <div class="t">${typeof teamLogo==="function"?teamLogo(t.team,16):""}${t.team}</div>
         <div class="d">${CLUB_TIERS[t.tier]?CLUB_TIERS[t.tier].n:""} · ${(po*100).toFixed(0)}%</div></button>`;
     }).join("")}</div>
-    <p class="note">被拒绝会给理由（位置刚续约 / 违约金劝退 / 还想再看看）。成功 = 对方有兴趣：
-      窗口开着就当场谈，赛段中先记意向。</p></div>`;
+    <p class="note">全赛区都能接触——点上面的赛区标签切换名单，档位按该联赛内的真实排位分。
+      被拒绝会给理由（位置刚续约 / 违约金劝退 / 还想再看看）。成功 = 对方有兴趣：
+      窗口开着就当场谈，赛段中先记意向；跨赛区谈成就是出海。</p></div>`;
   /* 轨迹 */
   const log = (S.txLog&&S.txLog.length)?`<div class="card"><h2>生涯轨迹</h2>
     <div class="log">${S.txLog.slice().reverse().map(x=>`<div><span class="hi">${x.s}</span> ${x.text}</div>`).join("")}</div></div>`:"";
@@ -12860,6 +12884,7 @@ function bind(){
   // 比赛档案里的拆解回放
   st.querySelectorAll("[data-pmv]").forEach(b=>b.onclick=()=>{S.pmView=+b.dataset.pmv;render()});
   st.querySelectorAll("[data-selfrec]").forEach(b=>b.onclick=()=>selfRecommend(b.dataset.selfrec));
+  st.querySelectorAll("[data-txlg]").forEach(b=>b.onclick=()=>{S.txLgPick=b.dataset.txlg;render()});
   const pc=$("pmclose"); if(pc) pc.onclick=()=>{S.pmView=null;render()};
   const of=$("off"); if(of) of.onclick=doOffseason;
   st.querySelectorAll("[data-ef]").forEach(b=>b.onclick=()=>{S.evFilter=b.dataset.ef;render()});

@@ -1298,14 +1298,30 @@ function canApproach(){
   return {ok:true};
 }
 /* 可以去接触谁：LDL 选手向上够 LPL，一线选手够同联赛的其他队 */
-function approachTargets(){
-  const inLDL=(S.homeLeague||"LPL")==="LDL";
-  const lg = inLDL ? "LPL" : (S.homeLeague||"LPL");
-  return (S.world[lg]||[]).filter(t=>t.name!==S.team).map(t=>{
-    const st = (typeof clubStanding==="function") ? clubStanding(t.name) : null;
-    const tier = st ? (st.pos<=4?"top":st.pos<=10?"mid":"low") : "mid";
-    return { team:t.name, tier, league:lg };
+/* 主动接触的联赛筛选（玩家点名：加入 LCK 也要能接触其他赛区）。
+   原来只列本联赛，而且 clubStanding 只认 LPL——身在 LCK 时全员
+   查无此队、被兜底成「中游 3%」（T1 都是中游，玩家截图抓的）。
+   现在：任意主联赛可选，档位按该联赛内战力排位分（前 25% 豪门、
+   65% 中游、其余弱队，与 pickClub 同一把尺）。 */
+function approachLeagues(){
+  const HL=(S.homeLeague||"LPL")==="LDL"?"LPL":(S.homeLeague||"LPL");
+  const all=Object.keys(S.world||{}).filter(k=>k!=="LDL"&&(S.world[k]||[]).length);
+  return [HL].concat(all.filter(k=>k!==HL));
+}
+function approachTargets(lgPick){
+  const lgs=approachLeagues();
+  let lg = lgPick || S.txLgPick || lgs[0];
+  if(!lgs.includes(lg)) lg=lgs[0];
+  const rows=(S.world[lg]||[]).map(t=>({t,p:power(t)})).sort((a,b)=>b.p-a.p);
+  const n=rows.length;
+  const out=[];
+  rows.forEach((x,i)=>{
+    if(x.t.name===S.team) return;
+    const pos=i+1;
+    const tier = pos<=Math.max(1,Math.round(n*0.25))?"top":pos<=Math.round(n*0.65)?"mid":"low";
+    out.push({ team:x.t.name, tier, league:lg });
   });
+  return out;
 }
 function approachOdds(tier){
   const perf = proPerf() - buyoutDrag()*2;
@@ -1409,7 +1425,11 @@ function transferPage(){
             <span style="color:var(--red)">经理 −18、教练 −10，全队信任 −12</span>`
           :`🔒 ${buyC.why}`}</div></button>
     </div>
-    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">主动接触　<span style="font-weight:400">每赛段 1 次 · 花 1 个行动点${ca.ok?"":` · 🔒 ${ca.why}`}</span></h3>
+    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">主动接触<span style="font-weight:400">每赛段 1 次 · 花 1 个行动点${ca.ok?"":` · 🔒 ${ca.why}`}</span></h3>
+    <div class="row" style="flex-wrap:wrap;gap:6px;margin:0 0 10px">${approachLeagues().map(l=>{
+      const on=l===(S.txLgPick||approachLeagues()[0]);
+      return `<button class="btn ghost sm" data-txlg="${l}" ${on?'style="border-color:var(--gold);color:var(--gold)"':''}>${l}</button>`;
+    }).join("")}</div>
     <div class="grid g5">${targets.map(t=>{
       const po = approachOdds(t.tier);
       return `<button class="act" data-approach="${t.team}" ${!ca.ok?'disabled style="opacity:.4"':''}
@@ -1417,8 +1437,9 @@ function transferPage(){
         <div class="t">${typeof teamLogo==="function"?teamLogo(t.team,16):""}${t.team}</div>
         <div class="d">${CLUB_TIERS[t.tier]?CLUB_TIERS[t.tier].n:""} · ${(po*100).toFixed(0)}%</div></button>`;
     }).join("")}</div>
-    <p class="note">被拒绝会给理由（位置刚续约 / 违约金劝退 / 还想再看看）。成功 = 对方有兴趣：
-      窗口开着就当场谈，赛段中先记意向。</p></div>`;
+    <p class="note">全赛区都能接触——点上面的赛区标签切换名单，档位按该联赛内的真实排位分。
+      被拒绝会给理由（位置刚续约 / 违约金劝退 / 还想再看看）。成功 = 对方有兴趣：
+      窗口开着就当场谈，赛段中先记意向；跨赛区谈成就是出海。</p></div>`;
   /* 轨迹 */
   const log = (S.txLog&&S.txLog.length)?`<div class="card"><h2>生涯轨迹</h2>
     <div class="log">${S.txLog.slice().reverse().map(x=>`<div><span class="hi">${x.s}</span> ${x.text}</div>`).join("")}</div></div>`:"";
