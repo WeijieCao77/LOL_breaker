@@ -1,4 +1,4 @@
-/* 破局者 —— 零依赖静态服务器
+/* 破晓 —— 零依赖静态服务器
    游戏本身是一个自包含的 HTML 文件，不需要框架，也不需要静态目录：
    CSS、JS、数据在 build.py 里全部内联进 career.html 了。
 
@@ -67,5 +67,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`破局者 listening on ${PORT}`);
+  console.log(`破晓 listening on ${PORT}`);
 });

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0B1220">
 <meta name="color-scheme" content="dark">
-<title>破局者 S12-S16</title>
+<title>破晓 · LOL 电竞生涯模拟</title>
 <!-- 不引任何外部资源：B站 Toy 审核明确禁止用外链资源规避审核，
      且 fonts.googleapis.com 在国内基本加载不出来。字体全部走系统栈。 -->
 
@@ -873,9 +873,9 @@ button:disabled .apc{opacity:.5}
         <path d="M33 62 L40 60 L36 69 Z" fill="#C9A961" opacity=".6"/>
       </svg>
       <div class="title-block">
-        <p class="game-kicker">LOL 人生模拟器</p>
-        <h1 class="game-title">破局者</h1>
-        <p class="game-en">The Breaker</p>
+        <p class="game-kicker">LOL 电竞生涯模拟器</p>
+        <h1 class="game-title">破晓</h1>
+        <p class="game-en">poxiao.lol</p>
       </div>
     </div>
     <p class="tagline">S12 到 S16，五年。一段有限的职业生涯，去终结那个王朝。</p>
@@ -886,7 +886,7 @@ button:disabled .apc{opacity:.5}
   <div id="stage"></div>
   <!-- 作者栏：常驻页面最底部，和游戏内容分开（stage 每次重画，它不动） -->
   <footer class="credits">
-    <b>破局者</b> · LOL 电竞生涯模拟　——　<span class="pig">猪之家</span> 出品
+    <b>破晓</b> · LOL 电竞生涯模拟　——　<span class="pig">猪之家</span> 出品
     <em id="credit-ver"></em>
   </footer>
 </div>
@@ -968,6 +968,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260903h", at:"2026-09-04", items:[
+    "游戏更名「破晓」：标题、页面标签、作者栏、存档文件名全部与域名 poxiao.lol 统一——至暗时刻之后的那个词。结局「破局者」保留：破晓是这个游戏的名字，破局者是你在故事里挣来的称号"
+  ]},
   {v:"v20260903g", at:"2026-09-04", items:[
     "修复「推到赛季结束只打了一场」：异化点数后剩 1 点付不起 2 点训练时，自动推进在原地死转卡死页面（刷新后只剩自动存档那一周）——现在剩 1 点会用排位收尾，一路推到底；中途弹事件交还给你的行为不变"
   ]},
@@ -10135,7 +10138,7 @@ function exportSave() {
     if (!raw) return;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([raw], { type: "application/json" }));
-    a.download = "破局者存档.json";
+    a.download = "破晓存档.json";
     document.body.appendChild(a); a.click(); a.remove();
   } catch (e) {}
 }

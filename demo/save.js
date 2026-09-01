@@ -308,7 +308,7 @@ function exportSave() {
     if (!raw) return;
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([raw], { type: "application/json" }));
-    a.download = "破局者存档.json";
+    a.download = "破晓存档.json";
     document.body.appendChild(a); a.click(); a.remove();
   } catch (e) {}
 }

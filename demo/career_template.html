@@ -1,4 +1,4 @@
-<title>破局者 S12-S16</title>
+<title>破晓 · LOL 电竞生涯模拟</title>
 <!-- 不引任何外部资源：B站 Toy 审核明确禁止用外链资源规避审核，
      且 fonts.googleapis.com 在国内基本加载不出来。字体全部走系统栈。 -->
 
@@ -192,16 +192,16 @@ input[type=text]{background:var(--surface-2);border:1px solid var(--line);border
 
 <div class="wrap">
   <header class="top">
-    <p class="eyebrow">跨赛季版 · S12–S15 · 四年生涯</p>
-    <h1>破局者 S12–S15</h1>
-    <p class="sub">四十支战队、两百名选手的评分来自 2022 赛季真实比赛数据。四年里他们会变老、会下滑、会退役，新人会顶上来。你也一样。</p>
+    <p class="eyebrow">S12–S16 · 五年生涯</p>
+    <h1>破晓</h1>
+    <p class="sub">四十支战队、两百名选手的评分来自 2022 赛季真实比赛数据。五年里他们会变老、会下滑、会退役，新人会顶上来。你也一样。（此块构建时会被 header.html 替换）</p>
   </header>
   <div id="hud" class="hud hide"></div>
   <div id="pin" class="pinbar hide"></div>
   <div id="stage"></div>
   <!-- 作者栏：常驻页面最底部，和游戏内容分开（stage 每次重画，它不动） -->
   <footer class="credits">
-    <b>破局者</b> · LOL 电竞生涯模拟　——　<span class="pig">猪之家</span> 出品
+    <b>破晓</b> · LOL 电竞生涯模拟　——　<span class="pig">猪之家</span> 出品
     <em id="credit-ver"></em>
   </footer>
 </div>
@@ -283,6 +283,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260903h", at:"2026-09-04", items:[
+    "游戏更名「破晓」：标题、页面标签、作者栏、存档文件名全部与域名 poxiao.lol 统一——至暗时刻之后的那个词。结局「破局者」保留：破晓是这个游戏的名字，破局者是你在故事里挣来的称号"
+  ]},
   {v:"v20260903g", at:"2026-09-04", items:[
     "修复「推到赛季结束只打了一场」：异化点数后剩 1 点付不起 2 点训练时，自动推进在原地死转卡死页面（刷新后只剩自动存档那一周）——现在剩 1 点会用排位收尾，一路推到底；中途弹事件交还给你的行为不变"
   ]},
