@@ -283,6 +283,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260904e", at:"2026-09-04", items:[
+    "修复：体质突破「休息 12/12 却没动静」——原来拖到赛段结算才发，结算时还暗查本赛段个人出场满 7 场（替补席不算，坐过板凳的赛段永远兑不了）。现在攒满当场兑现；还没顶到瓶颈就先攒着并告诉你，顶到那一刻兑现"
+  ]},
   {v:"v20260904d", at:"2026-09-04", items:[
     "修复：退役传奇复出只回自己的赛区——PraY/Smeb/Wolf/Bang 不会再空降 LPL 队（玩家实锤：在 IG 时更衣室里 PraY 问你他还能不能打）；只有真在 LPL 打过的 Mata/Looper 才可能回 LPL；本局内退役的按退役时的联赛复出；还在役的人不再重复「复出」一份"
   ]},
@@ -573,7 +576,7 @@ const BREAK_PATHS={
         auto:true, gain:2.0,
         prog:()=>`${clamp(S.btk&&S.btk.vod||0,0,6)}/6 次`,
         done:()=>(S.btk&&S.btk.vod||0)>=6 },
-  体质:{ how:"一个赛段里休息满 12 次，并且这个赛段一场不缺",
+  体质:{ how:"一个赛段里休息满 12 次（攒满当场兑现；没顶到瓶颈就先攒着，顶到那一刻兑现）",
         // 休息改 1 点碎片档后次数翻倍可得：6→12，真实投入量和原来完全一样
         by:"rest", act:"休息",
         auto:true, gain:1.6,
@@ -621,6 +624,23 @@ function btkNote(d,n){ S.btk=S.btk||{opStreak:0,opThisWeek:0,vod:0,rest:0};
     else breakthrough("运营",BREAK_PATHS.运营.gain,"整个赛段泡在录像里，你看比赛的方式变了。");
     S.btk.vod=0;
   }
+  /* 体质同理（玩家实锤：休息 12/12 却没突破）。原来拖到赛段结算，
+     而且结算时还暗查「本赛段个人出场 ≥ 7」——替补席上的场次不算，
+     坐过板凳的赛段永远兑不了。现在攒满当场兑现，出场数不再是条件
+     （「打满一个赛段」本来就是另一条独立的突破）。 */
+  if(d==="rest") btkRestSettle();
+}
+function btkRestSettle(){
+  if(!S.btk||(S.btk.rest||0)<12||typeof BREAK_PATHS==="undefined") return;
+  if(!btkAtCap("体质")){
+    if(!S.btk.restWait){ S.btk.restWait=true;
+      pushEvent(`休息攒满 12 次——但你的体质还没顶到瓶颈（${S.attrs.体质.toFixed(1)}/${capOf("体质").toFixed(0)}）。计数先留着，顶到那一刻兑现。`,"info","突破"); }
+    return;
+  }
+  const dead=btkPathDead("体质");
+  if(dead) pushEvent(`休息攒满 12 次——但${dead}。这个计数不再有意义。`,"info","突破");
+  else breakthrough("体质",BREAK_PATHS.体质.gain,"这个赛段你把作息守住了，身体给了回报。");
+  S.btk.rest=0; S.btk.restWait=false;
 }
 /* 声明式补发。
    原来心态那条是在「恰好第 3 次翻盘」那一刻用 ===3 触发的，
@@ -643,6 +663,7 @@ function sweepBreakthroughs(){
 function btkWeekEnd(){
   S.btk=S.btk||{opStreak:0,opThisWeek:0,vod:0,rest:0};
   sweepBreakthroughs();
+  if(typeof btkRestSettle==="function") btkRestSettle();   // 之前攒满、后来才顶到瓶颈的，周末补发
   // 审判用这一周「实际发放」的预算（apFor/enterPrep/出征周都会记录）。
   // 玩家实测抓出来的冤案：季后赛备战、出征这些 1 点的段落，把仅有的
   // 点全投操作也凑不满 3，下一次结算却按整周审判——连击被无声清零。
@@ -675,9 +696,8 @@ function btkWeekEnd(){
 function btkSplitEnd(){
   S.btk=S.btk||{opStreak:0,opThisWeek:0,vod:0,rest:0};
   if(BREAK_PATHS.运营.done()&&btkAtCap("运营")) breakthrough("运营",BREAK_PATHS.运营.gain,"整个赛段泡在录像里，你看比赛的方式变了。");
-  if(BREAK_PATHS.体质.done()&&btkAtCap("体质")&&S.record.w+S.record.l>=WEEKS)
-    breakthrough("体质",BREAK_PATHS.体质.gain,"这个赛段你把作息守住了，身体给了回报。");
-  S.btk.vod=0; S.btk.rest=0;
+  if(typeof btkRestSettle==="function") btkRestSettle();
+  S.btk.vod=0; S.btk.rest=0; S.btk.restWait=false;
 }
 
 /* 每个赛段检查一次「环境带来的成长」 */
