@@ -283,6 +283,12 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260904h", at:"2026-09-02", items:[
+    "赛后拆解新增「全员数据」：双方十个人的 KDA、补刀、伤害占比、评分一张表，谁是 MVP、谁是这场的洞一眼看出；比赛档案回放也带这张表",
+    "数据怎么来的写在明面上：各人数值 × 状态 × 胜负 × 你的临场选择——你选对了却输，多出来的那份「输」记在队友头上；你砸了却赢，功劳分给队友",
+    "球探改看数据：本赛段场均评分进表现分（1.2 → +5，0.8 → −5），队伍战绩的权重减半；「院长」场次额外加分——弱队里的强个人一样会有俱乐部来问",
+    "新增「逆境」成就：院长（输球但你全队最高、队友集体拉胯）、院长，救不了（五次）、一人成军（队友全员不及格你硬赢）"
+  ]},
   {v:"v20260904g", at:"2026-09-02", items:[
     "修复（严重）：新开的局第一次「继续上次」会被当成旧版本存档整体 +15 并重排世界——新档现在自带标尺版本；读档时再加一道保险：世界已经在新标尺上的档一律不迁移",
     "正式地址只有 www.poxiao.lol：裸域名和 Railway 域名会自动跳转过去；老域名上的存档会在你第一次打开 www 时自动接过来（谁新用谁），不用手动导出导入",
@@ -1928,6 +1934,7 @@ function myRoster(){ return myTeam().players; }
 
 function startSeason(first,split){
   S.split=(split===undefined)?0:split;
+  S.carrySplit=0;      // 「院长」次数按赛段算（球探看本赛段）
   S.benchedPO=false;   // 新赛段重置「替补看完季后赛」标记
   const HL=S.homeLeague||"LPL";
   const opp=S.world[HL].filter(t=>t.name!==S.team).map(t=>t.name);
@@ -2713,21 +2720,35 @@ const POS_STATLINE={top:[3.1,2.7,4.9,8.3,0.24],jng:[2.8,2.5,7.6,6.2,0.18],
   mid:[4.1,2.5,5.2,8.8,0.28],bot:[5.0,2.3,4.4,9.4,0.30],sup:[1.0,2.9,9.8,1.6,0.10]};
 function synthSeriesStats(m,won,myPw,opPw){
   if(!S.career) return;
-  const P=POS_STATLINE[S.pos]||POS_STATLINE.mid;
   const games=m.sc[0]+m.sc[1];
-  // 表现系数：战力差 + 胜负 + 节点失手拖累
-  const perf=clamp(1+ (myPw-opPw)*0.022 + (won?0.14:-0.10) - (m.nodeFails||0)*0.05 + (rnd()-0.5)*0.24, 0.5, 1.65);
-  const k=q1(P[0]*perf), d=q1(P[1]*(2-perf)*0.85+0.6), a=q1(P[2]*(0.8+perf*0.25));
-  const cs=q1(P[3]*(0.9+perf*0.12)), dmg=Math.round(P[4]*100*(0.82+perf*0.2));
-  const kda=q1((k+a)/Math.max(1,d));
-  const rating=q1(clamp(0.35+perf*0.55+(kda-2.6)*0.045,0.2,2.0));
+  /* 全员数据（boxscore.js）：双方十个人一起合成，你的那一行从里面取——
+     这样你的数据、队友的数据、球探看的数据是同一份。没有模块时退回旧算法。 */
+  const box=(typeof synthBoxScore==="function")?synthBoxScore(m,won):null;
+  let k,d,a,cs,dmg,rating;
+  if(box){ const me=box.mine.find(x=>x.me)||box.mine[0]; k=me.k;d=me.d;a=me.a;cs=me.cs;dmg=me.dmg;rating=me.rating; }
+  else{
+    const P=POS_STATLINE[S.pos]||POS_STATLINE.mid;
+    const perf=clamp(1+ (myPw-opPw)*0.022 + (won?0.14:-0.10) - (m.nodeFails||0)*0.05 + (rnd()-0.5)*0.24, 0.5, 1.65);
+    k=q1(P[0]*perf); d=q1(P[1]*(2-perf)*0.85+0.6); a=q1(P[2]*(0.8+perf*0.25));
+    cs=q1(P[3]*(0.9+perf*0.12)); dmg=Math.round(P[4]*100*(0.82+perf*0.2));
+    const kda=q1((k+a)/Math.max(1,d));
+    rating=q1(clamp(0.35+perf*0.55+(kda-2.6)*0.045,0.2,2.0));
+  }
   const tag=S.intl?(S.intl.type==="msi"?"MSI":"世界赛"):S.playoff?"季后赛":((S.homeLeague||"LPL")==="LDL"?"LDL":"联赛");
   S.archive=(S.archive||[]);
-  S.archive.push({si:S.si,w:S.week,tag,opp:m.oppName,sc:m.sc.slice(),win:won,g:games,k,d,a,cs,dmg,rating});
+  S.archive.push({si:S.si,sp:S.split||0,w:S.week,tag,opp:m.oppName,sc:m.sc.slice(),win:won,g:games,k,d,a,cs,dmg,rating,box:box||undefined});
   if(S.archive.length>60) S.archive.shift();
+  // 全员表只留最近 20 场，存档别撑大
+  let keepBox=0;
+  for(let i=S.archive.length-1;i>=0;i--) if(S.archive[i].box&&++keepBox>20) delete S.archive[i].box;
   S.stats=S.stats||{n:0,k:0,d:0,a:0,r:0};
   S.stats.n++; S.stats.k+=k; S.stats.d+=d; S.stats.a+=a; S.stats.r+=rating;
-  m.myline={k,d,a,cs,dmg,rating};
+  m.myline={k,d,a,cs,dmg,rating}; m.box=box;
+  if(box&&box.carry){
+    S.carries=(S.carries||0)+1; S.carrySplit=(S.carrySplit||0)+1;
+    pushEvent(`<b>院长局</b>：输给 ${m.oppName}，但你评分 <b>${rating.toFixed(2)}</b> 全队最高，队友场均 ${box.mateAvg.toFixed(2)}${box.worst?`（${box.worst} ${box.worstR.toFixed(2)}）`:""}。<span style="color:var(--ink-3)">这场输球不算在你头上——球探看数据，不只看比分。</span>`,"info","数据");
+  }
+  if(box&&box.soloWin) S.soloWins=(S.soloWins||0)+1;
   S.log.push(`<div><span class="hi">个人数据</span> ${k}/${d}/${a} · 分均补刀 ${cs} · 伤害 ${dmg}% · 评分 <b>${rating.toFixed(2)}</b></div>`);
 }
 /* 我的页 · 比赛档案卡：生涯场均 + 最近八个系列赛 */
@@ -2811,8 +2832,12 @@ function endMatch(){
   if(won&&typeof questWin==="function") questWin();      // 事件留下的「赢 N 场」待办
   if(!won&&myPw-opPw>4) addTrustAll(-3);      // 该赢没赢，更衣室有意见
   syncTrust();
+  // 每个系列赛产出真实的个人数据进档案：教练组、周报、试训看的都是这些数字。
+  // 成就要用到「院长」判定，所以先合成再建上下文。
+  if(typeof synthSeriesStats==="function") synthSeriesStats(m,won,myPw,opPw);
   // 成就上下文
   const ctx={won, bo5:m.need>=3, myScore:m.sc[0], oppScore:m.sc[1],
+    carry:!!(m.box&&m.box.carry), soloWin:!!(m.box&&m.box.soloWin),
     gap:+(myPw-opPw).toFixed(2), intl:!!S.intl,
     oppLeague:(typeof leagueOf==="function")?leagueOf(m.oppName):"LPL",
     // 点名类成就（对位 Faker 等）要看真实名单，不能拿联赛当替身——
@@ -2827,8 +2852,6 @@ function endMatch(){
   if(won&&ctx.intl&&ctx.oppLeague==="LCK") checkAch("beatlck",ctx);
 
   // ---- 世界的回声（2026-08-31 竞品拆解移植）----
-  // 每个系列赛产出真实的个人数据进档案：教练组、周报、试训看的都是这些数字
-  if(typeof synthSeriesStats==="function") synthSeriesStats(m,won,myPw,opPw);
   // 宿敌账本：赢下有明星选手的队要被记住
   if(typeof noteRivalBeat==="function") noteRivalBeat(m.opp.players,won);
   // 心态气压：输球攒 Tilt，赢球泄压。0:2 被横扫压力翻倍。
@@ -3933,6 +3956,7 @@ function viewOffer(){
 /* __FORM_MODULE__ */
 
 /* __POSTMATCH_MODULE__ */
+/* __BOXSCORE_MODULE__ */
 
 /* __INJURY_MODULE__ */
 /* __ROTATION_MODULE__ */

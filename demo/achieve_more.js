@@ -128,6 +128,14 @@ const ACH_MORE=[
   {id:"grandmaster", n:"国服第一", d:"排位打到国服第一（天梯读数 99 以上）。", tag:"成长",
    on:"rank", cond:()=>S.pre&&S.pre.rank>=99, r:{money:300,fame:110}},
 
+  /* ---------- 逆境 · 院长（2026-09-02 玩家点名：弱队里数值突出却赢不了，是队友的问题） ---------- */
+  {id:"carry1", n:"院长", d:"输了球，但全场数据最亮的是你：评分全队最高，队友集体拉胯。", tag:"逆境",
+   on:"match", cond:(c)=>!!(c&&c.carry), r:{fame:22,fat:-10}},
+  {id:"carry5", n:"院长，救不了", d:"五场输球都是你在扛。这些数据球探都记着。", tag:"逆境",
+   on:"match", cond:()=>(S.carries||0)>=5, r:{fame:60,money:80}},
+  {id:"solowin", n:"一人成军", d:"队友场均评分不到 0.9、没一个及格，你硬把比赛赢了下来。", tag:"逆境",
+   on:"win", cond:(c)=>!!(c&&c.soloWin), r:{fame:40,trust:10}},
+
   /* ---------- 宿敌（2026-08-31 竞品拆解移植：交手账本读的是真实名单） ---------- */
   {id:"star1", n:"第一滴血", d:"第一次在正式比赛里赢下带明星选手的队伍。", tag:"宿敌",
    on:"match", cond:()=>typeof beatCount==="function"&&Object.keys(S.beatStars||{}).length>=1, r:{fame:30}},

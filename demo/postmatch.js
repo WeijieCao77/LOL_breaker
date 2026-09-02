@@ -219,6 +219,7 @@ function postMatchCard(){
       ? "账面上你是劣势——这场是打出来的，不是数值给的。节点决策和运气都站在了你这边。"
       : "账面上你占优，还是输了。数值只决定每回合的胜率，不保证结果——看看状态、体能，剩下的是运气。"}</div>`:""}
     ${pmRowsHtml(rows)}
+    ${typeof boxScoreHtml==="function"?boxScoreHtml(m.box,won,m.oppName):""}
     ${pmNodesHtml(m.nodeLog,m.luck)}
     ${pmAdviceHtml(reviewAdvice(m),won,rows)}
     <p class="note">这些就是模拟器判胜负时用的数，不是事后编的解释。按影响从大到小排。<br>
@@ -240,6 +241,7 @@ function pmReplayCard(){
       <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>
     </div>
     ${pmRowsHtml(pm.rows)}
+    ${(typeof boxScoreHtml==="function"&&x.box)?boxScoreHtml(x.box,won,x.opp):""}
     ${pmNodesHtml(pm.nodes,pm.luck)}
     ${pmAdviceHtml(pm.adv,won,pm.rows)}
     <div class="row" style="justify-content:center;margin-top:10px">

@@ -723,7 +723,13 @@ function proPerf(){
   // 一辈子困在弱队拿头撞 88 分的明星队。3.0 是把梯子接回原高度。
   let v = (me - base) * 3.0;                       // 个人水平相对联赛
   const g = S.record ? (S.record.w + S.record.l) : 0;
-  if(g >= 3) v += ((S.record.w / g) - 0.5) * 20;   // 这个赛段的战绩
+  /* 玩家点名（2026-09-02）：弱队里数值突出却赢不了，不该没人来问。
+     队伍战绩的权重减半，个人场均评分（全员数据合成的那份）进来，
+     「院长」场次再加一份——弱队里的强个人，数据反而更显眼。 */
+  if(g >= 3) v += ((S.record.w / g) - 0.5) * 20 * 0.55;   // 这个赛段的战绩
+  const sr = (typeof splitRating === "function") ? splitRating() : null;
+  if(sr !== null) v += (sr - 1.0) * 26;                    // 场均 1.2 → +5.2；0.8 → −5.2
+  v += Math.min(S.carrySplit || 0, 4) * 1.5;               // 院长局：球探会把录像翻出来看
   v += ((S.career.titles || []).length) * 4;
   v += (((S.career.msi || 0) + (S.career.worlds || 0))) * 9;
   if(typeof myForm === "function") v += (myForm() - 52) * 0.18;

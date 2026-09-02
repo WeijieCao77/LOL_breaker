@@ -23,6 +23,7 @@ squad = io.open(os.path.join(BASE, "squad.js"), encoding="utf-8").read()
 random_ = io.open(os.path.join(BASE, "random.js"), encoding="utf-8").read()
 form = io.open(os.path.join(BASE, "form.js"), encoding="utf-8").read()
 postm = io.open(os.path.join(BASE, "postmatch.js"), encoding="utf-8").read()
+boxscore = io.open(os.path.join(BASE, "boxscore.js"), encoding="utf-8").read()
 injury = io.open(os.path.join(BASE, "injury.js"), encoding="utf-8").read()
 rotation = io.open(os.path.join(BASE, "rotation.js"), encoding="utf-8").read()
 clout = io.open(os.path.join(BASE, "clout.js"), encoding="utf-8").read()
@@ -52,7 +53,7 @@ assert n == 1, "header block not found"
 # 3) 国际赛模块
 assert "/* __INTL_MODULE__ */" in out, "intl placeholder missing"
 out = out.replace("/* __INTL_MODULE__ */", intl)
-for ph, mod in (("/* __TEAM_MODULE__ */", team), ("/* __RIVALS_MODULE__ */", rivals), ("/* __RANKICON_MODULE__ */", rankicon), ("/* __AVATAR_MODULE__ */", avatar), ("/* __SHOP_MODULE__ */", shop), ("/* __ORIGINS_MODULE__ */", origins), ("/* __ACHIEVE_MODULE__ */", achieve), ("/* __SQUAD_MODULE__ */", squad), ("/* __RANDOM_MODULE__ */", random_), ("/* __FORM_MODULE__ */", form), ("/* __POSTMATCH_MODULE__ */", postm), ("/* __INJURY_MODULE__ */", injury), ("/* __ROTATION_MODULE__ */", rotation), ("/* __CLOUT_MODULE__ */", clout), ("/* __ROUTINE_MODULE__ */", routine), ("/* __TRAIT_MODULE__ */", trait), ("/* __QUEST_MODULE__ */", quest), ("/* __AUTO_MODULE__ */", auto), ("/* __NODES_MODULE__ */", nodes), ("/* __CUP_MODULE__ */", cup), ("/* __SAVE_MODULE__ */", save), ("/* __TRYOUT_MODULE__ */", tryout), ("/* __PRESS_MODULE__ */", press), ("/* __AUDIO_MODULE__ */", audio)):
+for ph, mod in (("/* __TEAM_MODULE__ */", team), ("/* __RIVALS_MODULE__ */", rivals), ("/* __RANKICON_MODULE__ */", rankicon), ("/* __AVATAR_MODULE__ */", avatar), ("/* __SHOP_MODULE__ */", shop), ("/* __ORIGINS_MODULE__ */", origins), ("/* __ACHIEVE_MODULE__ */", achieve), ("/* __SQUAD_MODULE__ */", squad), ("/* __RANDOM_MODULE__ */", random_), ("/* __FORM_MODULE__ */", form), ("/* __POSTMATCH_MODULE__ */", postm), ("/* __BOXSCORE_MODULE__ */", boxscore), ("/* __INJURY_MODULE__ */", injury), ("/* __ROTATION_MODULE__ */", rotation), ("/* __CLOUT_MODULE__ */", clout), ("/* __ROUTINE_MODULE__ */", routine), ("/* __TRAIT_MODULE__ */", trait), ("/* __QUEST_MODULE__ */", quest), ("/* __AUTO_MODULE__ */", auto), ("/* __NODES_MODULE__ */", nodes), ("/* __CUP_MODULE__ */", cup), ("/* __SAVE_MODULE__ */", save), ("/* __TRYOUT_MODULE__ */", tryout), ("/* __PRESS_MODULE__ */", press), ("/* __AUDIO_MODULE__ */", audio)):
     assert ph in out, ph
     out = out.replace(ph, mod)
 

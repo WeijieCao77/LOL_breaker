@@ -415,7 +415,8 @@ function scoutCard(){
         <div class="track"><div class="fill" style="width:${clamp(perf*2.5+25,0,100)}%;background:${tier[1]}"></div></div>
         <div class="vn mono"><b>${perf.toFixed(0)}</b></div></div>
     </div>
-    <p class="note">本赛季正赛样本 <b>${n}</b> 个系列赛${n?`，场均评分 <b>${avgR.toFixed(2)}</b>（置信度 ${conf}%）`:"——还没有能拿去谈的数据"}。<br>
+    <p class="note">本赛季正赛样本 <b>${n}</b> 个系列赛${n?`，场均评分 <b>${avgR.toFixed(2)}</b>（置信度 ${conf}%）`:"——还没有能拿去谈的数据"}${
+      S.carrySplit?`；本赛段<b>院长局 ${S.carrySplit} 次</b>——输球但你全队最高，球探会翻这些录像`:""}。<br>
       <span style="color:var(--ink-3)">教练组看的是样本：打得少，评分再高也只是「有潜力」；样本够了，数字才变成筹码。
       看台上被记下的关注会在注册窗兑现成问询。</span></p></div>`;
 }

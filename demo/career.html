@@ -857,6 +857,16 @@ button:disabled .apc{opacity:.5}
 /* ---- 复盘里的长项 ---- */
 .review .rv-i.good .rq{color:var(--cyan)}
 
+/* ---- 赛后全员数据表 ---- */
+.box{margin-top:14px;border:1px solid var(--line);padding:12px 14px}
+.box .rv-h{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:11.5px;letter-spacing:.08em;color:var(--gold);margin-bottom:8px}
+.bxt td,.bxt th{padding:5px 8px;font-size:12.5px;white-space:nowrap}
+.bxt tr.me td{background:rgba(201,169,97,.08)}
+.bxt tr.bxsep td{color:var(--ink-3);font-size:11px;letter-spacing:.08em;padding-top:10px;border-bottom:1px solid var(--line);white-space:normal}
+.bxbar{display:inline-block;width:56px;height:6px;background:rgba(30,74,99,.5);vertical-align:middle;margin-right:6px;position:relative;overflow:hidden}
+.bxbar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--gold-dim),var(--gold))}
+@media(max-width:560px){.bxbar{width:36px}.bxt td,.bxt th{padding:4px 5px;font-size:11.5px}}
+
 </style>
 
 </head>
@@ -990,6 +1000,12 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260904h", at:"2026-09-02", items:[
+    "赛后拆解新增「全员数据」：双方十个人的 KDA、补刀、伤害占比、评分一张表，谁是 MVP、谁是这场的洞一眼看出；比赛档案回放也带这张表",
+    "数据怎么来的写在明面上：各人数值 × 状态 × 胜负 × 你的临场选择——你选对了却输，多出来的那份「输」记在队友头上；你砸了却赢，功劳分给队友",
+    "球探改看数据：本赛段场均评分进表现分（1.2 → +5，0.8 → −5），队伍战绩的权重减半；「院长」场次额外加分——弱队里的强个人一样会有俱乐部来问",
+    "新增「逆境」成就：院长（输球但你全队最高、队友集体拉胯）、院长，救不了（五次）、一人成军（队友全员不及格你硬赢）"
+  ]},
   {v:"v20260904g", at:"2026-09-02", items:[
     "修复（严重）：新开的局第一次「继续上次」会被当成旧版本存档整体 +15 并重排世界——新档现在自带标尺版本；读档时再加一道保险：世界已经在新标尺上的档一律不迁移",
     "正式地址只有 www.poxiao.lol：裸域名和 Railway 域名会自动跳转过去；老域名上的存档会在你第一次打开 www 时自动接过来（谁新用谁），不用手动导出导入",
@@ -2635,6 +2651,7 @@ function myRoster(){ return myTeam().players; }
 
 function startSeason(first,split){
   S.split=(split===undefined)?0:split;
+  S.carrySplit=0;      // 「院长」次数按赛段算（球探看本赛段）
   S.benchedPO=false;   // 新赛段重置「替补看完季后赛」标记
   const HL=S.homeLeague||"LPL";
   const opp=S.world[HL].filter(t=>t.name!==S.team).map(t=>t.name);
@@ -3420,21 +3437,35 @@ const POS_STATLINE={top:[3.1,2.7,4.9,8.3,0.24],jng:[2.8,2.5,7.6,6.2,0.18],
   mid:[4.1,2.5,5.2,8.8,0.28],bot:[5.0,2.3,4.4,9.4,0.30],sup:[1.0,2.9,9.8,1.6,0.10]};
 function synthSeriesStats(m,won,myPw,opPw){
   if(!S.career) return;
-  const P=POS_STATLINE[S.pos]||POS_STATLINE.mid;
   const games=m.sc[0]+m.sc[1];
-  // 表现系数：战力差 + 胜负 + 节点失手拖累
-  const perf=clamp(1+ (myPw-opPw)*0.022 + (won?0.14:-0.10) - (m.nodeFails||0)*0.05 + (rnd()-0.5)*0.24, 0.5, 1.65);
-  const k=q1(P[0]*perf), d=q1(P[1]*(2-perf)*0.85+0.6), a=q1(P[2]*(0.8+perf*0.25));
-  const cs=q1(P[3]*(0.9+perf*0.12)), dmg=Math.round(P[4]*100*(0.82+perf*0.2));
-  const kda=q1((k+a)/Math.max(1,d));
-  const rating=q1(clamp(0.35+perf*0.55+(kda-2.6)*0.045,0.2,2.0));
+  /* 全员数据（boxscore.js）：双方十个人一起合成，你的那一行从里面取——
+     这样你的数据、队友的数据、球探看的数据是同一份。没有模块时退回旧算法。 */
+  const box=(typeof synthBoxScore==="function")?synthBoxScore(m,won):null;
+  let k,d,a,cs,dmg,rating;
+  if(box){ const me=box.mine.find(x=>x.me)||box.mine[0]; k=me.k;d=me.d;a=me.a;cs=me.cs;dmg=me.dmg;rating=me.rating; }
+  else{
+    const P=POS_STATLINE[S.pos]||POS_STATLINE.mid;
+    const perf=clamp(1+ (myPw-opPw)*0.022 + (won?0.14:-0.10) - (m.nodeFails||0)*0.05 + (rnd()-0.5)*0.24, 0.5, 1.65);
+    k=q1(P[0]*perf); d=q1(P[1]*(2-perf)*0.85+0.6); a=q1(P[2]*(0.8+perf*0.25));
+    cs=q1(P[3]*(0.9+perf*0.12)); dmg=Math.round(P[4]*100*(0.82+perf*0.2));
+    const kda=q1((k+a)/Math.max(1,d));
+    rating=q1(clamp(0.35+perf*0.55+(kda-2.6)*0.045,0.2,2.0));
+  }
   const tag=S.intl?(S.intl.type==="msi"?"MSI":"世界赛"):S.playoff?"季后赛":((S.homeLeague||"LPL")==="LDL"?"LDL":"联赛");
   S.archive=(S.archive||[]);
-  S.archive.push({si:S.si,w:S.week,tag,opp:m.oppName,sc:m.sc.slice(),win:won,g:games,k,d,a,cs,dmg,rating});
+  S.archive.push({si:S.si,sp:S.split||0,w:S.week,tag,opp:m.oppName,sc:m.sc.slice(),win:won,g:games,k,d,a,cs,dmg,rating,box:box||undefined});
   if(S.archive.length>60) S.archive.shift();
+  // 全员表只留最近 20 场，存档别撑大
+  let keepBox=0;
+  for(let i=S.archive.length-1;i>=0;i--) if(S.archive[i].box&&++keepBox>20) delete S.archive[i].box;
   S.stats=S.stats||{n:0,k:0,d:0,a:0,r:0};
   S.stats.n++; S.stats.k+=k; S.stats.d+=d; S.stats.a+=a; S.stats.r+=rating;
-  m.myline={k,d,a,cs,dmg,rating};
+  m.myline={k,d,a,cs,dmg,rating}; m.box=box;
+  if(box&&box.carry){
+    S.carries=(S.carries||0)+1; S.carrySplit=(S.carrySplit||0)+1;
+    pushEvent(`<b>院长局</b>：输给 ${m.oppName}，但你评分 <b>${rating.toFixed(2)}</b> 全队最高，队友场均 ${box.mateAvg.toFixed(2)}${box.worst?`（${box.worst} ${box.worstR.toFixed(2)}）`:""}。<span style="color:var(--ink-3)">这场输球不算在你头上——球探看数据，不只看比分。</span>`,"info","数据");
+  }
+  if(box&&box.soloWin) S.soloWins=(S.soloWins||0)+1;
   S.log.push(`<div><span class="hi">个人数据</span> ${k}/${d}/${a} · 分均补刀 ${cs} · 伤害 ${dmg}% · 评分 <b>${rating.toFixed(2)}</b></div>`);
 }
 /* 我的页 · 比赛档案卡：生涯场均 + 最近八个系列赛 */
@@ -3518,8 +3549,12 @@ function endMatch(){
   if(won&&typeof questWin==="function") questWin();      // 事件留下的「赢 N 场」待办
   if(!won&&myPw-opPw>4) addTrustAll(-3);      // 该赢没赢，更衣室有意见
   syncTrust();
+  // 每个系列赛产出真实的个人数据进档案：教练组、周报、试训看的都是这些数字。
+  // 成就要用到「院长」判定，所以先合成再建上下文。
+  if(typeof synthSeriesStats==="function") synthSeriesStats(m,won,myPw,opPw);
   // 成就上下文
   const ctx={won, bo5:m.need>=3, myScore:m.sc[0], oppScore:m.sc[1],
+    carry:!!(m.box&&m.box.carry), soloWin:!!(m.box&&m.box.soloWin),
     gap:+(myPw-opPw).toFixed(2), intl:!!S.intl,
     oppLeague:(typeof leagueOf==="function")?leagueOf(m.oppName):"LPL",
     // 点名类成就（对位 Faker 等）要看真实名单，不能拿联赛当替身——
@@ -3534,8 +3569,6 @@ function endMatch(){
   if(won&&ctx.intl&&ctx.oppLeague==="LCK") checkAch("beatlck",ctx);
 
   // ---- 世界的回声（2026-08-31 竞品拆解移植）----
-  // 每个系列赛产出真实的个人数据进档案：教练组、周报、试训看的都是这些数字
-  if(typeof synthSeriesStats==="function") synthSeriesStats(m,won,myPw,opPw);
   // 宿敌账本：赢下有明星选手的队要被记住
   if(typeof noteRivalBeat==="function") noteRivalBeat(m.opp.players,won);
   // 心态气压：输球攒 Tilt，赢球泄压。0:2 被横扫压力翻倍。
@@ -6761,6 +6794,14 @@ const ACH_MORE=[
   {id:"grandmaster", n:"国服第一", d:"排位打到国服第一（天梯读数 99 以上）。", tag:"成长",
    on:"rank", cond:()=>S.pre&&S.pre.rank>=99, r:{money:300,fame:110}},
 
+  /* ---------- 逆境 · 院长（2026-09-02 玩家点名：弱队里数值突出却赢不了，是队友的问题） ---------- */
+  {id:"carry1", n:"院长", d:"输了球，但全场数据最亮的是你：评分全队最高，队友集体拉胯。", tag:"逆境",
+   on:"match", cond:(c)=>!!(c&&c.carry), r:{fame:22,fat:-10}},
+  {id:"carry5", n:"院长，救不了", d:"五场输球都是你在扛。这些数据球探都记着。", tag:"逆境",
+   on:"match", cond:()=>(S.carries||0)>=5, r:{fame:60,money:80}},
+  {id:"solowin", n:"一人成军", d:"队友场均评分不到 0.9、没一个及格，你硬把比赛赢了下来。", tag:"逆境",
+   on:"win", cond:(c)=>!!(c&&c.soloWin), r:{fame:40,trust:10}},
+
   /* ---------- 宿敌（2026-08-31 竞品拆解移植：交手账本读的是真实名单） ---------- */
   {id:"star1", n:"第一滴血", d:"第一次在正式比赛里赢下带明星选手的队伍。", tag:"宿敌",
    on:"match", cond:()=>typeof beatCount==="function"&&Object.keys(S.beatStars||{}).length>=1, r:{fame:30}},
@@ -8139,6 +8180,7 @@ function postMatchCard(){
       ? "账面上你是劣势——这场是打出来的，不是数值给的。节点决策和运气都站在了你这边。"
       : "账面上你占优，还是输了。数值只决定每回合的胜率，不保证结果——看看状态、体能，剩下的是运气。"}</div>`:""}
     ${pmRowsHtml(rows)}
+    ${typeof boxScoreHtml==="function"?boxScoreHtml(m.box,won,m.oppName):""}
     ${pmNodesHtml(m.nodeLog,m.luck)}
     ${pmAdviceHtml(reviewAdvice(m),won,rows)}
     <p class="note">这些就是模拟器判胜负时用的数，不是事后编的解释。按影响从大到小排。<br>
@@ -8160,11 +8202,118 @@ function pmReplayCard(){
       <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>
     </div>
     ${pmRowsHtml(pm.rows)}
+    ${(typeof boxScoreHtml==="function"&&x.box)?boxScoreHtml(x.box,won,x.opp):""}
     ${pmNodesHtml(pm.nodes,pm.luck)}
     ${pmAdviceHtml(pm.adv,won,pm.rows)}
     <div class="row" style="justify-content:center;margin-top:10px">
       <button class="btn" id="pmclose">关闭</button></div>
   </div></div>`;
+}
+
+/* ================= 全员数据（Box Score） =================
+
+   玩家点名（2026-09-02）：在弱队里数值很突出却赢不了，「这是队友的问题」——
+   可赛后只有你一个人的 KDA，谁在坑看不出来；球探也只看战绩，弱队里的强个人
+   永远没人来问。
+
+   现在每个系列赛为双方十个人各合成一行数据：K/D/A、分均补刀、伤害占比、评分。
+   合成的骨架：
+   · 每个人的数值（操作/运营/心态/体质加权）× 当赛段状态，相对全场十人均值
+   · 队伍胜负：赢的一边整体抬一档，输的一边压一档
+   · 你的临场选择：节点打成了给你加、砸了给你扣——数据要对得上你做的决定
+   · 队友背锅：你的节点净成功却输了，多出来的那份「输」记在队友头上；
+     反过来你节点砸了却赢了，功劳分给队友
+   · 位置画像：辅助的 K 低 A 高，AD 的伤害占比天然最高，等等
+   伤害占比在队内归一到 100%。评分口径和原来一样（0.2–2.0，1.0 是及格线）。
+
+   这些数据三处用：赛后拆解的「全员数据」表、比赛档案回放、球探评分
+   （proPerf 看你本赛段的场均评分和「院长」次数，不再只看队伍战绩）。 */
+
+const BOX_POS_ORDER=["top","jng","mid","bot","sup"];
+function boxAbility(p){
+  const r=p.r||p;
+  const v=(r.操作||50)*0.34+(r.运营||50)*0.28+(r.心态||50)*0.14+(r.体质||50)*0.10;
+  const fm=(typeof formMul==="function")?(p.me?myFormMul():formMul(p)):1;
+  return v*fm;
+}
+function synthBoxScore(m,won){
+  const mine=myRoster(), opp=(m.opp&&m.opp.players)||[];
+  if(!mine.length||!opp.length) return null;
+  const all=mine.concat(opp);
+  const mean=avg(all.map(boxAbility));
+  const games=m.sc[0]+m.sc[1];
+  const okN=(m.nodeLog||[]).filter(n=>n.ok).length, failN=(m.nodeFails||0);
+  // 队友背锅 / 分功：看你临场选择的净结果和比赛结果是否相符
+  const mateShift=(!won&&okN-failN>=1)?-0.07:(won&&failN-okN>=1)?0.05:0;
+  const line=(p,side)=>{
+    const T=(typeof POS_STATLINE!=="undefined"?POS_STATLINE[p.pos]:null)||[4.1,2.5,5.2,8.8,0.28];
+    let perf=1+(boxAbility(p)-mean)*0.04+(side==="mine"?(won?0.12:-0.10):(won?-0.10:0.12));
+    if(p.me) perf+=okN*0.05-failN*0.05;
+    else if(side==="mine") perf+=mateShift;
+    perf+=(rnd()-0.5)*0.28;
+    perf=clamp(perf,0.45,1.7);
+    const k=q1(T[0]*perf), d=q1(T[1]*(2-perf)*0.85+0.6), a=q1(T[2]*(0.8+perf*0.25));
+    const cs=q1(T[3]*(0.9+perf*0.12));
+    const kda=q1((k+a)/Math.max(1,d));
+    const rating=Math.round(clamp(0.35+perf*0.55+(kda-2.6)*0.045,0.2,2.0)*100)/100;   // 两位小数：十个人并排才分得开
+    return {id:p.id,pos:p.pos,me:!!p.me,k,d,a,cs,kda,rating,_w:T[4]*(0.8+perf*0.25)};
+  };
+  const sortPos=(x,y)=>BOX_POS_ORDER.indexOf(x.pos)-BOX_POS_ORDER.indexOf(y.pos);
+  const M=mine.map(p=>line(p,"mine")).sort(sortPos), O=opp.map(p=>line(p,"opp")).sort(sortPos);
+  [M,O].forEach(side=>{ const tot=side.reduce((s,x)=>s+x._w,0)||1; side.forEach(x=>{ x.dmg=Math.round(x._w/tot*100); delete x._w; }); });
+  const me=M.find(x=>x.me)||M[0];
+  const mates=M.filter(x=>!x.me);
+  const mateAvg=mates.length?avg(mates.map(x=>x.rating)):me.rating;
+  const worst=mates.length?mates.reduce((a,b)=>a.rating<=b.rating?a:b):null;
+  const best=M.concat(O).reduce((a,b)=>a.rating>=b.rating?a:b);
+  // 院长：输了，但你是全队最亮的那个，而且队友集体拉胯
+  const carry=!won&&me.rating>=1.15&&mates.every(x=>me.rating>=x.rating+0.25)&&mateAvg<0.95;
+  // 一人成军：赢了，队友全员不及格
+  const soloWin=won&&me.rating>=1.25&&mates.length>0&&mateAvg<0.9&&mates.every(x=>x.rating<1.0);
+  return {games,mine:M,opp:O,mateAvg:q1(mateAvg),worst:worst?worst.id:null,worstR:worst?worst.rating:null,
+          mvp:best.id,carry,soloWin,okN,failN};
+}
+
+/* ---------- 赛后 / 档案回放共用的表 ---------- */
+function boxScoreHtml(box,won,oppName){
+  if(!box||!box.mine) return "";
+  const row=(x,side)=>{
+    const tag=x.id===box.mvp?`<span class="tag g">MVP</span>`:(side==="mine"&&x.id===box.worst&&x.rating<0.8)?`<span class="tag l">洞</span>`:"";
+    const rc=x.rating>=1.1?"var(--cyan)":x.rating<0.85?"var(--red)":"var(--ink)";
+    return `<tr class="${x.me?'me':''}">
+      <td class="n" style="color:var(--ink-3)">${POSN[x.pos]||x.pos}</td>
+      <td>${x.me?`<b style="color:var(--gold-hi)">${x.id}</b>`:x.id}${tag}</td>
+      <td class="n mono">${x.k}/${x.d}/${x.a}</td>
+      <td class="n mono">${x.cs}</td>
+      <td><span class="bxbar"><i style="width:${x.dmg}%"></i></span><span class="mono">${x.dmg}%</span></td>
+      <td class="n mono" style="color:${rc};font-weight:700">${x.rating.toFixed(2)}</td></tr>`;
+  };
+  const me=box.mine.find(x=>x.me);
+  let verdict="";
+  if(me){
+    const mates=box.mine.filter(x=>!x.me);
+    if(box.carry) verdict=`你评分 <b>${me.rating.toFixed(2)}</b> 全队最高，队友场均只有 <b>${box.mateAvg.toFixed(2)}</b>${box.worst?`，<b>${box.worst}</b>（${box.worstR.toFixed(2)}）是这场的洞`:""}。<b>这场输球不算在你头上</b>——数据球探看得到。`;
+    else if(box.soloWin) verdict=`队友没有一个及格，你 <b>${me.rating.toFixed(2)}</b> 硬把比赛拿下来了。`;
+    else if(!won&&me.rating<0.85) verdict=`你这场 <b>${me.rating.toFixed(2)}</b>，队里${box.worst&&box.worst!==me.id&&box.worstR<me.rating?`还有更差的（${box.worst} ${box.worstR.toFixed(2)}）`:"没人比你更差"}。输球有你的一份。`;
+    else if(!won&&box.okN>box.failN&&box.mateAvg<0.95) verdict=`你临场 ${box.okN} 成 ${box.failN} 败，选择没错；队友场均 <b>${box.mateAvg.toFixed(2)}</b>，这场是他们丢的。`;
+    else if(won&&me.id===box.mvp) verdict=`全场 MVP 是你。`;
+    else if(won&&mates.length&&box.mvp&&mates.some(x=>x.id===box.mvp)) verdict=`这场赢在 <b>${box.mvp}</b>，你是跟着赢的。`;
+  }
+  return `<div class="box"><div class="rv-h">全员数据 · BO${box.games}${oppName?` · vs ${oppName}`:""}</div>
+    <div class="tw"><table class="bxt"><thead><tr><th class="n">位置</th><th>选手</th><th class="n">KDA</th><th class="n">补刀</th><th>伤害占比</th><th class="n">评分</th></tr></thead>
+    <tbody>${box.mine.map(x=>row(x,"mine")).join("")}
+    <tr class="bxsep"><td colspan="6">${oppName||"对手"}</td></tr>
+    ${box.opp.map(x=>row(x,"opp")).join("")}</tbody></table></div>
+    ${verdict?`<p class="note" style="margin:8px 0 0">${verdict}</p>`:""}
+    <p class="note" style="margin:6px 0 0;color:var(--ink-3)">数据按各人数值、状态、胜负和你的临场选择合成：你选对了却输，多出来的那份「输」记在队友头上。评分 1.0 及格，1.1 以上亮眼，0.85 以下拖后腿。</p>
+  </div>`;
+}
+
+/* 本赛段的场均评分与院长次数——球探看的是这个，不只看队伍战绩 */
+function splitRating(){
+  const rows=(S.archive||[]).filter(x=>x.si===S.si&&x.sp===(S.split||0)&&(x.tag==="联赛"||x.tag==="LDL"));
+  if(!rows.length) return null;
+  return avg(rows.map(x=>x.rating));
 }
 
 
@@ -11603,7 +11752,13 @@ function proPerf(){
   // 一辈子困在弱队拿头撞 88 分的明星队。3.0 是把梯子接回原高度。
   let v = (me - base) * 3.0;                       // 个人水平相对联赛
   const g = S.record ? (S.record.w + S.record.l) : 0;
-  if(g >= 3) v += ((S.record.w / g) - 0.5) * 20;   // 这个赛段的战绩
+  /* 玩家点名（2026-09-02）：弱队里数值突出却赢不了，不该没人来问。
+     队伍战绩的权重减半，个人场均评分（全员数据合成的那份）进来，
+     「院长」场次再加一份——弱队里的强个人，数据反而更显眼。 */
+  if(g >= 3) v += ((S.record.w / g) - 0.5) * 20 * 0.55;   // 这个赛段的战绩
+  const sr = (typeof splitRating === "function") ? splitRating() : null;
+  if(sr !== null) v += (sr - 1.0) * 26;                    // 场均 1.2 → +5.2；0.8 → −5.2
+  v += Math.min(S.carrySplit || 0, 4) * 1.5;               // 院长局：球探会把录像翻出来看
   v += ((S.career.titles || []).length) * 4;
   v += (((S.career.msi || 0) + (S.career.worlds || 0))) * 9;
   if(typeof myForm === "function") v += (myForm() - 52) * 0.18;
@@ -12844,7 +12999,8 @@ function scoutCard(){
         <div class="track"><div class="fill" style="width:${clamp(perf*2.5+25,0,100)}%;background:${tier[1]}"></div></div>
         <div class="vn mono"><b>${perf.toFixed(0)}</b></div></div>
     </div>
-    <p class="note">本赛季正赛样本 <b>${n}</b> 个系列赛${n?`，场均评分 <b>${avgR.toFixed(2)}</b>（置信度 ${conf}%）`:"——还没有能拿去谈的数据"}。<br>
+    <p class="note">本赛季正赛样本 <b>${n}</b> 个系列赛${n?`，场均评分 <b>${avgR.toFixed(2)}</b>（置信度 ${conf}%）`:"——还没有能拿去谈的数据"}${
+      S.carrySplit?`；本赛段<b>院长局 ${S.carrySplit} 次</b>——输球但你全队最高，球探会翻这些录像`:""}。<br>
       <span style="color:var(--ink-3)">教练组看的是样本：打得少，评分再高也只是「有潜力」；样本够了，数字才变成筹码。
       看台上被记下的关注会在注册窗兑现成问询。</span></p></div>`;
 }
