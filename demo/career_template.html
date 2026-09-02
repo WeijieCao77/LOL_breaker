@@ -283,6 +283,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260904c", at:"2026-09-04", items:[
+    "替补席随队夺冠也算冠军（玩家点名）：生涯一览、赛季结算、结局页和顶栏冠军数都记，标「随队」；成就、夺冠突破和转会保底仍只认你亲手打下的"
+  ]},
   {v:"v20260904b", at:"2026-09-04", items:[
     "随队/替补也看得到赛程：「本周」页多了一条赛程带，「世界」页有整张赛程表（对手实力、战绩、结果、你上没上）；随队 MSI/世界赛、替补看季后赛的间歇周有按周揭晓的日程卡",
     "进俱乐部前后都看得到门槛：「转会」栏新增「俱乐部门槛」表——各档的实力期望、段位底线，和你现在的综合、段位并排；主动接触/毛遂自荐按钮上直接写期望值；「我的」属性卡标题带综合实力",
@@ -3190,9 +3193,10 @@ function endSeason(result,seed){
     /* 球队夺冠、你全程替补：荣誉是球队的（现实里替补也有戒指，
        但这游戏的生涯表只记你亲手打下的——五人哲学的另一面）。 */
     const sp=SPLITS[S.split||0];
+    if(typeof addRingTitle==="function") addRingTitle(`${SEASONS[S.si].tag} ${S.homeLeague||"LPL"}${sp}`);
     pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${sp}冠军。</b>
-      你在替补席见证了整个过程——<span style="color:var(--ink-3)">戒指有你一枚，生涯表上没有这一行。
-      想让下一座奖杯写你的名字，先把首发抢下来。</span>`,"big","联赛冠军");
+      你在替补席见证了整个过程——<span style="color:var(--ink-3)">戒指有你一枚，生涯表记为<b>随队冠军</b>；
+      想让奖杯写上你的名字、算进成就和转会筹码，先把首发抢下来。</span>`,"big","联赛冠军");
   }
   else if(result==="champion"){
     const sp=SPLITS[S.split||0];
@@ -3264,7 +3268,7 @@ function viewOffseason(){
     <h2>${sea.tag} ${sea.y} 赛季结算</h2>
     <h3>${S.team} — ${label}</h3>
     <p class="note">你的战绩 ${ls.rec.w}胜 ${ls.rec.l}负 · 生涯小分 ${S.career.w}−${S.career.l}
-      ${S.career.titles.length?` · 已夺冠 ${S.career.titles.join("、")}`:""}</p>
+      ${(typeof titleCount==="function"?titleCount():S.career.titles.length)?` · 已夺冠 ${typeof titlesText==="function"?titlesText():S.career.titles.join("、")}`:""}</p>
     <div class="attrs" style="margin-top:16px">
       ${ls.grow.map(({d,g})=>{const c=capOf(d),v=S.attrs[d];
         return `<div class="at"><div class="lb">${d}</div>
@@ -3547,7 +3551,7 @@ function viewEnd(){
     <p>${e.d}</p>
     <p class="note">${meName()} · ${POSN[S.pos]} · ${S.age} 岁 · 生涯小分 ${S.career.w}−${S.career.l}${
       (S.career.w+S.career.l)<18?'<span class="tag l">出场极少</span>':''} ·
-      最佳常规赛排名 第 ${S.career.best===99?"—":S.career.best} 名${S.career.titles.length?` · 冠军 ${S.career.titles.join("、")}`:""}</p>
+      最佳常规赛排名 第 ${S.career.best===99?"—":S.career.best} 名${(typeof titleCount==="function"?titleCount():S.career.titles.length)?` · 冠军 ${typeof titlesText==="function"?titlesText():S.career.titles.join("、")}`:""}</p>
     <div class="attrs" style="margin-top:16px">${DIMS.map(d=>{
       const c=capOf(d),v=S.attrs[d],b=ORIGIN[S.origin].base[d];
       return `<div class="at"><div class="lb">${d}</div>
@@ -4024,7 +4028,7 @@ function hud(){
       <div class="v">${nowPhase().tag} ${nowPhase().phase} <small>${nowPhase().detail}</small></div></div>
     <div><div class="k">战队</div><div class="v">${S.team}</div></div>
     <div><div class="k">本季</div><div class="v mono">${S.record.w}−${S.record.l}</div></div>
-    <div><div class="k">冠军</div><div class="v mono">${S.career.titles.length}</div></div>
+    <div title="${(typeof ringTitles==="function"&&ringTitles().length)?`其中 ${ringTitles().length} 座是替补席随队`:""}"><div class="k">冠军</div><div class="v mono">${typeof titleCount==="function"?titleCount():S.career.titles.length}</div></div>
     <div><div class="k">段位</div><div class="v">${
       (S.pre&&S.pre.rank!==undefined)?rankBadge(S.pre.rank,26):"—"}</div></div>
     <div class="hud-fan"><div class="k">粉丝</div><div class="v" style="font-size:13px">${fanTier()}<small class="mono"> ${fansText()}</small></div>${fanNextNote()}</div>

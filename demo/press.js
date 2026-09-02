@@ -166,7 +166,9 @@ function careerCard(){
     <p class="note" style="margin:0 0 10px">${e.d}</p>`:""}
     <div class="tw"><table><tbody>
       <tr><td>生涯战绩</td><td class="n">${S.career.w}−${S.career.l}${st.n?` · 场均评分 ${(st.r/st.n).toFixed(2)}`:""}</td></tr>
-      <tr><td>冠军</td><td>${titles.length?titles.join("、"):"还没有"}</td></tr>
+      <tr><td>冠军</td><td>${(typeof titleCount==="function"?titleCount():titles.length)
+        ?`${typeof titlesText==="function"?titlesText():titles.join("、")}${(typeof ringTitles==="function"&&ringTitles().length)?`<br><span style="color:var(--ink-3);font-size:11.5px">「随队」是球队夺冠时你在替补席——戒指是你的；成就、突破和转会筹码只认你亲手打的。</span>`:""}`
+        :"还没有"}</td></tr>
       <tr><td>转会轨迹</td><td>${(S.txLog&&S.txLog.length)?S.txLog.length+" 站":"一队待到底"}</td></tr>
       <tr><td>剩下的时间</td><td class="n">${left>0?left+" 个赛季":"这是最后一年"} · ${S.age} 岁</td></tr>
     </tbody></table></div>

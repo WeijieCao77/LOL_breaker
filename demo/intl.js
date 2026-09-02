@@ -454,8 +454,9 @@ function benchedIntl(type,playerResult){
     : st.four.includes(S.team)?"四强"
     : st.eight.includes(S.team)?"八强":"小组赛/瑞士轮";
   const bench=S.understudy?S.understudy.id:"首发";
+  if(champUs&&typeof addRingTitle==="function") addRingTitle(`${F.tag} ${name}`);
   const ev=champUs
-    ? {text:`${name}落幕，<b>${S.team} 夺冠</b>——你在替补席见证了全程。<span style="color:var(--ink-3)">戒指有你一枚，生涯表上没有这一行。把首发抢下来，下一座才是你的。</span>`,tone:"big",tag:name}
+    ? {text:`${name}落幕，<b>${S.team} 夺冠</b>——你在替补席见证了全程。<span style="color:var(--ink-3)">戒指有你一枚，生涯表记为<b>随队冠军</b>；想让它算进成就和转会筹码，把首发抢下来。</span>`,tone:"big",tag:name}
     : intlChampEvent(name,st.champ);
   if(type==="msi"){
     enterBreak("summer",MID_WEEKS,"季中间歇 · 随队 MSI",

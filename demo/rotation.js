@@ -331,3 +331,15 @@ function mateInjuryNote(){
   const I=S.mateInjury; if(!I) return "";
   return `<p class="note" style="color:var(--red);margin-top:6px"><b>${I.id}</b>（${POSN[I.pos]||I.pos}）${I.n}，还要 <b>${I.left} 周</b>——这段时间他那个位置的战力打折扣。</p>`;
 }
+
+/* ---------- 六、随队冠军 ----------
+   玩家点名（2026-09-02）：「我跟着队伍在替补席混了一个冠军，这个也算冠军」。
+   记成单独一类：生涯一览、结算、结局、顶栏都算进去并标「替补席随队」；
+   成就、夺冠突破、转会保底仍只认亲手打下的——那些是关于你表现的判定。 */
+function addRingTitle(t){ if(!S.career) return; S.career.ringTitles=(S.career.ringTitles||[]).concat([t]); }
+function ringTitles(){ return (S.career&&S.career.ringTitles)||[]; }
+function titleCount(){ return ((S.career&&S.career.titles)||[]).length+ringTitles().length; }
+function titlesText(){
+  const own=(S.career&&S.career.titles)||[], ring=ringTitles();
+  return own.concat(ring.map(t=>`${t}<span class="tag" title="球队夺冠时你在替补席">随队</span>`)).join("、");
+}
