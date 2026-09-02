@@ -984,6 +984,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260904f", at:"2026-09-04", items:[
+    "推进按钮写清楚是哪个阶段的第几周（玩家点名：「进入第一周/第二周」分不清）：间歇/休赛期是「进入下一周 → 休赛期 第 2/3 周」，职业前是「进入下一周 → 赛季前 第 x/20 周」，比赛按钮是「打 春季赛第 3/7 周 · vs 对手」"
+  ]},
   {v:"v20260904e", at:"2026-09-04", items:[
     "修复：体质突破「休息 12/12 却没动静」——原来拖到赛段结算才发，结算时还暗查本赛段个人出场满 7 场（替补席不算，坐过板凳的赛段永远兑不了）。现在攒满当场兑现；还没顶到瓶颈就先攒着并告诉你，顶到那一刻兑现"
   ]},
@@ -3135,7 +3138,7 @@ function viewSeason(){
     ${squadActs()}
     <div class="row">
       <button class="btn" id="play" ${S.ap>0?'disabled':''}>
-        ${S.ap>0?`还剩 ${S.ap} 个行动点`:(benched?`替补席观战第 ${S.week} 周 →`:`打第 ${S.week} 周 · vs ${oppName} →`)}</button>
+        ${S.ap>0?`还剩 ${S.ap} 个行动点`:(benched?`替补席观战 · ${SPLITS[S.split||0]}第 ${S.week}/${WEEKS} 周 →`:`打 ${SPLITS[S.split||0]}第 ${S.week}/${WEEKS} 周 · vs ${oppName} →`)}</button>
       ${typeof quickBtn==="function"?quickBtn():""}
       <button class="btn ghost sm" id="auto">自动推进到下一件事</button>
     </div>
@@ -4223,7 +4226,7 @@ function offPanel(){
              :S.off.next==="wrap"?`世界赛落幕 · 赛季结算 →`
              :S.off.next==="intl"?`出征 ${S.pendingIntl&&S.pendingIntl.type==="msi"?"MSI":"世界赛"} →`
              :`开始 ${nx?nx.tag:"下"} 赛季 →`)
-            :`进入第 ${S.off.week+1} 周 →`)}</button>
+            :`进入下一周 → ${S.off.label||"休赛期"} 第 ${S.off.week+1}/${S.off.weeks} 周`)}</button>
       ${typeof quickBtn==="function"?quickBtn():""}</div>
   </div>`;
 }
@@ -4539,8 +4542,8 @@ function actPanelPre(){
         直接进入下一周会按弃权处理。</p>`:"";})()}
     <div class="row"><button class="btn" id="prenext" ${P.ap>0?'disabled':''}>
       ${P.ap>0?`还剩 ${P.ap} 个行动点`
-        :((typeof dueCups==="function"&&dueCups().length)?`进入第 ${P.week+1} 周（有比赛没打）→`
-                                                         :`进入第 ${P.week+1} 周 →`)}</button></div>
+        :((typeof dueCups==="function"&&dueCups().length)?`进入下一周（有比赛没打）→ 赛季前 第 ${P.week+1}/${PRE_WEEKS} 周`
+                                                         :`进入下一周 → 赛季前 第 ${P.week+1}/${PRE_WEEKS} 周`)}</button></div>
   </div>`;
 }
 function viewPre(){
