@@ -65,7 +65,8 @@ function squadBase(players){
     const w=p.me?(S.offerKind==="core"?1.45:1.18):1.0;
     // 能力 × 状态：同一个人，今年打成什么样是另一回事
     const fm=(typeof formMul==="function")?(p.me?myFormMul():formMul(p)):1;
-    s+=(r.操作*0.34+r.运营*0.28+r.心态*0.14+r.体质*0.10)*fm*w;
+    const ih=(!p.me&&typeof mateInjuryHit==="function")?mateInjuryHit(p):0;
+    s+=(r.操作*0.34+r.运营*0.28+r.心态*0.14+r.体质*0.10+ih)*fm*w;
     wt+=w;
   });
   return s/wt;
@@ -212,10 +213,11 @@ function squadCard(){
 
     <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">基础战力 · 五名选手的个人数值</h3>
     <div class="attrs">${mates.map(p=>{
-      const v=(p.r.操作*0.34+p.r.运营*0.28+p.r.心态*0.14+p.r.体质*0.10);
+      const ih=(!p.me&&typeof mateInjuryHit==="function")?mateInjuryHit(p):0;
+      const v=(p.r.操作*0.34+p.r.运营*0.28+p.r.心态*0.14+p.r.体质*0.10)+ih;
       return `<div class="at wide"><div class="lb">${POSN[p.pos]}</div>${bar(v)}
         <div class="vn mono"><b>${v.toFixed(0)}</b>${typeof avatarOf==="function"?avatarOf(p,22):""}<span class="pname">${
-          p.me?'<b style="color:var(--gold)">你</b>':p.id.slice(0,8)}</span></div></div>`;
+          p.me?'<b style="color:var(--gold)">你</b>':p.id.slice(0,8)}</span>${ih?`<span class="tag l" title="带伤/替补顶上">伤</span>`:""}</div></div>`;
     }).join("")}</div>
 
     <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">权重 · 五个人怎么变成一支队</h3>

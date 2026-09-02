@@ -122,8 +122,11 @@ const ACH_MORE=[
    // 审计修复：S.courses 是对象不是数组，原来的 includes 永远抛错
    on:"course", cond:()=>typeof COURSES!=="undefined"&&COURSES.every(c=>S.courses&&S.courses[c.k]),
    r:{money:200,fame:40}},
-  {id:"grandmaster", n:"国服第一", d:"排位打到国服前十。", tag:"经济",
-   on:"rank", cond:()=>S.pre&&S.pre.rank>=95, r:{money:300,fame:110}},
+  // 审计修复（玩家实锤：「国服前十」和「国服第一」总是一起弹）：
+  // 这条原来是从 top10 复制来的，阈值没改。天梯读数 95 是前十的门，
+  // 99 以上（统一标尺综合 81 档）才叫国服第一。
+  {id:"grandmaster", n:"国服第一", d:"排位打到国服第一（天梯读数 99 以上）。", tag:"成长",
+   on:"rank", cond:()=>S.pre&&S.pre.rank>=99, r:{money:300,fame:110}},
 
   /* ---------- 宿敌（2026-08-31 竞品拆解移植：交手账本读的是真实名单） ---------- */
   {id:"star1", n:"第一滴血", d:"第一次在正式比赛里赢下带明星选手的队伍。", tag:"宿敌",

@@ -835,6 +835,22 @@ ul.dealfx li::marker{color:var(--ink-3)}
   border-radius:3px;padding:0 4px;margin-left:5px;opacity:.9;vertical-align:1px}
 button:disabled .apc{opacity:.5}
 
+/* ---- 赛程带（本周页） ---- */
+.fixt{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0}
+.fixt .fc{font-size:11.5px;padding:4px 9px;border:1px solid var(--line);border-radius:6px;background:rgba(14,42,62,.45);color:var(--ink-2);white-space:nowrap}
+.fixt .fc b{color:var(--ink-3);font-weight:600;margin-right:2px}
+.fixt .fc em{font-style:normal;margin-left:4px;font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
+.fixt .fc i{font-style:normal;font-size:10px;color:var(--ink-3);margin-left:2px}
+.fixt .fc.w{border-color:rgba(79,190,218,.55);color:var(--cyan)}
+.fixt .fc.l{border-color:rgba(196,83,95,.55);color:var(--red)}
+.fixt .fc.now{border-color:var(--gold);color:var(--gold-hi);background:rgba(201,169,97,.14)}
+/* ---- 替补：训练赛对位挑战 ---- */
+.scrimbox{margin-top:14px;padding:12px 14px;border:1px solid var(--gold-dim);border-left:3px solid var(--gold);background:rgba(201,169,97,.06);border-radius:6px}
+.scrimbox.trial{border-color:var(--gold);background:rgba(201,169,97,.12)}
+.scrimbox .sb-h{font-size:13.5px;color:var(--ink);margin-bottom:8px}
+/* ---- 复盘里的长项 ---- */
+.review .rv-i.good .rq{color:var(--cyan)}
+
 </style>
 
 </head>
@@ -968,6 +984,14 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260904b", at:"2026-09-04", items:[
+    "随队/替补也看得到赛程：「本周」页多了一条赛程带，「世界」页有整张赛程表（对手实力、战绩、结果、你上没上）；随队 MSI/世界赛、替补看季后赛的间歇周有按周揭晓的日程卡",
+    "进俱乐部前后都看得到门槛：「转会」栏新增「俱乐部门槛」表——各档的实力期望、段位底线，和你现在的综合、段位并排；主动接触/毛遂自荐按钮上直接写期望值；「我的」属性卡标题带综合实力",
+    "替补有了自己的路——训练赛对位挑战：花 2 点和首发打三局两胜，每局你选打法，成功率看你那一维和他那一维的差距（极端加点的主场）。赢了攒轮换资本，攒到 3 教练给一场正赛试用：赢了首发就是你的，输光了回替补席再攒；训练赛战绩计入表现分，替补也能被人看见",
+    "队友也会受伤：每周每人 0.4%（老将略高），一次只倒一个、1-3 周，倒下的位置战力打折扣；倒的正好是你对位的首发，你顶上——顶上期间赢一场位置就是你的",
+    "修复：「国服第一」和「国服前十」不再一起弹——前者原是复制来的同一条件；现在天梯读数 99 以上才算国服第一，天梯读数也会显示「国服第一」",
+    "复盘也说长项：对位账里先列你压过对位的项（那是本钱，临场节点多选它），短板只点真正进战力公式的四维并写明权重；极端加点的玩家会明确看到：战力是加权和、没有短板惩罚，补不补短板看权重划不划算"
+  ]},
   {v:"v20260904a", at:"2026-09-04", items:[
     "替补不再莫名其妙打季后赛（玩家实锤：常规赛全程没抢下首发，季后赛却被安排上场、还和同位置首发同框）——教练的名单是连续的：没压过他，季后赛/MSI/世界赛就整届坐替补席，球队用真首发阵容打，你按周在场边看结果",
     "随队夺冠算球队的：戒指有你一枚，但生涯冠军表、夺冠突破、转会保送都不记——想让奖杯写你的名字，先把首发抢下来（训练赛数据压过对位，出征前教练会重新看一次）"
@@ -1089,7 +1113,7 @@ const AP_SEASON=8, AP_PRE=12, AP_OFF=8, AP_HURT=4;
    中 2 = 半天（专项训练 / 直播一开就是四小时 / 做内容 / 真歇半天 / 合练 / 复盘 / 杯赛备战）；
    重 3 = 训练赛——整个下午连打，最耗神。
    预算同步翻倍：起步强度净中性，体感是「能做的事变多、轻的真的轻」。 */
-const AP_COST={train:2,solo:1,stream:2,content:2,rest:1,scrim:3,vod:2,drill:2,duo:1,cupprep:2};   // rest=1：玩家拍板「一个行动点休息比较合理」
+const AP_COST={train:2,solo:1,stream:2,content:2,rest:1,scrim:3,vod:2,drill:2,duo:1,cupprep:2,duel:2};   // rest=1：玩家拍板「一个行动点休息比较合理」
 function apCost(k){ return AP_COST[k]||1; }
 function apTag(k){ return `<i class="apc">${apCost(k)}点</i>`; }
 function apFor(phase){
@@ -1494,6 +1518,7 @@ function powerCore(players,fatigue=0,verFav=null,team=null){
     if(p.me&&typeof gearBonus==="function"){
       v+=gearBonus("操作")*0.34+gearBonus("运营")*0.28+gearBonus("体质")*0.10+langBonus();
     }
+    if(!p.me&&typeof mateInjuryHit==="function") v+=mateInjuryHit(p);
     if(verFav&&verFav.includes(p.pos)) v+=1.5;
     // 人物特质：刺头逆风时更稳，这一下真的进战力
     if(p.me&&typeof traitMul==="function") v+=traitMul("clutch",true);
@@ -2060,7 +2085,7 @@ const DIV=["","一","二","三","四"];
 function rankFull(v){
   let i=0; RANKS.forEach((x,k)=>{ if(v>=x.at) i=k; });
   const cur=RANKS[i], next=RANKS[i+1];
-  if(!next) return cur.n;
+  if(!next) return v>=99?"国服第一":cur.n+" "+Math.round((v-cur.at)*22)+" 点";
   if(i>=3){                                   // 大师及以上按点数
     return cur.n+" "+Math.round((v-cur.at)*22)+" 点";
   }
@@ -2160,6 +2185,7 @@ function preAct(k,dim){
     }
     checkAch("rank");
     if(P.rank>=95&&!P.top10){P.top10=true;preLog(`你冲进<b>国服前 10</b>。这个位置上的人，职业队不会看不见。`,"big");}
+    if(P.rank>=99&&!P.top1){P.top1=true;preLog(`<b>国服第一。</b>这个服务器上没有人排在你前面了。`,"big");}
   } else if(k==="stream"){
     const m=S.origin==="streamer"?1.7:1.0;
     // 单纯开播涨得很慢；真正让人记住你的是段位和战绩
@@ -3016,7 +3042,7 @@ function tabContent(T){
     ${T==="shop"?(typeof economyCards==="function"?economyCards():shopCard()):""}
     ${T==="tx"?(typeof transferPage==="function"?transferPage():""):""}
     ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
-    ${T==="world"?standingsCard()+rivalCard()
+    ${T==="world"?(typeof fixtureCard==="function"?fixtureCard():"")+standingsCard()+rivalCard()
       +(typeof followUpCard==="function"?followUpCard():"")
       +newsCard()+eventsCard():""}
     ${T==="ach"?achCard():""}`;
@@ -3027,7 +3053,8 @@ function viewSeason(){
     +((S.contentPick&&typeof contentCard==="function")?contentCard():"")
     +((S.promoteDeal&&typeof promoteDealCard==="function")?promoteDealCard():"")
     +((S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():"");
-  if(T!=="act") return `${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
+  const scrimPop=(typeof scrimCard==="function")?scrimCard():"";
+  if(T!=="act") return `${champ}${scrimPop}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
     ${tabBar(TABS_SEASON)}
     ${tabContent(T)}`;
   const oppName=S.schedule[S.week-1];
@@ -3036,7 +3063,7 @@ function viewSeason(){
   const benched=isBenched();
   // 「本周」和其他标签同一套格式：标签栏在最上，内容在下。
   // 原来行动卡拼在标签栏上面，是六个标签里唯一的例外——没有理由。
-  return `${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
+  return `${champ}${scrimPop}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
   ${tabBar(TABS_SEASON)}
   ${nextMatchCard()}
   <div class="card">
@@ -3077,17 +3104,7 @@ function viewSeason(){
       ${typeof quickBtn==="function"?quickBtn():""}
       <button class="btn ghost sm" id="auto">自动推进到下一件事</button>
     </div>
-    ${benched?(()=>{
-      const him=avg(DIMS.map(d=>S.understudy.r[d])), me=avg(DIMS.map(d=>S.attrs[d]));
-      const gap=(him-2-me);
-      const acad=(S.homeLeague||"LPL")==="LDL";
-      return `<p class="note" style="color:var(--loss)">${acad
-        ? `<b>你还是青训生，没被写进 ${S.team} 的 LDL 名单。</b>
-           这个位置现在是 <b>${S.understudy.id}</b>（综合 ${him.toFixed(0)}，你 ${me.toFixed(0)}）。`
-        : `你还在替补席。首发是 <b>${S.understudy.id}</b>（综合 ${him.toFixed(0)}，你 ${me.toFixed(0)}）。`}
-        <br><b>教练看的是训练赛数据：练到压过他，才轮得到你。</b>${
-        gap>0?`还差 <b>${gap.toFixed(1)}</b> 点综合。`:`你已经够了——下周就该轮到你。`}</p>`;
-    })():""}
+    ${benched&&typeof scrimPanel==="function"?scrimPanel():""}
     ${opp?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${power(opp,0,sea.fav).toFixed(1)}）
       vs 你队 ${power(myRoster(),S.fatigue,sea.fav).toFixed(1)}</p>`:""}
   </div>
@@ -3119,8 +3136,9 @@ function teamCard(){
           t>=60?"linear-gradient(90deg,var(--cyan-dim),var(--cyan))":
           t>=35?"linear-gradient(90deg,#6B5A2A,var(--gold))":
                 "linear-gradient(90deg,#5A2228,var(--red))"}"></div></div>
-        <div class="vn mono">${typeof avatarOf==="function"?avatarOf(p,22):""}<span class="pname">${p.id.slice(0,9)}</span>${p.rookie?'<span class="tag">新</span>':""}${p.comeback?'<span class="tag g">复出</span>':""}</div>
+        <div class="vn mono">${typeof avatarOf==="function"?avatarOf(p,22):""}<span class="pname">${p.id.slice(0,9)}</span>${p.rookie?'<span class="tag">新</span>':""}${p.comeback?'<span class="tag g">复出</span>':""}${typeof mateInjuryTag==="function"?mateInjuryTag(p):""}</div>
       </div>`}).join("")}</div>
+    ${typeof mateInjuryNote==="function"?mateInjuryNote():""}
     <p class="note">这是<b>他们对你</b>的信任，撑的是全队士气。<b>${
       avgTrust()>=62?"他们服你，关键球敢交到你手上。":
       avgTrust()>=40?"还行，但也谈不上多信你。":
@@ -3171,7 +3189,9 @@ function fatigueBar(){
       ap!==undefined?`，本周还剩 <b>${ap}</b> 点`:""}。按钮上写的是该行动的体能变化与收益。</div></div>`;
 }
 function attrCard(){
-  return `<div class="card"><h2>你的属性<em>${S.age} 岁 · ${POSN[S.pos]}</em></h2>
+  return `<div class="card"><h2>你的属性<em>${S.age} 岁 · ${POSN[S.pos]}${
+      typeof tryoutSkill==="function"?` · 综合 <b>${tryoutSkill().toFixed(0)}</b>（俱乐部口径）`:""}${
+      S.pre&&typeof S.pre.rank==="number"?` · ${rankFull(S.pre.rank)}`:""}</em></h2>
     <div class="renamer">
       <span class="rn-k">ID</span>
       <input type="text" id="rename" maxlength="12" value="${escapeHtml(S.name||"")}"
@@ -3404,6 +3424,7 @@ function endMatch(){
     const st=S.standings[HL];
     if(st&&st[S.team]) st[S.team][won?"w":"l"]++;
     if(st&&st[m.oppName]) st[m.oppName][won?"l":"w"]++;
+    if(typeof fixNote==="function") fixNote(S.week,m.oppName,m.sc.slice(),won,true);
   }
   // 国际赛更耗人：赛会制连轴、长途、时差——18 对联赛周的 13。
   // 这是给「小组赛也有备战轮」配的数值面（玩家规矩：结构定死，平衡只动数值）。
@@ -3430,6 +3451,8 @@ function endMatch(){
   // 你自己的大事
   const me=S.name||"你", star=m.opp.players.filter(q=>q.pos===S.pos)[0];
   const myPw=power(myRoster(),S.fatigue,SEASONS[S.si].fav), opPw=power(m.opp.players,0,SEASONS[S.si].fav);
+  // 首发试用：赢了坐稳，输光了回替补席（rotation.js）
+  if(typeof rotationAfterMatch==="function") rotationAfterMatch(won,myPw-opPw);
   if(won&&myPw-opPw<-2){ S.comebacks=(S.comebacks||0)+1;   // 逆风翻盘计数
     if(S.comebacks===3) breakthrough("心态",3.0,"你已经在落后的局面里赢过三次。队友开始相信你不会崩。","cb3"); }
   if(won&&opPw-myPw>4)
@@ -3591,12 +3614,15 @@ function viewMatch(){
 function isBenched(){
   if(S.promoted) return false;
   const inc=S.understudy; if(!inc) { S.promoted=true; return false; }
+  // 训练赛攒够资本、或首发受伤你顶上：这周名单上是你（rotation.js）
+  if(typeof scrimTrialCheck==="function"&&scrimTrialCheck()) return false;
   const me=avg(DIMS.map(d=>S.attrs[d])), him=avg(DIMS.map(d=>inc.r[d]));
   if(me>=him-2){
     S.promoted=true;
     const t=myTeam();
-    t.players=t.players.map(q=>q===inc
+    t.players=t.players.map(q=>(q===inc||q.id===inc.id)
       ? {id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true} : q);
+    if(S.scrim){ S.scrim.trial=null; S.scrim.pendingTrial=false; }
     pushEvent((S.homeLeague||"LPL")==="LDL"
       ? `训练赛数据压过 <b>${inc.id}</b>，教练把你<b>写进了 ${S.team} 的 LDL 名单</b>。
          <b>你终于能打正式比赛了。</b>`
@@ -3619,6 +3645,7 @@ function benchWeek(){
   const w1=rnd()<p, w2=rnd()<p, won=(w1&&w2)||((w1||w2)&&rnd()<p);
   S.standings[S.homeLeague||"LPL"][S.team][won?"w":"l"]++;
   S.standings[S.homeLeague||"LPL"][on][won?"l":"w"]++;
+  if(typeof fixNote==="function") fixNote(S.week,on,won?[2,(w1&&w2)?0:1]:[(w1||w2)?1:0,2],won,false);
   addFans(-1.5);      // 不上场，热度在掉
   const acad=(S.homeLeague||"LPL")==="LDL";
   pushEvent(acad
@@ -3649,6 +3676,8 @@ function nextWeek(){
   if(typeof weeklyEcho==="function") weeklyEcho(); // 事件链/周报/商业机会的周节拍
   if(typeof injuryTick==="function") injuryTick();
   if(typeof rollInjury==="function") rollInjury("赛季中");
+  if(typeof mateInjuryTick==="function") mateInjuryTick();
+  if(typeof mateInjuryRoll==="function") mateInjuryRoll();
   if(typeof archiveWeek==="function") archiveWeek();
   if(typeof btkWeekEnd==="function") btkWeekEnd();
   if(typeof tickBuffs==='function') tickBuffs();
@@ -3696,9 +3725,10 @@ function startPlayoff(){
     S.playoff=tmp;
     const myPw=power(myRoster(),0,SEASONS[S.si].fav);   // 你不在名单里，这就是首发阵容
     let result="champion";
-    const runNews=[];
+    const runNews=[], agenda=[];
     for(let r=1;r<=3;r++){
       const on=playoffOpp(r);
+      agenda.push({w:Math.min(r,2),t:`${poRoundName(r)} · vs ${on}`});
       const op=teamPowerOf(on);
       const p=clampWinProb(1/(1+Math.exp(-(myPw-op)/SPREAD)), myPw-op);
       let w=0,l=0; while(w<3&&l<3){ rnd()<p?w++:l++; }
@@ -3713,6 +3743,8 @@ function startPlayoff(){
       `季后赛名单公布，<b>首发还是 ${S.understudy?S.understudy.id:"他"}</b>——教练看的是训练赛数据，你还没压过他。
        这几周你坐在替补席上，时间是自己的：练，把差距补上。`);
     runNews.forEach((t,i)=>queueBreakNews(Math.min(1+i,2),t,/不敌/.test(t)?"bad":"info","季后赛"));
+    if(typeof setBreakAgenda==="function") setBreakAgenda(agenda,
+      `首发还是 <b>${S.understudy?S.understudy.id:"他"}</b>，你在替补席。球队按真首发阵容打，赛果按周揭晓。`);
     return;
   }
   S.playoff={round:1,seed,alive:true,beaten:[S.team]};
@@ -3914,9 +3946,9 @@ function viewOffseason(){
     +((S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():"");
   if(S.off){
     const T=curTab(TABS_SEASON);
-    const pops=`${champ}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
+    const pops=`${champ}${typeof scrimCard==="function"?scrimCard():""}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
     if(T!=="act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
-    return `${pops}${tabBar(TABS_SEASON)}${offPanel()}${typeof pressCard==="function"?pressCard():""}`;
+    return `${pops}${tabBar(TABS_SEASON)}${typeof breakAgendaCard==="function"?breakAgendaCard():""}${offPanel()}${typeof pressCard==="function"?pressCard():""}`;
   }
   const ls=S.lastSeason,sea=SEASONS[S.si];
   let label=ls.result==="champion"?`<span class="tag g">LPL 冠军</span>`
@@ -4065,6 +4097,8 @@ function offNextWeek(){
     else btkWeekEnd();
   }
   flushBreakNews(S.off.week);
+  if(typeof mateInjuryTick==="function") mateInjuryTick();
+  if(typeof mateInjuryRoll==="function") mateInjuryRoll();
   if(typeof tickBuffs==='function') tickBuffs();
   if(typeof fanWeek==='function') fanWeek();
   if(typeof questWeek==='function') questWeek();
@@ -4139,6 +4173,7 @@ function offPanel(){
         <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${typeof squadActs==="function"?squadActs():""}
+    ${(S.career&&!S.promoted&&S.understudy&&typeof scrimPanel==="function")?scrimPanel():""}
     ${(()=>{ if(!S.career||typeof txWindowOpen!=="function"||!txWindowOpen()) return "";
       // 挂牌/买断/接触都住进「转会」栏了——这里只提醒窗口开着
       return `<p class="note" style="margin-top:14px"><b style="color:var(--gold)">${txWindowName()}开着。</b>
@@ -4421,7 +4456,8 @@ function actPanelPre(){
         const rc=rankCap(), ec=exposureCap();
         const nm=t=>(typeof CLUB_TIERS!=="undefined"&&CLUB_TIERS[t])?CLUB_TIERS[t].n:t;
         const worse=(TIER_ORDER.indexOf(rc)<=TIER_ORDER.indexOf(ec))?"rank":"exp";
-        return `<br>现在会来找你的最高档：<b>${nm(rc===ec?rc:(worse==="rank"?rc:ec))}</b>　·　${
+        return `<br>你的综合（俱乐部口径）<b>${typeof tryoutSkill==="function"?tryoutSkill().toFixed(0):"—"}</b> · 段位 <b>${rankFull(S.pre.rank)}</b>——各档的实力期望和段位门槛在「转会」栏。
+          <br>现在会来找你的最高档：<b>${nm(rc===ec?rc:(worse==="rank"?rc:ec))}</b>　·　${
           rc===ec ? `段位和曝光刚好卡在同一档`
           : worse==="rank" ? `卡在<b>段位</b>上——曝光够到 ${nm(ec)} 了，再往上冲分`
           : `卡在<b>曝光</b>上——段位够到 ${nm(rc)} 了，去打比赛、涨人气`}`;
@@ -4998,6 +5034,9 @@ function benchedIntl(type,playerResult){
     queueBreakNews(1,`${name} 开赛。${S.team} 的比赛你都在场边看完。`,"info",name);
     queueBreakNews(2,`${name} 四强：${st.four.map(n=>n===S.team?`<b>${n}</b>`:n).join("、")}。${st.four.includes(S.team)?"你的队还在走。":`${S.team} 止步${our}。`}`,"info",name);
     queueBreakNews(3,ev.text,ev.tone,ev.tag);
+    if(typeof setBreakAgenda==="function") setBreakAgenda(
+      [{w:1,t:`${name} 开赛 · ${stage==="groups"?"小组赛":"淘汰赛"}（${field.length} 队）`},{w:2,t:`${name} 四强`},{w:3,t:`${name} 决赛 · 冠军揭晓`}],
+      `名单：首发还是 <b>${bench}</b>，你随队出征、在替补席。这几周能做的事：把训练赛数据打上去（下面的对位挑战）。`);
   }else{
     enterBreak("wrap",3,"世界赛 · 替补席随队",
       `世界赛名单公布：<b>首发还是 ${bench}</b>——教练看的是训练赛数据。你随队出征，在替补席看完这一届。`);
@@ -5005,6 +5044,9 @@ function benchedIntl(type,playerResult){
     queueBreakNews(2,`世界赛八强：${st.eight.map(n=>n===S.team?`<b>${n}</b>`:n).join("、")}。`,"info","世界赛");
     queueBreakNews(3,`世界赛四强：${st.four.map(n=>n===S.team?`<b>${n}</b>`:n).join("、")}。${st.four.includes(S.team)?"":S.team+" 止步"+our+"。"}`,"info","世界赛");
     queueBreakNews(4,ev.text,ev.tone,ev.tag);
+    if(typeof setBreakAgenda==="function") setBreakAgenda(
+      [{w:1,t:`世界赛开打 · ${stage==="swiss"?"瑞士轮":"小组赛"}（${field.length} 队）`},{w:2,t:`八强`},{w:3,t:`四强 → 决赛 · 冠军揭晓`}],
+      `名单：首发还是 <b>${bench}</b>，你随队出征、在替补席。这几周能做的事：把训练赛数据打上去（下面的对位挑战）。`);
   }
   S.afterIntlGo=null; S._intlWrap=null;
   return true;
@@ -6679,8 +6721,11 @@ const ACH_MORE=[
    // 审计修复：S.courses 是对象不是数组，原来的 includes 永远抛错
    on:"course", cond:()=>typeof COURSES!=="undefined"&&COURSES.every(c=>S.courses&&S.courses[c.k]),
    r:{money:200,fame:40}},
-  {id:"grandmaster", n:"国服第一", d:"排位打到国服前十。", tag:"经济",
-   on:"rank", cond:()=>S.pre&&S.pre.rank>=95, r:{money:300,fame:110}},
+  // 审计修复（玩家实锤：「国服前十」和「国服第一」总是一起弹）：
+  // 这条原来是从 top10 复制来的，阈值没改。天梯读数 95 是前十的门，
+  // 99 以上（统一标尺综合 81 档）才叫国服第一。
+  {id:"grandmaster", n:"国服第一", d:"排位打到国服第一（天梯读数 99 以上）。", tag:"成长",
+   on:"rank", cond:()=>S.pre&&S.pre.rank>=99, r:{money:300,fame:110}},
 
   /* ---------- 宿敌（2026-08-31 竞品拆解移植：交手账本读的是真实名单） ---------- */
   {id:"star1", n:"第一滴血", d:"第一次在正式比赛里赢下带明星选手的队伍。", tag:"宿敌",
@@ -6982,7 +7027,8 @@ function squadBase(players){
     const w=p.me?(S.offerKind==="core"?1.45:1.18):1.0;
     // 能力 × 状态：同一个人，今年打成什么样是另一回事
     const fm=(typeof formMul==="function")?(p.me?myFormMul():formMul(p)):1;
-    s+=(r.操作*0.34+r.运营*0.28+r.心态*0.14+r.体质*0.10)*fm*w;
+    const ih=(!p.me&&typeof mateInjuryHit==="function")?mateInjuryHit(p):0;
+    s+=(r.操作*0.34+r.运营*0.28+r.心态*0.14+r.体质*0.10+ih)*fm*w;
     wt+=w;
   });
   return s/wt;
@@ -7129,10 +7175,11 @@ function squadCard(){
 
     <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">基础战力 · 五名选手的个人数值</h3>
     <div class="attrs">${mates.map(p=>{
-      const v=(p.r.操作*0.34+p.r.运营*0.28+p.r.心态*0.14+p.r.体质*0.10);
+      const ih=(!p.me&&typeof mateInjuryHit==="function")?mateInjuryHit(p):0;
+      const v=(p.r.操作*0.34+p.r.运营*0.28+p.r.心态*0.14+p.r.体质*0.10)+ih;
       return `<div class="at wide"><div class="lb">${POSN[p.pos]}</div>${bar(v)}
         <div class="vn mono"><b>${v.toFixed(0)}</b>${typeof avatarOf==="function"?avatarOf(p,22):""}<span class="pname">${
-          p.me?'<b style="color:var(--gold)">你</b>':p.id.slice(0,8)}</span></div></div>`;
+          p.me?'<b style="color:var(--gold)">你</b>':p.id.slice(0,8)}</span>${ih?`<span class="tag l" title="带伤/替补顶上">伤</span>`:""}</div></div>`;
     }).join("")}</div>
 
     <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">权重 · 五个人怎么变成一支队</h3>
@@ -7903,17 +7950,37 @@ function reviewAdvice(m){
   const bad=n=>{ const r=rows.find(x=>x.n===n); return (r&&r.v<=-0.25)?r:null; };
 
   /* —— 个人 —— */
+  /* 对位账：长项和短板一起说。
+     玩家实锤（2026-09-02）：「复盘总说我的短板比对面低多少，不提长项——
+     我是极端加点，这是不鼓励极端加点吗」。不是。战力是加权和
+     （操作 .34 / 运营 .28 / 心态 .14 / 体质 .10），没有短板惩罚；
+     指挥不进个人战力，只取全队最高值做乘数。所以：
+     · 只点真正进公式的四维，按「权重 × 差距」排，不按裸差距排；
+     · 你压过对位的项先说，那是这场的本钱；
+     · 极端加点的人明说：短板只在临场节点抽到它时吃亏，不用为了均衡去补。 */
+  const W={操作:0.34,运营:0.28,心态:0.14,体质:0.10};
+  const foes=(m.opp.players||m.opp), foe=foes.find&&foes.find(q=>q.pos===S.pos);
+  const base=(S.baseline&&S.baseline[S.homeLeague||"LPL"])||50;
+  const cmp=Object.keys(W).map(d=>{ const g=S.attrs[d]-(foe?foe.r[d]:base); return {d,g,eff:g*W[d]}; });
+  const strong=cmp.filter(x=>x.g>=3).sort((a,b)=>b.eff-a.eff).slice(0,2);
+  const weak=cmp.filter(x=>x.g<-1).sort((a,b)=>a.eff-b.eff).slice(0,2);
+  const vals=DIMS.map(d=>S.attrs[d]), mu=avg(vals), sd=Math.sqrt(avg(vals.map(x=>(x-mu)**2)));
+  const extreme=sd>=9;
+  if(strong.length){
+    personal.push({good:true,q:`长项：${strong.map(x=>`${x.d}比对位高 ${x.g.toFixed(0)}`).join("、")}`,
+      how:`这是你的本钱——临场节点里多选吃「${strong[0].d}」的选项，成功率直接看这一维；训练赛对位也用它打`});
+  }
   if(bad("个人能力")){
-    // 差在哪一维：跟你的对位比；没有对位就跟联赛均值比
-    const foes=(m.opp.players||m.opp), foe=foes.find&&foes.find(q=>q.pos===S.pos);
-    const gaps=DIMS.map(d=>({d,g:S.attrs[d]-(foe?foe.r[d]:((S.baseline&&S.baseline[S.homeLeague||"LPL"])||50))}))
-      .sort((a,b)=>a.g-b.g).filter(x=>x.g<-1).slice(0,2);
-    gaps.forEach(({d,g})=>{
+    weak.forEach(({d,g})=>{
       const capped=S.attrs[d]>=capOf(d)-0.05;
       const P=(typeof BREAK_PATHS!=="undefined")?BREAK_PATHS[d]:null;
-      personal.push({q:`${d}比对位低 ${(-g).toFixed(0)} 分`,
-        how:capped&&P?`已到瓶颈——突破方法：${P.how}`:`日常多点「练${d}」，装备/课程里也有加${d}的`});
+      personal.push({q:`${d}比对位低 ${(-g).toFixed(0)} 分（权重 ${W[d]}）`,
+        how:capped&&P?`已到瓶颈——突破方法：${P.how}`
+          :extreme?`补不补看你：这项权重 ${W[d]}，补 5 点只值 ${(5*W[d]).toFixed(1)} 战力；把长项练到顶往往更划算`
+          :`日常多点「练${d}」，装备/课程里也有加${d}的`});
     });
+    if(extreme&&weak.length) personal.push({good:true,q:"关于极端加点",
+      how:"战力是加权和，没有短板惩罚。极端加点只在临场节点抽到你的短板维度时吃亏——那种节点记得选另一个选项"});
   }
   if(bad("状态")) personal.push({q:"手感不在（状态低谷）",
     how:"点「打排位」找手感；状态是按战绩、体能、更衣室每赛段重算的——先把这三样稳住"});
@@ -7968,15 +8035,22 @@ function pmNodesHtml(nodes,luck){
   </div>`;
 }
 function pmAdviceHtml(adv,won,rows){
+  const li=x=>`<div class="rv-i ${x.good?'good':''}"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
+  const goods=(adv&&adv.personal||[]).filter(x=>x.good);
   if(won){
     const tops=rows.filter(r=>r.v>=0.4).slice(0,2).map(r=>r.n);
-    return tops.length?`<div class="review win"><div class="rv-h">复盘</div>
-      <p class="note" style="margin:6px 0 0">这场赢在<b>${tops.join("、")}</b>。别松——优势项每赛段都在向 50 回归，要一直喂。</p></div>`:"";
+    if(!tops.length&&!goods.length) return "";
+    return `<div class="review win"><div class="rv-h">复盘</div>
+      ${tops.length?`<p class="note" style="margin:6px 0 0">这场赢在<b>${tops.join("、")}</b>。别松——优势项每赛段都在向 50 回归，要一直喂。</p>`:""}
+      ${goods.length?`<div class="rv-g">${goods.map(li).join("")}</div>`:""}</div>`;
   }
   if(!adv||(!adv.personal.length&&!adv.team.length))
     return `<div class="review"><div class="rv-h">复盘</div>
       <p class="note" style="margin:6px 0 0">各项都没明显吃亏——这场输在概率上。数值只决定每回合胜率，不保证结果。</p></div>`;
-  const li=x=>`<div class="rv-i"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
+  if(!adv.personal.some(x=>!x.good)&&!adv.team.length)
+    return `<div class="review"><div class="rv-h">复盘</div>
+      <div class="rv-g">${goods.map(li).join("")}</div>
+      <p class="note" style="margin:6px 0 0">个人和团队都没明显吃亏——这场输在概率上。数值只决定每回合胜率，不保证结果。</p></div>`;
   return `<div class="review"><div class="rv-h">复盘 · 这场输在哪，明天练什么</div>
     ${adv.personal.length?`<div class="rv-g"><b>个人</b>${adv.personal.map(li).join("")}</div>`:""}
     ${adv.team.length?`<div class="rv-g"><b>团队</b>${adv.team.map(li).join("")}</div>`:""}
@@ -8138,6 +8212,340 @@ function riskHint(){
   return `<div class="riskbar ${p>=0.14?'hi':p>=0.07?'mid':'lo'}">
     受伤风险<b>${lv}</b>　体能 ${100-Math.round(S.fatigue)}/100${
       p>=0.07?"　——该休息了，练废了更亏。":""}</div>`;
+}
+
+/* ================= 轮换 · 赛程 · 队友伤病 =================
+
+   玩家点名的三件事（2026-09-02）：
+   · 随队参赛时看不到赛程——赛程只在一周一周的「下一场」里露过脸，
+     随队出征 MSI/世界赛、替补看季后赛时更是只有几行日志。
+   · 进了豪门没有晋升渠道——原来唯一的路是把五维均值练到「首发 −2」，
+     被动等一个数字。替补拿不到正赛数据，也没人来挖，等于烂在板凳上。
+   · 伤病只有你会受——队友都是铁人，首发永远不缺席。
+
+   现在：
+   · S.fix 记录本赛段每一周的赛果，「本周」页有一条赛程带，「世界」页有整张表；
+     随队/替补看季后赛的间歇周有一张按周揭晓的日程卡。
+   · 训练赛对位挑战：花行动点和首发打一场三局两胜的对位（每局你选打法，
+     成功率看你那一维和他那一维的差距）。赢了攒「轮换资本」，攒到 3 教练给你
+     一场正赛试用——赢了首发就是你的，输了回替补席，资本减半再来。
+     训练赛战绩也会流出去：表现分里算一份，替补也能被人看见。
+   · 队友伤病：每周每人 0.4%（27 岁以上略高），一次只倒一个，1–3 周。
+     倒下的那个人上场要打折扣；倒的正好是你对位的首发，你就顶上——
+     顶上期间赢一场，位置就是你的了。                                   */
+
+/* ---------- 一、赛程记录 ---------- */
+function fixKey(){ return `${S.si}-${S.split||0}`; }
+function fixNote(week,opp,sc,won,played){
+  if(!S.fix||S.fix.k!==fixKey()) S.fix={k:fixKey(),rows:{}};
+  S.fix.rows[week]={opp,sc,won,played:!!played};
+}
+function fixRows(){
+  if(!S.schedule||!S.schedule.length) return [];
+  const ok=S.fix&&S.fix.k===fixKey();
+  return S.schedule.map((opp,i)=>({w:i+1,opp,r:ok?(S.fix.rows[i+1]||null):null}));
+}
+/* 「本周」页的一条赛程带：每周一个小块，打过的标胜负，本周高亮 */
+function fixtureStrip(){
+  if(!S.career||S.step!=="season") return "";
+  const rows=fixRows(); if(!rows.length) return "";
+  return `<div class="fixt">${rows.map(x=>{
+    const now=x.w===S.week, past=!!x.r;
+    const cls=now?"now":past?(x.r.won?"w":"l"):"";
+    const res=past?`${x.r.sc[0]}:${x.r.sc[1]}${x.r.played?"":"<i title=\"你没上场\">替</i>"}`:now?"本周":"";
+    return `<span class="fc ${cls}" title="第 ${x.w} 周 vs ${x.opp}"><b>W${x.w}</b> ${x.opp}${res?` <em>${res}</em>`:""}</span>`;
+  }).join("")}</div>`;
+}
+/* 「世界」页的整张赛程表：对手实力、战绩、结果、你有没有上 */
+function fixtureCard(){
+  if(!S.career||!S.team) return "";
+  const rows=fixRows(); if(!rows.length) return "";
+  const HL=S.homeLeague||"LPL", sea=SEASONS[S.si];
+  const rec=S.record||{w:0,l:0};
+  const trs=rows.map(x=>{
+    const t=S.world[HL].find(q=>q.name===x.opp);
+    const st=(S.standings[HL]||{})[x.opp]||{w:0,l:0};
+    const pw=t?power(t,0,sea.fav).toFixed(1):"—";
+    const now=x.w===S.week&&S.step==="season";
+    const res=x.r?`<b class="${x.r.won?'w':'l'}">${x.r.won?"胜":"负"}</b> ${x.r.sc[0]}:${x.r.sc[1]}`:now?"本周":"—";
+    const me=x.r?(x.r.played?"上场":`<span style="color:var(--ink-3)">替补席</span>`):"";
+    return `<tr class="${now?'me':''}" style="${x.r?'':'opacity:.8'}">
+      <td class="n">${x.w}</td><td>${typeof teamLogo==="function"?teamLogo(x.opp,18):""}${x.opp}</td>
+      <td class="n mono">${pw}</td><td class="n mono">${st.w}−${st.l}</td><td class="n">${res}</td><td class="n">${me}</td></tr>`;
+  }).join("");
+  return `<div class="card"><h2>赛程<em>${sea.tag} ${SPLITS[S.split||0]} · ${rec.w}胜 ${rec.l}负</em></h2>
+    <div class="tw"><table><thead><tr><th class="n">周</th><th>对手</th><th class="n">实力</th><th class="n">对手战绩</th><th class="n">结果</th><th class="n">你</th></tr></thead>
+    <tbody>${trs}</tbody></table></div>
+    <p class="note">常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。「替补席」的场次不计入你的个人战绩。</p></div>`;
+}
+
+/* ---------- 二、随队/间歇期的日程卡 ----------
+   随队 MSI、世界赛，替补看季后赛：这些周原来只有日志。
+   现在写一张按周揭晓的日程，本周之前的标「已揭晓（见大事记）」。 */
+function setBreakAgenda(items,head){
+  if(!S.off) return;
+  S.off.agenda=items; S.off.agendaHead=head||"";
+}
+function breakAgendaCard(){
+  if(!S.off||!S.off.agenda||!S.off.agenda.length) return "";
+  const cur=S.off.week;
+  return `<div class="card"><h2>${S.off.label||"间歇"} · 日程<em>第 ${cur}/${S.off.weeks} 周</em></h2>
+    ${S.off.agendaHead?`<p class="note" style="margin-top:0">${S.off.agendaHead}</p>`:""}
+    <div class="tw"><table><thead><tr><th class="n">周</th><th>日程</th><th class="n">状态</th></tr></thead>
+    <tbody>${S.off.agenda.map(a=>`<tr class="${a.w===cur?'me':''}" style="${a.w<cur?'opacity:.55':''}">
+      <td class="n">${a.w}</td><td>${a.t}</td>
+      <td class="n">${a.w<cur?"已揭晓 · 见大事记":a.w===cur?"<b>本周</b>":"待揭晓"}</td></tr>`).join("")}
+    </tbody></table></div></div>`;
+}
+
+/* ---------- 三、训练赛对位挑战 ---------- */
+const SCRIM_EDGE_NEED=3;       // 攒到这个数，教练给一场正赛试用
+const SCRIM_POOL=[
+  {q:"对线期：教练把你和他放在同一个位置对打。",ctx:"训练赛不会为你调整战术，队伍照常打自己的。",
+   a:[{t:"抓他一个失误就越塔",dim:"操作",risk:1.2},{t:"控线压经济，不给机会",dim:"运营",risk:0.8},{t:"稳住不送，等打野来",dim:"心态",risk:0.6}]},
+  {q:"中期：对面打野开始频繁上你这一路。",ctx:"他显然想在教练面前把你打穿。",
+   a:[{t:"叫队友反蹲，反打一波",dim:"指挥",risk:1.0},{t:"换线拿资源，不跟他磨",dim:"运营",risk:0.8},{t:"单杀他，用操作说话",dim:"操作",risk:1.2}]},
+  {q:"决胜团：两边都累了，这一波谁先动手。",ctx:"教练组全在身后看。",
+   a:[{t:"先手开团",dim:"操作",risk:1.1},{t:"拉扯消耗，等他犯错",dim:"运营",risk:0.7},{t:"扛住压力打后手",dim:"心态",risk:0.9},{t:"指挥全队绕后",dim:"指挥",risk:1.0}]},
+  {q:"BP：教练问你要不要拿他的本命英雄。",ctx:"拿了就是在他面前证明这个英雄你也会。",
+   a:[{t:"拿，我比他玩得好",dim:"操作",risk:1.3},{t:"拿版本英雄，稳打",dim:"运营",risk:0.7},{t:"拿个功能型英雄，帮队伍赢",dim:"指挥",risk:0.9}]},
+  {q:"第三局前，他在休息室里跟你说：「别太当真，训练赛而已。」",ctx:"你知道他是想让你松下来。",
+   a:[{t:"笑一笑，上去更狠",dim:"心态",risk:1.0},{t:"当没听见，按自己节奏打",dim:"运营",risk:0.7},{t:"回一句「那你也别当真」",dim:"操作",risk:1.1}]},
+  {q:"局面焦灼，你这边的辅助问要不要换你去打野的视野。",ctx:"训练赛里指挥权本来在他手上，不在你。",
+   a:[{t:"接过指挥，报点开团",dim:"指挥",risk:1.2},{t:"听队伍的，先打好自己",dim:"心态",risk:0.6},{t:"自己去做视野，抓机会",dim:"运营",risk:0.8}]}
+];
+function scrimState(){ if(!S.scrim) S.scrim={edge:0,wins:0,played:0,trial:null,live:null}; return S.scrim; }
+function scrimCanStart(){
+  if(!S.career||!S.team||S.promoted||!S.understudy) return {ok:false,why:"你已经是首发了"};
+  if(scrimTrialActive()) return {ok:false,why:"正赛试用中——用比赛说话"};
+  const sc=scrimState(); if(sc.live) return {ok:false,why:"训练赛正在打"};
+  const cost=(typeof apCost==="function")?apCost("duel"):2;
+  if((S.ap||0)<cost) return {ok:false,why:`要 ${cost} 个行动点`};
+  if(S.injury) return {ok:false,why:"带伤打不了对位"};
+  return {ok:true,cost};
+}
+/* 每局成功率：看你那一维和首发那一维的差距——这是极端加点的人的主场 */
+function scrimOptP(opt){
+  const inc=S.understudy; if(!inc) return 0.5;
+  const mine=S.attrs[opt.dim]+((typeof gearBonus==="function")?gearBonus(opt.dim):0);
+  const his=(inc.r&&inc.r[opt.dim])||50;
+  let p=0.52+(mine-his)/38-(opt.risk-0.8)*0.10;
+  p-=Math.max(0,(S.fatigue||0)-55)*0.003;
+  if(typeof myFormMul==="function") p+=(myFormMul()-1)*1.2;
+  return clamp(p,0.12,0.88);
+}
+function startScrim(){
+  const c=scrimCanStart(); if(!c.ok) return;
+  const sc=scrimState();
+  S.ap-=c.cost; addFat(12);
+  const pool=SCRIM_POOL.slice(); for(let i=pool.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  sc.live={sc:[0,0],round:1,flash:0,lines:[],pool:pool.slice(0,5).map(n=>SCRIM_POOL.indexOf(n)),done:false};
+  render();
+}
+function scrimNode(){ const L=scrimState().live; if(!L) return null; return SCRIM_POOL[L.pool[(L.round-1)%L.pool.length]]; }
+function scrimPick(i){
+  const sc=scrimState(), L=sc.live; if(!L||L.done) return;
+  const node=scrimNode(), opt=node.a[i]; if(!opt) return;
+  const p=scrimOptP(opt), ok=rnd()<p;
+  if(ok){ L.sc[0]++; if(opt.risk>=1.1) L.flash++; } else L.sc[1]++;
+  // 打过的那一维会长一点——对位训练赛本来就是最好的练法
+  S.attrs[opt.dim]=Math.min(capOf(opt.dim),S.attrs[opt.dim]+(ok?0.16:0.08));
+  L.lines.push(`<div><span class="hi">第${L.round}局</span> ${opt.t}（吃${opt.dim} · ${Math.round(p*100)}%）— ${
+    ok?`<span class="w">打成了</span>${opt.risk>=1.1?" <span class=\"tag g\">亮眼</span>":""}`:`<span class="l">被他压住</span>`}</div>`);
+  L.round++;
+  if(L.sc[0]>=2||L.sc[1]>=2) endScrim();
+  render();
+}
+function endScrim(){
+  const sc=scrimState(), L=sc.live; if(!L) return;
+  const won=L.sc[0]>L.sc[1], inc=S.understudy;
+  L.done=true; sc.played++;
+  if(won){
+    sc.wins++;
+    const gain=1+L.flash*0.5;
+    sc.edge=q1(Math.min(SCRIM_EDGE_NEED+2,sc.edge+gain));
+    if(typeof addStaff==="function") addStaff("coach",1.2);
+    if(typeof addTrustAll==="function") addTrustAll(0.6);
+    L.verdict=`你 ${L.sc[0]}:${L.sc[1]} 赢下对位。${L.flash?`有 ${L.flash} 波打得很亮，教练组记下了。`:""}轮换资本 <b>+${gain}</b> → ${sc.edge}/${SCRIM_EDGE_NEED}`;
+    pushEvent(`训练赛对位 <b>${L.sc[0]}:${L.sc[1]}</b> 压过 <b>${inc?inc.id:"首发"}</b>${L.flash?"，还打出了亮眼操作":""}。轮换资本 ${sc.edge}/${SCRIM_EDGE_NEED}。`,"good","训练赛");
+  }else{
+    sc.edge=q1(Math.max(-1,sc.edge-0.5));
+    if(typeof addStaff==="function") addStaff("coach",-0.4);
+    L.verdict=`${L.sc[1]}:${L.sc[0]} 输给了他。这一场教练组看在眼里——轮换资本 <b>−0.5</b> → ${sc.edge}/${SCRIM_EDGE_NEED}。`;
+    pushEvent(`训练赛对位 ${L.sc[0]}:${L.sc[1]} 输给 <b>${inc?inc.id:"首发"}</b>。差距在哪自己清楚。`,"info","训练赛");
+  }
+  // 攒够了：教练给正赛机会（要有比赛可打；间歇期先记着，下一场正赛兑现）
+  if(sc.edge>=SCRIM_EDGE_NEED&&!sc.trial){
+    sc.pendingTrial=true;
+    L.verdict+=`<br><b style="color:var(--gold-hi)">教练找你谈了：下一场正赛，名单上是你。赢了位置就是你的；输了回替补席。</b>`;
+    pushEvent(`教练组开会定了：<b>下一场正赛让你上</b>。「训练赛打成这样，不给你一场说不过去。赢了首发就是你的，输了别怪我。」`,"big","轮换");
+  }
+}
+function scrimCard(){
+  const sc=S.scrim, L=sc&&sc.live; if(!L) return "";
+  const inc=S.understudy||{id:"首发"}, node=L.done?null:scrimNode();
+  return `<div class="rankup"><div class="ru-inner ev-inner" style="max-width:560px">
+    <div class="ru-eyebrow">训练赛 · 对位挑战 vs ${inc.id}</div>
+    <div class="ev-q" style="font-size:22px;letter-spacing:.08em"><span class="mono">${L.sc[0]} : ${L.sc[1]}</span></div>
+    ${node?`<div class="ev-q">${node.q}</div><div class="ev-ctx">${node.ctx}</div>
+      <div class="grid g2" style="margin-top:14px">${node.a.map((a,i)=>{
+        const p=scrimOptP(a);
+        return `<button class="opt" data-scrimopt="${i}"><div class="t">${a.t}</div>
+          <div class="d">吃 <b>${a.dim}</b>（你 ${S.attrs[a.dim].toFixed(0)} · 他 ${((inc.r&&inc.r[a.dim])||50).toFixed(0)}）· 成功率 <b style="color:${p>=0.6?'var(--cyan)':p>=0.4?'var(--gold)':'var(--red)'}">${Math.round(p*100)}%</b>${a.risk>=1.1?" · 打成算亮眼":""}</div></button>`;}).join("")}</div>`
+    :`<div class="ev-ctx" style="margin-top:10px">${L.verdict||""}</div>
+      <div class="row" style="justify-content:center;margin-top:12px"><button class="btn" id="scrimClose">回到本周 →</button></div>`}
+    ${L.lines.length?`<div class="log" style="margin-top:12px;text-align:left">${L.lines.slice().reverse().join("")}</div>`:""}
+  </div></div>`;
+}
+/* 替补页上的那一块：进度、按钮、说明 */
+function scrimPanel(){
+  if(!S.career||!S.understudy||S.promoted) return "";
+  const sc=scrimState(), c=scrimCanStart();
+  const him=avg(DIMS.map(d=>S.understudy.r[d])), me=avg(DIMS.map(d=>S.attrs[d]));
+  const acad=(S.homeLeague||"LPL")==="LDL";
+  const pct=clamp(Math.max(0,sc.edge)/SCRIM_EDGE_NEED*100,0,100);
+  const cost=(typeof apCost==="function")?apCost("duel"):2;
+  if(scrimTrialActive()){
+    const T=sc.trial;
+    return `<div class="scrimbox trial"><b style="color:var(--gold-hi)">正赛试用中</b> · ${T.why}。
+      还有 <b>${T.games}</b> 场机会：<b>赢一场，首发就是你的</b>；输光了回替补席。</div>`;
+  }
+  return `<div class="scrimbox">
+    <div class="sb-h"><b>${acad?"争取进名单":"抢首发"}</b> · 对位 <b>${S.understudy.id}</b>（综合 ${him.toFixed(0)}，你 ${me.toFixed(0)}）</div>
+    <div class="at wide"><div class="lb">轮换资本</div>
+      <div class="track"><div class="fill" style="width:${pct}%;background:linear-gradient(90deg,var(--gold-dim),var(--gold))"></div></div>
+      <div class="vn mono"><b>${sc.edge}</b>/${SCRIM_EDGE_NEED}</div></div>
+    <div class="row" style="margin-top:8px;align-items:center;gap:10px;flex-wrap:wrap">
+      <button class="btn sm" id="scrimStart" ${c.ok?"":'disabled style="opacity:.45"'}>训练赛对位挑战 ${typeof apTag==="function"?apTag("duel"):cost+"点"}</button>
+      <span class="note" style="margin:0">${c.ok?`三局两胜，每局你选打法——<b>成功率看你那一维和他那一维的差距</b>，用你最强的一项去打。体能 −12。`:`🔒 ${c.why}`}</span>
+    </div>
+    <p class="note" style="margin:8px 0 0">两条路都通：<b>①</b> 训练赛赢到资本攒满 ${SCRIM_EDGE_NEED}，教练给你一场正赛——赢了坐稳；
+      <b>②</b> 五维均值练到压过他（还差 ${Math.max(0,him-2-me).toFixed(1)}），直接转正。
+      训练赛战绩也会流出去（表现分里算一份），替补不再是没人看得见的位置。${
+      S.mateInjury&&S.understudy&&S.mateInjury.id===S.understudy.id?`<br><b style="color:var(--gold)">${S.understudy.id} 伤了——这几周名单上是你。</b>`:""}</p>
+  </div>`;
+}
+
+/* ---------- 四、正赛试用 ---------- */
+function scrimTrialActive(){ return !!(S.scrim&&S.scrim.trial); }
+function meAsPlayer(){ return {id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true}; }
+function grantTrial(games,why,opts){
+  const inc=S.understudy; if(!inc||S.promoted) return false;
+  const sc=scrimState(); if(sc.trial) return false;
+  const t=myTeam(); if(!t) return false;
+  let swapped=false;
+  t.players=t.players.map(q=>{ if(!swapped&&(q===inc||q.id===inc.id)){ swapped=true; return meAsPlayer(); } return q; });
+  if(!swapped){ t.players=t.players.map(q=>q.pos===S.pos&&!q.me?(swapped=true,meAsPlayer()):q); }
+  if(!swapped) return false;
+  sc.pendingTrial=false;
+  sc.trial={games:Math.max(1,games|0),w:0,l:0,why:why||"教练给的机会",forgiven:false,injury:!!(opts&&opts.injury)};
+  // 你顶上去是名单内的正常轮换，不算「换血」砸默契
+  S.rosterSig=null;
+  return true;
+}
+/* 每周赛前：有攒够的试用就兑现（isBenched 里调用） */
+function scrimTrialCheck(){
+  if(!S.career||S.promoted||!S.understudy) return false;
+  const sc=scrimState();
+  if(sc.trial) return true;
+  if(sc.pendingTrial){
+    if(grantTrial(1,"训练赛打出来的机会")){
+      pushEvent(`本周名单公布：<b>${S.pos?POSN[S.pos]:""}位置写的是你</b>。${S.understudy.id} 坐替补席。`,"big","轮换");
+      return true;
+    }
+  }
+  return false;
+}
+function revertTrial(){
+  const sc=scrimState(), T=sc.trial; if(!T) return;
+  const inc=S.understudy, t=myTeam();
+  if(t&&inc){ let done=false; t.players=t.players.map(q=>(!done&&q.me)?(done=true,inc):q); }
+  sc.trial=null; S.rosterSig=null;
+}
+function confirmStarter(why){
+  const sc=scrimState(), inc=S.understudy;
+  sc.trial=null; sc.pendingTrial=false;
+  S.promoted=true; S.understudy=null;
+  const t=myTeam(); if(t&&!t.players.some(q=>q.me)&&inc){ let d=false; t.players=t.players.map(q=>(!d&&(q===inc||q.id===inc.id))?(d=true,meAsPlayer()):q); }
+  pushEvent((S.homeLeague||"LPL")==="LDL"
+    ? `${why}<b>教练把你正式写进了 ${S.team} 的名单</b>。${inc?inc.id+" 退回替补。":""}`
+    : `${why}<b>首发是你的了</b>。${inc?inc.id+" 退回替补席。":""}`,"big","转正");
+  if(typeof checkAch==="function") checkAch("promote");
+}
+/* 每场正赛打完（endMatch 里调用） */
+function rotationAfterMatch(won,gap){
+  const sc=S.scrim; if(!sc||!sc.trial) return;
+  const T=sc.trial;
+  if(won){ T.w++; confirmStarter("试用期第一场就赢了。"); return; }
+  T.l++;
+  if(gap<-6&&!T.forgiven){
+    T.forgiven=true;
+    pushEvent(`输了，但对手账面强太多（差 ${(-gap).toFixed(1)}），教练没把这场算在你头上：<b>再给你一场</b>。`,"info","轮换");
+    return;
+  }
+  T.games--;
+  if(T.games>0){ pushEvent(`输了。名单上还是你，<b>还有 ${T.games} 场机会</b>——再输就回替补席。`,"bad","轮换"); return; }
+  const inc=S.understudy;
+  revertTrial();
+  sc.edge=q1(Math.max(0,Math.floor(sc.edge/2)));
+  pushEvent(`试用期没赢下来。<b>${inc?inc.id:"首发"} 回到名单，你回替补席。</b>轮换资本减半（${sc.edge}/${SCRIM_EDGE_NEED}）——训练赛里再攒。`,"bad","轮换");
+}
+
+/* ---------- 五、队友伤病 ---------- */
+const MATE_INJ=[
+  {n:"手腕劳损",weeks:[1,3],w:4},{n:"腰伤",weeks:[1,2],w:3},
+  {n:"急性肠胃炎",weeks:[1,1],w:3},{n:"状态问题需要休整",weeks:[2,3],w:2}
+];
+function mateInjuryRoll(){
+  if(!S.career||!S.team||S.mateInjury) return;
+  const t=myTeam(); if(!t) return;
+  // 候选：名单里的四个队友；你坐替补时，名单上的首发也在里面（含你的对位）
+  const mates=t.players.filter(p=>!p.me);
+  for(const p of mates){
+    let q=0.004; if((p.age||22)>=27) q+=0.002; if((p.age||22)>=30) q+=0.002;
+    if(rnd()>=q) continue;
+    const tot=MATE_INJ.reduce((a,x)=>a+x.w,0); let r=rnd()*tot;
+    const inj=MATE_INJ.find(x=>(r-=x.w)<=0)||MATE_INJ[0];
+    const wk=inj.weeks[0]+Math.floor(rnd()*(inj.weeks[1]-inj.weeks[0]+1));
+    S.mateInjury={id:p.id,pos:p.pos,n:inj.n,left:wk};
+    const isInc=!S.promoted&&S.understudy&&S.understudy.id===p.id;
+    if(isInc&&!scrimTrialActive()){
+      if(grantTrial(wk,`${p.id} ${inj.n}，你顶上`,{injury:true}))
+        pushEvent(`<b>${p.id}</b> ${inj.n}，预计缺席 <b>${wk} 周</b>。教练把你写进了名单：<b>这 ${wk} 周里赢一场，位置就是你的。</b>`,"big","伤病");
+      else pushEvent(`<b>${p.id}</b> ${inj.n}，预计缺席 <b>${wk} 周</b>。`,"bad","伤病");
+    }else{
+      pushEvent(`队友 <b>${p.id}</b>（${POSN[p.pos]||p.pos}）${inj.n}，预计缺席 <b>${wk} 周</b>。${
+        wk>=2?"二队的人顶上来，战力要打折扣。":"这周带伤上，发挥要打折扣。"}`,"bad","伤病");
+    }
+    break;   // 一次只倒一个
+  }
+}
+function mateInjuryTick(){
+  const I=S.mateInjury; if(!I) return;
+  I.left--;
+  if(I.left<=0){
+    pushEvent(`<b>${I.id}</b> 伤愈归队。`,"good","伤病");
+    S.mateInjury=null;
+    // 顶上期间没赢下来：他回来了，你回替补席
+    if(S.scrim&&S.scrim.trial&&S.scrim.trial.injury&&!S.promoted){
+      const sc=S.scrim; revertTrial();
+      sc.edge=q1(Math.max(sc.edge,1));
+      pushEvent(`${I.id} 回到名单，你回替补席。<span style="color:var(--ink-3)">顶上的那几场没赢下来——但你打过正赛了，教练心里有数。</span>`,"info","轮换");
+    }
+  }
+}
+/* 战力折扣：受伤的队友在名单上就是带伤/替补顶上 */
+function mateInjuryHit(p){
+  const I=S.mateInjury; if(!I||!p||p.me||p.id!==I.id) return 0;
+  return -5.5;
+}
+function mateInjuryTag(p){
+  const I=S.mateInjury; if(!I||!p||p.id!==I.id) return "";
+  return `<span class="tag l" title="${I.n} · 还有 ${I.left} 周">伤 ${I.left}周</span>`;
+}
+function mateInjuryNote(){
+  const I=S.mateInjury; if(!I) return "";
+  return `<p class="note" style="color:var(--red);margin-top:6px"><b>${I.id}</b>（${POSN[I.pos]||I.pos}）${I.n}，还要 <b>${I.left} 周</b>——这段时间他那个位置的战力打折扣。</p>`;
 }
 
 
@@ -10391,6 +10799,29 @@ function tryoutSkill(){
   return S.attrs.操作*0.34 + S.attrs.运营*0.24 + S.attrs.指挥*0.20
        + S.attrs.心态*0.14 + S.attrs.体质*0.08;
 }
+/* 各档俱乐部的门槛，和你现在的位置——玩家点名（2026-09-02）：
+   「进俱乐部看不到段位门槛和我的当前实力」。两把尺子都摆出来：
+   实力期望（试训评级用的综合）和段位底线（试训邀请的准入）。 */
+function tierCard(){
+  const me = tryoutSkill();
+  const rk = (S.pre && typeof S.pre.rank==="number") ? S.pre.rank : null;
+  const rows = TIER_ORDER.slice().reverse().map(k=>{
+    const T = CLUB_TIERS[k], need = TIER_RANK[k];
+    const okS = me >= T.expect, okR = rk===null || rk >= need;
+    const gap = T.expect - me;
+    return `<tr><td><b>${T.n}</b></td>
+      <td class="n mono">${T.expect}</td>
+      <td class="n">${typeof rankName==="function"?rankName(need):need}</td>
+      <td class="n" style="color:${okS?'var(--cyan)':gap<=6?'var(--gold)':'var(--red)'}">${okS?"够了":`差 ${gap.toFixed(0)}`}</td>
+      <td class="n" style="color:${okR?'var(--cyan)':'var(--red)'}">${rk===null?"—":okR?"够了":"不够"}</td></tr>`;
+  }).join("");
+  return `<div class="card"><h2>俱乐部门槛<em>你的综合 <b>${me.toFixed(0)}</b>${rk!==null&&typeof rankFull==="function"?` · ${rankFull(rk)}`:""}</em></h2>
+    <div class="tw"><table><thead><tr><th>档次</th><th class="n">实力期望</th><th class="n">段位底线</th><th class="n">实力</th><th class="n">段位</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <p class="note">综合是俱乐部口径：操作 .34 · 运营 .24 · 指挥 .20 · 心态 .14 · 体质 .08。
+      实力期望决定试训评级（够了是 A/B，差 10 以上基本 C/D）；段位底线是发邀请的准入，
+      段位不够可以用比赛履历（城市争霸赛 / 主播杯四强）敲门。签约后段位只是名片，看的是比赛。</p></div>`;
+}
 /* 城市赛/主播杯打完之后叫一次：打得好就有人来问。
    关键点是**不用夺冠**——走得远，数据被记下来，就够了。 */
 function checkTryoutInvite(kind, reached, champion){
@@ -11032,6 +11463,8 @@ function proPerf(){
   if(typeof myForm === "function") v += (myForm() - 52) * 0.18;
   v += Math.min(S.fans || 0, 400) * 0.018;
   if(S.benchedSplits) v -= S.benchedSplits * 6;    // 一直坐板凳，没人看得到你
+  // 训练赛数据会流出去：替补打赢首发的对位是圈内会传的事（rotation.js）
+  if(!S.promoted && S.scrim) v += Math.min(S.scrim.wins||0, 6) * 1.5;
   return v;
 }
 /* 违约金越高，越少有队愿意动你 */
@@ -11719,6 +12152,7 @@ function transferPage(){
       <b style="color:${drag>4?'var(--red)':'var(--ink-2)'}">${drag.toFixed(1)} 分</b>（主动求走时加倍）。
       太高的话，评级再好对面也可能付不起——续约时可以谈低，或者自己买断。`
       :`这份合同没有违约金条款——想走的时候没人拦得住你。`}</p></div>`;
+  const tiers = tierCard();
   /* 收到的意向 */
   const intentRows = intents.length ? intents.map(x=>`<tr>
       <td>${typeof teamLogo==="function"?teamLogo(x.team,18):""}${x.team}${x.asked?'<span class="tag">你去接触的</span>':""}</td>
@@ -11761,9 +12195,9 @@ function transferPage(){
       return `<button class="act" data-approach="${t.team}" ${!ca.ok?'disabled style="opacity:.4"':''}
         title="把握 ${(po*100).toFixed(0)}%">
         <div class="t">${typeof teamLogo==="function"?teamLogo(t.team,16):""}${t.team}</div>
-        <div class="d">${CLUB_TIERS[t.tier]?CLUB_TIERS[t.tier].n:""} · ${(po*100).toFixed(0)}%</div></button>`;
+        <div class="d">${CLUB_TIERS[t.tier]?CLUB_TIERS[t.tier].n:""} · 期望 ${CLUB_TIERS[t.tier]?CLUB_TIERS[t.tier].expect:"—"} · ${(po*100).toFixed(0)}%</div></button>`;
     }).join("")}</div>
-    <p class="note">全赛区都能接触——点上面的赛区标签切换名单，档位按该联赛内的真实排位分。
+    <p class="note">你的综合 <b>${tryoutSkill().toFixed(0)}</b>、本赛段表现分 <b>${perf.toFixed(0)}</b>。全赛区都能接触——点上面的赛区标签切换名单，档位按该联赛内的真实排位分。
       被拒绝会给理由（位置刚续约 / 违约金劝退 / 还想再看看）。成功 = 对方有兴趣：
       窗口开着就当场谈，赛段中先记意向；跨赛区谈成就是出海。</p></div>`;
   /* 轨迹 */
@@ -11772,7 +12206,7 @@ function transferPage(){
   const rules = `<p class="note" style="margin:4px 2px 0">规则：赛段中可以收意向、可以被接触，但<b>转会只在注册窗生效</b>——
     季中间歇（春→夏）和年底休赛期。LDL 注册的选手走升队通道随时可被母队调上一队。</p>`;
   const scout = (typeof scoutCard==="function")?scoutCard():"";
-  return contract + scout + intentCard + actions + log + rules;
+  return contract + tiers + scout + intentCard + actions + log + rules;
 }
 
 /* ---------- 职业前的「转会」页（2026-09-02 玩家点名）----------
@@ -11838,12 +12272,12 @@ function preTransferPage(){
     <div class="grid g2">${TIER_ORDER.slice().reverse().map(k=>{const T=CLUB_TIERS[k],p=selfRecOdds(k);
       return `<button class="act" data-selfrec="${k}" ${c.ok?"":'disabled style="opacity:.4"'}>
         <div class="t">${T.n}</div>
-        <div class="d">期望 ${T.expect} · 回信率 <b style="color:${p>=0.2?'var(--cyan)':p>=0.08?'var(--gold)':'var(--red)'}">${(p*100).toFixed(0)}%</b></div></button>`;}).join("")}</div>
+        <div class="d">期望 ${T.expect}（你 ${tryoutSkill().toFixed(0)}）· 段位 ${typeof rankName==="function"?rankName(TIER_RANK[k]):TIER_RANK[k]} · 回信率 <b style="color:${p>=0.2?'var(--cyan)':p>=0.08?'var(--gold)':'var(--red)'}">${(p*100).toFixed(0)}%</b></div></button>`;}).join("")}</div>
     <p class="note">没上岸也可以敲门：把排位战绩和杯赛集锦发过去。回信率看关注度、段位和你离这一档期望的差距——很低，但不是零。
       ${P.invite&&P.invite.pending?`<br><b style="color:var(--gold)">手上有一份 ${P.invite.team} 的试训邀请（回「本周」页处理）。</b>`:""}</p></div>`;
   const rules=`<p class="note" style="margin:4px 2px 0">外赛区规则：外赛区<b>一线队</b>的教练组会看城市争霸赛和主播杯——走得深可能收到跨国邀请（VCS/PCS 这些缺人的赛区来得最勤）；
     外赛区的<b>次级联赛不会跨国发邀请</b>。签约后这一页换成职业版：意向、挂牌、买断、主动接触。</p>`;
-  return expCard+recCard+rules;
+  return tierCard()+expCard+recCard+rules;
 }
 
 
@@ -12570,7 +13004,7 @@ function nextMatchCard(){
     <div class="gapbar ${V.k}">
       <div class="gv">${V.t}<span class="gd mono">${diff>=0?"+":""}${diff.toFixed(1)}</span></div>
       <div class="gt">${V.d}</div>
-    </div></div>`;
+    </div>${typeof fixtureStrip==="function"?fixtureStrip():""}</div>`;
 }
 function eventsCard(){
   if(!S.events.length) return `<div class="card"><h2>大事记</h2>
@@ -12975,6 +13409,9 @@ function bind(){
   st.querySelectorAll("[data-list]").forEach(b=>b.onclick=()=>doList(b.dataset.list));
   st.querySelectorAll("[data-sign]").forEach(b=>b.onclick=()=>doSign(b.dataset.sign));
   st.querySelectorAll("[data-squad]").forEach(b=>b.onclick=()=>doSquad(b.dataset.squad));
+  const _ss=$("scrimStart"); if(_ss) _ss.onclick=()=>{ if(typeof startScrim==="function") startScrim(); };
+  const _sx=$("scrimClose"); if(_sx) _sx.onclick=()=>{ if(S.scrim) S.scrim.live=null; render(); };
+  st.querySelectorAll("[data-scrimopt]").forEach(b=>b.onclick=()=>scrimPick(+b.dataset.scrimopt));
   st.querySelectorAll("[data-do]").forEach(b=>b.onclick=()=>doAction(b.dataset.do));
   const p=$("play"); if(p&&!S.locker) p.onclick=()=>{isBenched()?benchWeek():startMatch(false)};
   const au=$("auto"); if(au) au.onclick=()=>{

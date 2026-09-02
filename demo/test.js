@@ -51,7 +51,7 @@ try {
     + "preTransferPage,selfRecommend,selfRecOdds,canSelfRec,pickForeignScout,addInvite,queueInvite,checkTryoutInvite,inviteCard,"
     + "INTL_CANON,canonChamp,convergeChamp,convergeStaged,simEventStaged,"
     + "wlOf,wlAdd,wlInfluence,wlRelax,minorChampion,majorStandings,buildWorldsField,"
-    + "resolveRandom,btkNote,BREAK_PATHS,sweepBreakthroughs,btkWeekEnd,breakthrough,capMechOf,capMileOf,intlChampCard,quickPlan,quickBtn,transferPage,acceptPromote,askPromoteRaise,declinePromote,promoteDealCard,promoteRaiseOdds,patchNoteCard,miniPatchAdj,miniPatchTick,roleCard,careerCard,tryoutDays,fixLegacyForeignAch,checkAch,hasAch,skillToRank,rankToSkill,REGION_ANCHOR,REGION_STYLE,anchorLeague,fixScaleV2,cloneWorld,approachTargets,approachOdds,canApproach,approachTeam,txWindowOpen,transferBudget,resumeCap,rankCap,fitTier,exposureCap,weeklyEcho,queueFollowUp,tickFollowUps,FOLLOWUPS,pressIssue,pressCard,followUpCard,ladderEncounter,starPool,noteRivalBeat,beatCount,scoutCard,doContent,contentCard,CONTENT_KINDS,bizWeek,buyAsset,ASSETS,assetsCard,dataCard,tiltDrag,tiltNote,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,checkMateExit,teamTenure,trustOf,disruptSynergy,proPerf,rollProOffers,checkPromote,parentClub,buildLDL,takeProOffer,dropProOffer,makeProDeal,signTransfer,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,dueCups,forfeitCup,cupOppName,cupRoundName,cupReachName,poRoundName,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,TRAITS,TRAIT_NEED,TRAIT_OPP,traitHas,traitMul,addTraitPt,traitProgress,traitBar,QUEST_KINDS,addQuest,questWeek,questCard,questNote,questWin,evPickTeam,evRosterChange,evMakeRival,AUTO_KEYS,autoOn,autoSet,autoToggleAll,autoOnce,autoSweep,autoStep,autoBuy,autoBiz,autoDaily,autoCareerStep,autoAnyOn,tryoutSkill,checkTryoutInvite,checkRankInvite,addInvite,startTryout,resolveTryoutDay,tryoutGrade,endTryout,makeDeal,askDeal,signDeal,dropDeal,declineDeal,afterTryout,dealLeverage,CLUB_TIERS,DEAL_TIERS,TIER_RANK,rankCap,pickForeign,makeProDeal,buyoutDrag,canInvite,fitTier,exposureCap,exposureScore,inviteFloorOk,PRE_MILESTONES,nextMilestone,PRE_EARLIEST,preNextWeek,TRYOUT_DAYS,DEAL_ASKS,salaryOf,contractCheck,consumeOffer,preNextYear,setS:(v)=>{S=v}};")();
+    + "resolveRandom,btkNote,BREAK_PATHS,sweepBreakthroughs,btkWeekEnd,breakthrough,capMechOf,capMileOf,intlChampCard,quickPlan,quickBtn,transferPage,acceptPromote,askPromoteRaise,declinePromote,promoteDealCard,promoteRaiseOdds,patchNoteCard,miniPatchAdj,miniPatchTick,roleCard,careerCard,tryoutDays,fixLegacyForeignAch,checkAch,hasAch,skillToRank,rankToSkill,REGION_ANCHOR,REGION_STYLE,anchorLeague,fixScaleV2,cloneWorld,approachTargets,approachOdds,canApproach,approachTeam,txWindowOpen,transferBudget,resumeCap,rankCap,fitTier,exposureCap,weeklyEcho,queueFollowUp,tickFollowUps,FOLLOWUPS,pressIssue,pressCard,followUpCard,ladderEncounter,starPool,noteRivalBeat,beatCount,scoutCard,doContent,contentCard,CONTENT_KINDS,bizWeek,buyAsset,ASSETS,assetsCard,dataCard,tiltDrag,tiltNote,buffVal,squadBreakdown,myRoster,power,SEASONS,formOf,runPlan,repeatLast,savePlan,cloutOf,coachTrust,mgrTrust,canList,canSign,doList,doSign,signTargets,relOf,checkMateExit,teamTenure,trustOf,disruptSynergy,proPerf,rollProOffers,checkPromote,parentClub,buildLDL,takeProOffer,dropProOffer,makeProDeal,signTransfer,enterCup,cupOf,activeCups,cupPrep,startCupMatch,resolveCupNode,cupTick,CUPS,dueCups,forfeitCup,cupOppName,cupRoundName,cupReachName,poRoundName,cupMyPower,cupOppPower,cupDismissMatch,saveGame,loadGame,readSave,dropSave,hasSave,escapeHtml,safeName,runActs,pendingActs,autoRest,autoStop,TRAITS,TRAIT_NEED,TRAIT_OPP,traitHas,traitMul,addTraitPt,traitProgress,traitBar,QUEST_KINDS,addQuest,questWeek,questCard,questNote,questWin,evPickTeam,evRosterChange,evMakeRival,AUTO_KEYS,autoOn,autoSet,autoToggleAll,autoOnce,autoSweep,autoStep,autoBuy,autoBiz,autoDaily,autoCareerStep,autoAnyOn,tryoutSkill,checkTryoutInvite,checkRankInvite,addInvite,startTryout,resolveTryoutDay,tryoutGrade,endTryout,makeDeal,askDeal,signDeal,dropDeal,declineDeal,afterTryout,dealLeverage,CLUB_TIERS,DEAL_TIERS,TIER_RANK,rankCap,pickForeign,makeProDeal,buyoutDrag,canInvite,fitTier,exposureCap,exposureScore,inviteFloorOk,PRE_MILESTONES,nextMilestone,PRE_EARLIEST,preNextWeek,TRYOUT_DAYS,DEAL_ASKS,salaryOf,contractCheck,consumeOffer,preNextYear,startScrim,scrimPick,scrimCanStart,scrimTrialActive,rotationAfterMatch,mateInjuryRoll,mateInjuryTick,fixRows,fixtureCard,fixtureStrip,breakAgendaCard,scrimPanel,scrimCard,tierCard,SCRIM_EDGE_NEED,setS:(v)=>{S=v}};")();
 } catch (e) {
   console.error("脚本解析失败:", e.message);
   process.exit(1);
@@ -74,9 +74,13 @@ function playOne(opts) {
   let guard = 0, preYears = 0, rankUps = 0, lockers = 0;
   let signups = 0, cupMatches = 0, preps = 0, cupPick = 0;
   let invites = 0, tryPick = 0, dealPick = 0, transfers = 0;
+  let maxRank = 0, scrims = 0, trials = 0, trialWins = 0, mateInj = 0, benchWeeks = 0, _trialOn = false, _injOn = false;
   const cupRuns = [], grades = [], deals = [];
   while (A.S().step !== "end" && guard++ < 40000) {
     S = A.S();
+    if (S.scrim && S.scrim.trial) { if (!_trialOn) trials++; _trialOn = true; }
+    else { if (_trialOn && S.promoted && !S.understudy) trialWins++; _trialOn = false; }
+    if (S.mateInjury) { if (!_injOn) mateInj++; _injOn = true; } else _injOn = false;
     if (S.rankUp) { rankUps++; S.rankUp = null; continue; }
     if (S.rndEv) { A.resolveRandom(0); continue; }
     if (S.streamOffer) {                  // 平台独家：三条路轮着走，都要测到
@@ -150,6 +154,7 @@ function playOne(opts) {
         // 异化点数后剩 1 点付不起 2 点行动：落到 1 点的排位，别空转
         if (S.pre.ap === _b) A.preAct("rank");
         if (S.pre.ap === _b) S.pre.ap = 0;
+        if (S.pre.rank > maxRank) maxRank = S.pre.rank;
       } else { const w = S.pre.week; A.preNextWeek(); if (A.S().pre && A.S().pre.week < w) preYears++; }
     } else if (S.step === "offer") {
       // 年末报价现在也只是试训机会
@@ -160,6 +165,13 @@ function playOne(opts) {
       A.startTryout(tier, of.team, A.CLUB_TIERS[tier].expect);
     } else if (S.step === "season") {
       for (const x of A.SPEND) if (S.money >= x.cost && !(S.buff && S.buff[x.k])) { S.money -= x.cost; x.run(); break; }
+      // 替补：有点数就先打一场训练赛对位（跑通对位挑战与试用链路）
+      if (!S.promoted && S.understudy && A.scrimCanStart().ok) {
+        A.startScrim(); scrims++;
+        let g = 0; while (S.scrim && S.scrim.live && !S.scrim.live.done && g++ < 8) A.scrimPick(0);
+        if (S.scrim) S.scrim.live = null;
+      }
+      if (S.pre && typeof S.pre.rank === "number" && S.pre.rank > maxRank) maxRank = S.pre.rank;
       if (S.ap > 0) {
         const _b = S.ap;
         const av = A.DIMS.filter(d => S.attrs[d] < A.capOf(d));
@@ -168,7 +180,9 @@ function playOne(opts) {
         else A.doAction("stream");
         if (S.ap === _b) A.doAction("solo");   // 剩 1 点：打排位收尾
         if (S.ap === _b) S.ap = 0;
-      } else { A.isBenched() ? A.benchWeek() : A.startMatch(false); }
+      } else {
+        if (A.isBenched()) { benchWeeks++; A.benchWeek(); } else A.startMatch(false);
+      }
     } else if (S.step === "prep") {
       // 淘汰赛之间的备战：把行动点用掉再上场
       if (S.ap > 0) {
@@ -207,6 +221,8 @@ function playOne(opts) {
     ok: S.step === "end", steps: guard, preYears, rankUps, lockers,
     signups, cupMatches, preps, cupRuns,
     invites, grades, deals, transfers,
+    scrims, trials, trialWins, mateInj, benchWeeks, maxRank: Math.round(maxRank*10)/10,
+    scrimWins: (S.scrim && S.scrim.wins) || 0,
     contract: S.contract && S.contract.salary !== undefined ? S.contract : null,
     saved: A.hasSave(),
     team: S.team || "未签约", age: S.age,

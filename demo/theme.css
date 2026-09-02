@@ -822,3 +822,19 @@ ul.dealfx li::marker{color:var(--ink-3)}
   font-size:10px;color:var(--gold);border:1px solid rgba(201,169,97,.55);
   border-radius:3px;padding:0 4px;margin-left:5px;opacity:.9;vertical-align:1px}
 button:disabled .apc{opacity:.5}
+
+/* ---- 赛程带（本周页） ---- */
+.fixt{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0}
+.fixt .fc{font-size:11.5px;padding:4px 9px;border:1px solid var(--line);border-radius:6px;background:rgba(14,42,62,.45);color:var(--ink-2);white-space:nowrap}
+.fixt .fc b{color:var(--ink-3);font-weight:600;margin-right:2px}
+.fixt .fc em{font-style:normal;margin-left:4px;font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
+.fixt .fc i{font-style:normal;font-size:10px;color:var(--ink-3);margin-left:2px}
+.fixt .fc.w{border-color:rgba(79,190,218,.55);color:var(--cyan)}
+.fixt .fc.l{border-color:rgba(196,83,95,.55);color:var(--red)}
+.fixt .fc.now{border-color:var(--gold);color:var(--gold-hi);background:rgba(201,169,97,.14)}
+/* ---- 替补：训练赛对位挑战 ---- */
+.scrimbox{margin-top:14px;padding:12px 14px;border:1px solid var(--gold-dim);border-left:3px solid var(--gold);background:rgba(201,169,97,.06);border-radius:6px}
+.scrimbox.trial{border-color:var(--gold);background:rgba(201,169,97,.12)}
+.scrimbox .sb-h{font-size:13.5px;color:var(--ink);margin-bottom:8px}
+/* ---- 复盘里的长项 ---- */
+.review .rv-i.good .rq{color:var(--cyan)}

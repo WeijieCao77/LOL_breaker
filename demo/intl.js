@@ -463,6 +463,9 @@ function benchedIntl(type,playerResult){
     queueBreakNews(1,`${name} 开赛。${S.team} 的比赛你都在场边看完。`,"info",name);
     queueBreakNews(2,`${name} 四强：${st.four.map(n=>n===S.team?`<b>${n}</b>`:n).join("、")}。${st.four.includes(S.team)?"你的队还在走。":`${S.team} 止步${our}。`}`,"info",name);
     queueBreakNews(3,ev.text,ev.tone,ev.tag);
+    if(typeof setBreakAgenda==="function") setBreakAgenda(
+      [{w:1,t:`${name} 开赛 · ${stage==="groups"?"小组赛":"淘汰赛"}（${field.length} 队）`},{w:2,t:`${name} 四强`},{w:3,t:`${name} 决赛 · 冠军揭晓`}],
+      `名单：首发还是 <b>${bench}</b>，你随队出征、在替补席。这几周能做的事：把训练赛数据打上去（下面的对位挑战）。`);
   }else{
     enterBreak("wrap",3,"世界赛 · 替补席随队",
       `世界赛名单公布：<b>首发还是 ${bench}</b>——教练看的是训练赛数据。你随队出征，在替补席看完这一届。`);
@@ -470,6 +473,9 @@ function benchedIntl(type,playerResult){
     queueBreakNews(2,`世界赛八强：${st.eight.map(n=>n===S.team?`<b>${n}</b>`:n).join("、")}。`,"info","世界赛");
     queueBreakNews(3,`世界赛四强：${st.four.map(n=>n===S.team?`<b>${n}</b>`:n).join("、")}。${st.four.includes(S.team)?"":S.team+" 止步"+our+"。"}`,"info","世界赛");
     queueBreakNews(4,ev.text,ev.tone,ev.tag);
+    if(typeof setBreakAgenda==="function") setBreakAgenda(
+      [{w:1,t:`世界赛开打 · ${stage==="swiss"?"瑞士轮":"小组赛"}（${field.length} 队）`},{w:2,t:`八强`},{w:3,t:`四强 → 决赛 · 冠军揭晓`}],
+      `名单：首发还是 <b>${bench}</b>，你随队出征、在替补席。这几周能做的事：把训练赛数据打上去（下面的对位挑战）。`);
   }
   S.afterIntlGo=null; S._intlWrap=null;
   return true;

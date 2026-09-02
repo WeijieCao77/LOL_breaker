@@ -65,6 +65,29 @@ function tryoutSkill(){
   return S.attrs.操作*0.34 + S.attrs.运营*0.24 + S.attrs.指挥*0.20
        + S.attrs.心态*0.14 + S.attrs.体质*0.08;
 }
+/* 各档俱乐部的门槛，和你现在的位置——玩家点名（2026-09-02）：
+   「进俱乐部看不到段位门槛和我的当前实力」。两把尺子都摆出来：
+   实力期望（试训评级用的综合）和段位底线（试训邀请的准入）。 */
+function tierCard(){
+  const me = tryoutSkill();
+  const rk = (S.pre && typeof S.pre.rank==="number") ? S.pre.rank : null;
+  const rows = TIER_ORDER.slice().reverse().map(k=>{
+    const T = CLUB_TIERS[k], need = TIER_RANK[k];
+    const okS = me >= T.expect, okR = rk===null || rk >= need;
+    const gap = T.expect - me;
+    return `<tr><td><b>${T.n}</b></td>
+      <td class="n mono">${T.expect}</td>
+      <td class="n">${typeof rankName==="function"?rankName(need):need}</td>
+      <td class="n" style="color:${okS?'var(--cyan)':gap<=6?'var(--gold)':'var(--red)'}">${okS?"够了":`差 ${gap.toFixed(0)}`}</td>
+      <td class="n" style="color:${okR?'var(--cyan)':'var(--red)'}">${rk===null?"—":okR?"够了":"不够"}</td></tr>`;
+  }).join("");
+  return `<div class="card"><h2>俱乐部门槛<em>你的综合 <b>${me.toFixed(0)}</b>${rk!==null&&typeof rankFull==="function"?` · ${rankFull(rk)}`:""}</em></h2>
+    <div class="tw"><table><thead><tr><th>档次</th><th class="n">实力期望</th><th class="n">段位底线</th><th class="n">实力</th><th class="n">段位</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <p class="note">综合是俱乐部口径：操作 .34 · 运营 .24 · 指挥 .20 · 心态 .14 · 体质 .08。
+      实力期望决定试训评级（够了是 A/B，差 10 以上基本 C/D）；段位底线是发邀请的准入，
+      段位不够可以用比赛履历（城市争霸赛 / 主播杯四强）敲门。签约后段位只是名片，看的是比赛。</p></div>`;
+}
 /* 城市赛/主播杯打完之后叫一次：打得好就有人来问。
    关键点是**不用夺冠**——走得远，数据被记下来，就够了。 */
 function checkTryoutInvite(kind, reached, champion){
@@ -706,6 +729,8 @@ function proPerf(){
   if(typeof myForm === "function") v += (myForm() - 52) * 0.18;
   v += Math.min(S.fans || 0, 400) * 0.018;
   if(S.benchedSplits) v -= S.benchedSplits * 6;    // 一直坐板凳，没人看得到你
+  // 训练赛数据会流出去：替补打赢首发的对位是圈内会传的事（rotation.js）
+  if(!S.promoted && S.scrim) v += Math.min(S.scrim.wins||0, 6) * 1.5;
   return v;
 }
 /* 违约金越高，越少有队愿意动你 */
@@ -1393,6 +1418,7 @@ function transferPage(){
       <b style="color:${drag>4?'var(--red)':'var(--ink-2)'}">${drag.toFixed(1)} 分</b>（主动求走时加倍）。
       太高的话，评级再好对面也可能付不起——续约时可以谈低，或者自己买断。`
       :`这份合同没有违约金条款——想走的时候没人拦得住你。`}</p></div>`;
+  const tiers = tierCard();
   /* 收到的意向 */
   const intentRows = intents.length ? intents.map(x=>`<tr>
       <td>${typeof teamLogo==="function"?teamLogo(x.team,18):""}${x.team}${x.asked?'<span class="tag">你去接触的</span>':""}</td>
@@ -1435,9 +1461,9 @@ function transferPage(){
       return `<button class="act" data-approach="${t.team}" ${!ca.ok?'disabled style="opacity:.4"':''}
         title="把握 ${(po*100).toFixed(0)}%">
         <div class="t">${typeof teamLogo==="function"?teamLogo(t.team,16):""}${t.team}</div>
-        <div class="d">${CLUB_TIERS[t.tier]?CLUB_TIERS[t.tier].n:""} · ${(po*100).toFixed(0)}%</div></button>`;
+        <div class="d">${CLUB_TIERS[t.tier]?CLUB_TIERS[t.tier].n:""} · 期望 ${CLUB_TIERS[t.tier]?CLUB_TIERS[t.tier].expect:"—"} · ${(po*100).toFixed(0)}%</div></button>`;
     }).join("")}</div>
-    <p class="note">全赛区都能接触——点上面的赛区标签切换名单，档位按该联赛内的真实排位分。
+    <p class="note">你的综合 <b>${tryoutSkill().toFixed(0)}</b>、本赛段表现分 <b>${perf.toFixed(0)}</b>。全赛区都能接触——点上面的赛区标签切换名单，档位按该联赛内的真实排位分。
       被拒绝会给理由（位置刚续约 / 违约金劝退 / 还想再看看）。成功 = 对方有兴趣：
       窗口开着就当场谈，赛段中先记意向；跨赛区谈成就是出海。</p></div>`;
   /* 轨迹 */
@@ -1446,7 +1472,7 @@ function transferPage(){
   const rules = `<p class="note" style="margin:4px 2px 0">规则：赛段中可以收意向、可以被接触，但<b>转会只在注册窗生效</b>——
     季中间歇（春→夏）和年底休赛期。LDL 注册的选手走升队通道随时可被母队调上一队。</p>`;
   const scout = (typeof scoutCard==="function")?scoutCard():"";
-  return contract + scout + intentCard + actions + log + rules;
+  return contract + tiers + scout + intentCard + actions + log + rules;
 }
 
 /* ---------- 职业前的「转会」页（2026-09-02 玩家点名）----------
@@ -1512,10 +1538,10 @@ function preTransferPage(){
     <div class="grid g2">${TIER_ORDER.slice().reverse().map(k=>{const T=CLUB_TIERS[k],p=selfRecOdds(k);
       return `<button class="act" data-selfrec="${k}" ${c.ok?"":'disabled style="opacity:.4"'}>
         <div class="t">${T.n}</div>
-        <div class="d">期望 ${T.expect} · 回信率 <b style="color:${p>=0.2?'var(--cyan)':p>=0.08?'var(--gold)':'var(--red)'}">${(p*100).toFixed(0)}%</b></div></button>`;}).join("")}</div>
+        <div class="d">期望 ${T.expect}（你 ${tryoutSkill().toFixed(0)}）· 段位 ${typeof rankName==="function"?rankName(TIER_RANK[k]):TIER_RANK[k]} · 回信率 <b style="color:${p>=0.2?'var(--cyan)':p>=0.08?'var(--gold)':'var(--red)'}">${(p*100).toFixed(0)}%</b></div></button>`;}).join("")}</div>
     <p class="note">没上岸也可以敲门：把排位战绩和杯赛集锦发过去。回信率看关注度、段位和你离这一档期望的差距——很低，但不是零。
       ${P.invite&&P.invite.pending?`<br><b style="color:var(--gold)">手上有一份 ${P.invite.team} 的试训邀请（回「本周」页处理）。</b>`:""}</p></div>`;
   const rules=`<p class="note" style="margin:4px 2px 0">外赛区规则：外赛区<b>一线队</b>的教练组会看城市争霸赛和主播杯——走得深可能收到跨国邀请（VCS/PCS 这些缺人的赛区来得最勤）；
     外赛区的<b>次级联赛不会跨国发邀请</b>。签约后这一页换成职业版：意向、挂牌、买断、主动接触。</p>`;
-  return expCard+recCard+rules;
+  return tierCard()+expCard+recCard+rules;
 }

@@ -64,17 +64,37 @@ function reviewAdvice(m){
   const bad=n=>{ const r=rows.find(x=>x.n===n); return (r&&r.v<=-0.25)?r:null; };
 
   /* —— 个人 —— */
+  /* 对位账：长项和短板一起说。
+     玩家实锤（2026-09-02）：「复盘总说我的短板比对面低多少，不提长项——
+     我是极端加点，这是不鼓励极端加点吗」。不是。战力是加权和
+     （操作 .34 / 运营 .28 / 心态 .14 / 体质 .10），没有短板惩罚；
+     指挥不进个人战力，只取全队最高值做乘数。所以：
+     · 只点真正进公式的四维，按「权重 × 差距」排，不按裸差距排；
+     · 你压过对位的项先说，那是这场的本钱；
+     · 极端加点的人明说：短板只在临场节点抽到它时吃亏，不用为了均衡去补。 */
+  const W={操作:0.34,运营:0.28,心态:0.14,体质:0.10};
+  const foes=(m.opp.players||m.opp), foe=foes.find&&foes.find(q=>q.pos===S.pos);
+  const base=(S.baseline&&S.baseline[S.homeLeague||"LPL"])||50;
+  const cmp=Object.keys(W).map(d=>{ const g=S.attrs[d]-(foe?foe.r[d]:base); return {d,g,eff:g*W[d]}; });
+  const strong=cmp.filter(x=>x.g>=3).sort((a,b)=>b.eff-a.eff).slice(0,2);
+  const weak=cmp.filter(x=>x.g<-1).sort((a,b)=>a.eff-b.eff).slice(0,2);
+  const vals=DIMS.map(d=>S.attrs[d]), mu=avg(vals), sd=Math.sqrt(avg(vals.map(x=>(x-mu)**2)));
+  const extreme=sd>=9;
+  if(strong.length){
+    personal.push({good:true,q:`长项：${strong.map(x=>`${x.d}比对位高 ${x.g.toFixed(0)}`).join("、")}`,
+      how:`这是你的本钱——临场节点里多选吃「${strong[0].d}」的选项，成功率直接看这一维；训练赛对位也用它打`});
+  }
   if(bad("个人能力")){
-    // 差在哪一维：跟你的对位比；没有对位就跟联赛均值比
-    const foes=(m.opp.players||m.opp), foe=foes.find&&foes.find(q=>q.pos===S.pos);
-    const gaps=DIMS.map(d=>({d,g:S.attrs[d]-(foe?foe.r[d]:((S.baseline&&S.baseline[S.homeLeague||"LPL"])||50))}))
-      .sort((a,b)=>a.g-b.g).filter(x=>x.g<-1).slice(0,2);
-    gaps.forEach(({d,g})=>{
+    weak.forEach(({d,g})=>{
       const capped=S.attrs[d]>=capOf(d)-0.05;
       const P=(typeof BREAK_PATHS!=="undefined")?BREAK_PATHS[d]:null;
-      personal.push({q:`${d}比对位低 ${(-g).toFixed(0)} 分`,
-        how:capped&&P?`已到瓶颈——突破方法：${P.how}`:`日常多点「练${d}」，装备/课程里也有加${d}的`});
+      personal.push({q:`${d}比对位低 ${(-g).toFixed(0)} 分（权重 ${W[d]}）`,
+        how:capped&&P?`已到瓶颈——突破方法：${P.how}`
+          :extreme?`补不补看你：这项权重 ${W[d]}，补 5 点只值 ${(5*W[d]).toFixed(1)} 战力；把长项练到顶往往更划算`
+          :`日常多点「练${d}」，装备/课程里也有加${d}的`});
     });
+    if(extreme&&weak.length) personal.push({good:true,q:"关于极端加点",
+      how:"战力是加权和，没有短板惩罚。极端加点只在临场节点抽到你的短板维度时吃亏——那种节点记得选另一个选项"});
   }
   if(bad("状态")) personal.push({q:"手感不在（状态低谷）",
     how:"点「打排位」找手感；状态是按战绩、体能、更衣室每赛段重算的——先把这三样稳住"});
@@ -129,15 +149,22 @@ function pmNodesHtml(nodes,luck){
   </div>`;
 }
 function pmAdviceHtml(adv,won,rows){
+  const li=x=>`<div class="rv-i ${x.good?'good':''}"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
+  const goods=(adv&&adv.personal||[]).filter(x=>x.good);
   if(won){
     const tops=rows.filter(r=>r.v>=0.4).slice(0,2).map(r=>r.n);
-    return tops.length?`<div class="review win"><div class="rv-h">复盘</div>
-      <p class="note" style="margin:6px 0 0">这场赢在<b>${tops.join("、")}</b>。别松——优势项每赛段都在向 50 回归，要一直喂。</p></div>`:"";
+    if(!tops.length&&!goods.length) return "";
+    return `<div class="review win"><div class="rv-h">复盘</div>
+      ${tops.length?`<p class="note" style="margin:6px 0 0">这场赢在<b>${tops.join("、")}</b>。别松——优势项每赛段都在向 50 回归，要一直喂。</p>`:""}
+      ${goods.length?`<div class="rv-g">${goods.map(li).join("")}</div>`:""}</div>`;
   }
   if(!adv||(!adv.personal.length&&!adv.team.length))
     return `<div class="review"><div class="rv-h">复盘</div>
       <p class="note" style="margin:6px 0 0">各项都没明显吃亏——这场输在概率上。数值只决定每回合胜率，不保证结果。</p></div>`;
-  const li=x=>`<div class="rv-i"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
+  if(!adv.personal.some(x=>!x.good)&&!adv.team.length)
+    return `<div class="review"><div class="rv-h">复盘</div>
+      <div class="rv-g">${goods.map(li).join("")}</div>
+      <p class="note" style="margin:6px 0 0">个人和团队都没明显吃亏——这场输在概率上。数值只决定每回合胜率，不保证结果。</p></div>`;
   return `<div class="review"><div class="rv-h">复盘 · 这场输在哪，明天练什么</div>
     ${adv.personal.length?`<div class="rv-g"><b>个人</b>${adv.personal.map(li).join("")}</div>`:""}
     ${adv.team.length?`<div class="rv-g"><b>团队</b>${adv.team.map(li).join("")}</div>`:""}
