@@ -241,4 +241,14 @@ if (require.main === module) {
     "| 成就", A.ACHIEVEMENTS.length, "| 年龄", A.AGES.length, "| 段位", A.RANKS.length);
   const r = playOne();
   console.log(JSON.stringify(r, null, 1));
+  // 断言：跑不完、数值坏了都要以非零退出码失败——CI 靠这个
+  const S = A.S();
+  const bad = [];
+  if (!r.ok) bad.push("生涯没有走到结局（step=" + S.step + "，steps=" + r.steps + "）");
+  A.DIMS.forEach(d => { const v = S.attrs && S.attrs[d]; if (typeof v !== "number" || !isFinite(v) || v < 0 || v > 100) bad.push("属性异常 " + d + "=" + v); });
+  if (typeof S.fatigue !== "number" || S.fatigue < 0 || S.fatigue > 100) bad.push("疲劳越界 " + S.fatigue);
+  if (!r.saved) bad.push("存档没有写入");
+  if (S.scaleVer !== 2 || !S.born) bad.push("新档缺少 scaleVer/born（审计 P0 回归）");
+  if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }
+  console.log("自检通过");
 }

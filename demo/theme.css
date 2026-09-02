@@ -802,6 +802,11 @@ ul.dealfx li::marker{color:var(--ink-3)}
   .tal button{width:44px;height:44px;font-size:20px}
   .tal .n{width:30px}
   .savebar{opacity:1}
+  /* 右下角浮窗：竖排三颗 38px 的按钮会压住卡片右侧约 32px——
+     手机上改横排缩小，并给页面留出底部空间，滚到底也不被盖住 */
+  .audiofab{flex-direction:row;right:8px;bottom:8px;gap:6px}
+  .audiofab button{width:30px;height:30px;font-size:13px;box-shadow:0 1px 6px rgba(0,0,0,.4)}
+  body{padding-bottom:48px}
 }
 
 /* ---- 事件结果 ---- */

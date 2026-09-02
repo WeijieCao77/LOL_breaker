@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0B1220">
 <meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.ico">
 <title>破晓 · LOL 电竞生涯模拟</title>
 <!-- 不引任何外部资源：B站 Toy 审核明确禁止用外链资源规避审核，
      且 fonts.googleapis.com 在国内基本加载不出来。字体全部走系统栈。 -->
@@ -814,6 +815,11 @@ ul.dealfx li::marker{color:var(--ink-3)}
   .tal button{width:44px;height:44px;font-size:20px}
   .tal .n{width:30px}
   .savebar{opacity:1}
+  /* 右下角浮窗：竖排三颗 38px 的按钮会压住卡片右侧约 32px——
+     手机上改横排缩小，并给页面留出底部空间，滚到底也不被盖住 */
+  .audiofab{flex-direction:row;right:8px;bottom:8px;gap:6px}
+  .audiofab button{width:30px;height:30px;font-size:13px;box-shadow:0 1px 6px rgba(0,0,0,.4)}
+  body{padding-bottom:48px}
 }
 
 /* ---- 事件结果 ---- */
@@ -984,19 +990,27 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
-  {v:"v20260904f", at:"2026-09-04", items:[
+  {v:"v20260904g", at:"2026-09-02", items:[
+    "修复（严重）：新开的局第一次「继续上次」会被当成旧版本存档整体 +15 并重排世界——新档现在自带标尺版本；读档时再加一道保险：世界已经在新标尺上的档一律不迁移",
+    "正式地址只有 www.poxiao.lol：裸域名和 Railway 域名会自动跳转过去；老域名上的存档会在你第一次打开 www 时自动接过来（谁新用谁），不用手动导出导入",
+    "页面改为压缩传输并带 ETag：首屏体积从 1.2 MB 降到约 0.5 MB，没更新时刷新只回一个 304",
+    "安全：内容安全策略（CSP）上线，导入别人给的存档文件也跑不了脚本；导入前还会把存档里的标签消毒一遍",
+    "移动端右下角的音效/日志按钮改为横排缩小，不再压住卡片右侧",
+    "推进按钮与更新日志的日期更正"
+  ]},
+  {v:"v20260904f", at:"2026-09-02", items:[
     "推进按钮写清楚是哪个阶段的第几周（玩家点名：「进入第一周/第二周」分不清）：间歇/休赛期是「进入下一周 → 休赛期 第 2/3 周」，职业前是「进入下一周 → 赛季前 第 x/20 周」，比赛按钮是「打 春季赛第 3/7 周 · vs 对手」"
   ]},
-  {v:"v20260904e", at:"2026-09-04", items:[
+  {v:"v20260904e", at:"2026-09-02", items:[
     "修复：体质突破「休息 12/12 却没动静」——原来拖到赛段结算才发，结算时还暗查本赛段个人出场满 7 场（替补席不算，坐过板凳的赛段永远兑不了）。现在攒满当场兑现；还没顶到瓶颈就先攒着并告诉你，顶到那一刻兑现"
   ]},
-  {v:"v20260904d", at:"2026-09-04", items:[
+  {v:"v20260904d", at:"2026-09-02", items:[
     "修复：退役传奇复出只回自己的赛区——PraY/Smeb/Wolf/Bang 不会再空降 LPL 队（玩家实锤：在 IG 时更衣室里 PraY 问你他还能不能打）；只有真在 LPL 打过的 Mata/Looper 才可能回 LPL；本局内退役的按退役时的联赛复出；还在役的人不再重复「复出」一份"
   ]},
-  {v:"v20260904c", at:"2026-09-04", items:[
+  {v:"v20260904c", at:"2026-09-02", items:[
     "替补席随队夺冠也算冠军（玩家点名）：生涯一览、赛季结算、结局页和顶栏冠军数都记，标「随队」；成就、夺冠突破和转会保底仍只认你亲手打下的"
   ]},
-  {v:"v20260904b", at:"2026-09-04", items:[
+  {v:"v20260904b", at:"2026-09-02", items:[
     "随队/替补也看得到赛程：「本周」页多了一条赛程带，「世界」页有整张赛程表（对手实力、战绩、结果、你上没上）；随队 MSI/世界赛、替补看季后赛的间歇周有按周揭晓的日程卡",
     "进俱乐部前后都看得到门槛：「转会」栏新增「俱乐部门槛」表——各档的实力期望、段位底线，和你现在的综合、段位并排；主动接触/毛遂自荐按钮上直接写期望值；「我的」属性卡标题带综合实力",
     "替补有了自己的路——训练赛对位挑战：花 2 点和首发打三局两胜，每局你选打法，成功率看你那一维和他那一维的差距（极端加点的主场）。赢了攒轮换资本，攒到 3 教练给一场正赛试用：赢了首发就是你的，输光了回替补席再攒；训练赛战绩计入表现分，替补也能被人看见",
@@ -1004,23 +1018,23 @@ const CHANGELOG=[
     "修复：「国服第一」和「国服前十」不再一起弹——前者原是复制来的同一条件；现在天梯读数 99 以上才算国服第一，天梯读数也会显示「国服第一」",
     "复盘也说长项：对位账里先列你压过对位的项（那是本钱，临场节点多选它），短板只点真正进战力公式的四维并写明权重；极端加点的玩家会明确看到：战力是加权和、没有短板惩罚，补不补短板看权重划不划算"
   ]},
-  {v:"v20260904a", at:"2026-09-04", items:[
+  {v:"v20260904a", at:"2026-09-02", items:[
     "替补不再莫名其妙打季后赛（玩家实锤：常规赛全程没抢下首发，季后赛却被安排上场、还和同位置首发同框）——教练的名单是连续的：没压过他，季后赛/MSI/世界赛就整届坐替补席，球队用真首发阵容打，你按周在场边看结果",
     "随队夺冠算球队的：戒指有你一枚，但生涯冠军表、夺冠突破、转会保送都不记——想让奖杯写你的名字，先把首发抢下来（训练赛数据压过对位，出征前教练会重新看一次）"
   ]},
-  {v:"v20260903j", at:"2026-09-04", items:[
+  {v:"v20260903j", at:"2026-09-02", items:[
     "大陆直连打通：正式地址改为 www.poxiao.lol——原裸域名的边缘 IP 被运营商国际出口单独拉黑（同服务换主机名重新分配 IP 后实测国内 WiFi/流量免代理可开）；裸域名保留，挂代理仍可用"
   ]},
-  {v:"v20260903i", at:"2026-09-04", items:[
+  {v:"v20260903i", at:"2026-09-02", items:[
     "主动接触全赛区开放（玩家点名）：转会页新增赛区筛选栏，LPL/LCK/LEC/LCS 到各外卡联赛的任何一线队都能去敲门，跨赛区谈成就是出海；档位改按该联赛内真实排位分（此前身在 LCK 时全员被误标成「中游 3%」——连 T1 都是）"
   ]},
-  {v:"v20260903h", at:"2026-09-04", items:[
+  {v:"v20260903h", at:"2026-09-02", items:[
     "游戏更名「破晓」：标题、页面标签、作者栏、存档文件名全部与域名 poxiao.lol 统一——至暗时刻之后的那个词。结局「破局者」保留：破晓是这个游戏的名字，破局者是你在故事里挣来的称号"
   ]},
-  {v:"v20260903g", at:"2026-09-04", items:[
+  {v:"v20260903g", at:"2026-09-02", items:[
     "修复「推到赛季结束只打了一场」：异化点数后剩 1 点付不起 2 点训练时，自动推进在原地死转卡死页面（刷新后只剩自动存档那一周）——现在剩 1 点会用排位收尾，一路推到底；中途弹事件交还给你的行为不变"
   ]},
-  {v:"v20260903f", at:"2026-09-04", items:[
+  {v:"v20260903f", at:"2026-09-02", items:[
     "转会窗口不再关窗那天批发报价（玩家点名）：窗口=最后 4 周的一段时间，邀请一家一家来——弱队先动手、中游跟上、豪门压哨、外赛区最后一刻越洋来电；每周最多一家，谈完手上这家下一家才来",
     "随时够格随时来的路也一样改成单家来谈＋冷却；窗口最后一周手上还有没处理的邀请，会先让你表态再翻年"
   ]},
@@ -2143,7 +2157,9 @@ function startPre(){
     ageCfg:A,bg:B,preYear:1,si:0,split:0,
     pre:{week:1,ap:PRE_AP,rank:0,scout:0,cityCup:null,streamCup:null,log:[],offers:null},
     seasonAttr0:Object.assign({},attrs),
-    events:[],usedLegends:[],retiredPool:[],teamForm:{},formSeen:{},news:[],log:[]
+    events:[],usedLegends:[],retiredPool:[],teamForm:{},formSeen:{},news:[],log:[],
+    // 审计 P0：新档必须自带标尺版本，否则第一次读档会被当成老档整体 +15
+    scaleVer:2, born:(typeof GAME_VER!=="undefined")?GAME_VER:""
   });
   S.pre.rank=initialRank();
   initShop(); initAch();
@@ -2367,15 +2383,7 @@ function fireWeekEvents(){
 /* 「下一周」：把这一周收尾，走到下一周，然后触发那一周的事 */
 function preNextWeek(){ advancePreWeek(); }
 /* 杯赛轮次到点提醒 */
-function cupTick(){
-  if(typeof activeCups!=="function") return;
-  activeCups().forEach(c=>{
-    if(S.pre.week===c.nextWeek)
-      preLog(`<b>${c.name}</b> <b>${cupRoundName(c.kind,c.round)}</b>就在本周，对手 <b>${cupOppName(c.kind)}</b>。`,"big");
-    else if(c.nextWeek-S.pre.week===1)
-      preLog(`${c.name} ${cupRoundName(c.kind,c.round)}下周开打。`,"info");
-  });
-}
+/* cupTick 在 cup.js 里（原来这里还有一份旧的，被模块版静默覆盖，已删） */
 /* 报名弹窗处理完之后，继续把这一周走完 */
 function advancePreWeek(){
   const P=S.pre;
@@ -2607,7 +2615,8 @@ function joinTeam(){
     si:0,week:1,ap:AP,world,team:team.name,
     record:{w:0,l:0},gameRec:{w:0,l:0},career:{w:0,l:0,titles:[],best:99},
     log:[],news:[],events:[],retiredPool:[],usedLegends:[],form:{},formSeen:{},
-    schedule:[],standings:null,seasonAttr0:Object.assign({},attrs)
+    schedule:[],standings:null,seasonAttr0:Object.assign({},attrs),
+    scaleVer:2, born:(typeof GAME_VER!=="undefined")?GAME_VER:""
   });
   startSeason(true);
 }
@@ -5710,21 +5719,6 @@ const TIER_STYLE={
 /* 小段罗马数字 */
 const ROMAN={"一":"I","二":"II","三":"III","四":"IV"};
 
-/* 段位 -> 官方徽章文件名 */
-function tierArtKey(v){
-  let i=0; RANKS.forEach((x,k)=>{ if(v>=x.at) i=k; });
-  return ["gold","platinum","diamond","master","grandmaster","challenger","challenger","challenger"][i]||"gold";
-}
-/* 段位 -> 官方徽章文件名 */
-function tierArtKey(v){
-  let i=0; RANKS.forEach((x,k)=>{ if(v>=x.at) i=k; });
-  return ["gold","platinum","diamond","master","grandmaster","challenger","challenger","challenger"][i]||"gold";
-}
-/* 段位 -> 官方徽章文件名 */
-function tierArtKey(v){
-  let i=0; RANKS.forEach((x,k)=>{ if(v>=x.at) i=k; });
-  return ["gold","platinum","diamond","master","grandmaster","challenger","challenger","challenger"][i]||"gold";
-}
 /* 段位 -> 官方徽章文件名 */
 function tierArtKey(v){
   let i=0; RANKS.forEach((x,k)=>{ if(v>=x.at) i=k; });
@@ -10423,7 +10417,8 @@ function saveGame(reason) {
     if (!S || S.step === "create") return false;
     const data = {};
     Object.keys(S).forEach(k => { if (!SAVE_SKIP.includes(k)) data[k] = S[k]; });
-    const blob = { ver: SAVE_VER, at: Date.now(), reason: reason || "", S: data };
+    const blob = { ver: SAVE_VER, at: Date.now(), reason: reason || "",
+                   gameVer: (typeof GAME_VER !== "undefined") ? GAME_VER : "", S: data };
     localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
     return true;
   } catch (e) {
@@ -10532,6 +10527,7 @@ function loadGame() {
     fixLegacyForeignAch(S);
     fixLegacyAcadTier(S);
     fixScaleV2(S);
+    fixSeasonAttr0(S);
     fixLdlNames(S);
     fixWl(S);
     // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
@@ -10619,9 +10615,25 @@ function fixLegacyAcadTier(s) {
    世界整体 +15 并按赛区定锚，玩家属性 +15 保持相对位置。
    旧档的天梯读数会按新曲线自然校正（hold 回落/爬分门槛都走新函数）。
    属性超过新天花板的压回 capOf——老满级档会损失一点，事件里说明白。 */
+/* 世界是不是已经在新标尺上：新标尺的 LPL 五维均值锚在 65 附近（+成长），
+   旧标尺的世界是数据原值 ~53、五年成长后也不过 ~58。61 是一条干净的分界。 */
+function worldOnNewScale(s) {
+  try {
+    const w = (s.world && s.world.LPL) || (s.pre && s.pre.world && s.pre.world.LPL);
+    if (!w || !w.length) return false;
+    const ps = []; w.forEach(t => (t.players || []).forEach(p => { if (!p.me && p.r) ps.push(p); }));
+    if (!ps.length) return false;
+    const m = ps.reduce((a, p) => a + DIMS.reduce((x, d) => x + (p.r[d] || 50), 0) / DIMS.length, 0) / ps.length;
+    return m >= 61;
+  } catch (e) { return false; }
+}
 function fixScaleV2(s) {
   try {
     if (s.scaleVer >= 2) return;
+    /* 审计 P0（2026-09-02）：v20260902a 之后新开的局没写 scaleVer，第一次读档被当成
+       老档整体 +15、世界重新定锚——每个新档都中招。新档现在自带 scaleVer/born；
+       没有这两个字段的档再看世界本身：已经在新标尺上的一律不迁移。 */
+    if (s.born || worldOnNewScale(s)) { s.scaleVer = 2; return; }
     s.scaleVer = 2;
     [s.world, s.pre && s.pre.world].filter(Boolean).forEach(w => {
       Object.keys(w).forEach(lg => {
@@ -10647,6 +10659,86 @@ function fixScaleV2(s) {
     (s.events = s.events || []).push({ s: "更正", w: s.week || 0, tone: "info", tag: "版本",
       text: `<b>数值标尺统一</b>：全世界与你的属性整体 +15，赛区分层落地（LCK 66.5 / LPL 65 / 外卡 54-58），
         天梯换算改用新曲线（钻石45 · 大师55 · 宗师60 · 王者65）。你的相对实力没变，数字更像人话了。` });
+  } catch (e) {}
+}
+
+/* 被误迁移过的档：seasonAttr0 可能高于当前属性，赛季成长显示成负数。只修显示基线。 */
+function fixSeasonAttr0(s) {
+  try {
+    if (!s.seasonAttr0 || !s.attrs) return;
+    DIMS.forEach(d => { if (typeof s.seasonAttr0[d] === "number" && s.seasonAttr0[d] > s.attrs[d]) s.seasonAttr0[d] = s.attrs[d]; });
+  } catch (e) {}
+}
+
+/* ---------- 导入存档的消毒 ----------
+   存档里的日志、事件本来就是带 HTML 的字符串，读回来直接 innerHTML。
+   别人给的文件可能夹带 <img onerror=…> 这类东西——CSP 已经不让它跑，
+   这里再把明显的脚本载体剥掉一遍，两道闸。 */
+function sanitizeSave(v, depth) {
+  depth = depth || 0;
+  if (depth > 40) return null;
+  if (typeof v === "string") {
+    if (v.length > 200000) v = v.slice(0, 200000);
+    return v
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script\s*>/gi, "")
+      .replace(/<\/?(script|iframe|object|embed|link|meta|base|form|style|svg|math)\b[^>]*>/gi, "")
+      .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+      .replace(/(javascript|vbscript|data\s*:\s*text\/html)\s*:/gi, "");
+  }
+  if (Array.isArray(v)) return v.map(x => sanitizeSave(x, depth + 1));
+  if (v && typeof v === "object") {
+    const o = {};
+    Object.keys(v).forEach(k => { if (k !== "__proto__" && k !== "constructor" && k !== "prototype") o[k] = sanitizeSave(v[k], depth + 1); });
+    return o;
+  }
+  return v;
+}
+
+/* ---------- 老域名存档接力 ----------
+   正式地址统一成 www.poxiao.lol 之后，裸域名 / Railway 域名上的 localStorage 存档
+   不能就这么丢。www 页面加载时用隐藏 iframe 打开老域名的 /xfer，那边把存档
+   postMessage 过来（server.js 只让 www 嵌它）；谁新用谁，一个会话只拉一次。 */
+const XFER_FROM = ["https://poxiao.lol", "https://lol-breaker-production.up.railway.app"];
+function xferPull() {
+  try {
+    if (location.protocol !== "https:" || location.hostname !== "www.poxiao.lol") return;
+    if (sessionStorage.getItem("pojuzhe_xfer_done")) return;
+    const localAt = () => { const b = readSave(); return (b && !b.bad && typeof b.at === "number") ? b.at : 0; };
+    let pending = XFER_FROM.length, got = false;
+    const frames = [];
+    const finish = () => {
+      frames.forEach(f => { try { f.remove(); } catch (e) {} });
+      window.removeEventListener("message", onMsg);
+      try { sessionStorage.setItem("pojuzhe_xfer_done", "1"); } catch (e) {}
+      if (got && S && S.step === "create") render();
+    };
+    const onMsg = ev => {
+      if (!XFER_FROM.includes(ev.origin) || !ev.data || ev.data.t !== "poxiao-xfer") return;
+      pending--;
+      const raw = ev.data.raw;
+      if (typeof raw === "string" && raw.length < 8e6) {
+        try {
+          let blob = JSON.parse(raw);
+          if (blob && blob.S && typeof blob.at === "number") {
+            blob = migrate(sanitizeSave(blob));
+            if (blob.ver === SAVE_VER && blob.S.step && blob.S.attrs && blob.at > localAt()) {
+              localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
+              got = true;
+            }
+          }
+        } catch (e) {}
+      }
+      if (pending <= 0) finish();
+    };
+    window.addEventListener("message", onMsg);
+    XFER_FROM.forEach(o => {
+      const f = document.createElement("iframe");
+      f.style.display = "none"; f.setAttribute("aria-hidden", "true");
+      f.setAttribute("sandbox", "allow-scripts allow-same-origin");
+      f.src = o + "/xfer";
+      document.body.appendChild(f); frames.push(f);
+    });
+    setTimeout(finish, 8000);
   } catch (e) {}
 }
 
@@ -10725,9 +10817,11 @@ function importSave() {
       rd.onload = () => {
         try {
           let blob = JSON.parse(rd.result);
-          if (!blob || !blob.S) { alert("这个文件不像是存档。"); return; }
-          blob = migrate(blob);
+          if (!blob || typeof blob !== "object" || !blob.S || typeof blob.S !== "object") { alert("这个文件不像是存档。"); return; }
+          blob = migrate(sanitizeSave(blob));
           if (blob.ver !== SAVE_VER) { alert("存档版本不符，读不了。"); return; }
+          if (!blob.S.step || !blob.S.attrs) { alert("存档内容缺失。"); return; }
+          if (typeof blob.at !== "number") blob.at = Date.now();
           localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
           loadGame();
         } catch (e) { alert("读取失败。"); }
@@ -13494,6 +13588,7 @@ function bind(){
 let S=null;
 screenCreate();
 if(typeof audioInit==="function") audioInit();   // 声音、作者栏版本号、更新日志浮窗
+if(typeof xferPull==="function") xferPull();     // 老域名上的存档接力（只在 www 上生效）
 </script>
 
 </body>

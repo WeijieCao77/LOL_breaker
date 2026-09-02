@@ -19,21 +19,6 @@ function tierArtKey(v){
   let i=0; RANKS.forEach((x,k)=>{ if(v>=x.at) i=k; });
   return ["gold","platinum","diamond","master","grandmaster","challenger","challenger","challenger"][i]||"gold";
 }
-/* 段位 -> 官方徽章文件名 */
-function tierArtKey(v){
-  let i=0; RANKS.forEach((x,k)=>{ if(v>=x.at) i=k; });
-  return ["gold","platinum","diamond","master","grandmaster","challenger","challenger","challenger"][i]||"gold";
-}
-/* 段位 -> 官方徽章文件名 */
-function tierArtKey(v){
-  let i=0; RANKS.forEach((x,k)=>{ if(v>=x.at) i=k; });
-  return ["gold","platinum","diamond","master","grandmaster","challenger","challenger","challenger"][i]||"gold";
-}
-/* 段位 -> 官方徽章文件名 */
-function tierArtKey(v){
-  let i=0; RANKS.forEach((x,k)=>{ if(v>=x.at) i=k; });
-  return ["gold","platinum","diamond","master","grandmaster","challenger","challenger","challenger"][i]||"gold";
-}
 function rankIcon(v,size){
   size=size||44;
   const src=RANK_ART[tierArtKey(v)];

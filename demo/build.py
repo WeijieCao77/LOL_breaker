@@ -39,7 +39,7 @@ audio = io.open(os.path.join(BASE, "audio.js"), encoding="utf-8").read()
 data = io.open(os.path.join(ROOT, "data", "csv", "game_data_2022.json"), encoding="utf-8").read()
 # 像素头像可选：data/photos/ 有照片就跑 make_avatars.py 生成，没有就空着
 _av = os.path.join(ROOT, "data", "avatars.json")
-avatars = io.open(_av, encoding="utf-8").read() if os.path.exists(_av) else "{}"
+avatars = io.open(_av, encoding="utf-8").read() if (os.path.exists(_av) and "--no-avatars" not in sys.argv) else "{}"
 
 # 1) 样式
 out, n = re.subn(r"<style>.*?</style>", lambda m: "<style>\n" + css + "\n</style>", tpl, count=1, flags=re.S)
@@ -83,6 +83,7 @@ HEAD = (
     '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
     '<meta name="theme-color" content="#0B1220">\n'
     '<meta name="color-scheme" content="dark">\n'
+    '<link rel="icon" href="/favicon.ico">\n'
     "<title>" + page_title + "</title>\n"
 )
 BODY_OPEN = '</head>\n<body>\n<div class="wrap">'
@@ -90,6 +91,7 @@ assert '<div class="wrap">' in out, "wrap div not found"
 out = HEAD + out.replace('<div class="wrap">', BODY_OPEN, 1) + "\n</body>\n</html>\n"
 
 path = os.path.join(BASE, "career.html")
+if "--out" in sys.argv: path = sys.argv[sys.argv.index("--out") + 1]
 io.open(path, "w", encoding="utf-8").write(out)
 print("built", path, os.path.getsize(path), "bytes")
 print("logo:", "crackG" in out, "| theme:", "--gold:#C9A961" in out, "| intl:", "intlAdvance" in out)

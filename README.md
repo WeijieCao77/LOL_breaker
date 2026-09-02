@@ -8,7 +8,7 @@
 
 ## 在线体验
 
-在线体验：[https://lol-breaker-production.up.railway.app](https://lol-breaker-production.up.railway.app)
+在线体验：[https://www.poxiao.lol](https://www.poxiao.lol)（裸域名与 Railway 域名会自动跳转到这里；存档按域名隔离，老入口上的存档会在第一次打开 www 时自动接过来）
 
 ## 主要内容
 
@@ -19,7 +19,7 @@
 - 版本适应、竞技状态、队伍默契、战术、士气与伤病系统
 - 合同、薪资、消费、经理与教练关系、更衣室事件和引援话语权
 - 动态宿敌、比赛节点决策、随机际遇与赛后归因
-- 72 项成就和多种生涯结局
+- 82 项成就和多种生涯结局
 
 ## 本地运行
 
@@ -54,7 +54,38 @@ python demo/build.py
 npm test
 ```
 
-测试脚本会在模拟 DOM 环境中自动跑完一局生涯，检查主要模块能否共同工作。
+测试脚本会在模拟 DOM 环境中自动跑完一局生涯，检查主要模块能否共同工作；跑不完或数值异常会以非零退出码失败。
+
+检查提交的 `demo/career.html` 是否与模板一致（CI 也跑这一步；Railway 直接部署仓库里的产物，漏提交不会被发现）：
+
+```bash
+python demo/check_build.py
+```
+
+## 数据重建
+
+游戏运行时零依赖。只有重建 `data/csv/game_data_2022.json` 时才需要原始数据和 Python 包：
+
+```bash
+pip install -r data/requirements.txt
+bash data/fetch_oe.sh          # Oracle's Elixir 逐场数据（2022–2026，每年 30–40 MB，被 .gitignore 忽略）
+```
+
+`data/raw/` 下的 Leaguepedia / Riot 接口原始响应同样不进仓库，由 `data/build_leaguepedia.py`、`data/fetch_logos.py` 各自的抓取逻辑生成；没有这些文件时对应脚本会直接报错退出，不会写出半成品。
+
+## 部署
+
+Railway 从 `main` 自动构建，只跑 `node server.js`。服务端负责：规范域名跳转（→ www.poxiao.lol）、老域名存档接力页 `/xfer`、gzip/brotli 与 ETag、CSP 等安全头。
+
+Railway 已宣布 `railway.json` 于 2026-12-01 停止支持，替代是 `.railway/railway.ts`（仓库里已备好）。迁移要在项目所有者的 Railway 账号下执行：
+
+```bash
+npm i -D railway
+railway config pull      # 用线上真实配置覆盖 .railway/railway.ts
+railway config plan
+# 删掉 railway.json、清空服务设置里的自定义配置路径，然后
+railway config apply
+```
 
 ## 项目结构
 

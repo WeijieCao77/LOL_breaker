@@ -1,0 +1,39 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # 提交的 career.html 必须和模板+模块的构建产物一致——
+      # Railway 只跑 node server.js，直接发仓库里的产物，漏提交不会被部署发现
+      - name: build consistency
+        run: python demo/check_build.py
+
+      # 无头跑完整生涯：非零退出码才算失败
+      - name: headless career
+        run: npm test
+
+      # 服务端冒烟：健康检查、压缩、安全头、规范域名跳转、存档接力页
+      - name: server smoke
+        run: |
+          node server.js & sleep 1
+          set -e
+          curl -fsS http://localhost:3000/healthz | grep -q ok
+          curl -fsSI -H 'Accept-Encoding: br' http://localhost:3000/ | grep -qi 'content-encoding: br'
+          curl -fsSI http://localhost:3000/ | grep -qi 'content-security-policy: '
+          curl -sSI -H 'Host: poxiao.lol' http://localhost:3000/ | grep -q '301'
+          curl -sSI -H 'Host: poxiao.lol' http://localhost:3000/ | grep -qi 'location: https://www.poxiao.lol/'
+          curl -fsS -H 'Host: poxiao.lol' http://localhost:3000/xfer | grep -q 'poxiao-xfer'
+          kill %1

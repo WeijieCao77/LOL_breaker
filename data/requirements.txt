@@ -1,0 +1,4 @@
+# 数据管线（data/*.py）用到的第三方包；游戏运行时零依赖，这些只在重建数据时需要
+#   pip install -r data/requirements.txt
+numpy
+Pillow

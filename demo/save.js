@@ -21,7 +21,8 @@ function saveGame(reason) {
     if (!S || S.step === "create") return false;
     const data = {};
     Object.keys(S).forEach(k => { if (!SAVE_SKIP.includes(k)) data[k] = S[k]; });
-    const blob = { ver: SAVE_VER, at: Date.now(), reason: reason || "", S: data };
+    const blob = { ver: SAVE_VER, at: Date.now(), reason: reason || "",
+                   gameVer: (typeof GAME_VER !== "undefined") ? GAME_VER : "", S: data };
     localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
     return true;
   } catch (e) {
@@ -130,6 +131,7 @@ function loadGame() {
     fixLegacyForeignAch(S);
     fixLegacyAcadTier(S);
     fixScaleV2(S);
+    fixSeasonAttr0(S);
     fixLdlNames(S);
     fixWl(S);
     // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
@@ -217,9 +219,25 @@ function fixLegacyAcadTier(s) {
    世界整体 +15 并按赛区定锚，玩家属性 +15 保持相对位置。
    旧档的天梯读数会按新曲线自然校正（hold 回落/爬分门槛都走新函数）。
    属性超过新天花板的压回 capOf——老满级档会损失一点，事件里说明白。 */
+/* 世界是不是已经在新标尺上：新标尺的 LPL 五维均值锚在 65 附近（+成长），
+   旧标尺的世界是数据原值 ~53、五年成长后也不过 ~58。61 是一条干净的分界。 */
+function worldOnNewScale(s) {
+  try {
+    const w = (s.world && s.world.LPL) || (s.pre && s.pre.world && s.pre.world.LPL);
+    if (!w || !w.length) return false;
+    const ps = []; w.forEach(t => (t.players || []).forEach(p => { if (!p.me && p.r) ps.push(p); }));
+    if (!ps.length) return false;
+    const m = ps.reduce((a, p) => a + DIMS.reduce((x, d) => x + (p.r[d] || 50), 0) / DIMS.length, 0) / ps.length;
+    return m >= 61;
+  } catch (e) { return false; }
+}
 function fixScaleV2(s) {
   try {
     if (s.scaleVer >= 2) return;
+    /* 审计 P0（2026-09-02）：v20260902a 之后新开的局没写 scaleVer，第一次读档被当成
+       老档整体 +15、世界重新定锚——每个新档都中招。新档现在自带 scaleVer/born；
+       没有这两个字段的档再看世界本身：已经在新标尺上的一律不迁移。 */
+    if (s.born || worldOnNewScale(s)) { s.scaleVer = 2; return; }
     s.scaleVer = 2;
     [s.world, s.pre && s.pre.world].filter(Boolean).forEach(w => {
       Object.keys(w).forEach(lg => {
@@ -245,6 +263,86 @@ function fixScaleV2(s) {
     (s.events = s.events || []).push({ s: "更正", w: s.week || 0, tone: "info", tag: "版本",
       text: `<b>数值标尺统一</b>：全世界与你的属性整体 +15，赛区分层落地（LCK 66.5 / LPL 65 / 外卡 54-58），
         天梯换算改用新曲线（钻石45 · 大师55 · 宗师60 · 王者65）。你的相对实力没变，数字更像人话了。` });
+  } catch (e) {}
+}
+
+/* 被误迁移过的档：seasonAttr0 可能高于当前属性，赛季成长显示成负数。只修显示基线。 */
+function fixSeasonAttr0(s) {
+  try {
+    if (!s.seasonAttr0 || !s.attrs) return;
+    DIMS.forEach(d => { if (typeof s.seasonAttr0[d] === "number" && s.seasonAttr0[d] > s.attrs[d]) s.seasonAttr0[d] = s.attrs[d]; });
+  } catch (e) {}
+}
+
+/* ---------- 导入存档的消毒 ----------
+   存档里的日志、事件本来就是带 HTML 的字符串，读回来直接 innerHTML。
+   别人给的文件可能夹带 <img onerror=…> 这类东西——CSP 已经不让它跑，
+   这里再把明显的脚本载体剥掉一遍，两道闸。 */
+function sanitizeSave(v, depth) {
+  depth = depth || 0;
+  if (depth > 40) return null;
+  if (typeof v === "string") {
+    if (v.length > 200000) v = v.slice(0, 200000);
+    return v
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script\s*>/gi, "")
+      .replace(/<\/?(script|iframe|object|embed|link|meta|base|form|style|svg|math)\b[^>]*>/gi, "")
+      .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+      .replace(/(javascript|vbscript|data\s*:\s*text\/html)\s*:/gi, "");
+  }
+  if (Array.isArray(v)) return v.map(x => sanitizeSave(x, depth + 1));
+  if (v && typeof v === "object") {
+    const o = {};
+    Object.keys(v).forEach(k => { if (k !== "__proto__" && k !== "constructor" && k !== "prototype") o[k] = sanitizeSave(v[k], depth + 1); });
+    return o;
+  }
+  return v;
+}
+
+/* ---------- 老域名存档接力 ----------
+   正式地址统一成 www.poxiao.lol 之后，裸域名 / Railway 域名上的 localStorage 存档
+   不能就这么丢。www 页面加载时用隐藏 iframe 打开老域名的 /xfer，那边把存档
+   postMessage 过来（server.js 只让 www 嵌它）；谁新用谁，一个会话只拉一次。 */
+const XFER_FROM = ["https://poxiao.lol", "https://lol-breaker-production.up.railway.app"];
+function xferPull() {
+  try {
+    if (location.protocol !== "https:" || location.hostname !== "www.poxiao.lol") return;
+    if (sessionStorage.getItem("pojuzhe_xfer_done")) return;
+    const localAt = () => { const b = readSave(); return (b && !b.bad && typeof b.at === "number") ? b.at : 0; };
+    let pending = XFER_FROM.length, got = false;
+    const frames = [];
+    const finish = () => {
+      frames.forEach(f => { try { f.remove(); } catch (e) {} });
+      window.removeEventListener("message", onMsg);
+      try { sessionStorage.setItem("pojuzhe_xfer_done", "1"); } catch (e) {}
+      if (got && S && S.step === "create") render();
+    };
+    const onMsg = ev => {
+      if (!XFER_FROM.includes(ev.origin) || !ev.data || ev.data.t !== "poxiao-xfer") return;
+      pending--;
+      const raw = ev.data.raw;
+      if (typeof raw === "string" && raw.length < 8e6) {
+        try {
+          let blob = JSON.parse(raw);
+          if (blob && blob.S && typeof blob.at === "number") {
+            blob = migrate(sanitizeSave(blob));
+            if (blob.ver === SAVE_VER && blob.S.step && blob.S.attrs && blob.at > localAt()) {
+              localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
+              got = true;
+            }
+          }
+        } catch (e) {}
+      }
+      if (pending <= 0) finish();
+    };
+    window.addEventListener("message", onMsg);
+    XFER_FROM.forEach(o => {
+      const f = document.createElement("iframe");
+      f.style.display = "none"; f.setAttribute("aria-hidden", "true");
+      f.setAttribute("sandbox", "allow-scripts allow-same-origin");
+      f.src = o + "/xfer";
+      document.body.appendChild(f); frames.push(f);
+    });
+    setTimeout(finish, 8000);
   } catch (e) {}
 }
 
@@ -323,9 +421,11 @@ function importSave() {
       rd.onload = () => {
         try {
           let blob = JSON.parse(rd.result);
-          if (!blob || !blob.S) { alert("这个文件不像是存档。"); return; }
-          blob = migrate(blob);
+          if (!blob || typeof blob !== "object" || !blob.S || typeof blob.S !== "object") { alert("这个文件不像是存档。"); return; }
+          blob = migrate(sanitizeSave(blob));
           if (blob.ver !== SAVE_VER) { alert("存档版本不符，读不了。"); return; }
+          if (!blob.S.step || !blob.S.attrs) { alert("存档内容缺失。"); return; }
+          if (typeof blob.at !== "number") blob.at = Date.now();
           localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
           loadGame();
         } catch (e) { alert("读取失败。"); }
