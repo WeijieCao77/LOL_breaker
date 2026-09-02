@@ -968,6 +968,10 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260904a", at:"2026-09-04", items:[
+    "替补不再莫名其妙打季后赛（玩家实锤：常规赛全程没抢下首发，季后赛却被安排上场、还和同位置首发同框）——教练的名单是连续的：没压过他，季后赛/MSI/世界赛就整届坐替补席，球队用真首发阵容打，你按周在场边看结果",
+    "随队夺冠算球队的：戒指有你一枚，但生涯冠军表、夺冠突破、转会保送都不记——想让奖杯写你的名字，先把首发抢下来（训练赛数据压过对位，出征前教练会重新看一次）"
+  ]},
   {v:"v20260903j", at:"2026-09-04", items:[
     "大陆直连打通：正式地址改为 www.poxiao.lol——原裸域名的边缘 IP 被运营商国际出口单独拉黑（同服务换主机名重新分配 IP 后实测国内 WiFi/流量免代理可开）；裸域名保留，挂代理仍可用"
   ]},
@@ -2558,6 +2562,7 @@ function myRoster(){ return myTeam().players; }
 
 function startSeason(first,split){
   S.split=(split===undefined)?0:split;
+  S.benchedPO=false;   // 新赛段重置「替补看完季后赛」标记
   const HL=S.homeLeague||"LPL";
   const opp=S.world[HL].filter(t=>t.name!==S.team).map(t=>t.name);
   for(let i=opp.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[opp[i],opp[j]]=[opp[j],opp[i]];}
@@ -3683,6 +3688,33 @@ function startPlayoff(){
   }
   S.playoffSeed=seed;
   checkAch("playoff");
+  /* 替补不打季后赛（玩家实锤：常规赛全程没抢下首发，季后赛却被莫名安排上场，
+     还和同位置首发同框）。教练的名单是连续的：你没压过他，季后赛还是他打。
+     球队用真首发阵容模拟，你在替补席按周看结果；夺冠算球队的，不进你的生涯表。 */
+  if(typeof isBenched==="function"&&isBenched()){
+    const tmp={round:1,seed,alive:true,beaten:[S.team]};
+    S.playoff=tmp;
+    const myPw=power(myRoster(),0,SEASONS[S.si].fav);   // 你不在名单里，这就是首发阵容
+    let result="champion";
+    const runNews=[];
+    for(let r=1;r<=3;r++){
+      const on=playoffOpp(r);
+      const op=teamPowerOf(on);
+      const p=clampWinProb(1/(1+Math.exp(-(myPw-op)/SPREAD)), myPw-op);
+      let w=0,l=0; while(w<3&&l<3){ rnd()<p?w++:l++; }
+      if(w<3){ result=r; runNews.push(`${poRoundName(r)}：${S.team} ${w}:${l} 不敌 <b>${on}</b>，止步于此。你在替补席看完了整场。`); break; }
+      tmp.beaten.push(on);
+      runNews.push(`${poRoundName(r)}：${S.team} ${w}:${l} 击败 ${on}。<b>你没有出场。</b>`);
+    }
+    S.playoff=null;
+    S.benchedPO=true;                        // endSeason 据此不给你记冠军
+    S.pendingEnd={result,seed};
+    enterBreak("poEnd",2,SPLITS[S.split||0]+"季后赛 · 替补席",
+      `季后赛名单公布，<b>首发还是 ${S.understudy?S.understudy.id:"他"}</b>——教练看的是训练赛数据，你还没压过他。
+       这几周你坐在替补席上，时间是自己的：练，把差距补上。`);
+    runNews.forEach((t,i)=>queueBreakNews(Math.min(1+i,2),t,/不敌/.test(t)?"bad":"info","季后赛"));
+    return;
+  }
   S.playoff={round:1,seed,alive:true,beaten:[S.team]};
   S.step="match";
   startMatch(true, playoffOpp(1));
@@ -3823,7 +3855,15 @@ function endSeason(result,seed){
     if(amt){ addMoney("prize",amt);
       pushEvent(`${SPLITS[S.split||0]}季后赛奖金到账 <b>${amt} 万</b>。`,"good","奖金"); }
   }
-  if(result==="champion"){
+  if(result==="champion"&&S.benchedPO){
+    /* 球队夺冠、你全程替补：荣誉是球队的（现实里替补也有戒指，
+       但这游戏的生涯表只记你亲手打下的——五人哲学的另一面）。 */
+    const sp=SPLITS[S.split||0];
+    pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${sp}冠军。</b>
+      你在替补席见证了整个过程——<span style="color:var(--ink-3)">戒指有你一枚，生涯表上没有这一行。
+      想让下一座奖杯写你的名字，先把首发抢下来。</span>`,"big","联赛冠军");
+  }
+  else if(result==="champion"){
     const sp=SPLITS[S.split||0];
     S.career.titles.push(`${SEASONS[S.si].tag} ${S.homeLeague||"LPL"}${sp}`);
     S.career.leagueTitles=(S.career.leagueTitles||0)+1;
@@ -4658,6 +4698,11 @@ function simPlayIn(field){
 function startIntl(type,playerResult){
   const HL=S.homeLeague||"LPL";
   const F=SEASONS[S.si];
+  /* 替补随队（玩家实锤的漏洞的另一半）：出征前教练用最新训练赛数据
+     再看一眼——还没压过首发，就整届坐替补席，球队用真首发阵容打。 */
+  if(typeof isBenched==="function"&&isBenched()&&S.understudy){
+    return benchedIntl(type,playerResult);
+  }
   if(type==="msi"){
     const seeds={}; MAJOR.forEach(lg=>seeds[lg]=majorStandings(lg));
     /* 玩家不一定在四大赛区。开放「小赛区当低谷退路」之后，
@@ -4904,6 +4949,67 @@ function intlChampEvent(name,champ){
       lck?"LCK 又一次站在了最高处。":"你在屏幕外看完了颁奖。"}`,
     tone:lck?"bad":"info", tag:name};
 }
+/* ---------- 替补随队：球队去打，你在场边 ----------
+   名单构造和亲历版一致（自己的队占真实名额），赛果整届模拟＋世界线收束，
+   按周揭晓；球队夺冠只发团队新闻，不进你的生涯表、不触发夺冠突破。 */
+function benchedIntl(type,playerResult){
+  const F=SEASONS[S.si];
+  const name=type==="msi"?"MSI":"世界赛";
+  let field,stage;
+  if(type==="msi"){
+    const seeds={}; MAJOR.forEach(lg=>seeds[lg]=majorStandings(lg));
+    const HL=S.homeLeague||"LPL";
+    if(!seeds[HL]) seeds[HL]=majorStandings(HL)||[];
+    if(playerResult==="champion") seeds[HL]=[S.team].concat(seeds[HL].filter(n=>n!==S.team));
+    try{
+      if(typeof MSI_CANON!=="undefined"&&MSI_CANON[S.si]){
+        Object.keys(MSI_CANON[S.si]).forEach(lg=>{
+          const hist=(MSI_CANON[S.si][lg]||[]).filter(n=>n!==S.team&&(S.world[lg]||[]).some(t=>t.name===n));
+          if(hist.length&&rnd()>=wlOf(lg)&&seeds[lg]&&lg!==HL) seeds[lg]=hist.concat(seeds[lg].filter(n=>!hist.includes(n)));
+        });
+      }
+    }catch(e){}
+    const twoSeed=(F.msi&&F.msi.mode)!=="groups";
+    field=[]; MAJOR.forEach(lg=>{ const n=twoSeed&&(lg==="LPL"||lg==="LCK")?2:1; field.push(...(seeds[lg]||[]).slice(0,n)); });
+    if(!twoSeed) (MINOR||[]).forEach(lg=>{ if(!S.world[lg]||!S.world[lg].length) return;
+      const r=majorStandings(lg); if(r&&r[0]&&field.indexOf(r[0])<0) field.push(r[0]); });
+    if(field.indexOf(S.team)<0) field.push(S.team);
+    stage=F.msi.mode==="groups"?"groups":"knockout";
+  }else{
+    const cfg=F.worlds;
+    const {direct,playin}=buildWorldsField(playerResult,cfg);
+    field=direct.concat(canonQual(playin,simPlayIn(playin.filter(n=>n!==S.team)).slice(0,cfg.playin.take)));
+    if(field.indexOf(S.team)<0) field.push(S.team);
+    stage=cfg.main;
+  }
+  const st=convergeStaged(type,field,simEventStaged(field,stage));
+  const champUs=st.champ===S.team;
+  const our= champUs?"决赛"
+    : st.two.includes(S.team)?"决赛"
+    : st.four.includes(S.team)?"四强"
+    : st.eight.includes(S.team)?"八强":"小组赛/瑞士轮";
+  const bench=S.understudy?S.understudy.id:"首发";
+  const ev=champUs
+    ? {text:`${name}落幕，<b>${S.team} 夺冠</b>——你在替补席见证了全程。<span style="color:var(--ink-3)">戒指有你一枚，生涯表上没有这一行。把首发抢下来，下一座才是你的。</span>`,tone:"big",tag:name}
+    : intlChampEvent(name,st.champ);
+  if(type==="msi"){
+    enterBreak("summer",MID_WEEKS,"季中间歇 · 随队 MSI",
+      `教练公布了 ${name} 名单：<b>首发还是 ${bench}</b>。你随队出征，位置在替补席——这几周把训练赛数据打上去。`);
+    queueBreakNews(1,`${name} 开赛。${S.team} 的比赛你都在场边看完。`,"info",name);
+    queueBreakNews(2,`${name} 四强：${st.four.map(n=>n===S.team?`<b>${n}</b>`:n).join("、")}。${st.four.includes(S.team)?"你的队还在走。":`${S.team} 止步${our}。`}`,"info",name);
+    queueBreakNews(3,ev.text,ev.tone,ev.tag);
+  }else{
+    enterBreak("wrap",3,"世界赛 · 替补席随队",
+      `世界赛名单公布：<b>首发还是 ${bench}</b>——教练看的是训练赛数据。你随队出征，在替补席看完这一届。`);
+    queueBreakNews(1,`世界赛开打，${field.length} 支队伍。${S.team} 在场上，你在场边。`,"info","世界赛");
+    queueBreakNews(2,`世界赛八强：${st.eight.map(n=>n===S.team?`<b>${n}</b>`:n).join("、")}。`,"info","世界赛");
+    queueBreakNews(3,`世界赛四强：${st.four.map(n=>n===S.team?`<b>${n}</b>`:n).join("、")}。${st.four.includes(S.team)?"":S.team+" 止步"+our+"。"}`,"info","世界赛");
+    queueBreakNews(4,ev.text,ev.tone,ev.tag);
+  }
+  S.afterIntlGo=null; S._intlWrap=null;
+  return true;
+}
+
 /* ---------- 围观：没资格去的赛事，照打，分周揭晓 ----------
    MSI 铺在季中间歇（2 周）里，世界赛自成 3 周。
    这几周就是普通的间歇周：训练、直播、休息、战队行动都开着。 */
