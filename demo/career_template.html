@@ -283,6 +283,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260904d", at:"2026-09-04", items:[
+    "修复：退役传奇复出只回自己的赛区——PraY/Smeb/Wolf/Bang 不会再空降 LPL 队（玩家实锤：在 IG 时更衣室里 PraY 问你他还能不能打）；只有真在 LPL 打过的 Mata/Looper 才可能回 LPL；本局内退役的按退役时的联赛复出；还在役的人不再重复「复出」一份"
+  ]},
   {v:"v20260904c", at:"2026-09-04", items:[
     "替补席随队夺冠也算冠军（玩家点名）：生涯一览、赛季结算、结局页和顶栏冠军数都记，标「随队」；成就、夺冠突破和转会保底仍只认你亲手打下的"
   ]},
@@ -1180,16 +1183,25 @@ function ageWorld(){
   });
 
   // —— 复出：传奇池 + 本局内退役的选手 ——
-  const legendCands=(DATA.legends||[]).filter(L=>!S.usedLegends.includes(L.id));
+  /* 复出要回自己的赛区（玩家实锤：在 IG 时更衣室里「老将 PraY 问你还能不能打」——
+     他根本不是 LPL 的人）。原来落点写死随机一支 LPL 队。传奇池没有赛区字段，
+     韩国老将里只有真在 LPL 打过的（Mata / Looper）才可能回 LPL；本局内退役的按退役时的联赛。
+     另：传奇池里还在役的人（Rookie 在 V5）不能再「复出」一份。 */
+  const LEGEND_HOME={PraY:["LCK"],Smeb:["LCK"],Wolf:["LCK"],Bang:["LCK","LCS"],Mata:["LCK","LPL"],Looper:["LCK","LPL"]};
+  const activeIds=new Set(Object.values(S.world).flat().flatMap(t=>t.players.map(q=>q.id)));
+  const legendCands=(DATA.legends||[]).filter(L=>!S.usedLegends.includes(L.id)&&!activeIds.has(L.id))
+                  .map(L=>Object.assign({homes:LEGEND_HOME[L.id]||["LPL"]},L));
   const inGame=S.retiredPool.filter(r=>r.peak>54&&SEASONS[S.si].y-r.year<=2&&!r.back)
-                  .map(r=>({id:r.p.id,cn:r.p.cn,pos:r.p.pos,age:r.p.age,r:r.p.r,_ref:r}));
+                  .map(r=>({id:r.p.id,cn:r.p.cn,pos:r.p.pos,age:r.p.age,r:r.p.r,_ref:r,homes:[r.lg||"LPL"]}));
   // 30 岁是强制退役线，复出也不能越线
   const cands=legendCands.concat(inGame)
     .filter(c=>c.age+Math.max(1,SEASONS[S.si].y-2022)<=30);
   if(cands.length&&rnd()<0.7){
     const c=cands[Math.floor(rnd()*cands.length)];
     if(c._ref) c._ref.back=true; else S.usedLegends.push(c.id);
-    const team=S.world.LPL[Math.floor(rnd()*S.world.LPL.length)];
+    const homeLgs=(c.homes||["LPL"]).filter(k=>S.world[k]&&S.world[k].length);
+    const homeLg=homeLgs.length?homeLgs[Math.floor(rnd()*homeLgs.length)]:"LPL";
+    const team=S.world[homeLg][Math.floor(rnd()*S.world[homeLg].length)];
     const idx=team.players.findIndex(q=>q.pos===c.pos&&!q.me);
     if(idx>=0){
       const yearsOut=Math.max(1,SEASONS[S.si].y-2022);
@@ -1202,7 +1214,7 @@ function ageWorld(){
       back.r.运营=clamp(back.r.运营+2,20,99);
       const old=team.players[idx];
       team.players[idx]=back;
-      pushEvent(`<b>${back.id}</b>${back.cn?`（${back.cn}）`:""} 宣布复出，${back.age} 岁加盟 <b>${team.name}</b>，顶替 ${old.id}。手还在不在，要打了才知道。`,"big","复出");
+      pushEvent(`<b>${back.id}</b>${back.cn?`（${back.cn}）`:""} 宣布复出，${back.age} 岁加盟 ${homeLg!=="LPL"?homeLg+" 的 ":""}<b>${team.name}</b>${team.name===S.team?"——<b>你的队</b>":""}，顶替 ${old.id}。手还在不在，要打了才知道。`,"big","复出");
     }
   }
 
