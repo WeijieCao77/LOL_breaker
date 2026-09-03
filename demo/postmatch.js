@@ -212,8 +212,8 @@ function postMatchCard(){
   const upset=(won&&diff<-1.5)||(!won&&diff>1.5);
   return `<div class="card"><h2>赛后拆解 · vs ${m.oppName}<em>${won?"胜":"负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
     <div class="pm-head">
-      <span>综合 <b>${myTotal.toFixed(1)}</b> vs <b>${opTotal.toFixed(1)}</b></span>
-      <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>
+      <span>综合 <b>${pwShow(myTotal).toFixed(1)}</b> vs <b>${pwShow(opTotal).toFixed(1)}</b></span>
+      <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${pwShow(diff).toFixed(1)}</span>
     </div>
     ${upset?`<div class="pm-upset">${won
       ? "账面上你是劣势——这场是打出来的，不是数值给的。节点决策和运气都站在了你这边。"
@@ -237,8 +237,8 @@ function pmReplayCard(){
     <div class="ru-eyebrow">比赛档案 · 拆解回放</div>
     <h2 style="margin:0 0 6px">${seaTag} ${x.tag} · vs ${x.opp}<em style="float:right">${won?"胜":"负"} ${x.sc[0]}:${x.sc[1]}</em></h2>
     <div class="pm-head">
-      <span>综合 <b>${pm.my.toFixed(1)}</b> vs <b>${pm.op.toFixed(1)}</b></span>
-      <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>
+      <span>综合 <b>${pwShow(pm.my).toFixed(1)}</b> vs <b>${pwShow(pm.op).toFixed(1)}</b></span>
+      <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${pwShow(diff).toFixed(1)}</span>
     </div>
     ${pmRowsHtml(pm.rows)}
     ${(typeof boxScoreHtml==="function"&&x.box)?boxScoreHtml(x.box,won,x.opp):""}

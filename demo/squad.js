@@ -212,20 +212,21 @@ function squadCard(){
     v>=62?"linear-gradient(90deg,var(--cyan-dim),var(--cyan))":
     v>=42?"linear-gradient(90deg,#6B5A2A,var(--gold))":
           "linear-gradient(90deg,#5A2228,var(--red))"}"></div></div>`;
-  return `<div class="card"><h2>战队实力<em>综合 ${B.total.toFixed(1)}</em></h2>
+  return `<div class="card"><h2>战队实力<em>综合 ${pwShow(B.total).toFixed(1)}</em></h2>
 
     <div class="formula">
-      <span class="fb">基础战力 ${B.base.toFixed(1)}</span>${B.ws.map(w=>
+      <span class="fb">基础战力 ${pwShow(B.base).toFixed(1)}</span>${B.ws.map(w=>
         `<span class="fx">×</span><span class="fw ${w.mult>=1.008?'up':w.mult<=0.992?'dn':''}">${w.n} ${w.mult.toFixed(3)}</span>`
-      ).join("")}<span class="fx">=</span><span class="ft">${B.total.toFixed(1)}</span>
+      ).join("")}<span class="fx">=</span><span class="ft">${pwShow(B.total).toFixed(1)}</span>
     </div>
+    <p class="note" style="margin-top:4px">基础战力 = 五个人的实力按比赛权重加权（你 ×1.3 / 核心 ×1.6），指挥不进这里、走下面的全队乘数——所以它和五维均值差一点是正常的。</p>
 
-    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">基础战力 · 五名选手的个人数值</h3>
+    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">五名选手的实力 <span style="font-weight:400">· 五维均值，和天梯、试训、杯赛同一把尺；段位按同一张表</span></h3>
     <div class="attrs">${mates.map(p=>{
-      const ih=(!p.me&&typeof mateInjuryHit==="function")?mateInjuryHit(p):0;
-      const v=(p.r.操作*0.34+p.r.运营*0.28+p.r.心态*0.14+p.r.体质*0.10)+ih;
+      const ih=(!p.me&&typeof mateInjuryHit==="function")?mateInjuryHit(p)*PW_SHOW:0;
+      const v=strength(p)+ih;
       return `<div class="at wide"><div class="lb">${POSN[p.pos]}</div>${bar(v)}
-        <div class="vn mono"><b>${v.toFixed(0)}</b>${typeof avatarOf==="function"?avatarOf(p,22):""}<span class="pname">${
+        <div class="vn mono"><b>${v.toFixed(0)}</b><small style="color:var(--ink-3);margin-left:4px">${tierOf(v)}</small>${typeof avatarOf==="function"?avatarOf(p,22):""}<span class="pname">${
           p.me?'<b style="color:var(--gold)">你</b>':p.id.slice(0,8)}</span>${ih?`<span class="tag l" title="带伤/替补顶上">伤</span>`:""}</div></div>`;
     }).join("")}</div>
 

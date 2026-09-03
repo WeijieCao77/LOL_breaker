@@ -26,10 +26,10 @@
    青训 59≈LDL 首发 / 弱队 65≈王者(LPL平均) / 中游 71≈国服前100 / 豪门 79≈国服前10。
    宗师(60)的人在二队试训评 B，履历通道进来的（~55）评 C 拿青训约——各得其所。 */
 const CLUB_TIERS = {
-  top:   { n:"豪门",   expect:79, pay:[100,400], sign:[60,150], years:3, buyout:[900,2200] },
-  mid:   { n:"中游",   expect:71, pay:[45,130],  sign:[20,60],  years:2, buyout:[350,900] },
-  low:   { n:"弱队",   expect:65, pay:[20,60],   sign:[8,25],   years:2, buyout:[150,400] },
-  acad:  { n:"二队/青训", expect:59, pay:[3,15],    sign:[0,4],    years:2, buyout:[40,120] }
+  top:   { n:"豪门",   expect:77, pay:[100,400], sign:[60,150], years:3, buyout:[900,2200] },
+  mid:   { n:"中游",   expect:69, pay:[45,130],  sign:[20,60],  years:2, buyout:[350,900] },
+  low:   { n:"弱队",   expect:63, pay:[20,60],   sign:[8,25],   years:2, buyout:[150,400] },
+  acad:  { n:"二队/青训", expect:57, pay:[3,15],    sign:[0,4],    years:2, buyout:[40,120] }
 };
 
 /* ---------- 试训的四个环节 ----------
@@ -61,10 +61,9 @@ const TRYOUT_DAYS = [
 
 /* ---------- 一、邀请 ---------- */
 /* 你现在的个人水平，和试训评分同一把尺子 */
-function tryoutSkill(){
-  return S.attrs.操作*0.34 + S.attrs.运营*0.24 + S.attrs.指挥*0.20
-       + S.attrs.心态*0.14 + S.attrs.体质*0.08;
-}
+/* 统一实力尺：试训看的也是五维均值（原来是操作 .34/指挥 .20 的另一把尺，
+   同一个人比新尺高 2 左右——各档 expect 同步 −2，评级分布不变） */
+function tryoutSkill(){ return myStrength(); }
 /* 各档俱乐部的门槛，和你现在的位置——玩家点名（2026-09-02）：
    「进俱乐部看不到段位门槛和我的当前实力」。两把尺子都摆出来：
    实力期望（试训评级用的综合）和段位底线（试训邀请的准入）。 */
@@ -353,11 +352,11 @@ function inviteCard(){
         try{
           const rk=(S.world[iv.league]||[]).map(t=>({n:t.name,p:power(t)})).sort((a,b)=>b.p-a.p);
           const i=rk.findIndex(t=>t.n===iv.team);
-          return i>=0?`<span class="tag">${iv.league} 第 ${i+1}/${rk.length} · 战力 ${rk[i].p.toFixed(1)}</span>`:"";
+          return i>=0?`<span class="tag">${iv.league} 第 ${i+1}/${rk.length} · 战力 ${pwShow(rk[i].p).toFixed(1)}</span>`:"";
         }catch(e){ return ""; }
       }
       const st=clubStanding(iv.team);
-      return st?`<span class="tag">LPL 第 ${st.pos}/${st.of} · 战力 ${st.power.toFixed(1)}</span>`:"";
+      return st?`<span class="tag">LPL 第 ${st.pos}/${st.of} · 战力 ${pwShow(st.power).toFixed(1)}</span>`:"";
     })()}</div>
     <p class="note" style="margin:0 0 10px">他们来找你，是因为${iv.reason}。
       <b>但找你和要你是两回事</b>——能不能签下来，看接下来这四天。<br>

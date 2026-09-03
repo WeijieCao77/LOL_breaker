@@ -1000,6 +1000,12 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260905c", at:"2026-09-05", items:[
+    "统一实力尺（玩家拍板「基础实力只有一个数据」）：全游戏的「实力」只剩一个数——五维均值。天梯、试训、杯赛、队伍面板、明星聚光灯原来各用一套加权公式（排位看操作、试训看指挥、杯赛又一套、面板权重和只有 0.86），同一个人能被标出 39 / 45 / 48 三个数——现在全部读同一个数，段位按同一张表",
+    "队伍面板不再撒谎：LPL 首发不再显示成「四五十」——那是权重和 0.86 的比赛口径，对外一律归一到实力尺（LDL 均值 58 ≈ 宗师、LPL 均值 65 ≈ 国服前 100 边缘、明星 75+ ≈ 国服第一档）；每个人旁边直接标段位；战力、赛后拆解的综合同步归一",
+    "选手实力按比赛数据再平衡：明星放大量跟着战队真实胜率走——垫底队里刷出来的个人数据不再满额放大（此前 Astralis 的 Kobbe 被排到世界前 20，压过 TheShy/Rookie）",
+    "天梯曲线、杯赛对手带、试训期望值同步换尺（左移 5.5 / −3 / −2），爬分节奏、夺冠率、评级分布与换尺前一致——老档自动迁移，正在进行的试训期望值一并补齐"
+  ]},
   {v:"v20260905b", at:"2026-09-05", items:[
     "更衣室「资源之争」的选项改词：原来写「我打辅助位」像是要转位置，实际意思是少吃资源、打功能型——现在写「资源给他，我少吃点、打功能型」（玩家点名）"
   ]},
@@ -1228,7 +1234,12 @@ const mult=t=>0.40+t*0.16;
    综合 81 以上天梯已无法区分——Faker 档 88-90，排位读数一样是「国服第一」。
    世界数据整体 +15 并按赛区定锚（见 REGION_ANCHOR），玩家开局属性不动：
    开局 ~45 恰好就是新尺上的钻石门口，前期节奏和过去一致。 */
-const RANK_CURVE=[[35,0],[40,12],[45,26],[55,44],[60,60],[65,74],[71,86],[77,95],[81,100]];
+/* 统一实力尺（2026-09-05 玩家拍板：「基础实力只有一个数据」）：
+   曲线的横轴现在是五维均值（strength），不再是操作加权的「排位实力」。
+   整体左移 5.5——那是同一个人两种算法的系统差（开局 48 vs 42.6，满练 75 vs 69），
+   所以天梯的爬升节奏与迁移前一致。对表：LDL 均值 58 ≈ 宗师、LPL 均值 65 ≈ 国服前 100 边缘、
+   明星 75+ ≈ 国服第一档；玩家开局 42.6 ≈ 钻石。 */
+const RANK_CURVE=[[29.5,0],[34.5,12],[39.5,26],[49.5,44],[54.5,60],[59.5,74],[65.5,86],[71.5,95],[75.5,100]];
 function skillToRank(s){
   const C=RANK_CURVE;
   if(s<=C[0][0]) return 0;
@@ -1544,18 +1555,29 @@ const SCALE_UP=2.0;   // 2.2 时明星队叠出 88+ 车队，主角的冠军窗�
    Faker 的离均差只有 +0.2）。这些名字不该低于他们的江湖地位——
    这是编辑判断，不是数据，所以名单刻意短。 */
 const STAR_FLOOR={Faker:82,Chovy:80,Ruler:80,Viper:78,ShowMaker:78,Keria:77,
-  Deft:76,Scout:77,TheShy:75,Rookie:75,Xiaohu:74};
+  Deft:76,Scout:77,TheShy:75,Rookie:75,Xiaohu:74,
+  Caps:72,     // 2022 数据把「欧洲之王」量成 61（体质维度异常低）——LEC 春季冠军中单不该低于 LPL 均值
+  Jiejie:74};  // S11 冠军打野、2022 数据只量到 67——玩家点名的明星，不该在 LPL 均值边上
 function anchorLeague(lg,teams,anchorOverride){
   const anchor=(anchorOverride!==undefined)?anchorOverride:REGION_ANCHOR[lg];
   if(anchor===undefined||!teams||!teams.length) return;
   const st=REGION_STYLE[lg]||{};
-  const all=[]; teams.forEach(t=>(t.players||[]).forEach(p=>{ if(!p.me&&p.r) all.push(p); }));
+  const all=[], wrOf=new Map();
+  teams.forEach(t=>(t.players||[]).forEach(p=>{ if(!p.me&&p.r){ all.push(p); wrOf.set(p,(t.wr!==undefined)?t.wr:0.5); } }));
   if(!all.length) return;
   const compOf=p=>avg(DIMS.map(d=>p.r[d]||50));
   const mean=avg(all.map(compOf));
   all.forEach(p=>{
     const dev=compOf(p)-mean;
-    const add=anchor-mean+(dev>0?dev*(SCALE_UP-1):0);
+    /* 明星放大量跟着战队真实胜率走（2026-09-05 玩家点名「具体选手实力要根据比赛数据做平衡」）：
+       胜率 50% 以上的队全额放大——这部分是批测校准过的头部格局，一分不动；
+       输多赢少的队按胜率打折（39% 的队放 82%，垫底 30% 的队放六成）——
+       垫底队刷出来的个人数据不值满额（此前 Astralis 的 Kobbe 被放到世界前 20，压过 TheShy/Rookie）。
+       第一版以 0.5 为中心双向缩放，结果 LCK 前二胜率更极端、LPL 头部反被打八折，世界赛率掉了 8 个点——
+       2×120 局批测抓的，改成只罚不奖。 */
+    const wr=wrOf.get(p);
+    const up=(SCALE_UP-1)*clamp(1+(wr-0.5)*1.6,0.6,1.0);
+    const add=anchor-mean+(dev>0?dev*up:0);
     DIMS.forEach(d=>{ p.r[d]=q1(clamp((p.r[d]||50)+add+(st[d]||0),30,96)); });
   });
   const drift=avg(all.map(compOf))-anchor;
@@ -1870,6 +1892,18 @@ function nowStamp(){
 
 /* ---------- 事件系统 ---------- */
 function ovrOf(p){ return avg(DIMS.map(d=>p.r[d])); }
+/* ================= 统一实力尺（2026-09-05）=================
+   全游戏只有一个「实力」：五维均值。天梯、试训、杯赛、队伍面板、明星聚光灯全读它，
+   段位是它的函数（RANK_CURVE 一张表，tierOf）。
+   战力（power）内部权重和是 0.86、不含指挥——那是比赛模拟的口径，对外显示一律
+   乘 PW_SHOW 归一到实力尺，免得「LPL 首发 47」这种读数把人骗到。 */
+function strength(r){ const x=(r&&r.r)?r.r:r; return avg(DIMS.map(d=>(x&&x[d])||0)); }
+function myStrength(){
+  return strength(S.attrs)+(typeof gearBonus==="function"?avg(DIMS.map(d=>gearBonus(d)||0)):0);
+}
+function tierOf(s){ return rankName(skillToRank(s)); }
+const PW_SHOW=1/0.86;
+function pwShow(p){ return p*PW_SHOW; }
 function pushEvent(text,tone,tag){
   S.events.push({s:(typeof nowStamp==="function")?nowStamp():SEASONS[S.si].tag,
                  w:S.week,text,tone:tone||"info",tag:tag||"联赛"});
@@ -2218,10 +2252,9 @@ function preLog(t,tone){ S.pre.log.push({t,tone:tone||"info",w:S.pre.week,
     stamp:(typeof nowStamp==="function")?nowStamp():""}); if(S.pre.log.length>60)S.pre.log.shift(); }
 
 /* 排位实力：单排能不能赢，主要看操作和运营，心态决定逆风局。 */
-function soloSkill(){
-  return S.attrs.操作*0.50+S.attrs.运营*0.30+S.attrs.心态*0.20
-       + (typeof gearBonus==="function"?(gearBonus("操作")*0.5+gearBonus("运营")*0.3):0);
-}
+/* 统一实力尺：排位看的也是同一个数（原来是操作 .5/运营 .3/心态 .2 的另一把尺，
+   和队伍面板、试训、杯赛各说各话——玩家原话「基础实力只有一个数据」） */
+function soloSkill(){ return myStrength(); }
 /* 当前分数位置对应的实力门槛。
    这条曲线必须和「实际能练到的排位实力」在同一量纲上：
    均衡 build 练满约 58 -> 大师；极限 build 约 77 -> 国服前十。
@@ -3211,8 +3244,8 @@ function viewSeason(){
       <button class="btn ghost sm" id="auto">自动推进到下一件事</button>
     </div>
     ${benched&&typeof scrimPanel==="function"?scrimPanel():""}
-    ${opp?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${power(opp,0,sea.fav).toFixed(1)}）
-      vs 你队 ${power(myRoster(),S.fatigue,sea.fav).toFixed(1)}</p>`:""}
+    ${opp?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(power(opp,0,sea.fav)).toFixed(1)}）
+      vs 你队 ${pwShow(power(myRoster(),S.fatigue,sea.fav)).toFixed(1)}</p>`:""}
   </div>
   ${typeof pressCard==="function"?pressCard():""}
   ${typeof injuryCard==="function"?injuryCard():""}`;
@@ -3719,9 +3752,9 @@ function viewMatch(){
     <h2>${sea.tag} ${S.intl?intlStageName():S.playoff?"季后赛":"第 "+S.week+" 周"}<em>${
       m.need===1?"单局定胜负":m.need===2?"三局两胜":"五局三胜"}</em></h2>
     <div class="vs">
-      <div class="side"><div class="nm">${teamLogo(S.team,34)}<br>${S.team}</div><div class="pw mono">战力 ${my.toFixed(1)}</div></div>
+      <div class="side"><div class="nm">${teamLogo(S.team,34)}<br>${S.team}</div><div class="pw mono">战力 ${pwShow(my).toFixed(1)}</div></div>
       <div class="score">${m.sc[0]} : ${m.sc[1]}</div>
-      <div class="side"><div class="nm">${teamLogo(m.oppName,34)}<br>${m.oppName}</div><div class="pw mono">战力 ${op.toFixed(1)}</div></div>
+      <div class="side"><div class="nm">${teamLogo(m.oppName,34)}<br>${m.oppName}</div><div class="pw mono">战力 ${pwShow(op).toFixed(1)}</div></div>
     </div>
     ${typeof starLaneBadge==="function"?starLaneBadge(m.oppName):""}
     ${m.node?`<div class="node"><div class="q">${m.node.q}</div><div class="ctx">${m.node.ctx}</div>
@@ -3938,10 +3971,10 @@ function prepPanel(){
     ${typeof questCard==="function"?questCard():""}
     <div class="next">
       <div class="sd"><div class="nm">${typeof teamLogo==="function"?teamLogo(S.team,20):""} ${S.team}</div>
-        <div class="pw">战力 ${power(myRoster(),S.fatigue,SEASONS[S.si].fav).toFixed(1)}</div></div>
+        <div class="pw">战力 ${pwShow(power(myRoster(),S.fatigue,SEASONS[S.si].fav)).toFixed(1)}</div></div>
       <div class="mid">VS</div>
       <div class="sd"><div class="nm">${typeof teamLogo==="function"?teamLogo(P.opp,20):""} ${P.opp}</div>
-        <div class="pw">${oppT?`战力 ${power(oppT,0,SEASONS[S.si].fav).toFixed(1)}`:""}</div></div>
+        <div class="pw">${oppT?`战力 ${pwShow(power(oppT,0,SEASONS[S.si].fav)).toFixed(1)}`:""}</div></div>
     </div>
     ${typeof starSpotHtml==="function"?starSpotHtml(P.opp):""}
     <p class="note">下一场之前还有一点时间。<b>怎么用是你的事</b>——歇一口气、过一遍录像，
@@ -4594,7 +4627,7 @@ function actPanelPre(){
       <br>距离转会窗口还有 <b>${Math.max(0,PRE_YEAR-P.week)}</b> 周<span style="color:var(--ink-3)">（那是年末各队定人的日子；试训邀请不等它，什么时候够格什么时候来）</span>。</div>
     <div class="ver">
       ${rankBadge(P.rank,40)}${nextR?`　→　下一档 ${nextR.n}`:`　→　已经到顶`}<br>
-      排位实力 <b>${soloSkill().toFixed(0)}</b>　·　当前分段门槛 <b>${rankReq(P.rank).toFixed(0)}</b>${
+      实力 <b>${soloSkill().toFixed(0)}</b><span style="color:var(--ink-3)">（五维均值，全游戏同一个数）</span>　·　当前分段门槛 <b>${rankReq(P.rank).toFixed(0)}</b>${
         nextR?`　·　${nextR.n}门槛 <b>${rankReq(nextR.at).toFixed(0)}</b>`:""}<br>
       <span style="color:${soloWinP()>=0.5?'var(--cyan)':'var(--red)'}">${
         soloSkill()>=rankReq(P.rank)+6?"这个分段对你没什么难度，往上冲。":
@@ -7305,20 +7338,21 @@ function squadCard(){
     v>=62?"linear-gradient(90deg,var(--cyan-dim),var(--cyan))":
     v>=42?"linear-gradient(90deg,#6B5A2A,var(--gold))":
           "linear-gradient(90deg,#5A2228,var(--red))"}"></div></div>`;
-  return `<div class="card"><h2>战队实力<em>综合 ${B.total.toFixed(1)}</em></h2>
+  return `<div class="card"><h2>战队实力<em>综合 ${pwShow(B.total).toFixed(1)}</em></h2>
 
     <div class="formula">
-      <span class="fb">基础战力 ${B.base.toFixed(1)}</span>${B.ws.map(w=>
+      <span class="fb">基础战力 ${pwShow(B.base).toFixed(1)}</span>${B.ws.map(w=>
         `<span class="fx">×</span><span class="fw ${w.mult>=1.008?'up':w.mult<=0.992?'dn':''}">${w.n} ${w.mult.toFixed(3)}</span>`
-      ).join("")}<span class="fx">=</span><span class="ft">${B.total.toFixed(1)}</span>
+      ).join("")}<span class="fx">=</span><span class="ft">${pwShow(B.total).toFixed(1)}</span>
     </div>
+    <p class="note" style="margin-top:4px">基础战力 = 五个人的实力按比赛权重加权（你 ×1.3 / 核心 ×1.6），指挥不进这里、走下面的全队乘数——所以它和五维均值差一点是正常的。</p>
 
-    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">基础战力 · 五名选手的个人数值</h3>
+    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">五名选手的实力 <span style="font-weight:400">· 五维均值，和天梯、试训、杯赛同一把尺；段位按同一张表</span></h3>
     <div class="attrs">${mates.map(p=>{
-      const ih=(!p.me&&typeof mateInjuryHit==="function")?mateInjuryHit(p):0;
-      const v=(p.r.操作*0.34+p.r.运营*0.28+p.r.心态*0.14+p.r.体质*0.10)+ih;
+      const ih=(!p.me&&typeof mateInjuryHit==="function")?mateInjuryHit(p)*PW_SHOW:0;
+      const v=strength(p)+ih;
       return `<div class="at wide"><div class="lb">${POSN[p.pos]}</div>${bar(v)}
-        <div class="vn mono"><b>${v.toFixed(0)}</b>${typeof avatarOf==="function"?avatarOf(p,22):""}<span class="pname">${
+        <div class="vn mono"><b>${v.toFixed(0)}</b><small style="color:var(--ink-3);margin-left:4px">${tierOf(v)}</small>${typeof avatarOf==="function"?avatarOf(p,22):""}<span class="pname">${
           p.me?'<b style="color:var(--gold)">你</b>':p.id.slice(0,8)}</span>${ih?`<span class="tag l" title="带伤/替补顶上">伤</span>`:""}</div></div>`;
     }).join("")}</div>
 
@@ -8317,8 +8351,8 @@ function postMatchCard(){
   const upset=(won&&diff<-1.5)||(!won&&diff>1.5);
   return `<div class="card"><h2>赛后拆解 · vs ${m.oppName}<em>${won?"胜":"负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
     <div class="pm-head">
-      <span>综合 <b>${myTotal.toFixed(1)}</b> vs <b>${opTotal.toFixed(1)}</b></span>
-      <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>
+      <span>综合 <b>${pwShow(myTotal).toFixed(1)}</b> vs <b>${pwShow(opTotal).toFixed(1)}</b></span>
+      <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${pwShow(diff).toFixed(1)}</span>
     </div>
     ${upset?`<div class="pm-upset">${won
       ? "账面上你是劣势——这场是打出来的，不是数值给的。节点决策和运气都站在了你这边。"
@@ -8342,8 +8376,8 @@ function pmReplayCard(){
     <div class="ru-eyebrow">比赛档案 · 拆解回放</div>
     <h2 style="margin:0 0 6px">${seaTag} ${x.tag} · vs ${x.opp}<em style="float:right">${won?"胜":"负"} ${x.sc[0]}:${x.sc[1]}</em></h2>
     <div class="pm-head">
-      <span>综合 <b>${pm.my.toFixed(1)}</b> vs <b>${pm.op.toFixed(1)}</b></span>
-      <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>
+      <span>综合 <b>${pwShow(pm.my).toFixed(1)}</b> vs <b>${pwShow(pm.op).toFixed(1)}</b></span>
+      <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${pwShow(diff).toFixed(1)}</span>
     </div>
     ${pmRowsHtml(pm.rows)}
     ${(typeof boxScoreHtml==="function"&&x.box)?boxScoreHtml(x.box,won,x.opp):""}
@@ -8592,7 +8626,7 @@ function fixtureCard(){
   const trs=rows.map(x=>{
     const t=S.world[HL].find(q=>q.name===x.opp);
     const st=(S.standings[HL]||{})[x.opp]||{w:0,l:0};
-    const pw=t?power(t,0,sea.fav).toFixed(1):"—";
+    const pw=t?pwShow(power(t,0,sea.fav)).toFixed(1):"—";
     const now=x.w===S.week&&S.step==="season";
     const res=x.r?`<b class="${x.r.won?'w':'l'}">${x.r.won?"胜":"负"}</b> ${x.r.sc[0]}:${x.r.sc[1]}`:now?"本周":"—";
     const me=x.r?(x.r.played?"上场":`<span style="color:var(--ink-3)">替补席</span>`):"";
@@ -10261,18 +10295,18 @@ const NODES_MORE=[
    城市赛＝钻石到大师（45-57），主播杯＝大师到王者（52-64）。
    玩家开局属性没动（~45 恰在钻石门口），相对难度和过去一致。 */
 const CUPS={
-  city:{ name:"城市争霸赛", rounds:4, gap:1, band:[45,57],
+  city:{ name:"城市争霸赛", rounds:4, gap:1, band:[42,54],
          prize:[0,2,8,20,50],
          rn:["小组赛","八强赛","半决赛","决赛"],
          opps:["网吧联队","本地车队","大学生战队","市队"] },
-  stream:{ name:"主播杯", rounds:3, gap:1, band:[52,64],
+  stream:{ name:"主播杯", rounds:3, gap:1, band:[49,61],
          prize:[0,10,30,80],
          rn:["小组赛","半决赛","决赛"],
          opps:["百万粉丝队","退役选手队","冠军主播队"] },
   /* 全明星周末的娱乐表演赛（现实原型：LPL 全明星周末「主播对抗」）。
      邀请制看人气，免报名费，输了也有出场费——这是舞台，不是淘汰赛。
      主办方配明星队友，所以不动你的车队，胜负按个人发挥算。 */
-  show:{ name:"全明星周末 · 主播表演赛", rounds:1, gap:1, band:[58,58],
+  show:{ name:"全明星周末 · 主播表演赛", rounds:1, gap:1, band:[55,55],
          prize:[5,15],
          rn:["表演赛"],
          opps:["明星联队"] }
@@ -10357,12 +10391,7 @@ function cupOppPower(k){
 }
 /* 把强度翻回段位，界面上直说「这一轮对手大概什么水平」。
    玩家对段位有直觉，对 56.9 这个数字没有。 */
-function powerRank(p){
-  const v=clamp((p-40)/0.38,0,100);
-  let n=RANKS[0].n;
-  RANKS.forEach(r=>{ if(v>=r.at) n=r.n; });
-  return n;
-}
+function powerRank(p){ return tierOf(p); }   // 统一实力尺：同一张表
 function cupOppName(k){
   const c=cupOf(k), C=CUPS[k];
   return C.opps[Math.min(c.round-1,C.opps.length-1)];
@@ -10372,10 +10401,9 @@ function cupOppName(k){
    的个人数值，再乘默契、战术、士气——和职业赛同一套构成，只是
    系数更敏感（路人队从 30 练到 60 的收益要看得见）。
    老档没有车队时退回纯个人的旧公式。 */
-function cupPersonal(p){
-  const r=p.r||p;
-  return r.操作*0.42+r.运营*0.28+r.心态*0.18+r.体质*0.12+(r.指挥-50)*0.12;
-}
+/* 统一实力尺：杯赛也读五维均值（原来是操作 .42 的另一把尺，玩家开局在旧尺上 45.4、
+   新尺上 42.6——对手带整体下移 3 补偿，夺冠率不变） */
+function cupPersonal(p){ return strength(p); }
 function cupMyPower(k){
   const solo=cupPersonal(S.attrs)
        +(typeof gearBonus==="function"?gearBonus("操作")*0.4:0);
@@ -10835,6 +10863,7 @@ function loadGame() {
     fixSeasonAttr0(S);
     fixLdlNames(S);
     fixWl(S);
+    fixScaleV3(S);
     // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
     // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
     if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
@@ -10863,6 +10892,19 @@ function fixLdlNames(s) {
         if (real) p.id = real.id;
       });
     });
+  } catch (e) {}
+}
+
+/* 统一实力尺（v20260905c）：试训的「你现在」从操作加权换成五维均值，同一个人低 2 左右，
+   各档 expect 同步 −2。老档里已经发出的邀请/正在进行的试训/挂着的报价还带着旧 expect，
+   这里补齐——否则老玩家正在走的那次试训会平白难 2 分。属性、世界、天梯读数都不动。 */
+function fixScaleV3(s) {
+  try {
+    if (!s || s.scaleV3) return;
+    s.scaleV3 = 1;
+    const adj = o => { if (o && typeof o.expect === "number") o.expect = Math.max(40, o.expect - 2); };
+    if (s.pre) adj(s.pre.invite);
+    adj(s.tryout); adj(s.deal);
   } catch (e) {}
 }
 
@@ -11211,10 +11253,10 @@ function confirmCard(){
    青训 59≈LDL 首发 / 弱队 65≈王者(LPL平均) / 中游 71≈国服前100 / 豪门 79≈国服前10。
    宗师(60)的人在二队试训评 B，履历通道进来的（~55）评 C 拿青训约——各得其所。 */
 const CLUB_TIERS = {
-  top:   { n:"豪门",   expect:79, pay:[100,400], sign:[60,150], years:3, buyout:[900,2200] },
-  mid:   { n:"中游",   expect:71, pay:[45,130],  sign:[20,60],  years:2, buyout:[350,900] },
-  low:   { n:"弱队",   expect:65, pay:[20,60],   sign:[8,25],   years:2, buyout:[150,400] },
-  acad:  { n:"二队/青训", expect:59, pay:[3,15],    sign:[0,4],    years:2, buyout:[40,120] }
+  top:   { n:"豪门",   expect:77, pay:[100,400], sign:[60,150], years:3, buyout:[900,2200] },
+  mid:   { n:"中游",   expect:69, pay:[45,130],  sign:[20,60],  years:2, buyout:[350,900] },
+  low:   { n:"弱队",   expect:63, pay:[20,60],   sign:[8,25],   years:2, buyout:[150,400] },
+  acad:  { n:"二队/青训", expect:57, pay:[3,15],    sign:[0,4],    years:2, buyout:[40,120] }
 };
 
 /* ---------- 试训的四个环节 ----------
@@ -11246,10 +11288,9 @@ const TRYOUT_DAYS = [
 
 /* ---------- 一、邀请 ---------- */
 /* 你现在的个人水平，和试训评分同一把尺子 */
-function tryoutSkill(){
-  return S.attrs.操作*0.34 + S.attrs.运营*0.24 + S.attrs.指挥*0.20
-       + S.attrs.心态*0.14 + S.attrs.体质*0.08;
-}
+/* 统一实力尺：试训看的也是五维均值（原来是操作 .34/指挥 .20 的另一把尺，
+   同一个人比新尺高 2 左右——各档 expect 同步 −2，评级分布不变） */
+function tryoutSkill(){ return myStrength(); }
 /* 各档俱乐部的门槛，和你现在的位置——玩家点名（2026-09-02）：
    「进俱乐部看不到段位门槛和我的当前实力」。两把尺子都摆出来：
    实力期望（试训评级用的综合）和段位底线（试训邀请的准入）。 */
@@ -11538,11 +11579,11 @@ function inviteCard(){
         try{
           const rk=(S.world[iv.league]||[]).map(t=>({n:t.name,p:power(t)})).sort((a,b)=>b.p-a.p);
           const i=rk.findIndex(t=>t.n===iv.team);
-          return i>=0?`<span class="tag">${iv.league} 第 ${i+1}/${rk.length} · 战力 ${rk[i].p.toFixed(1)}</span>`:"";
+          return i>=0?`<span class="tag">${iv.league} 第 ${i+1}/${rk.length} · 战力 ${pwShow(rk[i].p).toFixed(1)}</span>`:"";
         }catch(e){ return ""; }
       }
       const st=clubStanding(iv.team);
-      return st?`<span class="tag">LPL 第 ${st.pos}/${st.of} · 战力 ${st.power.toFixed(1)}</span>`:"";
+      return st?`<span class="tag">LPL 第 ${st.pos}/${st.of} · 战力 ${pwShow(st.power).toFixed(1)}</span>`:"";
     })()}</div>
     <p class="note" style="margin:0 0 10px">他们来找你，是因为${iv.reason}。
       <b>但找你和要你是两回事</b>——能不能签下来，看接下来这四天。<br>
@@ -13525,7 +13566,7 @@ const STARS={
   Uzi:{ep:"永远的狂小狗", t:"ADC 的代名词——退役又复出，手还在"},
   TheShy:{ep:"上路单杀机器", t:"对线期每一次换血都可能是终结"},
   Rookie:{ep:"宿命中单", t:"S8 冠军中单，LPL 外援的天花板"},
-  JieJie:{ep:"EDG 的野区发动机", t:"S11 冠军打野，节奏从他手上起"},
+  Jiejie:{ep:"EDG 的野区发动机", t:"S11 冠军打野，节奏从他手上起"},   // 库里的写法是 Jiejie
   Scout:{ep:"S11 决赛 MVP", t:"稳到可怕的中单"},
   Viper:{ep:"毒蛇", t:"S11 冠军 AD，团战永远站在最正确的位置"},
   Knight:{ep:"天才中单", t:"LPL 本土中单的招牌"},
@@ -13603,7 +13644,7 @@ function starSpotHtml(teamName){
     h+=`<div class="ver" style="border-left:3px solid var(--gold);padding-left:10px;margin-top:10px">
       <div style="font-size:11px;letter-spacing:.08em;color:var(--ink-3)">对位聚光灯</div>
       <div style="font-size:15px;margin:2px 0"><b>${lane.id}</b> · ${lane.ep}${lane.p.cn?`<span style="color:var(--ink-3)">（${lane.p.cn}）</span>`:""}
-        <span class="tag">综合 ${ovrOf(lane.p).toFixed(0)} · 你 ${myOvr().toFixed(0)}</span></div>
+        <span class="tag">实力 ${ovrOf(lane.p).toFixed(0)}（${tierOf(ovrOf(lane.p))}） · 你 ${myOvr().toFixed(0)}（${tierOf(myOvr())}）</span></div>
       <div style="color:var(--ink-2);font-size:12.5px">${lane.t}。${starPrepLine(lane)}</div></div>`;
   }
   if(others.length){

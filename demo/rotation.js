@@ -49,7 +49,7 @@ function fixtureCard(){
   const trs=rows.map(x=>{
     const t=S.world[HL].find(q=>q.name===x.opp);
     const st=(S.standings[HL]||{})[x.opp]||{w:0,l:0};
-    const pw=t?power(t,0,sea.fav).toFixed(1):"—";
+    const pw=t?pwShow(power(t,0,sea.fav)).toFixed(1):"—";
     const now=x.w===S.week&&S.step==="season";
     const res=x.r?`<b class="${x.r.won?'w':'l'}">${x.r.won?"胜":"负"}</b> ${x.r.sc[0]}:${x.r.sc[1]}`:now?"本周":"—";
     const me=x.r?(x.r.played?"上场":`<span style="color:var(--ink-3)">替补席</span>`):"";

@@ -15,7 +15,7 @@ const STARS={
   Uzi:{ep:"永远的狂小狗", t:"ADC 的代名词——退役又复出，手还在"},
   TheShy:{ep:"上路单杀机器", t:"对线期每一次换血都可能是终结"},
   Rookie:{ep:"宿命中单", t:"S8 冠军中单，LPL 外援的天花板"},
-  JieJie:{ep:"EDG 的野区发动机", t:"S11 冠军打野，节奏从他手上起"},
+  Jiejie:{ep:"EDG 的野区发动机", t:"S11 冠军打野，节奏从他手上起"},   // 库里的写法是 Jiejie
   Scout:{ep:"S11 决赛 MVP", t:"稳到可怕的中单"},
   Viper:{ep:"毒蛇", t:"S11 冠军 AD，团战永远站在最正确的位置"},
   Knight:{ep:"天才中单", t:"LPL 本土中单的招牌"},
@@ -93,7 +93,7 @@ function starSpotHtml(teamName){
     h+=`<div class="ver" style="border-left:3px solid var(--gold);padding-left:10px;margin-top:10px">
       <div style="font-size:11px;letter-spacing:.08em;color:var(--ink-3)">对位聚光灯</div>
       <div style="font-size:15px;margin:2px 0"><b>${lane.id}</b> · ${lane.ep}${lane.p.cn?`<span style="color:var(--ink-3)">（${lane.p.cn}）</span>`:""}
-        <span class="tag">综合 ${ovrOf(lane.p).toFixed(0)} · 你 ${myOvr().toFixed(0)}</span></div>
+        <span class="tag">实力 ${ovrOf(lane.p).toFixed(0)}（${tierOf(ovrOf(lane.p))}） · 你 ${myOvr().toFixed(0)}（${tierOf(myOvr())}）</span></div>
       <div style="color:var(--ink-2);font-size:12.5px">${lane.t}。${starPrepLine(lane)}</div></div>`;
   }
   if(others.length){

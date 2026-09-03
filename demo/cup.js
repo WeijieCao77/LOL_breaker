@@ -57,18 +57,18 @@
    城市赛＝钻石到大师（45-57），主播杯＝大师到王者（52-64）。
    玩家开局属性没动（~45 恰在钻石门口），相对难度和过去一致。 */
 const CUPS={
-  city:{ name:"城市争霸赛", rounds:4, gap:1, band:[45,57],
+  city:{ name:"城市争霸赛", rounds:4, gap:1, band:[42,54],
          prize:[0,2,8,20,50],
          rn:["小组赛","八强赛","半决赛","决赛"],
          opps:["网吧联队","本地车队","大学生战队","市队"] },
-  stream:{ name:"主播杯", rounds:3, gap:1, band:[52,64],
+  stream:{ name:"主播杯", rounds:3, gap:1, band:[49,61],
          prize:[0,10,30,80],
          rn:["小组赛","半决赛","决赛"],
          opps:["百万粉丝队","退役选手队","冠军主播队"] },
   /* 全明星周末的娱乐表演赛（现实原型：LPL 全明星周末「主播对抗」）。
      邀请制看人气，免报名费，输了也有出场费——这是舞台，不是淘汰赛。
      主办方配明星队友，所以不动你的车队，胜负按个人发挥算。 */
-  show:{ name:"全明星周末 · 主播表演赛", rounds:1, gap:1, band:[58,58],
+  show:{ name:"全明星周末 · 主播表演赛", rounds:1, gap:1, band:[55,55],
          prize:[5,15],
          rn:["表演赛"],
          opps:["明星联队"] }
@@ -153,12 +153,7 @@ function cupOppPower(k){
 }
 /* 把强度翻回段位，界面上直说「这一轮对手大概什么水平」。
    玩家对段位有直觉，对 56.9 这个数字没有。 */
-function powerRank(p){
-  const v=clamp((p-40)/0.38,0,100);
-  let n=RANKS[0].n;
-  RANKS.forEach(r=>{ if(v>=r.at) n=r.n; });
-  return n;
-}
+function powerRank(p){ return tierOf(p); }   // 统一实力尺：同一张表
 function cupOppName(k){
   const c=cupOf(k), C=CUPS[k];
   return C.opps[Math.min(c.round-1,C.opps.length-1)];
@@ -168,10 +163,9 @@ function cupOppName(k){
    的个人数值，再乘默契、战术、士气——和职业赛同一套构成，只是
    系数更敏感（路人队从 30 练到 60 的收益要看得见）。
    老档没有车队时退回纯个人的旧公式。 */
-function cupPersonal(p){
-  const r=p.r||p;
-  return r.操作*0.42+r.运营*0.28+r.心态*0.18+r.体质*0.12+(r.指挥-50)*0.12;
-}
+/* 统一实力尺：杯赛也读五维均值（原来是操作 .42 的另一把尺，玩家开局在旧尺上 45.4、
+   新尺上 42.6——对手带整体下移 3 补偿，夺冠率不变） */
+function cupPersonal(p){ return strength(p); }
 function cupMyPower(k){
   const solo=cupPersonal(S.attrs)
        +(typeof gearBonus==="function"?gearBonus("操作")*0.4:0);

@@ -134,6 +134,7 @@ function loadGame() {
     fixSeasonAttr0(S);
     fixLdlNames(S);
     fixWl(S);
+    fixScaleV3(S);
     // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
     // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
     if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
@@ -162,6 +163,19 @@ function fixLdlNames(s) {
         if (real) p.id = real.id;
       });
     });
+  } catch (e) {}
+}
+
+/* 统一实力尺（v20260905c）：试训的「你现在」从操作加权换成五维均值，同一个人低 2 左右，
+   各档 expect 同步 −2。老档里已经发出的邀请/正在进行的试训/挂着的报价还带着旧 expect，
+   这里补齐——否则老玩家正在走的那次试训会平白难 2 分。属性、世界、天梯读数都不动。 */
+function fixScaleV3(s) {
+  try {
+    if (!s || s.scaleV3) return;
+    s.scaleV3 = 1;
+    const adj = o => { if (o && typeof o.expect === "number") o.expect = Math.max(40, o.expect - 2); };
+    if (s.pre) adj(s.pre.invite);
+    adj(s.tryout); adj(s.deal);
   } catch (e) {}
 }
 
