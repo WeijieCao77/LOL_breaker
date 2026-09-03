@@ -1000,6 +1000,12 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260905a", at:"2026-09-05", items:[
+    "战术素养：车队练的东西终于能带进俱乐部（玩家点名）——车队训练赛/合练/复盘、杯赛每一轮都涨，职业前封顶 40；试训评估加分、进队初始信任更高、进队后默契/战术训练最多快 20%。赛程预告页看得到当前数值",
+    "伏笔事件：职业前新增 6 个会在几年后有账的事件——代打诱惑、网吧老板是退役辅助、陪路人冲分、小品牌独家赞助、名记专访、二队观摩；每个选择在职业后都有对应回响（旧账被扒 / 谣言自证 / 违约金 / 跟拍报道 / 更衣室熟人）。前期事件频率 0.15 → 0.22",
+    "任务链「从网吧到主舞台」：城市赛八强 → 主播杯请柬 → 一座冠军，走完有成就和素养奖励",
+    "明星选手存在感（玩家点名 Uzi/TheShy/Faker/Caps 等 40 人）：赛前备战有「对位聚光灯」——名字、称号、综合分对比、一句按差距说的人话；比赛卡有对位徽章；击败对位明星有专门高光（热度/粉丝），被明星上课也会被记住是谁。不改胜率，只改感觉"
+  ]},
   {v:"v20260904k", at:"2026-09-04", items:[
     "拒绝试训说到做到：婉拒过的俱乐部当年真的不会再来（玩家实锤：拒了 TT，打完主播杯又被 TT 邀请）——邀请会换别家发，过了年既往不咎",
     "杯赛轮次全部叫名字：报名时直接写明赛程（小组赛 → 八强赛 → 半决赛 → 决赛），比赛卡、晋级提示、止步结算都用轮次名，不再让你数「第 3 轮是第几强」",
@@ -2442,7 +2448,7 @@ function advancePreWeek(){
   if(typeof fanWeek==='function') fanWeek();
   if(typeof questWeek==='function') questWeek();
   simWorldPre();
-  if(typeof tryRandomEvent==='function'&&rnd()<0.15) tryRandomEvent();   // 频率减半，太密会烦
+  if(typeof tryRandomEvent==='function'&&rnd()<0.22) tryRandomEvent();   // 职业前 0.22（玩家点名前期无聊；伏笔事件池已扩）
   if(typeof saveGame==='function') saveGame('第'+P.week+'周');
   // 提前预告：还有 3 周 / 1 周时提醒，并说清差多少
   PRE_MILESTONES.forEach(m=>{
@@ -2607,6 +2613,13 @@ function acceptOffer(i){
   if(typeof markTeamJoin==="function") markTeamJoin();   // 在队时长从这里开始算
   initTrust(); initSquad(); initCapBonus(); initBtk();
   initStaff(); initRelations();
+  // 伏笔兑现：职业前帮路人冲过分的人，队里可能就有一个认识你的
+  if(S.flags&&S.flags.peilian&&!S.flags.peilianDone){
+    const mates=myRoster().filter(p=>!p.me);
+    const t=mates[Math.floor(rnd()*mates.length)];
+    if(t){ S.flags.peilianDone=1; addTrust(t.id,10);
+      pushEvent(`更衣室里 <b>${t.id}</b> 先认出了你——当年在排位里你陪他冲过分。<b>这层关系省了你两个月的磨合。</b>`,"good","人脉"); }
+  }
   S.winStreak=0; S.sweepStreak=0; S.lckBeaten=[]; S.retireSeen=0;
   S.benchedSplits=0; S.everCut=false; S.cameFromPlayin=false;
   S.career.msiYears=[]; S.career.worldsYears=[]; S.career.lgYears=[]; S.career.lgStreak=0;
@@ -2830,6 +2843,19 @@ function fanCap(){
 }
 /* 离天花板还有多远，0–1。界面上要用它画进度条。 */
 function fanFill(){ return clamp((S.fans||0)/Math.max(fanCap(),1),0,1); }
+/* ---------- 战术素养（2026-09-04 玩家点名：车队练的东西要能带进俱乐部）----------
+   只有成建制的 5v5 才涨：车队训练赛/合练/复盘、杯赛每一轮。职业前封顶 40——
+   上限得进职业环境才打得开（职业后训练赛继续慢涨，封顶 60）。
+   兑现在三处：试训评估加分、进队初始信任、进队后默契/战术训练收益。 */
+function tacOf(){ return S.tacsense||0; }
+function tacAdd(n,why){
+  if(!n) return;
+  const cap=S.career?60:40;
+  const v0=tacOf();
+  S.tacsense=Math.min(cap,q1(v0+n));
+  if(!S.career&&why&&Math.floor(S.tacsense)>Math.floor(v0)&&typeof preLog==="function")
+    preLog(`战术素养涨到 <b>${Math.floor(S.tacsense)}</b><span style="color:var(--ink-3)">/${cap}</span>（${why}）。这些东西教练组看得见。`,"info");
+}
 function addFans(n){
   if(!n) return;
   if(S.heat===undefined) S.heat=0;
@@ -3578,6 +3604,7 @@ function endMatch(){
     nodeFails:m.nodeFails||0,
     lostFirstTwo:m.need>=3&&m.firstTwoLost};
   checkAch("match",ctx);
+  if(typeof starAfterMatch==="function") starAfterMatch(m,won,ctx);   // 明星存在感：赛后回响
   if(won) checkAch("win",ctx);
   if(won&&ctx.intl&&ctx.oppLeague==="LCK") checkAch("beatlck",ctx);
 
@@ -3693,6 +3720,7 @@ function viewMatch(){
       <div class="score">${m.sc[0]} : ${m.sc[1]}</div>
       <div class="side"><div class="nm">${teamLogo(m.oppName,34)}<br>${m.oppName}</div><div class="pw mono">战力 ${op.toFixed(1)}</div></div>
     </div>
+    ${typeof starLaneBadge==="function"?starLaneBadge(m.oppName):""}
     ${m.node?`<div class="node"><div class="q">${m.node.q}</div><div class="ctx">${m.node.ctx}</div>
       <div class="grid g2">${m.node.a.map((a,i)=>`<button class="opt" data-node="${i}">
         <div class="t">${a.t}</div><div class="d">吃 <b>${a.dim}</b> · ${a.risk>0.8?'高风险高回报':'稳健'}</div>
@@ -3912,6 +3940,7 @@ function prepPanel(){
       <div class="sd"><div class="nm">${typeof teamLogo==="function"?teamLogo(P.opp,20):""} ${P.opp}</div>
         <div class="pw">${oppT?`战力 ${power(oppT,0,SEASONS[S.si].fav).toFixed(1)}`:""}</div></div>
     </div>
+    ${typeof starSpotHtml==="function"?starSpotHtml(P.opp):""}
     <p class="note">下一场之前还有一点时间。<b>怎么用是你的事</b>——歇一口气、过一遍录像，
       或者临阵再练一手。</p>
     ${typeof btkChaseNote==="function"?btkChaseNote():""}
@@ -4414,7 +4443,8 @@ function scheduleCard(){
     <tbody>${rows}</tbody></table></div>
     <p class="note">这些是写在明面上的日程，<b>不达标就直接错过</b>。
       至于有没有人在暗处盯着你——那种事不会有人提前通知。</p>
-    <div class="ver" style="margin-top:12px">外界对你的关注：<b>${scoutTier()}</b> · 粉丝：<b>${fanTier()}</b> <span class="mono">${fansText()}</span> · 热度：<b>${heatTier()}</b></div>
+    <div class="ver" style="margin-top:12px">外界对你的关注：<b>${scoutTier()}</b> · 粉丝：<b>${fanTier()}</b> <span class="mono">${fansText()}</span> · 热度：<b>${heatTier()}</b>
+      · 战术素养：<b>${Math.floor(tacOf())}</b><span class="mono">/40</span> <span style="color:var(--ink-3);font-size:11px">（车队训练赛、杯赛每一轮都涨；试训和进队都认这个）</span></div>
     </div>`;
 }
 
@@ -5447,7 +5477,9 @@ function intlStakes(){
 /* 每个队友对你有 0~100 的信任。信任影响全队发挥，也决定更衣室事件走向。 */
 function initTrust(){
   S.trust={};
-  myRoster().forEach(p=>{ if(!p.me) S.trust[p.id]=42+Math.floor(rnd()*16); });
+  // 战术素养的继承之一：打过成建制比赛的新人，队友一开始就多给几分信任（素养 40 ＝ +3）
+  const tb=(typeof tacOf==="function")?Math.round(Math.min(40,tacOf())*0.075):0;
+  myRoster().forEach(p=>{ if(!p.me) S.trust[p.id]=42+Math.floor(rnd()*16)+tb; });
 }
 function trustOf(id){ return S.trust&&S.trust[id]!==undefined?S.trust[id]:50; }
 function avgTrust(){
@@ -6690,6 +6722,10 @@ function bgEffects(b){
    有的奖励和平共处，有的奖励把人挂牌走。                        */
 
 const ACH_MORE=[
+  /* ---------- 职业前任务链（2026-09-04 玩家点名：前期要有会影响后面的事）---------- */
+  {id:"road2stage", n:"从网吧到主舞台", d:"城市争霸赛进八强、拿到主播杯请柬、再赢下一座冠军。", tag:"职业前",
+   on:"cup", cond:()=>!!(S.flags&&S.flags.chainCity&&S.flags.chainInv&&S.flags.chainChamp), r:{money:150,fame:40}},
+
   /* ---------- 荣誉进阶 ---------- */
   /* 审计修复（2026-09-03）：这四条原来挂在 worlds 钩子上，而 checkAch("worlds")
      从未被调用——全部是死成就。改挂 crown（任一冠军入账后触发的共用钩子），
@@ -7076,7 +7112,11 @@ function addSquad(k,n){
   if(!S.squad) initSquad();
   // 收益递减：越高越难往上推，不然几次就拉满
   const room=clamp(1-(S.squad[k]-40)/52,0.12,1);
-  S.squad[k]=q1(clamp(S.squad[k]+n*room,0,100));   // q1：掐掉浮点尾巴
+  // 战术素养的继承：打过成建制比赛的人懂怎么练团队——职业队里默契/战术
+  // 涨得更快（素养 40 ＝ +20%，职业前的车队不吃这个，它就是素养的来源。
+  // 首版 +40% 批测把世界赛率抬了 10 个点——一半就够）
+  const inh=(S.career&&(k==="syn"||k==="tac")&&typeof tacOf==="function")?1+Math.min(40,tacOf())/200:1;
+  S.squad[k]=q1(clamp(S.squad[k]+n*room*inh,0,100));   // q1：掐掉浮点尾巴
 }
 function squadDecay(){
   if(!S.squad) return;
@@ -7202,6 +7242,11 @@ function doSquad(k){
   const cost=(typeof apCost==="function")?apCost(k):1;
   if(ap<cost) return;
   a.run(); addFat(a.fat);
+  // 战术素养：成建制的练法才涨。职业前是主要来源；职业后只有训练赛慢涨
+  if(typeof tacAdd==="function"){
+    if(inPre){ const g={scrim:0.8,drill:0.8,vod:0.5,duo:0.2}[k]||0; if(g) tacAdd(g,a.n); }
+    else if(k==="scrim") tacAdd(0.3);
+  }
   if(inPre){
     S.pre.ap-=cost;
     // 车队一起练过的场次是硬积累：除了默契战术池，还直接落一点
@@ -7365,6 +7410,85 @@ function buffChips(){
    凭空捏一个等于告诉玩家「这些文字和你的世界无关」。
    凡是能由真实发生的事引出来的，就不该靠摇骰子。            */
 const RANDOM_EVENTS=[
+  /* ================= 伏笔事件（2026-09-04 玩家点名：前期要有会影响后面的事）=================
+     职业前每个事件在 S.flags 上留一个标记，职业后由对应的「回响」事件兑现。
+     一局各限一次。这些不是调味料——每个选择都在几年后有账。 */
+  {id:"daida", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&(S.fans||0)>=25,
+   q:()=>`有人私信开价 <b>5 万</b>，让你帮他把号打上钻石。「就几天的事，没人会知道。」`,
+   ctx:"这个段位的代打市场一直存在。钱是真的，风险也是。",
+   a:[{t:"接了，几天就完", g:"hard", e:()=>{ S.money+=5; (S.flags=S.flags||{}).daida=1;
+        return "五万到账。你把那个号打到了钻石，然后删了聊天记录。<b>这件事没有消失，只是暂时没人提。</b>"; }},
+      {t:"不接，这条线不能碰", g:"grind", e:()=>{ (S.flags=S.flags||{}).clean=1;
+        S.attrs.心态=Math.min(capOf("心态"),q1(S.attrs.心态+0.5));
+        return "你回了个「不做」。多年以后如果有人翻旧账，你的记录是干净的。心态 +0.5。"; }}]},
+
+  {id:"cafecoach", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&S.money>=3,
+   q:()=>`常去的那家网吧老板，聊起来才知道是退役辅助——打过次级联赛。他愿意收 <b>3 万</b>带你两周。`,
+   ctx:"「你打得很凶，但你不知道为什么赢。这个我可以教。」",
+   a:[{t:"交钱，学", cost:3, e:()=>{ pay(3);
+        S.attrs.指挥=Math.min(capOf("指挥"),q1(S.attrs.指挥+1)); if(typeof tacAdd==="function") tacAdd(4,"网吧老板的两周课");
+        return "两周里他给你拆了三十场录像，讲的全是视野、时机和资源交换。<b>指挥 +1，战术素养 +4。</b>"; }},
+      {t:"算了，自己练", g:"grind", e:()=>"你觉得三万块能干别的。他也没多说。"}]},
+
+  {id:"peilian", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career,
+   q:()=>`排位里遇到个打得挺有想法的路人，加了好友。他说下个月有青训试训，想找人陪他冲一冲分。`,
+   ctx:"没有报酬。就是花时间。",
+   a:[{t:"陪他冲两周", g:"show", e:()=>{ addFat(6); addFans(4); (S.flags=S.flags||{}).peilian=1; S.pre.scoutSeen=(S.pre.scoutSeen||0)+1;
+        return "两周双排，他的分冲上去了，你也顺便被他直播间的人认识了几个。<b>他说：以后进队了记得我。</b>"; }},
+      {t:"没时间", g:"grind", e:()=>"你回了个「忙」。他没再找你。"}]},
+
+  {id:"geardeal", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&(S.fans||0)>=60,
+   q:()=>`一个小外设品牌找你签<b>独家</b>——现在给 <b>15 万</b>，条件是三年内不能用别家的键鼠露出。`,
+   ctx:"钱不少。但「三年」对一个还没上岸的人来说，是很长的时间。",
+   a:[{t:"签，先拿钱", g:"hard", e:()=>{ S.money+=15; (S.flags=S.flags||{}).exclusiveGear=1;
+        return "十五万到账，快递来了两套键鼠。合同锁在抽屉里。<b>三年很快的。</b>"; }},
+      {t:"不签独家", g:"grind", e:()=>"你说想留着以后的选择。对方没再联系。"}]},
+
+  {id:"reporter", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&(S.fans||0)>=100,
+   q:()=>`一位跑赛区多年的记者想给你做一期「草根选手」的专访。她的号在圈里有分量。`,
+   ctx:"她说：「我不吹你。我写我看到的。」",
+   a:[{t:"接受采访", g:"show", e:()=>{ addFans(10); (S.flags=S.flags||{}).pressFriend=1;
+        return "稿子发出来很克制，但看的人不少。<b>她留了你的联系方式：「上岸了告诉我。」</b>"; }},
+      {t:"现在还不是时候", g:"grind", e:()=>"你觉得没打出成绩就上稿子太早。她说理解。"}]},
+
+  {id:"acadwatch", rec:0, w:1.5, max:1, when:()=>!!S.pre&&!S.career&&typeof preScore==="function"&&preScore()>=50,
+   q:()=>`一家俱乐部的青训教练给你发了张观摩证——去看他们二队一周的训练赛，不上场，只看。`,
+   ctx:"「你先看看职业队怎么练，再决定要不要走这条路。」",
+   a:[{t:"去看一周", g:"grind", e:()=>{ addFat(4); if(typeof tacAdd==="function") tacAdd(3,"二队训练赛观摩"); S.pre.scoutSeen=(S.pre.scoutSeen||0)+2;
+        return "一周里你在训练室后排坐了六天。<b>原来职业队的复盘是这么开的。</b>战术素养 +3，教练组也记住了这张脸。"; }},
+      {t:"不去，要打排位", g:"grind", e:()=>"你觉得分更重要。观摩证过期了。"}]},
+
+  /* ---------- 回响：职业后兑现 ---------- */
+  {id:"daida_echo", rec:0, w:2, max:1, when:()=>!!S.career&&!!(S.flags&&S.flags.daida)&&(S.heat||0)>=120,
+   q:()=>`<b>旧账被扒了。</b>一个营销号放出了当年那个号的战绩截图和转账记录——「职业选手代打前科」上了热搜。`,
+   ctx:"截图是真的。你知道它是真的。",
+   a:[{t:"公关硬扛：不回应", g:"hard", e:()=>{ S.heat=Math.max(0,(S.heat||0)*0.6); if(typeof addTrustAll==="function") addTrustAll(-3);
+        return "热搜挂了三天。俱乐部没说话，队友也没说话——<b>但训练室安静了很多</b>。热度掉了四成。"; }},
+      {t:"承认，公开道歉", g:"grind", e:()=>{ S.heat=Math.max(0,(S.heat||0)*0.78); if(typeof addTrustAll==="function") addTrustAll(-1);
+        S.attrs.心态=Math.min(capOf("心态"),q1(S.attrs.心态+0.5));
+        return "你发了一段不长的声明。骂的人还是骂，但也有人说「敢认」。<b>热度掉两成，心态 +0.5——这事翻篇了。</b>"; }}]},
+
+  {id:"clean_echo", rec:0, w:1.5, max:1, when:()=>!!S.career&&!!(S.flags&&S.flags.clean)&&(S.fans||0)>=400,
+   q:()=>`有人在论坛造你的谣：说你当年打排位时收钱代打。帖子被转了几千次。`,
+   ctx:"俱乐部找你核实。",
+   a:[{t:"把当年拒绝代打的聊天记录甩出来", g:"show", e:()=>{ addFans(20); if(typeof addTrustAll==="function") addTrustAll(2);
+        return "记录一放，帖子当天就被删了。<b>「他连五万都没收过」成了你身上的一个标签。</b>粉丝 +20，队友信任 +2。"; }}]},
+
+  {id:"gear_echo", rec:0, w:2, max:1, when:()=>!!S.career&&!!(S.flags&&S.flags.exclusiveGear)&&typeof salaryOf==="function"&&salaryOf()>0,
+   q:()=>`一家一线外设品牌开出 <b>60 万</b>的年度代言——但你当年签的那份小品牌独家还在期内，解约要付 <b>20 万</b>违约金。`,
+   ctx:"当年抽屉里那份合同，现在有人替你翻出来了。",
+   a:[{t:"付违约金，签大牌", cost:20, e:()=>{ pay(20); S.money+=60; delete S.flags.exclusiveGear;
+        return "二十万违约金付掉，六十万代言到账，净赚四十万。<b>当年那十五万，成了最贵的一笔预支。</b>"; }},
+      {t:"守约，等它到期", g:"grind", e:()=>{ addFans(5);
+        return "你拒了大牌。小品牌老板亲自打电话来谢你，圈里也有人说你讲信用。<b>粉丝 +5，钱没有。</b>"; }}]},
+
+  {id:"press_echo", rec:0, w:2, max:1, when:()=>!!S.career&&!!(S.flags&&S.flags.pressFriend),
+   q:()=>`当年采访过你的那位记者发来消息：「上岸了？说好的。」她想做一期从网吧到职业的跟拍。`,
+   ctx:"她的号比当年更有分量了。",
+   a:[{t:"接受跟拍", g:"show", e:()=>{ addFans(18); delete S.flags.pressFriend;
+        return "稿子发出来的那周，你的名字第一次被圈外人念对。<b>粉丝 +18。</b>她说：「下次拿冠军再写。」"; }},
+      {t:"等打出成绩再说", g:"grind", e:()=>{ return "她说：「行，我等。」这次是真的等。"; }}]},
+
   /* 强队爆冷：由 simWorld 真的模拟出冷门之后才触发，队名取自当周真实结果 */
   {id:"upset", rec:0, auto:false, when:()=>!!(S._upset),
    q:()=>{ const u=S._upset||{};
@@ -10210,6 +10334,7 @@ function enterCup(kind){
   // 没有才抽新的——练出来的默契跟着车队走。
   // 表演赛除外：主办方配明星队友，不动你的车队
   if(kind!=="show"&&(!S.pre.mates||!S.pre.mates.length)) drawCupMates(kind);
+  if(kind==="stream"){ S.flags=S.flags||{}; S.flags.chainInv=1; }   // 任务链：主播杯的请柬到手
   // 别把间隔写死在文案里——赛程从两周一轮改成一周一轮之后，
   // 这句「中间这两周」就成了假话。
   preLog(`报名成功。<b>${C.name}</b> 赛程：<b>${C.rn.join(" → ")}</b>（共 ${C.rounds} 轮，一周一轮）。
@@ -10377,6 +10502,7 @@ function endCupMatch(){
   // 打得越多，被俱乐部看到的次数越多。累积在这里，但兑现要等整届打完——
   // 赛程进行中发邀请会把比赛线整个短路（试过：玩家半决赛就签约走人）。
   S.pre.scoutSeen = (S.pre.scoutSeen||0) + 1;
+  if(typeof tacAdd==="function") tacAdd(2, `${C.name}${cupRoundName(k,c.round)}`);   // 成建制比赛每打一轮都涨
   if(won){
     c.wins++;
     addFans(4+c.round*2);
@@ -10421,6 +10547,16 @@ function cupPayout(k,champion){
   // 关键：不用夺冠。走得远，数据被记下来，就有人来问。
   if(k!=="show"&&typeof checkTryoutInvite==="function") checkTryoutInvite(k,reached,champion);
   if(champion&&k!=="show") preLog(`<b>${C.name} 冠军。</b>这个名字开始有人记住了。`,"big");
+  if(champion&&k!=="show"&&typeof tacAdd==="function") tacAdd(3,`${C.name}夺冠`);
+  // 任务链「从网吧到主舞台」：城市赛进八强 → 主播杯受邀 → 任一冠军
+  S.flags=S.flags||{};
+  if(k==="city"&&reached>=1) S.flags.chainCity=1;
+  if(champion&&k!=="show") S.flags.chainChamp=1;
+  if(S.flags.chainCity&&S.flags.chainInv&&S.flags.chainChamp&&!S.flags.chainDone){
+    S.flags.chainDone=1;
+    if(typeof tacAdd==="function") tacAdd(5,"走完了从网吧到主舞台的路");
+    preLog(`<b>从网吧到主舞台</b>——城市赛八强、主播杯请柬、一座冠军，这条路你走完了。<span style="color:var(--ink-3)">俱乐部的青训教练翻你录像时，会从头看到尾。</span>`,"big");
+  }
   // 车队的生命周期跟着赛事走：全打完了，路人各回各家，战队栏目重新上锁
   if(!S.career&&S.pre.mates&&S.pre.mates.length&&
      typeof activeCups==="function"&&activeCups().length===0){
@@ -11461,7 +11597,9 @@ function resolveTryoutDay(i){
 /* 最终评级：四天的表现 + 你的底子，一起对上这家的期望 */
 function tryoutGrade(){
   const t = S.tryout;
-  const total = tryoutSkill() + t.score;
+  // 战术素养的继承：教练组看得出你打过正经比赛（素养 40 ＝ +1.6，够翻边缘局；首版 0.06 批测转会均值 +0.56，砍半）
+  const tb = (typeof tacOf === "function") ? Math.min(40, tacOf()) * 0.04 : 0;
+  const total = tryoutSkill() + t.score + tb;
   const d = total - t.expect;
   // 贴着期望值就是 B——「能用，但不到能托付的程度」。
   // A+ 要明显高出一截，否则档次分不开。
@@ -11476,6 +11614,8 @@ function endTryout(){
   t.done = true;
   t.result = tryoutGrade();
   addFat(18);
+  if(typeof tacOf === "function" && tacOf() >= 5)
+    preLog(`教练组注记：<b>战术素养 ${Math.floor(tacOf())}</b>——打过成建制比赛的痕迹，评估里给你加了 <b>+${(Math.min(40,tacOf())*0.04).toFixed(1)}</b>。`,"info");
   // 一家只给一次机会。不消耗掉的话，评了 D 可以回头再试一次，
   // 反复刷到 A+ 为止——那评级就白设计了。
   consumeOffer(t.team);
@@ -13361,6 +13501,157 @@ if (STATS_ON) {
   setInterval(function () {
     try { if (document.visibilityState === "visible") statSend("beat"); } catch (e) {}
   }, 60000);
+}
+
+
+/* ================= 明星选手：存在感 =================
+
+   玩家原话：「明星选手不管是 LPL 还是其他赛区的存在感都不够强，不管是对位
+   的时候还是即将遇到的时候，被击败或战胜都要更有感觉」。
+
+   这套东西不改任何胜率——存在感是叙事，不是 buff。三处落点：
+   · 赛前备战：对位聚光灯（同位置的明星）/ 对面阵中（其他位置的明星）
+   · 比赛卡：一行对位徽章
+   · 赛后：击败对位明星有专门的高光事件（热度/粉丝，一个赛段一位一次）；
+     被明星上课也有一句，让你记住是谁
+   名单以 2022 库里的真名为键，转会了跟着人走；库里没有的名字永远不会匹配。 */
+
+const STARS={
+  /* LPL */
+  Uzi:{ep:"永远的狂小狗", t:"ADC 的代名词——退役又复出，手还在"},
+  TheShy:{ep:"上路单杀机器", t:"对线期每一次换血都可能是终结"},
+  Rookie:{ep:"宿命中单", t:"S8 冠军中单，LPL 外援的天花板"},
+  JieJie:{ep:"EDG 的野区发动机", t:"S11 冠军打野，节奏从他手上起"},
+  Scout:{ep:"S11 决赛 MVP", t:"稳到可怕的中单"},
+  Viper:{ep:"毒蛇", t:"S11 冠军 AD，团战永远站在最正确的位置"},
+  Knight:{ep:"天才中单", t:"LPL 本土中单的招牌"},
+  Bin:{ep:"上路杀神", t:"S10 决赛五杀剑魔"},
+  GALA:{ep:"MSI 双冠 AD", t:"团战后手拉满"},
+  Xiaohu:{ep:"虎将", t:"中单改上单再改回来的老将"},
+  "369":{ep:"上路铁人", t:"一个人守一条边"},
+  Kanavi:{ep:"野区野兽", t:"MVP 级的打野"},
+  Doinb:{ep:"S9 冠军中单", t:"一手把节奏带出来的怪才"},
+  Ming:{ep:"辅助之光", t:"RNG 王朝的辅助"},
+  Wei:{ep:"野区节拍器", t:"MSI 冠军打野"},
+  Yagao:{ep:"中路老将", t:"JDG 的定海神针"},
+  Crisp:{ep:"辅助大脑", t:"S9 冠军辅助"},
+  Tian:{ep:"S9 决赛 MVP", t:"关键局从不手软的打野"},
+  /* LCK */
+  Faker:{ep:"大魔王", t:"不解释"},
+  ShowMaker:{ep:"DK 的魔法师", t:"S10 冠军中单"},
+  Chovy:{ep:"对线教科书", t:"领先 20 刀是常态"},
+  Deft:{ep:"金东河", t:"十年老将，还在等一座冠军"},
+  Ruler:{ep:"S7 冠军 AD", t:"后期决胜的 AD"},
+  Canyon:{ep:"S10 冠军打野", t:"野区节奏的天花板"},
+  Zeus:{ep:"新生代上单", t:"操作没有天花板"},
+  Keria:{ep:"辅助鬼才", t:"什么英雄都能开发成辅助"},
+  Gumayusi:{ep:"T1 的稳定器", t:"团战里最难被杀的 AD"},
+  Oner:{ep:"T1 的节拍器", t:"前期节奏的发起点"},
+  Peanut:{ep:"花生", t:"老牌打野，还是那么凶"},
+  Kiin:{ep:"上路稳定器", t:"没有明显短板"},
+  Bdd:{ep:"中路老将", t:"对线细节拉满"},
+  BeryL:{ep:"S10 冠军辅助", t:"游戏理解怪物"},
+  /* LEC */
+  Caps:{ep:"欧洲之王", t:"LEC 十冠中单"},
+  Jankos:{ep:"第一滴血之王", t:"欧洲最会入侵的打野"},
+  Rekkles:{ep:"欧洲 AD 传奇", t:"稀有的不死 AD"},
+  Upset:{ep:"欧洲第一 AD", t:"操作与稳健兼备"},
+  Humanoid:{ep:"欧洲中路新王", t:"MAD 的核心"},
+  /* LCS */
+  Bjergsen:{ep:"北美中单之神", t:"TSM 的图腾"},
+  CoreJJ:{ep:"S7 冠军辅助", t:"北美最会开团的人"},
+  Impact:{ep:"S3 冠军上单", t:"老兵不死"},
+  Blaber:{ep:"北美野王", t:"C9 的发动机"}
+};
+
+function starOf(id){ return id&&STARS[id] ? Object.assign({id}, STARS[id]) : null; }
+function rosterOf(teamName){
+  const t=(typeof findTeam==="function")?findTeam(teamName):null;
+  return (t&&t.players)||[];
+}
+/* 对面阵里所有明星（带位置和数值） */
+function starsOf(teamName){
+  return rosterOf(teamName).filter(p=>p&&!p.me&&STARS[p.id]).map(p=>Object.assign({p}, starOf(p.id)));
+}
+/* 同位置的明星——真正要对线的那个 */
+function laneStar(teamName){
+  return starsOf(teamName).find(s=>s.p.pos===S.pos)||null;
+}
+function myOvr(){ return avg(DIMS.map(d=>S.attrs[d])); }
+
+/* 赛前一句：按差距说人话，不装神弄鬼 */
+function starPrepLine(s){
+  const gap=ovrOf(s.p)-myOvr();
+  if(gap>=10) return `他大概不会把你当对手——但也不会给你任何机会。<b>别送，把这场当成一堂课。</b>`;
+  if(gap>=4)  return `账面上他压你一头。<b>对线期少换血，等团战找机会。</b>`;
+  if(gap>=-3) return `数值上你们已经站在同一层。<b>这一场会被拿出来反复看。</b>`;
+  return `现在轮到<b>他</b>研究<b>你</b>了。别飘——名字比数值多活好几年。`;
+}
+
+/* 备战卡里的聚光灯：对位的明星单独一块，其余明星列一行 */
+function starSpotHtml(teamName){
+  if(!S.career) return "";
+  const all=starsOf(teamName); if(!all.length) return "";
+  const lane=all.find(s=>s.p.pos===S.pos);
+  const others=all.filter(s=>!lane||s.id!==lane.id);
+  let h="";
+  if(lane){
+    h+=`<div class="ver" style="border-left:3px solid var(--gold);padding-left:10px;margin-top:10px">
+      <div style="font-size:11px;letter-spacing:.08em;color:var(--ink-3)">对位聚光灯</div>
+      <div style="font-size:15px;margin:2px 0"><b>${lane.id}</b> · ${lane.ep}${lane.p.cn?`<span style="color:var(--ink-3)">（${lane.p.cn}）</span>`:""}
+        <span class="tag">综合 ${ovrOf(lane.p).toFixed(0)} · 你 ${myOvr().toFixed(0)}</span></div>
+      <div style="color:var(--ink-2);font-size:12.5px">${lane.t}。${starPrepLine(lane)}</div></div>`;
+  }
+  if(others.length){
+    h+=`<div class="ver" style="margin-top:8px;color:var(--ink-2);font-size:12.5px">对面阵中：${
+      others.map(s=>`<b>${s.id}</b>（${s.ep}）`).join("、")}——<span style="color:var(--ink-3)">${
+      lane?"不止一个人要防。":"你的对位不是明星，但他们的节奏会从别处压过来。"}</span></div>`;
+  }
+  return h;
+}
+/* 比赛卡里的一行徽章 */
+function starLaneBadge(teamName){
+  if(!S.career) return "";
+  const lane=laneStar(teamName);
+  const all=starsOf(teamName);
+  if(!lane&&!all.length) return "";
+  return `<div class="ver" style="text-align:center;margin-top:-4px;color:var(--ink-2);font-size:12px">${
+    lane?`对位 <b style="color:var(--gold)">${lane.id}</b> · ${lane.ep}`:`对面有 ${all.map(s=>`<b>${s.id}</b>`).join("、")}`}</div>`;
+}
+
+/* 赛后回响：一个赛段里同一位明星只发一次高光，免得刷屏。
+   不动胜率、不动属性——只动热度和粉丝（击败明星本来就是上热搜的事）。 */
+function starAfterMatch(m,won,ctx){
+  try{
+    if(!S.career||!m||!m.oppName) return;
+    const all=starsOf(m.oppName); if(!all.length) return;
+    S.starSeen=S.starSeen||{};
+    const key=id=>`${S.si}|${S.split||0}|${S.intl?"i":"l"}|${id}`;
+    const lane=all.find(s=>s.p.pos===S.pos);
+    const big=(ctx&&ctx.intl)||(m.need>=3);
+    if(won){
+      if(lane&&!S.starSeen[key(lane.id)]){
+        S.starSeen[key(lane.id)]=1;
+        const outlaned=ctx&&ctx.laneWon;
+        addFans(big?22:14);
+        pushEvent(`<b>击败 ${lane.id}（${lane.ep}）。</b>${outlaned
+          ?`对位数据压过了他——这种截图会在圈里传很久。`
+          :`对线没占到便宜，但比分是 ${m.sc[0]}:${m.sc[1]}——赢的是五个人。`}${
+          big?`<br><span style="color:var(--ink-3)">大场面赢下他，你的名字第一次被放在他旁边念。</span>`:""}`,"big","高光");
+      } else if(!lane){
+        const s=all[0];
+        if(!S.starSeen[key("T:"+s.id)]){ S.starSeen[key("T:"+s.id)]=1; addFans(big?10:6);
+          pushEvent(`掀翻了有 <b>${s.id}</b>（${s.ep}）的 ${m.oppName}。你的对位不是他，但击败他的队伍，赛后采访问的全是他。`,"good","高光"); }
+      }
+    } else if(lane){
+      const gap=ovrOf(lane.p)-myOvr();
+      if(gap>=4&&!S.starSeen[key("L:"+lane.id)]){
+        S.starSeen[key("L:"+lane.id)]=1;
+        pushEvent(`<b>${lane.id}</b> 给你上了一课。对线细节、视野、换血时机——${lane.ep}不是白叫的。
+          <span style="color:var(--ink-3)">复盘把这场标红：下次见他之前，把差距缩到两位数以内。</span>`,"info","对位");
+      }
+    }
+  }catch(e){}
 }
 
 

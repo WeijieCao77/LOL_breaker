@@ -416,7 +416,9 @@ function resolveTryoutDay(i){
 /* 最终评级：四天的表现 + 你的底子，一起对上这家的期望 */
 function tryoutGrade(){
   const t = S.tryout;
-  const total = tryoutSkill() + t.score;
+  // 战术素养的继承：教练组看得出你打过正经比赛（素养 40 ＝ +1.6，够翻边缘局；首版 0.06 批测转会均值 +0.56，砍半）
+  const tb = (typeof tacOf === "function") ? Math.min(40, tacOf()) * 0.04 : 0;
+  const total = tryoutSkill() + t.score + tb;
   const d = total - t.expect;
   // 贴着期望值就是 B——「能用，但不到能托付的程度」。
   // A+ 要明显高出一截，否则档次分不开。
@@ -431,6 +433,8 @@ function endTryout(){
   t.done = true;
   t.result = tryoutGrade();
   addFat(18);
+  if(typeof tacOf === "function" && tacOf() >= 5)
+    preLog(`教练组注记：<b>战术素养 ${Math.floor(tacOf())}</b>——打过成建制比赛的痕迹，评估里给你加了 <b>+${(Math.min(40,tacOf())*0.04).toFixed(1)}</b>。`,"info");
   // 一家只给一次机会。不消耗掉的话，评了 D 可以回头再试一次，
   // 反复刷到 A+ 为止——那评级就白设计了。
   consumeOffer(t.team);

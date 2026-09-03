@@ -134,6 +134,7 @@ function enterCup(kind){
   // 没有才抽新的——练出来的默契跟着车队走。
   // 表演赛除外：主办方配明星队友，不动你的车队
   if(kind!=="show"&&(!S.pre.mates||!S.pre.mates.length)) drawCupMates(kind);
+  if(kind==="stream"){ S.flags=S.flags||{}; S.flags.chainInv=1; }   // 任务链：主播杯的请柬到手
   // 别把间隔写死在文案里——赛程从两周一轮改成一周一轮之后，
   // 这句「中间这两周」就成了假话。
   preLog(`报名成功。<b>${C.name}</b> 赛程：<b>${C.rn.join(" → ")}</b>（共 ${C.rounds} 轮，一周一轮）。
@@ -301,6 +302,7 @@ function endCupMatch(){
   // 打得越多，被俱乐部看到的次数越多。累积在这里，但兑现要等整届打完——
   // 赛程进行中发邀请会把比赛线整个短路（试过：玩家半决赛就签约走人）。
   S.pre.scoutSeen = (S.pre.scoutSeen||0) + 1;
+  if(typeof tacAdd==="function") tacAdd(2, `${C.name}${cupRoundName(k,c.round)}`);   // 成建制比赛每打一轮都涨
   if(won){
     c.wins++;
     addFans(4+c.round*2);
@@ -345,6 +347,16 @@ function cupPayout(k,champion){
   // 关键：不用夺冠。走得远，数据被记下来，就有人来问。
   if(k!=="show"&&typeof checkTryoutInvite==="function") checkTryoutInvite(k,reached,champion);
   if(champion&&k!=="show") preLog(`<b>${C.name} 冠军。</b>这个名字开始有人记住了。`,"big");
+  if(champion&&k!=="show"&&typeof tacAdd==="function") tacAdd(3,`${C.name}夺冠`);
+  // 任务链「从网吧到主舞台」：城市赛进八强 → 主播杯受邀 → 任一冠军
+  S.flags=S.flags||{};
+  if(k==="city"&&reached>=1) S.flags.chainCity=1;
+  if(champion&&k!=="show") S.flags.chainChamp=1;
+  if(S.flags.chainCity&&S.flags.chainInv&&S.flags.chainChamp&&!S.flags.chainDone){
+    S.flags.chainDone=1;
+    if(typeof tacAdd==="function") tacAdd(5,"走完了从网吧到主舞台的路");
+    preLog(`<b>从网吧到主舞台</b>——城市赛八强、主播杯请柬、一座冠军，这条路你走完了。<span style="color:var(--ink-3)">俱乐部的青训教练翻你录像时，会从头看到尾。</span>`,"big");
+  }
   // 车队的生命周期跟着赛事走：全打完了，路人各回各家，战队栏目重新上锁
   if(!S.career&&S.pre.mates&&S.pre.mates.length&&
      typeof activeCups==="function"&&activeCups().length===0){

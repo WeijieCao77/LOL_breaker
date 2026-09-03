@@ -64,6 +64,85 @@ function buffChips(){
    凭空捏一个等于告诉玩家「这些文字和你的世界无关」。
    凡是能由真实发生的事引出来的，就不该靠摇骰子。            */
 const RANDOM_EVENTS=[
+  /* ================= 伏笔事件（2026-09-04 玩家点名：前期要有会影响后面的事）=================
+     职业前每个事件在 S.flags 上留一个标记，职业后由对应的「回响」事件兑现。
+     一局各限一次。这些不是调味料——每个选择都在几年后有账。 */
+  {id:"daida", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&(S.fans||0)>=25,
+   q:()=>`有人私信开价 <b>5 万</b>，让你帮他把号打上钻石。「就几天的事，没人会知道。」`,
+   ctx:"这个段位的代打市场一直存在。钱是真的，风险也是。",
+   a:[{t:"接了，几天就完", g:"hard", e:()=>{ S.money+=5; (S.flags=S.flags||{}).daida=1;
+        return "五万到账。你把那个号打到了钻石，然后删了聊天记录。<b>这件事没有消失，只是暂时没人提。</b>"; }},
+      {t:"不接，这条线不能碰", g:"grind", e:()=>{ (S.flags=S.flags||{}).clean=1;
+        S.attrs.心态=Math.min(capOf("心态"),q1(S.attrs.心态+0.5));
+        return "你回了个「不做」。多年以后如果有人翻旧账，你的记录是干净的。心态 +0.5。"; }}]},
+
+  {id:"cafecoach", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&S.money>=3,
+   q:()=>`常去的那家网吧老板，聊起来才知道是退役辅助——打过次级联赛。他愿意收 <b>3 万</b>带你两周。`,
+   ctx:"「你打得很凶，但你不知道为什么赢。这个我可以教。」",
+   a:[{t:"交钱，学", cost:3, e:()=>{ pay(3);
+        S.attrs.指挥=Math.min(capOf("指挥"),q1(S.attrs.指挥+1)); if(typeof tacAdd==="function") tacAdd(4,"网吧老板的两周课");
+        return "两周里他给你拆了三十场录像，讲的全是视野、时机和资源交换。<b>指挥 +1，战术素养 +4。</b>"; }},
+      {t:"算了，自己练", g:"grind", e:()=>"你觉得三万块能干别的。他也没多说。"}]},
+
+  {id:"peilian", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career,
+   q:()=>`排位里遇到个打得挺有想法的路人，加了好友。他说下个月有青训试训，想找人陪他冲一冲分。`,
+   ctx:"没有报酬。就是花时间。",
+   a:[{t:"陪他冲两周", g:"show", e:()=>{ addFat(6); addFans(4); (S.flags=S.flags||{}).peilian=1; S.pre.scoutSeen=(S.pre.scoutSeen||0)+1;
+        return "两周双排，他的分冲上去了，你也顺便被他直播间的人认识了几个。<b>他说：以后进队了记得我。</b>"; }},
+      {t:"没时间", g:"grind", e:()=>"你回了个「忙」。他没再找你。"}]},
+
+  {id:"geardeal", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&(S.fans||0)>=60,
+   q:()=>`一个小外设品牌找你签<b>独家</b>——现在给 <b>15 万</b>，条件是三年内不能用别家的键鼠露出。`,
+   ctx:"钱不少。但「三年」对一个还没上岸的人来说，是很长的时间。",
+   a:[{t:"签，先拿钱", g:"hard", e:()=>{ S.money+=15; (S.flags=S.flags||{}).exclusiveGear=1;
+        return "十五万到账，快递来了两套键鼠。合同锁在抽屉里。<b>三年很快的。</b>"; }},
+      {t:"不签独家", g:"grind", e:()=>"你说想留着以后的选择。对方没再联系。"}]},
+
+  {id:"reporter", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&(S.fans||0)>=100,
+   q:()=>`一位跑赛区多年的记者想给你做一期「草根选手」的专访。她的号在圈里有分量。`,
+   ctx:"她说：「我不吹你。我写我看到的。」",
+   a:[{t:"接受采访", g:"show", e:()=>{ addFans(10); (S.flags=S.flags||{}).pressFriend=1;
+        return "稿子发出来很克制，但看的人不少。<b>她留了你的联系方式：「上岸了告诉我。」</b>"; }},
+      {t:"现在还不是时候", g:"grind", e:()=>"你觉得没打出成绩就上稿子太早。她说理解。"}]},
+
+  {id:"acadwatch", rec:0, w:1.5, max:1, when:()=>!!S.pre&&!S.career&&typeof preScore==="function"&&preScore()>=50,
+   q:()=>`一家俱乐部的青训教练给你发了张观摩证——去看他们二队一周的训练赛，不上场，只看。`,
+   ctx:"「你先看看职业队怎么练，再决定要不要走这条路。」",
+   a:[{t:"去看一周", g:"grind", e:()=>{ addFat(4); if(typeof tacAdd==="function") tacAdd(3,"二队训练赛观摩"); S.pre.scoutSeen=(S.pre.scoutSeen||0)+2;
+        return "一周里你在训练室后排坐了六天。<b>原来职业队的复盘是这么开的。</b>战术素养 +3，教练组也记住了这张脸。"; }},
+      {t:"不去，要打排位", g:"grind", e:()=>"你觉得分更重要。观摩证过期了。"}]},
+
+  /* ---------- 回响：职业后兑现 ---------- */
+  {id:"daida_echo", rec:0, w:2, max:1, when:()=>!!S.career&&!!(S.flags&&S.flags.daida)&&(S.heat||0)>=120,
+   q:()=>`<b>旧账被扒了。</b>一个营销号放出了当年那个号的战绩截图和转账记录——「职业选手代打前科」上了热搜。`,
+   ctx:"截图是真的。你知道它是真的。",
+   a:[{t:"公关硬扛：不回应", g:"hard", e:()=>{ S.heat=Math.max(0,(S.heat||0)*0.6); if(typeof addTrustAll==="function") addTrustAll(-3);
+        return "热搜挂了三天。俱乐部没说话，队友也没说话——<b>但训练室安静了很多</b>。热度掉了四成。"; }},
+      {t:"承认，公开道歉", g:"grind", e:()=>{ S.heat=Math.max(0,(S.heat||0)*0.78); if(typeof addTrustAll==="function") addTrustAll(-1);
+        S.attrs.心态=Math.min(capOf("心态"),q1(S.attrs.心态+0.5));
+        return "你发了一段不长的声明。骂的人还是骂，但也有人说「敢认」。<b>热度掉两成，心态 +0.5——这事翻篇了。</b>"; }}]},
+
+  {id:"clean_echo", rec:0, w:1.5, max:1, when:()=>!!S.career&&!!(S.flags&&S.flags.clean)&&(S.fans||0)>=400,
+   q:()=>`有人在论坛造你的谣：说你当年打排位时收钱代打。帖子被转了几千次。`,
+   ctx:"俱乐部找你核实。",
+   a:[{t:"把当年拒绝代打的聊天记录甩出来", g:"show", e:()=>{ addFans(20); if(typeof addTrustAll==="function") addTrustAll(2);
+        return "记录一放，帖子当天就被删了。<b>「他连五万都没收过」成了你身上的一个标签。</b>粉丝 +20，队友信任 +2。"; }}]},
+
+  {id:"gear_echo", rec:0, w:2, max:1, when:()=>!!S.career&&!!(S.flags&&S.flags.exclusiveGear)&&typeof salaryOf==="function"&&salaryOf()>0,
+   q:()=>`一家一线外设品牌开出 <b>60 万</b>的年度代言——但你当年签的那份小品牌独家还在期内，解约要付 <b>20 万</b>违约金。`,
+   ctx:"当年抽屉里那份合同，现在有人替你翻出来了。",
+   a:[{t:"付违约金，签大牌", cost:20, e:()=>{ pay(20); S.money+=60; delete S.flags.exclusiveGear;
+        return "二十万违约金付掉，六十万代言到账，净赚四十万。<b>当年那十五万，成了最贵的一笔预支。</b>"; }},
+      {t:"守约，等它到期", g:"grind", e:()=>{ addFans(5);
+        return "你拒了大牌。小品牌老板亲自打电话来谢你，圈里也有人说你讲信用。<b>粉丝 +5，钱没有。</b>"; }}]},
+
+  {id:"press_echo", rec:0, w:2, max:1, when:()=>!!S.career&&!!(S.flags&&S.flags.pressFriend),
+   q:()=>`当年采访过你的那位记者发来消息：「上岸了？说好的。」她想做一期从网吧到职业的跟拍。`,
+   ctx:"她的号比当年更有分量了。",
+   a:[{t:"接受跟拍", g:"show", e:()=>{ addFans(18); delete S.flags.pressFriend;
+        return "稿子发出来的那周，你的名字第一次被圈外人念对。<b>粉丝 +18。</b>她说：「下次拿冠军再写。」"; }},
+      {t:"等打出成绩再说", g:"grind", e:()=>{ return "她说：「行，我等。」这次是真的等。"; }}]},
+
   /* 强队爆冷：由 simWorld 真的模拟出冷门之后才触发，队名取自当周真实结果 */
   {id:"upset", rec:0, auto:false, when:()=>!!(S._upset),
    q:()=>{ const u=S._upset||{};

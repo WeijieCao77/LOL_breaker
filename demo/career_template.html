@@ -283,6 +283,12 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260905a", at:"2026-09-05", items:[
+    "战术素养：车队练的东西终于能带进俱乐部（玩家点名）——车队训练赛/合练/复盘、杯赛每一轮都涨，职业前封顶 40；试训评估加分、进队初始信任更高、进队后默契/战术训练最多快 20%。赛程预告页看得到当前数值",
+    "伏笔事件：职业前新增 6 个会在几年后有账的事件——代打诱惑、网吧老板是退役辅助、陪路人冲分、小品牌独家赞助、名记专访、二队观摩；每个选择在职业后都有对应回响（旧账被扒 / 谣言自证 / 违约金 / 跟拍报道 / 更衣室熟人）。前期事件频率 0.15 → 0.22",
+    "任务链「从网吧到主舞台」：城市赛八强 → 主播杯请柬 → 一座冠军，走完有成就和素养奖励",
+    "明星选手存在感（玩家点名 Uzi/TheShy/Faker/Caps 等 40 人）：赛前备战有「对位聚光灯」——名字、称号、综合分对比、一句按差距说的人话；比赛卡有对位徽章；击败对位明星有专门高光（热度/粉丝），被明星上课也会被记住是谁。不改胜率，只改感觉"
+  ]},
   {v:"v20260904k", at:"2026-09-04", items:[
     "拒绝试训说到做到：婉拒过的俱乐部当年真的不会再来（玩家实锤：拒了 TT，打完主播杯又被 TT 邀请）——邀请会换别家发，过了年既往不咎",
     "杯赛轮次全部叫名字：报名时直接写明赛程（小组赛 → 八强赛 → 半决赛 → 决赛），比赛卡、晋级提示、止步结算都用轮次名，不再让你数「第 3 轮是第几强」",
@@ -1725,7 +1731,7 @@ function advancePreWeek(){
   if(typeof fanWeek==='function') fanWeek();
   if(typeof questWeek==='function') questWeek();
   simWorldPre();
-  if(typeof tryRandomEvent==='function'&&rnd()<0.15) tryRandomEvent();   // 频率减半，太密会烦
+  if(typeof tryRandomEvent==='function'&&rnd()<0.22) tryRandomEvent();   // 职业前 0.22（玩家点名前期无聊；伏笔事件池已扩）
   if(typeof saveGame==='function') saveGame('第'+P.week+'周');
   // 提前预告：还有 3 周 / 1 周时提醒，并说清差多少
   PRE_MILESTONES.forEach(m=>{
@@ -1890,6 +1896,13 @@ function acceptOffer(i){
   if(typeof markTeamJoin==="function") markTeamJoin();   // 在队时长从这里开始算
   initTrust(); initSquad(); initCapBonus(); initBtk();
   initStaff(); initRelations();
+  // 伏笔兑现：职业前帮路人冲过分的人，队里可能就有一个认识你的
+  if(S.flags&&S.flags.peilian&&!S.flags.peilianDone){
+    const mates=myRoster().filter(p=>!p.me);
+    const t=mates[Math.floor(rnd()*mates.length)];
+    if(t){ S.flags.peilianDone=1; addTrust(t.id,10);
+      pushEvent(`更衣室里 <b>${t.id}</b> 先认出了你——当年在排位里你陪他冲过分。<b>这层关系省了你两个月的磨合。</b>`,"good","人脉"); }
+  }
   S.winStreak=0; S.sweepStreak=0; S.lckBeaten=[]; S.retireSeen=0;
   S.benchedSplits=0; S.everCut=false; S.cameFromPlayin=false;
   S.career.msiYears=[]; S.career.worldsYears=[]; S.career.lgYears=[]; S.career.lgStreak=0;
@@ -2113,6 +2126,19 @@ function fanCap(){
 }
 /* 离天花板还有多远，0–1。界面上要用它画进度条。 */
 function fanFill(){ return clamp((S.fans||0)/Math.max(fanCap(),1),0,1); }
+/* ---------- 战术素养（2026-09-04 玩家点名：车队练的东西要能带进俱乐部）----------
+   只有成建制的 5v5 才涨：车队训练赛/合练/复盘、杯赛每一轮。职业前封顶 40——
+   上限得进职业环境才打得开（职业后训练赛继续慢涨，封顶 60）。
+   兑现在三处：试训评估加分、进队初始信任、进队后默契/战术训练收益。 */
+function tacOf(){ return S.tacsense||0; }
+function tacAdd(n,why){
+  if(!n) return;
+  const cap=S.career?60:40;
+  const v0=tacOf();
+  S.tacsense=Math.min(cap,q1(v0+n));
+  if(!S.career&&why&&Math.floor(S.tacsense)>Math.floor(v0)&&typeof preLog==="function")
+    preLog(`战术素养涨到 <b>${Math.floor(S.tacsense)}</b><span style="color:var(--ink-3)">/${cap}</span>（${why}）。这些东西教练组看得见。`,"info");
+}
 function addFans(n){
   if(!n) return;
   if(S.heat===undefined) S.heat=0;
@@ -2861,6 +2887,7 @@ function endMatch(){
     nodeFails:m.nodeFails||0,
     lostFirstTwo:m.need>=3&&m.firstTwoLost};
   checkAch("match",ctx);
+  if(typeof starAfterMatch==="function") starAfterMatch(m,won,ctx);   // 明星存在感：赛后回响
   if(won) checkAch("win",ctx);
   if(won&&ctx.intl&&ctx.oppLeague==="LCK") checkAch("beatlck",ctx);
 
@@ -2976,6 +3003,7 @@ function viewMatch(){
       <div class="score">${m.sc[0]} : ${m.sc[1]}</div>
       <div class="side"><div class="nm">${teamLogo(m.oppName,34)}<br>${m.oppName}</div><div class="pw mono">战力 ${op.toFixed(1)}</div></div>
     </div>
+    ${typeof starLaneBadge==="function"?starLaneBadge(m.oppName):""}
     ${m.node?`<div class="node"><div class="q">${m.node.q}</div><div class="ctx">${m.node.ctx}</div>
       <div class="grid g2">${m.node.a.map((a,i)=>`<button class="opt" data-node="${i}">
         <div class="t">${a.t}</div><div class="d">吃 <b>${a.dim}</b> · ${a.risk>0.8?'高风险高回报':'稳健'}</div>
@@ -3195,6 +3223,7 @@ function prepPanel(){
       <div class="sd"><div class="nm">${typeof teamLogo==="function"?teamLogo(P.opp,20):""} ${P.opp}</div>
         <div class="pw">${oppT?`战力 ${power(oppT,0,SEASONS[S.si].fav).toFixed(1)}`:""}</div></div>
     </div>
+    ${typeof starSpotHtml==="function"?starSpotHtml(P.opp):""}
     <p class="note">下一场之前还有一点时间。<b>怎么用是你的事</b>——歇一口气、过一遍录像，
       或者临阵再练一手。</p>
     ${typeof btkChaseNote==="function"?btkChaseNote():""}
@@ -3697,7 +3726,8 @@ function scheduleCard(){
     <tbody>${rows}</tbody></table></div>
     <p class="note">这些是写在明面上的日程，<b>不达标就直接错过</b>。
       至于有没有人在暗处盯着你——那种事不会有人提前通知。</p>
-    <div class="ver" style="margin-top:12px">外界对你的关注：<b>${scoutTier()}</b> · 粉丝：<b>${fanTier()}</b> <span class="mono">${fansText()}</span> · 热度：<b>${heatTier()}</b></div>
+    <div class="ver" style="margin-top:12px">外界对你的关注：<b>${scoutTier()}</b> · 粉丝：<b>${fanTier()}</b> <span class="mono">${fansText()}</span> · 热度：<b>${heatTier()}</b>
+      · 战术素养：<b>${Math.floor(tacOf())}</b><span class="mono">/40</span> <span style="color:var(--ink-3);font-size:11px">（车队训练赛、杯赛每一轮都涨；试训和进队都认这个）</span></div>
     </div>`;
 }
 
@@ -3995,6 +4025,8 @@ function viewOffer(){
 /* __AUDIO_MODULE__ */
 
 /* __STATS_MODULE__ */
+
+/* __STARS_MODULE__ */
 
 /* ================= 侧栏 ================= */
 function formBar(team){

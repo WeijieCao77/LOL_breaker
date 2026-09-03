@@ -23,7 +23,11 @@ function addSquad(k,n){
   if(!S.squad) initSquad();
   // 收益递减：越高越难往上推，不然几次就拉满
   const room=clamp(1-(S.squad[k]-40)/52,0.12,1);
-  S.squad[k]=q1(clamp(S.squad[k]+n*room,0,100));   // q1：掐掉浮点尾巴
+  // 战术素养的继承：打过成建制比赛的人懂怎么练团队——职业队里默契/战术
+  // 涨得更快（素养 40 ＝ +20%，职业前的车队不吃这个，它就是素养的来源。
+  // 首版 +40% 批测把世界赛率抬了 10 个点——一半就够）
+  const inh=(S.career&&(k==="syn"||k==="tac")&&typeof tacOf==="function")?1+Math.min(40,tacOf())/200:1;
+  S.squad[k]=q1(clamp(S.squad[k]+n*room*inh,0,100));   // q1：掐掉浮点尾巴
 }
 function squadDecay(){
   if(!S.squad) return;
@@ -149,6 +153,11 @@ function doSquad(k){
   const cost=(typeof apCost==="function")?apCost(k):1;
   if(ap<cost) return;
   a.run(); addFat(a.fat);
+  // 战术素养：成建制的练法才涨。职业前是主要来源；职业后只有训练赛慢涨
+  if(typeof tacAdd==="function"){
+    if(inPre){ const g={scrim:0.8,drill:0.8,vod:0.5,duo:0.2}[k]||0; if(g) tacAdd(g,a.n); }
+    else if(k==="scrim") tacAdd(0.3);
+  }
   if(inPre){
     S.pre.ap-=cost;
     // 车队一起练过的场次是硬积累：除了默契战术池，还直接落一点

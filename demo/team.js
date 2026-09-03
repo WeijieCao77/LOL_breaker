@@ -4,7 +4,9 @@
 /* 每个队友对你有 0~100 的信任。信任影响全队发挥，也决定更衣室事件走向。 */
 function initTrust(){
   S.trust={};
-  myRoster().forEach(p=>{ if(!p.me) S.trust[p.id]=42+Math.floor(rnd()*16); });
+  // 战术素养的继承之一：打过成建制比赛的新人，队友一开始就多给几分信任（素养 40 ＝ +3）
+  const tb=(typeof tacOf==="function")?Math.round(Math.min(40,tacOf())*0.075):0;
+  myRoster().forEach(p=>{ if(!p.me) S.trust[p.id]=42+Math.floor(rnd()*16)+tb; });
 }
 function trustOf(id){ return S.trust&&S.trust[id]!==undefined?S.trust[id]:50; }
 function avgTrust(){
