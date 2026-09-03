@@ -135,6 +135,7 @@ function loadGame() {
     fixLdlNames(S);
     fixWl(S);
     fixScaleV3(S);
+    fixScaleV4(S);
     // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
     // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
     if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
@@ -176,6 +177,31 @@ function fixScaleV3(s) {
     const adj = o => { if (o && typeof o.expect === "number") o.expect = Math.max(40, o.expect - 2); };
     if (s.pre) adj(s.pre.invite);
     adj(s.tryout); adj(s.deal);
+  } catch (e) {}
+}
+
+/* 全体系 +5（v20260905d，玩家拍板「LPL 首发整体进国服前 100、明星 85-90、玩家极限 95+」）：
+   世界、你的属性、替补对位、车队路人、在途期望值一起 +5——所有差值不变，老档读回来胜率一分不动；
+   上限由 capOf（新公式 60+4t）管，属性不会超过它。 */
+function fixScaleV4(s) {
+  try {
+    if (!s || s.scaleV4) return;
+    s.scaleV4 = 1;
+    const up = (r, hi) => { if (!r) return; DIMS.forEach(d => { if (typeof r[d] === "number") r[d] = q1(Math.min(r[d] + 5, hi || 99)); }); };
+    [s.world, s.pre && s.pre.world].filter(Boolean).forEach(w => Object.keys(w).forEach(lg =>
+      (w[lg] || []).forEach(t => (t.players || []).forEach(p => { if (!p.me && p.r) up(p.r); }))));
+    if (s.attrs) up(s.attrs, 200);
+    if (s.seasonAttr0) up(s.seasonAttr0, 200);
+    if (s.understudy && s.understudy.r) up(s.understudy.r);
+    if (s.pre && Array.isArray(s.pre.mates)) s.pre.mates.forEach(m => m && up(m.r));
+    const adj = o => { if (o && typeof o.expect === "number") o.expect += 5; };
+    if (s.pre) adj(s.pre.invite);
+    adj(s.tryout); adj(s.deal);
+    if (s.attrs && typeof capOf === "function")
+      DIMS.forEach(d => { try { s.attrs[d] = Math.min(s.attrs[d], capOf(d)); } catch (e) {} });
+    if (s.career && s.world && typeof leagueBaseline === "function") s.baseline = leagueBaseline(s.world);
+    (s.events = s.events || []).push({ s: "版本", w: s.week || 0, tone: "info", tag: "版本",
+      text: "<b>实力尺顶端拉开</b>：全世界与你的属性整体 +5——LPL 首发整体进国服前 100、明星 85-90、你的上限抬到 95+。所有差值不变，比赛胜率一分没动。" });
   } catch (e) {}
 }
 
@@ -263,12 +289,14 @@ function fixScaleV2(s) {
         }
         // LDL 没有赛区锚，按「LPL−6」的位置钉住
         if (typeof anchorLeague === "function")
-          anchorLeague(lg, w[lg], lg === "LDL" ? 59 : undefined);
+          anchorLeague(lg, w[lg], lg === "LDL" ? 64 : undefined);   // 全体系 +5 后的 LDL 位置
       });
     });
-    if (s.attrs) DIMS.forEach(d => { s.attrs[d] = q1((s.attrs[d] || 40) + 15); });
-    if (s.understudy && s.understudy.r) DIMS.forEach(d => { s.understudy.r[d] = q1(clamp((s.understudy.r[d] || 50) + 13, 30, 96)); });
-    if (s.seasonAttr0) DIMS.forEach(d => { if (s.seasonAttr0[d] !== undefined) s.seasonAttr0[d] = q1(s.seasonAttr0[d] + 15); });
+    // 世界已按 +5 后的新锚定位，玩家侧这里一次到位（+15 旧迁移 +5 本轮），V4 不再重复
+    s.scaleV4 = 1;
+    if (s.attrs) DIMS.forEach(d => { s.attrs[d] = q1((s.attrs[d] || 40) + 20); });
+    if (s.understudy && s.understudy.r) DIMS.forEach(d => { s.understudy.r[d] = q1(clamp((s.understudy.r[d] || 50) + 18, 35, 99)); });
+    if (s.seasonAttr0) DIMS.forEach(d => { if (s.seasonAttr0[d] !== undefined) s.seasonAttr0[d] = q1(s.seasonAttr0[d] + 20); });
     // 属性压回新天花板（capOf 读的是 s——loadGame 里 S 已指向它）
     if (s.attrs && typeof capOf === "function") {
       DIMS.forEach(d => { try { s.attrs[d] = Math.min(s.attrs[d], capOf(d)); } catch (e) {} });

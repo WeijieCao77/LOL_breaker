@@ -26,7 +26,7 @@ function injuryRisk(){
   const a=S.age||20;
   if(a>=27) p+=(a-26)*0.002;
   // 体质是抗伤的：60 以上明显更耐操
-  p*=clamp(1.5-(S.attrs.体质-40)/60,0.55,1.5);
+  p*=clamp(1.5-(S.attrs.体质-45)/60,0.55,1.5);   // 全体系 +5：体质锚 40→45
   if(S.buff&&S.buff.physio) p*=0.6;              // 请了理疗师
   return clamp(p,0,0.30);
 }

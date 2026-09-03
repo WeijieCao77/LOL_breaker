@@ -57,18 +57,18 @@
    城市赛＝钻石到大师（45-57），主播杯＝大师到王者（52-64）。
    玩家开局属性没动（~45 恰在钻石门口），相对难度和过去一致。 */
 const CUPS={
-  city:{ name:"城市争霸赛", rounds:4, gap:1, band:[42,54],
+  city:{ name:"城市争霸赛", rounds:4, gap:1, band:[47,59],
          prize:[0,2,8,20,50],
          rn:["小组赛","八强赛","半决赛","决赛"],
          opps:["网吧联队","本地车队","大学生战队","市队"] },
-  stream:{ name:"主播杯", rounds:3, gap:1, band:[49,61],
+  stream:{ name:"主播杯", rounds:3, gap:1, band:[54,66],
          prize:[0,10,30,80],
          rn:["小组赛","半决赛","决赛"],
          opps:["百万粉丝队","退役选手队","冠军主播队"] },
   /* 全明星周末的娱乐表演赛（现实原型：LPL 全明星周末「主播对抗」）。
      邀请制看人气，免报名费，输了也有出场费——这是舞台，不是淘汰赛。
      主办方配明星队友，所以不动你的车队，胜负按个人发挥算。 */
-  show:{ name:"全明星周末 · 主播表演赛", rounds:1, gap:1, band:[55,55],
+  show:{ name:"全明星周末 · 主播表演赛", rounds:1, gap:1, band:[60,60],
          prize:[5,15],
          rn:["表演赛"],
          opps:["明星联队"] }
@@ -111,7 +111,7 @@ function drawCupMates(kind){
     // 偏上沿抽：愿意跟你组队打比赛的路人，本来就是这个池子里想赢的那批
     const lvl=lo+(0.45+0.55*rnd())*(hi-lo);
     const r={};
-    DIMS.forEach(d=>r[d]=clamp(Math.round(lvl+(rnd()*14-7)),25,75));
+    DIMS.forEach(d=>r[d]=clamp(Math.round(lvl+(rnd()*14-7)),30,80));   // 全体系 +5
     return {id:(pool[pi++%pool.length])+(10+Math.floor(rnd()*90)),
             pos:p.k, age:16+Math.floor(rnd()*14), r};
   });

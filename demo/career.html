@@ -943,10 +943,10 @@ const POS=[{k:"top",n:"上单"},{k:"jng",n:"打野"},{k:"mid",n:"中单"},{k:"bo
 const POSN={top:"上单",jng:"打野",mid:"中单",bot:"AD",sup:"辅助"};
 const ORIGIN={
   streamer:{n:"主播出身",d:"人气高、直播收益好；体质与运营底子薄",
-    base:{操作:54,运营:45,心态:50,指挥:46,体质:43},fame:62,
+    base:{操作:59,运营:50,心态:55,指挥:51,体质:48},fame:62,
     perk:"流量加持：直播收益 +60%"},
   academy:{n:"青训出身",d:"操作与运营扎实；人气低、期待压力大",
-    base:{操作:59,运营:55,心态:45,指挥:48,体质:53},fame:14,
+    base:{操作:64,运营:60,心态:50,指挥:53,体质:58},fame:14,
     perk:"科班底子：训练收益 +20%"}
 };
 /* 出道年龄：小的起点低但成长快，大的起点高但成长慢。
@@ -1000,6 +1000,12 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260905d", at:"2026-09-05", items:[
+    "实力尺顶端拉开（玩家拍板）：全世界与你的属性整体 +5，差值不变、胜率不动——LPL 首发整体进国服前 100（均值 70，98% 在门 62 以上），明星 85-90（Knight 90 / Faker 87 / Chovy 85），LDL 均值 63；你的上限同步抬高：天赋 10 的维度基础上限 95、加突破顶到 99，均衡 4 点 71+13=84",
+    "队伍界面只看实力：个人条只留数字不标段位（玩家点名），段位只在天梯/备战聚光灯出现",
+    "自动推进不再整季白练（玩家实锤：推了一个赛季实力不动）：主项顶到上限且机械突破池已用完时，转去补最短的板；确认框写清「练满就转去补最短的板」",
+    "老档自动 +5 迁移（世界、属性、替补对位、车队、在途试训期望值一起动）；各档试训期望 / 杯赛对手带 / 成就阈值同步 +5"
+  ]},
   {v:"v20260905c", at:"2026-09-05", items:[
     "统一实力尺（玩家拍板「基础实力只有一个数据」）：全游戏的「实力」只剩一个数——五维均值。天梯、试训、杯赛、队伍面板、明星聚光灯原来各用一套加权公式（排位看操作、试训看指挥、杯赛又一套、面板权重和只有 0.86），同一个人能被标出 39 / 45 / 48 三个数——现在全部读同一个数，段位按同一张表",
     "队伍面板不再撒谎：LPL 首发不再显示成「四五十」——那是权重和 0.86 的比赛口径，对外一律归一到实力尺（LDL 均值 58 ≈ 宗师、LPL 均值 65 ≈ 国服前 100 边缘、明星 75+ ≈ 国服第一档）；每个人旁边直接标段位；战力、赛后拆解的综合同步归一",
@@ -1239,7 +1245,10 @@ const mult=t=>0.40+t*0.16;
    整体左移 5.5——那是同一个人两种算法的系统差（开局 48 vs 42.6，满练 75 vs 69），
    所以天梯的爬升节奏与迁移前一致。对表：LDL 均值 58 ≈ 宗师、LPL 均值 65 ≈ 国服前 100 边缘、
    明星 75+ ≈ 国服第一档；玩家开局 42.6 ≈ 钻石。 */
-const RANK_CURVE=[[29.5,0],[34.5,12],[39.5,26],[49.5,44],[54.5,60],[59.5,74],[65.5,86],[71.5,95],[75.5,100]];
+/* 2026-09-05 尺顶重新对表（玩家拍板）：全体系 +5 之后，LPL 首发整体进国服前 100
+   （门 62 ≈ LPL 首发的 p10），明星 85-90 = 国服第一档，前 10 的门 78。
+   下半段（钻石 44.5→王者 59）是玩家开局到出道的路，节奏与换尺前一致。 */
+const RANK_CURVE=[[34.5,0],[39.5,12],[44.5,26],[52,44],[56.5,60],[59,74],[62,86],[78,95],[85,100]];
 function skillToRank(s){
   const C=RANK_CURVE;
   if(s<=C[0][0]) return 0;
@@ -1265,7 +1274,11 @@ function rankToSkill(r){
 /* 天花板重锚：天赋1→54≈大师边，天赋5→70≈一线主力封顶，天赋10→90＝顶级职业；
    加上突破双池（机械4+里程碑5）最高 99——苦练+多冠稳定站上 95+，
    超过世界上任何一个职业选手（Faker 档 88-90）。天赋依然主导。 */
-const cap=t=>50+t*4;
+/* 2026-09-05 全体系 +5（玩家拍板）：天赋 10 的维度基础上限 95，加突破池 +13 顶到 99；
+   均衡 4 点 71+13=84 ≈ 明星下沿。试过再多抬 5（60+4t）：机器人末态五维全顶上限、实力 81.5，
+   MSI/世界赛率从 16/21 飙到 45/45——上限每多 1 分都是难度决策，不在这次换尺里偷渡 */
+const SCALE_SHIFT=5;   // 2026-09-05 全体系平移量：凡是「属性/上限」这种比值，都先减掉它再算
+const cap=t=>55+t*4;
 /* 上限池分两个：机械/环境路径一个，里程碑经历一个。
    原来只有一个 6 点的池，强队、老将、复盘这些「肯做就有」的来源先到先得，
    等你真的捧起 MSI 奖杯，池子里只剩零头——玩家实测夺冠时刻只 +0.7，
@@ -1361,7 +1374,7 @@ const BREAK_PATHS={
                    return v?`队里有 ${v.id}`:((S.career&&S.career.bestIntl)?"打过国际赛":"队里没有老将"); },
         done:()=>{ if(!S.team) return false;
                    const v=myRoster().find(x=>!x.me&&x.age>=27);
-                   return !!v || power(myRoster(),0)>=72 || !!(S.career&&S.career.bestIntl); } }
+                   return !!v || power(myRoster(),0)>=76 || !!(S.career&&S.career.bestIntl); } }
 };
 /* 机械条件的计数器 */
 function initBtk(){ S.btk={opStreak:0,opThisWeek:0,vod:0,rest:0}; }
@@ -1472,7 +1485,7 @@ function checkBreakthrough(){
   const teamPw=power(myRoster(),0);
   // 待在强队：耳濡目染，指挥与运营的天花板会松
   // 环境类只算一次，否则十个赛段会把天花板顶穿
-  if(teamPw>=68){ breakthrough("指挥",2.2,`在 <b>${S.team}</b> 这样的队里待着，你看事情的方式变了。`,"strongteam");
+  if(teamPw>=72){ breakthrough("指挥",2.2,`在 <b>${S.team}</b> 这样的队里待着，你看事情的方式变了。`,"strongteam");
                   breakthrough("运营",1.8,`高强度的训练赛把你的判断磨快了。`,"strongteam2"); }
   // 队里有老将：有人手把手教
   const vet=mates.find(x=>x.age>=27);
@@ -1535,7 +1548,8 @@ const LCK_DYNASTY=[0.8,1.6,2.2,1.2,0];
    和 LPL 一样高，外卡不弱是漏了。现在装进同一把尺：锚定联赛平均，
    风格在维度间重分配（总和≈0，不改均值）：LCK 赢在脑子和纪律，
    LPL 枪最利，VCS 莽是天赋。默契/战术也分赛区（LCK 的强不全在个人数值）。 */
-const REGION_ANCHOR={LCK:66.5,LPL:65,LEC:63,LCS:61.5,PCS:58,VCS:57.5,LJL:55.5,LLA:55,CBLOL:55,LCO:54,TCL:54.5};
+/* 2026-09-05 全体系 +5（玩家拍板：LPL 首发整体进国服前 100、明星 85-90）：差值一分不变，胜率不动 */
+const REGION_ANCHOR={LCK:71.5,LPL:70,LEC:68,LCS:66.5,PCS:63,VCS:62.5,LJL:60.5,LLA:60,CBLOL:60,LCO:59,TCL:59.5};
 const REGION_STYLE={
   LCK:{运营:2,指挥:1,操作:-2,体质:-1},
   LPL:{操作:2,运营:-1,心态:-1},
@@ -1554,10 +1568,10 @@ const SCALE_UP=2.0;   // 2.2 时明星队叠出 88+ 车队，主角的冠军窗�
 /* 名望地板：单年比赛数据量不出历史级选手的统治力（实测 2022 数据里
    Faker 的离均差只有 +0.2）。这些名字不该低于他们的江湖地位——
    这是编辑判断，不是数据，所以名单刻意短。 */
-const STAR_FLOOR={Faker:82,Chovy:80,Ruler:80,Viper:78,ShowMaker:78,Keria:77,
-  Deft:76,Scout:77,TheShy:75,Rookie:75,Xiaohu:74,
-  Caps:72,     // 2022 数据把「欧洲之王」量成 61（体质维度异常低）——LEC 春季冠军中单不该低于 LPL 均值
-  Jiejie:74};  // S11 冠军打野、2022 数据只量到 67——玩家点名的明星，不该在 LPL 均值边上
+const STAR_FLOOR={Faker:87,Chovy:85,Ruler:85,Viper:83,ShowMaker:83,Keria:82,
+  Deft:81,Scout:82,TheShy:80,Rookie:80,Xiaohu:79,
+  Caps:77,     // 2022 数据把「欧洲之王」量成 66（体质维度异常低）——LEC 春季冠军中单不该低于 LPL 均值
+  Jiejie:79};  // S11 冠军打野、2022 数据只量到 72——玩家点名的明星，不该在 LPL 均值边上
 function anchorLeague(lg,teams,anchorOverride){
   const anchor=(anchorOverride!==undefined)?anchorOverride:REGION_ANCHOR[lg];
   if(anchor===undefined||!teams||!teams.length) return;
@@ -1578,16 +1592,25 @@ function anchorLeague(lg,teams,anchorOverride){
     const wr=wrOf.get(p);
     const up=(SCALE_UP-1)*clamp(1+(wr-0.5)*1.6,0.6,1.0);
     const add=anchor-mean+(dev>0?dev*up:0);
-    DIMS.forEach(d=>{ p.r[d]=q1(clamp((p.r[d]||50)+add+(st[d]||0),30,96)); });
+    DIMS.forEach(d=>{ p.r[d]=q1(clamp((p.r[d]||50)+add+(st[d]||0),35,99)); });
   });
   const drift=avg(all.map(compOf))-anchor;
   if(Math.abs(drift)>0.05)
-    all.forEach(p=>DIMS.forEach(d=>{ p.r[d]=q1(clamp(p.r[d]-drift,30,96)); }));
+    all.forEach(p=>DIMS.forEach(d=>{ p.r[d]=q1(clamp(p.r[d]-drift,35,99)); }));
   // 名望地板最后抬（不参与回中——十来个人的零头不值得稀释全联盟）
   all.forEach(p=>{
     const f=STAR_FLOOR[p.id]; if(!f) return;
     const c=compOf(p);
-    if(c<f){ const up=f-c; DIMS.forEach(d=>{ p.r[d]=q1(clamp(p.r[d]+up,30,96)); }); }
+    if(c<f){
+      // 抬升量只分给还有余量的维度，分几轮直到均值到地板——
+      // Faker 的指挥一抬就顶到 99，单轮均匀加会被截掉 10 分、地板吃不满（实测 84.9 vs 87）
+      for(let k=0;k<4;k++){
+        const c2=compOf(p); if(c2>=f-0.05) break;
+        const room=DIMS.filter(d=>p.r[d]<99); if(!room.length) break;
+        const up=(f-c2)*DIMS.length/room.length;
+        room.forEach(d=>{ p.r[d]=q1(clamp(p.r[d]+up,35,99)); });
+      }
+    }
   });
 }
 function dynastyBonus(players){
@@ -1742,7 +1765,7 @@ function buildLDL(w){
        大师到王者边缘）——强队青训≈王者边的门神，弱队青训跟弱队一样菜，
        宗师实力（60）有得打、没得躺。 */
     players:POS.map(x=>{
-      const pl=Object.assign(makeRookie(x.k,Math.min(Math.max(p-8,55),p-4)),{lg:"LDL",form:52,retired:false});
+      const pl=Object.assign(makeRookie(x.k,Math.min(Math.max(p-8,60),p-4)),{lg:"LDL",form:52,retired:false});   // 全体系 +5：下限 55→60
       const R=LDL_ROSTER[teamCode(t.name)];
       const real=R&&R.find(q=>q.pos===x.k);
       if(real) pl.id=real.id;               // 真名上身；数值不动
@@ -1757,7 +1780,7 @@ function makeRookie(pos,level){
   rookieN++;
   const r={};
   // 统一标尺后封顶提到 88：LCK 明星退役后补上来的新星也该有 70+ 的空间
-  DIMS.forEach(d=>r[d]=clamp(Math.round(level+(rnd()*16-8)),40,88));
+  DIMS.forEach(d=>r[d]=clamp(Math.round(level+(rnd()*16-8)),45,93));   // 全体系 +5
   return {id:"新秀"+ROOKIE_CN[rookieN%10]+rookieN,cn:"",pos,age:18,r,rookie:true};
 }
 
@@ -1941,7 +1964,7 @@ function ageWorld(){
         });
         // 退役
         const ovr=ovrOf(p);
-        if(p.age>=30||(p.age>=27&&ovr<42)){
+        if(p.age>=30||(p.age>=27&&ovr<47)){   // 全体系 +5：退役线 42→47
           // 新秀水平锚定「赛区开局基准」：真实联赛靠新血维持水位，
           // 若按当前均值生成，会随老将衰退形成死亡螺旋。
           const base=(S.baseline&&S.baseline[lg])||avg(S.world[lg].map(t=>avg(t.players.map(q=>ovrOf(q)))));
@@ -1982,7 +2005,7 @@ function ageWorld(){
     S.world[lg].forEach(t=>{
       if(t.syn===undefined) t.syn=50;
       if(t.tac===undefined) t.tac=50;
-      const elite=rk.includes(t.name)||power(t)>=72;
+      const elite=rk.includes(t.name)||power(t)>=76;   // 全体系 +5（战力口径 ×0.86 ≈ +4）
       const ceil=elite?72:58;                 // 强队经营得好，水位更高
       const rate=elite?4.5:2.2;
       t.syn=clamp(t.syn+(t.syn<ceil?rate:0.5),20,90);
@@ -2509,9 +2532,21 @@ function advancePreWeek(){
 
 /* 只有一个「外界评价」维度：段位 + 名气 + 赛事成绩。
    原来还有个「星探关注度」，但它和名气靠同样的行为增长，玩家分不清区别——已合并。 */
+/* 综合评估里的读数项走「旧刻度」：2026-09-05 读数曲线中段压紧后，同一实力的读数高了
+   最多 15 分，PRE_INVITE=118 这类阈值是按旧刻度调的——先把读数翻回实力，再按旧曲线
+   读一遍，评估节奏就和换尺前一致。 */
+const LEGACY_CURVE=[[34.5,0],[39.5,12],[44.5,26],[54.5,44],[59.5,60],[64.5,74],[70.5,86],[76.5,95],[80.5,100]];
+function legacyRead(r){
+  const s=rankToSkill(r), C=LEGACY_CURVE;
+  if(s<=C[0][0]) return 0;
+  for(let i=1;i<C.length;i++){
+    if(s<=C[i][0]){ const [s0,r0]=C[i-1],[s1,r1]=C[i]; return r0+(r1-r0)*(s-s0)/(s1-s0); }
+  }
+  return 100;
+}
 function preScore(){
   const P=S.pre;
-  return P.rank*0.92+Math.min(S.fans,300)*0.22+(P.cityCup||0)*8+(P.streamCup||0)*8;
+  return legacyRead(P.rank)*0.92+Math.min(S.fans,300)*0.22+(P.cityCup||0)*8+(P.streamCup||0)*8;
 }
 /* 这一年没签成：世界往前走一年，你也老一岁。没有死线，只有代价。 */
 function preNextYear(){
@@ -2790,7 +2825,9 @@ function trainBtn(d, ap, attr){
         : DIM_HINT[d]+costTrain(d) };
 }
 function gain(d){
-  const t=S.talent[d],c=cap(t),room=clamp(1-(S.attrs[d]/c),0,1);
+  // 余量按「平移后的尺」算：全体系 +5 之后 attr/cap 的比值会缩小、全程收益慢 6%
+  //（2×120 批测世界赛率掉 5 个点抓出来的）——减掉平移量再算，与换尺前逐点等价
+  const t=S.talent[d],c=cap(t),room=clamp(1-((S.attrs[d]-SCALE_SHIFT)/(c-SCALE_SHIFT)),0,1);
   const ageM=S.age<=21?1.15:S.age<=24?1.0:0.6;
   const bonus=S.origin==="academy"?1.2:1.0;
   const coach=(S.buff&&S.buff.coach)?1.22:1;
@@ -3147,9 +3184,12 @@ function autoRest(focus,weeks){
       const fbp=(typeof BREAK_PATHS!=="undefined")?BREAK_PATHS[focus]:null;
       if(S.fatigue>70) doAction("rest");
       else if(av.includes(focus)) doTrain(focus);
-      // 主项撞了瓶颈但「继续练就能突破」——那就接着练，别改道
-      else if(fbp&&fbp.by==="train"&&S.attrs[focus]>=capOf(focus)) doTrain(focus);
-      else if(av.length) doTrain(av[0]);
+      // 主项撞了瓶颈但「继续练就能突破」——那就接着练，别改道；
+      // 前提是机械突破池还有余量。池子用完还死练满级维度，就是整季白练
+      //（玩家实锤：推了一个赛季实力一动不动）
+      else if(fbp&&fbp.by==="train"&&S.attrs[focus]>=capOf(focus)
+              &&typeof capMechOf==="function"&&capMechOf(focus)<CAP_MECH_MAX) doTrain(focus);
+      else if(av.length) doTrain(av.slice().sort((a,b)=>S.attrs[a]-S.attrs[b])[0]);   // 补最短的板
       else doAction("stream");
       // 异化点数：剩 1 点付不起 2 点的行动会原地死转（玩家实测「只打了一场就停」
       // ——其实是这里卡死、刷新后只剩自动存档那一周）。1 点用排位收尾。
@@ -6805,9 +6845,9 @@ const ACH_MORE=[
   {id:"break3", n:"三处松动", d:"同时有三个维度的瓶颈被顶开过。", tag:"养成",
    on:"break", cond:()=>DIMS.filter(d=>((S.capBonus||{})[d]||0)>=2).length>=3, r:{money:300}},
   {id:"spec", n:"一招鲜", d:"把某一维练到 80 以上。", tag:"养成",
-   on:"train", cond:()=>DIMS.some(d=>S.attrs[d]>=80), r:{money:450,fame:80}},
+   on:"train", cond:()=>DIMS.some(d=>S.attrs[d]>=85), r:{money:450,fame:80}},   // 全体系 +5
   {id:"balanced", n:"六边形", d:"五维全部练到 55 以上。", tag:"养成",
-   on:"train", cond:()=>DIMS.every(d=>S.attrs[d]>=55), r:{money:450,fame:60}},
+   on:"train", cond:()=>DIMS.every(d=>S.attrs[d]>=60), r:{money:450,fame:60}},   // 全体系 +5
   {id:"mech", n:"苦练出真章", d:"靠纯机械训练顶开一次瓶颈。", tag:"养成",
    on:"breakauto", cond:()=>true, r:{money:220,fat:-30}},
 
@@ -7347,12 +7387,12 @@ function squadCard(){
     </div>
     <p class="note" style="margin-top:4px">基础战力 = 五个人的实力按比赛权重加权（你 ×1.3 / 核心 ×1.6），指挥不进这里、走下面的全队乘数——所以它和五维均值差一点是正常的。</p>
 
-    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">五名选手的实力 <span style="font-weight:400">· 五维均值，和天梯、试训、杯赛同一把尺；段位按同一张表</span></h3>
+    <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">五名选手的实力 <span style="font-weight:400">· 五维均值，和天梯、试训、杯赛同一把尺</span></h3>
     <div class="attrs">${mates.map(p=>{
       const ih=(!p.me&&typeof mateInjuryHit==="function")?mateInjuryHit(p)*PW_SHOW:0;
       const v=strength(p)+ih;
       return `<div class="at wide"><div class="lb">${POSN[p.pos]}</div>${bar(v)}
-        <div class="vn mono"><b>${v.toFixed(0)}</b><small style="color:var(--ink-3);margin-left:4px">${tierOf(v)}</small>${typeof avatarOf==="function"?avatarOf(p,22):""}<span class="pname">${
+        <div class="vn mono"><b>${v.toFixed(0)}</b>${typeof avatarOf==="function"?avatarOf(p,22):""}<span class="pname">${
           p.me?'<b style="color:var(--gold)">你</b>':p.id.slice(0,8)}</span>${ih?`<span class="tag l" title="带伤/替补顶上">伤</span>`:""}</div></div>`;
     }).join("")}</div>
 
@@ -8523,7 +8563,7 @@ function injuryRisk(){
   const a=S.age||20;
   if(a>=27) p+=(a-26)*0.002;
   // 体质是抗伤的：60 以上明显更耐操
-  p*=clamp(1.5-(S.attrs.体质-40)/60,0.55,1.5);
+  p*=clamp(1.5-(S.attrs.体质-45)/60,0.55,1.5);   // 全体系 +5：体质锚 40→45
   if(S.buff&&S.buff.physio) p*=0.6;              // 请了理疗师
   return clamp(p,0,0.30);
 }
@@ -10295,18 +10335,18 @@ const NODES_MORE=[
    城市赛＝钻石到大师（45-57），主播杯＝大师到王者（52-64）。
    玩家开局属性没动（~45 恰在钻石门口），相对难度和过去一致。 */
 const CUPS={
-  city:{ name:"城市争霸赛", rounds:4, gap:1, band:[42,54],
+  city:{ name:"城市争霸赛", rounds:4, gap:1, band:[47,59],
          prize:[0,2,8,20,50],
          rn:["小组赛","八强赛","半决赛","决赛"],
          opps:["网吧联队","本地车队","大学生战队","市队"] },
-  stream:{ name:"主播杯", rounds:3, gap:1, band:[49,61],
+  stream:{ name:"主播杯", rounds:3, gap:1, band:[54,66],
          prize:[0,10,30,80],
          rn:["小组赛","半决赛","决赛"],
          opps:["百万粉丝队","退役选手队","冠军主播队"] },
   /* 全明星周末的娱乐表演赛（现实原型：LPL 全明星周末「主播对抗」）。
      邀请制看人气，免报名费，输了也有出场费——这是舞台，不是淘汰赛。
      主办方配明星队友，所以不动你的车队，胜负按个人发挥算。 */
-  show:{ name:"全明星周末 · 主播表演赛", rounds:1, gap:1, band:[55,55],
+  show:{ name:"全明星周末 · 主播表演赛", rounds:1, gap:1, band:[60,60],
          prize:[5,15],
          rn:["表演赛"],
          opps:["明星联队"] }
@@ -10349,7 +10389,7 @@ function drawCupMates(kind){
     // 偏上沿抽：愿意跟你组队打比赛的路人，本来就是这个池子里想赢的那批
     const lvl=lo+(0.45+0.55*rnd())*(hi-lo);
     const r={};
-    DIMS.forEach(d=>r[d]=clamp(Math.round(lvl+(rnd()*14-7)),25,75));
+    DIMS.forEach(d=>r[d]=clamp(Math.round(lvl+(rnd()*14-7)),30,80));   // 全体系 +5
     return {id:(pool[pi++%pool.length])+(10+Math.floor(rnd()*90)),
             pos:p.k, age:16+Math.floor(rnd()*14), r};
   });
@@ -10864,6 +10904,7 @@ function loadGame() {
     fixLdlNames(S);
     fixWl(S);
     fixScaleV3(S);
+    fixScaleV4(S);
     // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
     // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
     if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
@@ -10905,6 +10946,31 @@ function fixScaleV3(s) {
     const adj = o => { if (o && typeof o.expect === "number") o.expect = Math.max(40, o.expect - 2); };
     if (s.pre) adj(s.pre.invite);
     adj(s.tryout); adj(s.deal);
+  } catch (e) {}
+}
+
+/* 全体系 +5（v20260905d，玩家拍板「LPL 首发整体进国服前 100、明星 85-90、玩家极限 95+」）：
+   世界、你的属性、替补对位、车队路人、在途期望值一起 +5——所有差值不变，老档读回来胜率一分不动；
+   上限由 capOf（新公式 60+4t）管，属性不会超过它。 */
+function fixScaleV4(s) {
+  try {
+    if (!s || s.scaleV4) return;
+    s.scaleV4 = 1;
+    const up = (r, hi) => { if (!r) return; DIMS.forEach(d => { if (typeof r[d] === "number") r[d] = q1(Math.min(r[d] + 5, hi || 99)); }); };
+    [s.world, s.pre && s.pre.world].filter(Boolean).forEach(w => Object.keys(w).forEach(lg =>
+      (w[lg] || []).forEach(t => (t.players || []).forEach(p => { if (!p.me && p.r) up(p.r); }))));
+    if (s.attrs) up(s.attrs, 200);
+    if (s.seasonAttr0) up(s.seasonAttr0, 200);
+    if (s.understudy && s.understudy.r) up(s.understudy.r);
+    if (s.pre && Array.isArray(s.pre.mates)) s.pre.mates.forEach(m => m && up(m.r));
+    const adj = o => { if (o && typeof o.expect === "number") o.expect += 5; };
+    if (s.pre) adj(s.pre.invite);
+    adj(s.tryout); adj(s.deal);
+    if (s.attrs && typeof capOf === "function")
+      DIMS.forEach(d => { try { s.attrs[d] = Math.min(s.attrs[d], capOf(d)); } catch (e) {} });
+    if (s.career && s.world && typeof leagueBaseline === "function") s.baseline = leagueBaseline(s.world);
+    (s.events = s.events || []).push({ s: "版本", w: s.week || 0, tone: "info", tag: "版本",
+      text: "<b>实力尺顶端拉开</b>：全世界与你的属性整体 +5——LPL 首发整体进国服前 100、明星 85-90、你的上限抬到 95+。所有差值不变，比赛胜率一分没动。" });
   } catch (e) {}
 }
 
@@ -10992,12 +11058,14 @@ function fixScaleV2(s) {
         }
         // LDL 没有赛区锚，按「LPL−6」的位置钉住
         if (typeof anchorLeague === "function")
-          anchorLeague(lg, w[lg], lg === "LDL" ? 59 : undefined);
+          anchorLeague(lg, w[lg], lg === "LDL" ? 64 : undefined);   // 全体系 +5 后的 LDL 位置
       });
     });
-    if (s.attrs) DIMS.forEach(d => { s.attrs[d] = q1((s.attrs[d] || 40) + 15); });
-    if (s.understudy && s.understudy.r) DIMS.forEach(d => { s.understudy.r[d] = q1(clamp((s.understudy.r[d] || 50) + 13, 30, 96)); });
-    if (s.seasonAttr0) DIMS.forEach(d => { if (s.seasonAttr0[d] !== undefined) s.seasonAttr0[d] = q1(s.seasonAttr0[d] + 15); });
+    // 世界已按 +5 后的新锚定位，玩家侧这里一次到位（+15 旧迁移 +5 本轮），V4 不再重复
+    s.scaleV4 = 1;
+    if (s.attrs) DIMS.forEach(d => { s.attrs[d] = q1((s.attrs[d] || 40) + 20); });
+    if (s.understudy && s.understudy.r) DIMS.forEach(d => { s.understudy.r[d] = q1(clamp((s.understudy.r[d] || 50) + 18, 35, 99)); });
+    if (s.seasonAttr0) DIMS.forEach(d => { if (s.seasonAttr0[d] !== undefined) s.seasonAttr0[d] = q1(s.seasonAttr0[d] + 20); });
     // 属性压回新天花板（capOf 读的是 s——loadGame 里 S 已指向它）
     if (s.attrs && typeof capOf === "function") {
       DIMS.forEach(d => { try { s.attrs[d] = Math.min(s.attrs[d], capOf(d)); } catch (e) {} });
@@ -11253,10 +11321,10 @@ function confirmCard(){
    青训 59≈LDL 首发 / 弱队 65≈王者(LPL平均) / 中游 71≈国服前100 / 豪门 79≈国服前10。
    宗师(60)的人在二队试训评 B，履历通道进来的（~55）评 C 拿青训约——各得其所。 */
 const CLUB_TIERS = {
-  top:   { n:"豪门",   expect:77, pay:[100,400], sign:[60,150], years:3, buyout:[900,2200] },
-  mid:   { n:"中游",   expect:69, pay:[45,130],  sign:[20,60],  years:2, buyout:[350,900] },
-  low:   { n:"弱队",   expect:63, pay:[20,60],   sign:[8,25],   years:2, buyout:[150,400] },
-  acad:  { n:"二队/青训", expect:57, pay:[3,15],    sign:[0,4],    years:2, buyout:[40,120] }
+  top:   { n:"豪门",   expect:82, pay:[100,400], sign:[60,150], years:3, buyout:[900,2200] },
+  mid:   { n:"中游",   expect:74, pay:[45,130],  sign:[20,60],  years:2, buyout:[350,900] },
+  low:   { n:"弱队",   expect:68, pay:[20,60],   sign:[8,25],   years:2, buyout:[150,400] },
+  acad:  { n:"二队/青训", expect:62, pay:[3,15],    sign:[0,4],    years:2, buyout:[40,120] }
 };
 
 /* ---------- 试训的四个环节 ----------
@@ -11370,12 +11438,14 @@ function checkRankInvite(){
   P.rankInvited = P.rankInvited || {};
   // 每个大段位各算一次机会——上分这条路不该只在最后才兑现
   // 门槛重锚后从宗师起步：宗师→青训、王者→弱队、国服前100→中游、国服前10→豪门
+  // 门槛走 TIER_RANK（实力等价翻译过的读数），不再直接读段位表的边界
   for(const [i, tier] of [[4,"acad"],[5,"low"],[6,"mid"],[7,"top"]]){
-    if(RANKS[i] && P.rank >= RANKS[i].at && !P.rankInvited[i]){
+    const at = TIER_RANK[tier];
+    if(P.rank >= at && !P.rankInvited[i]){
       const t = fitTier(tier);
       if(!canInvite(t)) continue;
       P.rankInvited[i] = 1;
-      addInvite(t, `排位打到${RANKS[i].n}`);
+      addInvite(t, `排位打到${typeof rankFull==="function"?rankFull(at):rankName(at)}`);
       return;
     }
   }
@@ -11446,7 +11516,7 @@ function resumeCap(){
    这是「有没有资格被看」的底线，和「能不能通过」无关。 */
 function inviteFloorOk(){
   const P = S.pre; if(!P) return false;
-  const need = (typeof RANKS !== "undefined" && RANKS[4]) ? RANKS[4].at : 60;   // 宗师
+  const need = TIER_RANK.acad;   // 实力 59.5 等价（原「宗师」门）
   return P.rank >= need || resumeCap() !== "none";
 }
 /* 邀请节流。
@@ -11469,7 +11539,11 @@ function inviteFloorOk(){
 /* 2026-08-31 重锚：一般宗师才摸到职业门槛（二队），一线至少王者，
    豪门要国服前列——玩家原话「已经无法用段位来衡量实力了，都是用比赛衡量的」。
    段位是底线，比赛履历是尺子：段位不够可走 resumeCap 的履历通道。 */
-const TIER_RANK = { acad:60, low:74, mid:86, top:95 };   // 宗师 / 王者 / 国服前100 / 国服前10
+/* 段位准入（天梯读数）。2026-09-05 尺顶重新对表后读数曲线中段压紧了，这些门按「实力等价」
+   重新翻译：原宗师 60 / 王者 74 / 前 100 86 / 前 10 95 ≙ 实力 59.5 / 64.5 / 70.5 / 76.5，
+   在新曲线上是 76 / 87 / 91 / 94。不翻译的话中游队会在实力 62 就来签人（LPL 首发 70），
+   机器人坐穿替补席，2×120 批测世界赛率从 21 掉到 12——被抓出来的。 */
+const TIER_RANK = { acad:76, low:87, mid:91, top:94 };
 function rankCap(){
   const r = (S.pre && S.pre.rank) || 0;
   let t = TIER_ORDER[0];
@@ -14153,7 +14227,7 @@ function bind(){
   const au=$("auto"); if(au) au.onclick=()=>{
     const f=DIMS.reduce((a,b)=>S.talent[a]>=S.talent[b]?a:b);
     askConfirm("自动推进",
-      `由系统替你安排：疲劳高就休息，否则练 <b>${f}</b>，然后打完比赛。<br>
+      `由系统替你安排：疲劳高就休息，否则练 <b>${f}</b>（练满就转去补最短的板），然后打完比赛。<br>
        <b>一旦有事情需要你决定，会立刻停下来交回给你</b>——推几周不影响这一点。<br>
        <span class="note">这期间的训练和临场决策都不是你做的。</span>`,
       "推 6 周", ()=>autoRest(f,AUTO_MAX),

@@ -54,9 +54,9 @@ const ACH_MORE=[
   {id:"break3", n:"三处松动", d:"同时有三个维度的瓶颈被顶开过。", tag:"养成",
    on:"break", cond:()=>DIMS.filter(d=>((S.capBonus||{})[d]||0)>=2).length>=3, r:{money:300}},
   {id:"spec", n:"一招鲜", d:"把某一维练到 80 以上。", tag:"养成",
-   on:"train", cond:()=>DIMS.some(d=>S.attrs[d]>=80), r:{money:450,fame:80}},
+   on:"train", cond:()=>DIMS.some(d=>S.attrs[d]>=85), r:{money:450,fame:80}},   // 全体系 +5
   {id:"balanced", n:"六边形", d:"五维全部练到 55 以上。", tag:"养成",
-   on:"train", cond:()=>DIMS.every(d=>S.attrs[d]>=55), r:{money:450,fame:60}},
+   on:"train", cond:()=>DIMS.every(d=>S.attrs[d]>=60), r:{money:450,fame:60}},   // 全体系 +5
   {id:"mech", n:"苦练出真章", d:"靠纯机械训练顶开一次瓶颈。", tag:"养成",
    on:"breakauto", cond:()=>true, r:{money:220,fat:-30}},
 

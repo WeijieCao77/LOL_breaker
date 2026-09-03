@@ -26,10 +26,10 @@
    青训 59≈LDL 首发 / 弱队 65≈王者(LPL平均) / 中游 71≈国服前100 / 豪门 79≈国服前10。
    宗师(60)的人在二队试训评 B，履历通道进来的（~55）评 C 拿青训约——各得其所。 */
 const CLUB_TIERS = {
-  top:   { n:"豪门",   expect:77, pay:[100,400], sign:[60,150], years:3, buyout:[900,2200] },
-  mid:   { n:"中游",   expect:69, pay:[45,130],  sign:[20,60],  years:2, buyout:[350,900] },
-  low:   { n:"弱队",   expect:63, pay:[20,60],   sign:[8,25],   years:2, buyout:[150,400] },
-  acad:  { n:"二队/青训", expect:57, pay:[3,15],    sign:[0,4],    years:2, buyout:[40,120] }
+  top:   { n:"豪门",   expect:82, pay:[100,400], sign:[60,150], years:3, buyout:[900,2200] },
+  mid:   { n:"中游",   expect:74, pay:[45,130],  sign:[20,60],  years:2, buyout:[350,900] },
+  low:   { n:"弱队",   expect:68, pay:[20,60],   sign:[8,25],   years:2, buyout:[150,400] },
+  acad:  { n:"二队/青训", expect:62, pay:[3,15],    sign:[0,4],    years:2, buyout:[40,120] }
 };
 
 /* ---------- 试训的四个环节 ----------
@@ -143,12 +143,14 @@ function checkRankInvite(){
   P.rankInvited = P.rankInvited || {};
   // 每个大段位各算一次机会——上分这条路不该只在最后才兑现
   // 门槛重锚后从宗师起步：宗师→青训、王者→弱队、国服前100→中游、国服前10→豪门
+  // 门槛走 TIER_RANK（实力等价翻译过的读数），不再直接读段位表的边界
   for(const [i, tier] of [[4,"acad"],[5,"low"],[6,"mid"],[7,"top"]]){
-    if(RANKS[i] && P.rank >= RANKS[i].at && !P.rankInvited[i]){
+    const at = TIER_RANK[tier];
+    if(P.rank >= at && !P.rankInvited[i]){
       const t = fitTier(tier);
       if(!canInvite(t)) continue;
       P.rankInvited[i] = 1;
-      addInvite(t, `排位打到${RANKS[i].n}`);
+      addInvite(t, `排位打到${typeof rankFull==="function"?rankFull(at):rankName(at)}`);
       return;
     }
   }
@@ -219,7 +221,7 @@ function resumeCap(){
    这是「有没有资格被看」的底线，和「能不能通过」无关。 */
 function inviteFloorOk(){
   const P = S.pre; if(!P) return false;
-  const need = (typeof RANKS !== "undefined" && RANKS[4]) ? RANKS[4].at : 60;   // 宗师
+  const need = TIER_RANK.acad;   // 实力 59.5 等价（原「宗师」门）
   return P.rank >= need || resumeCap() !== "none";
 }
 /* 邀请节流。
@@ -242,7 +244,11 @@ function inviteFloorOk(){
 /* 2026-08-31 重锚：一般宗师才摸到职业门槛（二队），一线至少王者，
    豪门要国服前列——玩家原话「已经无法用段位来衡量实力了，都是用比赛衡量的」。
    段位是底线，比赛履历是尺子：段位不够可走 resumeCap 的履历通道。 */
-const TIER_RANK = { acad:60, low:74, mid:86, top:95 };   // 宗师 / 王者 / 国服前100 / 国服前10
+/* 段位准入（天梯读数）。2026-09-05 尺顶重新对表后读数曲线中段压紧了，这些门按「实力等价」
+   重新翻译：原宗师 60 / 王者 74 / 前 100 86 / 前 10 95 ≙ 实力 59.5 / 64.5 / 70.5 / 76.5，
+   在新曲线上是 76 / 87 / 91 / 94。不翻译的话中游队会在实力 62 就来签人（LPL 首发 70），
+   机器人坐穿替补席，2×120 批测世界赛率从 21 掉到 12——被抓出来的。 */
+const TIER_RANK = { acad:76, low:87, mid:91, top:94 };
 function rankCap(){
   const r = (S.pre && S.pre.rank) || 0;
   let t = TIER_ORDER[0];
