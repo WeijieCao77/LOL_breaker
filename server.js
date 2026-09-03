@@ -23,6 +23,7 @@ const zlib = require("zlib");
 const crypto = require("crypto");
 
 const PORT = process.env.PORT || 3000;
+const BOOT_AT = new Date().toISOString();   // 进程启动时刻：/healthz 用它区分「新部署」和「同一容器」
 const ROOT = __dirname;
 const CANONICAL = process.env.CANONICAL_HOST || "www.poxiao.lol";
 /* 我们自己的其它入口：都该跳到规范域名。别人的域名（本地、预览）不动 */
@@ -410,7 +411,8 @@ const server = http.createServer((req, res) => {
     return send(res, 405, "method not allowed");
   }
   // 健康检查：Railway 用它判断服务是否起来了（任何主机名都答）
-  if (url === "/healthz") return send(res, 200, "ok");
+  // 带部署标记：SRV_REV 每次发版手动 +1，用 curl /healthz 就能确认新代码真的上线了
+  if (url === "/healthz") return send(res, 200, "ok r2 " + BOOT_AT);
   // 作者后台：没配 STATS_KEY 或钥匙不对，一律装作没有这页
   if (url === "/dash" || url === "/api/stats" || url === "/api/export") {
     if (!authOk(req)) return send(res, 404, "not found");
