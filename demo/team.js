@@ -106,8 +106,9 @@ const LOCKER=[
   {id:"resource", rec:2, when:()=>rnd()<0.4,
    q:t=>`<b>${t.id}</b> 想要更多资源，说这个版本该走他这边。`,
    ctx:"教练把决定权交给了你。",
-   a:[{t:"让给他，我打辅助位", g:"warm",e:(t)=>{addTrust(t.id,14);addTrustAll(4);
-        return `${t.id} 拿到了资源，也记住了这份人情。`}},
+   /* 玩家点名：原文「我打辅助位」像是要转去打辅助——意思其实是少吃资源、打功能型 */
+   a:[{t:"资源给他，我少吃点、打功能型", g:"warm",e:(t)=>{addTrust(t.id,14);addTrustAll(4);
+        return `${t.id} 拿到了资源，也记住了这份人情。你这个版本先把工具人做好。`}},
       {t:"资源还是给我，我能打出来", g:"hard",e:(t)=>{addTrust(t.id,-9);
         return `你留下了资源。${t.id} 没多说，但训练赛里少了几次配合。`}},
       {t:"看局势分，不预设",e:(t)=>{addTrust(t.id,3);addTrustAll(2);
