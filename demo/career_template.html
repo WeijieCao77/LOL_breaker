@@ -283,6 +283,11 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260904k", at:"2026-09-04", items:[
+    "拒绝试训说到做到：婉拒过的俱乐部当年真的不会再来（玩家实锤：拒了 TT，打完主播杯又被 TT 邀请）——邀请会换别家发，过了年既往不咎",
+    "杯赛轮次全部叫名字：报名时直接写明赛程（小组赛 → 八强赛 → 半决赛 → 决赛），比赛卡、晋级提示、止步结算都用轮次名，不再让你数「第 3 轮是第几强」",
+    "最后一周的推进按钮不再写「第 21/20 周」：写清楚下一步是「转会窗口关闭 · 年度结算」；间歇期最后一周同理写「XX结束」"
+  ]},
   {v:"v20260904j", at:"2026-09-04", items:[
     "「下一节点」不再像邀请函：全明星表演赛这类邀请制赛事，名气不够时顶栏直接写「请柬没来 / 还轮不到你」——那是世界的日历，不是你的日程（玩家点名：小主播却看到全明星『就是本周』）"
   ]},
@@ -1755,6 +1760,7 @@ function preNextYear(){
   if(S.si>=SEASONS.length-1){ S.step="end"; S.neverSigned=true; render(); return; }
   S.si++; S.age++; P.preYear=(P.preYear||1)+1;
   P.week=1; P.ap=apFor('pre'); P.cityCup=null; P.streamCup=null;
+  P.noRe={};   // 「拒绝试训后这家今年不再来」——过了年就既往不咎
   S.fatigue=0; S.buff={};
   if(typeof ledgerRotate==="function") ledgerRotate();
   P.rank=Math.max(0,P.rank-4);          // 一年下来手会生一点
@@ -3558,7 +3564,8 @@ function offPanel(){
              :S.off.next==="wrap"?`世界赛落幕 · 赛季结算 →`
              :S.off.next==="intl"?`出征 ${S.pendingIntl&&S.pendingIntl.type==="msi"?"MSI":"世界赛"} →`
              :`开始 ${nx?nx.tag:"下"} 赛季 →`)
-            :`进入下一周 → ${S.off.label||"休赛期"} 第 ${S.off.week+1}/${S.off.weeks} 周`)}</button>
+            :(S.off.week+1>S.off.weeks?`进入下一周 → ${S.off.label||"休赛期"}结束`
+              :`进入下一周 → ${S.off.label||"休赛期"} 第 ${S.off.week+1}/${S.off.weeks} 周`))}</button>
       ${typeof quickBtn==="function"?quickBtn():""}</div>
   </div>`;
 }
@@ -3875,8 +3882,9 @@ function actPanelPre(){
         直接进入下一周会按弃权处理。</p>`:"";})()}
     <div class="row"><button class="btn" id="prenext" ${P.ap>0?'disabled':''}>
       ${P.ap>0?`还剩 ${P.ap} 个行动点`
-        :((typeof dueCups==="function"&&dueCups().length)?`进入下一周（有比赛没打）→ 赛季前 第 ${P.week+1}/${PRE_WEEKS} 周`
-                                                         :`进入下一周 → 赛季前 第 ${P.week+1}/${PRE_WEEKS} 周`)}</button></div>
+        :((()=>{const last=P.week>=PRE_WEEKS;   // 最后一周的下一步不是「第 21/20 周」，是关窗结算（玩家点名）
+          const to=last?"转会窗口关闭 · 年度结算":`赛季前 第 ${P.week+1}/${PRE_WEEKS} 周`;
+          return (typeof dueCups==="function"&&dueCups().length)?`进入下一周（有比赛没打）→ ${to}`:`进入下一周 → ${to}`;})())}</button></div>
   </div>`;
 }
 function viewPre(){
@@ -4293,7 +4301,10 @@ function bind(){
   };
   const _ivn=$("ivno"); if(_ivn) _ivn.onclick=()=>{
     const iv=S.pre.invite; iv.pending=false;
-    preLog(`婉拒了 <b>${iv.team}</b> 的试训。你想再练一练，也许下次能去更好的地方。`,"info");
+    // 说到做到：卡片上写着「这家今年不会再来第二次」，就真的记下来
+    //（玩家实锤：拒了 TT，打完主播杯又被 TT 邀请一次）
+    S.pre.noRe=S.pre.noRe||{}; S.pre.noRe[iv.team]=1;
+    preLog(`婉拒了 <b>${iv.team}</b> 的试训——<b>这家今年不会再来</b>。你想再练一练，也许下次能去更好的地方。`,"info");
     render();
   };
   st.querySelectorAll("[data-tryout]").forEach(b=>b.onclick=()=>resolveTryoutDay(+b.dataset.tryout));

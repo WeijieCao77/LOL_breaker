@@ -105,7 +105,7 @@ function checkTryoutInvite(kind, reached, champion){
   //（能不能签下来另说：豪门期望 79，评级说话）
   let tier = champion ? (kind==="stream" ? "top" : "mid") : depth >= 0.75 ? "low" : "acad";
   if(kind === "stream" && tier !== "top") tier = tier === "acad" ? "low" : "mid";
-  const why = `${C.name}${champion ? "夺冠" : `走到第 ${reached+1} 轮`}`;
+  const why = `${C.name}${champion ? "夺冠" : (typeof cupReachName==="function" ? cupReachName(kind, reached) : `走到第 ${reached+1} 轮`)}`;
   // 兑现时机：整届打完之后。这会儿可能还有别的赛事在跑，那就先排队。
   queueInvite(fitTier(tier), why, pickForeignScout(champion));
 }
@@ -281,8 +281,12 @@ function addInvite(tier, reason, lg){
   // 外赛区没有跨国的次级邀请：来的必是一线队，档次至少从「弱队」起
   if(lg && lg !== "LPL" && tier === "acad") tier = "low";
   const T = CLUB_TIERS[tier];
-  const team = pickClub(tier, lg || undefined);
-  if(!team) return;
+  // 婉拒过的俱乐部当年不再上门（卡片上就是这么承诺的）——换别家来；
+  // 同档全被拒过就真没人来了，这个机会作废
+  const noRe = P.noRe || {};
+  let team = pickClub(tier, lg || undefined);
+  for(let i = 0; i < 8 && team && noRe[team]; i++) team = pickClub(tier, lg || undefined);
+  if(!team || noRe[team]) return;
   P.invite = { tier, team, league: lg || null, reason, pending:true, week:P.week, expect:T.expect };
   P.inviteCd = P.week + 2;
   P.inviteN = (P.inviteN || 0) + 1;

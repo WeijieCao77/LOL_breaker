@@ -136,8 +136,8 @@ function enterCup(kind){
   if(kind!=="show"&&(!S.pre.mates||!S.pre.mates.length)) drawCupMates(kind);
   // 别把间隔写死在文案里——赛程从两周一轮改成一周一轮之后，
   // 这句「中间这两周」就成了假话。
-  preLog(`报名成功。<b>${C.name}</b> 第一轮在 <b>第 ${S.cups[kind].nextWeek} 周</b>，
-    每轮之间隔 ${C.gap} 周。这段时间可以正常训练，也可以专门备战。`,"good");
+  preLog(`报名成功。<b>${C.name}</b> 赛程：<b>${C.rn.join(" → ")}</b>（共 ${C.rounds} 轮，一周一轮）。
+    ${cupRoundName(kind,1)}在 <b>第 ${S.cups[kind].nextWeek} 周</b>打响，这段时间可以正常训练，也可以专门备战。`,"good");
 }
 /* 对手强度随轮次递增 */
 function cupOf(k){ return (S.cups||{})[k]; }
@@ -315,7 +315,7 @@ function endCupMatch(){
       // 清掉的只是「针对上一个对手」的功课；练出来的东西在 S.pre.cupPrep 里留着
       c.round++; c.prep=0; c.oppRoll=rollOpp();
       c.nextWeek=S.pre.week+C.gap;
-      preLog(`下一轮对手是 <b>${cupOppName(k)}</b>，<b>第 ${c.nextWeek} 周</b>开打。`,"info");
+      preLog(`晋级 <b>${cupRoundName(k,c.round)}</b>，对手是 <b>${cupOppName(k)}</b>，<b>第 ${c.nextWeek} 周</b>开打。`,"info");
     }
   } else {
     c.alive=false;
@@ -353,8 +353,8 @@ function cupPayout(k,champion){
   // 结算先挂在这场比赛上，等玩家看完比分点「继续」再弹总结。
   // 之前这里直接 S.cupMatch=null，被淘汰那一场的比分和过程会凭空消失——
   // 玩家只看到一个「止步第几轮」的框，不知道最后那局是怎么输的。
-  if(S.cupMatch) S.cupMatch.result={name:C.name,reached,rounds:C.rounds,prize,champion};
-  else S.cupResult={name:C.name,reached,rounds:C.rounds,prize,champion};
+  if(S.cupMatch) S.cupMatch.result={kind:k,name:C.name,reached,rounds:C.rounds,prize,champion};
+  else S.cupResult={kind:k,name:C.name,reached,rounds:C.rounds,prize,champion};
 }
 /* 看完比分，收起比赛卡；该弹总结的时候再弹 */
 function cupDismissMatch(){
@@ -384,7 +384,7 @@ function cupCard(){
     const wait=Math.max(0,c.nextWeek-S.pre.week);
     const my=cupMyPower(k), op=cupOppPower(k);
     const d=my-op;
-    return `<div class="card cup"><h2>${C.name}<em>第 ${c.round}/${C.rounds} 轮</em></h2>
+    return `<div class="card cup"><h2>${C.name}<em>${cupRoundName(k,c.round)} · 第 ${c.round}/${C.rounds} 轮</em></h2>
       <div class="next">
         <div class="sd"><div class="nm">${cupTeamName()}</div>
           <div class="pw">${powerRank(my)}水平 · ${my.toFixed(0)}</div></div>
@@ -421,7 +421,7 @@ function cupMatchCard(){
   const m=S.cupMatch; if(!m) return "";
   const C=CUPS[m.kind]||CUPS.city;
   const c=cupOf(m.kind);
-  return `<div class="card"><h2>${C.name}<em>第 ${c?c.round:1} 轮 · 三局两胜</em></h2>
+  return `<div class="card"><h2>${C.name}<em>${cupRoundName(m.kind,c?c.round:1)} · 三局两胜</em></h2>
     <div class="vs">
       <div class="side"><div class="nm">${cupTeamName()}</div></div>
       <div class="score">${m.sc[0]} : ${m.sc[1]}</div>
@@ -471,7 +471,7 @@ function cupResultCard(){
   return `<div class="rankup"><div class="ru-inner" style="max-width:440px">
     <div class="ru-icon">${typeof gicon==="function"?gicon("cup",52):""}</div>
     <div class="ru-eyebrow">${r.name}</div>
-    <div class="ru-tier">${r.champion?"冠军":`止步第 ${r.reached+1} 轮`}</div>
+    <div class="ru-tier">${r.champion?"冠军":(r.kind?`止步${cupRoundName(r.kind,r.reached+1)}`:`止步第 ${r.reached+1} 轮`)}</div>
     <div class="ru-txt">${r.champion
       ? "你把这个比赛赢到底了。这种地方赛事的冠军不值多少钱，但它是你简历上的第一行。"
       : r.reached>=2 ? "走到了后面几轮。数据被记下来了，这比奖金重要。"
