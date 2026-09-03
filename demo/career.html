@@ -1000,6 +1000,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260904j", at:"2026-09-04", items:[
+    "「下一节点」不再像邀请函：全明星表演赛这类邀请制赛事，名气不够时顶栏直接写「请柬没来 / 还轮不到你」——那是世界的日历，不是你的日程（玩家点名：小主播却看到全明星『就是本周』）"
+  ]},
   {v:"v20260904i", at:"2026-09-04", items:[
     "新增匿名访问统计：只记「多少人来、玩了多久、走到哪一步」三件事——设备号是本地随机数，不含任何个人信息，不读存档内容，不采集你的名字、段位或任何选择"
   ]},
@@ -13447,7 +13450,12 @@ function hud(){
         // 只给「还有 N 周」很容易被算错——没有锚点，玩家会拿开局那个数
         // 去减当前周次。把目标周次直接写出来，就没什么可算的了。
         const d=Math.max(0,n.w-S.pre.week);
-        return `${n.name} <small>第 ${n.w} 周${d===0?"（就是本周）":`　还有 ${d} 周`}</small>`;
+        // 这是世界的日历，不是你的邀请函（玩家实锤：小主播看到「全明星
+        // 表演赛·就是本周」，以为自己被邀请了）。不够格就把话说穿。
+        const shut=!n.dateOnly&&!n.need();
+        const mark=shut?`　<span style="color:var(--red);font-size:11px">${
+          n.vague?(d===0?"请柬没来":"邀请制 · 还轮不到你"):(d===0?"未达门槛":"门槛未达")}</span>`:"";
+        return `${n.name} <small>第 ${n.w} 周${d===0?"（就是本周）":`　还有 ${d} 周`}</small>${mark}`;
       })()}</div></div>
     <div><div class="k">资金</div><div class="v mono">${Math.round(S.money)}<small>万</small></div></div>
     <div><div class="k">体能</div><div class="v mono">${100-Math.round(S.fatigue)}<small>/100</small></div></div>`;
