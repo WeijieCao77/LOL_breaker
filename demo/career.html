@@ -1000,6 +1000,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260904i", at:"2026-09-04", items:[
+    "新增匿名访问统计：只记「多少人来、玩了多久、走到哪一步」三件事——设备号是本地随机数，不含任何个人信息，不读存档内容，不采集你的名字、段位或任何选择"
+  ]},
   {v:"v20260904h", at:"2026-09-02", items:[
     "赛后拆解新增「全员数据」：双方十个人的 KDA、补刀、伤害占比、评分一张表，谁是 MVP、谁是这场的洞一眼看出；比赛档案回放也带这张表",
     "数据怎么来的写在明面上：各人数值 × 状态 × 胜负 × 你的临场选择——你选对了却输，多出来的那份「输」记在队友头上；你砸了却赢，功劳分给队友",
@@ -2163,6 +2166,7 @@ function rankFull(v){
 }
 function startPre(){
   S.patchSeen=(typeof GAME_VER!=="undefined")?GAME_VER:1;   // 新开局不弹更新说明
+  if(typeof statEvent==="function") statEvent("start");
   const o=ORIGIN[S.origin], A=AGES[S.ageIdx], B=bgOf(S.bgPick);
   const attrs={};
   DIMS.forEach(d=>attrs[d]=Math.min(
@@ -4275,6 +4279,7 @@ function offPanel(){
 
 /* ================= 结局 ================= */
 function ending(){
+  if(typeof statEvent==="function") statEvent("end");
   if(S.neverSigned) return {n:"没能上岸",
     d:`到 2026 年，你始终没能签下第一份职业合同。排位打到过 ${rankFull(S.pre?S.pre.rank:0)}，直播间也有过人，但那扇门没有为你开。`};
   if(!S.career) return {n:"没能上岸",
@@ -11635,6 +11640,7 @@ function declineDeal(){
 function signDeal(){
   const d = S.deal; if(!d || d.dead || d.signed) return;
   d.signed = true;
+  if(typeof statEvent==="function") statEvent("career");   // 第一份职业合同（按局去重）
   const P = S.pre;
   if(!P.world)    P.world = cloneWorld();
   if(!P.baseline) P.baseline = leagueBaseline(P.world);
@@ -13273,6 +13279,73 @@ function audioInit() {
     audioFab(hasAudio);
     if (hasAudio) document.addEventListener("click", audioClickHandler, true);
   } catch (e) {}
+}
+
+
+/* ================= 统计信标 =================
+
+   只回答作者的三个问题：多少人来、玩了多久、走到哪一步。
+   原则：
+   · 匿名——设备号是本地随机生成的 16 位十六进制，不含任何个人信息，
+     不读存档内容，不采集名字/段位/选择，发出去的只有 {id, 事件, 版本}
+   · 决不影响游戏——所有调用 try/catch 吞掉，服务端挂了、CSP 拦了、
+     隐私模式存不了号，游戏照玩
+   · 只在 http(s) 环境发（本地 file:// 打开、无头测试跑生涯都是空操作） */
+
+const STATS_ON = (typeof location !== "undefined") && /^https?:$/.test(location.protocol)
+  && (typeof navigator !== "undefined");
+
+function statSid() {
+  try {
+    let id = localStorage.getItem("poxiao_sid");
+    if (id && /^[0-9a-f]{16}$/.test(id)) return id;
+    let b;
+    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+      b = crypto.getRandomValues(new Uint8Array(8));
+    } else {
+      b = Array.from({length: 8}, () => Math.floor(Math.random() * 256));
+    }
+    id = Array.from(b).map(x => (x & 255).toString(16).padStart(2, "0")).join("");
+    localStorage.setItem("poxiao_sid", id);
+    return id;
+  } catch (e) {
+    // 隐私模式：发一个会话内稳定的临时号（statSid 只算一次，见下面的 SID）
+    return Array.from({length: 16}, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+  }
+}
+const STAT_SID = STATS_ON ? statSid() : "";
+
+function statSend(e) {
+  if (!STATS_ON) return;
+  try {
+    const body = JSON.stringify({ id: STAT_SID, e: e,
+      v: (typeof GAME_VER !== "undefined") ? String(GAME_VER).split(" ")[0] : "" });
+    if (navigator.sendBeacon &&
+        navigator.sendBeacon("/api/t", new Blob([body], { type: "application/json" }))) return;
+    fetch("/api/t", { method: "POST", body: body, keepalive: true,
+      headers: { "content-type": "application/json" } }).catch(() => {});
+  } catch (err) {}
+}
+
+/* 漏斗事件（start 开新档 / career 签下第一份职业合同 / end 打出结局）：
+   按这一局去重——标记写进 S，跟着存档走，读档回来也不会重复上报 */
+function statEvent(e) {
+  try {
+    if (typeof S !== "undefined" && S) {
+      S.statFlags = S.statFlags || {};
+      if (S.statFlags[e]) return;
+      S.statFlags[e] = 1;
+    }
+    statSend(e);
+  } catch (err) {}
+}
+
+if (STATS_ON) {
+  statSend("view");
+  // 心跳：页面可见的每一分钟记 1 分钟游玩时长；切后台就不算
+  setInterval(function () {
+    try { if (document.visibilityState === "visible") statSend("beat"); } catch (e) {}
+  }, 60000);
 }
 
 

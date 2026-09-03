@@ -283,6 +283,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260904i", at:"2026-09-04", items:[
+    "新增匿名访问统计：只记「多少人来、玩了多久、走到哪一步」三件事——设备号是本地随机数，不含任何个人信息，不读存档内容，不采集你的名字、段位或任何选择"
+  ]},
   {v:"v20260904h", at:"2026-09-02", items:[
     "赛后拆解新增「全员数据」：双方十个人的 KDA、补刀、伤害占比、评分一张表，谁是 MVP、谁是这场的洞一眼看出；比赛档案回放也带这张表",
     "数据怎么来的写在明面上：各人数值 × 状态 × 胜负 × 你的临场选择——你选对了却输，多出来的那份「输」记在队友头上；你砸了却赢，功劳分给队友",
@@ -1446,6 +1449,7 @@ function rankFull(v){
 }
 function startPre(){
   S.patchSeen=(typeof GAME_VER!=="undefined")?GAME_VER:1;   // 新开局不弹更新说明
+  if(typeof statEvent==="function") statEvent("start");
   const o=ORIGIN[S.origin], A=AGES[S.ageIdx], B=bgOf(S.bgPick);
   const attrs={};
   DIMS.forEach(d=>attrs[d]=Math.min(
@@ -3558,6 +3562,7 @@ function offPanel(){
 
 /* ================= 结局 ================= */
 function ending(){
+  if(typeof statEvent==="function") statEvent("end");
   if(S.neverSigned) return {n:"没能上岸",
     d:`到 2026 年，你始终没能签下第一份职业合同。排位打到过 ${rankFull(S.pre?S.pre.rank:0)}，直播间也有过人，但那扇门没有为你开。`};
   if(!S.career) return {n:"没能上岸",
@@ -3977,6 +3982,8 @@ function viewOffer(){
 /* __PRESS_MODULE__ */
 
 /* __AUDIO_MODULE__ */
+
+/* __STATS_MODULE__ */
 
 /* ================= 侧栏 ================= */
 function formBar(team){

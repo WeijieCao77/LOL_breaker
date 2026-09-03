@@ -1,0 +1,65 @@
+/* ================= 统计信标 =================
+
+   只回答作者的三个问题：多少人来、玩了多久、走到哪一步。
+   原则：
+   · 匿名——设备号是本地随机生成的 16 位十六进制，不含任何个人信息，
+     不读存档内容，不采集名字/段位/选择，发出去的只有 {id, 事件, 版本}
+   · 决不影响游戏——所有调用 try/catch 吞掉，服务端挂了、CSP 拦了、
+     隐私模式存不了号，游戏照玩
+   · 只在 http(s) 环境发（本地 file:// 打开、无头测试跑生涯都是空操作） */
+
+const STATS_ON = (typeof location !== "undefined") && /^https?:$/.test(location.protocol)
+  && (typeof navigator !== "undefined");
+
+function statSid() {
+  try {
+    let id = localStorage.getItem("poxiao_sid");
+    if (id && /^[0-9a-f]{16}$/.test(id)) return id;
+    let b;
+    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+      b = crypto.getRandomValues(new Uint8Array(8));
+    } else {
+      b = Array.from({length: 8}, () => Math.floor(Math.random() * 256));
+    }
+    id = Array.from(b).map(x => (x & 255).toString(16).padStart(2, "0")).join("");
+    localStorage.setItem("poxiao_sid", id);
+    return id;
+  } catch (e) {
+    // 隐私模式：发一个会话内稳定的临时号（statSid 只算一次，见下面的 SID）
+    return Array.from({length: 16}, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+  }
+}
+const STAT_SID = STATS_ON ? statSid() : "";
+
+function statSend(e) {
+  if (!STATS_ON) return;
+  try {
+    const body = JSON.stringify({ id: STAT_SID, e: e,
+      v: (typeof GAME_VER !== "undefined") ? String(GAME_VER).split(" ")[0] : "" });
+    if (navigator.sendBeacon &&
+        navigator.sendBeacon("/api/t", new Blob([body], { type: "application/json" }))) return;
+    fetch("/api/t", { method: "POST", body: body, keepalive: true,
+      headers: { "content-type": "application/json" } }).catch(() => {});
+  } catch (err) {}
+}
+
+/* 漏斗事件（start 开新档 / career 签下第一份职业合同 / end 打出结局）：
+   按这一局去重——标记写进 S，跟着存档走，读档回来也不会重复上报 */
+function statEvent(e) {
+  try {
+    if (typeof S !== "undefined" && S) {
+      S.statFlags = S.statFlags || {};
+      if (S.statFlags[e]) return;
+      S.statFlags[e] = 1;
+    }
+    statSend(e);
+  } catch (err) {}
+}
+
+if (STATS_ON) {
+  statSend("view");
+  // 心跳：页面可见的每一分钟记 1 分钟游玩时长；切后台就不算
+  setInterval(function () {
+    try { if (document.visibilityState === "visible") statSend("beat"); } catch (e) {}
+  }, 60000);
+}

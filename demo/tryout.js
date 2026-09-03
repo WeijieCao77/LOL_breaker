@@ -606,6 +606,7 @@ function declineDeal(){
 function signDeal(){
   const d = S.deal; if(!d || d.dead || d.signed) return;
   d.signed = true;
+  if(typeof statEvent==="function") statEvent("career");   // 第一份职业合同（按局去重）
   const P = S.pre;
   if(!P.world)    P.world = cloneWorld();
   if(!P.baseline) P.baseline = leagueBaseline(P.world);

@@ -30,3 +30,6 @@ demo/*.zip
 # 选手照片与像素头像：肖像素材不进公开仓库（data/make_avatars.py 本地生成）
 data/photos/
 data/avatars.json
+
+# 统计数据（本地测试产物；线上存 Railway Volume）
+stats-data/
