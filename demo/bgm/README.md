@@ -22,6 +22,7 @@
 | `silver-scrapes.mp3` | Silver Scrapes — Danny McCarthy |
 | `crawling.mp3` | Crawling — Linkin Park |
 | `numb.mp3` | Numb — Linkin Park |
+| `s12.mp3` … `s16.mp3` | **赛季主题曲位**（自备）：赛季一换、音乐开着时优先切到当年这首；没放的年份继续随机歌单 |
 
 ## 规则
 

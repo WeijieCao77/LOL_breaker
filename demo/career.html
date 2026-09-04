@@ -23,7 +23,7 @@
   /* 晨光橙（2026-09-05 界面重做第一期）：整套界面里唯一表示「正在发生 / 该你了」的颜色——
      只用在本周主行动按钮、HUD 的「现在」层、倒计时。金留给已经拿到的东西。 */
   --dawn:#E9A15A; --dawn-dim:#8C5A2A;
-  --ink:#E8F0F6; --ink-2:#9DB8C9; --ink-3:#5E8199;
+  --ink:#E8F0F6; --ink-2:#9DB8C9; --ink-3:#7395AA;   /* ink-3 原 #5E8199 在面板上只有 3.6:1，10–12px 说明字手机上发暗（外部测评量的）；现 4.7:1 */
 
   /* 五个功能域的身份色。
      原来每个标签页都是同样的深蓝卡片配金色标题，切过去认不出自己在哪——
@@ -1097,7 +1097,7 @@ ul.dealfx li::marker{color:var(--ink-3)}
   /* 右下角浮窗：竖排三颗 38px 的按钮会压住卡片右侧约 32px——
      手机上改横排缩小，并给页面留出底部空间，滚到底也不被盖住 */
   .audiofab{flex-direction:row;right:8px;bottom:8px;gap:6px}
-  .audiofab button{width:30px;height:30px;font-size:13px;box-shadow:0 1px 6px rgba(0,0,0,.4)}
+  .audiofab button{width:40px;height:40px;font-size:15px;box-shadow:0 1px 6px rgba(0,0,0,.4)}   /* 30px 手指点不准 */
   .support-overlay{padding:10px;align-items:start;overflow-y:auto}
   .support-card{width:100%;max-height:none;margin:10px 0;padding:18px}
   .support-head{gap:10px}
@@ -1222,12 +1222,12 @@ const AVATARS = {};
 
 /* ================= 常量 ================= */
 const DIMS=["操作","运营","心态","指挥","体质"];
-const DIM_HINT={操作:"对线与输出",运营:"视野与节奏",心态:"抗压与翻盘",指挥:"全队增益",体质:"耐久与状态"};
+const DIM_HINT={操作:"对线与输出",运营:"视野与节奏",心态:"抗压与翻盘",指挥:"主指挥取队内最高",体质:"耐久与状态"};
 const DIM_DESC={
   操作:"对线压制与个人输出，25 岁后掉得最快",
   运营:"视野、游走、资源判断，随经验缓慢增长",
   心态:"逆风稳定性，决定能不能翻盘",
-  指挥:"全队乘数，提升队友发挥率；越老越强",
+  指挥:"全队乘数：比赛只取队内最高的那个人当主指挥；段位、试训、实力照样算它；越老越强",
   体质:"赛季耐久，25 岁后明显下滑"
 };
 const POS=[{k:"top",n:"上单"},{k:"jng",n:"打野"},{k:"mid",n:"中单"},{k:"bot",n:"AD"},{k:"sup",n:"辅助"}];
@@ -2634,6 +2634,7 @@ function summaryCard(){
       extra.length?`<br>${extra.join("　·　")}`:""}</p>
     <p class="note" style="color:var(--ink-3)">竖线是天赋瓶颈。剩下的，靠你自己打出来。</p>
     <div class="row" style="justify-content:center;margin-top:18px">
+      <button class="btn ghost" id="startback">← 返回修改</button>
       <button class="btn" id="startgo">开启你的 LOL 人生 →</button>
     </div>
   </div></div>`;
@@ -2683,11 +2684,12 @@ function viewCreate(){
       <button class="btn ghost sm" id="reroll" style="margin-left:10px">换一批</button></h3>
     <div class="grid g2">${S.bgOffer.map(b=>`
       <button class="opt ${S.bgPick===b.k?'on':''}" data-bg="${b.k}">
-        <div class="t">${b.n} <span class="tag">${b.origin==="streamer"?"主播路线":"青训路线"}</span></div>
+        <div class="t">${b.n} <span class="tag">${b.origin==="streamer"?"主播路线 · 挑战难度":"青训路线 · 标准难度"}</span></div>
         <div class="d">${b.d}</div>
         <div class="d" style="color:var(--cyan);font-size:11.5px">${(typeof bgEffects==="function"?bgEffects(b):[]).join(" · ")||"无额外修正"}</div>
       </button>`).join("")}</div>
-    <p class="note" style="margin-top:6px">路线是出身自带的，选卡就定了（外部测评点名：原来藏着不显示）：<b>青训路线</b>底子厚、训练收益高、起始段位好；<b>主播路线</b>起始粉丝和直播收益高。</p>
+    <p class="note" style="margin-top:6px">路线是出身自带的，选卡就定了。<b>青训路线 · 标准难度</b>：底子厚、训练收益高、起始段位好，竞技成长强。
+      <b>主播路线 · 挑战难度</b>：起始粉丝和直播收益高，但五维底子平均低 4 分左右——赛场上更难，赛场外更强。</p>
     <p class="note">${S.ageIdx!=null?`你现在 ${AGES[S.ageIdx].a} 岁，还没有战队。`:"你还没有战队。"}先用半年时间打上分、攒人气、被人看见——然后才谈签约。
       18–21 岁是成长期，22–24 岁巅峰，25 岁起属性会真的往下掉——只有 21 岁出道会在生涯末尝到它。</p>
   </div>
@@ -3274,6 +3276,7 @@ function acceptOffer(i){
   // 你自己就是那个「强援」：base 上去了，但五个人要重新磨
   disruptSynergy(1,`<b>${meName()}</b> 加盟`);
   pushEvent(`<b>${meName()}</b> 正式签约 <b>${of.team}</b>（${of.t}）。${back?"重返职业赛场——上一段履历接着算。":"职业生涯从这里开始。"}`,"big","签约");
+  if(!back&&typeof supportNudge==="function") supportNudge("sign");   // 第一份职业合同：支持作者的提示在这里，不在开局
   checkAch("sign");
   startSeason(true);
 }
@@ -3425,7 +3428,21 @@ function trainBtn(d, ap, attr){
         : locked    ? `已达瓶颈 · 突破要做<b>战术复盘</b>，签约战队后才有`
         : dead      ? `已达瓶颈 · 突破靠<b>${P&&P.act?P.act:"别的途径"}</b>${
                        P&&P.auto&&P.prog?`　${P.prog()}`:""}`
-        : DIM_HINT[d]+costTrain(d) };
+        : DIM_HINT[d]+costTrain(d)+(d==="指挥"?cmdNote():"") };
+}
+/* 指挥这一维在比赛里只取队内最高（powerCore 的 cmd=max）——训练它之前得知道主指挥是谁、差多少。
+   外部测评抓的「隐性无效区间」：队友指挥比你高时，练指挥对当场战力没用；但段位/试训/实力照样算它。 */
+function cmdNote(){
+  if(!S.career||!S.team||typeof myRoster!=="function") return "";
+  try{
+    const mates=myRoster().filter(p=>!p.me);
+    if(!mates.length) return "";
+    const top=mates.slice().sort((a,b)=>((b.r||b).指挥||0)-((a.r||a).指挥||0))[0];
+    const tv=(top.r||top).指挥||0, me=S.attrs.指挥;
+    return me>=tv-0.05
+      ? `　<span style="color:var(--cyan)">你是队里的主指挥</span>`
+      : `　<span style="color:var(--ink-3)">主指挥是 ${top.id}（${tv.toFixed(0)}）——比赛只取队内最高，你要过 ${tv.toFixed(0)} 才进战力；段位 / 试训 / 实力照样算</span>`;
+  }catch(e){ return ""; }
 }
 function gain(d){
   // 余量按「平移后的尺」算：全体系 +5 之后 attr/cap 的比值会缩小、全程收益慢 6%
@@ -7156,7 +7173,7 @@ const GEAR={
     {n:"雷蛇 DeathAdder Essential", cost:0,   t:0, e:{操作:0}},
     {n:"罗技 G102",                cost:30,  t:1, e:{操作:0.8}},
     {n:"罗技 G Pro X Superlight",  cost:130, t:2, e:{操作:1.9}},
-    {n:"罗技 G PRO 2 Lightspeed",  cost:320, t:3, e:{操作:1.7}}
+    {n:"罗技 G PRO 2 Lightspeed",  cost:320, t:3, e:{操作:2.6}}   // 原来 1.7 比 130 万那档还弱（外部测评抓的反向升级）
   ],
   kb:[
     {n:"杂牌薄膜键盘",              cost:0,   t:0, e:{操作:0}},
@@ -7735,8 +7752,10 @@ function shopCard(){
 
 /* ================= 背景故事池 =================
    开局随机抽三个，可以重抽。每个背景都有明确代价，不存在纯强选项。
-   配平口径：资金 60 万 ≈ 1 点，人气 10 ≈ 1 点，信任 3 ≈ 1 点，属性 1 点 = 1 点。
-   每个背景的收益点总和大致相等（约 +9 ~ +11），差异只在「形状」。 */
+   折算口径：资金 60 万 ≈ 1 点，人气 10 ≈ 1 点，信任 3 ≈ 1 点，属性 1 点 = 1 点；
+   训练/恢复倍率、自带课程、宿敌、寄家用不折点。按这个口径各卡在 1.8 ~ 11.3 点之间，**并不等值**——
+   刻意如此：每张卡都有明确代价，差异在「形状」，不追求总分相等。
+   （原注释写「约 +9 ~ +11」是早期版本的数，已失真——外部测评抓的；demo/test.js 现在会把这张表打出来。） */
 
 const BACKGROUNDS=[
   {k:"netbar", origin:"academy", n:"网吧长大的",
@@ -11781,6 +11800,18 @@ function endCupMatch(){
   const m=S.cupMatch, k=m.kind, c=cupOf(k), C=CUPS[k];
   const won=m.sc[0]>m.sc[1];
   m.done=true;
+  // 赛后拆解要读「这场比赛当时」的账（外部测评抓的：原来先推进下一轮 / 清备战 / 解散车队，
+  // 玩家再打开拆解——标题变成下一轮、备战显示 0、决赛后车队那几行整个消失）。
+  // 结束那一刻先把状态冻一份，cupPostCard 只读它。
+  try{
+    const soloNow=cupPersonal(S.attrs)+(typeof gearBonus==="function"?gearBonus("操作")*0.4:0);
+    const mates=(S.pre&&S.pre.mates)||[];
+    m.snap={ round:c.round, prep:c.prep, my:cupMyPower(k), teamName:cupTeamName(),
+      hasMates:mates.length>0,
+      teamAvg:mates.length?(soloNow+mates.reduce((a,x)=>a+cupPersonal(x),0))/(1+mates.length):soloNow,
+      syn:(typeof squadOf==="function")?squadOf("syn"):50, tac:(typeof squadOf==="function")?squadOf("tac"):50,
+      mor:(typeof avgTrust==="function")?avgTrust():50, legacyPrep:(S.pre&&S.pre.cupPrep)||0 };
+  }catch(e){}
   // 打得越多，被俱乐部看到的次数越多。累积在这里，但兑现要等整届打完——
   // 赛程进行中发邀请会把比赛线整个短路（试过：玩家半决赛就签约走人）。
   S.pre.scoutSeen = (S.pre.scoutSeen||0) + 1;
@@ -11842,7 +11873,8 @@ function cupPayout(k,champion){
   // 车队的生命周期跟着赛事走：全打完了，路人各回各家，战队栏目重新上锁
   if(!S.career&&S.pre.mates&&S.pre.mates.length&&
      typeof activeCups==="function"&&activeCups().length===0){
-    disbandCrew();
+    if(S.cupMatch) S.cupMatch.disbandAfter=true;   // 看完拆解点「继续」再散伙——拆解里车队那几行得还在
+    else disbandCrew();
   }
   // 结算先挂在这场比赛上，等玩家看完比分点「继续」再弹总结。
   // 之前这里直接 S.cupMatch=null，被淘汰那一场的比分和过程会凭空消失——
@@ -11855,6 +11887,7 @@ function cupDismissMatch(){
   const m=S.cupMatch;
   if(m&&m.result) S.cupResult=m.result;
   S.cupMatch=null;
+  if(m&&m.disbandAfter&&typeof disbandCrew==="function") disbandCrew();
   render();
 }
 
@@ -11938,20 +11971,25 @@ function cupPostCard(m){
   if(!m||!m.done) return "";
   const k=m.kind, C=CUPS[k]||CUPS.city, c=cupOf(k);
   const won=m.sc[0]>m.sc[1];
+  // 只读开赛时冻的那份账（m.snap）；老存档里没有快照的比赛才退回读当前状态
+  const sn=m.snap||null;
   const solo=cupPersonal(S.attrs)+(typeof gearBonus==="function"?gearBonus("操作")*0.4:0);
-  const legacy=((c)?c.prep*1.15:0)+((S.pre&&S.pre.cupPrep)||0)*0.55;
-  const my=cupMyPower(k), op=m.op;
+  const prepRound=sn?sn.prep:((c)?c.prep:0);
+  const legacy=prepRound*1.15+(sn?sn.legacyPrep:((S.pre&&S.pre.cupPrep)||0))*0.55;
+  const my=sn?sn.my:cupMyPower(k), op=m.op;
+  const roundName=cupRoundName(k, sn?sn.round:(c?c.round:1));
+  const hasMates=sn?sn.hasMates:!!(S.pre&&S.pre.mates&&S.pre.mates.length);
   const rows=[];
   rows.push({n:"个人底子",v:solo-op,
     fix:solo<op?"你一个人的水平还在这一轮对手之下——排位和训练都在长它。":"你的个人水平压得住这一轮的对手。"});
-  if(S.pre&&S.pre.mates&&S.pre.mates.length){
-    const teamAvg=(solo+S.pre.mates.reduce((a,x)=>a+cupPersonal(x),0))/(1+S.pre.mates.length);
+  if(hasMates){
+    const teamAvg=sn?sn.teamAvg:(solo+S.pre.mates.reduce((a,x)=>a+cupPersonal(x),0))/(1+S.pre.mates.length);
     const base=solo*0.72+teamAvg*0.28;
     rows.push({n:"车队水位",v:(teamAvg-solo)*0.28,
       fix:teamAvg<solo?"四个路人队友拖了你的后腿——车队是抽到的，能做的是把默契和战术练上去。":"这支车队的路人不弱，跟得上你。"});
-    const syn=(typeof squadOf==="function")?squadOf("syn"):50;
-    const tac=(typeof squadOf==="function")?squadOf("tac"):50;
-    const mor=(typeof avgTrust==="function")?avgTrust():50;
+    const syn=sn?sn.syn:((typeof squadOf==="function")?squadOf("syn"):50);
+    const tac=sn?sn.tac:((typeof squadOf==="function")?squadOf("tac"):50);
+    const mor=sn?sn.mor:((typeof avgTrust==="function")?avgTrust():50);
     rows.push({n:"默契",v:base*((syn-50)/550),fix:syn<50?"五个人还没磨合：「网吧开黑」「战队合练」直接涨。":"配合是加分项。"});
     rows.push({n:"战术",v:base*((tac-50)/650),fix:tac<50?"没什么战术：「看职业录像」「战术复盘」喂它。":"战术在你这边。"});
     rows.push({n:"士气",v:base*((mor-50)/900),fix:mor<50?"车队里有人不服你——多开黑、别甩锅。":"更衣室没问题。"});
@@ -11983,7 +12021,7 @@ function cupPostCard(m){
     ?`<div class="review win"><div class="rv-h">复盘</div><p class="note" style="margin:6px 0 0">这场赢在<b>${rows.filter(r=>r.v>=0.4).slice(0,2).map(r=>r.n).join("、")||"临场"}</b>。下一轮对手更强——别停。</p></div>`
     :(adv.length?`<div class="review"><div class="rv-h">复盘 · 这场输在哪，明天练什么</div><div class="rv-g">${adv.map(li).join("")}</div></div>`
       :`<div class="review"><div class="rv-h">复盘</div><p class="note" style="margin:6px 0 0">各项都没明显吃亏——这场输在概率上。数值只决定每局胜率，不保证结果。</p></div>`);
-  return `<div class="card"><h2>赛后拆解 · ${C.name} ${c?cupRoundName(k,c.round):""} vs ${m.opp}<em>${won?"胜":"负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
+  return `<div class="card"><h2>赛后拆解 · ${C.name} ${roundName} vs ${m.opp}<em>${won?"胜":"负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
     <div class="pm-head">
       <span>赛事战力 <b>${my.toFixed(1)}</b> vs <b>${op.toFixed(1)}</b></span>
       <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>
@@ -13838,6 +13876,7 @@ function acceptPromote(){
   const pt = (S.world.LPL || []).find(t => t.name === d.team);
   if(!pt){ pushEvent(`调令出了变故：${d.team} 的名单动了，这个窗口先作罢。`,"bad","升队"); render(); return; }
   const old = S.team;
+  if(typeof leaveRoster==="function") leaveRoster(old, S.homeLeague||"LDL");   // 二队名单补人，别留幻影
   S.team = d.team; S.homeLeague = "LPL";
   S.offerKind = "start"; S.understudy = null; S.promoted = true;
   pt.players = pt.players.map(q => q.pos === S.pos
@@ -13914,6 +13953,7 @@ function offerSendDown(){
 }
 function doSendDown(acad){
   const old=S.team;
+  if(typeof leaveRoster==="function") leaveRoster(old, S.homeLeague||"LPL");   // 一队名单里若有我，补人
   S.team=acad.name; S.homeLeague="LDL";
   S.offerKind="core"; S.promoted=true; S.understudy=null;
   const t=myTeam();
@@ -14733,8 +14773,36 @@ const BGM_TRACKS = [
   { f:"hybrid-worlds",      t:"Hybrid — 英雄联盟" },
   { f:"silver-scrapes",     t:"Silver Scrapes — Danny McCarthy" },
   { f:"crawling",           t:"Crawling — Linkin Park" },
-  { f:"numb",               t:"Numb — Linkin Park" }
+  { f:"numb",               t:"Numb — Linkin Park" },
+  /* 赛季主题曲位：文件名就叫 s12.mp3 … s16.mp3（作者自备）。
+     赛季一换，如果那一年的文件在，就先切到它；没有的就继续随机歌单。
+     原来更新日志写「赛季一换就换歌」、代码却只有随机循环（外部测评抓的对不上）。 */
+  { f:"s12", t:"S12 赛季主题曲（自备 s12.mp3）", season:0 },
+  { f:"s13", t:"S13 赛季主题曲（自备 s13.mp3）", season:1 },
+  { f:"s14", t:"S14 赛季主题曲（自备 s14.mp3）", season:2 },
+  { f:"s15", t:"S15 赛季主题曲（自备 s15.mp3）", season:3 },
+  { f:"s16", t:"S16 赛季主题曲（自备 s16.mp3）", season:4 }
 ];
+/* 当前赛季的主题曲下标（没有 / 已知缺失 → -1） */
+function bgmSeasonIdx(){
+  try{
+    if (typeof S === "undefined" || !S || S.si === undefined) return -1;
+    const i = BGM_TRACKS.findIndex(t => t.season === S.si);
+    return (i >= 0 && !AU.missing[i]) ? i : -1;
+  }catch(e){ return -1; }
+}
+/* render() 每次调一下：赛季变了、音乐开着、那一年的主题曲在，就切过去 */
+function bgmSeasonTick(){
+  try{
+    if (typeof S === "undefined" || !S || S.si === undefined) return;
+    if (AU.si === S.si) return;
+    const first = (AU.si === undefined);
+    AU.si = S.si;
+    if (first || !AU.bgm || !AU.playing) return;
+    const i = bgmSeasonIdx();
+    if (i >= 0) { AU.oi = AU.order.indexOf(i); bgmLoad(i, true); }
+  }catch(e){}
+}
 
 function bgmShuffle() {
   AU.order = BGM_TRACKS.map((_, i) => i);
@@ -14935,14 +15003,33 @@ function showSupport(source) {
     if (typeof statEvent === "function") statEvent("support");
   } catch (e) {}
 }
+/* 自动提示的时机（外部测评抓的：原来开局 1.4 秒就弹，正好打断建档）：
+   两个节点先到哪个算哪个——第一次签下职业合同（acceptOffer 调 supportNudge("sign")），
+   或本次会话累计玩了 8 分钟且不在建档/结局页。每个浏览器会话最多弹一次；点过「别再提示」永远不弹。 */
+function supportSeen() {
+  try { return sessionStorage.getItem(SUPPORT_SESSION_KEY) === "1"; } catch (e) { return false; }
+}
+function supportNudge(reason) {
+  try {
+    if (!supportUrl() || supportAutoHidden() || supportSeen()) return;
+    try { sessionStorage.setItem(SUPPORT_SESSION_KEY, "1"); } catch (e) {}
+    setTimeout(() => showSupport("auto"), reason === "sign" ? 2600 : 0);   // 签约那句大事记先看完
+  } catch (e) {}
+}
 function scheduleSupport() {
   try {
-    if (!supportUrl() || supportAutoHidden() || sessionStorage.getItem(SUPPORT_SESSION_KEY) === "1") return;
-    sessionStorage.setItem(SUPPORT_SESSION_KEY, "1");
-    setTimeout(() => showSupport("auto"), 1400);
-  } catch (e) {
-    if (supportUrl() && !supportAutoHidden()) setTimeout(() => showSupport("auto"), 1400);
-  }
+    if (!supportUrl() || supportAutoHidden() || supportSeen()) return;
+    const t0 = Date.now();
+    const tick = () => {
+      try {
+        if (supportAutoHidden() || supportSeen()) return;
+        const busy = (typeof S !== "undefined" && S && (S.step === "create" || S.step === "end"));
+        if (!busy && Date.now() - t0 >= 8 * 60 * 1000) { supportNudge("time"); return; }
+      } catch (e) {}
+      setTimeout(tick, 30000);
+    };
+    setTimeout(tick, 30000);
+  } catch (e) {}
 }
 
 /* ---------- 更新提示（玩家点名，照 vctgames：「游戏更新了 → 刷新 / 稍后」）----------
@@ -15109,6 +15196,7 @@ function audioInit() {
     audioPrefs();
     audioFab(hasSfx, hasBgm);
     scheduleSupport();
+    bgmSeasonTick();
     updInit();                                    // 新版本上线时提示刷新
     if (hasSfx || hasBgm) document.addEventListener("click", audioClickHandler, true);
   } catch (e) {}
@@ -15860,6 +15948,7 @@ function render(){
   if(typeof hudCta==="function") hudCta();               // HUD 主按钮镜像本页的 .btn.primary
   if(typeof stageSwitchFx==="function") stageSwitchFx(); // 换标签 160ms 淡入
   if(typeof flushToasts==="function") flushToasts();     // 事件提示条
+  if(typeof bgmSeasonTick==="function") bgmSeasonTick();   // 赛季主题曲：赛季变了就切
   /* 大标题只在创建页和结局页铺开。
      进了游戏之后它每一屏都在重复占 237px，而首屏总共才 900px——
      收成一条窄横幅，把地方让给内容。 */
@@ -15931,6 +16020,7 @@ function bind(){
        不能拿一个空的 input 把它盖成「无名」——玩家报过名字莫名其妙没了。 */
     S.name=safeName((nm&&nm.value)||S.name||"")||"无名"; S.showStart=true; render(); };
   const sg=$("startgo"); if(sg) sg.onclick=()=>{ S.showStart=false; startPre(); };
+  const sb=$("startback"); if(sb) sb.onclick=()=>{ S.showStart=false; render(); };   // 天赋/背景点错了不用重载
   st.querySelectorAll("[data-prolg]").forEach(b=>b.onclick=()=>{S.proLg=b.dataset.prolg;render()});
   st.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render()});
   const _rok=$("rndok"); if(_rok) _rok.onclick=()=>{S.rndResult=null;render()};

@@ -101,7 +101,7 @@ const GEAR={
     {n:"雷蛇 DeathAdder Essential", cost:0,   t:0, e:{操作:0}},
     {n:"罗技 G102",                cost:30,  t:1, e:{操作:0.8}},
     {n:"罗技 G Pro X Superlight",  cost:130, t:2, e:{操作:1.9}},
-    {n:"罗技 G PRO 2 Lightspeed",  cost:320, t:3, e:{操作:1.7}}
+    {n:"罗技 G PRO 2 Lightspeed",  cost:320, t:3, e:{操作:2.6}}   // 原来 1.7 比 130 万那档还弱（外部测评抓的反向升级）
   ],
   kb:[
     {n:"杂牌薄膜键盘",              cost:0,   t:0, e:{操作:0}},

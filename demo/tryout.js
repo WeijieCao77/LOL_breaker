@@ -1255,6 +1255,7 @@ function acceptPromote(){
   const pt = (S.world.LPL || []).find(t => t.name === d.team);
   if(!pt){ pushEvent(`调令出了变故：${d.team} 的名单动了，这个窗口先作罢。`,"bad","升队"); render(); return; }
   const old = S.team;
+  if(typeof leaveRoster==="function") leaveRoster(old, S.homeLeague||"LDL");   // 二队名单补人，别留幻影
   S.team = d.team; S.homeLeague = "LPL";
   S.offerKind = "start"; S.understudy = null; S.promoted = true;
   pt.players = pt.players.map(q => q.pos === S.pos
@@ -1331,6 +1332,7 @@ function offerSendDown(){
 }
 function doSendDown(acad){
   const old=S.team;
+  if(typeof leaveRoster==="function") leaveRoster(old, S.homeLeague||"LPL");   // 一队名单里若有我，补人
   S.team=acad.name; S.homeLeague="LDL";
   S.offerKind="core"; S.promoted=true; S.understudy=null;
   const t=myTeam();

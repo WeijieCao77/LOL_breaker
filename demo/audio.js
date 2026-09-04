@@ -102,8 +102,36 @@ const BGM_TRACKS = [
   { f:"hybrid-worlds",      t:"Hybrid — 英雄联盟" },
   { f:"silver-scrapes",     t:"Silver Scrapes — Danny McCarthy" },
   { f:"crawling",           t:"Crawling — Linkin Park" },
-  { f:"numb",               t:"Numb — Linkin Park" }
+  { f:"numb",               t:"Numb — Linkin Park" },
+  /* 赛季主题曲位：文件名就叫 s12.mp3 … s16.mp3（作者自备）。
+     赛季一换，如果那一年的文件在，就先切到它；没有的就继续随机歌单。
+     原来更新日志写「赛季一换就换歌」、代码却只有随机循环（外部测评抓的对不上）。 */
+  { f:"s12", t:"S12 赛季主题曲（自备 s12.mp3）", season:0 },
+  { f:"s13", t:"S13 赛季主题曲（自备 s13.mp3）", season:1 },
+  { f:"s14", t:"S14 赛季主题曲（自备 s14.mp3）", season:2 },
+  { f:"s15", t:"S15 赛季主题曲（自备 s15.mp3）", season:3 },
+  { f:"s16", t:"S16 赛季主题曲（自备 s16.mp3）", season:4 }
 ];
+/* 当前赛季的主题曲下标（没有 / 已知缺失 → -1） */
+function bgmSeasonIdx(){
+  try{
+    if (typeof S === "undefined" || !S || S.si === undefined) return -1;
+    const i = BGM_TRACKS.findIndex(t => t.season === S.si);
+    return (i >= 0 && !AU.missing[i]) ? i : -1;
+  }catch(e){ return -1; }
+}
+/* render() 每次调一下：赛季变了、音乐开着、那一年的主题曲在，就切过去 */
+function bgmSeasonTick(){
+  try{
+    if (typeof S === "undefined" || !S || S.si === undefined) return;
+    if (AU.si === S.si) return;
+    const first = (AU.si === undefined);
+    AU.si = S.si;
+    if (first || !AU.bgm || !AU.playing) return;
+    const i = bgmSeasonIdx();
+    if (i >= 0) { AU.oi = AU.order.indexOf(i); bgmLoad(i, true); }
+  }catch(e){}
+}
 
 function bgmShuffle() {
   AU.order = BGM_TRACKS.map((_, i) => i);
@@ -304,14 +332,33 @@ function showSupport(source) {
     if (typeof statEvent === "function") statEvent("support");
   } catch (e) {}
 }
+/* 自动提示的时机（外部测评抓的：原来开局 1.4 秒就弹，正好打断建档）：
+   两个节点先到哪个算哪个——第一次签下职业合同（acceptOffer 调 supportNudge("sign")），
+   或本次会话累计玩了 8 分钟且不在建档/结局页。每个浏览器会话最多弹一次；点过「别再提示」永远不弹。 */
+function supportSeen() {
+  try { return sessionStorage.getItem(SUPPORT_SESSION_KEY) === "1"; } catch (e) { return false; }
+}
+function supportNudge(reason) {
+  try {
+    if (!supportUrl() || supportAutoHidden() || supportSeen()) return;
+    try { sessionStorage.setItem(SUPPORT_SESSION_KEY, "1"); } catch (e) {}
+    setTimeout(() => showSupport("auto"), reason === "sign" ? 2600 : 0);   // 签约那句大事记先看完
+  } catch (e) {}
+}
 function scheduleSupport() {
   try {
-    if (!supportUrl() || supportAutoHidden() || sessionStorage.getItem(SUPPORT_SESSION_KEY) === "1") return;
-    sessionStorage.setItem(SUPPORT_SESSION_KEY, "1");
-    setTimeout(() => showSupport("auto"), 1400);
-  } catch (e) {
-    if (supportUrl() && !supportAutoHidden()) setTimeout(() => showSupport("auto"), 1400);
-  }
+    if (!supportUrl() || supportAutoHidden() || supportSeen()) return;
+    const t0 = Date.now();
+    const tick = () => {
+      try {
+        if (supportAutoHidden() || supportSeen()) return;
+        const busy = (typeof S !== "undefined" && S && (S.step === "create" || S.step === "end"));
+        if (!busy && Date.now() - t0 >= 8 * 60 * 1000) { supportNudge("time"); return; }
+      } catch (e) {}
+      setTimeout(tick, 30000);
+    };
+    setTimeout(tick, 30000);
+  } catch (e) {}
 }
 
 /* ---------- 更新提示（玩家点名，照 vctgames：「游戏更新了 → 刷新 / 稍后」）----------
@@ -478,6 +525,7 @@ function audioInit() {
     audioPrefs();
     audioFab(hasSfx, hasBgm);
     scheduleSupport();
+    bgmSeasonTick();
     updInit();                                    // 新版本上线时提示刷新
     if (hasSfx || hasBgm) document.addEventListener("click", audioClickHandler, true);
   } catch (e) {}

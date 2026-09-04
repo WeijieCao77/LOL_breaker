@@ -10,7 +10,7 @@
   /* 晨光橙（2026-09-05 界面重做第一期）：整套界面里唯一表示「正在发生 / 该你了」的颜色——
      只用在本周主行动按钮、HUD 的「现在」层、倒计时。金留给已经拿到的东西。 */
   --dawn:#E9A15A; --dawn-dim:#8C5A2A;
-  --ink:#E8F0F6; --ink-2:#9DB8C9; --ink-3:#5E8199;
+  --ink:#E8F0F6; --ink-2:#9DB8C9; --ink-3:#7395AA;   /* ink-3 原 #5E8199 在面板上只有 3.6:1，10–12px 说明字手机上发暗（外部测评量的）；现 4.7:1 */
 
   /* 五个功能域的身份色。
      原来每个标签页都是同样的深蓝卡片配金色标题，切过去认不出自己在哪——
@@ -1084,7 +1084,7 @@ ul.dealfx li::marker{color:var(--ink-3)}
   /* 右下角浮窗：竖排三颗 38px 的按钮会压住卡片右侧约 32px——
      手机上改横排缩小，并给页面留出底部空间，滚到底也不被盖住 */
   .audiofab{flex-direction:row;right:8px;bottom:8px;gap:6px}
-  .audiofab button{width:30px;height:30px;font-size:13px;box-shadow:0 1px 6px rgba(0,0,0,.4)}
+  .audiofab button{width:40px;height:40px;font-size:15px;box-shadow:0 1px 6px rgba(0,0,0,.4)}   /* 30px 手指点不准 */
   .support-overlay{padding:10px;align-items:start;overflow-y:auto}
   .support-card{width:100%;max-height:none;margin:10px 0;padding:18px}
   .support-head{gap:10px}

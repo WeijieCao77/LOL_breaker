@@ -214,12 +214,12 @@ const AVATARS = __AVATARS__;
 
 /* ================= 常量 ================= */
 const DIMS=["操作","运营","心态","指挥","体质"];
-const DIM_HINT={操作:"对线与输出",运营:"视野与节奏",心态:"抗压与翻盘",指挥:"全队增益",体质:"耐久与状态"};
+const DIM_HINT={操作:"对线与输出",运营:"视野与节奏",心态:"抗压与翻盘",指挥:"主指挥取队内最高",体质:"耐久与状态"};
 const DIM_DESC={
   操作:"对线压制与个人输出，25 岁后掉得最快",
   运营:"视野、游走、资源判断，随经验缓慢增长",
   心态:"逆风稳定性，决定能不能翻盘",
-  指挥:"全队乘数，提升队友发挥率；越老越强",
+  指挥:"全队乘数：比赛只取队内最高的那个人当主指挥；段位、试训、实力照样算它；越老越强",
   体质:"赛季耐久，25 岁后明显下滑"
 };
 const POS=[{k:"top",n:"上单"},{k:"jng",n:"打野"},{k:"mid",n:"中单"},{k:"bot",n:"AD"},{k:"sup",n:"辅助"}];
@@ -1626,6 +1626,7 @@ function summaryCard(){
       extra.length?`<br>${extra.join("　·　")}`:""}</p>
     <p class="note" style="color:var(--ink-3)">竖线是天赋瓶颈。剩下的，靠你自己打出来。</p>
     <div class="row" style="justify-content:center;margin-top:18px">
+      <button class="btn ghost" id="startback">← 返回修改</button>
       <button class="btn" id="startgo">开启你的 LOL 人生 →</button>
     </div>
   </div></div>`;
@@ -1675,11 +1676,12 @@ function viewCreate(){
       <button class="btn ghost sm" id="reroll" style="margin-left:10px">换一批</button></h3>
     <div class="grid g2">${S.bgOffer.map(b=>`
       <button class="opt ${S.bgPick===b.k?'on':''}" data-bg="${b.k}">
-        <div class="t">${b.n} <span class="tag">${b.origin==="streamer"?"主播路线":"青训路线"}</span></div>
+        <div class="t">${b.n} <span class="tag">${b.origin==="streamer"?"主播路线 · 挑战难度":"青训路线 · 标准难度"}</span></div>
         <div class="d">${b.d}</div>
         <div class="d" style="color:var(--cyan);font-size:11.5px">${(typeof bgEffects==="function"?bgEffects(b):[]).join(" · ")||"无额外修正"}</div>
       </button>`).join("")}</div>
-    <p class="note" style="margin-top:6px">路线是出身自带的，选卡就定了（外部测评点名：原来藏着不显示）：<b>青训路线</b>底子厚、训练收益高、起始段位好；<b>主播路线</b>起始粉丝和直播收益高。</p>
+    <p class="note" style="margin-top:6px">路线是出身自带的，选卡就定了。<b>青训路线 · 标准难度</b>：底子厚、训练收益高、起始段位好，竞技成长强。
+      <b>主播路线 · 挑战难度</b>：起始粉丝和直播收益高，但五维底子平均低 4 分左右——赛场上更难，赛场外更强。</p>
     <p class="note">${S.ageIdx!=null?`你现在 ${AGES[S.ageIdx].a} 岁，还没有战队。`:"你还没有战队。"}先用半年时间打上分、攒人气、被人看见——然后才谈签约。
       18–21 岁是成长期，22–24 岁巅峰，25 岁起属性会真的往下掉——只有 21 岁出道会在生涯末尝到它。</p>
   </div>
@@ -2266,6 +2268,7 @@ function acceptOffer(i){
   // 你自己就是那个「强援」：base 上去了，但五个人要重新磨
   disruptSynergy(1,`<b>${meName()}</b> 加盟`);
   pushEvent(`<b>${meName()}</b> 正式签约 <b>${of.team}</b>（${of.t}）。${back?"重返职业赛场——上一段履历接着算。":"职业生涯从这里开始。"}`,"big","签约");
+  if(!back&&typeof supportNudge==="function") supportNudge("sign");   // 第一份职业合同：支持作者的提示在这里，不在开局
   checkAch("sign");
   startSeason(true);
 }
@@ -2417,7 +2420,21 @@ function trainBtn(d, ap, attr){
         : locked    ? `已达瓶颈 · 突破要做<b>战术复盘</b>，签约战队后才有`
         : dead      ? `已达瓶颈 · 突破靠<b>${P&&P.act?P.act:"别的途径"}</b>${
                        P&&P.auto&&P.prog?`　${P.prog()}`:""}`
-        : DIM_HINT[d]+costTrain(d) };
+        : DIM_HINT[d]+costTrain(d)+(d==="指挥"?cmdNote():"") };
+}
+/* 指挥这一维在比赛里只取队内最高（powerCore 的 cmd=max）——训练它之前得知道主指挥是谁、差多少。
+   外部测评抓的「隐性无效区间」：队友指挥比你高时，练指挥对当场战力没用；但段位/试训/实力照样算它。 */
+function cmdNote(){
+  if(!S.career||!S.team||typeof myRoster!=="function") return "";
+  try{
+    const mates=myRoster().filter(p=>!p.me);
+    if(!mates.length) return "";
+    const top=mates.slice().sort((a,b)=>((b.r||b).指挥||0)-((a.r||a).指挥||0))[0];
+    const tv=(top.r||top).指挥||0, me=S.attrs.指挥;
+    return me>=tv-0.05
+      ? `　<span style="color:var(--cyan)">你是队里的主指挥</span>`
+      : `　<span style="color:var(--ink-3)">主指挥是 ${top.id}（${tv.toFixed(0)}）——比赛只取队内最高，你要过 ${tv.toFixed(0)} 才进战力；段位 / 试训 / 实力照样算</span>`;
+  }catch(e){ return ""; }
 }
 function gain(d){
   // 余量按「平移后的尺」算：全体系 +5 之后 attr/cap 的比值会缩小、全程收益慢 6%
@@ -5054,6 +5071,7 @@ function render(){
   if(typeof hudCta==="function") hudCta();               // HUD 主按钮镜像本页的 .btn.primary
   if(typeof stageSwitchFx==="function") stageSwitchFx(); // 换标签 160ms 淡入
   if(typeof flushToasts==="function") flushToasts();     // 事件提示条
+  if(typeof bgmSeasonTick==="function") bgmSeasonTick();   // 赛季主题曲：赛季变了就切
   /* 大标题只在创建页和结局页铺开。
      进了游戏之后它每一屏都在重复占 237px，而首屏总共才 900px——
      收成一条窄横幅，把地方让给内容。 */
@@ -5125,6 +5143,7 @@ function bind(){
        不能拿一个空的 input 把它盖成「无名」——玩家报过名字莫名其妙没了。 */
     S.name=safeName((nm&&nm.value)||S.name||"")||"无名"; S.showStart=true; render(); };
   const sg=$("startgo"); if(sg) sg.onclick=()=>{ S.showStart=false; startPre(); };
+  const sb=$("startback"); if(sb) sb.onclick=()=>{ S.showStart=false; render(); };   // 天赋/背景点错了不用重载
   st.querySelectorAll("[data-prolg]").forEach(b=>b.onclick=()=>{S.proLg=b.dataset.prolg;render()});
   st.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render()});
   const _rok=$("rndok"); if(_rok) _rok.onclick=()=>{S.rndResult=null;render()};

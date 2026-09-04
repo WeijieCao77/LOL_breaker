@@ -296,6 +296,18 @@ function endCupMatch(){
   const m=S.cupMatch, k=m.kind, c=cupOf(k), C=CUPS[k];
   const won=m.sc[0]>m.sc[1];
   m.done=true;
+  // 赛后拆解要读「这场比赛当时」的账（外部测评抓的：原来先推进下一轮 / 清备战 / 解散车队，
+  // 玩家再打开拆解——标题变成下一轮、备战显示 0、决赛后车队那几行整个消失）。
+  // 结束那一刻先把状态冻一份，cupPostCard 只读它。
+  try{
+    const soloNow=cupPersonal(S.attrs)+(typeof gearBonus==="function"?gearBonus("操作")*0.4:0);
+    const mates=(S.pre&&S.pre.mates)||[];
+    m.snap={ round:c.round, prep:c.prep, my:cupMyPower(k), teamName:cupTeamName(),
+      hasMates:mates.length>0,
+      teamAvg:mates.length?(soloNow+mates.reduce((a,x)=>a+cupPersonal(x),0))/(1+mates.length):soloNow,
+      syn:(typeof squadOf==="function")?squadOf("syn"):50, tac:(typeof squadOf==="function")?squadOf("tac"):50,
+      mor:(typeof avgTrust==="function")?avgTrust():50, legacyPrep:(S.pre&&S.pre.cupPrep)||0 };
+  }catch(e){}
   // 打得越多，被俱乐部看到的次数越多。累积在这里，但兑现要等整届打完——
   // 赛程进行中发邀请会把比赛线整个短路（试过：玩家半决赛就签约走人）。
   S.pre.scoutSeen = (S.pre.scoutSeen||0) + 1;
@@ -357,7 +369,8 @@ function cupPayout(k,champion){
   // 车队的生命周期跟着赛事走：全打完了，路人各回各家，战队栏目重新上锁
   if(!S.career&&S.pre.mates&&S.pre.mates.length&&
      typeof activeCups==="function"&&activeCups().length===0){
-    disbandCrew();
+    if(S.cupMatch) S.cupMatch.disbandAfter=true;   // 看完拆解点「继续」再散伙——拆解里车队那几行得还在
+    else disbandCrew();
   }
   // 结算先挂在这场比赛上，等玩家看完比分点「继续」再弹总结。
   // 之前这里直接 S.cupMatch=null，被淘汰那一场的比分和过程会凭空消失——
@@ -370,6 +383,7 @@ function cupDismissMatch(){
   const m=S.cupMatch;
   if(m&&m.result) S.cupResult=m.result;
   S.cupMatch=null;
+  if(m&&m.disbandAfter&&typeof disbandCrew==="function") disbandCrew();
   render();
 }
 
@@ -453,20 +467,25 @@ function cupPostCard(m){
   if(!m||!m.done) return "";
   const k=m.kind, C=CUPS[k]||CUPS.city, c=cupOf(k);
   const won=m.sc[0]>m.sc[1];
+  // 只读开赛时冻的那份账（m.snap）；老存档里没有快照的比赛才退回读当前状态
+  const sn=m.snap||null;
   const solo=cupPersonal(S.attrs)+(typeof gearBonus==="function"?gearBonus("操作")*0.4:0);
-  const legacy=((c)?c.prep*1.15:0)+((S.pre&&S.pre.cupPrep)||0)*0.55;
-  const my=cupMyPower(k), op=m.op;
+  const prepRound=sn?sn.prep:((c)?c.prep:0);
+  const legacy=prepRound*1.15+(sn?sn.legacyPrep:((S.pre&&S.pre.cupPrep)||0))*0.55;
+  const my=sn?sn.my:cupMyPower(k), op=m.op;
+  const roundName=cupRoundName(k, sn?sn.round:(c?c.round:1));
+  const hasMates=sn?sn.hasMates:!!(S.pre&&S.pre.mates&&S.pre.mates.length);
   const rows=[];
   rows.push({n:"个人底子",v:solo-op,
     fix:solo<op?"你一个人的水平还在这一轮对手之下——排位和训练都在长它。":"你的个人水平压得住这一轮的对手。"});
-  if(S.pre&&S.pre.mates&&S.pre.mates.length){
-    const teamAvg=(solo+S.pre.mates.reduce((a,x)=>a+cupPersonal(x),0))/(1+S.pre.mates.length);
+  if(hasMates){
+    const teamAvg=sn?sn.teamAvg:(solo+S.pre.mates.reduce((a,x)=>a+cupPersonal(x),0))/(1+S.pre.mates.length);
     const base=solo*0.72+teamAvg*0.28;
     rows.push({n:"车队水位",v:(teamAvg-solo)*0.28,
       fix:teamAvg<solo?"四个路人队友拖了你的后腿——车队是抽到的，能做的是把默契和战术练上去。":"这支车队的路人不弱，跟得上你。"});
-    const syn=(typeof squadOf==="function")?squadOf("syn"):50;
-    const tac=(typeof squadOf==="function")?squadOf("tac"):50;
-    const mor=(typeof avgTrust==="function")?avgTrust():50;
+    const syn=sn?sn.syn:((typeof squadOf==="function")?squadOf("syn"):50);
+    const tac=sn?sn.tac:((typeof squadOf==="function")?squadOf("tac"):50);
+    const mor=sn?sn.mor:((typeof avgTrust==="function")?avgTrust():50);
     rows.push({n:"默契",v:base*((syn-50)/550),fix:syn<50?"五个人还没磨合：「网吧开黑」「战队合练」直接涨。":"配合是加分项。"});
     rows.push({n:"战术",v:base*((tac-50)/650),fix:tac<50?"没什么战术：「看职业录像」「战术复盘」喂它。":"战术在你这边。"});
     rows.push({n:"士气",v:base*((mor-50)/900),fix:mor<50?"车队里有人不服你——多开黑、别甩锅。":"更衣室没问题。"});
@@ -498,7 +517,7 @@ function cupPostCard(m){
     ?`<div class="review win"><div class="rv-h">复盘</div><p class="note" style="margin:6px 0 0">这场赢在<b>${rows.filter(r=>r.v>=0.4).slice(0,2).map(r=>r.n).join("、")||"临场"}</b>。下一轮对手更强——别停。</p></div>`
     :(adv.length?`<div class="review"><div class="rv-h">复盘 · 这场输在哪，明天练什么</div><div class="rv-g">${adv.map(li).join("")}</div></div>`
       :`<div class="review"><div class="rv-h">复盘</div><p class="note" style="margin:6px 0 0">各项都没明显吃亏——这场输在概率上。数值只决定每局胜率，不保证结果。</p></div>`);
-  return `<div class="card"><h2>赛后拆解 · ${C.name} ${c?cupRoundName(k,c.round):""} vs ${m.opp}<em>${won?"胜":"负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
+  return `<div class="card"><h2>赛后拆解 · ${C.name} ${roundName} vs ${m.opp}<em>${won?"胜":"负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
     <div class="pm-head">
       <span>赛事战力 <b>${my.toFixed(1)}</b> vs <b>${op.toFixed(1)}</b></span>
       <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>

@@ -241,6 +241,9 @@ function playOne(opts) {
 module.exports.playOne = playOne;
 
 if (require.main === module) {
+  // 背景卡折算表（资金 60 万 / 人气 10 / 信任 3 ≈ 1 点，属性 1 点 = 1 点）：各卡并不等值，差异在形状——见 origins.js 顶部注释
+  console.log("背景折算：", A.BACKGROUNDS.map(b => b.k + " " + (Object.values(b.mod || {}).reduce((a, v) => a + v, 0)
+    + (b.money || 0) / 60 + (b.fame || 0) / 10 + (b.trust || 0) / 3).toFixed(1)).join(" · "));
   console.log("模块自检：赛季", A.SEASONS.length, "| 背景", A.BACKGROUNDS.length,
     "| 成就", A.ACHIEVEMENTS.length, "| 年龄", A.AGES.length, "| 段位", A.RANKS.length);
   const r = playOne();
@@ -252,6 +255,12 @@ if (require.main === module) {
   A.DIMS.forEach(d => { const v = S.attrs && S.attrs[d]; if (typeof v !== "number" || !isFinite(v) || v < 0 || v > 100) bad.push("属性异常 " + d + "=" + v); });
   if (typeof S.fatigue !== "number" || S.fatigue < 0 || S.fatigue > 100) bad.push("疲劳越界 " + S.fatigue);
   if (!r.saved) bad.push("存档没有写入");
+  // 外设每一档都得比上一档贵、也比上一档强（外部测评抓的：320 万的鼠标比 130 万的还弱）
+  Object.keys(A.GEAR).forEach(k => A.GEAR[k].forEach((g, i) => {
+    if (i === 0) return;
+    const pv = A.GEAR[k][i - 1], d = Object.keys(g.e)[0];
+    if (!(g.cost > pv.cost) || !((g.e[d] || 0) > (pv.e[d] || 0))) bad.push("外设反向升级 " + k + " → " + g.n);
+  }));
   if (S.scaleVer !== 2 || !S.born) bad.push("新档缺少 scaleVer/born（审计 P0 回归）");
   if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }
   console.log("自检通过");
