@@ -283,6 +283,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906l", at:"2026-09-06", items:[
+    "「弱队冲榜」方案 A 上线（玩家拍板）：你的版本相性压回 AI 同一把尺——每高联赛均线 1 分 +0.16 战力（原 0.55，AI 是 0.08），整体封顶 ±6；比赛节点的成功率七成看你、三成看队友同一维的均值，摆动从 ±风险×6 收到 ±风险×4.5。一个人拉不动四个人；你在队里的权重 1.6 不变"
+  ]},
   {v:"v20260906k", at:"2026-09-06", items:[
     "备战期恢复上调（玩家实锤：世界赛两场之间只能休息，合练 / 训练赛根本排不上）：进入备战自动回 12 点体能，备战 / 出征期休息折算 0.45 → 0.6（保姆车 0.55 → 0.7）。120 局批测 MSI 冠军率 3.3% → 8.3%、世界赛 4.2% → 6.7%，玩家认为原来偏低、接受"
   ]},
@@ -943,7 +946,7 @@ function verInfo(){
   const rel=(mine-bar)/8, posB=sea.fav.includes(S.pos)?1.6:0, cushion=adaptOf()/100;
   const mini=(typeof miniPatchAdj==="function")?miniPatchAdj():0;
   return {sea,d,bar,mine,rel,posB,cushion,mini,fit:versionFit(),
-    parts:{dim:rel*2.2*2.0, pos:posB*2.0, cushion:(rel<0?rel*-1*cushion*1.4:0)*2.0, mini}};
+    parts:{dim:rel*VER_ME_K*2.0, pos:posB*2.0, cushion:(rel<0?rel*-1*cushion*1.4*(VER_ME_K/2.2):0)*2.0, mini}};
 }
 /* 一支队从版本里拿到多少战力（战力口径，显示时乘 PW_SHOW）：强势位置每人 +1.5，关键属性高于联赛均线的部分 ×VER_DIM_W；你的队再加你的相性 */
 function teamVerBonus(team){
@@ -998,6 +1001,11 @@ function leagueDimAvg(d){
   ts.forEach(t=>t.players.forEach(p=>{ if(!p.me&&p.r&&p.r[d]!==undefined){ s+=p.r[d]; n++; } }));
   return n?s/n:55;
 }
+/* 2026-09-06 玩家拍板「弱队冲榜」方案 A：你的版本相性压回 AI 同一把尺。
+   原来每高联赛均线 1 分 +0.55 战力（AI 每分只有 0.08，且要和四个队友平均），操作 92 遇上吃操作的赛季一项就 +14.7，
+   垫底队直接抬到中游。现在每分 0.16（AI 的两倍——你是全队唯一被行动点培养的人，留一点倾斜），整体封顶 ±6。 */
+const VER_ME_K=0.64;      // rel=差/8，×VER_ME_K×2 ＝ 每分 0.16
+const VER_ME_CAP=6;
 function versionFit(){
   const sea=SEASONS[S.si], d=sea.dim;
   const bar=leagueDimAvg(d);
@@ -1005,7 +1013,7 @@ function versionFit(){
   const posBonus=sea.fav.includes(S.pos)?1.6:0;
   const cushion=adaptOf()/100;                  // 适应力缓冲逆版本
   const mini=(typeof miniPatchAdj==="function")?miniPatchAdj():0;   // 赛季中热修的小刀
-  return (rel*2.2+posBonus+(rel<0?rel*-1*cushion*1.4:0))*2.0+mini;
+  return clamp((rel*VER_ME_K+posBonus+(rel<0?rel*-1*cushion*1.4*(VER_ME_K/2.2):0))*2.0,-VER_ME_CAP,VER_ME_CAP)+mini;
 }
 
 /* LCK 的统治力逐年变化——S12 起步、S14 顶峰、S16 才松动。
@@ -3384,14 +3392,26 @@ function gameWinP(swing){
   const op=power(m.opp.players,0,sea.fav);
   return clampWinProb(1/(1+Math.exp(-(my-op)/SPREAD)), my-op);
 }
+/* 节点摆动倍率与成功率里的队友占比（2026-09-06 方案 A）：一个人拉不动四个人——
+   成功率七成看你、三成看队友同一维的均值；摆动从 ±风险×6 收到 ±风险×4.5。操作 92 配 55 分队友：75% → 67%，期望每节点 +2.7 → +1.5 */
+const NODE_SWING=4.5, NODE_MATE_W=0.3;
+function nodeSkill(dim){
+  const mine=S.attrs[dim];
+  try{
+    const mates=myRoster().filter(p=>!p.me);
+    if(!mates.length) return mine;
+    const avgM=mates.reduce((a,p)=>a+((p.r||p)[dim]||50),0)/mates.length;
+    return mine*(1-NODE_MATE_W)+avgM*NODE_MATE_W;
+  }catch(e){ return mine; }
+}
 function resolveNode(ai){
-  const m=S.match,opt=m.node.a[ai],v=S.attrs[opt.dim];
+  const m=S.match,opt=m.node.a[ai],v=nodeSkill(opt.dim);
   // 风险真的影响成功率（外部测评抓的：原来「高风险」只放大摆动、不降成功率，标签骗人）：
   // risk 0.9 的选项比中性低约 6 个点，0.3 的高约 3 个点；摆动倍率照旧
   const p=clamp(0.30+(v/100)*0.55-((opt.risk||0.5)-0.5)*0.15,0.12,0.92);
   const ok=rnd()<p;
   const was=gameWinP(m.swing);            // 做决定之前的赢面
-  m.swing+=(ok?1:-1)*opt.risk*6.0;
+  m.swing+=(ok?1:-1)*opt.risk*NODE_SWING;
   const now=gameWinP(m.swing);            // 做完之后
   if(typeof addStaff==='function') addStaff('coach',ok?0.3:-0.6);
   if(!ok){ m.nodeFails=(m.nodeFails||0)+1;
