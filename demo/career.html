@@ -1000,6 +1000,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260905g", at:"2026-09-05", items:[
+    "进俱乐部后段位旁也把账算清楚（玩家点名）：顶栏段位下面一行「实力 X · 本段门槛 Y · 下一档要 Z（差 N）」，「我的」页标题同样写明——你随时知道自己离下一档差多少"
+  ]},
   {v:"v20260905f", at:"2026-09-05", items:[
     "自动推进重做（玩家点名：推到赛季结束/推 6 周总被周中事件截断）：路上的际遇、更衣室、直播报价、试训邀请、转会问询、合同、转正、确认框全部按托管规则代办，不再中途停下（不动你的采购开关，不替你花钱）；推满周数或常规赛打完时弹「推进总结」——战绩、每场比分、属性变化、突破、替你做的每个决定、大事记",
     "自动推进不再把替补偷偷排上场：还在替补席就按替补周走（和季后赛那次同一个坑）",
@@ -2299,6 +2302,18 @@ function soloSkill(){ return myStrength(); }
    之前用的 33+v*0.63 太陡，均衡 build 连大师都摸不到，
    最强 build 也上不了王者——整条段位天梯有一半是死的。 */
 function rankReq(v){ return rankToSkill(clamp(v,0,100)); }   // 统一标尺：门槛走新曲线
+/* 段位旁边把账算清楚：你现在的实力、本段门槛、下一档要多少、还差多少。
+   职业前天梯卡本来有这行，进俱乐部后 HUD 只剩一个段位徽章——玩家原话
+   「不显示门槛和当前实力，玩家不知道自己差多少」。 */
+function rankGapNote(){
+  if(!S.pre||typeof S.pre.rank!=="number") return "";
+  const me=myStrength(), cur=rankReq(S.pre.rank);
+  const nextR=RANKS.find(x=>x.at>S.pre.rank);
+  const nx=nextR?rankToSkill(nextR.at):null;
+  const gap=nx!=null?nx-me:0;
+  return `<small style="display:block;color:var(--ink-3);font-size:11px;line-height:1.35;margin-top:2px">实力 <b style="color:var(--ink)">${me.toFixed(0)}</b> · 本段门槛 ${cur.toFixed(0)}${
+    nx!=null?` · ${nextR.n}要 ${nx.toFixed(0)}<span style="color:${gap<=0?'var(--cyan)':'var(--gold)'}">（${gap<=0?"实力已够，去打排位":"差 "+gap.toFixed(0)}）</span>`:" · 已到顶"}</small>`;
+}
 /* 打一把的胜率：实力压过门槛就赢多输少，差得远就基本打不动 */
 function soloWinP(){
   const md=(typeof buffVal==="function")?(buffVal("mood")-1)*8:0;
@@ -3494,8 +3509,9 @@ function fatigueBar(){
 }
 function attrCard(){
   return `<div class="card"><h2>你的属性<em>${S.age} 岁 · ${POSN[S.pos]}${
-      typeof tryoutSkill==="function"?` · 综合 <b>${tryoutSkill().toFixed(0)}</b>（俱乐部口径）`:""}${
-      S.pre&&typeof S.pre.rank==="number"?` · ${rankFull(S.pre.rank)}`:""}</em></h2>
+      typeof tryoutSkill==="function"?` · 实力 <b>${tryoutSkill().toFixed(0)}</b>`:""}${
+      S.pre&&typeof S.pre.rank==="number"?` · ${rankFull(S.pre.rank)}${(()=>{const nx=RANKS.find(x=>x.at>S.pre.rank);
+        return nx?`（本段门槛 ${rankReq(S.pre.rank).toFixed(0)} · ${nx.n}要 ${rankToSkill(nx.at).toFixed(0)}）`:"（已到顶）";})()}`:""}</em></h2>
     <div class="renamer">
       <span class="rn-k">ID</span>
       <input type="text" id="rename" maxlength="12" value="${escapeHtml(S.name||"")}"
@@ -14079,7 +14095,7 @@ function hud(){
       <div><div class="k">年龄</div><div class="v mono">${S.age}</div></div>
       <div class="hud-now ${nowPhase().urgent?'urgent':''}"><div class="k">现在</div>
         <div class="v">${nowPhase().tag} ${nowPhase().phase} <small>${nowPhase().detail}</small></div></div>
-      <div><div class="k">段位</div><div class="v">${rankBadge(S.pre.rank,26)}</div></div>
+      <div><div class="k">段位</div><div class="v">${rankBadge(S.pre.rank,26)}</div>${rankGapNote()}</div>
       <div class="hud-fan"><div class="k">粉丝</div><div class="v" style="font-size:13px">${fanTier()}<small class="mono"> ${fansText()}</small></div>${fanNextNote()}</div>
       <div><div class="k">热度</div><div class="v" style="font-size:13px">${heatTier()}</div>${heatNote()}</div>
       <div><div class="k">下一节点</div><div class="v">${(()=>{const n=nextMilestone();
@@ -14108,7 +14124,7 @@ function hud(){
     <div><div class="k">本季</div><div class="v mono">${S.record.w}−${S.record.l}</div></div>
     <div title="${(typeof ringTitles==="function"&&ringTitles().length)?`其中 ${ringTitles().length} 座是替补席随队`:""}"><div class="k">冠军</div><div class="v mono">${typeof titleCount==="function"?titleCount():S.career.titles.length}</div></div>
     <div><div class="k">段位</div><div class="v">${
-      (S.pre&&S.pre.rank!==undefined)?rankBadge(S.pre.rank,26):"—"}</div></div>
+      (S.pre&&S.pre.rank!==undefined)?rankBadge(S.pre.rank,26):"—"}</div>${rankGapNote()}</div>
     <div class="hud-fan"><div class="k">粉丝</div><div class="v" style="font-size:13px">${fanTier()}<small class="mono"> ${fansText()}</small></div>${fanNextNote()}</div>
       <div><div class="k">热度</div><div class="v" style="font-size:13px">${heatTier()}</div>${heatNote()}</div>
     <div><div class="k">状态</div><div class="v" style="font-size:13px">${
