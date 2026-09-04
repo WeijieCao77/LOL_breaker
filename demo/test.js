@@ -44,6 +44,7 @@ try {
     + "GEAR,SLOTS,COURSES,RELAX,SPEND,screenCreate,startPre,preAct,preNextWeek,acceptOffer,"
     + "render,bracketCard,intlBracketCard,playoffBracketCard,cupLadder,weekDiary,attrCard,tabBar,uiSetNum,uiNum,dimWord,TABS_PRE,TABS_SEASON,dropToStreets,tourMaybe,TAL_PRESETS,"
     + "renewNegotiate,signRenewDeal,renewCollapse,poBrInit,poMyOpp,poCanon,contractSpanText,contractLeftText,txWindowOpen,TOUR_PRE_FULL,TOUR_SEASON_FULL,"
+    + "faRollOffers,takeFaOffer,dropFaOffer,faCard,faResume,"
     + "doTrain,doAction,startMatch,resolveNode,playGame,nextWeek,doOffseason,offNextWeek,prepGo,enterPrep,finishOffseason,OFF_WEEKS,isBenched,benchWeek,"
     + "resolveLocker,ending,cap,rankFull,nowLabel,nowPhase,yearWeek,yearTotal,rankIcon,fanTier,scoutTier,preScore,hasAch,pickClub,power,ageWorld,myTeam,myRoster,leagueBaseline,fanCap,fanFill,fansWan,fansText,fanWeek,addFans,heatTier,fanToNext,"
     + "buyGear,buyCourse,buyRelax,gearBonus,streamIncome,drawBackgrounds,advancePreWeek,capOf,"
@@ -211,6 +212,8 @@ function playOne(opts) {
         else A.acceptRenew();
         continue;
       }
+      // 自由身桌上的邀请：先谈第一家（opts.noOffers 一律回绝）
+      if (S.faOffers && S.faOffers.length && !S.proOffer && !S.tryout && !S.deal) { if (opts.noOffers) A.dropFaOffer(0); else { transfers++; A.takeFaOffer(0); } continue; }
       // 有队来挖：表现好就走人（测试里一律接受，用来量频率）；opts.noOffers 一律回绝（逼出自由身没人签）
       if (S.proOffer) { if (opts.noOffers) { A.dropProOffer(); } else { transfers++; A.takeProOffer(); } continue; }
       if (S.tryout) { const t=S.tryout; if(t.done) A.afterTryout(); else A.resolveTryoutDay(1); continue; }

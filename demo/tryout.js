@@ -192,7 +192,8 @@ function fitTier(tier){
    能被看见的途径：打过的比赛（有数据）、杯赛走得多深、名气。 */
 function exposureScore(){
   const P = S.pre; if(!P) return 0;
-  return Math.min(S.fans, 420) * 0.50          // 名气
+  const pro = S.careerBak ? 120 + Math.min(((S.careerBak.w||0)+(S.careerBak.l||0)), 40) * 2 : 0;   // 前职业：正赛场次本身就是曝光
+  return pro + Math.min(S.fans, 420) * 0.50          // 名气
        + (P.cityCup || 0) * 18                 // 城市赛走到第几轮
        + (P.streamCup || 0) * 24               // 主播杯（邀请制，更受关注）
        + Math.min(P.scoutSeen || 0, 12) * 4;   // 打过多少场正式比赛
@@ -211,6 +212,14 @@ function exposureCap(){
     中游以上在数学上永远够不着，玩家点的「入口太极端」一半就极端在这。） */
 function resumeCap(){
   const P = S.pre; if(!P) return "none";
+  // 回到路人的前职业选手：职业履历就是简历（玩家实锤：世界赛八强的人回到路人后没人来问）
+  const cb = S.careerBak;
+  if(cb){
+    const d = cb.bestIntl||0, t = (cb.titles||[]).length, g = (cb.w||0)+(cb.l||0);
+    if(d >= 3 || t >= 1) return "top";
+    if(d >= 1 || g >= 14) return "mid";
+    return "acad";
+  }
   const cc=(P.cityCup||0), sc=(P.streamCup||0);
   if(cc >= 4 && sc >= 3) return "top";      // 双料冠军：圈子没法装看不见
   if(cc >= 4 || sc >= 3) return "mid";
@@ -221,6 +230,7 @@ function resumeCap(){
    这是「有没有资格被看」的底线，和「能不能通过」无关。 */
 function inviteFloorOk(){
   const P = S.pre; if(!P) return false;
+  if(S.careerBak) return true;   // 打过职业的人不需要再证明「有资格被看」
   const need = TIER_RANK.acad;   // 实力 59.5 等价（原「宗师」门）
   return P.rank >= need || resumeCap() !== "none";
 }
@@ -803,6 +813,7 @@ function rollProOffers(wnd){
   if(S.offerWnd === wk) return;
   S.offerWnd = wk;
   if(wnd === "year") S.offerYear = S.si;   // 老存档兼容
+  if(S.freeAgent){ faRollOffers(wnd); return; }   // 自由身：按履历铺一桌邀请，不是一家一家摇骰子
   const inLDL = (S.homeLeague||"LPL")==="LDL";
   const perf = proPerf() - buyoutDrag();
   // 赛季里攒下的关注度直接折成概率：被盯了一个赛段，注册窗不该毫无动静
@@ -942,9 +953,70 @@ function proOfferCard(){
         :"语言不通。去了也能打，但更衣室里你插不上话——默契会一直上不去，除非补上语言课。"}`:""}</p>
     <div class="row" style="justify-content:center">
       <button class="btn" id="pofgo">${o.direct?"去谈合同 →":"去试训 →"}</button>
-      <button class="btn ghost" id="pofno">留在 ${S.team}</button>
+      <button class="btn ghost" id="pofno">${S.freeAgent?"不去":"留在 "+S.team}</button>
     </div>
     <p class="note">拒绝没有惩罚，但这家今年不会再来。</p></div></div>`;
+}
+/* ---------- 自由身市场（2026-09-06 玩家实锤：世界赛打进八强、被放走后一家来问的都没有，不知不觉就回了路人）----------
+   被放走 / 拒续约 / 买断之后，注册窗一开就按履历铺一桌：今年国际赛走到哪（八强 +1、四强 +2、决赛 +3、冠军 +4）、
+   联赛冠军 +1、表现分 ≥15 +1、粉丝 ≥200 +1，最多五家；履历平平才按老规矩摇一次。
+   一次谈一家（试训 / 谈判没成再看下一家），本周页顶上挂着醒目的自由身卡，窗口还剩几周写清楚。 */
+function faResume(){
+  const c=S.career||{};
+  const depth=(c.intlLog||[]).filter(x=>x.si===S.si).reduce((a,x)=>Math.max(a,x.d||0),0);
+  const lgTitle=((c.lgYears||[]).includes(S.si))?1:0;
+  return {depth,lgTitle};
+}
+function faRollOffers(wnd){
+  const perf=proPerf();
+  const {depth,lgTitle}=faResume();
+  let n=0;
+  if(depth>=5) n+=4; else if(depth>=4) n+=3; else if(depth>=3) n+=2; else if(depth>=2) n+=1;
+  if(lgTitle) n+=1;
+  if(perf>=15) n+=1;
+  if((S.fans||0)>=200) n+=1;
+  if(n===0){ const p=clamp(0.25+perf*0.03,0.05,0.9); if(rnd()<p) n=1; }
+  n=Math.min(n,5);
+  const used=new Set([S.team]), list=[], tiers=["top","mid","low"];
+  const t0=(perf>=19||depth>=4)?0:(perf>=10||depth>=2)?1:2;
+  for(let i=0;i<n;i++){
+    const ti=Math.min(2,t0+Math.floor(i/2));            // 第一家最高档，往后一档一档铺开
+    const abroad=(i>0&&rnd()<0.3)?pickForeign(Math.max(perf,12)):null;
+    const lg=abroad||"LPL";
+    let team=null;
+    for(let k=0;k<8&&(!team||used.has(team));k++) team=pickClub(tiers[ti],lg);
+    if(!team||used.has(team)) continue;
+    used.add(team);
+    list.push({team,tier:tiers[ti],league:lg,perf:Math.round(perf),direct:(perf>=15||depth>=3),buyout:0});
+  }
+  S.faOffers=list; S.faWnd=wnd;
+  if(list.length) pushEvent(`你是自由身，${wnd==="mid"?"季中":"年底"}注册窗一开就有 <b>${list.length} 家</b>俱乐部来问：${list.map(o=>`<b>${o.team}</b>`).join("、")}。<b>本周页上挑一家去谈。</b>`,"big","转会");
+  else { S.offerDry=(S.offerDry||0)+1; pushEvent(`注册窗开了，暂时没有俱乐部来问。<span style="color:var(--ink-3)">窗口还开着——挂牌、主动接触都在「转会」栏。</span>`,"info","转会"); }
+}
+function takeFaOffer(i){
+  const o=(S.faOffers||[])[i]; if(!o||S.proOffer||S.tryout||S.deal) return;
+  S.faOffers.splice(i,1);
+  S.proOffer=o; takeProOffer();
+}
+function dropFaOffer(i){
+  const o=(S.faOffers||[])[i]; if(!o) return;
+  S.faOffers.splice(i,1);
+  pushEvent(`婉拒了 <b>${o.team}</b>。`,"info","转会"); render();
+}
+function faCard(){
+  if(!S.career||!S.freeAgent) return "";
+  const wnd=(typeof txWindowOpen==="function")?txWindowOpen():false;
+  const list=S.faOffers||[];
+  const left=S.off?Math.max(0,S.off.weeks-S.off.week+1):0;
+  return `<div class="card" style="border-left:3px solid var(--red)"><h2>你是自由身<em>${wnd?`${txWindowName()} · 还有 ${left} 周关闭`:"注册窗还没开"}</em></h2>
+    <p class="note" style="margin-top:0">${S.cutReason?`<b>${S.team}</b> 没有续约：${S.cutReason}`:`你没和 <b>${S.team}</b> 续约。`}
+      <b style="color:var(--red)">窗口关了还没签成，就回到路人的日子</b>——履历不清零，但要从试训邀请重新来。</p>
+    ${list.length?`<div class="grid g2">${list.map((o,i)=>`<button class="act" data-fa="${i}" ${(S.proOffer||S.tryout||S.deal)?'disabled style="opacity:.5"':''}>
+        <div class="t">${typeof teamLogo==="function"?teamLogo(o.team,18):""}${o.team} <span class="tag ${o.tier==="top"?"g":""}">${CLUB_TIERS[o.tier].n}${o.league&&o.league!=="LPL"?" · "+o.league:""}</span></div>
+        <div class="d">${o.direct?"看过你的比赛，直接谈合同":"想让你去队里试训几天"}</div></button>`).join("")}</div>
+      <p class="note">一次谈一家：试训 / 谈判没成，再看下一家；谈成签字就走。${wnd?"":"注册窗一开这些队就会递表。"}</p>`
+      :`<p class="note">${wnd?"桌上暂时没有邀请——挂牌、主动接触在「转会」栏，有意向的队会在窗口里递表。":"注册窗还没开，MSI / 世界赛打完才开门。"}</p>`}
+  </div>`;
 }
 /* 接受问询：要么进试训，要么直接谈 */
 function takeProOffer(){
@@ -959,7 +1031,7 @@ function takeProOffer(){
 }
 function dropProOffer(){
   const o = S.proOffer; if(!o) return;
-  pushEvent(`婉拒了 <b>${o.team}</b>。你还想在 <b>${S.team}</b> 把事情做完。`, "info", "转会");
+  pushEvent(S.freeAgent?`婉拒了 <b>${o.team}</b>。`:`婉拒了 <b>${o.team}</b>。你还想在 <b>${S.team}</b> 把事情做完。`, "info", "转会");
   S.proOffer = null; render();
 }
 
@@ -1229,7 +1301,7 @@ function signTransfer(){
   S.trust = {}; if(typeof initTrust==="function") initTrust();
   if(typeof syncTrust==="function") syncTrust();
   if(typeof initRelations==="function") initRelations();   // 新东家：队友关系从头建，别挂一排默认 50
-  S.gotCut = false; S.pendingRenew = null; S.freeAgent = false;   // 签了新约，自由身/被裁状态清掉
+  S.gotCut = false; S.pendingRenew = null; S.freeAgent = false; S.faOffers = null; S.cutReason = null;   // 签了新约，自由身/被裁状态清掉
   addMoney("sign", d.sign);
   S.contract = { years:d.years, left:d.years, salary:d.salary, sign:d.sign,
                  buyout:d.buyout, team:d.team, tier:d.dealTier, grade:d.grade,
@@ -1555,6 +1627,7 @@ function transferPage(){
       太高的话，评级再好对面也可能付不起——续约时可以谈低，或者自己买断。`
       :`这份合同没有违约金条款——想走的时候没人拦得住你。`}</p></div>`;
   const tiers = tierCard();
+  const fa = (typeof faCard==="function") ? faCard() : "";
   /* 收到的意向 */
   const intentRows = intents.length ? intents.map(x=>`<tr>
       <td>${typeof teamLogo==="function"?teamLogo(x.team,18):""}${x.team}${x.asked?'<span class="tag">你去接触的</span>':""}</td>
@@ -1608,7 +1681,7 @@ function transferPage(){
   const rules = `<p class="note" style="margin:4px 2px 0">规则：赛段中可以收意向、可以被接触，但<b>转会只在注册窗生效</b>——
     季中间歇（春→夏）和年底休赛期。LDL 注册的选手走升队通道随时可被母队调上一队。</p>`;
   const scout = (typeof scoutCard==="function")?scoutCard():"";
-  return contract + tiers + scout + intentCard + actions + log + rules;
+  return fa + contract + tiers + scout + intentCard + actions + log + rules;
 }
 
 /* ---------- 职业前的「转会」页（2026-09-02 玩家点名）----------

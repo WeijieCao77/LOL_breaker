@@ -283,6 +283,11 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906f", at:"2026-09-06", items:[
+    "自由身市场（玩家实锤：世界赛八强、被放走后一家来问的都没有，不知不觉就回了路人）：被放走 / 拒续约 / 买断之后，注册窗一开就按履历铺一桌邀请——今年国际赛八强 +1 家、四强 +2、决赛 +3、冠军 +4，联赛冠军、表现分、粉丝各加一家，最多五家，第一家最高档往下铺；履历平平才按老规矩摇一次。本周页顶上挂着醒目的「你是自由身」卡：窗口还剩几周、关了没签就回路人、桌上有哪几家——一次谈一家",
+    "回到路人的前职业选手：试训邀请看职业履历（国际赛四强或拿过冠军＝豪门档，打过正赛＝中游档），不再只看杯赛",
+    "「野路子」这类第一份合同的成就不再在重返职业时误发"
+  ]},
   {v:"v20260906e", at:"2026-09-06", items:[
     "左栏新增「新闻」栏目：电竞周报和生涯大事记搬到这里（玩家点名周报不见了——原来压在本周页最底下）。赛事栏只留赛程、积分榜、对阵图、宿敌和各赛区新闻"
   ]},
@@ -2318,7 +2323,7 @@ function acceptOffer(i){
   // 你自己就是那个「强援」：base 上去了，但五个人要重新磨
   disruptSynergy(1,`<b>${meName()}</b> 加盟`);
   pushEvent(`<b>${meName()}</b> 正式签约 <b>${of.team}</b>（${of.t}）。${back?"重返职业赛场——上一段履历接着算。":"职业生涯从这里开始。"}`,"big","签约");
-  checkAch("sign");
+  if(!back) checkAch("sign");   // 重返职业不是「第一份合同」——野路子那类成就不该再发（玩家实锤）
   startSeason(true);
 }
 
@@ -4309,7 +4314,7 @@ function dropToStreets(mid){
   S.streets=(S.streets||0)+1; S.everCut=true;
   S.team=null; S.homeLeague=null; S.contract=null; S.understudy=null; S.promoted=false;
   S.squad=null; S.trust={}; S.gotCut=false; S.freeAgent=true; S.pendingRenew=null; S.proOffer=null;
-  S.deal=null; S.tryout=null; S.scrim=null; S.promoteDeal=null; S.cutReason=null; S.askedTransfer=false;
+  S.deal=null; S.tryout=null; S.scrim=null; S.promoteDeal=null; S.cutReason=null; S.askedTransfer=false; S.faOffers=null;
   const P=S.pre=S.pre||{rank:0}; P.log=P.log||[];
   P.world=S.world; P.baseline=leagueBaseline(S.world);   // 再签约接的是这个活着的世界，不是重开一份
   P.week=mid?9:1; P.ap=apFor("pre");                    // 季中回落：从年中开始，主播杯和年底窗口都还赶得上
@@ -4335,6 +4340,7 @@ function offPanel(){
   if(S.deal)   return dealCard();
   const nx=SEASONS[S.si+1];
   return `${typeof renewCard==="function"?renewCard():""}${typeof proOfferCard==="function"?proOfferCard():""}
+  ${typeof faCard==="function"?faCard():""}
   <div class="card">
     <h2>${S.off.label||"休赛期"}<em>第 ${S.off.week}/${S.off.weeks} 周 · 剩余行动点 ${S.ap}</em></h2>
     <p class="note">没有比赛要打。${S.off.next==="playoff"
@@ -5813,6 +5819,7 @@ function bind(){
   const _pp=$("prepgo"); if(_pp) _pp.onclick=prepGo;
   const _off=$("offnext"); if(_off) _off.onclick=offNextWeek;
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;
+  st.querySelectorAll("[data-fa]").forEach(b=>b.onclick=()=>{ if(typeof takeFaOffer==="function") takeFaOffer(+b.dataset.fa); });
   const _pn=$("pofno"); if(_pn) _pn.onclick=dropProOffer;
   const _rwy=$("rnwyes"); if(_rwy) _rwy.onclick=()=>{ if(typeof acceptRenew==="function") acceptRenew(); };
   const _rwt=$("rnwtalk"); if(_rwt) _rwt.onclick=()=>{ if(typeof renewNegotiate==="function") renewNegotiate(); };
