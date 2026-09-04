@@ -20,6 +20,9 @@
   --gold:#C9A961; --gold-hi:#F0E6D2; --gold-dim:#8A7440;
   --cyan:#4FBEDA; --cyan-dim:#1E5E75;
   --red:#C4535F;
+  /* 晨光橙（2026-09-05 界面重做第一期）：整套界面里唯一表示「正在发生 / 该你了」的颜色——
+     只用在本周主行动按钮、HUD 的「现在」层、倒计时。金留给已经拿到的东西。 */
+  --dawn:#E9A15A; --dawn-dim:#8C5A2A;
   --ink:#E8F0F6; --ink-2:#9DB8C9; --ink-3:#5E8199;
 
   /* 五个功能域的身份色。
@@ -93,22 +96,42 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
   color:var(--gold-hi);text-shadow:0 0 26px rgba(201,169,97,.28)}
 .sub{color:var(--ink-2);margin:0;max-width:62ch;font-size:14.5px}
 
-/* ---- HUD ---- */
-/* 网格而不是 flex-wrap：两行格子的竖线必须对齐（玩家实锤「上下不一致宽度」）。
-   赛季 HUD 12 格 = 7 列 × 2 行（「现在」「段位」各占两列）；职业前 HUD 加 .pre = 6 列 × 2 行。 */
-.hud{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line);margin-bottom:20px;
-  border:1px solid var(--line);
+/* ---- HUD：三层（2026-09-05 界面重做第一期）----
+   上：你是谁；中：现在（阶段大字 + 全页唯一的晨光橙主按钮）；下：资源数，等宽小格、竖线对齐。 */
+.hud{display:block;margin-bottom:20px;border:1px solid var(--line);
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
   clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px)}
-.hud.pre{grid-template-columns:repeat(6,minmax(0,1fr))}
-.hud>div{background:linear-gradient(180deg,var(--panel-2),var(--panel));padding:10px 15px;min-width:0}
-.hud>.hud-now,.hud>.hud-rank,.hud>.hud-next{grid-column:span 2}
+.h-id{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding:10px 16px 9px;border-bottom:1px solid var(--line)}
+.h-id .who{font-size:17px;font-weight:700;color:var(--gold-hi)}
+.h-id .who small{font-size:12px;color:var(--ink-2);font-weight:400;margin-left:8px}
+.h-id .team{margin-left:auto;font-size:13px;color:var(--ink-2)}
+.h-id .team b{color:var(--ink)}
+.h-now{display:flex;align-items:center;gap:16px;padding:11px 16px;border-bottom:1px solid var(--line);
+  background:linear-gradient(90deg,rgba(233,161,90,.10),transparent 60%)}
+.h-now .ph{flex:none;font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;
+  font-size:10.5px;letter-spacing:.22em;color:var(--dawn)}
+.h-now .big{min-width:0;font-size:21px;font-weight:800;color:var(--gold-hi);letter-spacing:.03em;line-height:1.2}
+.h-now .big small{display:block;font-size:12px;color:var(--ink-2);font-weight:400;letter-spacing:0;margin-top:2px}
+.h-now.urgent{background:linear-gradient(90deg,rgba(196,83,95,.18),transparent 60%)}
+.h-now.urgent .ph{color:var(--red)}
+.h-cta{margin-left:auto;flex:none;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  background:linear-gradient(180deg,#F2B978,var(--dawn));color:#071626;border:none;
+  font-weight:800;font-size:14px;letter-spacing:.06em;padding:10px 18px;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+  box-shadow:0 0 24px -6px rgba(233,161,90,.8)}
+.h-cta:hover{filter:brightness(1.06)}
+.h-cta[hidden]{display:none}
+.h-res{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:var(--line)}
+.h-res.pre{grid-template-columns:repeat(7,minmax(0,1fr))}
+.h-res>div{background:linear-gradient(180deg,var(--panel),rgba(6,21,32,.85));padding:8px 12px;min-width:0}
+.h-res>.h-next{grid-column:span 2}
+.h-res>.h-next .v{white-space:normal}
 .hud .k{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
   font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
-.hud .v{font-size:16px;font-weight:650;margin-top:1px;color:var(--gold-hi)}
-.hud .v small{font-size:11px;color:var(--ink-3);font-weight:400}
-/* 段位格：徽章横排、门槛说明一行放得下（玩家实锤：原来被挤成一条竖的） */
+.hud .v{font-size:15px;font-weight:650;margin-top:2px;color:var(--gold-hi);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud .v small{font-size:10.5px;color:var(--ink-3);font-weight:400}
+.hud .v.cy{color:var(--cyan)}
 .hud .rankbadge{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.hud .gapnote{white-space:normal}
 /* 名气格下面的「还差几次直播」——档位名只说了你在哪，这行说还有多远 */
 .fnext{margin-top:5px;font-size:10px;line-height:1.5;color:var(--ink-3);letter-spacing:.02em}
 .fnext b{color:var(--gold);font-weight:650;font-variant-numeric:tabular-nums}
@@ -118,8 +141,15 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 /* 手机上 8 个格子按 96px 的下限只能排 3 列，折成 4 行占掉 333px——
    一块「你是谁、现在第几周」的信息不值这个价。收紧到 4 列 2 行。 */
 @media(max-width:560px){
-  .hud,.hud.pre{grid-template-columns:repeat(4,minmax(0,1fr))}
-  .hud>div{padding:6px 9px}
+  .h-id{padding:8px 10px;gap:8px}
+  .h-id .who{font-size:15px}
+  .h-id .team{margin-left:0;flex-basis:100%;font-size:12px}
+  .h-now{padding:9px 10px;gap:10px;flex-wrap:wrap}
+  .h-now .big{font-size:17px}
+  .h-cta{margin-left:0;flex-basis:100%;max-width:none;text-align:center;padding:9px 12px}
+  .h-res,.h-res.pre{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .h-res>.h-next{grid-column:span 3}
+  .h-res>div{padding:6px 8px}
   .hud .k{font-size:8.5px;letter-spacing:.1em}
   .hud .v{font-size:13.5px;line-height:1.35}
   .hud .v small{font-size:10px}
@@ -416,6 +446,13 @@ tr.cut td{border-bottom:2px solid var(--gold-dim)}
 .btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--line-hot);box-shadow:none}
 .btn.ghost:hover{border-color:var(--gold);background:rgba(201,169,97,.1)}
 .btn.sm{padding:8px 16px;font-size:13.5px}
+/* 主行动按钮：全页唯一的晨光橙（推进周 / 备战 / 开赛 / 休赛期下一周 / 职业前下一周） */
+.btn.primary{background:linear-gradient(180deg,#F2B978,var(--dawn));color:#071626;box-shadow:0 0 26px -6px rgba(233,161,90,.85)}
+.btn.primary:hover:not(:disabled){background:linear-gradient(180deg,#F7C689,#EAA65F)}
+/* 换标签：160ms 交叉淡入 */
+#stage.sw{animation:sw-in .16s ease-out}
+@keyframes sw-in{from{opacity:.35;transform:translateY(3px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){#stage.sw{animation:none}}
 .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:14px}
 input[type=text]{background:rgba(6,21,32,.7);border:1px solid var(--line);
   padding:11px 14px;color:var(--gold-hi);font-size:15px;width:230px;
@@ -3767,7 +3804,7 @@ function viewSeason(){
     </div>
     ${squadActs()}
     <div class="row">
-      <button class="btn" id="play" ${S.ap>0?'disabled':''}>
+      <button class="btn primary" id="play" ${S.ap>0?'disabled':''}>
         ${S.ap>0?`还剩 ${S.ap} 个行动点`:(benched?`替补席观战 · ${SPLITS[S.split||0]}第 ${S.week}/${WEEKS} 周 →`:`打 ${SPLITS[S.split||0]}第 ${S.week}/${WEEKS} 周 · vs ${oppName} →`)}</button>
       ${typeof quickBtn==="function"?quickBtn():""}
       <button class="btn ghost sm" id="auto">自动推进到下一件事</button>
@@ -4287,7 +4324,7 @@ function viewMatch(){
   // 原来拆解卡排在「继续」按钮底下，玩家点了继续就再也看不到了。
   if(m.done&&m.pmSeen&&m.attr&&typeof postMatchCard==="function"){
     return `${postMatchCard()}
-    <div class="row"><button class="btn" id="next">继续 →</button></div>`;
+    <div class="row"><button class="btn primary" id="next">继续 →</button></div>`;
   }
   const my0=power(myRoster(),S.fatigue,sea.fav), vf=versionFit(), my=my0+vf, op=power(m.opp.players,0,sea.fav);   // 版本加成单独标，不揉进「战力」
   return `<div class="card">
@@ -4537,7 +4574,7 @@ function prepPanel(){
         <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${typeof squadActs==="function"?squadActs():""}
-    <div class="row"><button class="btn" id="prepgo">上场 →</button>
+    <div class="row"><button class="btn primary" id="prepgo">上场 →</button>
       ${typeof quickBtn==="function"?quickBtn():""}</div>
     <p class="note">行动点没用完也可以直接上场。</p>
   </div>`;
@@ -4687,7 +4724,7 @@ function viewOffseason(){
         <div class="vn mono"><b>${v.toFixed(1)}</b>${Math.abs(g)>=0.05?` <span class="${g>0?'up':'dn'}">${g>0?'+':''}${g.toFixed(1)}</span>`:""}</div></div>`}).join("")}
     </div>
     <div class="row">
-      <button class="btn" id="off">${last?"生涯总结 →":`进入休赛期 · ${SEASONS[S.si+1].tag} 备战 →`}</button>
+      <button class="btn primary" id="off">${last?"生涯总结 →":`进入休赛期 · ${SEASONS[S.si+1].tag} 备战 →`}</button>
     </div>
   </div>
   ${eventsCard()}`;
@@ -4919,7 +4956,7 @@ function offPanel(){
       // 挂牌/买断/接触都住进「转会」栏了——这里只提醒窗口开着
       return `<p class="note" style="margin-top:14px"><b style="color:var(--gold)">${txWindowName()}开着。</b>
         挂牌、买断、主动接触都在<b>「转会」栏</b>——想动就趁现在。</p>`;})()}
-    <div class="row"><button class="btn" id="offnext" ${S.ap>0?'disabled':''}>
+    <div class="row"><button class="btn primary" id="offnext" ${S.ap>0?'disabled':''}>
       ${S.ap>0?`还剩 ${S.ap} 个行动点`
         :(S.off.week>=S.off.weeks
             ?(S.off.next==="summer"?`开始夏季赛 →`
@@ -5302,7 +5339,7 @@ function actPanelPre(){
       return due.length?`<p class="note" style="color:var(--gold);margin-top:14px">
         <b>${CUPS[due[0].kind].name}</b> <b>${cupRoundName(due[0].kind,due[0].round)}</b>就在本周，你还没上场——
         直接进入下一周会按弃权处理。</p>`:"";})()}
-    <div class="row"><button class="btn" id="prenext" ${P.ap>0?'disabled':''}>
+    <div class="row"><button class="btn primary" id="prenext" ${P.ap>0?'disabled':''}>
       ${P.ap>0?`还剩 ${P.ap} 个行动点`
         :((()=>{const last=P.week>=PRE_WEEKS;   // 最后一周的下一步不是「第 21/20 周」，是关窗结算（玩家点名）
           const to=last?"转会窗口关闭 · 年度结算":`赛季前 第 ${P.week+1}/${PRE_WEEKS} 周`;
@@ -15073,12 +15110,98 @@ function matchLogCard(){
 }
 
 /* ================= 渲染 ================= */
+/* ---------- HUD：三层（2026-09-05 界面重做第一期，设计稿「黎明前的战术板」）----------
+   上：你是谁（ID · 位置 · 年龄 | 队伍 · 本季）；
+   中：现在（赛季标签 · 阶段大字 · 细节 | 主行动按钮——全页唯一的晨光橙，是本页 .btn.primary 的镜像）；
+   下：资源（赛季六格：冠军/段位/粉丝/资金/体能/状态；职业前七格：段位/粉丝/热度/资金/体能/下一节点×2）。
+   数字换周时从旧值滚到新值（400ms，尊重 reduced-motion）。段位门槛那一长串说明只留在「我的」页。 */
+var _hudPrev={}, _lastTab;
+function hudNum(k,v,suffix,cls){
+  return `<div><div class="k">${k}</div><div class="v mono ${cls||""}"><span class="num" data-k="${k}" data-count="${v}">${v}</span>${suffix?`<small>${suffix}</small>`:""}</div></div>`;
+}
 function hud(){
   const h=$("hud");
   if(!S||S.step==="create"){h.classList.add("hide");return;}
   h.classList.remove("hide");
   const isPre=(S.step==="pre"||S.step==="offer"||(!S.career&&S.pre));
-  if(isPre) h.classList.add("pre"); else h.classList.remove("pre");   // 职业前 6 列 / 赛季 7 列，两行格子的竖线对齐
+  const np=nowPhase();
+  const idLine=`<div class="h-id"><div class="who">${meName()}<small>${POSN[S.pos]||""} · ${S.age} 岁</small></div>
+    <div class="team">${isPre?`还没有战队 · 先打上分、攒人气、被人看见`:`效力 <b>${S.team}</b> · 本季 <span class="mono">${S.record?S.record.w:0}–${S.record?S.record.l:0}</span>`}</div></div>`;
+  const nowLine=`<div class="h-now ${np.urgent?'urgent':''}"><div class="ph">${np.tag}</div>
+    <div class="big">${np.phase}${np.detail?`<small>${np.detail}</small>`:""}</div>
+    <button class="h-cta" id="hudcta" hidden></button></div>`;
+  let res;
+  if(isPre){
+    const n=(typeof nextMilestone==="function")?nextMilestone():null;
+    let nx="—";
+    if(n){
+      const d=Math.max(0,n.w-S.pre.week), shut=!n.dateOnly&&!n.need();
+      nx=`${n.name}<small> 第 ${n.w} 周${d===0?"（就是本周）":` · 还有 ${d} 周`}${
+        shut?`<span style="color:var(--red)"> · ${n.vague?(d===0?"请柬没来":"邀请制"):(d===0?"未达门槛":"门槛未达")}</span>`:""}</small>`;
+    }
+    res=`<div class="h-res pre">
+      <div><div class="k">段位</div><div class="v">${rankBadge(S.pre.rank,20)}</div></div>
+      <div><div class="k">粉丝</div><div class="v">${fanTier()}<small> ${fansText()}</small></div></div>
+      <div><div class="k">热度</div><div class="v">${heatTier()}</div></div>
+      ${hudNum("资金",Math.round(S.money),"万")}
+      ${hudNum("体能",100-Math.round(S.fatigue),"/100","cy")}
+      <div class="h-next"><div class="k">下一节点</div><div class="v">${nx}</div></div></div>`;
+  }else{
+    res=`<div class="h-res">
+      ${hudNum("冠军",typeof titleCount==="function"?titleCount():S.career.titles.length,"")}
+      <div><div class="k">段位</div><div class="v">${(S.pre&&S.pre.rank!==undefined)?rankBadge(S.pre.rank,20):"—"}</div></div>
+      <div><div class="k">粉丝</div><div class="v">${fanTier()}<small> ${fansText()}</small></div></div>
+      ${hudNum("资金",Math.round(S.money),"万")}
+      ${hudNum("体能",100-Math.round(S.fatigue),"/100","cy")}
+      <div><div class="k">状态</div><div class="v">${typeof formTier==="function"&&S.form!==undefined?formTier(myForm()).n:"—"}</div></div></div>`;
+  }
+  h.innerHTML=idLine+nowLine+res;
+  hudCount(h);
+}
+/* 数字滚动：同一个格上一次是多少、这次是多少，400ms 滚过去 */
+function hudCount(h){
+  try{
+    if(!h.querySelectorAll) return;
+    const rm=(typeof matchMedia==="function")&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+    h.querySelectorAll(".num[data-count]").forEach(el=>{
+      const k=el.dataset.k, to=+el.dataset.count, from=_hudPrev[k];
+      _hudPrev[k]=to;
+      if(rm||from===undefined||from===to||typeof requestAnimationFrame!=="function") return;
+      const t0=performance.now(), dur=400;
+      const step=t=>{ const p=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-p,3);
+        el.textContent=Math.round(from+(to-from)*e); if(p<1) requestAnimationFrame(step); else el.textContent=to; };
+      requestAnimationFrame(step);
+    });
+  }catch(e){}
+}
+/* HUD 里的主行动按钮 = 本页那颗 .btn.primary 的镜像：文字一样、点它等于点那颗；本页没有就不显示 */
+function hudCta(){
+  try{
+    const b=document.getElementById("hudcta"); if(!b) return;
+    const st=document.getElementById("stage");
+    const p=(st&&st.querySelector)?st.querySelector(".btn.primary:not(:disabled)"):null;
+    if(!p){ b.hidden=true; return; }
+    b.textContent=(p.textContent||"").trim(); b.hidden=false;
+    b.onclick=(e)=>{ e.stopPropagation(); p.click(); };
+  }catch(e){}
+}
+/* 换标签：给 #stage 一次 160ms 的淡入，不再「啪」一下重画 */
+function stageSwitchFx(){
+  try{
+    const st=document.getElementById("stage"); if(!st||!st.classList) return;
+    const list=(S.step==="pre"||S.step==="offer")?TABS_PRE:TABS_SEASON;
+    const key=S.step+"|"+((typeof curTab==="function")?curTab(list):"");
+    if(_lastTab!==undefined&&_lastTab!==key){ st.classList.remove("sw"); void st.offsetWidth; st.classList.add("sw"); }
+    _lastTab=key;
+  }catch(e){}
+}
+/* 旧版十二格 HUD（第一期重做后不再调用，第二期清理时删） */
+function hudLegacy(){
+  const h=$("hud");
+  if(!S||S.step==="create"){h.classList.add("hide");return;}
+  h.classList.remove("hide");
+  const isPre=(S.step==="pre"||S.step==="offer"||(!S.career&&S.pre));
+  if(isPre) h.classList.add("pre"); else h.classList.remove("pre");
   if(isPre){
     h.innerHTML=`
       <div><div class="k">选手</div><div class="v">${meName()} <small>${POSN[S.pos]}</small></div></div>
@@ -15196,6 +15319,8 @@ function render(){
     + (typeof streamOfferCard==="function"?streamOfferCard():"")
     + (typeof confirmCard==="function"?confirmCard():"");
   if(_st.setAttribute) _st.setAttribute("data-zone", curZone());
+  if(typeof hudCta==="function") hudCta();               // HUD 主按钮镜像本页的 .btn.primary
+  if(typeof stageSwitchFx==="function") stageSwitchFx(); // 换标签 160ms 淡入
   /* 大标题只在创建页和结局页铺开。
      进了游戏之后它每一屏都在重复占 237px，而首屏总共才 900px——
      收成一条窄横幅，把地方让给内容。 */

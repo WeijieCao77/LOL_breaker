@@ -7,6 +7,9 @@
   --gold:#C9A961; --gold-hi:#F0E6D2; --gold-dim:#8A7440;
   --cyan:#4FBEDA; --cyan-dim:#1E5E75;
   --red:#C4535F;
+  /* 晨光橙（2026-09-05 界面重做第一期）：整套界面里唯一表示「正在发生 / 该你了」的颜色——
+     只用在本周主行动按钮、HUD 的「现在」层、倒计时。金留给已经拿到的东西。 */
+  --dawn:#E9A15A; --dawn-dim:#8C5A2A;
   --ink:#E8F0F6; --ink-2:#9DB8C9; --ink-3:#5E8199;
 
   /* 五个功能域的身份色。
@@ -80,22 +83,42 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
   color:var(--gold-hi);text-shadow:0 0 26px rgba(201,169,97,.28)}
 .sub{color:var(--ink-2);margin:0;max-width:62ch;font-size:14.5px}
 
-/* ---- HUD ---- */
-/* 网格而不是 flex-wrap：两行格子的竖线必须对齐（玩家实锤「上下不一致宽度」）。
-   赛季 HUD 12 格 = 7 列 × 2 行（「现在」「段位」各占两列）；职业前 HUD 加 .pre = 6 列 × 2 行。 */
-.hud{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line);margin-bottom:20px;
-  border:1px solid var(--line);
+/* ---- HUD：三层（2026-09-05 界面重做第一期）----
+   上：你是谁；中：现在（阶段大字 + 全页唯一的晨光橙主按钮）；下：资源数，等宽小格、竖线对齐。 */
+.hud{display:block;margin-bottom:20px;border:1px solid var(--line);
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
   clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px)}
-.hud.pre{grid-template-columns:repeat(6,minmax(0,1fr))}
-.hud>div{background:linear-gradient(180deg,var(--panel-2),var(--panel));padding:10px 15px;min-width:0}
-.hud>.hud-now,.hud>.hud-rank,.hud>.hud-next{grid-column:span 2}
+.h-id{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding:10px 16px 9px;border-bottom:1px solid var(--line)}
+.h-id .who{font-size:17px;font-weight:700;color:var(--gold-hi)}
+.h-id .who small{font-size:12px;color:var(--ink-2);font-weight:400;margin-left:8px}
+.h-id .team{margin-left:auto;font-size:13px;color:var(--ink-2)}
+.h-id .team b{color:var(--ink)}
+.h-now{display:flex;align-items:center;gap:16px;padding:11px 16px;border-bottom:1px solid var(--line);
+  background:linear-gradient(90deg,rgba(233,161,90,.10),transparent 60%)}
+.h-now .ph{flex:none;font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;
+  font-size:10.5px;letter-spacing:.22em;color:var(--dawn)}
+.h-now .big{min-width:0;font-size:21px;font-weight:800;color:var(--gold-hi);letter-spacing:.03em;line-height:1.2}
+.h-now .big small{display:block;font-size:12px;color:var(--ink-2);font-weight:400;letter-spacing:0;margin-top:2px}
+.h-now.urgent{background:linear-gradient(90deg,rgba(196,83,95,.18),transparent 60%)}
+.h-now.urgent .ph{color:var(--red)}
+.h-cta{margin-left:auto;flex:none;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  background:linear-gradient(180deg,#F2B978,var(--dawn));color:#071626;border:none;
+  font-weight:800;font-size:14px;letter-spacing:.06em;padding:10px 18px;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+  box-shadow:0 0 24px -6px rgba(233,161,90,.8)}
+.h-cta:hover{filter:brightness(1.06)}
+.h-cta[hidden]{display:none}
+.h-res{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:var(--line)}
+.h-res.pre{grid-template-columns:repeat(7,minmax(0,1fr))}
+.h-res>div{background:linear-gradient(180deg,var(--panel),rgba(6,21,32,.85));padding:8px 12px;min-width:0}
+.h-res>.h-next{grid-column:span 2}
+.h-res>.h-next .v{white-space:normal}
 .hud .k{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
   font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
-.hud .v{font-size:16px;font-weight:650;margin-top:1px;color:var(--gold-hi)}
-.hud .v small{font-size:11px;color:var(--ink-3);font-weight:400}
-/* 段位格：徽章横排、门槛说明一行放得下（玩家实锤：原来被挤成一条竖的） */
+.hud .v{font-size:15px;font-weight:650;margin-top:2px;color:var(--gold-hi);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud .v small{font-size:10.5px;color:var(--ink-3);font-weight:400}
+.hud .v.cy{color:var(--cyan)}
 .hud .rankbadge{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.hud .gapnote{white-space:normal}
 /* 名气格下面的「还差几次直播」——档位名只说了你在哪，这行说还有多远 */
 .fnext{margin-top:5px;font-size:10px;line-height:1.5;color:var(--ink-3);letter-spacing:.02em}
 .fnext b{color:var(--gold);font-weight:650;font-variant-numeric:tabular-nums}
@@ -105,8 +128,15 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 /* 手机上 8 个格子按 96px 的下限只能排 3 列，折成 4 行占掉 333px——
    一块「你是谁、现在第几周」的信息不值这个价。收紧到 4 列 2 行。 */
 @media(max-width:560px){
-  .hud,.hud.pre{grid-template-columns:repeat(4,minmax(0,1fr))}
-  .hud>div{padding:6px 9px}
+  .h-id{padding:8px 10px;gap:8px}
+  .h-id .who{font-size:15px}
+  .h-id .team{margin-left:0;flex-basis:100%;font-size:12px}
+  .h-now{padding:9px 10px;gap:10px;flex-wrap:wrap}
+  .h-now .big{font-size:17px}
+  .h-cta{margin-left:0;flex-basis:100%;max-width:none;text-align:center;padding:9px 12px}
+  .h-res,.h-res.pre{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .h-res>.h-next{grid-column:span 3}
+  .h-res>div{padding:6px 8px}
   .hud .k{font-size:8.5px;letter-spacing:.1em}
   .hud .v{font-size:13.5px;line-height:1.35}
   .hud .v small{font-size:10px}
@@ -403,6 +433,13 @@ tr.cut td{border-bottom:2px solid var(--gold-dim)}
 .btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--line-hot);box-shadow:none}
 .btn.ghost:hover{border-color:var(--gold);background:rgba(201,169,97,.1)}
 .btn.sm{padding:8px 16px;font-size:13.5px}
+/* 主行动按钮：全页唯一的晨光橙（推进周 / 备战 / 开赛 / 休赛期下一周 / 职业前下一周） */
+.btn.primary{background:linear-gradient(180deg,#F2B978,var(--dawn));color:#071626;box-shadow:0 0 26px -6px rgba(233,161,90,.85)}
+.btn.primary:hover:not(:disabled){background:linear-gradient(180deg,#F7C689,#EAA65F)}
+/* 换标签：160ms 交叉淡入 */
+#stage.sw{animation:sw-in .16s ease-out}
+@keyframes sw-in{from{opacity:.35;transform:translateY(3px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){#stage.sw{animation:none}}
 .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:14px}
 input[type=text]{background:rgba(6,21,32,.7);border:1px solid var(--line);
   padding:11px 14px;color:var(--gold-hi);font-size:15px;width:230px;
