@@ -1000,6 +1000,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260905k", at:"2026-09-05", items:[
+    "赛程预告里的「综合实力」改成和队伍页同一口径的「全队战力」（玩家实锤：预告 67.8、队伍页 76.1——预告那个漏了归一到实力尺，还沿用旧名字）"
+  ]},
   {v:"v20260905j", at:"2026-09-05", items:[
     "升队通道的「你」和队伍页的「你」现在是同一个数（玩家实锤 65.3 vs 66：升队通道没算装备）；口径说明换成新尺（LPL 均值、国服前 100 / 前 10 的门、明星 85+）",
     "队伍页把三个数标清楚（玩家点名「莫名其妙的 76」）：「五人实力加权」是五个人按比赛权重加权的数，不是你的；乘上默契/战术/士气/指挥/体能五个团队系数才是「全队战力」——它和个人实力不是一把尺，一支队能打出比五个人各自更高的数就靠这些系数"
@@ -4999,8 +5002,8 @@ function viewPre(){
          <div class="at"><div class="lb">战术</div><div class="track"><div class="fill" style="width:46%"></div></div><div class="vn mono">准备得充不充分</div></div>
          <div class="at"><div class="lb">士气</div><div class="track"><div class="fill" style="width:50%"></div></div><div class="vn mono">更衣室气氛</div></div>
        </div>
-       <p class="note" style="margin-top:14px">综合实力 = 基础战力 × 默契 × 战术 × 士气 × 指挥 × 体能。<br>
-         你的个人数值只是基础战力的一部分——五个人怎么变成一支队，是另一半。</p>`)
+       <p class="note" style="margin-top:14px">全队战力 = 五人实力加权 × 默契 × 战术 × 士气 × 指挥 × 体能。<br>
+         你的个人数值只是五人加权的一部分——五个人怎么变成一支队，是另一半。</p>`)
     +lockedCard("队友","签约职业战队后解锁完整版。",
       `<p class="note" style="margin:0">每个队友对你有独立的信任度，会因为你的选择涨落，也会影响全队发挥。</p>`):""}
   ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
@@ -14204,10 +14207,10 @@ function nextMatchCard(){
   return `<div class="card"><h2>下一场<em>${sea.tag} 第 ${S.week} 周 · BO3</em></h2>
     <div class="next">
       <div class="sd"><div class="nm">${teamLogo(S.team,28)}${S.team}${formBar(S.team)}</div>
-        <div class="pw">综合实力 <b>${myPw.toFixed(1)}</b></div></div>
+        <div class="pw">全队战力 <b>${pwShow(myPw).toFixed(1)}</b></div></div>
       <div class="mid">VS</div>
       <div class="sd"><div class="nm">${teamLogo(on,28)}${on}${formBar(on)}</div>
-        <div class="pw">综合实力 <b>${opPw.toFixed(1)}</b></div></div>
+        <div class="pw">全队战力 <b>${pwShow(opPw).toFixed(1)}</b></div></div>
     </div>
     <div class="oppinfo">
       <span class="chipx">对面战绩 <b>${st.w}−${st.l}</b></span>
