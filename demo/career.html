@@ -5119,18 +5119,48 @@ function careerPoster(){
     :`<div class="tp none" style="--i:0"><div class="tp-ic">—</div><div class="tp-n">无冠</div><div class="tp-y">${
         C.bestIntl?`国际赛最远走到${INTL_DEPTH_N[C.bestIntl]||""}`:(C.best&&C.best<99)?`常规赛最好第 ${C.best} 名`:"那扇门没有为你开"}</div></div>`;
   const log=C.log||[], il=C.intlLog||[];
+  /* 逐赛段轨迹（C.log）是 2026-09-05 才开始记的。老存档没有它，不能把那几年写成「未签约」
+     （玩家实锤：拿了六个冠军的档，S12–S15 全是未签约）。没记录的年份用手头的账倒推：
+     冠军表给成绩、荣誉表/转会记录给东家；只有第一份职业合同之前的年份才是真「未签约」。 */
+  const tagSi=s=>{ const m=String(s||"").match(/S(\d\d)/); return m?(+m[1]-12):-1; };
+  const allT=own.map(t=>({t,ring:false})).concat(ring.map(t=>({t,ring:true})));
+  const tx=(S.txLog||[]);
+  const known=[].concat(log.map(x=>x.si), allT.map(x=>tagSi(x.t)), tx.map(x=>tagSi(x.s))).filter(v=>v>=0);
+  const firstPro=known.length?Math.min(...known):(S.career?S.si:99);
+  const teamFromTx=si=>{
+    for(const x of tx.filter(x=>tagSi(x.s)===si).slice().reverse()){
+      const t=String(x.text||"");
+      let m=t.match(/→\s*<b>([^<]+)<\/b>/)||t.match(/与\s*([^\s<]+?)\s*续约/)||t.match(/签到了\s*<b>([^<]+)<\/b>/)||t.match(/加盟\s*<b>([^<]+)<\/b>/);
+      if(m) return m[1];
+    }
+    return null;
+  };
+  let prevTeam=null;   // 没记录又没转会的年份，沿用上一年的东家
   const years=SEASONS.map((sea,si)=>{
     const rows=log.filter(x=>x.si===si);
-    const team=rows.length?rows[rows.length-1].team:(S.career&&si===S.si?S.team:null);
-    const res=rows.map(r=>`${SPLITS[r.split]?SPLITS[r.split][0]:""}${
+    const H=S.honors||{};
+    let team=rows.length?rows[rows.length-1].team:null;
+    if(!team&&(C.msiYears||[]).includes(si)&&H.msi&&H.msi[si]) team=H.msi[si];
+    if(!team&&(C.worldsYears||[]).includes(si)&&H.worlds&&H.worlds[si]) team=H.worlds[si];
+    if(!team) team=teamFromTx(si);
+    if(!team&&S.career&&si===S.si) team=S.team;
+    if(!team&&prevTeam&&si>=firstPro&&!tx.some(x=>tagSi(x.s)===si)) team=prevTeam;
+    if(team) prevTeam=team;
+    let res=rows.map(r=>`${SPLITS[r.split]?SPLITS[r.split][0]:""}${
       r.result==="champion"?"冠":r.result===3?"亚":r.result===2?"四强":r.seed>6?`第${r.seed}`:"季后赛"}`).join(" · ");
+    if(!rows.length){   // 没有逐段记录：用当年的冠军顶上
+      const tt=allT.filter(x=>tagSi(x.t)===si).map(x=>x.t.replace(/^S\d\d\s*/,"")+"冠军"+(x.ring?"（随队）":""));
+      res=tt.join(" · ");
+    }
     const best={}; il.filter(x=>x.si===si).forEach(x=>{ best[x.type]=Math.max(best[x.type]||0,x.d); });
     const it=Object.entries(best).map(([t,d])=>`${t==="msi"?"MSI":"世界赛"}${INTL_DEPTH_N[d]||""}`).join(" · ");
     const won=(C.lgYears||[]).includes(si)||(C.msiYears||[]).includes(si)||(C.worldsYears||[]).includes(si);
+    const pre=si<firstPro;   // 第一份职业合同之前
     return `<div class="yr${won?' won':''}" style="--i:${si}">
       <div class="yr-t">${sea.tag}<small>${sea.y}</small></div>
-      <div class="yr-team">${team?`${typeof teamLogo==="function"?teamLogo(team,16):""}<span>${team}</span>`:`<span class="dim">未签约</span>`}</div>
-      <div class="yr-r">${res||(team?"—":"")}</div>
+      <div class="yr-team">${team?`${typeof teamLogo==="function"?teamLogo(team,16):""}<span>${team}</span>`
+        :pre?`<span class="dim">未签约</span>`:`<span class="dim">职业中 · 队伍未记录</span>`}</div>
+      <div class="yr-r">${res||(pre?"":"—")}</div>
       ${it?`<div class="yr-i">${it}</div>`:""}</div>`;
   }).join("");
   const stats=[
