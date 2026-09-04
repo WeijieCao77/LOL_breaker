@@ -284,6 +284,8 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
   {v:"v20260905p", at:"2026-09-05", items:[
+    "游戏更新提示（玩家点名，照 vctgames）：页面开着时新版本上线，右上角弹「游戏更新了 → 刷新 / 稍后」，刷新前自动存档；「稍后」这一版不再提示",
+    "「支持作者」正式接上爱发电（ifdian.net/a/poxiao_lol）：右下角 ♥、页脚入口、首次进入提示一次、浮窗里有二维码和跳转按钮",
     "只要是比赛就有赛后拆解（玩家点名）：主播杯 / 城市争霸赛打完先看拆解再「继续」——赛事战力对比、个人底子 / 车队水位 / 默契 / 战术 / 士气 / 备战各占多少、临场每个节点的成功率与结果、赢面高却输的那局怪谁、明天练什么；训练赛对位结束多了「对位拆解」——每局选了什么打法、吃哪一维、你和他各多少、成功率与结果，五维并排比一遍，说清哪几维该拿去打、哪几维别碰",
     "新增支持作者浮窗：首次进入会温和提示一次，明确游戏永久免费、不卖数值与抽卡；可扫码或跳转爱发电，点「不用了，别再提示」后不再自动出现，右下角爱心仍可随时打开",
     "职业前也有「一键安排」了（玩家点名：原来只在赛季里有）：累了先休息，实力压得住分段就打排位冲分、和补短板交替，剩 1 点用排位/看录像/休息收尾；不接代练、不开直播、不追瓶颈",
@@ -538,8 +540,8 @@ const GAME_VER=CHANGELOG[0].v+" · 回声";
 /* 支持作者（爱发电）：填上主页链接后，会出现右下角 ♥、页脚入口，并在每次浏览器会话首次进入时提示一次；
    玩家点「不用了，别再提示」后停止自动弹出，但仍可点 ♥ 主动打开。
    SUPPORT_QR 可选：爱发电主页二维码图的 data URI（站点 CSP 只放行 self/data:，外链图不显示）。 */
-const SUPPORT_URL="";
-const SUPPORT_QR="";
+const SUPPORT_URL="https://ifdian.net/a/poxiao_lol";   // 玩家 2026-09-05 给的爱发电主页
+const SUPPORT_QR="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQgAAAEIAQMAAACZOPi8AAAABlBMVEUhHxv///8MgZmDAAABEUlEQVR42u2ZwQ7DMAhDrf3/PzOtAQOTpt73mh5Co5wssA1R3C09N9g3dNaJw1GdvnS3/umGCrQLgoNGIpMBEI/PprNX4FMuHhFGYZ5y8yNL5grQeETmRsZZL1j+yODrw+pLa2/myD7m4aFk0ioXk6qQeEzPkeVzsiSo9dIs4kRRUStSXzRE1/YjgSLyR1tU660JhckfjUZskMD6Uqqi9mZcP2YDUuaDWy9Rrt0aEyNFkPyhNT0aLgTr17cdsyOD4jE9iAlEAfbrPRGK4VbJ/a37lmnTwPOP6NmpzSp6vp5C2x0uVG93K9fDMWg/Nxy6nCN+moK/NxR/+Bc8X1c3cwLPP5bCqienVD593vefGz/XG3+oKcMv8c6DAAAAAElFTkSuQmCC";   // 上面链接的二维码（segno 生成，PNG 内嵌）
 const AP_SEASON=8, AP_PRE=12, AP_OFF=8, AP_HURT=4;
 /* 异化点数（2026-09-03 玩家拍板）：按现实时间精力定价。
    轻 1 = 碎片时间（排位几把 / 双排 / 发简历）；

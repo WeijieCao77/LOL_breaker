@@ -313,6 +313,21 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 }
 @media(max-width:560px){.tab .ti{display:none}}
 
+/* ---- 更新提示条（游戏更新了 → 刷新 / 稍后） ---- */
+.updbar{position:fixed;top:14px;right:14px;z-index:75;display:flex;align-items:center;gap:14px;
+  width:min(520px,calc(100vw - 28px));padding:11px 14px;
+  background:rgba(12,26,40,.97);border:1px solid var(--line-hot);border-left:3px solid var(--dawn);
+  color:var(--ink);box-shadow:0 8px 28px rgba(0,0,0,.5);animation:toast-in .26s cubic-bezier(.2,.8,.2,1)}
+.updbar .ub-t{flex:1;min-width:0;font-size:13px;line-height:1.5}
+.updbar .ub-t b{display:block;font-size:15px;color:var(--gold-hi)}
+.updbar .ub-t span{color:var(--ink-2)}
+.updbar .ub-b{display:flex;gap:8px;flex:none}
+@media(max-width:560px){
+  .updbar{top:auto;bottom:130px;right:8px;flex-wrap:wrap;gap:8px}
+  .updbar .ub-b{width:100%;justify-content:flex-end}
+}
+@media(prefers-reduced-motion:reduce){.updbar{animation:none}}
+
 /* ---- 界面重做第三期：宋体标题 + 手机底部导航 ---- */
 /* 自托管的思源宋体 Bold 子集（749 字，159KB，OFL 许可，见 demo/fonts/README.md）：只给展示级大字——
    结局称号、名片、HUD 的「现在」、弹窗标题、页头。正文仍是系统黑体。swap：先用黑体画，字体到了再换。 */

@@ -463,6 +463,13 @@ const server = http.createServer((req, res) => {
   // 健康检查：Railway 用它判断服务是否起来了（任何主机名都答）
   // 带部署标记：SRV_REV 每次发版手动 +1，用 curl /healthz 就能确认新代码真的上线了
   if (url === "/healthz") return send(res, 200, "ok r2 " + BOOT_AT);
+  // 版本戳：页面开着时定时来问，ETag 变了就弹「游戏更新了 → 刷新」（audio.js 的 updInit）
+  if (url === "/api/version") {
+    const r = ROUTES["/"], file = typeof r === "string" ? r : (r && (r.file || r.path)) || "demo/career.html";
+    const entry = loadAsset(file);
+    return send(res, 200, JSON.stringify({ v: entry ? entry.etag : null, boot: BOOT_AT }),
+      "application/json; charset=utf-8", { "cache-control": "no-store" });
+  }
   // 作者后台：没配 STATS_KEY 或钥匙不对，一律装作没有这页
   if (url === "/dash" || url === "/api/stats" || url === "/api/export") {
     if (!authOk(req)) return send(res, 404, "not found");

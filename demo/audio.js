@@ -314,6 +314,51 @@ function scheduleSupport() {
   }
 }
 
+/* ---------- 更新提示（玩家点名，照 vctgames：「游戏更新了 → 刷新 / 稍后」）----------
+   页面打开时记下服务器的版本戳（/api/version 返回 career.html 的 ETag），之后每 5 分钟、以及切回标签页时再问一次；
+   变了就在右上角弹一条。「刷新」先自动存档再 reload；「稍后」这一版不再提示，再有新版本才提。
+   单文件发布（Toy）没有这个接口，请求失败就静默。 */
+const UPD = { v0: null, timer: null, shown: false };
+function updFetch() {
+  return fetch("api/version", { cache: "no-store" }).then(r => { if (!r.ok) throw new Error("bad"); return r.json(); }).then(j => j && j.v);
+}
+function updInit() {
+  try {
+    if (typeof fetch !== "function" || typeof location === "undefined" || location.protocol === "file:") return;
+    updFetch().then(v => {
+      if (!v) return;
+      UPD.v0 = v;
+      UPD.timer = setInterval(updCheck, 5 * 60 * 1000);
+      document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") updCheck(); });
+    }).catch(() => {});
+  } catch (e) {}
+}
+function updCheck() {
+  if (!UPD.v0 || UPD.shown) return;
+  updFetch().then(v => { if (v && v !== UPD.v0) updShow(v); }).catch(() => {});
+}
+function updShow(v) {
+  try {
+    if (UPD.shown || document.getElementById("updbar")) return;
+    let later = ""; try { later = sessionStorage.getItem("poxiao_upd_later") || ""; } catch (e) {}
+    if (later && later === v) return;
+    UPD.shown = true;
+    const el = document.createElement("div");
+    el.id = "updbar"; el.className = "updbar"; el.setAttribute("role", "status");
+    el.innerHTML = `<div class="ub-t"><b>游戏更新了</b><span>刷新一下页面就能用上新版本，存档不受影响。</span></div>
+      <div class="ub-b"><button type="button" class="btn primary sm" id="upd-go">刷新</button><button type="button" class="btn ghost sm" id="upd-later">稍后</button></div>`;
+    document.body.appendChild(el);
+    el.querySelector("#upd-go").onclick = () => {
+      try { if (typeof saveGame === "function" && typeof S !== "undefined" && S && S.step !== "create") saveGame("更新前"); } catch (e) {}
+      location.reload();
+    };
+    el.querySelector("#upd-later").onclick = () => {
+      try { sessionStorage.setItem("poxiao_upd_later", v); } catch (e) {}
+      el.remove(); UPD.shown = false; UPD.v0 = v;
+    };
+  } catch (e) {}
+}
+
 /* ---------- 背景音乐浮窗 ----------
    ♪ 钮点开一个小面板：开关、上一首/播放暂停/下一首、当前曲目、可滚动的歌单（点谁放谁）。
    缺文件的曲目置灰、不可点。面板挂 body，render() 重写 stage 不影响它。 */
@@ -433,6 +478,7 @@ function audioInit() {
     audioPrefs();
     audioFab(hasSfx, hasBgm);
     scheduleSupport();
+    updInit();                                    // 新版本上线时提示刷新
     if (hasSfx || hasBgm) document.addEventListener("click", audioClickHandler, true);
   } catch (e) {}
 }
