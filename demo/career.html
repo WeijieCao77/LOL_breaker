@@ -298,9 +298,9 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .toast{display:flex;gap:9px;align-items:flex-start;background:rgba(12,26,40,.96);border:1px solid var(--line-hot);
   border-left:3px solid var(--gold);color:var(--ink);padding:9px 12px;font-size:13px;line-height:1.45;
   box-shadow:0 6px 22px rgba(0,0,0,.45);animation:toast-in .26s cubic-bezier(.2,.8,.2,1)}
-.toast.good{border-left-color:var(--cyan)}
-.toast.bad{border-left-color:var(--red)}
-.toast.big{border-left-color:var(--dawn)}
+.toast.t-good{border-left-color:var(--cyan)}
+.toast.t-bad{border-left-color:var(--red)}
+.toast.t-big{border-left-color:var(--dawn)}
 .toast .tt{flex:none;margin-top:3px;font-size:10px;letter-spacing:.14em;color:var(--ink-3);
   font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
 .toast .tx{min-width:0}
@@ -15582,7 +15582,7 @@ function flushToasts(){
     _toastQ.splice(0).forEach((ev,i)=>{
       const raw=String(ev.text||"").replace(/<br\s*\/?>/gi," ").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim();
       const txt=raw.slice(0,96)+(raw.length>96?"…":"");
-      const el=document.createElement("div"); el.className="toast "+ev.tone;
+      const el=document.createElement("div"); el.className="toast t-"+ev.tone;   // t- 前缀：别和结局页的 .big 大字类撞名（玩家实锤：突破提示条变成 36px 宋体）
       el.innerHTML=`<span class="tt">${typeof escapeHtml==="function"?escapeHtml(ev.tag||""):(ev.tag||"")}</span><span class="tx">${typeof escapeHtml==="function"?escapeHtml(txt):txt}</span>`;
       box.appendChild(el);
       while(box.children.length>3) box.removeChild(box.firstChild);

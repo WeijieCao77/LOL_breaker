@@ -4780,7 +4780,7 @@ function flushToasts(){
     _toastQ.splice(0).forEach((ev,i)=>{
       const raw=String(ev.text||"").replace(/<br\s*\/?>/gi," ").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim();
       const txt=raw.slice(0,96)+(raw.length>96?"…":"");
-      const el=document.createElement("div"); el.className="toast "+ev.tone;
+      const el=document.createElement("div"); el.className="toast t-"+ev.tone;   // t- 前缀：别和结局页的 .big 大字类撞名（玩家实锤：突破提示条变成 36px 宋体）
       el.innerHTML=`<span class="tt">${typeof escapeHtml==="function"?escapeHtml(ev.tag||""):(ev.tag||"")}</span><span class="tx">${typeof escapeHtml==="function"?escapeHtml(txt):txt}</span>`;
       box.appendChild(el);
       while(box.children.length>3) box.removeChild(box.firstChild);
