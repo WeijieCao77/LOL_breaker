@@ -283,6 +283,10 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260905i", at:"2026-09-05", items:[
+    "职业前多了四样能做的事（玩家点名：第二年只剩训练太无聊）：接代练（来钱快，心态和手感付代价，接到第三单会留下记录、职业后可能被扒）、网吧开黑（清疲劳稳心态，有车队默契一起涨）、换个游戏放松（疲劳掉得最快、手感生一点）、看职业录像（运营/指挥的便宜课，战术素养也涨）",
+    "自动存档改为每次状态变化后节流存（原来只在推进周时存）——玩家实锤：报了主播杯、刷新后显示「已错过」，报名是在两次存档之间做的；现在报名、接受邀请、签合同这类操作一做完就落档"
+  ]},
   {v:"v20260905h", at:"2026-09-05", items:[
     "全员数据里你的评分改由临场选择说了算（玩家实锤：不管选项成不成永远全队垫底）——原来实力差 10 分就压 −0.4、三个节点全成才 +0.15；现在能力项减半、每个节点 ±0.07、三个全成再加关键局分：实力差 10 分时 3/3 成功抬到全队中游，0/3 才垫底",
     "LDL 不再儿子比爹强（玩家点名）：强队青训原来能到 73、压过 LPL 后四名；现在 LDL 天花板钉在 LPL 垫底三队的平均——TES.Y/RNG.Y 仍是 LDL 的头，和 LPL 弱队打个五五开，能赢不保证。而且这条天花板每个休赛期重钉一次：二队全是新秀、年年在涨，原来到 S16 末 LDL 均值 83 反超 LPL 75（你看到的 RNG.Y 八十多就是这么来的），现在 S16 末 LDL 70 / LPL 77",
@@ -492,7 +496,7 @@ const AP_SEASON=8, AP_PRE=12, AP_OFF=8, AP_HURT=4;
    中 2 = 半天（专项训练 / 直播一开就是四小时 / 做内容 / 真歇半天 / 合练 / 复盘 / 杯赛备战）；
    重 3 = 训练赛——整个下午连打，最耗神。
    预算同步翻倍：起步强度净中性，体感是「能做的事变多、轻的真的轻」。 */
-const AP_COST={train:2,solo:1,stream:2,content:2,rest:1,scrim:3,vod:2,drill:2,duo:1,cupprep:2,duel:2};   // rest=1：玩家拍板「一个行动点休息比较合理」
+const AP_COST={train:2,solo:1,stream:2,content:2,rest:1,scrim:3,vod:2,drill:2,duo:1,cupprep:2,duel:2,boost:2,cafe:1,chill:1,watch:1};   // rest=1：玩家拍板「一个行动点休息比较合理」；boost/cafe/chill/watch 是职业前的其它活动
 function apCost(k){ return AP_COST[k]||1; }
 function apTag(k){ return `<i class="apc">${apCost(k)}点</i>`; }
 function apFor(phase){
@@ -1749,6 +1753,26 @@ function preAct(k,dim){
     if(dim==="操作"&&typeof btkNote==="function") btkNote("op",1);   // 到瓶颈也要能攒突破进度
     if(S.attrs[dim]<c) S.attrs[dim]=Math.min(c,S.attrs[dim]+gain(dim)*0.85);
     addFat(9);
+  } else if(k==="boost"){
+    /* 接代练（2026-09-05 玩家点名「职业前第二年只有训练可做」）：来钱快，但手会糙、心会累，
+       接多了就是一笔旧账——职业后有概率被扒（走 daida 回响） */
+    const cash=Math.round(3+P.rank*0.06);
+    if(typeof addMoney==='function') addMoney('boost',cash); else S.money+=cash;
+    addFat(8); S.attrs.心态=Math.max(20,S.attrs.心态-0.15); S.heat=Math.max(0,(S.heat||0)-1);
+    S.flags=S.flags||{}; S.flags.boostN=(S.flags.boostN||0)+1;
+    if(S.flags.boostN>=3&&!S.flags.daida){ S.flags.daida=1; preLog(`代练接到第三单，圈子里开始有人知道你的号在「帮人上分」。<b>这事以后可能会被翻出来。</b>`,"bad"); }
+    else if(S.flags.boostN===1) preLog(`接了一单代练，到手 <b>${cash} 万</b>。钱是真的，风险也是——接多了会留下记录。`,"info");
+  } else if(k==="cafe"){
+    /* 和朋友上网：清疲劳、稳心态，网吧里认识的人也是人气；有车队的话默契一起涨 */
+    addFat(-8); S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.25); addFans(1.5);
+    if(P.mates&&P.mates.length&&typeof addSquad==="function") addSquad("syn",1.2);
+  } else if(k==="chill"){
+    /* 换个游戏放松：疲劳掉得最快，但手感会生一点 */
+    addFat(-12); S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.2); S.attrs.操作=Math.max(20,q1(S.attrs.操作-0.08));
+  } else if(k==="watch"){
+    /* 看职业比赛录像：运营和指挥的便宜课，战术素养也涨一点 */
+    S.attrs.运营=Math.min(capOf("运营"),q1(S.attrs.运营+0.18)); S.attrs.指挥=Math.min(capOf("指挥"),q1(S.attrs.指挥+0.18));
+    addFat(2); if(typeof tacAdd==="function") tacAdd(0.3,"看职业比赛录像");
   } else { addFat(-18); S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.3); }   // 1 点碎片休息 ×0.55
   P.ap-=_c; render();
 }
@@ -4200,6 +4224,14 @@ function actPanelPre(){
         <div class="t">${b.title}${(S.career&&SEASONS[S.si]&&SEASONS[S.si].dim===d)?' <i class="apc" title="本季版本关键属性，训练收益 ×'+VER_TRAIN+'">版本 +'+Math.round((VER_TRAIN-1)*100)+'%</i>':''}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-pre="rest" ${P.ap<apCost("rest")?'disabled style="opacity:.34"':''}>
         <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳${costRest()}</div></button>
+      <button class="act" data-pre="boost" ${P.ap<apCost("boost")?'disabled style="opacity:.34"':''} title="来钱快；手会糙、心会累，接多了会留下记录">
+        <div class="t">接代练 ${apTag("boost")}</div><div class="d">到手约 <b>${Math.round(3+P.rank*0.06)} 万</b> · 心态 −0.15 · 疲劳 +8${(S.flags&&S.flags.boostN)?`　<span style="color:var(--ink-3)">已接 ${S.flags.boostN} 单</span>`:""}</div></button>
+      <button class="act" data-pre="cafe" ${P.ap<apCost("cafe")?'disabled style="opacity:.34"':''} title="清疲劳、稳心态；有车队的话默契一起涨">
+        <div class="t">网吧开黑 ${apTag("cafe")}</div><div class="d">疲劳 −8 · 心态 +0.25 · 人气小涨${P.mates&&P.mates.length?" · 车队默契 +":""}</div></button>
+      <button class="act" data-pre="chill" ${P.ap<apCost("chill")?'disabled style="opacity:.34"':''} title="疲劳掉得最快，但手感会生一点">
+        <div class="t">换个游戏 ${apTag("chill")}</div><div class="d">疲劳 −12 · 心态 +0.2 · 操作 −0.08</div></button>
+      <button class="act" data-pre="watch" ${P.ap<apCost("watch")?'disabled style="opacity:.34"':''} title="运营和指挥的便宜课">
+        <div class="t">看职业录像 ${apTag("watch")}</div><div class="d">运营 +0.18 · 指挥 +0.18 · 战术素养 +0.3</div></button>
     </div>
     ${typeof routineBar==="function"?routineBar():""}
     ${(S.pre.mates&&S.pre.mates.length&&typeof squadActs==="function")?squadActs()
@@ -4508,6 +4540,7 @@ function scrollStageTop(){
   }catch(e){}
 }
 let _renderLock=0;
+let _autosaveAt=0;
 function render(){
   if(_renderLock>0) return;                 // 托管正在连续处理，等它做完再画
   if(typeof autoSweep==="function"&&S&&S.auto){
@@ -4516,6 +4549,14 @@ function render(){
   }
   if(typeof watchRoster==="function") watchRoster();
   hud(); pinbar();
+  // 节流自动存档（2026-09-05 玩家实锤：报了主播杯、刷新后「已错过」——原来只在推进周时存，
+  // 两次存档之间做的事一刷新就没了）。每次状态变化后最多 1.5 秒存一次，弹窗类字段本来就不进档
+  try{
+    if(typeof saveGame==="function"&&S&&S.step!=="create"&&S.step!=="end"){
+      const now=Date.now();
+      if(now-_autosaveAt>1500){ _autosaveAt=now; saveGame("自动"); }
+    }
+  }catch(e){}
   const body = S.step==="create"?viewCreate()
     : S.step==="pre"?viewPre()
     : S.step==="offer"?viewOffer()
