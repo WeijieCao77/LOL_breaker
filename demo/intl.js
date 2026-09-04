@@ -408,7 +408,12 @@ function canonQual(playin,qual){
   return qual;
 }
 /* 冠军播报——围观和亲历淘汰共用一句 */
+/* 荣誉账本：哪一年谁拿了 MSI / 世界赛——明星聚光灯用它把本作里改写的历史写进履历 */
+function noteHonor(kind,si,team){
+  try{ S.honors=S.honors||{}; (S.honors[kind]=S.honors[kind]||{})[si]=team; }catch(e){}
+}
 function intlChampEvent(name,champ){
+  noteHonor(name==="MSI"?"msi":"worlds",S.si,champ);
   const lck=leagueOf(champ)==="LCK";
   return {text:`${name}落幕，<b>${champ}</b> 捧起奖杯。${
       lck?"LCK 又一次站在了最高处。":"你在屏幕外看完了颁奖。"}`,
@@ -455,6 +460,7 @@ function benchedIntl(type,playerResult){
     : st.eight.includes(S.team)?"八强":"小组赛/瑞士轮";
   const bench=S.understudy?S.understudy.id:"首发";
   if(champUs&&typeof addRingTitle==="function") addRingTitle(`${F.tag} ${name}`);
+  if(champUs) noteHonor(type==="msi"?"msi":"worlds",S.si,S.team);
   const ev=champUs
     ? {text:`${name}落幕，<b>${S.team} 夺冠</b>——你在替补席见证了全程。<span style="color:var(--ink-3)">戒指有你一枚，生涯表记为<b>随队冠军</b>；想让它算进成就和转会筹码，把首发抢下来。</span>`,tone:"big",tag:name}
     : intlChampEvent(name,st.champ);
@@ -631,6 +637,7 @@ function noteDepth(kind){
 }
 function crownChampion(){
   const I=S.intl, name=I.type==="msi"?"MSI":"世界赛";
+  noteHonor(I.type==="msi"?"msi":"worlds",S.si,S.team);
   // 世界线张力：国际冠军让全世界都开始围着你转
   try{ Object.keys(S.world).forEach(lg=>wlAdd(lg,0.10)); }catch(e){}
   // 冠军奖金每次都发——不是一次性成就（那边只发首冠纪念）
