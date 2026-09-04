@@ -1000,6 +1000,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260905l", at:"2026-09-05", items:[
+    "复盘的对位账两边都算（玩家点名：只列短板扣分、长板不加分还说「没有短板惩罚」）：长项每一行写「高 X 分 → +Y 战力」，短板写「低 X 分 → −Y 战力」，最后给合计；极端加点的建议按权重说话——短板权重比长项低才劝你练长项，反过来就明说补短板更划算"
+  ]},
   {v:"v20260905k", at:"2026-09-05", items:[
     "赛程预告里的「综合实力」改成和队伍页同一口径的「全队战力」（玩家实锤：预告 67.8、队伍页 76.1——预告那个漏了归一到实力尺，还沿用旧名字）"
   ]},
@@ -8536,26 +8539,29 @@ function reviewAdvice(m){
   const foes=(m.opp.players||m.opp), foe=foes.find&&foes.find(q=>q.pos===S.pos);
   const base=(S.baseline&&S.baseline[S.homeLeague||"LPL"])||50;
   const cmp=Object.keys(W).map(d=>{ const g=S.attrs[d]-(foe?foe.r[d]:base); return {d,g,eff:g*W[d]}; });
-  const strong=cmp.filter(x=>x.g>=3).sort((a,b)=>b.eff-a.eff).slice(0,2);
+  /* 2026-09-05 玩家点名：原来只列「比对位低」的行、长板赢的那份账不写，再配一句「没有短板惩罚」，
+     读起来像只罚不奖。战力是加权和，长板加的和短板扣的是同一把秤——两边都列，最后给净账。 */
+  const strong=cmp.filter(x=>x.g>=1).sort((a,b)=>b.eff-a.eff).slice(0,2);
   const weak=cmp.filter(x=>x.g<-1).sort((a,b)=>a.eff-b.eff).slice(0,2);
   const vals=DIMS.map(d=>S.attrs[d]), mu=avg(vals), sd=Math.sqrt(avg(vals.map(x=>(x-mu)**2)));
   const extreme=sd>=9;
-  if(strong.length){
-    personal.push({good:true,q:`长项：${strong.map(x=>`${x.d}比对位高 ${x.g.toFixed(0)}`).join("、")}`,
-      how:`这是你的本钱——临场节点里多选吃「${strong[0].d}」的选项，成功率直接看这一维；训练赛对位也用它打`});
-  }
-  if(bad("个人能力")){
-    weak.forEach(({d,g})=>{
-      const capped=S.attrs[d]>=capOf(d)-0.05;
-      const P=(typeof BREAK_PATHS!=="undefined")?BREAK_PATHS[d]:null;
-      personal.push({q:`${d}比对位低 ${(-g).toFixed(0)} 分（权重 ${W[d]}）`,
-        how:capped&&P?`已到瓶颈——突破方法：${P.how}`
-          :extreme?`补不补看你：这项权重 ${W[d]}，补 5 点只值 ${(5*W[d]).toFixed(1)} 战力；把长项练到顶往往更划算`
-          :`日常多点「练${d}」，装备/课程里也有加${d}的`});
-    });
-    if(extreme&&weak.length) personal.push({good:true,q:"关于极端加点",
-      how:"战力是加权和，没有短板惩罚。极端加点只在临场节点抽到你的短板维度时吃亏——那种节点记得选另一个选项"});
-  }
+  const topW=strong.length?W[strong[0].d]:0;
+  const net=cmp.reduce((a,x)=>a+x.eff,0);
+  strong.forEach(({d,g,eff},i)=>{
+    personal.push({good:true,q:`${d}比对位高 ${g.toFixed(0)} 分（权重 ${W[d]}）→ <b>+${pwShow(eff).toFixed(1)}</b> 战力`,
+      how:i===0?`这是你的本钱——临场节点里多选吃「${d}」的选项，成功率直接看这一维；训练赛对位也用它打`:`长板的每一分和短板的每一分是同一把秤：高就加、低就扣，权重一样`});
+  });
+  weak.forEach(({d,g,eff})=>{
+    const capped=S.attrs[d]>=capOf(d)-0.05;
+    const P=(typeof BREAK_PATHS!=="undefined")?BREAK_PATHS[d]:null;
+    personal.push({q:`${d}比对位低 ${(-g).toFixed(0)} 分（权重 ${W[d]}）→ <b>${pwShow(eff).toFixed(1)}</b> 战力`,
+      how:capped&&P?`已到瓶颈——突破方法：${P.how}`
+        :(extreme&&topW&&W[d]<topW)?`这项权重 ${W[d]} 比你长项（${strong[0].d} ${topW}）低：补 5 点值 ${pwShow(5*W[d]).toFixed(1)} 战力，长项练 5 点值 ${pwShow(5*topW).toFixed(1)}——把长项练到顶更划算`
+        :(extreme&&topW&&W[d]>=topW)?`这项权重 ${W[d]} 不比你的长项低：补 5 点值 ${pwShow(5*W[d]).toFixed(1)} 战力，和练长项一样划算甚至更划算——别被「极端加点」四个字骗了`
+        :`日常多点「练${d}」，装备/课程里也有加${d}的`});
+  });
+  if(strong.length||weak.length) personal.push({good:net>=0,q:`对位账：合计 <b>${net>=0?"+":""}${pwShow(net).toFixed(1)}</b> 战力（操作 .34 / 运营 .28 / 心态 .14 / 体质 .10；指挥走全队乘数另算）`,
+    how:extreme?"极端加点的总账就是这一行：长项赢的减短项输的。另外临场节点抽到短板维度会吃亏——那种节点选另一个选项":"高就加、低就扣，没有额外的短板惩罚，也没有额外的长板奖励"});
   if(bad("状态")) personal.push({q:"手感不在（状态低谷）",
     how:"点「打排位」找手感；状态是按战绩、体能、更衣室每赛段重算的——先把这三样稳住"});
   if(bad("体能")) personal.push({q:`体能只剩 ${100-Math.round(S.fatigue)}/100`,
