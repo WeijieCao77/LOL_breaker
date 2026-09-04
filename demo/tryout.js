@@ -1149,8 +1149,9 @@ function checkPromote(){
   const pname = parentClub(); if(!pname) return false;
   const pt = (S.world.LPL || []).find(t => t.name === pname); if(!pt) return false;
   const inc = pt.players.find(q => q.pos === S.pos); if(!inc) return false;
-  const me = avg(DIMS.map(d => S.attrs[d]));
-  const him = avg(DIMS.map(d => inc.r[d]));
+  // 统一实力尺：核查和升队通道卡用同一个数（含装备）——卡上写「差 2.6」，核查就按 2.6 算
+  const me = (typeof myStrength === "function") ? myStrength() : avg(DIMS.map(d => S.attrs[d]));
+  const him = (typeof strength === "function") ? strength(inc) : avg(DIMS.map(d => inc.r[d]));
   const g = S.record ? (S.record.w + S.record.l) : 0;
   const wr = g >= 3 ? (S.record.w / g) : 0.5;
   // 比一队那个人强，或者接近但二队战绩极好
@@ -1298,13 +1299,13 @@ function promoteCard(){
   const pname=parentClub(); if(!pname) return "";
   const pt=(S.world.LPL||[]).find(t=>t.name===pname); if(!pt) return "";
   const inc=pt.players.find(q=>q.pos===S.pos);
-  const me=avg(DIMS.map(d=>S.attrs[d])), him=inc?avg(DIMS.map(d=>inc.r[d])):0;
+  const me=(typeof myStrength==="function")?myStrength():avg(DIMS.map(d=>S.attrs[d])), him=inc?((typeof strength==="function")?strength(inc):avg(DIMS.map(d=>inc.r[d]))):0;   // 统一实力尺：含装备，和队伍页同一个数
   const g=S.record?(S.record.w+S.record.l):0, wr=g>=3?(S.record.w/g):null;
   const ok1=me>=him+1;
   return `<div class="card"><h2>升队通道<em>母队 ${typeof teamLogo==="function"?teamLogo(pname,18):""} ${pname}</em></h2>
     <p class="note" style="margin:0 0 10px">合同签给的是俱乐部，你现在注册在二队名单。
       升队窗口：<b>季中间歇</b> 和 <b>休赛期</b>——到点自动核查，达标就调上去。<br>
-      <span style="color:var(--ink-3)">评分口径：65＝LPL 平均（王者线），77+ 是国服前十的明星，88+ 天梯已经量不动。</span></p>
+      <span style="color:var(--ink-3)">口径：五维均值（含装备），和队伍页、天梯同一个数。LPL 均值约 ${Math.round((S.baseline&&S.baseline.LPL)||70)}，国服前 100 的门 ${typeof rankToSkill==="function"?rankToSkill(86).toFixed(0):62}，前 10 的门 ${typeof rankToSkill==="function"?rankToSkill(95).toFixed(0):78}，明星 85+。</span></p>
     <div class="attrs">
       <div class="at wide"><div class="lb">你</div>
         <div class="track"><div class="fill" style="width:${clamp(me,0,100)}%"></div></div>

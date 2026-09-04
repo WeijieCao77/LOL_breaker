@@ -212,14 +212,14 @@ function squadCard(){
     v>=62?"linear-gradient(90deg,var(--cyan-dim),var(--cyan))":
     v>=42?"linear-gradient(90deg,#6B5A2A,var(--gold))":
           "linear-gradient(90deg,#5A2228,var(--red))"}"></div></div>`;
-  return `<div class="card"><h2>战队实力<em>综合 ${pwShow(B.total).toFixed(1)}</em></h2>
+  return `<div class="card"><h2>战队战力<em>全队 ${pwShow(B.total).toFixed(1)}</em></h2>
 
     <div class="formula">
-      <span class="fb">基础战力 ${pwShow(B.base).toFixed(1)}</span>${B.ws.map(w=>
+      <span class="fb">五人实力加权 ${pwShow(B.base).toFixed(1)}</span>${B.ws.map(w=>
         `<span class="fx">×</span><span class="fw ${w.mult>=1.008?'up':w.mult<=0.992?'dn':''}">${w.n} ${w.mult.toFixed(3)}</span>`
-      ).join("")}<span class="fx">=</span><span class="ft">${pwShow(B.total).toFixed(1)}</span>
+      ).join("")}<span class="fx">=</span><span class="ft">全队战力 ${pwShow(B.total).toFixed(1)}</span>
     </div>
-    <p class="note" style="margin-top:4px">基础战力 = 五个人的实力按比赛权重加权（你 ×1.3 / 核心 ×1.6），指挥不进这里、走下面的全队乘数——所以它和五维均值差一点是正常的。</p>
+    <p class="note" style="margin-top:4px"><b>五人实力加权</b>＝五个人的实力按比赛权重加权（你 ×1.3 / 核心 ×1.6，指挥不进这里）；再乘默契、战术、士气、指挥、体能五个<b>团队系数</b>（合计 ×${(B.ws.reduce((a,w)=>a*w.mult,1)).toFixed(2)}）才是<b>全队战力</b>。全队战力和个人实力不是一把尺——一支队能打出比五个人各自更高的数，就是靠这些系数；换人会砸默契，纸面变强了打起来往往还不如从前。</p>
 
     <h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">五名选手的实力 <span style="font-weight:400">· 五维均值，和天梯、试训、杯赛同一把尺</span></h3>
     <div class="attrs">${mates.map(p=>{
