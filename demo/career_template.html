@@ -283,6 +283,16 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260905q", at:"2026-09-05", items:[
+    "叙事层（玩家反馈「数值扑面而来、没有游戏性」）：默认用文字档位说话——实力 / 五维「生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级」（职业级 ≈ LPL 首发），按钮上的收益写成箭头；顶栏「数值」一键切回具体数字，一个数都没改、没藏。建档多了五套天赋预设（操作型 / 运营型 / 均衡型 / 指挥型 / 铁人型）；每个行动都在本周卡顶上留一句话（这周做了什么、手感怎么样）",
+    "教程导览（玩家点名，参考 Val Manager）：第一次进职业前、第一次进赛季各走一遍，逐栏目高亮说明每一块是干什么的；顶栏「导览」随时重看，Esc 跳过",
+    "对阵图（玩家点名）：世界赛瑞士轮 / 小组赛按战绩分桶的看板（3 胜晋级、3 负淘汰）、八强起的淘汰赛对阵树（MSI 双败按胜者组 / 败者组逐轮列）、联赛季后赛六强种子与你的路线（常规赛期间是按当前排名的「若现在结束」形势）、杯赛轮次阶梯——赛事栏、备战页、杯赛卡里都有，一眼看到下一场打谁、赢了打谁。全是同一套骨架换队名队标，不用图片",
+    "自由身没人签就变回路人主播（玩家实锤：拒了续约、市场上没人要，点下一回合却还穿着旧队衣打夏季赛）：年底 / 季中窗口关了还没合同，就从旧队除名，回到职业前那套循环（排位、直播、杯赛、等试训邀请）；冠军、战绩、生涯轨迹封存，签回去接着算；走到时间尽头也按职业生涯算结局。原来会按表现自动塞去弱队 / 二队，季中到期更是根本没结算",
+    "右上角提示条停留时间按字数走（6–12 秒）、鼠标悬着不走、点一下关闭（玩家实锤「还来不及看就没了」）；完整内容永远在大事记 / 生涯日志",
+    "手机：底栏只留本周 / 战队（赛季里是我的）/ 赛事 / 转会 + 「更多」，经济 / 成就 / 日志 / 托管收进抽屉；右下角浮窗按钮 30 → 40px；说明文字对比度 3.6 → 4.7",
+    "测评核实后修复：杯赛赛后拆解读开赛那一刻的账、车队散伙延到点「继续」之后（原来先推进下一轮 / 散伙再拆解，标题、备战、车队全失真）；320 万的鼠标不再比 130 万的弱（1.7 → 2.6，自检会盯外设每档必须更贵更强）；支持作者提示改到第一次签约或玩满 8 分钟后弹，不再开局 1.4 秒打断建档；指挥说明「比赛只取队内最高，主指挥是谁、差几分」；建档页标明青训 · 标准难度 / 主播 · 挑战难度；起点页能「返回修改」；s12–s16.mp3 是赛季主题曲位，赛季一换、音乐开着就切（没放的年份继续随机歌单）；升队 / 下放 / 转会离队时旧队名单补人，不再留一个幻影",
+    "回退点：这一批改动前的版本打了标签 rollback-20260905（a6a3833）"
+  ]},
   {v:"v20260905p", at:"2026-09-05", items:[
     "游戏更新提示（玩家点名，照 vctgames）：页面开着时新版本上线，右上角弹「游戏更新了 → 刷新 / 稍后」，刷新前自动存档；「稍后」这一版不再提示",
     "「支持作者」正式接上爱发电（ifdian.net/a/poxiao_lol）：右下角 ♥、页脚入口、首次进入提示一次、浮窗里有二维码和跳转按钮",
@@ -926,11 +936,15 @@ function versionCard(){
   return `<div class="ver">
     <div>版本 <b>${sea.ver}</b>（${sea.tag}）— 强势位置 <b>${sea.fav.map(k=>POSN[k]).join("、")}</b> · 关键属性 <b>${sea.dim}</b>${
       S.miniPatch?`　·　热修 <b>${sea.tag}.${S.miniPatch.n}</b>：${S.miniPatch.dim}权重${S.miniPatch.up?"↑":"↓"}`:""}</div>
-    <div style="margin-top:4px">你的相性 <b style="color:${I.fit>=1.5?'var(--cyan)':I.fit>=-0.5?'var(--ink)':'var(--red)'}">${label} ${s(I.fit)}</b> 战力
+    ${uiNum()?`<div style="margin-top:4px">你的相性 <b style="color:${I.fit>=1.5?'var(--cyan)':I.fit>=-0.5?'var(--ink)':'var(--red)'}">${label} ${s(I.fit)}</b> 战力
       <span style="color:var(--ink-3)">= ${sea.dim} ${I.mine.toFixed(0)} vs ${HL}均线 ${I.bar.toFixed(0)}（${s(I.parts.dim)}）${
         I.posB?` + ${POSN[S.pos]}是红利位（${s(I.parts.pos)}）`:""}${I.parts.cushion?` + 适应力缓冲（${s(I.parts.cushion)}）`:""}${I.mini?` + 热修（${s(I.mini)}）`:""}</span></div>
     <div style="margin-top:4px;color:var(--ink-2)">本队：${favMates.length?`${favMates.map(p=>p.id).join("、")} 站在红利位`:"没有队友在红利位"}，全队版本加成 <b>${s(teamVerBonus(myTeam()))}</b>${
-      top.length?`　·　本联赛最吃版本的队：${top.map(t=>`${t.n} ${t.v>=0?"+":""}${t.v.toFixed(1)}`).join("、")}`:""}</div>
+      top.length?`　·　本联赛最吃版本的队：${top.map(t=>`${t.n} ${t.v>=0?"+":""}${t.v.toFixed(1)}`).join("、")}`:""}</div>`
+    :`<div style="margin-top:4px">你的相性 <b style="color:${I.fit>=1.5?'var(--cyan)':I.fit>=-0.5?'var(--ink)':'var(--red)'}">${label}</b>
+      <span style="color:var(--ink-3)">（你的${sea.dim}${I.mine>=I.bar?"高于":"低于"}${HL}均线${I.posB?`，${POSN[S.pos]}是红利位`:""}${I.parts.cushion?"，适应力兜了一手":""}${I.mini?"，热修也有影响":""}）</span></div>
+    <div style="margin-top:4px;color:var(--ink-2)">本队：${favMates.length?`${favMates.map(p=>p.id).join("、")} 站在红利位`:"没有队友在红利位"}，版本上${(()=>{const v=teamVerBonus(myTeam());return v>=0.5?"占便宜":v<=-0.5?"吃亏":"不占不亏";})()}${
+      top.length?`　·　本联赛最吃版本的队：${top.map(t=>t.n).join("、")}`:""}</div>`}
     <div style="margin-top:4px;color:var(--ink-3);font-size:12px">这一年练 <b>${sea.dim}</b> 收益 ×${VER_TRAIN}（教练组按版本抓训练）；赛后拆解里「版本相性」那一行就是这个数。</div>
   </div>`;
 }
@@ -1620,7 +1634,7 @@ function summaryCard(){
       <div class="at"><div class="lb">${d}</div>
         <div class="track"><div class="fill" style="width:${clamp(attrs[d],0,100)}%"></div>
           <div class="capline" style="left:${clamp(capOf(d),0,100)}%"></div></div>
-        <div class="vn mono"><b>${attrs[d].toFixed(0)}</b> /${capOf(d)}</div></div>`).join("")}
+        <div class="vn mono">${uiNum()?`<b>${attrs[d].toFixed(0)}</b> /${capOf(d)}`:`<b>${dimWord(attrs[d])}</b>`}</div></div>`).join("")}
     </div>
     <p class="note">起始资金 <b>${money} 万</b>　·　粉丝 <b>${fanTier(fans)}</b>${
       extra.length?`<br>${extra.join("　·　")}`:""}</p>
@@ -1652,6 +1666,16 @@ function randomTalent(){
   }
   render();
 }
+/* 天赋预设：先选「你是哪种选手」，再微调。五套各 20 点（TOTAL_TALENT） */
+const TAL_PRESETS=[
+  {k:"carry",n:"操作型",d:"手上功夫吃饭，对线和团战靠个人",   t:{操作:8,运营:5,心态:4,指挥:1,体质:2}},
+  {k:"brain",n:"运营型",d:"视野、转线、资源判断，赢在脑子",   t:{操作:5,运营:8,心态:3,指挥:3,体质:1}},
+  {k:"even", n:"均衡型",d:"没有短板也没有一招鲜，版本怎么变都跟得上", t:{操作:4,运营:4,心态:4,指挥:4,体质:4}},
+  {k:"lead", n:"指挥型",d:"开麦带队，越老越值钱",             t:{操作:4,运营:5,心态:3,指挥:7,体质:1}},
+  {k:"iron", n:"铁人型",d:"打得多、伤得少、掉得慢",           t:{操作:5,运营:4,心态:3,指挥:1,体质:7}}
+];
+const growWord=t=>t>=7?"快":t>=4?"一般":"慢";
+const capWord=c=>c>=91?"极高":c>=79?"高":c>=67?"中":"低";
 function viewCreate(){
   if(S.showStart) return summaryCard();
   const cont=(typeof continueCard==="function")?continueCard():"";
@@ -1690,6 +1714,8 @@ function viewCreate(){
     <h2>第二步 · 天赋分配<em>剩余 ${left} 点</em></h2>
     <p class="note" style="margin:0 0 10px">天赋是<b>成长倍率与瓶颈</b>，不是初始属性。另外：天赋越专精，<b>适应力越低</b>——版本一变你就难受。
       <button class="btn ghost sm" id="talrand" style="margin-left:8px">一键随机分配</button></p>
+    <div class="talpre">${TAL_PRESETS.map(x=>`<button class="opt ${DIMS.every(d=>(S.talent[d]||0)===(x.t[d]||0))?'on':''}" data-talpre="${x.k}">
+      <div class="t">${x.n}</div><div class="d">${x.d}</div></button>`).join("")}</div>
     ${sa?`<p class="note" style="margin:-4px 0 10px;color:var(--ink-3)">下面「起始」是你<b>进游戏时的个人能力值</b>（在「我的」栏目里看到的那个数），随出身/年龄/背景来，被天赋上限截住。</p>`
       :`<p class="note" style="margin:-4px 0 10px;color:var(--ink-3)">选完<b>出身</b>和<b>起始年龄</b>后，这里会显示每一维<b>进游戏时的起始能力值</b>。</p>`}
     ${DIMS.map(d=>`<div class="tal">
@@ -1699,9 +1725,11 @@ function viewCreate(){
         <div class="n mono">${S.talent[d]}</div>
         <button data-inc="${d}" ${(left<=0||S.talent[d]>=10)?'disabled':''}>+</button>
       </div>
-      <div class="cap mono">${sa?`<b style="color:var(--gold-hi)">起始 ${sa[d].toFixed(0)}</b> · `:""}×${mult(S.talent[d]).toFixed(2)} · 上限${capOf(d)}</div>
+      <div class="cap mono">${uiNum()
+        ?`${sa?`<b style="color:var(--gold-hi)">起始 ${sa[d].toFixed(0)}</b> · `:""}×${mult(S.talent[d]).toFixed(2)} · 上限${capOf(d)}`
+        :`${sa?`<b style="color:var(--gold-hi)">起始 ${dimWord(sa[d])}</b> · `:""}成长${growWord(S.talent[d])} · 天花板${capWord(capOf(d))}`}</div>
     </div>`).join("")}
-    <div class="ver">当前加点路线的<b>适应力约 ${Math.round(ad)}</b>：${
+    <div class="ver">当前加点路线${uiNum()?`的<b>适应力约 ${Math.round(ad)}</b>`:`<b>${ad>62?"很均衡":ad>45?"有侧重":"高度专精"}</b>`}：${
       ad>62?"很均衡，版本怎么变你都能跟上，但没有一招鲜。":
       ad>45?"有侧重也有兜底，逆版本时会难受一阵但缓得过来。":
       "高度专精。顺版本能炸，逆版本会被针对到怀疑人生。"}</div>
@@ -2458,6 +2486,38 @@ function gain(d){
   const asset=(S.assets&&S.assets.station)?1.04:1;   // 数据分析工作站
   return apComp*asset*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*tt*ij;
 }
+/* ---------- 本周流水（叙事层）----------
+   点了「练操作」之后原来只有数字悄悄变了一下（玩家反馈：反馈太直接、没有游戏性）。
+   现在每个行动都留一句话在行动卡顶上：这周做了什么、手感怎么样。文案按本周行动数轮着挑，同一周不重复。 */
+const DIARY_POOL={
+  train:{
+    操作:["泡在训练营磨对线，手上的细节顺了一点。","一下午的补刀和换血，肌肉记忆在长。","对着录像抠了一晚上走位。"],
+    运营:["复盘了几局视野和转线的时机。","把地图资源的刷新时间背了一遍。","跟着高分局学怎么滚雪球。"],
+    心态:["逆风局硬撑到底的几把，心稳了一点。","输了不摔键盘，这也是练出来的。","连败之后照常上号，这就是进步。"],
+    指挥:["开麦指挥了一晚，队友居然听了。","练了怎么在团战前十秒把话说清楚。","看职业指挥的第一视角，学他们什么时候开口。"],
+    体质:["跑步、拉伸、早睡——身体是本钱。","按点吃饭按点睡，手腕不酸了。","做了两组护腕训练，坐姿也改了。"]},
+  pre:{rank:P=>P&&P.lastQ?`打了几把排位，${P.lastQ.w} 胜 ${P.lastQ.l} 负。`:"打了几把排位。",
+       stream:"开了一晚直播。",rest:"睡了个饱，什么都没干。",boost:"接了一单代练，钱到手了。",
+       cafe:"和朋友去网吧开黑，笑得比赢得多。",chill:"换了个游戏放松，手感生了一点。",watch:"看了一晚职业比赛录像。"},
+  do:{solo:"打了几把排位找手感。",stream:"开了一晚直播。",content:"剪了条内容发出去。",rest:"好好休息了一天。"},
+  squad:{scrim:"和别的队打了训练赛。",vod:"全队一起复盘录像。",drill:"专项练了配合。",duo:"和队友双排了一晚。"}
+};
+function diaryLine(a,i){
+  const n=(S.thisWeek||[]).length, pick=arr=>arr[(i+n)%arr.length];
+  if(a.k==="train"){ const p=DIARY_POOL.train[a.v]; return p?pick(p):`练了${a.v}。`; }
+  if(a.k==="pre"){ const p=DIARY_POOL.pre[a.v]; return typeof p==="function"?p(S.pre):(p||""); }
+  if(a.k==="do") return DIARY_POOL.do[a.v]||"";
+  if(a.k==="squad") return DIARY_POOL.squad[a.v]||"和队里一起练了练。";
+  return "";
+}
+function weekDiary(){
+  const list=S.thisWeek||[];
+  if(!list.length) return `<div class="diary muted"><span class="dk">这周</span>还什么都没做——下面挑一件事。</div>`;
+  const lines=[], seen={};
+  list.forEach((a,i)=>{ const key=a.k+":"+a.v; if(seen[key]) return; seen[key]=1; const t=diaryLine(a,i); if(t) lines.push(t); });
+  return `<div class="diary"><span class="dk">这周</span>${lines.slice(-3).join(" ")}${
+    list.length>1&&typeof actListText==="function"?`<span class="dl">${actListText(list)}</span>`:""}</div>`;
+}
 /* 冲瓶颈状态条：正在冲操作瓶颈时，把规则和本周进度顶在行动区最上面。
    玩家原话：「我根本不知道要每周投入三个点」——规则不能只藏在按钮小字里。 */
 function btkChaseNote(){
@@ -2603,11 +2663,27 @@ function fansText(v){
    按钮只有 123px 宽，所以标注必须短：行动点恒为 1，统一在体能条那里说一次，
    不在九个按钮上各写一遍——那会把按钮撑高一倍半，等于用可读性换可读性。 */
 function costBits(bits){
-  const s=bits.filter(Boolean).map(b=>`<span>${b}</span>`).join("");
+  const num=uiNum();
+  const s=bits.filter(Boolean).map(b=>num?b:arrowize(b)).map(b=>`<span>${b}</span>`).join("");
   return s?`<div class="cost">${s}</div>`:"";
 }
 const _eDn=n=>`体能<i class="dn">−${Math.round(n)}</i>`;
 const _eUp=n=>`体能<i class="up">+${Math.round(n)}</i>`;
+/* ---------- 显示模式：叙事 / 数值（2026-09-05 玩家反馈「数值扑面而来、没有游戏性」）----------
+   数值一个不改、一个不藏——只是默认用文字档位和箭头说话；顶栏「数值」一键切回具体数字。
+   偏好记在 localStorage（是设备的事，不是生涯的事），无头批测里没有 localStorage 就当「数值」。 */
+const UI_NUM_KEY="poxiao_uinum";
+function uiNum(){ try{ return localStorage.getItem(UI_NUM_KEY)==="1"; }catch(e){ return true; } }
+function uiSetNum(v){ try{ localStorage.setItem(UI_NUM_KEY,v?"1":"0"); }catch(e){} }
+/* 五维 / 实力 / 战力共用一把文字尺（和统一实力尺对表：职业级 62 ≈ LPL 首发门槛，顶尖 70，世界级 78） */
+const DIM_WORDS=[[78,"世界级"],[70,"顶尖"],[62,"职业级"],[55,"精通"],[48,"扎实"],[40,"入门"],[-1e9,"生疏"]];
+function dimWord(v){ for(const [at,w] of DIM_WORDS) if(v>=at) return w; return "生疏"; }
+const N=(num,word)=>uiNum()?num:word;
+/* 收益芯片的叙事版：「操作 +0.4」→「操作↑」、「体能 −9」→「体能↓」；钱照写（钱不是数值感的来源） */
+function arrowize(b){
+  if(/万<\/i>|万$/.test(b)) return b;
+  return b.replace(/<i class="up">[^<]*<\/i>/g,'<i class="up">↑</i>').replace(/<i class="dn">[^<]*<\/i>/g,'<i class="dn">↓</i>');
+}
 /* 备战是几天不是一周，出征周是赶路加时差——两种「压缩周」里
    休息/排位的效果都按 0.45 折算（保姆车资产提到 0.55），和 doAction 保持一致 */
 const _prepMul=()=>(S.step==="prep"||(S.off&&S.off.next==="intl"))?((S.assets&&S.assets.van)?0.55:0.45):1;
@@ -2944,7 +3020,7 @@ function tabContent(T){
     ${T==="shop"?(typeof economyCards==="function"?economyCards():shopCard()):""}
     ${T==="tx"?(typeof transferPage==="function"?transferPage():""):""}
     ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
-    ${T==="world"?(typeof fixtureCard==="function"?fixtureCard():"")+standingsCard()+rivalCard()
+    ${T==="world"?(typeof bracketCard==="function"?bracketCard():"")+(typeof fixtureCard==="function"?fixtureCard():"")+standingsCard()+rivalCard()
       +(typeof followUpCard==="function"?followUpCard():"")
       +newsCard()+eventsCard():""}
     ${T==="ach"?achCard():""}`;
@@ -2973,6 +3049,7 @@ function viewSeason(){
     <h2>${sea.tag} ${SPLITS[S.split||0]} · 第 ${S.week}/${WEEKS} 周<em>剩余行动点 ${S.ap}</em></h2>
     ${typeof autoBar==="function"?autoBar():""}
     ${typeof questCard==="function"?questCard():""}
+    ${weekDiary()}
     ${typeof btkChaseNote==="function"?btkChaseNote():""}
     ${versionCard()}
     ${fatigueBar()}
@@ -3002,7 +3079,7 @@ function viewSeason(){
       <button class="btn ghost sm" id="auto">自动推进到下一件事</button>
     </div>
     ${benched&&typeof scrimPanel==="function"?scrimPanel():""}
-    ${opp?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(power(opp,0,sea.fav)).toFixed(1)}）
+    ${opp&&uiNum()?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(power(opp,0,sea.fav)).toFixed(1)}）
       vs 你队 ${pwShow(power(myRoster(),S.fatigue,sea.fav)).toFixed(1)}</p>`:""}
   </div>
   ${typeof pressCard==="function"?pressCard():""}
@@ -3086,10 +3163,16 @@ function fatigueBar(){
       ap!==undefined?`，本周还剩 <b>${ap}</b> 点`:""}。按钮上写的是该行动的体能变化与收益。</div></div>`;
 }
 function attrCard(){
-  return `<div class="card"><h2>你的属性<em>${S.age} 岁 · ${POSN[S.pos]}${
-      typeof tryoutSkill==="function"?` · 实力 <b>${tryoutSkill().toFixed(0)}</b>`:""}${
-      S.pre&&typeof S.pre.rank==="number"?` · ${rankFull(S.pre.rank)}${(()=>{const nx=RANKS.find(x=>x.at>S.pre.rank);
-        return nx?`（本段门槛 ${rankReq(S.pre.rank).toFixed(0)} · ${nx.n}要 ${rankToSkill(nx.at).toFixed(0)}）`:"（已到顶）";})()}`:""}</em></h2>
+  const num=uiNum();
+  const st=(typeof strength==="function")?strength(S.attrs):avg(DIMS.map(d=>S.attrs[d]));
+  const rk=(S.pre&&typeof S.pre.rank==="number")?S.pre.rank:null;
+  const head=num
+    ? `${S.age} 岁 · ${POSN[S.pos]}${typeof tryoutSkill==="function"?` · 实力 <b>${tryoutSkill().toFixed(0)}</b>`:""}${
+        rk!==null?` · ${rankFull(rk)}${(()=>{const nx=RANKS.find(x=>x.at>rk);
+        return nx?`（本段门槛 ${rankReq(rk).toFixed(0)} · ${nx.n}要 ${rankToSkill(nx.at).toFixed(0)}）`:"（已到顶）";})()}`:""}`
+    : `${S.age} 岁 · ${POSN[S.pos]} · 实力 <b>${dimWord(st)}</b>${rk!==null?` · ${rankFull(rk)}`:""}`;
+  const adaptW=(()=>{ const ad=Math.round(adaptOf()); return ad>62?"很均衡":ad>45?"有侧重也有兜底":"高度专精"; })();
+  return `<div class="card"><h2>你的属性<em>${head}</em></h2>
     <div class="renamer">
       <span class="rn-k">ID</span>
       <input type="text" id="rename" maxlength="12" value="${escapeHtml(S.name||"")}"
@@ -3099,12 +3182,16 @@ function attrCard(){
     <div class="attrs">${DIMS.map(d=>{
       const c=capOf(d),v=S.attrs[d],d0=(S.seasonAttr0||{})[d]??v,g=v-d0;
       const cb=(S.capBonus&&S.capBonus[d])||0;
+      const vn=num
+        ? `<b>${v.toFixed(1)}</b><span style="color:var(--ink-3)">/${c.toFixed(0)}</span>${
+            cb>=0.1?`<span style="color:var(--gold)" title="经历顶开的天花板">↑${cb.toFixed(0)}</span>`:""}${
+            Math.abs(g)>=0.05?` <span class="${g>0?'up':'dn'}">${g>0?'+':''}${g.toFixed(1)}</span>`:""}`
+        : `<b>${dimWord(v)}</b>${v>=c-0.05?`<span style="color:var(--gold)" title="到瓶颈了">·顶</span>`:""}${
+            g>=0.05?` <span class="up" title="本赛季在涨">↑</span>`:g<=-0.05?` <span class="dn" title="本赛季在掉">↓</span>`:""}`;
       return `<div class="at"><div class="lb">${d}</div>
         <div class="track"><div class="fill" style="width:${clamp(v,0,100)}%"></div>
         <div class="capline" style="left:${clamp(c,0,100)}%"></div></div>
-        <div class="vn mono"><b>${v.toFixed(1)}</b><span style="color:var(--ink-3)">/${c.toFixed(0)}</span>${
-          cb>=0.1?`<span style="color:var(--gold)" title="经历顶开的天花板">↑${cb.toFixed(0)}</span>`:""}${
-          Math.abs(g)>=0.05?` <span class="${g>0?'up':'dn'}">${g>0?'+':''}${g.toFixed(1)}</span>`:""}</div>
+        <div class="vn mono">${vn}</div>
       </div>`}).join("")}</div>
     ${(()=>{
       const hit=DIMS.filter(d=>S.attrs[d]>=capOf(d)-0.05);
@@ -3122,8 +3209,11 @@ function attrCard(){
     })()}
     ${typeof buffChips==="function"?buffChips():""}
     ${typeof traitBar==="function"?traitBar():""}
-    <p class="note">竖线是当前瓶颈，<b style="color:var(--gold)">↑</b> 是被经历顶开的部分（夺冠、进强队、跟老将同队都会让它松动）。绿数字是本赛季成长。适应力 ${Math.round(adaptOf())}（由天赋均衡度决定）·
-      粉丝 ${fansText()}（${fanTier()}）· 热度 ${heatTier()} · 疲劳 ${Math.round(S.fatigue)}/100</p></div>`;
+    <p class="note">${num
+      ?`竖线是当前瓶颈，<b style="color:var(--gold)">↑</b> 是被经历顶开的部分（夺冠、进强队、跟老将同队都会让它松动）。绿数字是本赛季成长。适应力 ${Math.round(adaptOf())}（由天赋均衡度决定）·
+      粉丝 ${fansText()}（${fanTier()}）· 热度 ${heatTier()} · 疲劳 ${Math.round(S.fatigue)}/100`
+      :`条是水平、竖线是瓶颈，<b>↑</b> 是本赛季在涨。文字档位从低到高：生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级（职业级 ≈ LPL 首发）。想看具体数字，点顶栏的「数值」。
+      适应力${adaptW} · 粉丝 ${fanTier()} · 热度 ${heatTier()}`}</p></div>`;
 }
 
 /* ================= 比赛 ================= */
@@ -3737,7 +3827,7 @@ function viewPrep(){
   const pops=`${(S.autoSum&&typeof autoSumCard==="function")?autoSumCard():""}${(S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():""}${
     S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
   if(T!=="act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
-  return `${pops}${tabBar(TABS_SEASON)}${prepPanel()}`;
+  return `${pops}${tabBar(TABS_SEASON)}${prepPanel()}${typeof bracketCard==="function"?bracketCard():""}`;
 }
 function prepPanel(){
   const P=S.prep; if(!P) return "";
@@ -4161,6 +4251,7 @@ function offPanel(){
       : S.off.next==="summer"
       ? `接下来是 <b>${SEASONS[S.si].tag} 夏季赛</b>，还是吃 <b>${SEASONS[S.si].dim}</b>。`
       : (nx?`下赛季是 <b>${nx.tag} ${nx.y}</b>，版本「${nx.ver}」，吃 <b>${nx.dim}</b>——现在补这一项最划算。`:"")}</p>
+    ${weekDiary()}
     ${typeof btkChaseNote==="function"?btkChaseNote():""}
     ${fatigueBar()}
     ${typeof routineBar==="function"?routineBar():""}
@@ -4482,6 +4573,7 @@ const TABS_SEASON=[
 ];
 /* 导航图标（界面重做第二期 ④）：单线 SVG，跟字色走；竖栏里图标在字上，横条里在字左，手机上只留字 */
 const TAB_ICONS={
+  more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
   act:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
   me:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>',
   team:'<svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c1-3 3-5 6-5s5 2 6 5M10 20c1-3 3-5 6-5s5 2 6 5"/></svg>',
@@ -4493,12 +4585,27 @@ const TAB_ICONS={
   log:'<svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg>',
   auto:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4z"/></svg>'
 };
+var _moreOpen=false;   // 手机「更多」抽屉开着没（不进存档）
 function tabBar(list){
   const cur=curTab(list);
-  return `<div class="tabs">${list.map(t=>
-    `<button class="tab z-${t.z||"act"} ${t.sep?"sep":""} ${t.k===cur?'on':''}" data-tab="${t.k}">${TAB_ICONS[t.k]?`<i class="ti">${TAB_ICONS[t.k]}</i>`:""}${t.n}${
-      t.k==="ach"?`<span class="tcount">${ACHIEVEMENTS.filter(a=>hasAch(a.id)).length}</span>`:""}</button>`
-  ).join("")}</div>`;
+  const btn=t=>`<button class="tab z-${t.z||"act"} ${t.sep?"sep":""} ${t.k===cur?'on':''}" data-tab="${t.k}">${TAB_ICONS[t.k]?`<i class="ti">${TAB_ICONS[t.k]}</i>`:""}${t.n}${
+      t.k==="ach"?`<span class="tcount">${ACHIEVEMENTS.filter(a=>hasAch(a.id)).length}</span>`:""}</button>`;
+  // 手机（≤560px）：底栏只放四个主入口 + 「更多」，其余收进抽屉——
+  // 外部测评量的：八个入口挤在 375px 里每个 47px，能用但拥挤。当前栏目在后面就顶替第四格。
+  const mob=(typeof window!=="undefined"&&window.innerWidth&&window.innerWidth<=560);
+  try{ if(typeof document!=="undefined"&&document.body&&document.body.classList) document.body.classList.toggle("moreopen",!!(mob&&_moreOpen)); }catch(e){}   // 抽屉开着时右下角浮窗让位
+  if(!mob) return `<div class="tabs">${list.map(btn).join("")}</div>`;
+  let prim=list.slice(0,4);
+  const ci=list.findIndex(t=>t.k===cur);
+  if(ci>=4) prim=prim.slice(0,3).concat([list[ci]]);
+  const rest=list.filter(x=>!prim.includes(x));
+  return `${_moreOpen?`<div class="tabsheet-bg" data-more="0"></div><div class="tabsheet"><div class="ts-grid">${rest.map(btn).join("")}</div></div>`:""}
+  <div class="tabs mob">${prim.map(btn).join("")}<button class="tab more ${_moreOpen?'on':''}" data-more="1"><i class="ti">${TAB_ICONS.more||""}</i>更多</button></div>`;
+}
+var _mobW=(typeof window!=="undefined"&&!!window.innerWidth&&window.innerWidth<=560);
+if(typeof window!=="undefined"&&window.addEventListener){
+  // 跨过 560px 这条线才重画（底栏结构变了）；同侧拖窗口不重画
+  window.addEventListener("resize",()=>{ try{ const m=window.innerWidth<=560; if(m!==_mobW){ _mobW=m; _moreOpen=false; if(typeof S!=="undefined"&&S&&S.step!=="create") render(); } }catch(e){} });
 }
 function curTab(list){
   const has=list.some(t=>t.k===S.tab);
@@ -4521,6 +4628,7 @@ function actPanelPre(){
     <h2>第 ${P.week} 周<em>剩余行动点 ${P.ap}</em></h2>
     ${typeof autoBar==="function"?autoBar():""}
     ${typeof questCard==="function"?questCard():""}
+    ${weekDiary()}
     ${S.careerBak?`<div class="ver" style="border-left:3px solid var(--red)">你现在是<b>自由身</b>：上一份合同在 <b>${(S.pre.exPro&&S.pre.exPro.team)||"—"}</b> 结束，没人接手。
       俱乐部看的是你现在的段位、人气和杯赛履历——职业履历封存着，签回去就接上。</div>`:""}
     <div class="ver">${(()=>{const sc=preScore();
@@ -4559,7 +4667,7 @@ function actPanelPre(){
         const rc=rankCap(), ec=exposureCap();
         const nm=t=>(typeof CLUB_TIERS!=="undefined"&&CLUB_TIERS[t])?CLUB_TIERS[t].n:t;
         const worse=(TIER_ORDER.indexOf(rc)<=TIER_ORDER.indexOf(ec))?"rank":"exp";
-        return `<br>你的综合（俱乐部口径）<b>${typeof tryoutSkill==="function"?tryoutSkill().toFixed(0):"—"}</b> · 段位 <b>${rankFull(S.pre.rank)}</b>——各档的实力期望和段位门槛在「转会」栏。
+        return `<br>你的综合（俱乐部口径）<b>${typeof tryoutSkill==="function"?N(tryoutSkill().toFixed(0),dimWord(tryoutSkill())):"—"}</b> · 段位 <b>${rankFull(S.pre.rank)}</b>——各档的实力期望和段位门槛在「转会」栏。
           <br>现在会来找你的最高档：<b>${nm(rc===ec?rc:(worse==="rank"?rc:ec))}</b>　·　${
           rc===ec ? `段位和曝光刚好卡在同一档`
           : worse==="rank" ? `卡在<b>段位</b>上——曝光够到 ${nm(ec)} 了，再往上冲分`
@@ -4568,8 +4676,9 @@ function actPanelPre(){
       <br>距离转会窗口还有 <b>${Math.max(0,PRE_YEAR-P.week)}</b> 周<span style="color:var(--ink-3)">（那是年末各队定人的日子；试训邀请不等它，什么时候够格什么时候来）</span>。</div>
     <div class="ver">
       ${rankBadge(P.rank,40)}${nextR?`　→　下一档 ${nextR.n}`:`　→　已经到顶`}<br>
-      实力 <b>${soloSkill().toFixed(0)}</b><span style="color:var(--ink-3)">（五维均值，全游戏同一个数）</span>　·　当前分段门槛 <b>${rankReq(P.rank).toFixed(0)}</b>${
-        nextR?`　·　${nextR.n}门槛 <b>${rankReq(nextR.at).toFixed(0)}</b>`:""}<br>
+      ${uiNum()?`实力 <b>${soloSkill().toFixed(0)}</b><span style="color:var(--ink-3)">（五维均值，全游戏同一个数）</span>　·　当前分段门槛 <b>${rankReq(P.rank).toFixed(0)}</b>${
+        nextR?`　·　${nextR.n}门槛 <b>${rankReq(nextR.at).toFixed(0)}</b>`:""}`
+        :`实力 <b>${dimWord(soloSkill())}</b>（${tierOf(soloSkill())}的水平）`}<br>
       <span style="color:${soloWinP()>=0.5?'var(--cyan)':'var(--red)'}">${
         soloSkill()>=rankReq(P.rank)+6?"这个分段对你没什么难度，往上冲。":
         soloSkill()>=rankReq(P.rank)-2?"卡在门槛附近，有涨有掉——再练一点就稳了。":
@@ -4591,13 +4700,13 @@ function actPanelPre(){
       <button class="act" data-pre="rest" ${P.ap<apCost("rest")?'disabled style="opacity:.34"':''}>
         <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳${costRest()}</div></button>
       <button class="act" data-pre="boost" ${P.ap<apCost("boost")?'disabled style="opacity:.34"':''} title="来钱快；手会糙、心会累，接多了会留下记录">
-        <div class="t">接代练 ${apTag("boost")}</div><div class="d">到手约 <b>${Math.round(3+P.rank*0.06)} 万</b> · 心态 −0.15 · 疲劳 +8${(S.flags&&S.flags.boostN)?`　<span style="color:var(--ink-3)">已接 ${S.flags.boostN} 单</span>`:""}</div></button>
+        <div class="t">接代练 ${apTag("boost")}</div><div class="d">到手约 <b>${Math.round(3+P.rank*0.06)} 万</b> · ${N("心态 −0.15 · 疲劳 +8","手会糙、心会累")}${(S.flags&&S.flags.boostN)?`　<span style="color:var(--ink-3)">已接 ${S.flags.boostN} 单</span>`:""}</div></button>
       <button class="act" data-pre="cafe" ${P.ap<apCost("cafe")?'disabled style="opacity:.34"':''} title="清疲劳、稳心态；有车队的话默契一起涨">
-        <div class="t">网吧开黑 ${apTag("cafe")}</div><div class="d">疲劳 −8 · 心态 +0.25 · 人气小涨${P.mates&&P.mates.length?" · 车队默契 +":""}</div></button>
+        <div class="t">网吧开黑 ${apTag("cafe")}</div><div class="d">${N("疲劳 −8 · 心态 +0.25 · 人气小涨","清疲劳、稳心态、人气小涨")}${P.mates&&P.mates.length?" · 车队默契一起涨":""}</div></button>
       <button class="act" data-pre="chill" ${P.ap<apCost("chill")?'disabled style="opacity:.34"':''} title="疲劳掉得最快，但手感会生一点">
-        <div class="t">换个游戏 ${apTag("chill")}</div><div class="d">疲劳 −12 · 心态 +0.2 · 操作 −0.08</div></button>
+        <div class="t">换个游戏 ${apTag("chill")}</div><div class="d">${N("疲劳 −12 · 心态 +0.2 · 操作 −0.08","疲劳掉得最快，手感生一点")}</div></button>
       <button class="act" data-pre="watch" ${P.ap<apCost("watch")?'disabled style="opacity:.34"':''} title="运营和指挥的便宜课">
-        <div class="t">看职业录像 ${apTag("watch")}</div><div class="d">运营 +0.18 · 指挥 +0.18 · 战术素养 +0.3</div></button>
+        <div class="t">看职业录像 ${apTag("watch")}</div><div class="d">${N("运营 +0.18 · 指挥 +0.18 · 战术素养 +0.3","运营和指挥的便宜课，战术素养也涨")}</div></button>
     </div>
     ${typeof routineBar==="function"?routineBar():""}
     ${(S.pre.mates&&S.pre.mates.length&&typeof squadActs==="function")?squadActs()
@@ -4733,6 +4842,125 @@ function viewOffer(){
 
 /* __MARKET_MODULE__ */
 
+/* ================= 对阵图（2026-09-05 玩家点名）=================
+   「赛程或者其他地方放上分组 / 赛程图，八强四强淘汰赛也画出来，玩家一眼知道下一场打谁、赢了打谁。」
+   全部用 HTML 画、不用图片：同一套骨架，换队名和队标。
+   · 瑞士轮 / 小组赛：按战绩分桶的看板（3 胜晋级、3 负淘汰），你的队晨光橙框
+   · 淘汰赛：对阵树——已打完的轮次（intl.br.hist）+ 本轮 + 后续占位；MSI 双败按胜者组 / 败者组逐轮列
+   · 联赛季后赛：六强种子 + 你的路线；常规赛期间按当前排名画「若现在结束」的形势
+   · 杯赛：轮次阶梯（对手按轮固定，赢了打谁一目了然） */
+function brTeam(n,opt){
+  opt=opt||{};
+  if(!n) return `<span class="bt empty">${opt.ph||"待定"}</span>`;
+  const me=(n===S.team);
+  let code=n; try{ code=(typeof teamCode==="function"&&teamCode(n))||n; }catch(e){}
+  return `<span class="bt ${me?'me':''} ${opt.win?'win':''} ${opt.lose?'lose':''}" title="${escapeHtml(n)}">${
+    typeof teamLogo==="function"?teamLogo(n,16):""}<b>${escapeHtml(code)}</b></span>`;
+}
+function swissBoard(I){
+  const groups={};
+  (I.field||[]).forEach(n=>{ const r=I.swiss[n]||[0,0]; const k=r[0]+"-"+r[1]; (groups[k]=groups[k]||[]).push(n); });
+  const keys=Object.keys(groups).sort((a,b)=>{ const [aw,al]=a.split("-").map(Number),[bw,bl]=b.split("-").map(Number); return (bw-aw)||(al-bl); });
+  const next=(S.prep&&S.prep.opp)||(S.match&&S.match.oppName)||null;
+  return `<div class="brk-board">${keys.map(k=>{ const [w,l]=k.split("-").map(Number); const st=w>=3?"adv":l>=3?"out":"";
+    return `<div class="bb ${st}"><div class="bh">${k}${st==="adv"?' <em>晋级</em>':st==="out"?' <em>淘汰</em>':''}</div>${
+      groups[k].map(n=>brTeam(n,{win:w>=3,lose:l>=3})).join("")}</div>`; }).join("")}</div>
+  <p class="note" style="margin:8px 0 0">${I.stage==="groups"?"小组赛":"瑞士轮"}第 ${I.round} 轮 · 你 <b>${I.record.join("-")}</b>${
+    next?` · 下一场 vs <b>${next}</b>（同战绩、不同赛区配对）`:""}。三胜晋级八强，三负出局。</p>`;
+}
+function koRounds(B){
+  const rounds=(B.hist||[]).map(h=>({label:h.label,pairs:h.pairs,winners:h.winners,done:true}));
+  const cur=(!B.champ&&typeof brStep==="function")?brStep():null;
+  if(cur&&cur.pairs&&cur.pairs.length) rounds.push({label:cur.label,pairs:cur.pairs,winners:[],now:true});
+  if(!B.champ){
+    if(!B.double){
+      let n=cur?cur.pairs.length:0;
+      while(n>1){ n=Math.floor(n/2); rounds.push({label:n>=4?"八强":n>=2?"半决赛":"决赛",pairs:Array.from({length:n},()=>[null,null]),winners:[],ph:true}); }
+    } else {
+      const labs=["胜者组第一轮","败者组第一轮","胜者组半决赛","败者组第二轮","胜者组决赛","败者组第三轮","败者组决赛","总决赛"];
+      const cnt=[4,2,2,2,1,1,1,1];
+      for(let st=(B.step||0)+1;st<8;st++) rounds.push({label:labs[st],pairs:Array.from({length:cnt[st]},()=>[null,null]),winners:[],ph:true});
+    }
+  }
+  return rounds;
+}
+function koTree(rounds,champ){
+  return `<div class="brk-tree">${rounds.map(r=>`<div class="bcol ${r.now?'now':''} ${r.done?'done':''}"><div class="bh">${r.label}${r.now?' <em>本轮</em>':''}</div>${
+    r.pairs.map((p,i)=>{ const w=r.winners[i]||null; const ph=r.ph?"胜者":"轮空";
+      return `<div class="bm ${(p[0]===S.team||p[1]===S.team)&&r.now?'now':''}">${
+        brTeam(p[0],{win:w&&w===p[0],lose:w&&p[0]&&w!==p[0],ph})}<span class="bvs">vs</span>${
+        brTeam(p[1],{win:w&&w===p[1],lose:w&&p[1]&&w!==p[1],ph})}</div>`; }).join("")}</div>`).join("")}${
+    champ?`<div class="bcol"><div class="bh">冠军</div><div class="bm">${brTeam(champ,{win:true})}<i class="bok">🏆</i></div></div>`:""}</div>`;
+}
+function intlBracketCard(){
+  const I=S.intl; if(!I) return "";
+  const name=I.type==="msi"?"MSI":"世界赛";
+  if(I.stage==="playin"){
+    return `<div class="card"><h2>${name}入围赛<em>第 ${I.round} 轮</em></h2>
+      <div class="brk-tree"><div class="bcol"><div class="bh">入围赛名单</div>${(I.field||[]).map(n=>`<div class="bm">${brTeam(n)}</div>`).join("")}</div></div>
+      <p class="note">从最底下打起，前 ${(I.cfg&&I.cfg.playin&&I.cfg.playin.take)||2} 名进正赛。</p></div>`;
+  }
+  if(I.stage==="swiss"||I.stage==="groups"){
+    return `<div class="card"><h2>${name}${I.stage==="groups"?"小组赛":"瑞士轮"} · 对阵看板<em>${(I.field||[]).length} 队</em></h2>${swissBoard(I)}</div>`;
+  }
+  const B=I.br; if(!B) return "";
+  const rounds=koRounds(B);
+  return `<div class="card"><h2>${name}淘汰赛 · 对阵树<em>${B.double?"双败制 BO5":"单败 BO5"}</em></h2>${koTree(rounds,B.champ)}
+    <p class="note">${B.champ?`冠军 <b>${B.champ}</b>。`:`亮字是赢了的队、划掉的是被淘汰的，晨光橙框是你。${
+      (S.prep&&S.prep.opp)?`下一场 vs <b>${S.prep.opp}</b>。`:""}${typeof brOthersText==="function"?brOthersText():""}`}</p></div>`;
+}
+/* 联赛季后赛：六队三轮。首轮打 5/6 号种子，半决赛打 2/3 号，决赛打榜首（playoffOpp 的规则） */
+function playoffBracketCard(){
+  if(!S.career||!S.team||typeof lplRank!=="function") return "";
+  const rk=lplRank(); if(!rk||rk.length<6) return "";
+  const P=(S.playoff&&S.playoff.alive)?S.playoff:null;
+  const inSeason=S.step==="season";
+  if(!P&&!inSeason) return "";
+  const six=rk.slice(0,6), mySeed=rk.findIndex(r=>r.n===S.team)+1;
+  const names=["季后赛首轮","半决赛","决赛"];
+  let path=[];
+  if(P){
+    const beaten=(P.beaten||[]).filter(n=>n!==S.team);
+    for(let r=1;r<=3;r++){
+      if(r<P.round) path.push({n:names[r-1],opp:beaten[r-1]||null,st:"win"});
+      else if(r===P.round) path.push({n:names[r-1],opp:(S.prep&&S.prep.opp)||(S.match&&S.match.oppName)||(typeof playoffOpp==="function"?playoffOpp(r):null),st:"now"});
+      else path.push({n:names[r-1],opp:null,st:"ph"});
+    }
+  } else if(mySeed>=1&&mySeed<=6){
+    const pool=rk.filter(r=>r.n!==S.team).map(r=>r.n);
+    path=[{n:names[0],opp:pool[Math.min(4,pool.length-1)],st:"ph"},{n:names[1],opp:pool[1],st:"ph"},{n:names[2],opp:pool[0],st:"ph"}];
+  }
+  return `<div class="card"><h2>${P?"季后赛 · 对阵":"季后赛形势"}<em>${P?poRoundName(P.round):`常规赛第 ${S.week}/${WEEKS} 周 · 你第 ${mySeed} 名`}</em></h2>
+    <div class="brk-tree">
+      <div class="bcol"><div class="bh">六强种子${P?"":"（按当前排名）"}</div>${six.map((r,i)=>`<div class="bm seed ${r.n===S.team?'now':''}">${brTeam(r.n)}<span class="bsd">#${i+1} · ${r.w}−${r.l}</span></div>`).join("")}</div>
+      ${path.length?`<div class="bcol path"><div class="bh">你的路线${P?"":"（预测）"}</div>${path.map(x=>`<div class="bm ${x.st}"><span class="bsd">${x.n}</span>${
+        brTeam(x.opp,{win:x.st==="win",ph:"待定"})}${x.st==="win"?'<i class="bok">胜</i>':x.st==="now"?'<i class="bnow">下一场</i>':''}</div>`).join("")}</div>`:""}
+    </div>
+    <p class="note">${P?"首轮打 5/6 号种子，半决赛打 2/3 号，决赛打榜首——赢一轮往上走一格。"
+      :mySeed>=1&&mySeed<=6?"前六进季后赛。按现在的排名算，每周都会变。":"前六进季后赛，你现在在线外——把排名打上去。"}</p></div>`;
+}
+function bracketCard(){
+  try{
+    return (S.intl?intlBracketCard():"")+((!S.intl&&S.career)?playoffBracketCard():"");
+  }catch(e){ return ""; }
+}
+/* 杯赛阶梯：对手按轮固定（CUPS.opps），赢了打谁一目了然 */
+function cupLadder(k){
+  try{
+    const c=cupOf(k), C=CUPS[k]; if(!c||!C) return "";
+    const steps=[];
+    for(let r=1;r<=C.rounds;r++){
+      const opp=C.opps[Math.min(r-1,C.opps.length-1)];
+      const st=!c.alive?(r<=c.wins?"win":r===c.wins+1?"lost":"ph"):(r<c.round?"win":r===c.round?"now":"ph");
+      steps.push({r,n:cupRoundName(k,r),opp,st});
+    }
+    const wait=Math.max(0,c.nextWeek-S.pre.week);
+    return `<div class="brk-tree cup"><div class="bcol path"><div class="bh">赛程阶梯</div>${steps.map(x=>
+      `<div class="bm ${x.st}"><span class="bsd">${x.n}</span><span class="bt ${x.st==="win"?"win":x.st==="lost"?"lose":""}"><b>${x.opp}</b></span>${
+        x.st==="win"?'<i class="bok">胜</i>':x.st==="now"?`<i class="bnow">${wait===0?"本周":"第 "+c.nextWeek+" 周"}</i>`:x.st==="lost"?'<i class="bko">止步</i>':''}</div>`).join("")}</div></div>`;
+  }catch(e){ return ""; }
+}
+
 /* ================= 侧栏 ================= */
 function formBar(team){
   const f=S.teamForm[team]||[];
@@ -4752,18 +4980,18 @@ function nextMatchCard(){
   return `<div class="card"><h2>下一场<em>${sea.tag} 第 ${S.week} 周 · BO3</em></h2>
     <div class="next">
       <div class="sd"><div class="nm">${teamLogo(S.team,28)}${S.team}${formBar(S.team)}</div>
-        <div class="pw">全队战力 <b>${pwShow(myPw).toFixed(1)}</b></div></div>
+        <div class="pw">全队战力 <b>${N(pwShow(myPw).toFixed(1),dimWord(pwShow(myPw)))}</b></div></div>
       <div class="mid">VS</div>
       <div class="sd"><div class="nm">${teamLogo(on,28)}${on}${formBar(on)}</div>
-        <div class="pw">全队战力 <b>${pwShow(opPw).toFixed(1)}</b></div></div>
+        <div class="pw">全队战力 <b>${N(pwShow(opPw).toFixed(1),dimWord(pwShow(opPw)))}</b></div></div>
     </div>
     <div class="oppinfo">
       <span class="chipx">对面战绩 <b>${st.w}−${st.l}</b></span>
-      <span class="chipx">核心 <b>${star.id}</b>${star.cn?`（${star.cn}）`:""} ${POSN[star.pos]}<i class="ovr">实力 ${ovrOf(star).toFixed(0)}</i>${star.comeback?' · 复出':''}${star.rookie?' · 新秀':''}</span>
-      ${rival?`<span class="chipx">你的对位 <b>${rival.id}</b><i class="ovr">实力 ${ovrOf(rival).toFixed(0)}</i>${rival.rookie?' · 新秀':''}</span>`:""}
+      <span class="chipx">核心 <b>${star.id}</b>${star.cn?`（${star.cn}）`:""} ${POSN[star.pos]}<i class="ovr">${N("实力 "+ovrOf(star).toFixed(0),dimWord(ovrOf(star)))}</i>${star.comeback?' · 复出':''}${star.rookie?' · 新秀':''}</span>
+      ${rival?`<span class="chipx">你的对位 <b>${rival.id}</b><i class="ovr">${N("实力 "+ovrOf(rival).toFixed(0),dimWord(ovrOf(rival)))}</i>${rival.rookie?' · 新秀':''}</span>`:""}
     </div>
     <div class="gapbar ${V.k}">
-      <div class="gv">${V.t}<span class="gd mono">${diff>=0?"+":""}${diff.toFixed(1)}</span></div>
+      <div class="gv">${V.t}${uiNum()?`<span class="gd mono">${diff>=0?"+":""}${diff.toFixed(1)}</span>`:""}</div>
       <div class="gt">${V.d}</div>
     </div>${typeof fixtureStrip==="function"?fixtureStrip():""}</div>`;
 }
@@ -4863,6 +5091,115 @@ function flushToasts(){
       el.onclick=close;                           // 点击 / 手机上点一下：关掉
       arm(toastHold(txt)+i*400);
     });
+  }catch(e){}
+}
+/* ---------- 教程导览（2026-09-05 玩家点名，参考 Val Manager）----------
+   第一次进职业前、第一次进赛季各走一遍：压暗全页、给目标元素开一个「聚光框」，旁边一张说明卡，
+   上一步 / 下一步 / 跳过，Esc 也能退。看过记在 localStorage；顶栏「导览」随时重看。
+   目标元素不在页面上（比如本周没有推进按钮）就自动跳过那一步。无头批测没有 document.body，整段不跑。 */
+const TOUR_PRE=[
+  {sel:"#hud", t:"你的仪表盘", d:"你是谁、现在是什么时候、手里有什么：段位、粉丝、热度、资金、体能。晨光橙的按钮永远是「接下来该做的事」。"},
+  {sel:"#pin", t:"实力条", d:"你的水平和本周剩下的行动点。默认用文字描述：生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级（职业级 ≈ LPL 首发）。想看具体数字，点右边的「数值」。"},
+  {sel:'[data-tab="act"]', t:"本周", d:"花行动点的地方：训练、排位、直播、休息、杯赛。行动点用完，推进到下一周。"},
+  {sel:'[data-tab="squad"]', t:"战队", d:"报名城市争霸赛或主播杯会抽到一支路人车队——默契、战术、士气在这里练。签约职业队后，这里变成「队伍」。"},
+  {sel:'[data-tab="world"]', t:"赛事", d:"外面的世界：各赛区积分榜、赛程、大事记。你没在打，联赛也在打。"},
+  {sel:'[data-tab="tx"]', t:"转会", d:"试训邀请、合同、各档俱乐部要什么水平的人——什么时候够格，电话什么时候来。"},
+  {sel:'[data-tab="shop"]', t:"经济", d:"钱从哪来、往哪花：直播收入、奖金、外设、课程。"},
+  {sel:'[data-tab="ach"]', t:"成就 / 日志", d:"成就是你拿到过的东西；日志是这一路发生过的事。"},
+  {sel:'[data-tab="auto"]', t:"托管", d:"把重复的事交出去：一键安排、自动推进到下一件需要你拿主意的事。"},
+  {sel:".grid.g5", t:"行动", d:"每个按钮是一周里的一件事：练哪一维、打排位、直播、休息……写着它会让什么变好、累不累。点了之后，卡片顶上会留一句这周做了什么。"},
+  {sel:"#prenext", t:"推进", d:"行动点用完就进入下一周。年底是转会窗口，试训邀请随时可能来——把段位和人气打上去，让人看见你。"}
+];
+const TOUR_SEASON=[
+  {sel:"#hud", t:"赛季仪表盘", d:"效力的队、本季战绩、冠军数、段位、粉丝、资金、体能、状态。"},
+  {sel:'[data-tab="me"]', t:"我的", d:"五维属性、状态曲线、个人数据、比赛记录、生涯与外设——你自己的一切。"},
+  {sel:'[data-tab="team"]', t:"队伍", d:"队友、默契、战术、士气、信任与话语权——这是五个人的游戏，队友弱你再强也赢不了。"},
+  {sel:'[data-tab="world"]', t:"赛事", d:"赛程、积分榜、季后赛形势、宿敌、各赛区新闻、大事记。国际赛期间对阵图也在这里。"},
+  {sel:'[data-tab="tx"]', t:"转会", d:"别的队来挖你、你挂牌、买断、续约——都在这里。"},
+  {sel:'[data-tab="shop"]', t:"经济", d:"年薪、直播、奖金进账；外设、课程、俱乐部资源花钱。"},
+  {sel:"#play", t:"这周的比赛", d:"行动点用完，打这周的比赛。赛后有拆解：赢在哪、输在哪、明天练什么。"}
+];
+var _tour=null;
+function tourSeen(k){ try{ return localStorage.getItem("poxiao_tour_"+k)==="1"; }catch(e){ return true; } }
+function tourMark(k){ try{ localStorage.setItem("poxiao_tour_"+k,"1"); }catch(e){} }
+function tourStart(kind){
+  try{
+    if(typeof document==="undefined"||!document.body||!document.body.appendChild||!document.querySelector) return;
+    tourEnd(false);
+    _tour={kind,steps:kind==="season"?TOUR_SEASON:TOUR_PRE,i:0};
+    const ov=document.createElement("div"); ov.className="tour"; ov.id="tour";
+    ov.innerHTML=`<div class="tour-hole"></div><div class="tour-card"><div class="tour-k"></div><div class="tour-t"></div><div class="tour-d"></div>
+      <div class="tour-b"><button class="btn ghost sm" id="tour-skip">跳过</button><span class="tour-n"></span>
+      <button class="btn ghost sm" id="tour-prev">上一步</button><button class="btn sm" id="tour-next">下一步</button></div></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector("#tour-skip").onclick=()=>tourEnd(true);
+    ov.querySelector("#tour-prev").onclick=()=>tourGo(-1);
+    ov.querySelector("#tour-next").onclick=()=>tourGo(1);
+    ov.onclick=e=>{ if(e.target===ov) tourGo(1); };
+    document.addEventListener("keydown",tourKey);
+    window.addEventListener("resize",tourPlace);
+    tourShow();
+  }catch(e){}
+}
+function tourKey(e){ if(e.key==="Escape") tourEnd(true); else if(e.key==="ArrowRight"||e.key==="Enter") tourGo(1); else if(e.key==="ArrowLeft") tourGo(-1); }
+function tourGo(d){ if(!_tour) return; const n=_tour.i+d; if(n<0) return; if(n>=_tour.steps.length){ tourEnd(true); return; } _tour.i=n; tourShow(d<0?-1:1); }
+function tourShow(dir){
+  if(!_tour) return;
+  dir=dir||1;
+  let s=_tour.steps[_tour.i], el=document.querySelector(s.sel), guard=0;
+  while(!el&&guard++<20){   // 这一步的目标不在页面上：跳过
+    _tour.i+=dir; if(_tour.i<0){ _tour.i=0; break; }
+    if(_tour.i>=_tour.steps.length){ tourEnd(true); return; }
+    s=_tour.steps[_tour.i]; el=document.querySelector(s.sel);
+  }
+  if(!el){ tourEnd(true); return; }
+  try{ el.scrollIntoView({block:"center"}); }catch(e){ try{ el.scrollIntoView(); }catch(e2){} }
+  const ov=document.getElementById("tour"); if(!ov) return;
+  ov.querySelector(".tour-k").textContent=`导览 ${_tour.i+1} / ${_tour.steps.length}`;
+  ov.querySelector(".tour-t").textContent=s.t;
+  ov.querySelector(".tour-d").textContent=s.d;
+  ov.querySelector("#tour-next").textContent=(_tour.i>=_tour.steps.length-1)?"开始吧":"下一步";
+  ov.querySelector("#tour-prev").disabled=(_tour.i===0);
+  setTimeout(tourPlace,60);   // 等 scrollIntoView 落定再量位置
+}
+function tourPlace(){
+  try{
+    if(!_tour) return;
+    const ov=document.getElementById("tour"); if(!ov) return;
+    const s=_tour.steps[_tour.i], el=document.querySelector(s.sel); if(!el) return;
+    const r=el.getBoundingClientRect(), pad=6;
+    const hole=ov.querySelector(".tour-hole"), card=ov.querySelector(".tour-card");
+    hole.style.left=(r.left-pad)+"px"; hole.style.top=(r.top-pad)+"px";
+    hole.style.width=(r.width+pad*2)+"px"; hole.style.height=(r.height+pad*2)+"px";
+    const vw=window.innerWidth, vh=window.innerHeight, cw=card.offsetWidth, ch=card.offsetHeight;
+    if(vw<=560){
+      card.style.left="10px"; card.style.right="10px";
+      // 目标在下半屏（比如底栏）就把卡片放上面，否则放下面
+      if(r.top>vh*0.5){ card.style.top=Math.max(10,r.top-pad-12-ch)+"px"; }
+      else { card.style.top=Math.min(vh-ch-10,r.bottom+pad+12)+"px"; }
+    } else {
+      card.style.right="auto";
+      card.style.left=Math.max(10,Math.min(vw-cw-10,r.left))+"px";
+      const below=r.bottom+pad+12;
+      card.style.top=((below+ch<vh-10)?below:Math.max(10,r.top-pad-12-ch))+"px";
+    }
+  }catch(e){}
+}
+function tourEnd(mark){
+  if(_tour&&mark) tourMark(_tour.kind);
+  _tour=null;
+  try{ const ov=document.getElementById("tour"); if(ov) ov.remove(); }catch(e){}
+  try{ document.removeEventListener("keydown",tourKey); window.removeEventListener("resize",tourPlace); }catch(e){}
+}
+/* render() 末尾调：第一次到职业前 / 第一次到赛季，且页面上没有别的弹窗时，开导览 */
+function tourMaybe(){
+  try{
+    if(_tour||typeof document==="undefined"||!document.body||!document.body.appendChild) return;
+    if(typeof _renderLock!=="undefined"&&_renderLock>0) return;
+    if(S.rndEv||S.rndResult||S.locker||S.signup||S.rankUp||S.cupMatch||S.cupResult||S.tryout||S.deal||S.showStart) return;
+    if(S.pre&&S.pre.invite&&S.pre.invite.pending) return;
+    if(S.step==="pre"&&!tourSeen("pre")){ setTimeout(()=>{ if(!_tour&&S.step==="pre") tourStart("pre"); },600); }
+    else if(S.step==="season"&&S.career&&!tourSeen("season")){ setTimeout(()=>{ if(!_tour&&S.step==="season") tourStart("season"); },600); }
   }catch(e){}
 }
 function hudNum(k,v,suffix,cls){
@@ -5005,12 +5342,19 @@ function pinbar(){
   // 行动点放最前面——这是每周最要紧的操作数字，有剩余时亮金色
   const ap=(S.step==="pre"&&S.pre)?S.pre.ap
           :(S.step==="season"||S.step==="prep"||S.step==="offseason")?S.ap:null;
+  const num=uiNum();
+  const st=(typeof strength==="function")?strength(S.attrs):avg(DIMS.map(d=>S.attrs[d]));
   p.innerHTML=(ap!==null&&ap!==undefined?`<span class="pv ${ap>0?'top':'dim'}"><i>行动</i><b>${ap}</b></span>`:"")
-  +DIMS.map(d=>
-    `<span class="pv ${d===top?'top':''}"><i>${d}</i><b>${S.attrs[d].toFixed(0)}</b></span>`
-  ).join("")
+  +(num
+    ? DIMS.map(d=>`<span class="pv ${d===top?'top':''}"><i>${d}</i><b>${S.attrs[d].toFixed(0)}</b></span>`).join("")
+    : `<span class="pv top"><i>实力</i><b>${dimWord(st)}</b></span><span class="pv"><i>最强</i><b>${top}</b></span>`)
   +`<span class="pv dim"><i>体能</i><b>${100-Math.round(S.fatigue)}</b></span>`
-  +(S.form!==undefined&&S.career?`<span class="pv dim"><i>状态</i><b>${Math.round(myForm())}</b></span>`:"");
+  +(S.form!==undefined&&S.career?`<span class="pv dim"><i>状态</i><b>${Math.round(myForm())}</b></span>`:"")
+  +`<span class="pv tools"><button class="pvb ${num?'on':''}" id="uinum" title="${num?"切回文字描述":"显示具体数值"}">${num?"数值 开":"数值 关"}</button><button class="pvb" id="tourbtn" title="重看一遍导览">导览</button></span>`;
+  try{
+    const ub=p.querySelector("#uinum"); if(ub) ub.onclick=()=>{ uiSetNum(!num); render(); };
+    const tb=p.querySelector("#tourbtn"); if(tb) tb.onclick=()=>{ if(typeof tourStart==="function") tourStart(S.career?"season":"pre"); };
+  }catch(e){}
 }
 /* 新的内联阻塞卡出现时把内容区拉到可见位置。
    玩家原话：「新的事件有时候会在下面，我不滑动都看不见」。
@@ -5072,6 +5416,7 @@ function render(){
   if(typeof stageSwitchFx==="function") stageSwitchFx(); // 换标签 160ms 淡入
   if(typeof flushToasts==="function") flushToasts();     // 事件提示条
   if(typeof bgmSeasonTick==="function") bgmSeasonTick();   // 赛季主题曲：赛季变了就切
+  if(typeof tourMaybe==="function") tourMaybe();           // 第一次进职业前 / 赛季：教程导览
   /* 大标题只在创建页和结局页铺开。
      进了游戏之后它每一屏都在重复占 237px，而首屏总共才 900px——
      收成一条窄横幅，把地方让给内容。 */
@@ -5145,7 +5490,10 @@ function bind(){
   const sg=$("startgo"); if(sg) sg.onclick=()=>{ S.showStart=false; startPre(); };
   const sb=$("startback"); if(sb) sb.onclick=()=>{ S.showStart=false; render(); };   // 天赋/背景点错了不用重载
   st.querySelectorAll("[data-prolg]").forEach(b=>b.onclick=()=>{S.proLg=b.dataset.prolg;render()});
-  st.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render()});
+  st.querySelectorAll("[data-talpre]").forEach(b=>b.onclick=()=>{ const x=TAL_PRESETS.find(y=>y.k===b.dataset.talpre);
+    if(x){ DIMS.forEach(d=>S.talent[d]=x.t[d]||0); render(); } });
+  st.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;_moreOpen=false;render()});
+  st.querySelectorAll("[data-more]").forEach(b=>b.onclick=()=>{_moreOpen=(b.dataset.more==="1")?!_moreOpen:false;render()});
   const _rok=$("rndok"); if(_rok) _rok.onclick=()=>{S.rndResult=null;render()};
   st.querySelectorAll("[data-rnd]").forEach(b=>b.onclick=()=>resolveRandom(+b.dataset.rnd));
   st.querySelectorAll("[data-locker]").forEach(b=>b.onclick=()=>resolveLocker(+b.dataset.locker));

@@ -42,6 +42,7 @@ const code = m[1];
 try {
   new Function(code + "\n;globalThis.__api={S:()=>S,SEASONS,SPLITS,DIMS,AGES,BACKGROUNDS,ACHIEVEMENTS,RANKS,"
     + "GEAR,SLOTS,COURSES,RELAX,SPEND,screenCreate,startPre,preAct,preNextWeek,acceptOffer,"
+    + "render,bracketCard,intlBracketCard,playoffBracketCard,cupLadder,weekDiary,attrCard,tabBar,uiSetNum,uiNum,dimWord,TABS_PRE,TABS_SEASON,dropToStreets,tourMaybe,TAL_PRESETS,"
     + "doTrain,doAction,startMatch,resolveNode,playGame,nextWeek,doOffseason,offNextWeek,prepGo,enterPrep,finishOffseason,OFF_WEEKS,isBenched,benchWeek,"
     + "resolveLocker,ending,cap,rankFull,nowLabel,nowPhase,yearWeek,yearTotal,rankIcon,fanTier,scoutTier,preScore,hasAch,pickClub,power,ageWorld,myTeam,myRoster,leagueBaseline,fanCap,fanFill,fansWan,fansText,fanWeek,addFans,heatTier,fanToNext,"
     + "buyGear,buyCourse,buyRelax,gearBonus,streamIncome,drawBackgrounds,advancePreWeek,capOf,"

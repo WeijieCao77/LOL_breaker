@@ -1144,3 +1144,73 @@ button:disabled .apc{opacity:.5}
 .bxbar{display:inline-block;width:56px;height:6px;background:rgba(30,74,99,.5);vertical-align:middle;margin-right:6px;position:relative;overflow:hidden}
 .bxbar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--gold-dim),var(--gold))}
 @media(max-width:560px){.bxbar{width:36px}.bxt td,.bxt th{padding:4px 5px;font-size:11.5px}}
+
+/* ---- 叙事层：本周流水、天赋预设、顶栏工具 ---- */
+.diary{margin:0 0 10px;padding:8px 12px;border-left:3px solid var(--cyan-dim);background:rgba(79,190,218,.06);
+  font-size:13px;line-height:1.55;color:var(--ink-2)}
+.diary.muted{color:var(--ink-3);border-left-color:var(--line)}
+.diary .dk{display:inline-block;margin-right:8px;font-size:10px;letter-spacing:.16em;color:var(--ink-3);vertical-align:1px}
+.diary .dl{display:block;margin-top:3px;font-size:11.5px;color:var(--ink-3)}
+.talpre{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:0 0 12px}
+.talpre .opt{padding:9px 10px}
+.talpre .opt .t{font-size:14px}
+.talpre .opt .d{font-size:11.5px}
+@media(max-width:700px){.talpre{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pinbar .pv.tools{margin-left:auto;gap:6px}
+.pvb{font-size:11px;letter-spacing:.06em;padding:3px 8px;border:1px solid var(--line);background:rgba(14,42,62,.7);color:var(--ink-3);cursor:pointer}
+.pvb:hover{border-color:var(--gold);color:var(--ink)}
+.pvb.on{border-color:var(--cyan);color:var(--cyan)}
+@media(max-width:560px){.pinbar .pv.tools{margin-left:0}.pvb{padding:4px 7px}}
+
+/* ---- 教程导览：聚光框 + 说明卡（不加动画） ---- */
+.tour{position:fixed;inset:0;z-index:85}
+.tour-hole{position:absolute;box-shadow:0 0 0 9999px rgba(3,12,20,.74);border:2px solid var(--dawn);border-radius:4px;pointer-events:none}
+.tour-card{position:absolute;width:min(380px,calc(100vw - 20px));background:rgba(12,26,40,.98);border:1px solid var(--line-hot);
+  border-left:3px solid var(--gold);padding:14px 16px 12px;box-shadow:0 10px 30px rgba(0,0,0,.55)}
+.tour-k{font-size:10px;letter-spacing:.16em;color:var(--ink-3);font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
+.tour-t{font-size:16px;font-weight:650;color:var(--gold-hi);margin:3px 0 6px}
+.tour-d{font-size:13px;line-height:1.55;color:var(--ink-2)}
+.tour-b{display:flex;gap:8px;align-items:center;margin-top:12px}
+.tour-b .tour-n{flex:1}
+/* ---- 手机底栏「更多」抽屉 ---- */
+@media(max-width:560px){
+  .tabsheet-bg{position:fixed;inset:0;z-index:44;background:rgba(3,12,20,.45)}
+  .tabsheet{position:fixed;left:0;right:0;bottom:44px;z-index:46;background:rgba(8,22,36,.98);border-top:1px solid var(--line-hot);padding:10px 10px 12px}
+  .tabsheet .ts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .tabsheet .tab{flex:none;min-width:0;padding:10px 4px;font-size:11px;letter-spacing:0;background:rgba(14,42,62,.9);border:1px solid var(--line);white-space:normal}
+  .tabsheet .tab.on{border-color:var(--gold)}
+  .tabsheet .tab .ti{display:block;margin:0 auto 3px;width:18px;height:18px;opacity:.9}
+  .tabsheet .tab .ti svg{width:18px;height:18px}
+  .tabsheet .tab.sep{margin-top:0;border-top:1px solid var(--line)}
+  .tabsheet .tcount{display:none}
+}
+
+/* ---- 对阵图：瑞士轮看板 / 淘汰赛树 / 季后赛形势 / 杯赛阶梯 ---- */
+.brk-tree{display:flex;gap:14px;overflow-x:auto;padding:4px 2px 8px;align-items:flex-start}
+.brk-tree .bcol{flex:none;min-width:176px;display:flex;flex-direction:column;gap:8px}
+.brk-tree .bcol.path{min-width:230px}
+.brk-tree .bh,.brk-board .bh{font-size:10.5px;letter-spacing:.14em;color:var(--ink-3);font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
+.brk-tree .bh em,.brk-board .bh em{font-style:normal;color:var(--dawn);margin-left:6px}
+.brk-tree .bcol.now .bh{color:var(--dawn)}
+.brk-tree .bcol.done{opacity:.8}
+.bm{display:flex;align-items:center;gap:6px;padding:6px 8px;background:rgba(6,21,32,.7);border:1px solid var(--line);font-size:12.5px;flex-wrap:wrap}
+.bm .bvs{font-size:10px;color:var(--ink-3);letter-spacing:.1em}
+.bm .bsd{font-size:10.5px;color:var(--ink-3);min-width:64px}
+.bm.now{border-color:var(--dawn)}
+.bm.win{border-color:var(--cyan-dim)}
+.bm .bok{font-style:normal;color:var(--cyan);font-size:11px;margin-left:auto}
+.bm .bnow{font-style:normal;color:var(--dawn);font-size:11px;margin-left:auto}
+.bm .bko{font-style:normal;color:var(--red);font-size:11px;margin-left:auto}
+.bt{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border:1px solid transparent;color:var(--ink-2);white-space:nowrap}
+.bt b{font-weight:650;color:var(--ink)}
+.bt.win b{color:var(--gold-hi)}
+.bt.lose{opacity:.45}
+.bt.lose b{text-decoration:line-through}
+.bt.me{border-color:var(--dawn);background:rgba(233,161,90,.1)}
+.bt.empty{color:var(--ink-3);border-style:dashed;border-color:var(--line)}
+.bt .tlogo{margin:0}
+.brk-board{display:flex;flex-wrap:wrap;gap:10px}
+.brk-board .bb{flex:1 1 150px;padding:8px 10px;background:rgba(6,21,32,.7);border:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.brk-board .bb.adv{border-color:var(--cyan-dim)}
+.brk-board .bb.out{opacity:.6}
+body.moreopen .audiofab{display:none}

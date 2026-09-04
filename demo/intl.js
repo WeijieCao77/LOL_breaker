@@ -326,6 +326,8 @@ function brStep(){
 }
 function brApply(st,winners){
   const B=S.intl.br;
+  // 每一轮的对局和胜者留档，对阵图（bracketCard）按它画已经打完的轮次
+  B.hist=(B.hist||[]).concat([{label:st.label,pairs:st.pairs.map(p=>p?[p[0]||null,p[1]||null]:[null,null]),winners:winners.map(w=>w||null)}]);
   const win=i=>winners[i]||null;
   const lose=i=>{ const p=st.pairs[i]; if(!p||!p[0]||!p[1]) return null; return p[0]===winners[i]?p[1]:p[0]; };
   const real=a=>a.filter(Boolean);

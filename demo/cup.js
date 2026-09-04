@@ -415,6 +415,7 @@ function cupCard(){
         <div class="sd"><div class="nm">${cupOppName(k)}</div>
           <div class="pw">${powerRank(op)}水平 · ${op.toFixed(0)}</div></div>
       </div>
+      ${typeof cupLadder==="function"?cupLadder(k):""}
       <p class="note" style="margin-top:10px">${wait>0
         ? `还有 <b>${wait} 周</b>开打。这期间可以正常训练，也可以专门备战。`
         : `<b style="color:var(--gold)">就是本周。</b>`}
