@@ -283,6 +283,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906p", at:"2026-09-06", items:[
+    "「弱队冲榜」方案 B 上线（玩家拍板）：AI 队赛季里也练默契 / 战术——每周 +0.6、只往 62 靠，换人后照旧砸、再回补。原来只有你的队在练，明星个人进垫底队靠默契差还能冲前二"
+  ]},
   {v:"v20260906o", at:"2026-09-06", items:[
     "比赛节点的摆动从 ±风险×4.5 放回 ±风险×5.5（成功率仍三成看队友）：方案 A 把 MSI / 世界赛冠军率压回了 3–4%，试过 LCK 王朝加成 ×0.7、胜率曲线放宽、版本相性 0.25、国际赛疲劳 20→16，机器人的国际赛成绩都不动——真正管用的只有节点；5.5 让联赛冠军局 41.7% → 44.2%、世界赛 4.2% → 5.8%，「明星个人进垫底队」的前二率仍只有原来的六成"
   ]},
@@ -1336,6 +1339,7 @@ function makeRookie(pos,level,lg){
 /* 职业前的世界推进：你没在打，但联赛在打。 */
 function simWorldPre(){
   if(!S.world||!S.standings) return;
+  if(typeof aiTeamsTrain==="function") aiTeamsTrain();   // 职业前世界照样在练
   Object.keys(S.world).forEach(lg=>{
     const ts=S.world[lg].slice();
     for(let i=ts.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[ts[i],ts[j]]=[ts[j],ts[i]];}
@@ -3677,10 +3681,23 @@ function endMatch(){
   }
   render();
 }
+/* AI 队赛季里也练默契 / 战术（2026-09-06 玩家拍板「弱队冲榜」方案 B）：每周 +0.6、只往 62 靠，换人后照旧砸、再回补。
+   原来只有你的队在练（托管一个赛段能把默契推到 65+），AI 队的默契整个赛季不动——这是「明星个人进垫底队」还能冲前二的最后一根杠杆。 */
+const AI_TRAIN_STEP=0.6, AI_TRAIN_CAP=62;
+function aiTeamsTrain(){
+  try{
+    Object.keys(S.world||{}).forEach(lg=>(S.world[lg]||[]).forEach(t=>{
+      if(S.team&&t.name===S.team) return;
+      if(t.syn!==undefined&&t.syn<AI_TRAIN_CAP) t.syn=q1(Math.min(AI_TRAIN_CAP,t.syn+AI_TRAIN_STEP));
+      if(t.tac!==undefined&&t.tac<AI_TRAIN_CAP) t.tac=q1(Math.min(AI_TRAIN_CAP,t.tac+AI_TRAIN_STEP));
+    }));
+  }catch(e){}
+}
 function simWorld(){
   // 国际赛 / 季后赛期间联赛停摆——原来每打一场国际赛都替联赛多模拟一周，
   // 世界赛期间冒出「TT 爆冷击败 EDG」还进了大事记（玩家实锤：TT 根本没来世界赛）
   if(S.intl||S.playoff) return;
+  aiTeamsTrain();   // 方案 B：AI 队每个常规赛周也在练
   S._upset=null;          // 每周重摇：际遇里说的冷门必须是「这一周真的发生的」
   Object.keys(S.world).forEach(lg=>{
     const sea=SEASONS[S.si];
