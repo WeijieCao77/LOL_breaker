@@ -283,6 +283,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906h", at:"2026-09-06", items:[
+    "新秀改用按赛区分的名字池（玩家实锤：「新秀王1」出戏）：LPL / LDL 中文风 ID 带中文名，LCK 韩式，LEC / LCS 欧美，VCS / PCS / LJL / CBLOL / LLA / LCO / TCL 各有各的；同赛区不重名"
+  ]},
   {v:"v20260906g", at:"2026-09-06", items:[
     "训练赛对位挑战限次（玩家点名：2 点一次、一周能打三轮不合理）：每周最多 2 次、连着两周最多 3 次，教练要看常规训练",
     "外赛区修正（玩家实锤：加盟 LCK 的 DRX，推进总结写「0 胜 0 负」、大事记全是 LPL 的冷门）：连胜 / 冷门播报改成你所在的联赛；俱乐部排名按队伍所属联赛算（问询卡、谈判卡不再一律写「LPL 第 x/17」）；推进总结顶上写队伍本赛段战绩，替补就写「你在替补席」"
@@ -1173,7 +1176,7 @@ function cloneWorld(){
     const seen=new Set();
     w[lg].forEach(t=>{
       const lvl=avg(t.players.map(q=>avg(DIMS.map(d=>q.r[d]||50))));
-      t.players=t.players.map(q=>{ if(seen.has(q.id)){ const nr=makeRookie(q.pos,lvl); nr.lg=lg; return nr; } seen.add(q.id); return q; });
+      t.players=t.players.map(q=>{ if(seen.has(q.id)){ const nr=makeRookie(q.pos,lvl,lg); nr.lg=lg; return nr; } seen.add(q.id); return q; });
     });
     // 统一标尺：均值锚定 + 明星放大 + 风格重分配（LDL 随后按母队生成，自动继承）
     anchorLeague(lg,w[lg]);
@@ -1254,7 +1257,7 @@ function buildLDL(w){
        大师到王者边缘）——强队青训≈王者边的门神，弱队青训跟弱队一样菜，
        宗师实力（60）有得打、没得躺。 */
     players:POS.map(x=>{
-      const pl=Object.assign(makeRookie(x.k,Math.max(56,Math.min(p-8,lplLow))),{lg:"LDL",form:52,retired:false});   // 母队 −8，不高于 LPL 垫底三队均值，下限 56
+      const pl=Object.assign(makeRookie(x.k,Math.max(56,Math.min(p-8,lplLow)),"LDL"),{lg:"LDL",form:52,retired:false});   // 母队 −8，不高于 LPL 垫底三队均值，下限 56
       const R=LDL_ROSTER[teamCode(t.name)];
       const real=R&&R.find(q=>q.pos===x.k);
       if(real) pl.id=real.id;               // 真名上身；数值不动
@@ -1263,14 +1266,41 @@ function buildLDL(w){
   }));
 }
 
-const ROOKIE_CN=["林","王","张","李","陈","刘","杨","黄","赵","周"];
+/* ---------- 新秀名字池（2026-09-06 玩家点名：「新秀王1」太出戏；每个赛区自己的池子，LCK 不冒中文名、LPL 不冒外国新秀）----------
+   ID 都是编的、避开现役 / 退役名将；同一赛区里不重名，池子用光了才带数字。LPL / LDL 的新秀顺带一个中文名。 */
+const ROOKIE_IDS={
+  LPL:["Xiaobai","Yuzhou","Langx","Hanwei","Qingfeng","Moli","Tianci","Lingxi","Jiuyou","Kaiyan","Xiaosu","Ranzhi","Biubiu","Wuji","Yanzi","Beichen","Xingchen","Muyu","Chenxi","Zhiyu","Anran","Haoyu","Yunfei","Shuhan"],
+  LCK:["Haru","Doyoung","Jiwoo","Seungho","Kyeol","Saero","Hanbit","Woongi","Dasom","Nabi","Yeonho","Bono","Taeyang","Minsoo","Jinho","Hyunwoo","Sangmin","Yohan","Byeol","Garam","Dalbit","Sky"],
+  LEC:["Nox","Vale","Kairos","Ember","Orbit","Lumen","Rook","Halo","Quill","Sable","Zephyr","Ivo","Bastian","Fjord","Rune","Tarn","Silva","Marlow","Odin","Bram"],
+  LCS:["Ace","Dash","Rev","Tango","Juno","Miles","Crest","Brick","Cole","Tex","Ridge","Nova","Drift","Jett","Kai","Blaze","Reed","Sawyer","Colt","Vance"],
+  VCS:["Bao","Khoa","Minh","Tuan","Phong","Long","Quang","Duy","Hieu","Nam","Thanh","Kiet"],
+  PCS:["Yuan","Kuan","Chieh","Hao","Ming","Wei","Jun","Sheng","Yao","Chen","Lun","Hsu"],
+  LJL:["Yuki","Ren","Sora","Haru","Kaito","Riku","Yuto","Sho","Taiga","Hikaru","Kaede","Aoi"],
+  CBLOL:["Tiago","Caio","Leo","Rafa","Guto","Nando","Dudu","Bruno","Vini","Cadu","Theo","Enzo"],
+  LLA:["Mateo","Nico","Pablo","Diego","Santi","Tomas","Joaquin","Facu","Lucho","Andres","Ivan","Emi"],
+  LCO:["Jack","Ollie","Lachie","Riley","Kobe","Jarrod","Blake","Tyson","Flynn","Mitch","Zac","Bailey"],
+  TCL:["Emre","Kaan","Deniz","Berk","Arda","Cem","Efe","Mert","Onur","Yigit","Kerem","Tolga"]
+};
+const ROOKIE_CN_SUR=["林","王","张","李","陈","刘","杨","黄","赵","周","吴","徐","孙","胡","朱","高","郭","罗"];
+const ROOKIE_CN_GIVEN=["宇","浩然","子轩","梓豪","嘉俊","泽宇","俊杰","晨","天宇","子涵","一凡","博文","思远","文昊","雨泽","明轩","翔","锐"];
 let rookieN=0;
-function makeRookie(pos,level){
+function rookieName(lg){
+  const key=(lg==="LDL")?"LPL":lg;
+  const pool=ROOKIE_IDS[key]||ROOKIE_IDS.LEC;
+  const used=new Set();
+  try{ Object.keys(S.world||{}).forEach(k=>(S.world[k]||[]).forEach(t=>(t.players||[]).forEach(p=>used.add(p.id)))); }catch(e){}
+  const free=pool.filter(n=>!used.has(n));
+  let id=free.length?free[Math.floor(rnd()*free.length)]:(pool[Math.floor(rnd()*pool.length)]+(rookieN%90+10));
+  const cn=(key==="LPL")?ROOKIE_CN_SUR[Math.floor(rnd()*ROOKIE_CN_SUR.length)]+ROOKIE_CN_GIVEN[Math.floor(rnd()*ROOKIE_CN_GIVEN.length)]:"";
+  return {id,cn};
+}
+function makeRookie(pos,level,lg){
   rookieN++;
   const r={};
   // 统一标尺后封顶提到 88：LCK 明星退役后补上来的新星也该有 70+ 的空间
   DIMS.forEach(d=>r[d]=clamp(Math.round(level+(rnd()*16-8)),45,93));   // 全体系 +5
-  return {id:"新秀"+ROOKIE_CN[rookieN%10]+rookieN,cn:"",pos,age:18,r,rookie:true};
+  const nm=rookieName(lg||(S&&S.homeLeague)||"LPL");
+  return {id:nm.id,cn:nm.cn,pos,age:18,r,rookie:true,lg:lg||undefined};
 }
 
 /* 职业前的世界推进：你没在打，但联赛在打。 */
@@ -1503,7 +1533,7 @@ function ageWorld(){
              生涯末我队比联赛其余高 10 分，联赛冠军率 100%、MSI 80%。
              那不是玩家变强了，是世界停在原地等他。
              现实里新一代选手确实一年比一年强，所以锚点跟着赛季往上走。 */
-          const nr=makeRookie(p.pos,base-6+(S.si||0)*2.2);
+          const nr=makeRookie(p.pos,base-6+(S.si||0)*2.2,lg);
           S.retiredPool.push({p:Object.assign({},p),peak:ovr,year:SEASONS[S.si].y,lg});
           if(lg==="LPL"||ovr>58){
             const honor = ovr>76?"一代人的记忆就此谢幕":ovr>64?"结束了自己的职业生涯":"低调退役";
@@ -4308,7 +4338,7 @@ function leaveRoster(name,lg){
   if(!t||!t.players||!t.players.some(q=>q.me)) return false;
   const others=t.players.filter(q=>!q.me);
   const lvl=others.length?avg(others.map(q=>ovrOf(q))):60;
-  t.players=t.players.map(q=>q.me?Object.assign(makeRookie(q.pos,lvl-3),{lg:lg||"LPL"}):q);
+  t.players=t.players.map(q=>q.me?Object.assign(makeRookie(q.pos,lvl-3,lg||"LPL"),{lg:lg||"LPL"}):q);
   t.syn=clamp((t.syn===undefined?50:t.syn)-7,20,90);
   return true;
 }

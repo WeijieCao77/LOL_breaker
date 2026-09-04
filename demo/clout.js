@@ -137,7 +137,7 @@ function doList(id){
     const lg=S.homeLeague||"LPL";
     const team=myTeam();
     const base=(S.baseline&&S.baseline[lg])||50;
-    const nr=makeRookie(t.pos,base-3);
+    const nr=makeRookie(t.pos,base-3,S.homeLeague||"LPL");
     team.players=team.players.map(q=>q===t?nr:q);
     addStaff("coach",-4);                        // 教练替他惋惜
     addTrustAll(-6); relDrift(false);
@@ -210,7 +210,7 @@ function doSign(id){
       (a.r.操作*.34+a.r.运营*.28)<(b.r.操作*.34+b.r.运营*.28)?a:b);
     const src=findTeam(x.team);
     if(src) src.players=src.players.map(q=>q===x.p?makeRookie(x.p.pos,
-      ((S.baseline&&S.baseline[x.lg])||50)-4):q);
+      ((S.baseline&&S.baseline[x.lg])||50)-4,(typeof leagueOf==="function")?leagueOf(src.name):(S.homeLeague||"LPL")):q);
     team.players=team.players.map(q=>q===out?Object.assign({},x.p):q);
     addStaff("mgr",-3);
     pushEvent(`俱乐部按你的要求把 <b>${x.p.id}</b>${x.p.cn?`（${x.p.cn}）`:""} 签了下来，

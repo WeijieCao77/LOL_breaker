@@ -75,7 +75,7 @@ function checkMateExit(){
   const lg=S.homeLeague||"LPL";
   const base=(S.baseline&&S.baseline[lg])||50;
   const idx=t.players.indexOf(gone);
-  const nr=makeRookie(gone.pos, base-4);
+  const nr=makeRookie(gone.pos, base-4, S.homeLeague||"LPL");
   nr.lg=lg; nr.form=50;
   t.players[idx]=nr;
   delete S.trust[gone.id];

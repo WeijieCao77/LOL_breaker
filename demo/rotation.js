@@ -325,7 +325,7 @@ function pickReplacement(){
     const p=acad&&acad.players.find(q=>q.pos===S.pos&&!q.me);
     if(p) return Object.assign({},p,{r:Object.assign({},p.r),lg:S.homeLeague||"LPL",fromAcad:true});
   }catch(e){}
-  const r=(typeof makeRookie==="function")?makeRookie(S.pos,tavg-2):null;
+  const r=(typeof makeRookie==="function")?makeRookie(S.pos,tavg-2,S.homeLeague||"LPL"):null;
   return r||{id:"替补",pos:S.pos,age:20,r:Object.assign({},S.attrs)};
 }
 function demoteCheck(won,gap){

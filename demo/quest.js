@@ -140,7 +140,7 @@ function evRosterChange(team){
   });
   if(idx<0) return null;
   const out=team.players[idx];
-  const nr=makeRookie(out.pos, base-3);
+  const nr=makeRookie(out.pos, base-3, S.homeLeague||"LPL");
   nr.lg=lg; nr.form=52;
   team.players[idx]=nr;
   team.syn=clamp((team.syn===undefined?50:team.syn)-6,20,90);   // 换人要重新磨
