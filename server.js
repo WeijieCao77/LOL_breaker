@@ -92,7 +92,7 @@ function gameCsp(entry) {
     "script-src " + (entry.scriptSrc.length ? entry.scriptSrc.join(" ") : "'none'"),
     "style-src 'unsafe-inline'",
     "img-src 'self' data: blob:",
-    "font-src data:",
+    "font-src 'self' data:",
     "media-src 'self' data: blob:",
     "connect-src 'self'",
     "frame-src " + XFER_FROM.join(" "),
@@ -158,12 +158,15 @@ function serveAsset(req, res, url) {
    · 支持 Range（206）：iOS Safari 没有它就不播；不压缩（mp3 压不动）
    · 一天缓存 + ETag；走 loadAsset 整文件进内存，五首歌也就二三十 MB
    · CSP 已是 media-src 'self'，不用再放行 */
-const MEDIA_TYPES = { ".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".m4a": "audio/mp4", ".wav": "audio/wav" };
+const MEDIA_TYPES = { ".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".m4a": "audio/mp4", ".wav": "audio/wav",
+                      ".woff": "font/woff", ".woff2": "font/woff2" };   // /fonts/：界面重做第三期的自托管宋体子集
 function serveMedia(req, res, url) {
-  const m = /^\/bgm\/([a-z0-9_-]+)(\.[a-z0-9]+)$/i.exec(url);
-  const type = m && MEDIA_TYPES[m[2].toLowerCase()];
+  const m = /^\/(bgm|fonts)\/([a-z0-9_-]+)(\.[a-z0-9]+)$/i.exec(url);
+  const type = m && MEDIA_TYPES[m[3].toLowerCase()];
   if (!type) return send(res, 404, "not found");
-  const entry = loadAsset("demo/bgm/" + m[1] + m[2]);
+  if (m[1] === "fonts" && !/^font\//.test(type)) return send(res, 404, "not found");
+  if (m[1] === "bgm" && !/^audio\//.test(type)) return send(res, 404, "not found");
+  const entry = loadAsset("demo/" + m[1] + "/" + m[2] + m[3]);
   if (!entry) return send(res, 404, "not found");
   const total = entry.raw.length;
   const headers = baseHeaders({
@@ -484,7 +487,7 @@ const server = http.createServer((req, res) => {
       { "location": "https://" + CANONICAL + (req.url || "/") });
   }
 
-  if (url.startsWith("/bgm/")) return serveMedia(req, res, url);   // 背景音乐文件
+  if (url.startsWith("/bgm/") || url.startsWith("/fonts/")) return serveMedia(req, res, url);   // 背景音乐 / 自托管字体
   if (!ROUTES[url]) return send(res, 404, "not found");
   serveAsset(req, res, url);
 });

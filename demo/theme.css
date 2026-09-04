@@ -313,6 +313,31 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 }
 @media(max-width:560px){.tab .ti{display:none}}
 
+/* ---- 界面重做第三期：宋体标题 + 手机底部导航 ---- */
+/* 自托管的思源宋体 Bold 子集（749 字，159KB，OFL 许可，见 demo/fonts/README.md）：只给展示级大字——
+   结局称号、名片、HUD 的「现在」、弹窗标题、页头。正文仍是系统黑体。swap：先用黑体画，字体到了再换。 */
+@font-face{font-family:"Poxiao Serif";src:url("fonts/poxiao-serif-700.woff") format("woff");
+  font-weight:700;font-style:normal;font-display:swap}
+.po-title,.po-mark,header.top h1,.h-now .big,.big,.ru-tier{
+  font-family:"Poxiao Serif","Noto Serif SC","Source Han Serif SC","Songti SC",serif;font-weight:700}
+.h-now .big small{font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","HarmonyOS Sans SC","Microsoft YaHei","Noto Sans SC",sans-serif;font-weight:400}
+.po-title{letter-spacing:.16em}
+/* 手机：导航挪到底部一行（图标在上、字在下），内容区留出底栏高度；浮窗按钮和提示条相应上移 */
+@media(max-width:560px){
+  #stage>.tabs{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:45;margin:0;gap:0;
+    border:none;border-top:1px solid var(--line-hot);clip-path:none;
+    background:rgba(8,22,36,.97);backdrop-filter:blur(6px);flex-wrap:nowrap;overflow-x:auto}
+  #stage>.tabs .tab{flex:1 1 0;min-width:44px;padding:7px 2px 6px;font-size:10px;letter-spacing:0;line-height:1.2}
+  #stage>.tabs .tab .ti{display:block;margin:0 auto 2px;width:16px;height:16px;opacity:.9}
+  #stage>.tabs .tab .ti svg{width:16px;height:16px}
+  #stage>.tabs .tab.on::after{top:0;bottom:auto;height:2px}
+  #stage>.tabs .tab.sep{margin-top:0;border-top:none}
+  #stage>.tabs .tcount{display:none}
+  html body{padding-bottom:76px}
+  body .audiofab{bottom:64px}
+  .toasts{bottom:122px}
+}
+
 /* ---- 生涯名片（结局） ---- */
 .poster{position:relative;max-width:720px;margin:0 auto;padding:26px 28px 20px;color:var(--ink);
   background:radial-gradient(120% 90% at 50% 0%,rgba(201,169,97,.14),transparent 55%),linear-gradient(180deg,#0B2438,#071626);
