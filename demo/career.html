@@ -1000,6 +1000,10 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260905m", at:"2026-09-05", items:[
+    "经济栏新增「商务」账本（玩家点名：大事记和成就说有商务邀约，经济页却看不到是什么、签没签）：直播独家（邀约到达 / 签了 / 拒了）、外设独家、代言、赞助分成、赞助外设——每一单写时间、对象、你的决定、金额、备注；在履行的独家合约和本赛段开播次数也在这张卡",
+    "托管页「现在就按推荐执行一次」点了看得见结果（玩家实锤：点击没反应）：按钮下方直接写「执行了 N 件事：…」或「暂时没有该做的事」，说明文字也写清它会处理什么"
+  ]},
   {v:"v20260905l", at:"2026-09-05", items:[
     "复盘的对位账两边都算（玩家点名：只列短板扣分、长板不加分还说「没有短板惩罚」）：长项每一行写「高 X 分 → +Y 战力」，短板写「低 X 分 → −Y 战力」，最后给合计；极端加点的建议按权重说话——短板权重比长项低才劝你练长项，反过来就明说补短板更划算"
   ]},
@@ -6675,6 +6679,28 @@ function streamPushMul(){
 
 /* 每次开播时结算「平台关系」：分成该升就升（发事件），独家该谈就谈（弹窗）。
    放在直播动作里而不是每周结算里——你和平台打交道的时机就是开播。 */
+/* ---------- 商务账本（2026-09-05 玩家点名：大事记和成就说有商务邀约，经济页却看不到是什么、签没签）----------
+   每一单邀约到达、签、拒、到账都记一行：直播独家、外设独家、代言、赞助分成、赞助外设。 */
+function bizNote(kind,who,decision,money,note){
+  try{
+    S.bizLog=S.bizLog||[];
+    S.bizLog.push({s:(typeof nowStamp==="function")?nowStamp():(SEASONS[S.si]?SEASONS[S.si].tag:""),
+      w:S.career?S.week:(S.pre?S.pre.week:0), kind, who, decision, money:money||0, note:note||""});
+    if(S.bizLog.length>60) S.bizLog=S.bizLog.slice(-60);
+  }catch(e){}
+}
+function bizCard(){
+  const L=(S.bizLog||[]).slice().reverse().slice(0,14);
+  const deal=S.streamDeal;
+  const cur=deal?`<p class="note" style="margin:0 0 8px">在履行的合约：<b>${deal.plat}</b> · ${deal.n}${deal.kind==="club"?"（俱乐部合作平台，抽 20%）":deal.kind==="rival"?"（对家平台，俱乐部抽 40%）":""} · 每次直播保底 ${deal.base} 万 · 本赛段开播 ${deal.done||0}/${deal.need} 次</p>`
+    :`<p class="note" style="margin:0 0 8px">目前没有在履行的独家合约——直播收入跟着粉丝和热度浮动。</p>`;
+  const rows=L.length?L.map(x=>`<tr><td class="n" style="color:var(--ink-3)">${x.s}${x.w?` 第${x.w}周`:""}</td><td>${x.kind}</td><td>${escapeHtml(String(x.who||""))}</td>
+      <td>${/签|收|接/.test(x.decision)?`<b style="color:var(--cyan)">${x.decision}</b>`:/拒|守约|没去/.test(x.decision)?`<b style="color:var(--ink-3)">${x.decision}</b>`:x.decision}</td>
+      <td class="n mono">${x.money?(x.money>0?"+":"")+x.money+" 万":"—"}</td><td style="color:var(--ink-3)">${x.note||""}</td></tr>`).join("")
+    :`<tr><td colspan="6" style="color:var(--ink-3)">还没有商务找上门。平台的独家合约看粉丝档（到「小主播」以上才会带合同来），代言和赞助看人气与成绩。</td></tr>`;
+  return `<div class="card"><h2>商务<em>${(S.bizLog||[]).length} 单</em></h2>${cur}
+    <div class="tw"><table><thead><tr><th class="n">时间</th><th>类型</th><th>对象</th><th>你的决定</th><th class="n">金额</th><th>备注</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
 function checkStreamBiz(){
   const f=S.fans||0;
   // 分成上调：一档一档来，每次都告诉玩家
@@ -6700,6 +6726,7 @@ function checkStreamBiz(){
     const club=clubPlatform();            // 没签约时为 null，卡片会走「自由身」那一版
     S.streamOffer={lvl:d.lvl,sign:d.sign,base:d.base,n:d.n,
                    club, rival:rivalPlatform(club)};
+    bizNote("直播独家",club?`${club} / ${rivalPlatform(club)}`:PLATFORMS[0],"邀约到达",0,`${d.n}：签字费 ${d.sign} 万，每播保底 ${d.base} 万`);
     break;
   }
 }
@@ -6719,6 +6746,7 @@ function signStreamDeal(kind){
   S.streamDeal={lvl:o.lvl,base,n:o.n,plat,cut,kind:kind||"solo",
                 need:o.lvl>=2?3:2, done:0};
   addMoney("sign",sign);
+  bizNote("直播独家",plat,"签了",sign,`${o.n}${kind==="club"?"（俱乐部合作平台）":kind==="rival"?"（对家平台，经理不高兴）":""}·每播保底 ${base} 万·每赛段至少播 ${o.lvl>=2?3:2} 次`);
   const originMul=S.origin==="streamer"?1.7:1.0;
   const net=Math.round(base*originMul*(1-cut));
   let extra="";
@@ -6741,6 +6769,7 @@ function signStreamDeal(kind){
 function declineStreamDeal(){
   const o=S.streamOffer; if(!o) return;
   S.streamOffer=null;
+  bizNote("直播独家",o.club||o.rival||PLATFORMS[0],"拒了",0,`${o.n}：保持自由身`);
   pushEvent(`拒绝了<b>${o.n}</b>。收入继续跟着粉丝和热度浮动——上限是你自己挣的，下限也是。`,"info","直播");
   render();
 }
@@ -6905,6 +6934,7 @@ function gearCard(){
 function economyCards(){
   return financeCard()
     + streamDealCard()
+    + bizCard()
     + ((typeof contractTerms==="function")?contractTerms():"")
     + assetsCard()
     + shopCard()
@@ -7798,8 +7828,9 @@ const RANDOM_EVENTS=[
    q:()=>`一个小外设品牌找你签<b>独家</b>——现在给 <b>15 万</b>，条件是三年内不能用别家的键鼠露出。`,
    ctx:"钱不少。但「三年」对一个还没上岸的人来说，是很长的时间。",
    a:[{t:"签，先拿钱", g:"hard", e:()=>{ S.money+=15; (S.flags=S.flags||{}).exclusiveGear=1;
+        if(typeof bizNote==="function") bizNote("外设独家","小外设品牌","签了",15,"三年独家，别家键鼠不能露出");
         return "十五万到账，快递来了两套键鼠。合同锁在抽屉里。<b>三年很快的。</b>"; }},
-      {t:"不签独家", g:"grind", e:()=>"你说想留着以后的选择。对方没再联系。"}]},
+      {t:"不签独家", g:"grind", e:()=>{ if(typeof bizNote==="function") bizNote("外设独家","小外设品牌","拒了",0,"留着以后的选择"); return "你说想留着以后的选择。对方没再联系。"; }}]},
 
   {id:"reporter", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&(S.fans||0)>=100,
    q:()=>`一位跑赛区多年的记者想给你做一期「草根选手」的专访。她的号在圈里有分量。`,
@@ -7835,8 +7866,10 @@ const RANDOM_EVENTS=[
    q:()=>`一家一线外设品牌开出 <b>60 万</b>的年度代言——但你当年签的那份小品牌独家还在期内，解约要付 <b>20 万</b>违约金。`,
    ctx:"当年抽屉里那份合同，现在有人替你翻出来了。",
    a:[{t:"付违约金，签大牌", cost:20, e:()=>{ pay(20); S.money+=60; delete S.flags.exclusiveGear;
+        if(typeof bizNote==="function") bizNote("代言","一线外设品牌","签了",40,"年度代言 60 万，付小品牌违约金 20 万");
         return "二十万违约金付掉，六十万代言到账，净赚四十万。<b>当年那十五万，成了最贵的一笔预支。</b>"; }},
       {t:"守约，等它到期", g:"grind", e:()=>{ addFans(5);
+        if(typeof bizNote==="function") bizNote("代言","一线外设品牌","守约拒了",0,"小品牌独家未到期；圈里说你讲信用");
         return "你拒了大牌。小品牌老板亲自打电话来谢你，圈里也有人说你讲信用。<b>粉丝 +5，钱没有。</b>"; }}]},
 
   {id:"press_echo", rec:0, w:2, max:1, when:()=>!!S.career&&!!(S.flags&&S.flags.pressFriend),
@@ -8148,6 +8181,7 @@ const RANDOM_EVENTS=[
    q:()=>`俱乐部发了笔额外奖金——上个赛段的赞助分成。`,
    ctx:"数额不大，但没想到还有这个。",
    a:[{t:"收下",e:()=>{const n=30+Math.floor(rnd()*50);addMoney("other",n);
+        if(typeof bizNote==="function") bizNote("赞助分成",S.team||"俱乐部","收下",n,"上赛段赞助分成");
         return `到账 ${n} 万。`}}]},
 
   {id:"junior", rec:0, w:2, when:()=>(S.pre?S.pre.rank>=25:false),
@@ -8227,8 +8261,10 @@ const RANDOM_EVENTS=[
    ctx:"东西不错，但手感和你现在用的不一样。",
    a:[{t:"接了，直播时用", g:"show",e:()=>{const n=40+Math.floor(rnd()*40);addMoney("other",n);
         addBuff("train",0.92,1,"手感在适应");
+        if(typeof bizNote==="function") bizNote("赞助外设","赞助商","接了",n,"直播时使用，手感适应一周");
         return `到账 ${n} 万。手感别扭了几天。`}},
       {t:"婉拒，手感要紧", g:"grind",e:()=>{typeof addStaff==="function"&&addStaff("mgr",-2);
+        if(typeof bizNote==="function") bizNote("赞助外设","赞助商","婉拒了",0,"经理 −2");
         return "商务那边不太高兴，但你的手感没受影响。"}}]}
 ];
 
@@ -10424,6 +10460,9 @@ function autoOnce(){
   }catch(e){ S._autoErr=(e&&e.message)||String(e); }
   finally{ _autoBusy=false; }
   const n=(S.autoLog||[]).length-before;
+  // 结果直接写在托管页按钮下面（玩家实锤：点了没反应——原来只进大事记，人在托管页看不见）
+  S.autoOnceMsg=n?`执行了 ${n} 件事：${(S.autoLog||[]).slice(-n).join("、")}`
+    :`按推荐看了一遍，暂时没有该做的事：没有待处理的弹窗或报价，余额也没到该采购的档（安全余额 ${AUTO_RESERVE} 万以上才会买）`;
   pushEvent(n?`按推荐执行了 <b>${n}</b> 件事：${(S.autoLog||[]).slice(-n).join("、")}。`
              :`按推荐看了一遍，<b>暂时没有该做的事</b>。`,"info","托管");
   render();
@@ -10475,8 +10514,9 @@ function autoPage(){
       <button class="btn ${all?"ghost":""}" id="autoAll">${all?"全部收回":"一键全托管"}</button>
       <button class="btn ghost" id="autoNow">现在就按推荐执行一次</button>
     </div>
-    <p class="note" style="margin:0 0 14px;color:var(--ink-3)">
-      「执行一次」不改开关，只是把当下该做的事按推荐做掉——不想长期托管也能用。</p>
+    <p class="note" style="margin:0 0 ${S.autoOnceMsg?"4px":"14px"};color:var(--ink-3)">
+      「执行一次」不改开关：把<b>此刻</b>能按推荐处理的事做掉一次——待处理的际遇/更衣室弹窗、直播报价、杯赛报名、该买的外设课程——不想长期托管也能用。</p>
+    ${S.autoOnceMsg?`<p class="note" style="margin:0 0 14px;color:var(--cyan)">↳ ${S.autoOnceMsg}</p>`:""}
 
     <h3>四档，可以只交出去一部分</h3>
     <p class="note" style="margin:0 0 10px">下面每一格<b>点一下就是开关</b>。</p>

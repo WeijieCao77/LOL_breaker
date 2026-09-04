@@ -95,8 +95,9 @@ const RANDOM_EVENTS=[
    q:()=>`一个小外设品牌找你签<b>独家</b>——现在给 <b>15 万</b>，条件是三年内不能用别家的键鼠露出。`,
    ctx:"钱不少。但「三年」对一个还没上岸的人来说，是很长的时间。",
    a:[{t:"签，先拿钱", g:"hard", e:()=>{ S.money+=15; (S.flags=S.flags||{}).exclusiveGear=1;
+        if(typeof bizNote==="function") bizNote("外设独家","小外设品牌","签了",15,"三年独家，别家键鼠不能露出");
         return "十五万到账，快递来了两套键鼠。合同锁在抽屉里。<b>三年很快的。</b>"; }},
-      {t:"不签独家", g:"grind", e:()=>"你说想留着以后的选择。对方没再联系。"}]},
+      {t:"不签独家", g:"grind", e:()=>{ if(typeof bizNote==="function") bizNote("外设独家","小外设品牌","拒了",0,"留着以后的选择"); return "你说想留着以后的选择。对方没再联系。"; }}]},
 
   {id:"reporter", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&(S.fans||0)>=100,
    q:()=>`一位跑赛区多年的记者想给你做一期「草根选手」的专访。她的号在圈里有分量。`,
@@ -132,8 +133,10 @@ const RANDOM_EVENTS=[
    q:()=>`一家一线外设品牌开出 <b>60 万</b>的年度代言——但你当年签的那份小品牌独家还在期内，解约要付 <b>20 万</b>违约金。`,
    ctx:"当年抽屉里那份合同，现在有人替你翻出来了。",
    a:[{t:"付违约金，签大牌", cost:20, e:()=>{ pay(20); S.money+=60; delete S.flags.exclusiveGear;
+        if(typeof bizNote==="function") bizNote("代言","一线外设品牌","签了",40,"年度代言 60 万，付小品牌违约金 20 万");
         return "二十万违约金付掉，六十万代言到账，净赚四十万。<b>当年那十五万，成了最贵的一笔预支。</b>"; }},
       {t:"守约，等它到期", g:"grind", e:()=>{ addFans(5);
+        if(typeof bizNote==="function") bizNote("代言","一线外设品牌","守约拒了",0,"小品牌独家未到期；圈里说你讲信用");
         return "你拒了大牌。小品牌老板亲自打电话来谢你，圈里也有人说你讲信用。<b>粉丝 +5，钱没有。</b>"; }}]},
 
   {id:"press_echo", rec:0, w:2, max:1, when:()=>!!S.career&&!!(S.flags&&S.flags.pressFriend),
@@ -445,6 +448,7 @@ const RANDOM_EVENTS=[
    q:()=>`俱乐部发了笔额外奖金——上个赛段的赞助分成。`,
    ctx:"数额不大，但没想到还有这个。",
    a:[{t:"收下",e:()=>{const n=30+Math.floor(rnd()*50);addMoney("other",n);
+        if(typeof bizNote==="function") bizNote("赞助分成",S.team||"俱乐部","收下",n,"上赛段赞助分成");
         return `到账 ${n} 万。`}}]},
 
   {id:"junior", rec:0, w:2, when:()=>(S.pre?S.pre.rank>=25:false),
@@ -524,8 +528,10 @@ const RANDOM_EVENTS=[
    ctx:"东西不错，但手感和你现在用的不一样。",
    a:[{t:"接了，直播时用", g:"show",e:()=>{const n=40+Math.floor(rnd()*40);addMoney("other",n);
         addBuff("train",0.92,1,"手感在适应");
+        if(typeof bizNote==="function") bizNote("赞助外设","赞助商","接了",n,"直播时使用，手感适应一周");
         return `到账 ${n} 万。手感别扭了几天。`}},
       {t:"婉拒，手感要紧", g:"grind",e:()=>{typeof addStaff==="function"&&addStaff("mgr",-2);
+        if(typeof bizNote==="function") bizNote("赞助外设","赞助商","婉拒了",0,"经理 −2");
         return "商务那边不太高兴，但你的手感没受影响。"}}]}
 ];
 

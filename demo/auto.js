@@ -307,6 +307,9 @@ function autoOnce(){
   }catch(e){ S._autoErr=(e&&e.message)||String(e); }
   finally{ _autoBusy=false; }
   const n=(S.autoLog||[]).length-before;
+  // 结果直接写在托管页按钮下面（玩家实锤：点了没反应——原来只进大事记，人在托管页看不见）
+  S.autoOnceMsg=n?`执行了 ${n} 件事：${(S.autoLog||[]).slice(-n).join("、")}`
+    :`按推荐看了一遍，暂时没有该做的事：没有待处理的弹窗或报价，余额也没到该采购的档（安全余额 ${AUTO_RESERVE} 万以上才会买）`;
   pushEvent(n?`按推荐执行了 <b>${n}</b> 件事：${(S.autoLog||[]).slice(-n).join("、")}。`
              :`按推荐看了一遍，<b>暂时没有该做的事</b>。`,"info","托管");
   render();
@@ -358,8 +361,9 @@ function autoPage(){
       <button class="btn ${all?"ghost":""}" id="autoAll">${all?"全部收回":"一键全托管"}</button>
       <button class="btn ghost" id="autoNow">现在就按推荐执行一次</button>
     </div>
-    <p class="note" style="margin:0 0 14px;color:var(--ink-3)">
-      「执行一次」不改开关，只是把当下该做的事按推荐做掉——不想长期托管也能用。</p>
+    <p class="note" style="margin:0 0 ${S.autoOnceMsg?"4px":"14px"};color:var(--ink-3)">
+      「执行一次」不改开关：把<b>此刻</b>能按推荐处理的事做掉一次——待处理的际遇/更衣室弹窗、直播报价、杯赛报名、该买的外设课程——不想长期托管也能用。</p>
+    ${S.autoOnceMsg?`<p class="note" style="margin:0 0 14px;color:var(--cyan)">↳ ${S.autoOnceMsg}</p>`:""}
 
     <h3>四档，可以只交出去一部分</h3>
     <p class="note" style="margin:0 0 10px">下面每一格<b>点一下就是开关</b>。</p>

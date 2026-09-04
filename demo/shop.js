@@ -371,6 +371,28 @@ function streamPushMul(){
 
 /* 每次开播时结算「平台关系」：分成该升就升（发事件），独家该谈就谈（弹窗）。
    放在直播动作里而不是每周结算里——你和平台打交道的时机就是开播。 */
+/* ---------- 商务账本（2026-09-05 玩家点名：大事记和成就说有商务邀约，经济页却看不到是什么、签没签）----------
+   每一单邀约到达、签、拒、到账都记一行：直播独家、外设独家、代言、赞助分成、赞助外设。 */
+function bizNote(kind,who,decision,money,note){
+  try{
+    S.bizLog=S.bizLog||[];
+    S.bizLog.push({s:(typeof nowStamp==="function")?nowStamp():(SEASONS[S.si]?SEASONS[S.si].tag:""),
+      w:S.career?S.week:(S.pre?S.pre.week:0), kind, who, decision, money:money||0, note:note||""});
+    if(S.bizLog.length>60) S.bizLog=S.bizLog.slice(-60);
+  }catch(e){}
+}
+function bizCard(){
+  const L=(S.bizLog||[]).slice().reverse().slice(0,14);
+  const deal=S.streamDeal;
+  const cur=deal?`<p class="note" style="margin:0 0 8px">在履行的合约：<b>${deal.plat}</b> · ${deal.n}${deal.kind==="club"?"（俱乐部合作平台，抽 20%）":deal.kind==="rival"?"（对家平台，俱乐部抽 40%）":""} · 每次直播保底 ${deal.base} 万 · 本赛段开播 ${deal.done||0}/${deal.need} 次</p>`
+    :`<p class="note" style="margin:0 0 8px">目前没有在履行的独家合约——直播收入跟着粉丝和热度浮动。</p>`;
+  const rows=L.length?L.map(x=>`<tr><td class="n" style="color:var(--ink-3)">${x.s}${x.w?` 第${x.w}周`:""}</td><td>${x.kind}</td><td>${escapeHtml(String(x.who||""))}</td>
+      <td>${/签|收|接/.test(x.decision)?`<b style="color:var(--cyan)">${x.decision}</b>`:/拒|守约|没去/.test(x.decision)?`<b style="color:var(--ink-3)">${x.decision}</b>`:x.decision}</td>
+      <td class="n mono">${x.money?(x.money>0?"+":"")+x.money+" 万":"—"}</td><td style="color:var(--ink-3)">${x.note||""}</td></tr>`).join("")
+    :`<tr><td colspan="6" style="color:var(--ink-3)">还没有商务找上门。平台的独家合约看粉丝档（到「小主播」以上才会带合同来），代言和赞助看人气与成绩。</td></tr>`;
+  return `<div class="card"><h2>商务<em>${(S.bizLog||[]).length} 单</em></h2>${cur}
+    <div class="tw"><table><thead><tr><th class="n">时间</th><th>类型</th><th>对象</th><th>你的决定</th><th class="n">金额</th><th>备注</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
 function checkStreamBiz(){
   const f=S.fans||0;
   // 分成上调：一档一档来，每次都告诉玩家
@@ -396,6 +418,7 @@ function checkStreamBiz(){
     const club=clubPlatform();            // 没签约时为 null，卡片会走「自由身」那一版
     S.streamOffer={lvl:d.lvl,sign:d.sign,base:d.base,n:d.n,
                    club, rival:rivalPlatform(club)};
+    bizNote("直播独家",club?`${club} / ${rivalPlatform(club)}`:PLATFORMS[0],"邀约到达",0,`${d.n}：签字费 ${d.sign} 万，每播保底 ${d.base} 万`);
     break;
   }
 }
@@ -415,6 +438,7 @@ function signStreamDeal(kind){
   S.streamDeal={lvl:o.lvl,base,n:o.n,plat,cut,kind:kind||"solo",
                 need:o.lvl>=2?3:2, done:0};
   addMoney("sign",sign);
+  bizNote("直播独家",plat,"签了",sign,`${o.n}${kind==="club"?"（俱乐部合作平台）":kind==="rival"?"（对家平台，经理不高兴）":""}·每播保底 ${base} 万·每赛段至少播 ${o.lvl>=2?3:2} 次`);
   const originMul=S.origin==="streamer"?1.7:1.0;
   const net=Math.round(base*originMul*(1-cut));
   let extra="";
@@ -437,6 +461,7 @@ function signStreamDeal(kind){
 function declineStreamDeal(){
   const o=S.streamOffer; if(!o) return;
   S.streamOffer=null;
+  bizNote("直播独家",o.club||o.rival||PLATFORMS[0],"拒了",0,`${o.n}：保持自由身`);
   pushEvent(`拒绝了<b>${o.n}</b>。收入继续跟着粉丝和热度浮动——上限是你自己挣的，下限也是。`,"info","直播");
   render();
 }
@@ -601,6 +626,7 @@ function gearCard(){
 function economyCards(){
   return financeCard()
     + streamDealCard()
+    + bizCard()
     + ((typeof contractTerms==="function")?contractTerms():"")
     + assetsCard()
     + shopCard()
