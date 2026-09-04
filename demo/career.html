@@ -1361,6 +1361,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906a", at:"2026-09-06", items:[
+    "「支持作者」浮窗打开网页不再弹：只有通关、或者这一次玩够 10 分钟（只算标签页可见、进了游戏之后的时间）才提示一次；点过「别再提示」永远不弹，右下角 ♥ 随时能主动打开"
+  ]},
   {v:"v20260905q", at:"2026-09-05", items:[
     "叙事层（玩家反馈「数值扑面而来、没有游戏性」）：默认用文字档位说话——实力 / 五维「生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级」（职业级 ≈ LPL 首发），按钮上的收益写成箭头；顶栏「数值」一键切回具体数字，一个数都没改、没藏。建档多了五套天赋预设（操作型 / 运营型 / 均衡型 / 指挥型 / 铁人型）；每个行动都在本周卡顶上留一句话（这周做了什么、手感怎么样）",
     "教程导览（玩家点名，参考 Val Manager）：第一次进职业前、第一次进赛季各走一遍，逐栏目高亮说明每一块是干什么的；顶栏「导览」随时重看，Esc 跳过",
@@ -3374,7 +3377,6 @@ function acceptOffer(i){
   // 你自己就是那个「强援」：base 上去了，但五个人要重新磨
   disruptSynergy(1,`<b>${meName()}</b> 加盟`);
   pushEvent(`<b>${meName()}</b> 正式签约 <b>${of.team}</b>（${of.t}）。${back?"重返职业赛场——上一段履历接着算。":"职业生涯从这里开始。"}`,"big","签约");
-  if(!back&&typeof supportNudge==="function") supportNudge("sign");   // 第一份职业合同：支持作者的提示在这里，不在开局
   checkAch("sign");
   startSeason(true);
 }
@@ -15185,9 +15187,11 @@ function showSupport(source) {
     if (typeof statEvent === "function") statEvent("support");
   } catch (e) {}
 }
-/* 自动提示的时机（外部测评抓的：原来开局 1.4 秒就弹，正好打断建档）：
-   两个节点先到哪个算哪个——第一次签下职业合同（acceptOffer 调 supportNudge("sign")），
-   或本次会话累计玩了 8 分钟且不在建档/结局页。每个浏览器会话最多弹一次；点过「别再提示」永远不弹。 */
+/* 自动提示的时机（玩家 2026-09-06 定的：打开网页不弹，只有通关、或者这一次玩够 10 分钟才弹）：
+   · 通关：S.step 变成 "end" 时（render 末尾调 supportNudge("end")），等 5 秒让人先看结局；
+   · 玩够 10 分钟：只数标签页可见、且不在建档页的时间，每 30 秒记一次。
+   每个浏览器会话最多弹一次；点过「别再提示」永远不弹。右下角 ♥ 随时能主动打开。 */
+const SUPPORT_PLAY_MS = 10 * 60 * 1000;
 function supportSeen() {
   try { return sessionStorage.getItem(SUPPORT_SESSION_KEY) === "1"; } catch (e) { return false; }
 }
@@ -15195,18 +15199,20 @@ function supportNudge(reason) {
   try {
     if (!supportUrl() || supportAutoHidden() || supportSeen()) return;
     try { sessionStorage.setItem(SUPPORT_SESSION_KEY, "1"); } catch (e) {}
-    setTimeout(() => showSupport("auto"), reason === "sign" ? 2600 : 0);   // 签约那句大事记先看完
+    setTimeout(() => showSupport("auto"), reason === "end" ? 5000 : 0);   // 通关：先让人看完结局
   } catch (e) {}
 }
 function scheduleSupport() {
   try {
     if (!supportUrl() || supportAutoHidden() || supportSeen()) return;
-    const t0 = Date.now();
+    let played = 0;                                   // 这一次会话真正在玩的毫秒数
     const tick = () => {
       try {
         if (supportAutoHidden() || supportSeen()) return;
-        const busy = (typeof S !== "undefined" && S && (S.step === "create" || S.step === "end"));
-        if (!busy && Date.now() - t0 >= 8 * 60 * 1000) { supportNudge("time"); return; }
+        const inGame = (typeof S !== "undefined" && S && S.step !== "create");
+        const visible = (typeof document === "undefined") || document.visibilityState !== "hidden";
+        if (inGame && visible) played += 30000;
+        if (played >= SUPPORT_PLAY_MS) { supportNudge("time"); return; }
       } catch (e) {}
       setTimeout(tick, 30000);
     };
@@ -16367,6 +16373,7 @@ function render(){
   if(typeof flushToasts==="function") flushToasts();     // 事件提示条
   if(typeof bgmSeasonTick==="function") bgmSeasonTick();   // 赛季主题曲：赛季变了就切
   if(typeof tourMaybe==="function") tourMaybe();           // 第一次进职业前 / 赛季：教程导览
+  if(S.step==="end"&&typeof supportNudge==="function") supportNudge("end");   // 通关才提「支持作者」（玩家定的：开局不弹）
   /* 大标题只在创建页和结局页铺开。
      进了游戏之后它每一屏都在重复占 237px，而首屏总共才 900px——
      收成一条窄横幅，把地方让给内容。 */

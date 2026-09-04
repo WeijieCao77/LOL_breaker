@@ -332,9 +332,11 @@ function showSupport(source) {
     if (typeof statEvent === "function") statEvent("support");
   } catch (e) {}
 }
-/* 自动提示的时机（外部测评抓的：原来开局 1.4 秒就弹，正好打断建档）：
-   两个节点先到哪个算哪个——第一次签下职业合同（acceptOffer 调 supportNudge("sign")），
-   或本次会话累计玩了 8 分钟且不在建档/结局页。每个浏览器会话最多弹一次；点过「别再提示」永远不弹。 */
+/* 自动提示的时机（玩家 2026-09-06 定的：打开网页不弹，只有通关、或者这一次玩够 10 分钟才弹）：
+   · 通关：S.step 变成 "end" 时（render 末尾调 supportNudge("end")），等 5 秒让人先看结局；
+   · 玩够 10 分钟：只数标签页可见、且不在建档页的时间，每 30 秒记一次。
+   每个浏览器会话最多弹一次；点过「别再提示」永远不弹。右下角 ♥ 随时能主动打开。 */
+const SUPPORT_PLAY_MS = 10 * 60 * 1000;
 function supportSeen() {
   try { return sessionStorage.getItem(SUPPORT_SESSION_KEY) === "1"; } catch (e) { return false; }
 }
@@ -342,18 +344,20 @@ function supportNudge(reason) {
   try {
     if (!supportUrl() || supportAutoHidden() || supportSeen()) return;
     try { sessionStorage.setItem(SUPPORT_SESSION_KEY, "1"); } catch (e) {}
-    setTimeout(() => showSupport("auto"), reason === "sign" ? 2600 : 0);   // 签约那句大事记先看完
+    setTimeout(() => showSupport("auto"), reason === "end" ? 5000 : 0);   // 通关：先让人看完结局
   } catch (e) {}
 }
 function scheduleSupport() {
   try {
     if (!supportUrl() || supportAutoHidden() || supportSeen()) return;
-    const t0 = Date.now();
+    let played = 0;                                   // 这一次会话真正在玩的毫秒数
     const tick = () => {
       try {
         if (supportAutoHidden() || supportSeen()) return;
-        const busy = (typeof S !== "undefined" && S && (S.step === "create" || S.step === "end"));
-        if (!busy && Date.now() - t0 >= 8 * 60 * 1000) { supportNudge("time"); return; }
+        const inGame = (typeof S !== "undefined" && S && S.step !== "create");
+        const visible = (typeof document === "undefined") || document.visibilityState !== "hidden";
+        if (inGame && visible) played += 30000;
+        if (played >= SUPPORT_PLAY_MS) { supportNudge("time"); return; }
       } catch (e) {}
       setTimeout(tick, 30000);
     };
