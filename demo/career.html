@@ -980,6 +980,40 @@ ul.dealfx li::marker{color:var(--ink-3)}
 }
 .audiofab button:hover{border-color:var(--gold)}
 .audiofab button.off{opacity:.45;border-color:var(--line)}
+
+/* 支持作者：结构参考常见的独立游戏赞助浮窗。
+   这一张刻意用暖白纸面，与游戏的冷蓝背景拉开层级；爱发电只负责跳转，不在游戏里收集支付信息。 */
+.support-overlay{z-index:80;padding:16px;background:rgba(4,10,18,.78)}
+.support-card{
+  width:min(660px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow-y:auto;
+  color:#37332c;background:#f7f3e9;border:1px solid #d7cdb8;border-radius:6px;
+  padding:24px;box-shadow:0 18px 70px rgba(0,0,0,.52);text-align:left;
+}
+.support-head{display:flex;align-items:flex-start;gap:18px;margin:0 0 12px}
+.support-head>div{flex:1;min-width:0}
+.support-kicker{font-size:10.5px;letter-spacing:.22em;color:#94733b;margin-bottom:3px}
+.support-head h2{margin:0;color:#211f1b;font-size:23px;line-height:1.35;letter-spacing:.01em}
+.support-close,.support-never{
+  flex:none;border:1px solid #d7cdb8;border-radius:5px;background:#fbf9f3;color:#4c463d;
+  padding:8px 13px;line-height:1.25;
+}
+.support-close:hover,.support-never:hover{border-color:#9c8354;color:#211f1b}
+.support-close span{font-size:20px;line-height:0;vertical-align:-2px;margin-left:2px}
+.support-lead{font-size:15.5px;line-height:1.78;color:#665f55;margin:0 0 16px}
+.support-lead strong{color:#29251f}
+.support-main{display:grid;grid-template-columns:176px minmax(0,1fr);align-items:center;gap:20px}
+.support-main.no-qr{grid-template-columns:1fr}
+.support-qrbox{width:176px;height:176px;padding:10px;background:#fff;border-radius:5px}
+.support-qrbox img{display:block;width:100%;height:100%;object-fit:contain}
+.support-copy{min-width:0;color:#6b6358}
+.support-copy p{margin:8px 0 0;font-size:14px;line-height:1.65}
+.support-copy b{color:#4b4439}
+.support-link{display:inline-block;color:#b33f3f;font-size:19px;font-weight:700;text-decoration:none;padding:2px 0}
+.support-link:hover{text-decoration:underline;text-underline-offset:4px}
+.support-foot{display:flex;align-items:center;gap:14px;margin-top:18px;padding-top:16px;border-top:1px solid #ddd3c0}
+.support-foot span{color:#7b7368;font-size:12.5px;line-height:1.5}
+.support-never{white-space:nowrap}
+.support-card :focus-visible{outline:2px solid #b33f3f;outline-offset:2px}
 /* 背景音乐浮窗 */
 .bgmpanel{position:fixed;right:14px;bottom:60px;z-index:61;width:264px;max-width:calc(100vw - 28px);
   background:rgba(12,26,40,.97);border:1px solid var(--line-hot);border-radius:12px;
@@ -1038,6 +1072,18 @@ ul.dealfx li::marker{color:var(--ink-3)}
      手机上改横排缩小，并给页面留出底部空间，滚到底也不被盖住 */
   .audiofab{flex-direction:row;right:8px;bottom:8px;gap:6px}
   .audiofab button{width:30px;height:30px;font-size:13px;box-shadow:0 1px 6px rgba(0,0,0,.4)}
+  .support-overlay{padding:10px;align-items:start;overflow-y:auto}
+  .support-card{width:100%;max-height:none;margin:10px 0;padding:18px}
+  .support-head{gap:10px}
+  .support-head h2{font-size:20px}
+  .support-kicker{letter-spacing:.16em}
+  .support-close{padding:7px 10px;font-size:13px}
+  .support-lead{font-size:14px;line-height:1.7}
+  .support-main{grid-template-columns:1fr;gap:12px}
+  .support-qrbox{width:164px;height:164px;margin:0 auto}
+  .support-copy{text-align:center}
+  .support-link{font-size:18px}
+  .support-foot{align-items:flex-start;flex-direction:column}
   body{padding-bottom:48px}
 }
 
@@ -1220,6 +1266,8 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
   {v:"v20260905p", at:"2026-09-05", items:[
+    "新增支持作者浮窗：首次进入会温和提示一次，明确游戏永久免费、不卖数值与抽卡；可扫码或跳转爱发电，点「不用了，别再提示」后不再自动出现，右下角爱心仍可随时打开",
+    "职业前也有「一键安排」了（玩家点名：原来只在赛季里有）：累了先休息，实力压得住分段就打排位冲分、和补短板交替，剩 1 点用排位/看录像/休息收尾；不接代练、不开直播、不追瓶颈",
     "界面重做第三期：展示级大字换成宋体——结局称号、生涯名片、HUD 的「现在」、弹窗标题、页头用自托管的思源宋体 Bold 子集（749 字、159KB，开源许可，不走外链，先黑体后换字不挡首屏）；手机上导航挪到底部一行，图标在上字在下，浮窗按钮与提示条相应上移",
     "界面重做第二期：比赛开打有了编排——比分一变，两侧战力向中线撞一下、「胜 / 负」砸出来，系列赛打完「胜出 / 落败」留在比分上方；好事坏事大事从右上滑进一条提示（3 秒淡出，最多三条），不用再翻大事记；左侧导航加了单线图标；卡片按性质分形：数据卡表格斑马行、行动卡按钮间距更松。全部尊重系统的「减少动态效果」设置",
     "界面重做第一期（玩家批的设计稿「黎明前的战术板」）：新增「晨光橙」——整套界面里唯一表示「正在发生 / 该你了」的颜色，只给本页主行动按钮（推进周 / 备战 / 开赛 / 休赛期下一周）；顶部 HUD 从十二个同样重的格子改成三层：你是谁 → 现在（赛季 · 阶段大字 · 主按钮镜像）→ 资源六格；换标签 160ms 淡入；换周时 HUD 数字从旧值滚到新值。第二期（卡片分形、比赛开打编排、事件提示条、导航图标）和第三期（宋体标题、手机底栏）接着上",
@@ -1468,8 +1516,9 @@ const CHANGELOG=[
 ];
 /* 版本戳：印在存档栏和作者栏。玩家对不上这个号，就是开了旧页面。 */
 const GAME_VER=CHANGELOG[0].v+" · 回声";
-/* 支持作者（爱发电）：填上主页链接就会出现右下角 ♥ 和页脚入口；留空一律不显示。
-   SUPPORT_QR 可选：爱发电二维码图的 data URI（站点 CSP 只放行 self/data:，外链图不显示）。 */
+/* 支持作者（爱发电）：填上主页链接后，会出现右下角 ♥、页脚入口，并在每次浏览器会话首次进入时提示一次；
+   玩家点「不用了，别再提示」后停止自动弹出，但仍可点 ♥ 主动打开。
+   SUPPORT_QR 可选：爱发电主页二维码图的 data URI（站点 CSP 只放行 self/data:，外链图不显示）。 */
 const SUPPORT_URL="";
 const SUPPORT_QR="";
 const AP_SEASON=8, AP_PRE=12, AP_OFF=8, AP_HURT=4;
@@ -5479,7 +5528,8 @@ function actPanelPre(){
       ${P.ap>0?`还剩 ${P.ap} 个行动点`
         :((()=>{const last=P.week>=PRE_WEEKS;   // 最后一周的下一步不是「第 21/20 周」，是关窗结算（玩家点名）
           const to=last?"转会窗口关闭 · 年度结算":`赛季前 第 ${P.week+1}/${PRE_WEEKS} 周`;
-          return (typeof dueCups==="function"&&dueCups().length)?`进入下一周（有比赛没打）→ ${to}`:`进入下一周 → ${to}`;})())}</button></div>
+          return (typeof dueCups==="function"&&dueCups().length)?`进入下一周（有比赛没打）→ ${to}`:`进入下一周 → ${to}`;})())}</button>
+      ${typeof quickBtn==="function"?quickBtn():""}</div>
   </div>`;
 }
 function viewPre(){
@@ -10431,8 +10481,41 @@ function clearPlan(){ S.plan = null; render(); }
    有意做得很笨——头疼医头，脚疼医脚：
    不追瓶颈连击、不刷直播收入、不碰战队行动、不看下周对手。
    它的上限就这么高。省的是手，不是脑子；想打出上限，自己安排。 */
+/* 职业前版（2026-09-05 玩家点名「自动分配的功能没有了」——原来这按钮只在赛季里有）：
+   累了先休息（没点就网吧/换游戏）；实力压得住当前分段就打排位冲分，和补短板交替；
+   剩 1 点付不起 2 点的训练，用 1 点的排位 / 看录像 / 休息收尾。一样是「省手不省脑」。 */
+function quickPlanPre(){
+  const P=S.pre; if(!P) return;
+  const cost=k=>(typeof apCost==="function")?apCost(k):2;
+  const acts={}; let done=0, guard=0, turn=0;
+  const tryAct=(k,dim,name)=>{ const b=P.ap; preAct(k,dim); if(P.ap<b){ acts[name]=(acts[name]||0)+1; done++; return true; } return false; };
+  while(P.ap>0&&guard++<16){
+    if(S.rndEv||S.locker||S.signup||S.rankUp||S.streamOffer||S.confirm||S.tryout||S.deal) break;
+    let ok=false;
+    if(S.fatigue>55){
+      ok=(P.ap>=cost("rest")&&tryAct("rest",null,"休息"))||(P.ap>=cost("cafe")&&tryAct("cafe",null,"网吧开黑"))||(P.ap>=cost("chill")&&tryAct("chill",null,"换个游戏"));
+    }
+    if(!ok){
+      const canClimb=P.rank<95&&soloSkill()>=rankReq(P.rank)-2;
+      const av=DIMS.filter(d=>S.attrs[d]<capOf(d)).sort((a,b)=>S.attrs[a]-S.attrs[b]);
+      if(canClimb&&(turn%2===0||!av.length)&&P.ap>=cost("solo")) ok=tryAct("rank",null,"打排位");
+      if(!ok&&av.length&&P.ap>=cost("train")) ok=tryAct("train",av[0],"练"+av[0]);
+      if(!ok&&P.ap>=cost("solo")) ok=tryAct("rank",null,"打排位");
+      if(!ok&&P.ap>=cost("watch")) ok=tryAct("watch",null,"看职业录像");
+      if(!ok&&P.ap>=cost("rest")) ok=tryAct("rest",null,"休息");
+    }
+    if(!ok) break;   // 什么都花不出去，真卡住了
+    turn++;
+  }
+  if(done){
+    const txt=Object.entries(acts).map(([n,v])=>v>1?`${n}×${v}`:n).join("、");
+    preLog(`朋友替你把这周剩下的 ${done} 个行动点安排了：<b>${txt}</b>。
+      <span style="color:var(--ink-3)">稳妥优先——不接代练、不开直播、不追瓶颈；想打出上限，自己安排。</span>`,"info");
+  }
+  render();
+}
 function quickPlan(){
-  if(S.step==="pre") return;   // 职业前的行动体系不同，这按钮不出现在那边
+  if(S.step==="pre"){ quickPlanPre(); return; }   // 职业前走自己的一套（行动、点数都不同）
   const acts={};
   let done=0, guard=0;
   while(S.ap>0&&guard++<12){
@@ -10464,7 +10547,8 @@ function quickPlan(){
 }
 /* 「一键安排」按钮，摆在推进按钮旁边。点数花完就让位，不占地方 */
 function quickBtn(){
-  if(!S.ap||S.ap<=0) return "";
+  const ap=(S.step==="pre")?(S.pre?S.pre.ap:0):S.ap;
+  if(!ap||ap<=0) return "";
   return `<button class="btn ghost sm" id="quickap" aria-label="一键安排"
     title="按最稳妥的路数花掉剩余行动点：累了休息、没累补短板、练无可练打排位。不追瓶颈、不刷钱——上限很低，赢在省事">一键安排</button>`;
 }
@@ -14604,29 +14688,77 @@ function showChangelog() {
 }
 
 /* ---------- 支持作者（爱发电）----------
-   玩家 2026-09-05 点名，仿 VAL Manager：右下角 ♥ 弹一张卡——一句话、去爱发电的按钮、可选二维码。
-   链接在模板的 SUPPORT_URL；为空时按钮和页脚入口都不渲染。 */
+   右下角 ♥ 随时可手动打开；首次进入一次自动提示。
+   「不用了，别再提示」只关闭自动提示，不会藏掉 ♥，玩家以后仍可主动打开。
+   链接在模板的 SUPPORT_URL；为空时整套入口都不渲染。 */
+const SUPPORT_HIDE_KEY = "poxiao_support_hide_v1";
+const SUPPORT_SESSION_KEY = "poxiao_support_seen_session_v1";
 function supportUrl() { try { return (typeof SUPPORT_URL === "string" && SUPPORT_URL.trim()) ? SUPPORT_URL.trim() : ""; } catch (e) { return ""; } }
-function showSupport() {
+function supportAutoHidden() {
+  try { return localStorage.getItem(SUPPORT_HIDE_KEY) === "1"; } catch (e) { return false; }
+}
+function showSupport(source) {
   try {
-    const url = supportUrl(); if (!url || document.getElementById("suplove")) return;
-    const qr = (typeof SUPPORT_QR === "string" && SUPPORT_QR) ? SUPPORT_QR : "";
+    const url = supportUrl();
+    if (!url || document.getElementById("suplove") || (source === "auto" && supportAutoHidden())) return;
+    const qr = (typeof SUPPORT_QR === "string" && SUPPORT_QR.trim()) ? SUPPORT_QR.trim() : "";
     const wrap = document.createElement("div");
-    wrap.id = "suplove"; wrap.className = "rankup";
-    wrap.innerHTML = `<div class="ru-inner" style="max-width:440px;text-align:center">
-      <div class="ru-eyebrow">支持作者</div>
-      <div class="ru-tier" style="font-size:22px;margin:6px 0 10px">破晓是免费的同人作品</div>
-      <p class="note" style="margin:0 0 14px">一个人写的：世界、数值、一千多条文案。觉得它值一杯奶茶，可以去爱发电请作者喝一杯——
-        不解锁任何内容，游戏永远免费。</p>
-      ${qr ? `<img src="${qr}" alt="爱发电二维码" style="width:180px;height:180px;border:1px solid var(--line);margin:0 auto 12px;display:block">` : ""}
-      <div class="row" style="justify-content:center;gap:10px">
-        <a class="btn" href="${url}" target="_blank" rel="noopener noreferrer">去爱发电 →</a>
-        <button class="btn ghost" id="suplove-x">下次一定</button></div></div>`;
+    wrap.id = "suplove";
+    wrap.className = "rankup support-overlay";
+    wrap.setAttribute("role", "dialog");
+    wrap.setAttribute("aria-modal", "true");
+    wrap.setAttribute("aria-labelledby", "support-title");
+    wrap.innerHTML = `<section class="support-card">
+      <header class="support-head">
+        <div>
+          <div class="support-kicker">支持独立创作</div>
+          <h2 id="support-title">游戏是免费的，以后也是</h2>
+        </div>
+        <button type="button" class="support-close" id="suplove-x" aria-label="关闭支持作者浮窗">关闭 <span aria-hidden="true">×</span></button>
+      </header>
+      <p class="support-lead">《破晓》会继续免费更新，<strong>所有内容永久免费，不卖数值、不卖抽卡。</strong>
+        如果它曾让你开心，欢迎请作者喝杯咖啡；不支持也完全没关系，继续反馈 bug 和建议就是最大的帮助。</p>
+      <div class="support-main${qr ? "" : " no-qr"}">
+        ${qr ? `<div class="support-qrbox"><img id="support-qr" alt="爱发电主页二维码"></div>` : ""}
+        <div class="support-copy">
+          <a class="support-link" id="support-link" target="_blank" rel="noopener noreferrer">打开爱发电 <span aria-hidden="true">↗</span></a>
+          <p>手机扫码，或直接点击上面的按钮。</p>
+          <p><b>5 元起，也可以自选金额。</b>选择赞助 1 个月即可作为一次支持，不会自动续费。</p>
+        </div>
+      </div>
+      <footer class="support-foot">
+        <button type="button" class="support-never" id="suplove-never">不用了，别再提示</button>
+        <span>《破晓》为程序模拟作品，与现实选手、战队和赛事无关</span>
+      </footer>
+    </section>`;
+    const link = wrap.querySelector("#support-link");
+    if (link) link.href = url;
+    const qrImg = wrap.querySelector("#support-qr");
+    if (qrImg) qrImg.src = qr;
+
+    const close = (never) => {
+      if (never) { try { localStorage.setItem(SUPPORT_HIDE_KEY, "1"); } catch (e) {} }
+      document.removeEventListener("keydown", onKey);
+      wrap.remove();
+    };
+    const onKey = (e) => { if (e.key === "Escape") close(false); };
+    wrap.querySelector("#suplove-x").onclick = () => close(false);
+    wrap.querySelector("#suplove-never").onclick = () => close(true);
+    wrap.onclick = (e) => { if (e.target === wrap) close(false); };
     document.body.appendChild(wrap);
-    wrap.querySelector("#suplove-x").onclick = () => wrap.remove();
-    wrap.onclick = (e) => { if (e.target === wrap) wrap.remove(); };
+    document.addEventListener("keydown", onKey);
+    setTimeout(() => { try { wrap.querySelector("#suplove-x").focus(); } catch (e) {} }, 0);
     if (typeof statEvent === "function") statEvent("support");
   } catch (e) {}
+}
+function scheduleSupport() {
+  try {
+    if (!supportUrl() || supportAutoHidden() || sessionStorage.getItem(SUPPORT_SESSION_KEY) === "1") return;
+    sessionStorage.setItem(SUPPORT_SESSION_KEY, "1");
+    setTimeout(() => showSupport("auto"), 1400);
+  } catch (e) {
+    if (supportUrl() && !supportAutoHidden()) setTimeout(() => showSupport("auto"), 1400);
+  }
 }
 
 /* ---------- 背景音乐浮窗 ----------
@@ -14747,6 +14879,7 @@ function audioInit() {
     const hasBgm = typeof Audio !== "undefined";
     audioPrefs();
     audioFab(hasSfx, hasBgm);
+    scheduleSupport();
     if (hasSfx || hasBgm) document.addEventListener("click", audioClickHandler, true);
   } catch (e) {}
 }

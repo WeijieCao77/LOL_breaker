@@ -967,6 +967,40 @@ ul.dealfx li::marker{color:var(--ink-3)}
 }
 .audiofab button:hover{border-color:var(--gold)}
 .audiofab button.off{opacity:.45;border-color:var(--line)}
+
+/* 支持作者：结构参考常见的独立游戏赞助浮窗。
+   这一张刻意用暖白纸面，与游戏的冷蓝背景拉开层级；爱发电只负责跳转，不在游戏里收集支付信息。 */
+.support-overlay{z-index:80;padding:16px;background:rgba(4,10,18,.78)}
+.support-card{
+  width:min(660px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow-y:auto;
+  color:#37332c;background:#f7f3e9;border:1px solid #d7cdb8;border-radius:6px;
+  padding:24px;box-shadow:0 18px 70px rgba(0,0,0,.52);text-align:left;
+}
+.support-head{display:flex;align-items:flex-start;gap:18px;margin:0 0 12px}
+.support-head>div{flex:1;min-width:0}
+.support-kicker{font-size:10.5px;letter-spacing:.22em;color:#94733b;margin-bottom:3px}
+.support-head h2{margin:0;color:#211f1b;font-size:23px;line-height:1.35;letter-spacing:.01em}
+.support-close,.support-never{
+  flex:none;border:1px solid #d7cdb8;border-radius:5px;background:#fbf9f3;color:#4c463d;
+  padding:8px 13px;line-height:1.25;
+}
+.support-close:hover,.support-never:hover{border-color:#9c8354;color:#211f1b}
+.support-close span{font-size:20px;line-height:0;vertical-align:-2px;margin-left:2px}
+.support-lead{font-size:15.5px;line-height:1.78;color:#665f55;margin:0 0 16px}
+.support-lead strong{color:#29251f}
+.support-main{display:grid;grid-template-columns:176px minmax(0,1fr);align-items:center;gap:20px}
+.support-main.no-qr{grid-template-columns:1fr}
+.support-qrbox{width:176px;height:176px;padding:10px;background:#fff;border-radius:5px}
+.support-qrbox img{display:block;width:100%;height:100%;object-fit:contain}
+.support-copy{min-width:0;color:#6b6358}
+.support-copy p{margin:8px 0 0;font-size:14px;line-height:1.65}
+.support-copy b{color:#4b4439}
+.support-link{display:inline-block;color:#b33f3f;font-size:19px;font-weight:700;text-decoration:none;padding:2px 0}
+.support-link:hover{text-decoration:underline;text-underline-offset:4px}
+.support-foot{display:flex;align-items:center;gap:14px;margin-top:18px;padding-top:16px;border-top:1px solid #ddd3c0}
+.support-foot span{color:#7b7368;font-size:12.5px;line-height:1.5}
+.support-never{white-space:nowrap}
+.support-card :focus-visible{outline:2px solid #b33f3f;outline-offset:2px}
 /* 背景音乐浮窗 */
 .bgmpanel{position:fixed;right:14px;bottom:60px;z-index:61;width:264px;max-width:calc(100vw - 28px);
   background:rgba(12,26,40,.97);border:1px solid var(--line-hot);border-radius:12px;
@@ -1025,6 +1059,18 @@ ul.dealfx li::marker{color:var(--ink-3)}
      手机上改横排缩小，并给页面留出底部空间，滚到底也不被盖住 */
   .audiofab{flex-direction:row;right:8px;bottom:8px;gap:6px}
   .audiofab button{width:30px;height:30px;font-size:13px;box-shadow:0 1px 6px rgba(0,0,0,.4)}
+  .support-overlay{padding:10px;align-items:start;overflow-y:auto}
+  .support-card{width:100%;max-height:none;margin:10px 0;padding:18px}
+  .support-head{gap:10px}
+  .support-head h2{font-size:20px}
+  .support-kicker{letter-spacing:.16em}
+  .support-close{padding:7px 10px;font-size:13px}
+  .support-lead{font-size:14px;line-height:1.7}
+  .support-main{grid-template-columns:1fr;gap:12px}
+  .support-qrbox{width:164px;height:164px;margin:0 auto}
+  .support-copy{text-align:center}
+  .support-link{font-size:18px}
+  .support-foot{align-items:flex-start;flex-direction:column}
   body{padding-bottom:48px}
 }
 

@@ -150,8 +150,41 @@ function clearPlan(){ S.plan = null; render(); }
    有意做得很笨——头疼医头，脚疼医脚：
    不追瓶颈连击、不刷直播收入、不碰战队行动、不看下周对手。
    它的上限就这么高。省的是手，不是脑子；想打出上限，自己安排。 */
+/* 职业前版（2026-09-05 玩家点名「自动分配的功能没有了」——原来这按钮只在赛季里有）：
+   累了先休息（没点就网吧/换游戏）；实力压得住当前分段就打排位冲分，和补短板交替；
+   剩 1 点付不起 2 点的训练，用 1 点的排位 / 看录像 / 休息收尾。一样是「省手不省脑」。 */
+function quickPlanPre(){
+  const P=S.pre; if(!P) return;
+  const cost=k=>(typeof apCost==="function")?apCost(k):2;
+  const acts={}; let done=0, guard=0, turn=0;
+  const tryAct=(k,dim,name)=>{ const b=P.ap; preAct(k,dim); if(P.ap<b){ acts[name]=(acts[name]||0)+1; done++; return true; } return false; };
+  while(P.ap>0&&guard++<16){
+    if(S.rndEv||S.locker||S.signup||S.rankUp||S.streamOffer||S.confirm||S.tryout||S.deal) break;
+    let ok=false;
+    if(S.fatigue>55){
+      ok=(P.ap>=cost("rest")&&tryAct("rest",null,"休息"))||(P.ap>=cost("cafe")&&tryAct("cafe",null,"网吧开黑"))||(P.ap>=cost("chill")&&tryAct("chill",null,"换个游戏"));
+    }
+    if(!ok){
+      const canClimb=P.rank<95&&soloSkill()>=rankReq(P.rank)-2;
+      const av=DIMS.filter(d=>S.attrs[d]<capOf(d)).sort((a,b)=>S.attrs[a]-S.attrs[b]);
+      if(canClimb&&(turn%2===0||!av.length)&&P.ap>=cost("solo")) ok=tryAct("rank",null,"打排位");
+      if(!ok&&av.length&&P.ap>=cost("train")) ok=tryAct("train",av[0],"练"+av[0]);
+      if(!ok&&P.ap>=cost("solo")) ok=tryAct("rank",null,"打排位");
+      if(!ok&&P.ap>=cost("watch")) ok=tryAct("watch",null,"看职业录像");
+      if(!ok&&P.ap>=cost("rest")) ok=tryAct("rest",null,"休息");
+    }
+    if(!ok) break;   // 什么都花不出去，真卡住了
+    turn++;
+  }
+  if(done){
+    const txt=Object.entries(acts).map(([n,v])=>v>1?`${n}×${v}`:n).join("、");
+    preLog(`朋友替你把这周剩下的 ${done} 个行动点安排了：<b>${txt}</b>。
+      <span style="color:var(--ink-3)">稳妥优先——不接代练、不开直播、不追瓶颈；想打出上限，自己安排。</span>`,"info");
+  }
+  render();
+}
 function quickPlan(){
-  if(S.step==="pre") return;   // 职业前的行动体系不同，这按钮不出现在那边
+  if(S.step==="pre"){ quickPlanPre(); return; }   // 职业前走自己的一套（行动、点数都不同）
   const acts={};
   let done=0, guard=0;
   while(S.ap>0&&guard++<12){
@@ -183,7 +216,8 @@ function quickPlan(){
 }
 /* 「一键安排」按钮，摆在推进按钮旁边。点数花完就让位，不占地方 */
 function quickBtn(){
-  if(!S.ap||S.ap<=0) return "";
+  const ap=(S.step==="pre")?(S.pre?S.pre.ap:0):S.ap;
+  if(!ap||ap<=0) return "";
   return `<button class="btn ghost sm" id="quickap" aria-label="一键安排"
     title="按最稳妥的路数花掉剩余行动点：累了休息、没累补短板、练无可练打排位。不追瓶颈、不刷钱——上限很低，赢在省事">一键安排</button>`;
 }

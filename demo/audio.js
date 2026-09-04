@@ -241,29 +241,77 @@ function showChangelog() {
 }
 
 /* ---------- 支持作者（爱发电）----------
-   玩家 2026-09-05 点名，仿 VAL Manager：右下角 ♥ 弹一张卡——一句话、去爱发电的按钮、可选二维码。
-   链接在模板的 SUPPORT_URL；为空时按钮和页脚入口都不渲染。 */
+   右下角 ♥ 随时可手动打开；首次进入一次自动提示。
+   「不用了，别再提示」只关闭自动提示，不会藏掉 ♥，玩家以后仍可主动打开。
+   链接在模板的 SUPPORT_URL；为空时整套入口都不渲染。 */
+const SUPPORT_HIDE_KEY = "poxiao_support_hide_v1";
+const SUPPORT_SESSION_KEY = "poxiao_support_seen_session_v1";
 function supportUrl() { try { return (typeof SUPPORT_URL === "string" && SUPPORT_URL.trim()) ? SUPPORT_URL.trim() : ""; } catch (e) { return ""; } }
-function showSupport() {
+function supportAutoHidden() {
+  try { return localStorage.getItem(SUPPORT_HIDE_KEY) === "1"; } catch (e) { return false; }
+}
+function showSupport(source) {
   try {
-    const url = supportUrl(); if (!url || document.getElementById("suplove")) return;
-    const qr = (typeof SUPPORT_QR === "string" && SUPPORT_QR) ? SUPPORT_QR : "";
+    const url = supportUrl();
+    if (!url || document.getElementById("suplove") || (source === "auto" && supportAutoHidden())) return;
+    const qr = (typeof SUPPORT_QR === "string" && SUPPORT_QR.trim()) ? SUPPORT_QR.trim() : "";
     const wrap = document.createElement("div");
-    wrap.id = "suplove"; wrap.className = "rankup";
-    wrap.innerHTML = `<div class="ru-inner" style="max-width:440px;text-align:center">
-      <div class="ru-eyebrow">支持作者</div>
-      <div class="ru-tier" style="font-size:22px;margin:6px 0 10px">破晓是免费的同人作品</div>
-      <p class="note" style="margin:0 0 14px">一个人写的：世界、数值、一千多条文案。觉得它值一杯奶茶，可以去爱发电请作者喝一杯——
-        不解锁任何内容，游戏永远免费。</p>
-      ${qr ? `<img src="${qr}" alt="爱发电二维码" style="width:180px;height:180px;border:1px solid var(--line);margin:0 auto 12px;display:block">` : ""}
-      <div class="row" style="justify-content:center;gap:10px">
-        <a class="btn" href="${url}" target="_blank" rel="noopener noreferrer">去爱发电 →</a>
-        <button class="btn ghost" id="suplove-x">下次一定</button></div></div>`;
+    wrap.id = "suplove";
+    wrap.className = "rankup support-overlay";
+    wrap.setAttribute("role", "dialog");
+    wrap.setAttribute("aria-modal", "true");
+    wrap.setAttribute("aria-labelledby", "support-title");
+    wrap.innerHTML = `<section class="support-card">
+      <header class="support-head">
+        <div>
+          <div class="support-kicker">支持独立创作</div>
+          <h2 id="support-title">游戏是免费的，以后也是</h2>
+        </div>
+        <button type="button" class="support-close" id="suplove-x" aria-label="关闭支持作者浮窗">关闭 <span aria-hidden="true">×</span></button>
+      </header>
+      <p class="support-lead">《破晓》会继续免费更新，<strong>所有内容永久免费，不卖数值、不卖抽卡。</strong>
+        如果它曾让你开心，欢迎请作者喝杯咖啡；不支持也完全没关系，继续反馈 bug 和建议就是最大的帮助。</p>
+      <div class="support-main${qr ? "" : " no-qr"}">
+        ${qr ? `<div class="support-qrbox"><img id="support-qr" alt="爱发电主页二维码"></div>` : ""}
+        <div class="support-copy">
+          <a class="support-link" id="support-link" target="_blank" rel="noopener noreferrer">打开爱发电 <span aria-hidden="true">↗</span></a>
+          <p>手机扫码，或直接点击上面的按钮。</p>
+          <p><b>5 元起，也可以自选金额。</b>选择赞助 1 个月即可作为一次支持，不会自动续费。</p>
+        </div>
+      </div>
+      <footer class="support-foot">
+        <button type="button" class="support-never" id="suplove-never">不用了，别再提示</button>
+        <span>《破晓》为程序模拟作品，与现实选手、战队和赛事无关</span>
+      </footer>
+    </section>`;
+    const link = wrap.querySelector("#support-link");
+    if (link) link.href = url;
+    const qrImg = wrap.querySelector("#support-qr");
+    if (qrImg) qrImg.src = qr;
+
+    const close = (never) => {
+      if (never) { try { localStorage.setItem(SUPPORT_HIDE_KEY, "1"); } catch (e) {} }
+      document.removeEventListener("keydown", onKey);
+      wrap.remove();
+    };
+    const onKey = (e) => { if (e.key === "Escape") close(false); };
+    wrap.querySelector("#suplove-x").onclick = () => close(false);
+    wrap.querySelector("#suplove-never").onclick = () => close(true);
+    wrap.onclick = (e) => { if (e.target === wrap) close(false); };
     document.body.appendChild(wrap);
-    wrap.querySelector("#suplove-x").onclick = () => wrap.remove();
-    wrap.onclick = (e) => { if (e.target === wrap) wrap.remove(); };
+    document.addEventListener("keydown", onKey);
+    setTimeout(() => { try { wrap.querySelector("#suplove-x").focus(); } catch (e) {} }, 0);
     if (typeof statEvent === "function") statEvent("support");
   } catch (e) {}
+}
+function scheduleSupport() {
+  try {
+    if (!supportUrl() || supportAutoHidden() || sessionStorage.getItem(SUPPORT_SESSION_KEY) === "1") return;
+    sessionStorage.setItem(SUPPORT_SESSION_KEY, "1");
+    setTimeout(() => showSupport("auto"), 1400);
+  } catch (e) {
+    if (supportUrl() && !supportAutoHidden()) setTimeout(() => showSupport("auto"), 1400);
+  }
 }
 
 /* ---------- 背景音乐浮窗 ----------
@@ -384,6 +432,7 @@ function audioInit() {
     const hasBgm = typeof Audio !== "undefined";
     audioPrefs();
     audioFab(hasSfx, hasBgm);
+    scheduleSupport();
     if (hasSfx || hasBgm) document.addEventListener("click", audioClickHandler, true);
   } catch (e) {}
 }
