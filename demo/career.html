@@ -1236,6 +1236,11 @@ body.moreopen .audiofab{display:none}
 /* 右下角 📜 的未读点 */
 .audiofab button{position:relative}
 .audiofab button.new::after{content:"";position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--dawn);box-shadow:0 0 6px var(--dawn)}
+/* 提示条关闭按钮；导览的选择卡 */
+.toast .tx-x{flex:none;margin-left:auto;background:none;border:none;color:var(--ink-3);font-size:16px;line-height:1;cursor:pointer;padding:0 2px;align-self:flex-start}
+.toast .tx-x:hover{color:var(--ink)}
+.tour.ask{background:rgba(3,12,20,.74)}
+.tour-card.center{left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100vw - 20px))}
 
 </style>
 
@@ -1370,6 +1375,18 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906d", at:"2026-09-06", items:[
+    "教程导览分简明 / 详细两版，第一次进职业前、第一次进赛季先让你选：简明只讲栏目；详细把仪表盘、实力条、每个行动按钮（排位 / 训练 / 直播 / 休息 / 代练 / 网吧 / 换游戏 / 看录像）、体能、本周流水、处境卡、杯赛、一键安排都过一遍。「教程说明」栏目里两版都能重放",
+    "注册窗只在 MSI 结束、世界赛结束之后才开（玩家点名：那两段不是转会时间）：MSI 进行中的季中间歇拉到 3 周，第 3 周冠军揭晓、注册窗同时开门，续约卡、问询、挂牌都从那一周起；合同到期点就是 MSI 结束 / 世界赛结束。合同谈判卡和「我的合同」写清从哪个赛段起、到哪个赛段止，不再只写「几个赛段」",
+    "更衣室事件每个选项都有利有弊（玩家点名「资源留给我没有任何好处」）：留资源手感和对线更顺、让资源手感会闷；认锅弹幕会说你、摆数据教练认可、吵回去人气热度涨；挽留老将教练组有意见、劝转型你接过指挥；陪新秀累、不陪省时间；接专访耽误训练",
+    "对阵图队名显示全（原来 T1 显示成「T」、Cloud9 成「C」）：LPL 用惯用缩写，其余不长就写全名",
+    "右上角提示条多了 × 关闭按钮",
+    "国际赛 / 季后赛期间联赛停摆：原来每打一场国际赛都替联赛模拟一周，世界赛期间冒出「TT 爆冷击败 EDG」还进了大事记（玩家实锤：TT 根本没来）"
+  ]},
+  {v:"v20260906c", at:"2026-09-06", items:[
+    "联赛季后赛改成真正的对阵树（玩家点名：要像瑞士轮 / 杯赛那样看得到线路）：六队三轮，首轮 3v6、4v5，一二号种子轮空进半决赛，1 号打 4v5 的胜者、2 号打 3v6 的胜者；你不在的对局按正典顺序判，和赛后宣布的冠军、国际赛种子是同一件事。赛事栏 / 备战页的对阵图画完整的树——对手是击败了谁来的、赢了下一个打谁，一眼看清",
+    "续约要谈（玩家点名）：续约报价卡多了「谈条件」，和试训签约一样能要加薪 / 签字费 / 缩短年限 / 压低违约金，每一条都有成功率（底气来自表现分、人气、当年冠军、教练信任），提得越多越容易谈崩——谈崩了队伍收回报价，你就是自由身"
+  ]},
   {v:"v20260906b", at:"2026-09-06", items:[
     "版本更新不再弹窗（玩家实锤：它盖住了教程导览）：更新内容只记在右下角 📜 里，有新版本时 📜 上亮一个点，自己点开才显示",
     "左栏最下面新增「教程说明」栏目：文字版的各栏目说明、基本概念（行动点 / 体能 / 文字档位 / 天赋瓶颈 / 职业前 / 赛季 / 合同转会 / 托管），以及「重放导览」按钮——一开始跳过了导览的，随时能回来看"
@@ -4222,7 +4239,7 @@ function contractTerms(){
   const T=(typeof CLUB_TIERS!=="undefined"&&c.clubTier)?CLUB_TIERS[c.clubTier]:null;
   const D=(typeof DEAL_TIERS!=="undefined"&&c.tier)?DEAL_TIERS[c.tier]:null;
   const paid=salaryOf();
-  return `<div class="card"><h2>我的合同<em>剩 ${c.left||0}/${c.years||0} 赛段</em></h2>
+  return `<div class="card"><h2>我的合同<em>剩 ${c.left||0}/${c.years||0} 赛段${typeof contractLeftText==="function"&&c.left?" · "+contractLeftText():""}</em></h2>
     <h3>${S.team||""}${T?"　"+T.n:""}${D?"　"+D.n:""}${
       c.grade?`<span class="tag g">试训 ${c.grade}</span>`:""}${
       (S.homeLeague||"LPL")==="LDL"
@@ -4648,6 +4665,9 @@ function endMatch(){
   render();
 }
 function simWorld(){
+  // 国际赛 / 季后赛期间联赛停摆——原来每打一场国际赛都替联赛多模拟一周，
+  // 世界赛期间冒出「TT 爆冷击败 EDG」还进了大事记（玩家实锤：TT 根本没来世界赛）
+  if(S.intl||S.playoff) return;
   S._upset=null;          // 每周重摇：际遇里说的冷门必须是「这一周真的发生的」
   Object.keys(S.world).forEach(lg=>{
     const sea=SEASONS[S.si];
@@ -4867,8 +4887,59 @@ function startPlayoff(){
     return;
   }
   S.playoff={round:1,seed,alive:true,beaten:[S.team]};
+  poBrInit();                              // 六队真对阵树；1/2 号种子轮空，从半决赛打起
+  S.playoff.round=S.playoff.br.stage;
   S.step="match";
-  startMatch(true, playoffOpp(1));
+  startMatch(true, poMyOpp()||playoffOpp(S.playoff.round));
+}
+/* ---------- 季后赛对阵树（2026-09-06 玩家点名：要像瑞士轮/杯赛那样看得到线路——对手是击败了谁来的、赢了下一个打谁）----------
+   六队三轮：首轮 3v6 / 4v5，一二号种子轮空；半决赛 1 号打 4v5 的胜者、2 号打 3v6 的胜者；决赛。
+   你不在的对局不摇骰子，按 majorStandings 的正典顺序判（冠军 > 亚军 > 四强 > 其余按排名）——
+   这样树上的结果和赛后宣布的冠军、国际赛的种子是同一件事。老档没有 br 就走原来的阶梯逻辑。 */
+function poCanon(){
+  const HL=S.homeLeague||"LPL";
+  const rk=lplRank().map(r=>r.n);
+  let top=[]; try{ top=(typeof majorStandings==="function")?majorStandings(HL):[]; }catch(e){ top=[]; }
+  return top.concat(rk.filter(n=>!top.includes(n)));
+}
+function poAiWin(a,b){
+  if(!a) return b||null; if(!b) return a;
+  const o=poCanon(), ia=o.indexOf(a), ib=o.indexOf(b);
+  return ((ia<0?99:ia)<=(ib<0?99:ib))?a:b;
+}
+function poBrInit(){
+  const six=lplRank().slice(0,6).map(r=>r.n);
+  S.playoff.br={seeds:six, hist:[], stage:1, pairs:[[six[2]||null,six[5]||null],[six[3]||null,six[4]||null]], champ:null};
+  poBrSettle();
+}
+function poBrAdvance(winners){
+  const B=S.playoff.br, six=B.seeds;
+  if(B.stage===1){ B.pairs=[[six[0]||null,winners[1]||null],[six[1]||null,winners[0]||null]]; B.stage=2; }
+  else if(B.stage===2){ B.pairs=[[winners[0]||null,winners[1]||null]]; B.stage=3; }
+  else { B.champ=winners[0]||null; B.pairs=[]; B.stage=4; }
+}
+/* 当前阶段没有我的对局：整阶段判掉、推进，直到轮到我或出冠军 */
+function poBrSettle(){
+  const B=S.playoff&&S.playoff.br; if(!B) return;
+  for(let g=0;g<4;g++){
+    if(B.champ||!B.pairs.length) return;
+    if(B.pairs.some(p=>p[0]===S.team||p[1]===S.team)) return;
+    const winners=B.pairs.map(p=>poAiWin(p[0],p[1]));
+    B.hist.push({label:poRoundName(B.stage),pairs:B.pairs.map(p=>p.slice()),winners});
+    poBrAdvance(winners);
+  }
+}
+function poMyOpp(){
+  const B=S.playoff&&S.playoff.br; if(!B) return null;
+  const p=B.pairs.find(p=>p[0]===S.team||p[1]===S.team);
+  return p?(p[0]===S.team?p[1]:p[0]):null;
+}
+/* 我打完：结果写回树，同阶段另一场判掉，推进一阶段 */
+function poBrResolveMine(won,opp){
+  const B=S.playoff&&S.playoff.br; if(!B) return;
+  const winners=B.pairs.map(p=>(p[0]===S.team||p[1]===S.team)?(won?S.team:opp):poAiWin(p[0],p[1]));
+  B.hist.push({label:poRoundName(B.stage),pairs:B.pairs.map(p=>p.slice()),winners});
+  poBrAdvance(winners);
 }
 /* 第1轮打 5/6 号种子，第2轮打 2/3 号，决赛打 1 号 */
 function playoffOpp(round){
@@ -4880,14 +4951,21 @@ function playoffOpp(round){
    玩家原话：「打一线比赛 lpl 也是常规赛，季后赛季后赛半决赛这些要写清楚」。 */
 function poRoundName(r){ return ["季后赛首轮","半决赛","决赛"][(r||1)-1] || `第 ${r} 轮`; }
 function playoffAdvance(){
-  const won=S.match.sc[0]>S.match.sc[1];
-  if(!won){ noteGrudge(S.match.oppName,S.playoff.round>=3?4:2,
+  const won=S.match.sc[0]>S.match.sc[1], opp=S.match.oppName;
+  if(S.playoff.br) poBrResolveMine(won,opp);
+  if(!won){ noteGrudge(opp,S.playoff.round>=3?4:2,
       `${poRoundName(S.playoff.round)}被淘汰`);
     S.playoff.alive=false; endSeason(S.playoff.round,S.playoff.seed); return; }
-  S.playoff.beaten.push(S.match.oppName);
-  S.playoff.round++;
-  if(S.playoff.round>3){ endSeason("champion",S.playoff.seed); return; }
-  const nm=playoffOpp(S.playoff.round);
+  S.playoff.beaten.push(opp);
+  if(S.playoff.br){
+    poBrSettle();
+    S.playoff.round=S.playoff.br.stage;
+    if(S.playoff.br.champ===S.team||S.playoff.round>3){ endSeason("champion",S.playoff.seed); return; }
+  } else {
+    S.playoff.round++;
+    if(S.playoff.round>3){ endSeason("champion",S.playoff.seed); return; }
+  }
+  const nm=(S.playoff.br&&poMyOpp())||playoffOpp(S.playoff.round);
   enterPrep("playoff", nm, true,
     `${poRoundName(S.playoff.round)} · 赛前备战`);
 }
@@ -5120,7 +5198,12 @@ const OFF_WEEKS=3, MID_WEEKS=2;
    原来没进 MSI 就直接开夏季赛，中间一点时间都没有——
    可那正是现实里休整、补短板的窗口。用同一套面板，只是去向不同。 */
 function enterBreak(next, weeks, label, note){
-  S.off={week:1, weeks, next, label};
+  /* 注册窗只在 MSI / 世界赛结束之后才开（玩家 2026-09-06 定的：那两段不是转会时间，
+     合同的实际到期点就是 MSI 结束 / 世界赛结束）。标签里带「MSI」的季中间歇＝MSI 还在打：
+     拉到 3 周，第 3 周冠军揭晓、注册窗同时打开（wndFrom）。世界赛期间走 "wrap"，本来就在年底窗之前。 */
+  const during=(next==="summer"&&/MSI/.test(label||""));
+  if(during) weeks=Math.max(weeks,3);
+  S.off={week:1, weeks, next, label, wndFrom:during?3:1};
   // 出征周是赶路、抽签、适应场馆——能自主安排的时间少，
   // 而且长途飞行和时差本身就不养人：这里不自动洗疲劳（别的间歇会），
   // 休息也按 0.45 折算（见 doAction 的 prepMul）。当年只给 1 点是因为
@@ -5133,7 +5216,7 @@ function enterBreak(next, weeks, label, note){
   pushEvent(note||`${label}（${weeks} 周）。没有比赛，正好把该补的补上。`,"info","间歇");
   // 季中注册窗（2026-08-31 玩家拍板的双窗制）：春季赛打完，转会市场开门。
   // 赛段里攒的意向在这里兑现——LDL 打半年打得好，夏季赛就能上一线。
-  if(next==="summer"&&S.career){
+  if(next==="summer"&&S.career&&!during){
     S.askedTransfer=false;
     if(typeof rollProOffers==="function") rollProOffers("mid");
   }
@@ -5219,6 +5302,15 @@ function offNextWeek(){
     finishOffseason(); return;
   }
   S.off.week++;
+  // MSI 落幕的那一周：季中注册窗开门（续约卡、问询、挂牌都从这一周起）
+  if(S.off.wndFrom&&S.off.week>=S.off.wndFrom&&!S.off.wndOpened){
+    S.off.wndOpened=true;
+    if(S.off.next==="summer"){
+      S.off.label="季中注册窗"; S.askedTransfer=false;
+      if(S.career&&typeof rollProOffers==="function") rollProOffers("mid");
+      pushEvent(`MSI 落幕，<b>季中注册窗</b>开了：续约、挂牌、问询都在这一周。`,"info","转会");
+    }
+  }
   S.ap=(S.off.next==="intl")?2:apFor("off");
   if(S.off.next==="intl"&&S.btk) S.btk.apWeek=4;
   if(S.assets&&S.assets.apt) addFat(-4);
@@ -6881,23 +6973,24 @@ const LOCKER=[
   {id:"blame", rec:0, when:()=>S.record.l>=2&&rnd()<0.5,
    q:t=>`输球后复盘，<b>${t.id}</b> 说那波团是你先开的。`,
    ctx:"所有人都在看你怎么回。",
-   a:[{t:"认下来，这波我的问题", g:"warm",e:(t)=>{addTrustAll(6);S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.8);
-        return "你把锅接了。更衣室安静下来，气氛缓和。"}},
-      {t:"数据摆出来，不是我的问题", g:"hard",e:(t)=>{addTrust(t.id,-12);addTrustAll(-3);
-        return `你把回放调出来逐帧过。${t.id} 没再说话，但脸色不好看。`}},
-      {t:"当场吵回去", g:"hard",e:(t)=>{addTrust(t.id,-20);addTrustAll(-6);addFans(3);
-        return "更衣室炸了。第二天这段被爆料出去，上了热搜。"}}]},
+   /* 玩家 2026-09-06 点名：每个选项都得有对应的好处和坏处，不能有纯亏的 */
+   a:[{t:"认下来，这波我的问题", g:"warm",e:(t)=>{addTrustAll(6);S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.8);addFans(-3);
+        return "你把锅接了。更衣室安静下来，气氛缓和——弹幕里倒是有人开始说你「就是背锅的」。"}},
+      {t:"数据摆出来，不是我的问题", g:"hard",e:(t)=>{addTrust(t.id,-12);addTrustAll(-3);if(typeof addStaff==="function") addStaff("coach",6);
+        return `你把回放调出来逐帧过。${t.id} 没再说话，但脸色不好看。教练在旁边点了点头——他要的就是敢看数据的人。`}},
+      {t:"当场吵回去", g:"hard",e:(t)=>{addTrust(t.id,-20);addTrustAll(-6);addFans(9);S.heat=(S.heat||0)+12;S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.4);
+        return "更衣室炸了。第二天这段被爆料出去，上了热搜——人气和热度都涨了，你也硬气了一点。"}}]},
 
   {id:"resource", rec:2, when:()=>rnd()<0.4,
    q:t=>`<b>${t.id}</b> 想要更多资源，说这个版本该走他这边。`,
    ctx:"教练把决定权交给了你。",
    /* 玩家点名：原文「我打辅助位」像是要转去打辅助——意思其实是少吃资源、打功能型 */
-   a:[{t:"资源给他，我少吃点、打功能型", g:"warm",e:(t)=>{addTrust(t.id,14);addTrustAll(4);
-        return `${t.id} 拿到了资源，也记住了这份人情。你这个版本先把工具人做好。`}},
-      {t:"资源还是给我，我能打出来", g:"hard",e:(t)=>{addTrust(t.id,-9);
-        return `你留下了资源。${t.id} 没多说，但训练赛里少了几次配合。`}},
-      {t:"看局势分，不预设",e:(t)=>{addTrust(t.id,3);addTrustAll(2);
-        return "折中方案，没人特别满意，也没人不满意。"}}]},
+   a:[{t:"资源给他，我少吃点、打功能型", g:"warm",e:(t)=>{addTrust(t.id,14);addTrustAll(4);if(S.form!==undefined) S.form=q1(clamp(S.form-4,25,95));
+        return `${t.id} 拿到了资源，也记住了这份人情。你这个版本先把工具人做好——手感会闷一阵。`}},
+      {t:"资源还是给我，我能打出来", g:"hard",e:(t)=>{addTrust(t.id,-9);if(S.form!==undefined) S.form=q1(clamp(S.form+5,25,95));S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.5);
+        return `你留下了资源。${t.id} 没多说，但训练赛里少了几次配合。资源在手，你的手感和对线确实更顺了。`}},
+      {t:"看局势分，不预设",e:(t)=>{addTrust(t.id,3);addTrustAll(2);if(typeof addSquad==="function") addSquad("tac",-2);
+        return "折中方案，没人特别满意，也没人不满意。打法没定下来，训练赛里各打各的。"}}]},
 
   {id:"rookie", rec:0, when:()=>(typeof teamTenure==="function"?teamTenure():99)>=3&&myRoster().some(p=>!p.me&&p.rookie)&&rnd()<0.5,
    q:t=>`新秀 <b>${t.id}</b> 连着几把打崩，训练室里一个人坐着。`,
@@ -6906,23 +6999,23 @@ const LOCKER=[
         DIMS.forEach(d=>{ if(d!=="操作") t.r[d]=clamp(t.r[d]+1.2,20,99); });
         if(typeof checkAch==="function") checkAch("mentor");
         return `${t.id} 的状态回来了一些。他记住了这件事。`}},
-      {t:"让他自己扛过去", g:"show",e:(t)=>{addTrust(t.id,-6);
-        return "职业圈本来就是这样。他没说什么。"}}]},
+      {t:"让他自己扛过去", g:"show",e:(t)=>{addTrust(t.id,-6);addFat(-6);
+        return "职业圈本来就是这样。他没说什么。你把这两个小时留给了自己。"}}]},
 
   {id:"veteran", rec:0, when:()=>(typeof teamTenure==="function"?teamTenure():99)>=3&&myRoster().some(p=>!p.me&&p.age>=27)&&rnd()<0.45,
    q:t=>`老将 <b>${t.id}</b> 私下问你，是不是该退了。`,
    ctx:"他的操作确实在掉，但他还是队里最懂运营的人。",
-   a:[{t:"你还能打，队里需要你", g:"warm",e:(t)=>{addTrust(t.id,16);addTrustAll(4);
+   a:[{t:"你还能打，队里需要你", g:"warm",e:(t)=>{addTrust(t.id,16);addTrustAll(4);if(typeof addStaff==="function") addStaff("coach",-4);
         t.r.指挥=clamp(t.r.指挥+2.5,20,99);
-        return `${t.id} 点了点头。那个赛季他的指挥变得更果断了。`}},
-      {t:"实话说，你该考虑转型", g:"hard",e:(t)=>{addTrust(t.id,-10);
-        return "他沉默了很久，说谢谢你的诚实。"}}]},
+        return `${t.id} 点了点头。那个赛季他的指挥变得更果断了——教练组本来想换人，对你这句话有点意见。`}},
+      {t:"实话说，你该考虑转型", g:"hard",e:(t)=>{addTrust(t.id,-10);if(typeof addStaff==="function") addStaff("coach",6);S.attrs.指挥=Math.min(capOf("指挥"),S.attrs.指挥+0.6);
+        return "他沉默了很久，说谢谢你的诚实。之后训练赛里开麦的人变成了你，教练也记下了这一点。"}}]},
 
   {id:"media", rec:0, when:()=>S.fans>=100&&rnd()<0.35,
    q:t=>`媒体想做你的专访，队里其他人一个都没约。`,
    ctx:"流量都在你身上，这未必是好事。",
-   a:[{t:"接，顺便多提队友", g:"warm",e:(t)=>{addFans(12);addMoney("other",14);addTrustAll(5);
-        return "采访里你把功劳分了出去。队友看到了。"}},
+   a:[{t:"接，顺便多提队友", g:"warm",e:(t)=>{addFans(12);addMoney("other",14);addTrustAll(5);addFat(6);
+        return "采访里你把功劳分了出去。队友看到了。拍了一下午，晚上的训练没赶上。"}},
       {t:"接，好好聊自己", g:"show",e:(t)=>{addFans(22);addMoney("other",20);addTrustAll(-7);
         return "热度起来了。更衣室里有人觉得你飘了。"}},
       {t:"推掉，专心训练", g:"grind",e:(t)=>{addFans(-4);addTrustAll(4);
@@ -13386,23 +13479,23 @@ function dealCard(){
   const D = DEAL_TIERS[d.dealTier], T = CLUB_TIERS[d.clubTier];
   if(d.dead){
     return `<div class="card"><h2>谈判破裂<em>${d.team}</em></h2>
-      <p class="note">你把价格要到了对方不能接受的位置。这家今年不会再谈了。</p>
+      <p class="note">${d.renew?"你把价格要到了俱乐部不能接受的位置——<b>续约报价收回了</b>，你成了自由身，去转会市场自己找下家。":"你把价格要到了对方不能接受的位置。这家今年不会再谈了。"}</p>
       ${d.log.length?`<div class="log">${d.log.slice().reverse().join("")}</div>`:""}
-      <div class="row"><button class="btn ghost" id="dealend">继续练下去 →</button></div></div>`;
+      <div class="row"><button class="btn ghost" id="dealend">${d.renew?"进转会市场 →":"继续练下去 →"}</button></div></div>`;
   }
   const lev = d.leverage;
   const st=clubStanding(d.team);
-  return `<div class="card"><h2>合同谈判<em>${d.team} · ${T.n}${
+  return `<div class="card"><h2>${d.renew?"续约谈判":"合同谈判"}<em>${d.team} · ${T.n}${
     st?` · LPL 第 ${st.pos}/${st.of}`:""}</em></h2>
-    <h3>${D.n}<span class="tag g">试训 ${d.grade}</span></h3>
+    <h3>${D.n}<span class="tag g">${d.renew?"续约":"试训 "+d.grade}</span></h3>
     <div class="grid g2" style="margin:12px 0">
       <div class="ver"><div class="k">年薪</div><div class="v mono" style="font-size:22px;color:var(--gold-hi)">${d.salary}<small> 万/赛段</small></div></div>
       <div class="ver"><div class="k">签字费</div><div class="v mono" style="font-size:22px">${d.sign}<small> 万</small></div></div>
-      <div class="ver"><div class="k">合同年限</div><div class="v mono" style="font-size:22px">${d.years}<small> 赛段</small></div></div>
+      <div class="ver"><div class="k">合同年限</div><div class="v mono" style="font-size:22px">${d.years}<small> 赛段</small></div><div class="k" style="font-size:10px;line-height:1.4">${contractSpanText(d.years)}</div></div>
       <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:22px">${d.buyout}<small> 万</small></div></div>
     </div>
-    <p class="note">你的底气 <b>${lev.toFixed(0)}</b>——来自试训评级、人气和段位。
-      已经提了 <b>${d.asks}</b> 次要求，<b>提得越多越容易谈崩</b>。</p>
+    <p class="note">你的底气 <b>${lev.toFixed(0)}</b>——${d.renew?"来自表现分、人气、当年冠军和教练的信任":"来自试训评级、人气和段位"}。
+      已经提了 <b>${d.asks}</b> 次要求，<b>提得越多越容易谈崩</b>${d.renew?"——谈崩了报价就收回，你成自由身":""}。</p>
     <div class="grid g2">${DEAL_ASKS.map(a=>{
       const p = clamp((lev - a.cost - d.asks*14)/40 + 0.5, 0.06, 0.93);
       return `<button class="act" data-ask="${a.k}">
@@ -13412,7 +13505,7 @@ function dealCard(){
     ${d.log.length?`<div class="log">${d.log.slice().reverse().join("")}</div>`:""}
     <div class="row">
       <button class="btn" id="dealsign">就这么签 →</button>
-      <button class="btn ghost" id="dealno">不签，再练一年</button>
+      <button class="btn ghost" id="dealno">${d.renew?"不续约，进转会市场":"不签，再练一年"}</button>
     </div>
     <p class="note">签字费当场到账，年薪每个赛段结算一次。违约金越高，以后别队越难把你买走。<br>
       ${d.dealTier==="acad"
@@ -13514,6 +13607,8 @@ function consumeOffer(team){
 }
 /* 试训没过，或者谈崩了：这家今年到此为止 */
 function dropDeal(){
+  const rd=S.deal;
+  if(rd&&rd.renew){ S.deal=null; if(rd.dead) renewCollapse(); else render(); return; }   // 续约谈崩：报价收回，自由身
   const team = (S.deal && S.deal.team) || (S.tryout && S.tryout.team);
   if(team) consumeOffer(team);
   S.deal = null; S.tryout = null;
@@ -13789,6 +13884,7 @@ function dropProOffer(){
    拒 → 成为自由身，当场开一次转会问询，去哪从报价里自己选。 */
 function renewCard(){
   const r = S.pendingRenew; if(!r) return "";
+  if(typeof txWindowOpen==="function"&&!txWindowOpen()) return "";   // MSI / 世界赛还在打：合同还没到期，窗口没开
   const up = (a,b)=> (a!==undefined&&b!==undefined&&b>a) ? `<span style="color:var(--good)"> ↑</span>` : "";
   return `<div class="rankup"><div class="ru-inner" style="max-width:520px;text-align:left;max-height:86vh;overflow-y:auto">
     <div class="ru-icon" style="text-align:center">${typeof gicon==="function"?gicon("transfer",52):""}</div>
@@ -13801,17 +13897,18 @@ function renewCard(){
       <div class="ver"><div class="k">新年薪</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${
         r.salary!==undefined?r.salary:"—"}<small> 万/赛段</small>${up(r.oldSalary,r.salary)}</div>${
         r.oldSalary!==undefined?`<div class="k" style="font-size:10px">原 ${r.oldSalary} 万</div>`:""}</div>
-      <div class="ver"><div class="k">年限</div><div class="v mono" style="font-size:20px">${r.years}<small> 个赛段</small></div></div>
+      <div class="ver"><div class="k">年限</div><div class="v mono" style="font-size:20px">${r.years}<small> 个赛段</small></div><div class="k" style="font-size:10px;line-height:1.4">${contractSpanText(r.years)}</div></div>
       <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:20px">${
         r.buyout!==undefined?r.buyout:"—"}<small> 万</small>${up(r.oldBuyout,r.buyout)}</div>${
         r.oldBuyout!==undefined?`<div class="k" style="font-size:10px">原 ${r.oldBuyout} 万</div>`:""}</div>
       <div class="ver"><div class="k">违约金的意思</div><div class="k" style="font-size:11px;line-height:1.5">谈得高，别的队买你要付更多，愿意来的就少；想留后路可谈低。</div></div>
     </div>
     <div class="row" style="justify-content:center">
-      <button class="btn" id="rnwyes">签下续约 →</button>
+      <button class="btn" id="rnwyes">就这么签 →</button>
+      <button class="btn ghost" id="rnwtalk">谈条件</button>
       <button class="btn ghost" id="rnwno">拒绝，进转会市场</button>
     </div>
-    <p class="note" style="text-align:center">拒绝没有惩罚，但你就成了自由身——去哪得自己在市场上找。</p>
+    <p class="note" style="text-align:center">「谈条件」和试训签约一样：加薪、签字费、年限、违约金都能要，每条有成功率，提得越多越容易谈崩——谈崩了报价就收回。<br>拒绝没有惩罚，但你就成了自由身——去哪得自己在市场上找。</p>
   </div></div>`;
 }
 function acceptRenew(){
@@ -13822,6 +13919,35 @@ function acceptRenew(){
   pushEvent(`<b>${r.team}</b> 与你续约 ${r.years} 个赛段，年薪 <b>${r.salary!==undefined?r.salary:"—"} 万</b>${
     r.buyout!==undefined?`，违约金 <b>${r.buyout} 万</b>`:""}。`,"good","合同");
   if(typeof txNote==="function") txNote(`与 ${r.team} 续约，年薪 ${r.salary!==undefined?r.salary:"—"} 万`);
+  render();
+}
+/* ---------- 续约谈判（2026-09-06 玩家点名：不能只有签或不签，要像试训那样能谈）----------
+   把续约报价装进 S.deal（renew:true），复用 dealCard / askDeal 那一套：四个方向各有成功率，
+   底气来自表现分、人气、当年冠军和教练信任；谈崩了（dead）队伍收回报价 → 自由身。 */
+function renewNegotiate(){
+  const r=S.pendingRenew; if(!r||S.deal) return;
+  const perf=(typeof proPerf==="function")?proPerf():0;
+  const coach=(typeof coachTrust==="function")?coachTrust():50;
+  S.deal={ team:r.team, renew:true, clubTier:r.clubTier||"mid", dealTier:r.tier||"start", grade:r.grade||"B", kind:"start",
+    salary:(r.salary!==undefined)?r.salary:0, sign:0, years:r.years||2, buyout:(r.buyout!==undefined)?r.buyout:0,
+    asks:0, dead:false, signed:false, log:[],
+    leverage: clamp(14 + perf*0.9 + Math.min(S.fans||0,400)*0.03 + (r.wonTitle?12:0) + (coach-50)*0.2, 8, 70) };
+  render();
+}
+function signRenewDeal(){
+  const d=S.deal, r=S.pendingRenew; if(!d||!d.renew||d.dead||d.signed) return;
+  d.signed=true;
+  if(r){ r.salary=d.salary; r.buyout=d.buyout; r.years=d.years; }
+  if(d.sign){ addMoney("sign",d.sign); pushEvent(`续约签字费 <b>${d.sign} 万</b>到账。`,"good","合同"); }
+  S.deal=null;
+  if(r) acceptRenew(); else render();
+}
+function renewCollapse(){
+  const r=S.pendingRenew; if(!r) return;
+  S.pendingRenew=null; S.freeAgent=true; S.gotCut=true;
+  pushEvent(`续约谈崩了：<b>${r.team}</b> 觉得你要的太多，收回了报价。你成了<b>自由身</b>——去哪由你自己在转会市场上找。`,"bad","合同");
+  if(typeof txNote==="function") txNote(`与 ${r.team} 的续约谈崩，成为自由身`);
+  if(typeof rollProOffers==="function"){ S.offerYear=undefined; S.offerWnd=undefined; rollProOffers((S.off&&S.off.next==="summer")?"mid":"year"); }
   render();
 }
 function declineRenew(){
@@ -13841,7 +13967,33 @@ function declineRenew(){
    代价是明码标价的：经理不高兴，没人接的话更衣室还会知道你想走。 */
 /* 注册窗开着吗（季中间歇 / 年底休赛期）——挂牌、买断、当场谈约都看它 */
 function txWindowOpen(){
-  return !!(S.off && (S.off.next==="year" || S.off.next==="summer"));
+  // 季中窗：MSI 还在打的那几周不算（S.off.wndFrom 是开窗的周）
+  return !!(S.off && (S.off.next==="year" || (S.off.next==="summer" && S.off.week>=(S.off.wndFrom||1))));
+}
+/* ---------- 合同的起止（玩家 2026-09-06 点名：写清从什么时候到什么时候，不只是「几个赛段」）----------
+   赛段序号 = 赛季×2 + (0 春 / 1 夏)。春季赛段在 MSI 结束时到期，夏季赛段在世界赛结束时到期。 */
+function splitIdxNow(){
+  const si=S.si||0, sp=S.split||0;
+  if(S.step==="offseason"&&S.off){
+    if(S.off.next==="summer") return si*2+1;                  // 季中窗：下一个是夏季赛
+    if(S.off.next==="year"||S.off.next==="wrap") return (si+1)*2;   // 年底窗 / 世界赛期间：下一个是明年春季赛
+    return si*2+sp;                                            // 出征 / 季后赛前：本赛段还没算完
+  }
+  return si*2+sp;
+}
+function splitLabel(idx){
+  const si=Math.max(0,Math.floor(idx/2)), sp=idx%2;
+  const sea=SEASONS[Math.min(si,SEASONS.length-1)];
+  return `${sea.tag} ${sp?"夏季赛":"春季赛"}`;
+}
+function contractSpanText(years,startIdx){
+  const st=(startIdx===undefined)?splitIdxNow():startIdx, e=st+Math.max(1,years||1)-1;
+  return `${splitLabel(st)} 起 → ${splitLabel(e)} 止，${e%2?"世界赛":"MSI"}结束时到期`;
+}
+function contractLeftText(){
+  const c=S.contract; if(!c||c.left===undefined||c.left<=0) return "";
+  const st=splitIdxNow(), e=st+Math.max(1,c.left)-1;
+  return `到 ${splitLabel(e)} 止，${e%2?"世界赛":"MSI"}结束时到期`;
 }
 function txWindowName(){
   return S.off && S.off.next==="summer" ? "季中注册窗" : "年底注册窗";
@@ -15835,11 +15987,21 @@ function aiMarketWindow(full){
    · 淘汰赛：对阵树——已打完的轮次（intl.br.hist）+ 本轮 + 后续占位；MSI 双败按胜者组 / 败者组逐轮列
    · 联赛季后赛：六强种子 + 你的路线；常规赛期间按当前排名画「若现在结束」的形势
    · 杯赛：轮次阶梯（对手按轮固定，赢了打谁一目了然） */
+/* 对阵图里的队名：LPL 用惯用缩写，其余不长就写全（玩家实锤：T1 显示成「T」、Cloud9 成「C」），太长才取首字母 */
+function brCode(n){
+  try{ if(typeof LPL_CODE!=="undefined"&&LPL_CODE[n]) return LPL_CODE[n]; }catch(e){}
+  const str=String(n||"");
+  if(str.length<=14) return str;
+  const w=str.split(/\s+/).filter(Boolean);
+  if(w.length===1) return str.slice(0,12);
+  const ini=w.map(x=>x[0]).join("").toUpperCase();
+  return ini.length>=2?ini:str.slice(0,12);
+}
 function brTeam(n,opt){
   opt=opt||{};
   if(!n) return `<span class="bt empty">${opt.ph||"待定"}</span>`;
   const me=(n===S.team);
-  let code=n; try{ code=(typeof teamCode==="function"&&teamCode(n))||n; }catch(e){}
+  let code=n; try{ code=brCode(n); }catch(e){}
   return `<span class="bt ${me?'me':''} ${opt.win?'win':''} ${opt.lose?'lose':''}" title="${escapeHtml(n)}">${
     typeof teamLogo==="function"?teamLogo(n,16):""}<b>${escapeHtml(code)}</b></span>`;
 }
@@ -15903,27 +16065,35 @@ function playoffBracketCard(){
   const inSeason=S.step==="season";
   if(!P&&!inSeason) return "";
   const six=rk.slice(0,6), mySeed=rk.findIndex(r=>r.n===S.team)+1;
-  const names=["季后赛首轮","半决赛","决赛"];
-  let path=[];
-  if(P){
+  const sx=six.map(r=>r.n);
+  const seedCol=`<div class="bcol"><div class="bh">六强种子${P?"":"（按当前排名）"}</div>${six.map((r,i)=>`<div class="bm seed ${r.n===S.team?'now':''}">${brTeam(r.n)}<span class="bsd">#${i+1} · ${r.w}−${r.l}</span></div>`).join("")}</div>`;
+  let rounds=[], champ=null, head, note;
+  if(P&&P.br){
+    const B=P.br;
+    rounds=(B.hist||[]).map(h=>({label:h.label,pairs:h.pairs,winners:h.winners,done:true}));
+    if(!B.champ&&B.pairs.length) rounds.push({label:poRoundName(B.stage),pairs:B.pairs,winners:[],now:true});
+    for(let st=(B.champ?4:B.stage+1);st<=3;st++)
+      rounds.push({label:poRoundName(st),pairs:st===2?[[B.seeds[0]||null,null],[B.seeds[1]||null,null]]:[[null,null]],winners:[],ph:true});
+    champ=B.champ;
+    head=`季后赛 · 对阵树`;
+    note=champ?`冠军 <b>${champ}</b>。`:`亮字是赢了的队、划掉的是被淘汰的，晨光橙框是你。${poMyOpp()?`下一场 vs <b>${poMyOpp()}</b>。`:""}一二号种子轮空进半决赛；1 号打 4v5 的胜者，2 号打 3v6 的胜者。`;
+  } else if(P){
+    // 老档（没有对阵树）：只画你的路线
     const beaten=(P.beaten||[]).filter(n=>n!==S.team);
-    for(let r=1;r<=3;r++){
-      if(r<P.round) path.push({n:names[r-1],opp:beaten[r-1]||null,st:"win"});
-      else if(r===P.round) path.push({n:names[r-1],opp:(S.prep&&S.prep.opp)||(S.match&&S.match.oppName)||(typeof playoffOpp==="function"?playoffOpp(r):null),st:"now"});
-      else path.push({n:names[r-1],opp:null,st:"ph"});
-    }
-  } else if(mySeed>=1&&mySeed<=6){
-    const pool=rk.filter(r=>r.n!==S.team).map(r=>r.n);
-    path=[{n:names[0],opp:pool[Math.min(4,pool.length-1)],st:"ph"},{n:names[1],opp:pool[1],st:"ph"},{n:names[2],opp:pool[0],st:"ph"}];
+    const names=["季后赛首轮","半决赛","决赛"];
+    rounds=names.map((n,i)=>{ const r=i+1; const opp=r<P.round?beaten[r-1]:r===P.round?((S.prep&&S.prep.opp)||(S.match&&S.match.oppName)||null):null;
+      return {label:n,pairs:[[S.team,opp]],winners:r<P.round?[S.team]:[],now:r===P.round,done:r<P.round,ph:r>P.round}; });
+    head=`季后赛 · 你的路线`; note="这份存档是旧版季后赛开的，只有你自己的路线。";
+  } else {
+    rounds=[{label:"季后赛首轮",pairs:[[sx[2],sx[5]],[sx[3],sx[4]]],winners:[],ph:true},
+            {label:"半决赛",pairs:[[sx[0],null],[sx[1],null]],winners:[],ph:true},
+            {label:"决赛",pairs:[[null,null]],winners:[],ph:true}];
+    head=`季后赛形势`;
+    note=mySeed>=1&&mySeed<=6?`前六进季后赛，按现在的排名画的，每周都会变。首轮 3v6、4v5，一二号种子轮空。`:`前六进季后赛，你现在在线外——把排名打上去。`;
   }
-  return `<div class="card"><h2>${P?"季后赛 · 对阵":"季后赛形势"}<em>${P?poRoundName(P.round):`常规赛第 ${S.week}/${WEEKS} 周 · 你第 ${mySeed} 名`}</em></h2>
-    <div class="brk-tree">
-      <div class="bcol"><div class="bh">六强种子${P?"":"（按当前排名）"}</div>${six.map((r,i)=>`<div class="bm seed ${r.n===S.team?'now':''}">${brTeam(r.n)}<span class="bsd">#${i+1} · ${r.w}−${r.l}</span></div>`).join("")}</div>
-      ${path.length?`<div class="bcol path"><div class="bh">你的路线${P?"":"（预测）"}</div>${path.map(x=>`<div class="bm ${x.st}"><span class="bsd">${x.n}</span>${
-        brTeam(x.opp,{win:x.st==="win",ph:"待定"})}${x.st==="win"?'<i class="bok">胜</i>':x.st==="now"?'<i class="bnow">下一场</i>':''}</div>`).join("")}</div>`:""}
-    </div>
-    <p class="note">${P?"首轮打 5/6 号种子，半决赛打 2/3 号，决赛打榜首——赢一轮往上走一格。"
-      :mySeed>=1&&mySeed<=6?"前六进季后赛。按现在的排名算，每周都会变。":"前六进季后赛，你现在在线外——把排名打上去。"}</p></div>`;
+  return `<div class="card"><h2>${head}<em>${P?poRoundName(P.round):`常规赛第 ${S.week}/${WEEKS} 周 · 你第 ${mySeed>0?mySeed:"—"} 名`}</em></h2>
+    <div class="brk-tree">${seedCol}${koTree(rounds,champ).replace('<div class="brk-tree">','').replace(/<\/div>$/,'')}</div>
+    <p class="note">${note}</p></div>`;
 }
 function bracketCard(){
   try{
@@ -16066,7 +16236,7 @@ function flushToasts(){
       const txt=raw.slice(0,140)+(raw.length>140?"…":"");
       const el=document.createElement("div"); el.className="toast t-"+ev.tone;   // t- 前缀：别和结局页的 .big 大字类撞名（玩家实锤：突破提示条变成 36px 宋体）
       el.title="点一下关闭 · 完整内容在大事记";
-      el.innerHTML=`<span class="tt">${typeof escapeHtml==="function"?escapeHtml(ev.tag||""):(ev.tag||"")}</span><span class="tx">${typeof escapeHtml==="function"?escapeHtml(txt):txt}</span>`;
+      el.innerHTML=`<span class="tt">${typeof escapeHtml==="function"?escapeHtml(ev.tag||""):(ev.tag||"")}</span><span class="tx">${typeof escapeHtml==="function"?escapeHtml(txt):txt}</span><button class="tx-x" aria-label="关闭" title="关闭">×</button>`;
       box.appendChild(el);
       while(box.children.length>4) box.removeChild(box.firstChild);
       let tm=null, gone=false;
@@ -16093,19 +16263,66 @@ const TOUR_PRE=[
   {sel:'[data-tab="shop"]', t:"经济", d:"钱从哪来、往哪花：直播收入、奖金、外设、课程。"},
   {sel:'[data-tab="ach"]', t:"成就 / 日志", d:"成就是你拿到过的东西；日志是这一路发生过的事。"},
   {sel:'[data-tab="auto"]', t:"托管", d:"把重复的事交出去：一键安排、自动推进到下一件需要你拿主意的事。"},
-  {sel:'[data-tab="help"]', t:"教程说明", d:"以后想再看：这里有文字版的栏目说明和「重放导览」按钮。"},
+  {sel:'[data-tab="help"]', t:"教程说明", d:"以后想再看：这里有文字版的栏目说明和「重放导览」按钮（简明 / 详细都能选）。"},
   {sel:".grid.g5", t:"行动", d:"每个按钮是一周里的一件事：练哪一维、打排位、直播、休息……写着它会让什么变好、累不累。点了之后，卡片顶上会留一句这周做了什么。"},
   {sel:"#prenext", t:"推进", d:"行动点用完就进入下一周。年底是转会窗口，试训邀请随时可能来——把段位和人气打上去，让人看见你。"}
+];
+/* 详细版：在简明版基础上，把行动面板里每一个按钮、体能、本周流水、处境卡都过一遍 */
+const TOUR_PRE_FULL=[
+  TOUR_PRE[0],
+  {sel:".h-res", t:"资源格", d:"段位是俱乐部看你的第一把尺；粉丝慢涨几乎不掉、热度快涨快跌（每周回落一成，直播趁热最值钱）；资金买外设和课程；体能是每周的本钱；「下一节点」告诉你下一个赛事或窗口还有几周、门槛够不够。"},
+  TOUR_PRE[1],
+  TOUR_PRE[2],TOUR_PRE[3],TOUR_PRE[4],TOUR_PRE[5],TOUR_PRE[6],TOUR_PRE[7],TOUR_PRE[8],TOUR_PRE[9],
+  {sel:".diary", t:"本周流水", d:"你这周做过的事都会在这里留一句话——做了什么、手感怎么样。一周开始时它是空的。"},
+  {sel:".ver", t:"处境卡", d:"现在谁看得到你：差在段位还是差在曝光、离转会窗口还有几周、哪一档俱乐部会来找你。练段位还是去露脸，看这里定。"},
+  {sel:".energy", t:"体能", d:"每个行动都累，比赛更累。掉到四成以下状态明显下滑；休息、网吧开黑、换个游戏都能回。行动点写在每个按钮上。"},
+  {sel:'[data-pre="rank"]', t:"打排位（1 点）", d:"三把排位：赢了涨分、输了掉分，五维都小涨一点。实力压得住分段就冲，卡在门槛附近先练。段位到宗师起，青训教练才会看你。"},
+  {sel:'[data-pretrain="操作"]', t:"训练（2 点）", d:"五个按钮各练一维：操作是对线与输出，运营是视野与节奏，心态是抗压与翻盘，指挥是全队乘数（比赛只取队内最高），体质是耐久。撞到天赋瓶颈会提示怎么突破。"},
+  {sel:'[data-pre="stream"]', t:"直播（2 点）", d:"涨热度、赚礼物；热度沉淀成粉丝，粉丝决定谁来邀请你、也决定薪水的浮动。主播出身直播收益更高。"},
+  {sel:'[data-pre="rest"]', t:"休息（1 点）", d:"清疲劳、稳心态。累了硬练收益会打折，还容易受伤。"},
+  {sel:'[data-pre="boost"]', t:"接代练（2 点）", d:"来钱快，但手会糙、心会累；接到第三单会留下记录，进职业后可能被扒出来。"},
+  {sel:'[data-pre="cafe"]', t:"网吧开黑（1 点）", d:"清疲劳、稳心态、人气小涨；有车队的话默契一起涨。"},
+  {sel:'[data-pre="chill"]', t:"换个游戏（1 点）", d:"疲劳掉得最快，但手感会生一点。"},
+  {sel:'[data-pre="watch"]', t:"看职业录像（1 点）", d:"运营和指挥的便宜课，战术素养也涨——车队和职业队里都用得上。"},
+  {sel:".card.cup", t:"杯赛", d:"报了名的赛事卡：对手水位、赢面、还有几周开打、针对性备战。下面的阶梯写着每一轮打谁、赢了打谁。"},
+  {sel:"#quickap", t:"一键安排", d:"懒得一个个点：按最稳妥的路数花掉剩余行动点（累了休息、没累补短板、练无可练打排位）。"},
+  {sel:".routine", t:"重复上回合 / 计划", d:"把上周的安排再来一遍，或者存一套「没事发生时的默认安排」一键执行。有事打断会停下来交回给你。"},
+  TOUR_PRE[10],
+  {sel:"#uinum", t:"数值开关", d:"默认用文字描述实力；想看具体数字点这里，随时切回来。"},
+  TOUR_PRE[11]
 ];
 const TOUR_SEASON=[
   {sel:"#hud", t:"赛季仪表盘", d:"效力的队、本季战绩、冠军数、段位、粉丝、资金、体能、状态。"},
   {sel:'[data-tab="me"]', t:"我的", d:"五维属性、状态曲线、个人数据、比赛记录、生涯与外设——你自己的一切。"},
   {sel:'[data-tab="team"]', t:"队伍", d:"队友、默契、战术、士气、信任与话语权——这是五个人的游戏，队友弱你再强也赢不了。"},
   {sel:'[data-tab="world"]', t:"赛事", d:"赛程、积分榜、季后赛形势、宿敌、各赛区新闻、大事记。国际赛期间对阵图也在这里。"},
-  {sel:'[data-tab="tx"]', t:"转会", d:"别的队来挖你、你挂牌、买断、续约——都在这里。"},
+  {sel:'[data-tab="tx"]', t:"转会", d:"别的队来挖你、你挂牌、买断、续约——都在这里。注册窗只在 MSI 结束后和世界赛结束后开。"},
   {sel:'[data-tab="shop"]', t:"经济", d:"年薪、直播、奖金进账；外设、课程、俱乐部资源花钱。"},
   {sel:'[data-tab="help"]', t:"教程说明", d:"文字版的栏目说明和「重放导览」都在这里，随时回来看。"},
   {sel:"#play", t:"这周的比赛", d:"行动点用完，打这周的比赛。赛后有拆解：赢在哪、输在哪、明天练什么。"}
+];
+const TOUR_SEASON_FULL=[
+  TOUR_SEASON[0],
+  {sel:".h-res", t:"资源格", d:"冠军数、段位、粉丝、资金、体能、状态。状态是「今年打成什么样」——排位找手感、休息护状态，它直接乘在战力上。"},
+  {sel:"#pin", t:"实力条", d:"你的水平、本周剩下的行动点、体能、状态。文字档位：生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级；点「数值」看具体数。"},
+  TOUR_SEASON[1],TOUR_SEASON[2],TOUR_SEASON[3],TOUR_SEASON[4],TOUR_SEASON[5],
+  {sel:'[data-tab="ach"]', t:"成就", d:"八十多项成就：拿到过的东西，有的给钱、给名气、给信任。"},
+  {sel:'[data-tab="auto"]', t:"托管", d:"把重复的事交出去：一键安排、执行计划、自动推进到下一件需要你拿主意的事。"},
+  TOUR_SEASON[6],
+  {sel:".next", t:"下一场", d:"本周对手：两队战力对比、对面核心和你的对位、差距判断。战力 = 五人实力加权 × 默契 × 战术 × 士气 × 指挥 × 体能。"},
+  {sel:".diary", t:"本周流水", d:"这周做过的事都会在这里留一句话。"},
+  {sel:".ver", t:"版本", d:"这一年的强势位置和关键属性：高于联赛均线的人吃红利、低的人吃亏。练关键属性收益更高，赛后拆解里「版本相性」那一行就是它。"},
+  {sel:".energy", t:"体能", d:"每周恢复一些，比赛最累。掉到四成以下战力明显下滑——赛季里别把自己练废。"},
+  {sel:'[data-train="操作"]', t:"训练（2 点）", d:"五个按钮各练一维。赛季里训练收益比职业前低两成（进队的人底子已经厚了）；本季关键属性有额外加成。"},
+  {sel:'[data-do="solo"]', t:"打排位（1 点）", d:"五维小涨，更重要的是找回手感：状态不练会掉。段位也跟着动。"},
+  {sel:'[data-do="stream"]', t:"直播（2 点）", d:"涨热度、赚礼物；签了直播独家有保底，自由身上限更高。"},
+  {sel:'[data-do="content"]', t:"做内容（2 点）", d:"教学 / 高光 / 复盘 / 整活——同样一点，方向不同，涨的东西不同。"},
+  {sel:'[data-do="rest"]', t:"休息（1 点）", d:"清疲劳、护状态、泄心态气压。"},
+  {sel:"[data-squad]", t:"战队行动", d:"训练赛、战术复盘、战队合练、队友双排：默契和战术直接乘在全队战力上，信任决定士气。"},
+  {sel:".routine", t:"重复上回合 / 计划", d:"把上周的安排再来一遍，或存一套默认安排一键执行。"},
+  {sel:"#quickap", t:"一键安排", d:"按最稳妥的路数花掉剩余行动点。"},
+  {sel:"#auto", t:"自动推进", d:"只替你跳过「没得选的周」，一有事（际遇、更衣室、报价）立刻交回给你。"},
+  TOUR_SEASON[7]
 ];
 /* 「教程说明」栏目（玩家 2026-09-06 点名：一开始跳过了导览、后面又找不到）：
    文字版的栏目说明 + 基本概念 + 重放导览按钮。栏目说明直接读导览步骤表，两边不会说两套话。 */
@@ -16115,7 +16332,8 @@ function helpCard(){
   const li=(t,d)=>`<div class="hs"><b>${t}</b><span>${d}</span></div>`;
   return `<div class="card"><h2>教程说明<em>${pro?"赛季":"职业前"}</em></h2>
     <div class="row" style="margin:0 0 12px">
-      <button class="btn" id="tourreplay">重放导览 →</button>
+      <button class="btn" id="tourreplay">重放导览 · 简明 →</button>
+      <button class="btn" id="tourreplayfull">重放导览 · 详细 →</button>
       <button class="btn ghost" id="helplog">更新日志</button>
     </div>
     <h3 style="font-size:14px">各栏目是干什么的</h3>
@@ -16137,11 +16355,28 @@ function helpCard(){
 var _tour=null;
 function tourSeen(k){ try{ return localStorage.getItem("poxiao_tour_"+k)==="1"; }catch(e){ return true; } }
 function tourMark(k){ try{ localStorage.setItem("poxiao_tour_"+k,"1"); }catch(e){} }
-function tourStart(kind){
+/* 先问一句：简明（约 1 分钟，只讲栏目）还是详细（约 3 分钟，把行动面板里每个按钮都过一遍）——玩家 2026-09-06 点名 */
+function tourAsk(kind){
+  try{
+    if(typeof document==="undefined"||!document.body||!document.body.appendChild) return;
+    tourEnd(false);
+    const ov=document.createElement("div"); ov.className="tour ask"; ov.id="tour";
+    ov.innerHTML=`<div class="tour-card center"><div class="tour-k">导览</div><div class="tour-t">${kind==="season"?"签约了，要不要先看看赛季怎么玩？":"要不要先看看怎么玩？"}</div>
+      <div class="tour-d">简明版只讲每个栏目是干什么的；详细版把仪表盘、每个行动按钮、体能、杯赛都过一遍。以后在「教程说明」栏目里随时能重放。</div>
+      <div class="tour-b"><button class="btn ghost sm" id="tour-skip">跳过</button><span class="tour-n"></span>
+      <button class="btn ghost sm" id="tour-lite">简明 · 1 分钟</button><button class="btn sm" id="tour-full">详细 · 3 分钟</button></div></div>`;
+    document.body.appendChild(ov);
+    ov.querySelector("#tour-skip").onclick=()=>{ tourMark(kind); tourEnd(false); };
+    ov.querySelector("#tour-lite").onclick=()=>tourStart(kind,"lite");
+    ov.querySelector("#tour-full").onclick=()=>tourStart(kind,"full");
+  }catch(e){}
+}
+function tourStart(kind,mode){
   try{
     if(typeof document==="undefined"||!document.body||!document.body.appendChild||!document.querySelector) return;
     tourEnd(false);
-    _tour={kind,steps:kind==="season"?TOUR_SEASON:TOUR_PRE,i:0};
+    const full=(mode==="full");
+    _tour={kind,steps:kind==="season"?(full?TOUR_SEASON_FULL:TOUR_SEASON):(full?TOUR_PRE_FULL:TOUR_PRE),i:0};
     const ov=document.createElement("div"); ov.className="tour"; ov.id="tour";
     ov.innerHTML=`<div class="tour-hole"></div><div class="tour-card"><div class="tour-k"></div><div class="tour-t"></div><div class="tour-d"></div>
       <div class="tour-b"><button class="btn ghost sm" id="tour-skip">跳过</button><span class="tour-n"></span>
@@ -16213,8 +16448,8 @@ function tourMaybe(){
     if(typeof _renderLock!=="undefined"&&_renderLock>0) return;
     if(S.rndEv||S.rndResult||S.locker||S.signup||S.rankUp||S.cupMatch||S.cupResult||S.tryout||S.deal||S.showStart) return;
     if(S.pre&&S.pre.invite&&S.pre.invite.pending) return;
-    if(S.step==="pre"&&!tourSeen("pre")){ setTimeout(()=>{ if(!_tour&&S.step==="pre") tourStart("pre"); },600); }
-    else if(S.step==="season"&&S.career&&!tourSeen("season")){ setTimeout(()=>{ if(!_tour&&S.step==="season") tourStart("season"); },600); }
+    if(S.step==="pre"&&!tourSeen("pre")){ setTimeout(()=>{ if(!_tour&&S.step==="pre"&&!document.getElementById("tour")) tourAsk("pre"); },600); }
+    else if(S.step==="season"&&S.career&&!tourSeen("season")){ setTimeout(()=>{ if(!_tour&&S.step==="season"&&!document.getElementById("tour")) tourAsk("season"); },600); }
   }catch(e){}
 }
 function hudNum(k,v,suffix,cls){
@@ -16368,7 +16603,7 @@ function pinbar(){
   +`<span class="pv tools"><button class="pvb ${num?'on':''}" id="uinum" title="${num?"切回文字描述":"显示具体数值"}">${num?"数值 开":"数值 关"}</button><button class="pvb" id="tourbtn" title="重看一遍导览">导览</button></span>`;
   try{
     const ub=p.querySelector("#uinum"); if(ub) ub.onclick=()=>{ uiSetNum(!num); render(); };
-    const tb=p.querySelector("#tourbtn"); if(tb) tb.onclick=()=>{ if(typeof tourStart==="function") tourStart(S.career?"season":"pre"); };
+    const tb=p.querySelector("#tourbtn"); if(tb) tb.onclick=()=>{ if(typeof tourAsk==="function") tourAsk(S.career?"season":"pre"); };
   }catch(e){}
 }
 /* 新的内联阻塞卡出现时把内容区拉到可见位置。
@@ -16510,7 +16745,8 @@ function bind(){
     if(x){ DIMS.forEach(d=>S.talent[d]=x.t[d]||0); render(); } });
   st.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;_moreOpen=false;render()});
   st.querySelectorAll("[data-more]").forEach(b=>b.onclick=()=>{_moreOpen=(b.dataset.more==="1")?!_moreOpen:false;render()});
-  const _tr=$("tourreplay"); if(_tr) _tr.onclick=()=>{ S.tab="act"; render(); if(typeof tourStart==="function") setTimeout(()=>tourStart(S.career?"season":"pre"),80); };
+  const _tr=$("tourreplay"); if(_tr) _tr.onclick=()=>{ S.tab="act"; render(); if(typeof tourStart==="function") setTimeout(()=>tourStart(S.career?"season":"pre","lite"),80); };
+  const _trf=$("tourreplayfull"); if(_trf) _trf.onclick=()=>{ S.tab="act"; render(); if(typeof tourStart==="function") setTimeout(()=>tourStart(S.career?"season":"pre","full"),80); };
   const _hl=$("helplog"); if(_hl) _hl.onclick=()=>{ if(typeof showChangelog==="function") showChangelog(); };
   const _rok=$("rndok"); if(_rok) _rok.onclick=()=>{S.rndResult=null;render()};
   st.querySelectorAll("[data-rnd]").forEach(b=>b.onclick=()=>resolveRandom(+b.dataset.rnd));
@@ -16563,9 +16799,16 @@ function bind(){
   const _td=$("tryoutdone"); if(_td) _td.onclick=afterTryout;
   st.querySelectorAll("[data-ask]").forEach(b=>b.onclick=()=>askDeal(b.dataset.ask));
   const _ds=$("dealsign"); if(_ds) _ds.onclick=()=>{
-    (S.deal&&S.deal.transfer) ? signTransfer() : signDeal(); };
+    (S.deal&&S.deal.renew) ? signRenewDeal() : (S.deal&&S.deal.transfer) ? signTransfer() : signDeal(); };
   const _de=$("dealend");  if(_de) _de.onclick=dropDeal;
   const _dn=$("dealno");   if(_dn) _dn.onclick=()=>{
+    if(S.deal&&S.deal.renew){
+      askConfirm("不续约",
+        `放弃 <b>${S.deal.team}</b> 的续约，进转会市场。<br>
+         <span class="note">你就成了自由身——去哪得自己找；窗口关了还没人签，就回到路人的日子。</span>`,
+        "进转会市场", ()=>{ S.deal=null; if(typeof declineRenew==="function") declineRenew(); });
+      return;
+    }
     if(S.deal&&S.deal.transfer){
       askConfirm("拒绝转会",
         `留在 <b>${S.team}</b>，不去 <b>${S.deal.team}</b>。<br>
@@ -16604,6 +16847,7 @@ function bind(){
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;
   const _pn=$("pofno"); if(_pn) _pn.onclick=dropProOffer;
   const _rwy=$("rnwyes"); if(_rwy) _rwy.onclick=()=>{ if(typeof acceptRenew==="function") acceptRenew(); };
+  const _rwt=$("rnwtalk"); if(_rwt) _rwt.onclick=()=>{ if(typeof renewNegotiate==="function") renewNegotiate(); };
   const _rwn=$("rnwno");  if(_rwn) _rwn.onclick=()=>{ if(typeof declineRenew==="function") declineRenew(); };
   const _at=$("askTransfer"); if(_at) _at.onclick=()=>askTransfer();
   st.querySelectorAll("[data-approach]").forEach(b=>b.onclick=()=>{

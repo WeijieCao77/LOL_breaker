@@ -43,6 +43,7 @@ try {
   new Function(code + "\n;globalThis.__api={S:()=>S,SEASONS,SPLITS,DIMS,AGES,BACKGROUNDS,ACHIEVEMENTS,RANKS,"
     + "GEAR,SLOTS,COURSES,RELAX,SPEND,screenCreate,startPre,preAct,preNextWeek,acceptOffer,"
     + "render,bracketCard,intlBracketCard,playoffBracketCard,cupLadder,weekDiary,attrCard,tabBar,uiSetNum,uiNum,dimWord,TABS_PRE,TABS_SEASON,dropToStreets,tourMaybe,TAL_PRESETS,"
+    + "renewNegotiate,signRenewDeal,renewCollapse,poBrInit,poMyOpp,poCanon,contractSpanText,contractLeftText,txWindowOpen,TOUR_PRE_FULL,TOUR_SEASON_FULL,"
     + "doTrain,doAction,startMatch,resolveNode,playGame,nextWeek,doOffseason,offNextWeek,prepGo,enterPrep,finishOffseason,OFF_WEEKS,isBenched,benchWeek,"
     + "resolveLocker,ending,cap,rankFull,nowLabel,nowPhase,yearWeek,yearTotal,rankIcon,fanTier,scoutTier,preScore,hasAch,pickClub,power,ageWorld,myTeam,myRoster,leagueBaseline,fanCap,fanFill,fansWan,fansText,fanWeek,addFans,heatTier,fanToNext,"
     + "buyGear,buyCourse,buyRelax,gearBonus,streamIncome,drawBackgrounds,advancePreWeek,capOf,"
@@ -74,7 +75,7 @@ function playOne(opts) {
 
   let guard = 0, preYears = 0, rankUps = 0, lockers = 0;
   let signups = 0, cupMatches = 0, preps = 0, cupPick = 0;
-  let invites = 0, tryPick = 0, dealPick = 0, transfers = 0;
+  let invites = 0, tryPick = 0, dealPick = 0, transfers = 0, renewTalks = 0;
   let maxRank = 0, scrims = 0, trials = 0, trialWins = 0, mateInj = 0, benchWeeks = 0, _trialOn = false, _injOn = false;
   const cupRuns = [], grades = [], deals = [];
   while (A.S().step !== "end" && guard++ < 40000) {
@@ -137,7 +138,7 @@ function playOne(opts) {
       // 这里原来无条件调 signDeal，把下面 offseason 分支里那句正确的分派整个遮蔽了，
       // 于是机器人从来没换过赛区：实测 30 局发出 136 次外赛区报价，0 局在外赛区结束。
       // 那是这个测试脚本的 bug，不是游戏的 bug。
-      if (d.transfer) A.signTransfer(); else A.signDeal();
+      if (d.renew) A.signRenewDeal(); else if (d.transfer) A.signTransfer(); else A.signDeal();
       continue;
     }
     if (S.step === "pre") {
@@ -204,7 +205,12 @@ function playOne(opts) {
       // 休赛期现在是可玩的几周：先把结算页点掉，再把每周的行动点用完
       if (!S.off) { A.doOffseason(); continue; }
       // 合同到期续约：测试里默认接受（留在想留你的队）；opts.declineRenew 走「拒绝进市场」
-      if (S.pendingRenew) { if (opts.declineRenew) A.declineRenew(); else A.acceptRenew(); continue; }
+      if (S.pendingRenew && !S.deal) {
+        if (opts.declineRenew) A.declineRenew();
+        else if (opts.negotiateRenew) { renewTalks++; A.renewNegotiate(); }   // 谈一轮再签（覆盖谈判/谈崩两条路）
+        else A.acceptRenew();
+        continue;
+      }
       // 有队来挖：表现好就走人（测试里一律接受，用来量频率）；opts.noOffers 一律回绝（逼出自由身没人签）
       if (S.proOffer) { if (opts.noOffers) { A.dropProOffer(); } else { transfers++; A.takeProOffer(); } continue; }
       if (S.tryout) { const t=S.tryout; if(t.done) A.afterTryout(); else A.resolveTryoutDay(1); continue; }
@@ -235,7 +241,8 @@ function playOne(opts) {
     money: Math.round(S.money), fame: A.fanTier(),
     fans: Math.round(S.fans), heat: Math.round(S.heat||0),
     titles: (S.career && S.career.titles) || [],
-    streets: S.streets || 0, everCut: !!S.everCut,
+    streets: S.streets || 0, everCut: !!S.everCut, renewTalks,
+    poBracket: !!(S.lastPo && S.lastPo.br),
     events: (S.events || []).length
   };
 }

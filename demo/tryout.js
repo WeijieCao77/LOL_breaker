@@ -563,23 +563,23 @@ function dealCard(){
   const D = DEAL_TIERS[d.dealTier], T = CLUB_TIERS[d.clubTier];
   if(d.dead){
     return `<div class="card"><h2>谈判破裂<em>${d.team}</em></h2>
-      <p class="note">你把价格要到了对方不能接受的位置。这家今年不会再谈了。</p>
+      <p class="note">${d.renew?"你把价格要到了俱乐部不能接受的位置——<b>续约报价收回了</b>，你成了自由身，去转会市场自己找下家。":"你把价格要到了对方不能接受的位置。这家今年不会再谈了。"}</p>
       ${d.log.length?`<div class="log">${d.log.slice().reverse().join("")}</div>`:""}
-      <div class="row"><button class="btn ghost" id="dealend">继续练下去 →</button></div></div>`;
+      <div class="row"><button class="btn ghost" id="dealend">${d.renew?"进转会市场 →":"继续练下去 →"}</button></div></div>`;
   }
   const lev = d.leverage;
   const st=clubStanding(d.team);
-  return `<div class="card"><h2>合同谈判<em>${d.team} · ${T.n}${
+  return `<div class="card"><h2>${d.renew?"续约谈判":"合同谈判"}<em>${d.team} · ${T.n}${
     st?` · LPL 第 ${st.pos}/${st.of}`:""}</em></h2>
-    <h3>${D.n}<span class="tag g">试训 ${d.grade}</span></h3>
+    <h3>${D.n}<span class="tag g">${d.renew?"续约":"试训 "+d.grade}</span></h3>
     <div class="grid g2" style="margin:12px 0">
       <div class="ver"><div class="k">年薪</div><div class="v mono" style="font-size:22px;color:var(--gold-hi)">${d.salary}<small> 万/赛段</small></div></div>
       <div class="ver"><div class="k">签字费</div><div class="v mono" style="font-size:22px">${d.sign}<small> 万</small></div></div>
-      <div class="ver"><div class="k">合同年限</div><div class="v mono" style="font-size:22px">${d.years}<small> 赛段</small></div></div>
+      <div class="ver"><div class="k">合同年限</div><div class="v mono" style="font-size:22px">${d.years}<small> 赛段</small></div><div class="k" style="font-size:10px;line-height:1.4">${contractSpanText(d.years)}</div></div>
       <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:22px">${d.buyout}<small> 万</small></div></div>
     </div>
-    <p class="note">你的底气 <b>${lev.toFixed(0)}</b>——来自试训评级、人气和段位。
-      已经提了 <b>${d.asks}</b> 次要求，<b>提得越多越容易谈崩</b>。</p>
+    <p class="note">你的底气 <b>${lev.toFixed(0)}</b>——${d.renew?"来自表现分、人气、当年冠军和教练的信任":"来自试训评级、人气和段位"}。
+      已经提了 <b>${d.asks}</b> 次要求，<b>提得越多越容易谈崩</b>${d.renew?"——谈崩了报价就收回，你成自由身":""}。</p>
     <div class="grid g2">${DEAL_ASKS.map(a=>{
       const p = clamp((lev - a.cost - d.asks*14)/40 + 0.5, 0.06, 0.93);
       return `<button class="act" data-ask="${a.k}">
@@ -589,7 +589,7 @@ function dealCard(){
     ${d.log.length?`<div class="log">${d.log.slice().reverse().join("")}</div>`:""}
     <div class="row">
       <button class="btn" id="dealsign">就这么签 →</button>
-      <button class="btn ghost" id="dealno">不签，再练一年</button>
+      <button class="btn ghost" id="dealno">${d.renew?"不续约，进转会市场":"不签，再练一年"}</button>
     </div>
     <p class="note">签字费当场到账，年薪每个赛段结算一次。违约金越高，以后别队越难把你买走。<br>
       ${d.dealTier==="acad"
@@ -691,6 +691,8 @@ function consumeOffer(team){
 }
 /* 试训没过，或者谈崩了：这家今年到此为止 */
 function dropDeal(){
+  const rd=S.deal;
+  if(rd&&rd.renew){ S.deal=null; if(rd.dead) renewCollapse(); else render(); return; }   // 续约谈崩：报价收回，自由身
   const team = (S.deal && S.deal.team) || (S.tryout && S.tryout.team);
   if(team) consumeOffer(team);
   S.deal = null; S.tryout = null;
@@ -966,6 +968,7 @@ function dropProOffer(){
    拒 → 成为自由身，当场开一次转会问询，去哪从报价里自己选。 */
 function renewCard(){
   const r = S.pendingRenew; if(!r) return "";
+  if(typeof txWindowOpen==="function"&&!txWindowOpen()) return "";   // MSI / 世界赛还在打：合同还没到期，窗口没开
   const up = (a,b)=> (a!==undefined&&b!==undefined&&b>a) ? `<span style="color:var(--good)"> ↑</span>` : "";
   return `<div class="rankup"><div class="ru-inner" style="max-width:520px;text-align:left;max-height:86vh;overflow-y:auto">
     <div class="ru-icon" style="text-align:center">${typeof gicon==="function"?gicon("transfer",52):""}</div>
@@ -978,17 +981,18 @@ function renewCard(){
       <div class="ver"><div class="k">新年薪</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${
         r.salary!==undefined?r.salary:"—"}<small> 万/赛段</small>${up(r.oldSalary,r.salary)}</div>${
         r.oldSalary!==undefined?`<div class="k" style="font-size:10px">原 ${r.oldSalary} 万</div>`:""}</div>
-      <div class="ver"><div class="k">年限</div><div class="v mono" style="font-size:20px">${r.years}<small> 个赛段</small></div></div>
+      <div class="ver"><div class="k">年限</div><div class="v mono" style="font-size:20px">${r.years}<small> 个赛段</small></div><div class="k" style="font-size:10px;line-height:1.4">${contractSpanText(r.years)}</div></div>
       <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:20px">${
         r.buyout!==undefined?r.buyout:"—"}<small> 万</small>${up(r.oldBuyout,r.buyout)}</div>${
         r.oldBuyout!==undefined?`<div class="k" style="font-size:10px">原 ${r.oldBuyout} 万</div>`:""}</div>
       <div class="ver"><div class="k">违约金的意思</div><div class="k" style="font-size:11px;line-height:1.5">谈得高，别的队买你要付更多，愿意来的就少；想留后路可谈低。</div></div>
     </div>
     <div class="row" style="justify-content:center">
-      <button class="btn" id="rnwyes">签下续约 →</button>
+      <button class="btn" id="rnwyes">就这么签 →</button>
+      <button class="btn ghost" id="rnwtalk">谈条件</button>
       <button class="btn ghost" id="rnwno">拒绝，进转会市场</button>
     </div>
-    <p class="note" style="text-align:center">拒绝没有惩罚，但你就成了自由身——去哪得自己在市场上找。</p>
+    <p class="note" style="text-align:center">「谈条件」和试训签约一样：加薪、签字费、年限、违约金都能要，每条有成功率，提得越多越容易谈崩——谈崩了报价就收回。<br>拒绝没有惩罚，但你就成了自由身——去哪得自己在市场上找。</p>
   </div></div>`;
 }
 function acceptRenew(){
@@ -999,6 +1003,35 @@ function acceptRenew(){
   pushEvent(`<b>${r.team}</b> 与你续约 ${r.years} 个赛段，年薪 <b>${r.salary!==undefined?r.salary:"—"} 万</b>${
     r.buyout!==undefined?`，违约金 <b>${r.buyout} 万</b>`:""}。`,"good","合同");
   if(typeof txNote==="function") txNote(`与 ${r.team} 续约，年薪 ${r.salary!==undefined?r.salary:"—"} 万`);
+  render();
+}
+/* ---------- 续约谈判（2026-09-06 玩家点名：不能只有签或不签，要像试训那样能谈）----------
+   把续约报价装进 S.deal（renew:true），复用 dealCard / askDeal 那一套：四个方向各有成功率，
+   底气来自表现分、人气、当年冠军和教练信任；谈崩了（dead）队伍收回报价 → 自由身。 */
+function renewNegotiate(){
+  const r=S.pendingRenew; if(!r||S.deal) return;
+  const perf=(typeof proPerf==="function")?proPerf():0;
+  const coach=(typeof coachTrust==="function")?coachTrust():50;
+  S.deal={ team:r.team, renew:true, clubTier:r.clubTier||"mid", dealTier:r.tier||"start", grade:r.grade||"B", kind:"start",
+    salary:(r.salary!==undefined)?r.salary:0, sign:0, years:r.years||2, buyout:(r.buyout!==undefined)?r.buyout:0,
+    asks:0, dead:false, signed:false, log:[],
+    leverage: clamp(14 + perf*0.9 + Math.min(S.fans||0,400)*0.03 + (r.wonTitle?12:0) + (coach-50)*0.2, 8, 70) };
+  render();
+}
+function signRenewDeal(){
+  const d=S.deal, r=S.pendingRenew; if(!d||!d.renew||d.dead||d.signed) return;
+  d.signed=true;
+  if(r){ r.salary=d.salary; r.buyout=d.buyout; r.years=d.years; }
+  if(d.sign){ addMoney("sign",d.sign); pushEvent(`续约签字费 <b>${d.sign} 万</b>到账。`,"good","合同"); }
+  S.deal=null;
+  if(r) acceptRenew(); else render();
+}
+function renewCollapse(){
+  const r=S.pendingRenew; if(!r) return;
+  S.pendingRenew=null; S.freeAgent=true; S.gotCut=true;
+  pushEvent(`续约谈崩了：<b>${r.team}</b> 觉得你要的太多，收回了报价。你成了<b>自由身</b>——去哪由你自己在转会市场上找。`,"bad","合同");
+  if(typeof txNote==="function") txNote(`与 ${r.team} 的续约谈崩，成为自由身`);
+  if(typeof rollProOffers==="function"){ S.offerYear=undefined; S.offerWnd=undefined; rollProOffers((S.off&&S.off.next==="summer")?"mid":"year"); }
   render();
 }
 function declineRenew(){
@@ -1018,7 +1051,33 @@ function declineRenew(){
    代价是明码标价的：经理不高兴，没人接的话更衣室还会知道你想走。 */
 /* 注册窗开着吗（季中间歇 / 年底休赛期）——挂牌、买断、当场谈约都看它 */
 function txWindowOpen(){
-  return !!(S.off && (S.off.next==="year" || S.off.next==="summer"));
+  // 季中窗：MSI 还在打的那几周不算（S.off.wndFrom 是开窗的周）
+  return !!(S.off && (S.off.next==="year" || (S.off.next==="summer" && S.off.week>=(S.off.wndFrom||1))));
+}
+/* ---------- 合同的起止（玩家 2026-09-06 点名：写清从什么时候到什么时候，不只是「几个赛段」）----------
+   赛段序号 = 赛季×2 + (0 春 / 1 夏)。春季赛段在 MSI 结束时到期，夏季赛段在世界赛结束时到期。 */
+function splitIdxNow(){
+  const si=S.si||0, sp=S.split||0;
+  if(S.step==="offseason"&&S.off){
+    if(S.off.next==="summer") return si*2+1;                  // 季中窗：下一个是夏季赛
+    if(S.off.next==="year"||S.off.next==="wrap") return (si+1)*2;   // 年底窗 / 世界赛期间：下一个是明年春季赛
+    return si*2+sp;                                            // 出征 / 季后赛前：本赛段还没算完
+  }
+  return si*2+sp;
+}
+function splitLabel(idx){
+  const si=Math.max(0,Math.floor(idx/2)), sp=idx%2;
+  const sea=SEASONS[Math.min(si,SEASONS.length-1)];
+  return `${sea.tag} ${sp?"夏季赛":"春季赛"}`;
+}
+function contractSpanText(years,startIdx){
+  const st=(startIdx===undefined)?splitIdxNow():startIdx, e=st+Math.max(1,years||1)-1;
+  return `${splitLabel(st)} 起 → ${splitLabel(e)} 止，${e%2?"世界赛":"MSI"}结束时到期`;
+}
+function contractLeftText(){
+  const c=S.contract; if(!c||c.left===undefined||c.left<=0) return "";
+  const st=splitIdxNow(), e=st+Math.max(1,c.left)-1;
+  return `到 ${splitLabel(e)} 止，${e%2?"世界赛":"MSI"}结束时到期`;
 }
 function txWindowName(){
   return S.off && S.off.next==="summer" ? "季中注册窗" : "年底注册窗";

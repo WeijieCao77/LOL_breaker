@@ -99,23 +99,24 @@ const LOCKER=[
   {id:"blame", rec:0, when:()=>S.record.l>=2&&rnd()<0.5,
    q:t=>`输球后复盘，<b>${t.id}</b> 说那波团是你先开的。`,
    ctx:"所有人都在看你怎么回。",
-   a:[{t:"认下来，这波我的问题", g:"warm",e:(t)=>{addTrustAll(6);S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.8);
-        return "你把锅接了。更衣室安静下来，气氛缓和。"}},
-      {t:"数据摆出来，不是我的问题", g:"hard",e:(t)=>{addTrust(t.id,-12);addTrustAll(-3);
-        return `你把回放调出来逐帧过。${t.id} 没再说话，但脸色不好看。`}},
-      {t:"当场吵回去", g:"hard",e:(t)=>{addTrust(t.id,-20);addTrustAll(-6);addFans(3);
-        return "更衣室炸了。第二天这段被爆料出去，上了热搜。"}}]},
+   /* 玩家 2026-09-06 点名：每个选项都得有对应的好处和坏处，不能有纯亏的 */
+   a:[{t:"认下来，这波我的问题", g:"warm",e:(t)=>{addTrustAll(6);S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.8);addFans(-3);
+        return "你把锅接了。更衣室安静下来，气氛缓和——弹幕里倒是有人开始说你「就是背锅的」。"}},
+      {t:"数据摆出来，不是我的问题", g:"hard",e:(t)=>{addTrust(t.id,-12);addTrustAll(-3);if(typeof addStaff==="function") addStaff("coach",6);
+        return `你把回放调出来逐帧过。${t.id} 没再说话，但脸色不好看。教练在旁边点了点头——他要的就是敢看数据的人。`}},
+      {t:"当场吵回去", g:"hard",e:(t)=>{addTrust(t.id,-20);addTrustAll(-6);addFans(9);S.heat=(S.heat||0)+12;S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.4);
+        return "更衣室炸了。第二天这段被爆料出去，上了热搜——人气和热度都涨了，你也硬气了一点。"}}]},
 
   {id:"resource", rec:2, when:()=>rnd()<0.4,
    q:t=>`<b>${t.id}</b> 想要更多资源，说这个版本该走他这边。`,
    ctx:"教练把决定权交给了你。",
    /* 玩家点名：原文「我打辅助位」像是要转去打辅助——意思其实是少吃资源、打功能型 */
-   a:[{t:"资源给他，我少吃点、打功能型", g:"warm",e:(t)=>{addTrust(t.id,14);addTrustAll(4);
-        return `${t.id} 拿到了资源，也记住了这份人情。你这个版本先把工具人做好。`}},
-      {t:"资源还是给我，我能打出来", g:"hard",e:(t)=>{addTrust(t.id,-9);
-        return `你留下了资源。${t.id} 没多说，但训练赛里少了几次配合。`}},
-      {t:"看局势分，不预设",e:(t)=>{addTrust(t.id,3);addTrustAll(2);
-        return "折中方案，没人特别满意，也没人不满意。"}}]},
+   a:[{t:"资源给他，我少吃点、打功能型", g:"warm",e:(t)=>{addTrust(t.id,14);addTrustAll(4);if(S.form!==undefined) S.form=q1(clamp(S.form-4,25,95));
+        return `${t.id} 拿到了资源，也记住了这份人情。你这个版本先把工具人做好——手感会闷一阵。`}},
+      {t:"资源还是给我，我能打出来", g:"hard",e:(t)=>{addTrust(t.id,-9);if(S.form!==undefined) S.form=q1(clamp(S.form+5,25,95));S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.5);
+        return `你留下了资源。${t.id} 没多说，但训练赛里少了几次配合。资源在手，你的手感和对线确实更顺了。`}},
+      {t:"看局势分，不预设",e:(t)=>{addTrust(t.id,3);addTrustAll(2);if(typeof addSquad==="function") addSquad("tac",-2);
+        return "折中方案，没人特别满意，也没人不满意。打法没定下来，训练赛里各打各的。"}}]},
 
   {id:"rookie", rec:0, when:()=>(typeof teamTenure==="function"?teamTenure():99)>=3&&myRoster().some(p=>!p.me&&p.rookie)&&rnd()<0.5,
    q:t=>`新秀 <b>${t.id}</b> 连着几把打崩，训练室里一个人坐着。`,
@@ -124,23 +125,23 @@ const LOCKER=[
         DIMS.forEach(d=>{ if(d!=="操作") t.r[d]=clamp(t.r[d]+1.2,20,99); });
         if(typeof checkAch==="function") checkAch("mentor");
         return `${t.id} 的状态回来了一些。他记住了这件事。`}},
-      {t:"让他自己扛过去", g:"show",e:(t)=>{addTrust(t.id,-6);
-        return "职业圈本来就是这样。他没说什么。"}}]},
+      {t:"让他自己扛过去", g:"show",e:(t)=>{addTrust(t.id,-6);addFat(-6);
+        return "职业圈本来就是这样。他没说什么。你把这两个小时留给了自己。"}}]},
 
   {id:"veteran", rec:0, when:()=>(typeof teamTenure==="function"?teamTenure():99)>=3&&myRoster().some(p=>!p.me&&p.age>=27)&&rnd()<0.45,
    q:t=>`老将 <b>${t.id}</b> 私下问你，是不是该退了。`,
    ctx:"他的操作确实在掉，但他还是队里最懂运营的人。",
-   a:[{t:"你还能打，队里需要你", g:"warm",e:(t)=>{addTrust(t.id,16);addTrustAll(4);
+   a:[{t:"你还能打，队里需要你", g:"warm",e:(t)=>{addTrust(t.id,16);addTrustAll(4);if(typeof addStaff==="function") addStaff("coach",-4);
         t.r.指挥=clamp(t.r.指挥+2.5,20,99);
-        return `${t.id} 点了点头。那个赛季他的指挥变得更果断了。`}},
-      {t:"实话说，你该考虑转型", g:"hard",e:(t)=>{addTrust(t.id,-10);
-        return "他沉默了很久，说谢谢你的诚实。"}}]},
+        return `${t.id} 点了点头。那个赛季他的指挥变得更果断了——教练组本来想换人，对你这句话有点意见。`}},
+      {t:"实话说，你该考虑转型", g:"hard",e:(t)=>{addTrust(t.id,-10);if(typeof addStaff==="function") addStaff("coach",6);S.attrs.指挥=Math.min(capOf("指挥"),S.attrs.指挥+0.6);
+        return "他沉默了很久，说谢谢你的诚实。之后训练赛里开麦的人变成了你，教练也记下了这一点。"}}]},
 
   {id:"media", rec:0, when:()=>S.fans>=100&&rnd()<0.35,
    q:t=>`媒体想做你的专访，队里其他人一个都没约。`,
    ctx:"流量都在你身上，这未必是好事。",
-   a:[{t:"接，顺便多提队友", g:"warm",e:(t)=>{addFans(12);addMoney("other",14);addTrustAll(5);
-        return "采访里你把功劳分了出去。队友看到了。"}},
+   a:[{t:"接，顺便多提队友", g:"warm",e:(t)=>{addFans(12);addMoney("other",14);addTrustAll(5);addFat(6);
+        return "采访里你把功劳分了出去。队友看到了。拍了一下午，晚上的训练没赶上。"}},
       {t:"接，好好聊自己", g:"show",e:(t)=>{addFans(22);addMoney("other",20);addTrustAll(-7);
         return "热度起来了。更衣室里有人觉得你飘了。"}},
       {t:"推掉，专心训练", g:"grind",e:(t)=>{addFans(-4);addTrustAll(4);

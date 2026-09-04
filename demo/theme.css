@@ -1223,3 +1223,8 @@ body.moreopen .audiofab{display:none}
 /* 右下角 📜 的未读点 */
 .audiofab button{position:relative}
 .audiofab button.new::after{content:"";position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--dawn);box-shadow:0 0 6px var(--dawn)}
+/* 提示条关闭按钮；导览的选择卡 */
+.toast .tx-x{flex:none;margin-left:auto;background:none;border:none;color:var(--ink-3);font-size:16px;line-height:1;cursor:pointer;padding:0 2px;align-self:flex-start}
+.toast .tx-x:hover{color:var(--ink)}
+.tour.ask{background:rgba(3,12,20,.74)}
+.tour-card.center{left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,calc(100vw - 20px))}
