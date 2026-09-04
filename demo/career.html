@@ -1266,6 +1266,7 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
   {v:"v20260905p", at:"2026-09-05", items:[
+    "只要是比赛就有赛后拆解（玩家点名）：主播杯 / 城市争霸赛打完先看拆解再「继续」——赛事战力对比、个人底子 / 车队水位 / 默契 / 战术 / 士气 / 备战各占多少、临场每个节点的成功率与结果、赢面高却输的那局怪谁、明天练什么；训练赛对位结束多了「对位拆解」——每局选了什么打法、吃哪一维、你和他各多少、成功率与结果，五维并排比一遍，说清哪几维该拿去打、哪几维别碰",
     "新增支持作者浮窗：首次进入会温和提示一次，明确游戏永久免费、不卖数值与抽卡；可扫码或跳转爱发电，点「不用了，别再提示」后不再自动出现，右下角爱心仍可随时打开",
     "职业前也有「一键安排」了（玩家点名：原来只在赛季里有）：累了先休息，实力压得住分段就打排位冲分、和补短板交替，剩 1 点用排位/看录像/休息收尾；不接代练、不开直播、不追瓶颈",
     "界面重做第三期：展示级大字换成宋体——结局称号、生涯名片、HUD 的「现在」、弹窗标题、页头用自托管的思源宋体 Bold 子集（749 字、159KB，开源许可，不走外链，先黑体后换字不挡首屏）；手机上导航挪到底部一行，图标在上字在下，浮窗按钮与提示条相应上移",
@@ -9752,6 +9753,8 @@ function scrimPick(i){
   const sc=scrimState(), L=sc.live; if(!L||L.done) return;
   const node=scrimNode(), opt=node.a[i]; if(!opt) return;
   const p=scrimOptP(opt), ok=rnd()<p;
+  (L.rounds=L.rounds||[]).push({r:L.round,t:opt.t,dim:opt.dim,p:Math.round(p*100),ok,
+    mine:Math.round(S.attrs[opt.dim]),his:Math.round((S.understudy&&S.understudy.r&&S.understudy.r[opt.dim])||50),flash:ok&&opt.risk>=1.1});
   if(ok){ L.sc[0]++; if(opt.risk>=1.1) L.flash++; } else L.sc[1]++;
   // 打过的那一维会长一点——对位训练赛本来就是最好的练法
   S.attrs[opt.dim]=Math.min(capOf(opt.dim),S.attrs[opt.dim]+(ok?0.16:0.08));
@@ -9798,9 +9801,41 @@ function scrimCard(){
         return `<button class="opt" data-scrimopt="${i}"><div class="t">${a.t}</div>
           <div class="d">吃 <b>${a.dim}</b>（你 ${S.attrs[a.dim].toFixed(0)} · 他 ${((inc.r&&inc.r[a.dim])||50).toFixed(0)}）· 成功率 <b style="color:${p>=0.6?'var(--cyan)':p>=0.4?'var(--gold)':'var(--red)'}">${Math.round(p*100)}%</b>${a.risk>=1.1?" · 打成算亮眼":""}</div></button>`;}).join("")}</div>`
     :`<div class="ev-ctx" style="margin-top:10px">${L.verdict||""}</div>
-      <div class="row" style="justify-content:center;margin-top:12px"><button class="btn" id="scrimClose">回到本周 →</button></div>`}
+      ${scrimPostHtml(L,inc)}
+      <div class="row" style="justify-content:center;margin-top:12px"><button class="btn primary" id="scrimClose">回到本周 →</button></div>`}
     ${L.lines.length?`<div class="log" style="margin-top:12px;text-align:left">${L.lines.slice().reverse().join("")}</div>`:""}
   </div></div>`;
+}
+/* 训练赛对位的赛后拆解（玩家点名：训练赛也要有）：
+   每一局选了什么打法、吃哪一维、你和他各多少、成功率、结果；再把五维摆一排比一遍，最后说明天练什么。 */
+function scrimPostHtml(L,inc){
+  if(!L||!L.done) return "";
+  const rounds=L.rounds||[];
+  const his=d=>(inc&&inc.r&&inc.r[d]!==undefined)?inc.r[d]:50;
+  const cmp=DIMS.map(d=>({d,me:S.attrs[d],he:his(d),g:S.attrs[d]-his(d)}));
+  const up=cmp.filter(x=>x.g>=1).sort((a,b)=>b.g-a.g), dn=cmp.filter(x=>x.g<=-1).sort((a,b)=>a.g-b.g);
+  const won=L.sc[0]>L.sc[1];
+  const fails=rounds.filter(r=>!r.ok), unlucky=rounds.filter(r=>!r.ok&&r.p>=65), lucky=rounds.filter(r=>r.ok&&r.p<=35);
+  const adv=[];
+  if(up.length) adv.push({good:true,q:`你压过他的：${up.map(x=>`${x.d} +${x.g.toFixed(0)}`).join("、")}`,how:"对位挑战每局选吃这几维的打法，成功率直接看这一维的差距"});
+  if(dn.length) adv.push({q:`他压过你的：${dn.map(x=>`${x.d} ${x.g.toFixed(0)}`).join("、")}`,how:`临场别选吃这几维的选项；想正面赢他，就把「练${dn[0].d}」排进日常`});
+  const wrong=fails.filter(r=>cmp.find(x=>x.d===r.dim&&x.g<-1));
+  if(wrong.length) adv.push({q:`有 ${wrong.length} 局选了吃自己短板的打法`,how:"打法列表里写着成功率——低于五成的少碰，用最强的一维去打"});
+  if(!won&&unlucky.length&&!wrong.length) adv.push({q:`${unlucky.length} 局成功率过六成还是没成`,how:"这是骰子背，不是你的问题。资本只扣 0.5，下周再打"});
+  if(won&&lucky.length) adv.push({good:true,q:`${lucky.length} 局成功率不到四成却打成了`,how:"运气也算，但下次别指望它"});
+  const li=x=>`<div class="rv-i${x.good?' good':''}"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
+  return `<div class="review${won?' win':''}" style="text-align:left;margin-top:12px">
+    <div class="rv-h">对位拆解 · ${won?"胜":"负"} ${L.sc[0]}:${L.sc[1]}${L.flash?` · 亮眼 ${L.flash} 波`:""}</div>
+    ${rounds.length?`<div class="tw" style="margin:8px 0"><table>
+      <thead><tr><th>局</th><th>打法</th><th>吃</th><th class="n">你 / 他</th><th class="n">成功率</th><th>结果</th></tr></thead>
+      <tbody>${rounds.map(r=>`<tr><td class="n">${r.r}</td><td>${r.t}</td><td>${r.dim}</td><td class="n">${r.mine} / ${r.his}</td><td class="n">${r.p}%</td><td>${r.ok?`<span class="w">成了</span>${r.flash?' <span class="tag g">亮眼</span>':''}`:'<span class="l">没成</span>'}</td></tr>`).join("")}</tbody></table></div>`:""}
+    <div class="tw" style="margin:8px 0"><table>
+      <thead><tr><th>五维</th>${DIMS.map(d=>`<th class="n">${d}</th>`).join("")}</tr></thead>
+      <tbody><tr><td>你</td>${cmp.map(x=>`<td class="n">${x.me.toFixed(0)}</td>`).join("")}</tr>
+      <tr><td>${inc?inc.id:"首发"}</td>${cmp.map(x=>`<td class="n">${x.he.toFixed(0)}</td>`).join("")}</tr>
+      <tr><td>差</td>${cmp.map(x=>`<td class="n ${x.g>=1?'w':x.g<=-1?'l':''}">${x.g>=0?"+":""}${x.g.toFixed(0)}</td>`).join("")}</tr></tbody></table></div>
+    ${adv.length?`<div class="rv-g">${adv.map(li).join("")}</div>`:""}
+  </div>`;
 }
 /* 替补页上的那一块：进度、按钮、说明 */
 function scrimPanel(){
@@ -11648,6 +11683,8 @@ function resolveCupNode(i){
   m.lines.push(`<div><span class="hi">第${m.game}局</span> ${opt.t} — ${
     ok?'<span class="w">成了</span>':'<span class="l">没成</span>'}　<span class="${
       d>0?'w':d<0?'l':''}">赢面 ${Math.round(was*100)}% → ${Math.round(now*100)}%</span></div>`);
+  // 赛后拆解用的结构化账本（玩家点名：只要是比赛就要有赛后拆解）
+  (m.nodeLog=m.nodeLog||[]).push({g:m.game,t:opt.t,dim:opt.dim,p:Math.round(p*100),ok,d});
   m.node=null;
   cupPlayGame();
 }
@@ -11656,6 +11693,7 @@ function cupPlayGame(){
   const my=cupMyPower(m.kind)+m.swing;
   const p=clamp(1/(1+Math.exp(-(my-m.op)/5.5)),0.05,0.95);
   const win=rnd()<p;
+  (m.gameLog=m.gameLog||[]).push({g:m.game,p:Math.round(p*100),win});
   if(win) m.sc[0]++; else m.sc[1]++;
   m.lines.push(`<div>第${m.game}局 ${win?'<span class="w">胜</span>':'<span class="l">负</span>'}</div>`);
   m.game++; m.swing*=0.4;
@@ -11810,7 +11848,73 @@ function cupMatchCard(){
         <div class="t">${a.t}</div><div class="d">吃 <b>${a.dim}</b> · ${a.risk>0.8?'高风险高回报':'稳健'}</div>
       </button>`).join("")}</div></div>`:""}
     ${m.lines.length?`<div class="log">${m.lines.slice().reverse().join("")}</div>`:""}
-    ${m.done?`<div class="row"><button class="btn" id="cupdone">继续 →</button></div>`:""}
+    ${m.done&&!m.pmSeen?`<div class="row"><button class="btn primary" id="cuppm">赛后拆解 →</button></div>`:""}
+  </div>
+  ${m.done&&m.pmSeen?`${cupPostCard(m)}<div class="row"><button class="btn primary" id="cupdone">继续 →</button></div>`:""}`;
+}
+/* ---------- 杯赛赛后拆解（玩家点名：只要是比赛就要有赛后拆解）----------
+   和职业赛同一套零件（pmRowsHtml / pmNodesHtml），但账按业余赛的公式拆：
+   你自己的底子、车队水位、默契 / 战术 / 士气、备战积累，再加临场每个节点的成功率与结果。
+   对手在业余赛里只是一个水位数，所以「个人底子」那一行就是你和这个水位的差。 */
+function cupPostCard(m){
+  if(!m||!m.done) return "";
+  const k=m.kind, C=CUPS[k]||CUPS.city, c=cupOf(k);
+  const won=m.sc[0]>m.sc[1];
+  const solo=cupPersonal(S.attrs)+(typeof gearBonus==="function"?gearBonus("操作")*0.4:0);
+  const legacy=((c)?c.prep*1.15:0)+((S.pre&&S.pre.cupPrep)||0)*0.55;
+  const my=cupMyPower(k), op=m.op;
+  const rows=[];
+  rows.push({n:"个人底子",v:solo-op,
+    fix:solo<op?"你一个人的水平还在这一轮对手之下——排位和训练都在长它。":"你的个人水平压得住这一轮的对手。"});
+  if(S.pre&&S.pre.mates&&S.pre.mates.length){
+    const teamAvg=(solo+S.pre.mates.reduce((a,x)=>a+cupPersonal(x),0))/(1+S.pre.mates.length);
+    const base=solo*0.72+teamAvg*0.28;
+    rows.push({n:"车队水位",v:(teamAvg-solo)*0.28,
+      fix:teamAvg<solo?"四个路人队友拖了你的后腿——车队是抽到的，能做的是把默契和战术练上去。":"这支车队的路人不弱，跟得上你。"});
+    const syn=(typeof squadOf==="function")?squadOf("syn"):50;
+    const tac=(typeof squadOf==="function")?squadOf("tac"):50;
+    const mor=(typeof avgTrust==="function")?avgTrust():50;
+    rows.push({n:"默契",v:base*((syn-50)/550),fix:syn<50?"五个人还没磨合：「网吧开黑」「战队合练」直接涨。":"配合是加分项。"});
+    rows.push({n:"战术",v:base*((tac-50)/650),fix:tac<50?"没什么战术：「看职业录像」「战术复盘」喂它。":"战术在你这边。"});
+    rows.push({n:"士气",v:base*((mor-50)/900),fix:mor<50?"车队里有人不服你——多开黑、别甩锅。":"更衣室没问题。"});
+  }
+  rows.push({n:"备战积累",v:legacy,fix:legacy<1?"这一轮没怎么备战：针对性备战每次 +1.15，练出来的战术与配合 +0.55 且不清零。":"备战的功课兑现在这里了。"});
+  rows.sort((a,b)=>Math.abs(b.v)-Math.abs(a.v));
+  const diff=my-op;
+  const upset=(won&&diff<-1.5)||(!won&&diff>1.5);
+  const luck=[];
+  (m.gameLog||[]).forEach(g=>{
+    if(!g.win&&g.p>=70) luck.push(`第${g.g}局赢面 <b>${g.p}%</b> 还是丢了——${(m.nodeLog||[]).some(n=>n.g===g.g&&!n.ok)?"那一波是你自己没打成，账本上记着。":"这就是十次里还要输一次的那一次。"}`);
+    if(g.win&&g.p<=30) luck.push(`第${g.g}局赢面只有 <b>${g.p}%</b> 却拿下了——运气也是实力的一部分，别指望它常来。`);
+  });
+  // 复盘：这场输在哪、明天点哪个按钮
+  const adv=[];
+  const fails=(m.nodeLog||[]).filter(n=>!n.ok);
+  if(fails.length){
+    const cnt={}; fails.forEach(n=>cnt[n.dim]=(cnt[n.dim]||0)+1);
+    const worst=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0];
+    adv.push({q:`临场决策砸了 ${fails.length} 次（多数吃「${worst}」）`,how:`节点成功率直接看对应属性——「练${worst}」提上去，同样的选择就多几成把握；或者临场挑吃你长项的选项`});
+  }
+  const bad=n=>{ const r=rows.find(x=>x.n===n); return r&&r.v<=-0.4; };
+  if(bad("个人底子")) adv.push({q:"个人水平还没到这一轮的对手",how:"排位、训练、看录像——业余赛的对手一轮比一轮强，早一轮开始练"});
+  if(bad("车队水位")||bad("默契")) adv.push({q:"车队配合生疏",how:"「网吧开黑」「战队合练」「队友双排」——默契直接乘在车队战力上"});
+  if(bad("战术")) adv.push({q:"没有战术",how:"「看职业录像」「战术复盘」，战术素养还能带进职业队"});
+  if(!won&&legacy<1) adv.push({q:"这一轮没备战",how:"杯赛卡上的「针对性备战」每次 +1.15；练出来的配合 +0.55 且跨轮不清零"});
+  const li=x=>`<div class="rv-i${x.good?' good':''}"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
+  const advHtml=won
+    ?`<div class="review win"><div class="rv-h">复盘</div><p class="note" style="margin:6px 0 0">这场赢在<b>${rows.filter(r=>r.v>=0.4).slice(0,2).map(r=>r.n).join("、")||"临场"}</b>。下一轮对手更强——别停。</p></div>`
+    :(adv.length?`<div class="review"><div class="rv-h">复盘 · 这场输在哪，明天练什么</div><div class="rv-g">${adv.map(li).join("")}</div></div>`
+      :`<div class="review"><div class="rv-h">复盘</div><p class="note" style="margin:6px 0 0">各项都没明显吃亏——这场输在概率上。数值只决定每局胜率，不保证结果。</p></div>`);
+  return `<div class="card"><h2>赛后拆解 · ${C.name} ${c?cupRoundName(k,c.round):""} vs ${m.opp}<em>${won?"胜":"负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
+    <div class="pm-head">
+      <span>赛事战力 <b>${my.toFixed(1)}</b> vs <b>${op.toFixed(1)}</b></span>
+      <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>
+    </div>
+    ${upset?`<div class="pm-upset">${won?"账面上你是劣势——这场是打出来的，节点决策和运气都站在了你这边。":"账面上你占优，还是输了。数值只决定每局胜率——看看临场账本，剩下的是运气。"}</div>`:""}
+    ${typeof pmRowsHtml==="function"?pmRowsHtml(rows):""}
+    ${typeof pmNodesHtml==="function"?pmNodesHtml(m.nodeLog||[],luck):""}
+    ${advHtml}
+    <p class="note">这些就是模拟器判胜负时用的数，不是事后编的解释。业余赛里对手只是一个水位，所以没有对位选手的账。</p>
   </div>`;
 }
 /* ---------- 职业前的战队页：车队真实存在 ---------- */
@@ -15765,6 +15869,7 @@ function bind(){
   st.querySelectorAll("[data-cupgo]").forEach(b=>b.onclick=()=>startCupMatch(b.dataset.cupgo));
   st.querySelectorAll("[data-cupnode]").forEach(b=>b.onclick=()=>resolveCupNode(+b.dataset.cupnode));
   const _cd=$("cupdone"); if(_cd) _cd.onclick=cupDismissMatch;
+  const _cpm=$("cuppm"); if(_cpm) _cpm.onclick=()=>{ if(S.cupMatch) S.cupMatch.pmSeen=true; render(); scrollStageTop&&scrollStageTop(); };
   const _cr=$("cupresok"); if(_cr) _cr.onclick=()=>{S.cupResult=null;render()};
   const _ic=$("intlchampok"); if(_ic) _ic.onclick=()=>{S.intlChamp=null;render()};
   const _as=$("autosumok"); if(_as) _as.onclick=()=>{S.autoSum=null;render()};

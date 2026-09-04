@@ -276,6 +276,8 @@ function resolveCupNode(i){
   m.lines.push(`<div><span class="hi">第${m.game}局</span> ${opt.t} — ${
     ok?'<span class="w">成了</span>':'<span class="l">没成</span>'}　<span class="${
       d>0?'w':d<0?'l':''}">赢面 ${Math.round(was*100)}% → ${Math.round(now*100)}%</span></div>`);
+  // 赛后拆解用的结构化账本（玩家点名：只要是比赛就要有赛后拆解）
+  (m.nodeLog=m.nodeLog||[]).push({g:m.game,t:opt.t,dim:opt.dim,p:Math.round(p*100),ok,d});
   m.node=null;
   cupPlayGame();
 }
@@ -284,6 +286,7 @@ function cupPlayGame(){
   const my=cupMyPower(m.kind)+m.swing;
   const p=clamp(1/(1+Math.exp(-(my-m.op)/5.5)),0.05,0.95);
   const win=rnd()<p;
+  (m.gameLog=m.gameLog||[]).push({g:m.game,p:Math.round(p*100),win});
   if(win) m.sc[0]++; else m.sc[1]++;
   m.lines.push(`<div>第${m.game}局 ${win?'<span class="w">胜</span>':'<span class="l">负</span>'}</div>`);
   m.game++; m.swing*=0.4;
@@ -438,7 +441,73 @@ function cupMatchCard(){
         <div class="t">${a.t}</div><div class="d">吃 <b>${a.dim}</b> · ${a.risk>0.8?'高风险高回报':'稳健'}</div>
       </button>`).join("")}</div></div>`:""}
     ${m.lines.length?`<div class="log">${m.lines.slice().reverse().join("")}</div>`:""}
-    ${m.done?`<div class="row"><button class="btn" id="cupdone">继续 →</button></div>`:""}
+    ${m.done&&!m.pmSeen?`<div class="row"><button class="btn primary" id="cuppm">赛后拆解 →</button></div>`:""}
+  </div>
+  ${m.done&&m.pmSeen?`${cupPostCard(m)}<div class="row"><button class="btn primary" id="cupdone">继续 →</button></div>`:""}`;
+}
+/* ---------- 杯赛赛后拆解（玩家点名：只要是比赛就要有赛后拆解）----------
+   和职业赛同一套零件（pmRowsHtml / pmNodesHtml），但账按业余赛的公式拆：
+   你自己的底子、车队水位、默契 / 战术 / 士气、备战积累，再加临场每个节点的成功率与结果。
+   对手在业余赛里只是一个水位数，所以「个人底子」那一行就是你和这个水位的差。 */
+function cupPostCard(m){
+  if(!m||!m.done) return "";
+  const k=m.kind, C=CUPS[k]||CUPS.city, c=cupOf(k);
+  const won=m.sc[0]>m.sc[1];
+  const solo=cupPersonal(S.attrs)+(typeof gearBonus==="function"?gearBonus("操作")*0.4:0);
+  const legacy=((c)?c.prep*1.15:0)+((S.pre&&S.pre.cupPrep)||0)*0.55;
+  const my=cupMyPower(k), op=m.op;
+  const rows=[];
+  rows.push({n:"个人底子",v:solo-op,
+    fix:solo<op?"你一个人的水平还在这一轮对手之下——排位和训练都在长它。":"你的个人水平压得住这一轮的对手。"});
+  if(S.pre&&S.pre.mates&&S.pre.mates.length){
+    const teamAvg=(solo+S.pre.mates.reduce((a,x)=>a+cupPersonal(x),0))/(1+S.pre.mates.length);
+    const base=solo*0.72+teamAvg*0.28;
+    rows.push({n:"车队水位",v:(teamAvg-solo)*0.28,
+      fix:teamAvg<solo?"四个路人队友拖了你的后腿——车队是抽到的，能做的是把默契和战术练上去。":"这支车队的路人不弱，跟得上你。"});
+    const syn=(typeof squadOf==="function")?squadOf("syn"):50;
+    const tac=(typeof squadOf==="function")?squadOf("tac"):50;
+    const mor=(typeof avgTrust==="function")?avgTrust():50;
+    rows.push({n:"默契",v:base*((syn-50)/550),fix:syn<50?"五个人还没磨合：「网吧开黑」「战队合练」直接涨。":"配合是加分项。"});
+    rows.push({n:"战术",v:base*((tac-50)/650),fix:tac<50?"没什么战术：「看职业录像」「战术复盘」喂它。":"战术在你这边。"});
+    rows.push({n:"士气",v:base*((mor-50)/900),fix:mor<50?"车队里有人不服你——多开黑、别甩锅。":"更衣室没问题。"});
+  }
+  rows.push({n:"备战积累",v:legacy,fix:legacy<1?"这一轮没怎么备战：针对性备战每次 +1.15，练出来的战术与配合 +0.55 且不清零。":"备战的功课兑现在这里了。"});
+  rows.sort((a,b)=>Math.abs(b.v)-Math.abs(a.v));
+  const diff=my-op;
+  const upset=(won&&diff<-1.5)||(!won&&diff>1.5);
+  const luck=[];
+  (m.gameLog||[]).forEach(g=>{
+    if(!g.win&&g.p>=70) luck.push(`第${g.g}局赢面 <b>${g.p}%</b> 还是丢了——${(m.nodeLog||[]).some(n=>n.g===g.g&&!n.ok)?"那一波是你自己没打成，账本上记着。":"这就是十次里还要输一次的那一次。"}`);
+    if(g.win&&g.p<=30) luck.push(`第${g.g}局赢面只有 <b>${g.p}%</b> 却拿下了——运气也是实力的一部分，别指望它常来。`);
+  });
+  // 复盘：这场输在哪、明天点哪个按钮
+  const adv=[];
+  const fails=(m.nodeLog||[]).filter(n=>!n.ok);
+  if(fails.length){
+    const cnt={}; fails.forEach(n=>cnt[n.dim]=(cnt[n.dim]||0)+1);
+    const worst=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0];
+    adv.push({q:`临场决策砸了 ${fails.length} 次（多数吃「${worst}」）`,how:`节点成功率直接看对应属性——「练${worst}」提上去，同样的选择就多几成把握；或者临场挑吃你长项的选项`});
+  }
+  const bad=n=>{ const r=rows.find(x=>x.n===n); return r&&r.v<=-0.4; };
+  if(bad("个人底子")) adv.push({q:"个人水平还没到这一轮的对手",how:"排位、训练、看录像——业余赛的对手一轮比一轮强，早一轮开始练"});
+  if(bad("车队水位")||bad("默契")) adv.push({q:"车队配合生疏",how:"「网吧开黑」「战队合练」「队友双排」——默契直接乘在车队战力上"});
+  if(bad("战术")) adv.push({q:"没有战术",how:"「看职业录像」「战术复盘」，战术素养还能带进职业队"});
+  if(!won&&legacy<1) adv.push({q:"这一轮没备战",how:"杯赛卡上的「针对性备战」每次 +1.15；练出来的配合 +0.55 且跨轮不清零"});
+  const li=x=>`<div class="rv-i${x.good?' good':''}"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
+  const advHtml=won
+    ?`<div class="review win"><div class="rv-h">复盘</div><p class="note" style="margin:6px 0 0">这场赢在<b>${rows.filter(r=>r.v>=0.4).slice(0,2).map(r=>r.n).join("、")||"临场"}</b>。下一轮对手更强——别停。</p></div>`
+    :(adv.length?`<div class="review"><div class="rv-h">复盘 · 这场输在哪，明天练什么</div><div class="rv-g">${adv.map(li).join("")}</div></div>`
+      :`<div class="review"><div class="rv-h">复盘</div><p class="note" style="margin:6px 0 0">各项都没明显吃亏——这场输在概率上。数值只决定每局胜率，不保证结果。</p></div>`);
+  return `<div class="card"><h2>赛后拆解 · ${C.name} ${c?cupRoundName(k,c.round):""} vs ${m.opp}<em>${won?"胜":"负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
+    <div class="pm-head">
+      <span>赛事战力 <b>${my.toFixed(1)}</b> vs <b>${op.toFixed(1)}</b></span>
+      <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>
+    </div>
+    ${upset?`<div class="pm-upset">${won?"账面上你是劣势——这场是打出来的，节点决策和运气都站在了你这边。":"账面上你占优，还是输了。数值只决定每局胜率——看看临场账本，剩下的是运气。"}</div>`:""}
+    ${typeof pmRowsHtml==="function"?pmRowsHtml(rows):""}
+    ${typeof pmNodesHtml==="function"?pmNodesHtml(m.nodeLog||[],luck):""}
+    ${advHtml}
+    <p class="note">这些就是模拟器判胜负时用的数，不是事后编的解释。业余赛里对手只是一个水位，所以没有对位选手的账。</p>
   </div>`;
 }
 /* ---------- 职业前的战队页：车队真实存在 ---------- */

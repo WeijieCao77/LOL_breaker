@@ -134,6 +134,8 @@ function scrimPick(i){
   const sc=scrimState(), L=sc.live; if(!L||L.done) return;
   const node=scrimNode(), opt=node.a[i]; if(!opt) return;
   const p=scrimOptP(opt), ok=rnd()<p;
+  (L.rounds=L.rounds||[]).push({r:L.round,t:opt.t,dim:opt.dim,p:Math.round(p*100),ok,
+    mine:Math.round(S.attrs[opt.dim]),his:Math.round((S.understudy&&S.understudy.r&&S.understudy.r[opt.dim])||50),flash:ok&&opt.risk>=1.1});
   if(ok){ L.sc[0]++; if(opt.risk>=1.1) L.flash++; } else L.sc[1]++;
   // 打过的那一维会长一点——对位训练赛本来就是最好的练法
   S.attrs[opt.dim]=Math.min(capOf(opt.dim),S.attrs[opt.dim]+(ok?0.16:0.08));
@@ -180,9 +182,41 @@ function scrimCard(){
         return `<button class="opt" data-scrimopt="${i}"><div class="t">${a.t}</div>
           <div class="d">吃 <b>${a.dim}</b>（你 ${S.attrs[a.dim].toFixed(0)} · 他 ${((inc.r&&inc.r[a.dim])||50).toFixed(0)}）· 成功率 <b style="color:${p>=0.6?'var(--cyan)':p>=0.4?'var(--gold)':'var(--red)'}">${Math.round(p*100)}%</b>${a.risk>=1.1?" · 打成算亮眼":""}</div></button>`;}).join("")}</div>`
     :`<div class="ev-ctx" style="margin-top:10px">${L.verdict||""}</div>
-      <div class="row" style="justify-content:center;margin-top:12px"><button class="btn" id="scrimClose">回到本周 →</button></div>`}
+      ${scrimPostHtml(L,inc)}
+      <div class="row" style="justify-content:center;margin-top:12px"><button class="btn primary" id="scrimClose">回到本周 →</button></div>`}
     ${L.lines.length?`<div class="log" style="margin-top:12px;text-align:left">${L.lines.slice().reverse().join("")}</div>`:""}
   </div></div>`;
+}
+/* 训练赛对位的赛后拆解（玩家点名：训练赛也要有）：
+   每一局选了什么打法、吃哪一维、你和他各多少、成功率、结果；再把五维摆一排比一遍，最后说明天练什么。 */
+function scrimPostHtml(L,inc){
+  if(!L||!L.done) return "";
+  const rounds=L.rounds||[];
+  const his=d=>(inc&&inc.r&&inc.r[d]!==undefined)?inc.r[d]:50;
+  const cmp=DIMS.map(d=>({d,me:S.attrs[d],he:his(d),g:S.attrs[d]-his(d)}));
+  const up=cmp.filter(x=>x.g>=1).sort((a,b)=>b.g-a.g), dn=cmp.filter(x=>x.g<=-1).sort((a,b)=>a.g-b.g);
+  const won=L.sc[0]>L.sc[1];
+  const fails=rounds.filter(r=>!r.ok), unlucky=rounds.filter(r=>!r.ok&&r.p>=65), lucky=rounds.filter(r=>r.ok&&r.p<=35);
+  const adv=[];
+  if(up.length) adv.push({good:true,q:`你压过他的：${up.map(x=>`${x.d} +${x.g.toFixed(0)}`).join("、")}`,how:"对位挑战每局选吃这几维的打法，成功率直接看这一维的差距"});
+  if(dn.length) adv.push({q:`他压过你的：${dn.map(x=>`${x.d} ${x.g.toFixed(0)}`).join("、")}`,how:`临场别选吃这几维的选项；想正面赢他，就把「练${dn[0].d}」排进日常`});
+  const wrong=fails.filter(r=>cmp.find(x=>x.d===r.dim&&x.g<-1));
+  if(wrong.length) adv.push({q:`有 ${wrong.length} 局选了吃自己短板的打法`,how:"打法列表里写着成功率——低于五成的少碰，用最强的一维去打"});
+  if(!won&&unlucky.length&&!wrong.length) adv.push({q:`${unlucky.length} 局成功率过六成还是没成`,how:"这是骰子背，不是你的问题。资本只扣 0.5，下周再打"});
+  if(won&&lucky.length) adv.push({good:true,q:`${lucky.length} 局成功率不到四成却打成了`,how:"运气也算，但下次别指望它"});
+  const li=x=>`<div class="rv-i${x.good?' good':''}"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
+  return `<div class="review${won?' win':''}" style="text-align:left;margin-top:12px">
+    <div class="rv-h">对位拆解 · ${won?"胜":"负"} ${L.sc[0]}:${L.sc[1]}${L.flash?` · 亮眼 ${L.flash} 波`:""}</div>
+    ${rounds.length?`<div class="tw" style="margin:8px 0"><table>
+      <thead><tr><th>局</th><th>打法</th><th>吃</th><th class="n">你 / 他</th><th class="n">成功率</th><th>结果</th></tr></thead>
+      <tbody>${rounds.map(r=>`<tr><td class="n">${r.r}</td><td>${r.t}</td><td>${r.dim}</td><td class="n">${r.mine} / ${r.his}</td><td class="n">${r.p}%</td><td>${r.ok?`<span class="w">成了</span>${r.flash?' <span class="tag g">亮眼</span>':''}`:'<span class="l">没成</span>'}</td></tr>`).join("")}</tbody></table></div>`:""}
+    <div class="tw" style="margin:8px 0"><table>
+      <thead><tr><th>五维</th>${DIMS.map(d=>`<th class="n">${d}</th>`).join("")}</tr></thead>
+      <tbody><tr><td>你</td>${cmp.map(x=>`<td class="n">${x.me.toFixed(0)}</td>`).join("")}</tr>
+      <tr><td>${inc?inc.id:"首发"}</td>${cmp.map(x=>`<td class="n">${x.he.toFixed(0)}</td>`).join("")}</tr>
+      <tr><td>差</td>${cmp.map(x=>`<td class="n ${x.g>=1?'w':x.g<=-1?'l':''}">${x.g>=0?"+":""}${x.g.toFixed(0)}</td>`).join("")}</tr></tbody></table></div>
+    ${adv.length?`<div class="rv-g">${adv.map(li).join("")}</div>`:""}
+  </div>`;
 }
 /* 替补页上的那一块：进度、按钮、说明 */
 function scrimPanel(){

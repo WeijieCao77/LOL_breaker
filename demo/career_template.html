@@ -284,6 +284,7 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
   {v:"v20260905p", at:"2026-09-05", items:[
+    "只要是比赛就有赛后拆解（玩家点名）：主播杯 / 城市争霸赛打完先看拆解再「继续」——赛事战力对比、个人底子 / 车队水位 / 默契 / 战术 / 士气 / 备战各占多少、临场每个节点的成功率与结果、赢面高却输的那局怪谁、明天练什么；训练赛对位结束多了「对位拆解」——每局选了什么打法、吃哪一维、你和他各多少、成功率与结果，五维并排比一遍，说清哪几维该拿去打、哪几维别碰",
     "新增支持作者浮窗：首次进入会温和提示一次，明确游戏永久免费、不卖数值与抽卡；可扫码或跳转爱发电，点「不用了，别再提示」后不再自动出现，右下角爱心仍可随时打开",
     "职业前也有「一键安排」了（玩家点名：原来只在赛季里有）：累了先休息，实力压得住分段就打排位冲分、和补短板交替，剩 1 点用排位/看录像/休息收尾；不接代练、不开直播、不追瓶颈",
     "界面重做第三期：展示级大字换成宋体——结局称号、生涯名片、HUD 的「现在」、弹窗标题、页头用自托管的思源宋体 Bold 子集（749 字、159KB，开源许可，不走外链，先黑体后换字不挡首屏）；手机上导航挪到底部一行，图标在上字在下，浮窗按钮与提示条相应上移",
@@ -5136,6 +5137,7 @@ function bind(){
   st.querySelectorAll("[data-cupgo]").forEach(b=>b.onclick=()=>startCupMatch(b.dataset.cupgo));
   st.querySelectorAll("[data-cupnode]").forEach(b=>b.onclick=()=>resolveCupNode(+b.dataset.cupnode));
   const _cd=$("cupdone"); if(_cd) _cd.onclick=cupDismissMatch;
+  const _cpm=$("cuppm"); if(_cpm) _cpm.onclick=()=>{ if(S.cupMatch) S.cupMatch.pmSeen=true; render(); scrollStageTop&&scrollStageTop(); };
   const _cr=$("cupresok"); if(_cr) _cr.onclick=()=>{S.cupResult=null;render()};
   const _ic=$("intlchampok"); if(_ic) _ic.onclick=()=>{S.intlChamp=null;render()};
   const _as=$("autosumok"); if(_as) _as.onclick=()=>{S.autoSum=null;render()};
