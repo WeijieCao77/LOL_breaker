@@ -78,6 +78,7 @@ function playOne(opts) {
   const cupRuns = [], grades = [], deals = [];
   while (A.S().step !== "end" && guard++ < 40000) {
     S = A.S();
+    if (opts.hook) opts.hook(S, A, guard);   // 场景测试用：每步先给外部一次改状态的机会
     if (S.scrim && S.scrim.trial) { if (!_trialOn) trials++; _trialOn = true; }
     else { if (_trialOn && S.promoted && !S.understudy) trialWins++; _trialOn = false; }
     if (S.mateInjury) { if (!_injOn) mateInj++; _injOn = true; } else _injOn = false;
@@ -201,10 +202,10 @@ function playOne(opts) {
     } else if (S.step === "offseason") {
       // 休赛期现在是可玩的几周：先把结算页点掉，再把每周的行动点用完
       if (!S.off) { A.doOffseason(); continue; }
-      // 合同到期续约：测试里默认接受（留在想留你的队）
-      if (S.pendingRenew) { A.acceptRenew(); continue; }
-      // 有队来挖：表现好就走人（测试里一律接受，用来量频率）
-      if (S.proOffer) { transfers++; A.takeProOffer(); continue; }
+      // 合同到期续约：测试里默认接受（留在想留你的队）；opts.declineRenew 走「拒绝进市场」
+      if (S.pendingRenew) { if (opts.declineRenew) A.declineRenew(); else A.acceptRenew(); continue; }
+      // 有队来挖：表现好就走人（测试里一律接受，用来量频率）；opts.noOffers 一律回绝（逼出自由身没人签）
+      if (S.proOffer) { if (opts.noOffers) { A.dropProOffer(); } else { transfers++; A.takeProOffer(); } continue; }
       if (S.tryout) { const t=S.tryout; if(t.done) A.afterTryout(); else A.resolveTryoutDay(1); continue; }
       if (S.deal) { if(S.deal.transfer) A.signTransfer(); else A.signDeal(); continue; }
       if (S.ap > 0) {
@@ -233,6 +234,7 @@ function playOne(opts) {
     money: Math.round(S.money), fame: A.fanTier(),
     fans: Math.round(S.fans), heat: Math.round(S.heat||0),
     titles: (S.career && S.career.titles) || [],
+    streets: S.streets || 0, everCut: !!S.everCut,
     events: (S.events || []).length
   };
 }

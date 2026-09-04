@@ -18,7 +18,7 @@ const SQUAD_DECAY = 0.21;       // 每赛段向 50 回归——这是个要一�
 function initSquad(){
   S.squad={ syn:44+Math.floor(rnd()*10), tac:44+Math.floor(rnd()*10) };
 }
-function squadOf(k){ return (S.squad&&S.squad[k])!==undefined?S.squad[k]:50; }
+function squadOf(k){ return (S.squad&&S.squad[k]!==undefined)?S.squad[k]:50; }   // S.squad 可能是 null（车队散伙 / 回到路人）
 function addSquad(k,n){
   if(!S.squad) initSquad();
   // 收益递减：越高越难往上推，不然几次就拉满

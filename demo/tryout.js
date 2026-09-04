@@ -1007,7 +1007,8 @@ function declineRenew(){
   S.freeAgent = true; S.gotCut = true;      // 自由身：走自由市场，不再瞬移
   pushEvent(`你拒绝了 <b>${r.team}</b> 的续约，成为<b>自由身</b>。<br>
     <span style="color:var(--ink-3)">去哪由你自己在转会市场上找——没人再替你付违约金，也没人拦着你。</span>`,"big","合同");
-  if(typeof rollProOffers==="function"){ S.offerYear=undefined; S.offerWnd=undefined; rollProOffers(); }
+  // 季中到期就开季中窗的问询——原来一律按年底窗摇，把年底那把钥匙（offerWnd）提前用掉了
+  if(typeof rollProOffers==="function"){ S.offerYear=undefined; S.offerWnd=undefined; rollProOffers((S.off&&S.off.next==="summer")?"mid":"year"); }
   render();
 }
 
@@ -1157,6 +1158,7 @@ function signTransfer(){
   const d = S.deal; if(!d || d.dead || d.signed) return;
   d.signed = true;
   const old = S.team, oldLg = S.homeLeague||"LPL", fee = (S.contract && S.contract.buyout) || 0;
+  if(typeof leaveRoster==="function") leaveRoster(old, oldLg);   // 旧队补人，别留幻影
   S.team = d.team;
   if(d.league) S.homeLeague = d.league;      // 跨赛区转会，联赛也要跟着换
   S.offerKind = d.kind;

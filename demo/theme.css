@@ -279,12 +279,14 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
   0%{opacity:0;transform:translate(-50%,-115%) rotate(-8deg) scale(2)}
   40%{opacity:1;transform:translate(-50%,-115%) rotate(-8deg) scale(1)}
   100%{opacity:.95;transform:translate(-50%,-115%) rotate(-8deg) scale(1)}}
-/* ③ 事件提示条：右上滑入，3.2 秒淡出，最多三条 */
+/* ③ 事件提示条：右上滑入，按字数停留 6–12 秒，悬停暂停、点击关闭，最多四条 */
 .toasts{position:fixed;right:14px;top:14px;z-index:70;display:flex;flex-direction:column;gap:8px;
   width:min(340px,calc(100vw - 28px));pointer-events:none}
 .toast{display:flex;gap:9px;align-items:flex-start;background:rgba(12,26,40,.96);border:1px solid var(--line-hot);
   border-left:3px solid var(--gold);color:var(--ink);padding:9px 12px;font-size:13px;line-height:1.45;
-  box-shadow:0 6px 22px rgba(0,0,0,.45);animation:toast-in .26s cubic-bezier(.2,.8,.2,1)}
+  box-shadow:0 6px 22px rgba(0,0,0,.45);animation:toast-in .26s cubic-bezier(.2,.8,.2,1);
+  pointer-events:auto;cursor:pointer}
+.toast:hover{border-color:var(--gold)}
 .toast.t-good{border-left-color:var(--cyan)}
 .toast.t-bad{border-left-color:var(--red)}
 .toast.t-big{border-left-color:var(--dawn)}

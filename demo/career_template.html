@@ -1327,7 +1327,7 @@ function nowPhase(){
   // 「现在」是个时钟，只报时间。职业前是你的处境，不是赛季的阶段
   const YW=`第 ${yearWeek()} 周`;
   if(S.step==="pre"||S.step==="offer")
-    return {tag:sea.tag,phase:"赛季前",detail:`${YW} · 窗口剩 ${Math.max(0,PRE_YEAR-(S.pre?S.pre.week:1))} 周`,
+    return {tag:sea.tag,phase:S.careerBak?"自由身":"赛季前",detail:`${YW} · 窗口剩 ${Math.max(0,PRE_YEAR-(S.pre?S.pre.week:1))} 周`,
             urgent:S.pre&&S.pre.week>PRE_YEAR-4};
   if(S.intl){
     const n=S.intl.type==="msi"?"MSI":"世界赛";
@@ -2094,11 +2094,26 @@ function preScore(){
 /* 这一年没签成：世界往前走一年，你也老一岁。没有死线，只有代价。 */
 function preNextYear(){
   const P=S.pre;
-  if(S.si>=SEASONS.length-1){ S.step="end"; S.neverSigned=true; render(); return; }
+  if(S.si>=SEASONS.length-1){
+    // 曾打过职业的人走到时间尽头：履历接回来，结局按职业生涯算，不是「没能上岸」
+    if(S.careerBak){ S.career=S.careerBak; S.careerBak=null; } else S.neverSigned=true;
+    S.step="end"; render(); return;
+  }
   S.si++; S.age++; P.preYear=(P.preYear||1)+1;
   P.week=1; P.ap=apFor('pre'); P.cityCup=null; P.streamCup=null;
   P.noRe={};   // 「拒绝试训后这家今年不再来」——过了年就既往不咎
   S.fatigue=0; S.buff={};
+  if(S.careerBak){
+    // 回到路人的前职业选手：世界照样老一岁、转会、退役（第一次职业前不动世界，和以前一样）；
+    // 每年重新给一次「段位/人气够了就有人来问」的机会
+    P.rankInvited={}; P.fanInvited={}; P.wndGiven={};
+    try{
+      const nw=ageWorld();
+      if(typeof aiMarketWindow==="function") aiMarketWindow(true);
+      capWorldDrift(); capLDL();
+      S.news=(S.news||[]).concat(nw||[]);
+    }catch(e){}
+  }
   if(typeof ledgerRotate==="function") ledgerRotate();
   P.rank=Math.max(0,P.rank-4);          // 一年下来手会生一点
   if(P.mates&&P.mates.length&&typeof disbandCrew==="function") disbandCrew();
@@ -2205,13 +2220,14 @@ function acceptOffer(i){
     team.players=team.players.map(q=>q.pos===S.pos
       ? {id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true} : q);
   }
+  const back=!!S.careerBak;   // 前职业选手重返（dropToStreets 封存的履历）
   S=Object.assign({},S,{
     step:"season",age:S.age,world,baseline:P.baseline,team:of.team,homeLeague:lgKey,offerKind:of.k,
     understudy:asSub?incumbent:null, promoted:!asSub,
     // si 保持不动。原来写死 si:0，于是在职业前多打一年（已经到 S13）
     // 的人一签约就被扔回 S12，整条时间线倒流。
     week:1,ap:AP,record:{w:0,l:0},gameRec:{w:0,l:0},
-    career:{w:0,l:0,titles:[],best:99},seasonAttr0:Object.assign({},S.attrs),
+    career:S.careerBak||{w:0,l:0,titles:[],best:99},seasonAttr0:Object.assign({},S.attrs),
     buff:{},contract:(S.pendingContract||{years:2,left:2}),rivals:{},lockerSeen:[]
   });
   /* 签约就离开业余赛季了——手上还没打完的杯赛必须有个交代。
@@ -2225,7 +2241,7 @@ function acceptOffer(i){
     });
   }
   if(typeof markTeamJoin==="function") markTeamJoin();   // 在队时长从这里开始算
-  initTrust(); initSquad(); initCapBonus(); initBtk();
+  initTrust(); initSquad(); if(!back){ initCapBonus(); initBtk(); }   // 顶开过的天花板、突破进度是自己的，换队不清
   initStaff(); initRelations();
   // 伏笔兑现：职业前帮路人冲过分的人，队里可能就有一个认识你的
   if(S.flags&&S.flags.peilian&&!S.flags.peilianDone){
@@ -2235,8 +2251,9 @@ function acceptOffer(i){
       pushEvent(`更衣室里 <b>${t.id}</b> 先认出了你——当年在排位里你陪他冲过分。<b>这层关系省了你两个月的磨合。</b>`,"good","人脉"); }
   }
   S.winStreak=0; S.sweepStreak=0; S.lckBeaten=[]; S.retireSeen=0;
-  S.benchedSplits=0; S.everCut=false; S.cameFromPlayin=false;
-  S.career.msiYears=[]; S.career.worldsYears=[]; S.career.lgYears=[]; S.career.lgStreak=0;
+  S.benchedSplits=0; S.everCut=back; S.cameFromPlayin=false;
+  if(!back){ S.career.msiYears=[]; S.career.worldsYears=[]; S.career.lgYears=[]; S.career.lgStreak=0; }
+  S.careerBak=null; S.freeAgent=false; S.gotCut=false;
   S.form=52; S.injury=null; S.listCooldown=0; S.signCooldown=0;
   S.rosterSig=myRoster().map(x=>x.id).sort().join("|");
   S.pendingContract=null;
@@ -2248,7 +2265,7 @@ function acceptOffer(i){
   S.pre.mates=null;              // 车队就到这了——职业队的默契信任由 initSquad/initTrust 重开
   // 你自己就是那个「强援」：base 上去了，但五个人要重新磨
   disruptSynergy(1,`<b>${meName()}</b> 加盟`);
-  pushEvent(`<b>${meName()}</b> 正式签约 <b>${of.team}</b>（${of.t}）。职业生涯从这里开始。`,"big","签约");
+  pushEvent(`<b>${meName()}</b> 正式签约 <b>${of.team}</b>（${of.t}）。${back?"重返职业赛场——上一段履历接着算。":"职业生涯从这里开始。"}`,"big","签约");
   checkAch("sign");
   startSeason(true);
 }
@@ -3986,6 +4003,9 @@ function offNextWeek(){
       // 季中间歇也是注册窗口：LDL 打得好，夏季赛能直接调上一队——
       // 现实里升降就是跟着转会/注册窗走的，不用等到年底
       if(typeof aiMarketWindow==="function") aiMarketWindow(false);   // 全联盟的提拔/下放先走一遍（AI 队）
+      // 季中到期的合同也要有个了断（玩家实锤：拒了续约、没人签，夏季赛照样穿着旧队衣上场）
+      if(S.pendingRenew) settleRenewDefault();
+      if(S.gotCut){ dropToStreets(true); return; }
       if(typeof checkPromote==="function") checkPromote();
       if(S.promoteDeal){
         // 调令没批完不开赛：赛程是按你所在的队排的，先表态再进夏季赛
@@ -4039,41 +4059,69 @@ function finishOffseason(){
   pushEvent(`<b>${SEASONS[S.si].tag} 版本「${SEASONS[S.si].ver}」</b>：强势位置 <b>${SEASONS[S.si].fav.map(k=>POSN[k]).join("、")}</b>，关键属性 <b>${SEASONS[S.si].dim}</b>——这一维高于联赛均线的人全年吃红利，低的人吃亏；本周卡的「版本」块里有你和本队的账。`,"info","版本");
   S.news=S.news.concat(news);
   S.fatigue=0; S.buff={};
-  // 续约报价整个休赛期都没回应（多半是托管/自动推进）：默认接受，留队比瞬移友好
-  if(S.pendingRenew){
-    const r=S.pendingRenew;
-    S.contract={years:r.years,left:r.years,salary:r.salary,sign:0,buyout:r.buyout,
-                team:r.team,tier:r.tier,grade:r.grade,clubTier:r.clubTier};
-    S.pendingRenew=null; S.gotCut=false;
-    pushEvent(`<b>${r.team}</b> 的续约没等到你的答复，默认接受——续约 ${r.years} 个赛段。`,"info","合同");
-  }
+  if(S.pendingRenew) settleRenewDefault();
   // 自由市场走到最后还没签成（队伍放你走 / 你拒了续约，且整个休赛期没接任何报价）：
-  // 按你的表现给一个落点，写清楚原因——不再随机塞一支弱队瞬移。
-  if(S.gotCut){
-    S.gotCut=false; S.everCut=true;
-    const old=S.team;
-    const perf=(typeof proPerf==="function")?proPerf():0;
-    let lg="LPL", dest=(perf>=8&&typeof pickClub==="function")?pickClub("low","LPL"):null;
-    if(!dest||dest===old){
-      // 一线没人给首发：回到二队打 LDL（有母队编制就进母队二队，否则任意二队）
-      const ld=(S.world.LDL||[]);
-      dest=((ld.find(t=>t.parent===old))||ld[Math.floor(rnd()*Math.max(1,ld.length))]||{}).name||old;
-      lg="LDL";
-    }
-    S.team=dest; S.homeLeague=lg; S.promoted=true; S.understudy=null; S.offerKind="core";
-    const t=(S.world[lg]||[]).find(x=>x.name===S.team)||myTeam();
-    if(t&&t.players) t.players=t.players.map(q=>q.pos===S.pos?{id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true}:q);
-    if(typeof markTeamJoin==="function") markTeamJoin();
-    S.trust={}; initTrust();
-    if(typeof initRelations==="function") initRelations();   // 新东家：队友关系从头建，别让看板挂一排默认 50
-    S.freeAgent=false;
-    S.contract={years:2,left:2,team:S.team,tier:(lg==="LDL"?"acad":"low")};
-    pushEvent(`自由市场走到最后，<b>没有一线队愿意给你首发</b>${S.cutReason?`（${S.cutReason}）`:""}。你最终${
-      lg==="LDL"?`回到二队，在 <b>${S.team}</b> 打 LDL 重新证明自己`:`接了 <b>${S.team}</b> 的合同`}——从头再来。`,"bad","合同");
-    S.cutReason=null;
-  }
+  // 没合同就是没队——回到路人。原来按表现自动塞去弱队/二队，玩家实锤「没人要却自动有队」不合理。
+  if(S.gotCut){ dropToStreets(false); return; }
   syncTrust();
   startSeason(false,0);
+}
+
+/* 续约报价整个窗口都没回应（多半是托管/自动推进）：默认接受，留队比瞬移友好 */
+function settleRenewDefault(){
+  const r=S.pendingRenew; if(!r) return;
+  S.contract={years:r.years,left:r.years,salary:r.salary,sign:0,buyout:r.buyout,
+              team:r.team,tier:r.tier,grade:r.grade,clubTier:r.clubTier};
+  S.pendingRenew=null; S.gotCut=false;
+  pushEvent(`<b>${r.team}</b> 的续约没等到你的答复，默认接受——续约 ${r.years} 个赛段。`,"info","合同");
+}
+/* ---------- 自由身走到窗口关闭还没签成 → 变回路人主播 ----------
+   玩家原话（2026-09-05）：「我选择不续约进入转会市场，市场上又没人要我，那我就应该变回路人主播；
+   但我点击下一回合，又继续去打比赛了，还是在我原来的队伍，这完全不合理。」
+   两处病根：① 年底没签成会按表现自动塞去弱队/二队——「没人要」却自动有队；
+   ② 季中到期（转会合同/短约）的续约与放走，在「开始夏季赛」那一步根本没结算，旧队衣照穿。
+   现在没合同就是没队：从旧队名单除名，回到职业前那套循环（排位/直播/杯赛/等试训邀请）。
+   职业履历封存在 S.careerBak（冠军、战绩、生涯轨迹一样不丢），再签约时 acceptOffer 原样接回；
+   走到时间尽头还没签回去，preNextYear 把履历接回来按职业生涯算结局。 */
+/* 离队：旧队名单里的「我」换成一个比队均低一点的新秀，换人要重新磨。
+   signTransfer 原来只往新队塞人，旧队里那个 me:true 的幻影一直留着——
+   powerCore 见到 me 就按「我的队」算（用我的默契/信任/状态），AI 队的战力从此失真。 */
+function leaveRoster(name,lg){
+  const t=(S.world[lg||"LPL"]||[]).find(x=>x.name===name);
+  if(!t||!t.players||!t.players.some(q=>q.me)) return false;
+  const others=t.players.filter(q=>!q.me);
+  const lvl=others.length?avg(others.map(q=>ovrOf(q))):60;
+  t.players=t.players.map(q=>q.me?Object.assign(makeRookie(q.pos,lvl-3),{lg:lg||"LPL"}):q);
+  t.syn=clamp((t.syn===undefined?50:t.syn)-7,20,90);
+  return true;
+}
+function dropToStreets(mid){
+  const old=S.team||"", lg=S.homeLeague||"LPL";
+  // 全世界扫一遍：旧队、以及以前转会留下的幻影，一个不留
+  Object.keys(S.world||{}).forEach(k=>(S.world[k]||[]).forEach(x=>leaveRoster(x.name,k)));
+  const missed=S.proOffer?S.proOffer.team:null;
+  if(S.career) S.careerBak=S.career;
+  S.career=null;
+  S.streets=(S.streets||0)+1; S.everCut=true;
+  S.team=null; S.homeLeague=null; S.contract=null; S.understudy=null; S.promoted=false;
+  S.squad=null; S.trust={}; S.gotCut=false; S.freeAgent=true; S.pendingRenew=null; S.proOffer=null;
+  S.deal=null; S.tryout=null; S.scrim=null; S.promoteDeal=null; S.cutReason=null; S.askedTransfer=false;
+  const P=S.pre=S.pre||{rank:0}; P.log=P.log||[];
+  P.world=S.world; P.baseline=leagueBaseline(S.world);   // 再签约接的是这个活着的世界，不是重开一份
+  P.week=mid?9:1; P.ap=apFor("pre");                    // 季中回落：从年中开始，主播杯和年底窗口都还赶得上
+  P.cityCup=null; P.streamCup=null; P.noRe={}; P.wndGiven={}; P.rankInvited={}; P.fanInvited={};
+  P.invite=null; P.inviteCd=P.week+4; P.mates=null; P.offers=null; P.finalScore=undefined;   // 先冷一个月，电话才会来
+  P.exPro={team:old,lg,si:S.si};
+  if(!mid){   // 年底回落：新赛季的积分榜从零开始（季中回落时夏季赛还在打，榜不动）
+    Object.keys(S.world).forEach(k=>{ S.standings[k]={}; S.world[k].forEach(x=>S.standings[k][x.name]={w:0,l:0}); });
+  }
+  S.step="pre"; S.tab="act";
+  const why=missed?`你没有回应 <b>${missed}</b> 的问询，机会过期了。`:`没有一家俱乐部给你合同。`;
+  pushEvent(`${mid?"季中注册窗":"转会窗口"}关了，${why}<b>${old}</b> 把你从名单上除了名——你又是路人了。<br>
+    <span style="color:var(--ink-3)">排位、直播、杯赛、等电话：和当年一样。冠军和履历都还在，圈子不会忘记你，但也不会等你。</span>`,"bad","合同");
+  preLog(`<b>回到路人的日子。</b>${why}上一份合同在 <b>${old}</b> 结束。俱乐部看的是你现在的段位和人气——履历不清零。`,"bad");
+  if(typeof saveGame==="function") saveGame("回到路人");
+  render();
 }
 
 /* 休赛期的行动面板：没有比赛，其余照常 */
@@ -4456,6 +4504,8 @@ function actPanelPre(){
     <h2>第 ${P.week} 周<em>剩余行动点 ${P.ap}</em></h2>
     ${typeof autoBar==="function"?autoBar():""}
     ${typeof questCard==="function"?questCard():""}
+    ${S.careerBak?`<div class="ver" style="border-left:3px solid var(--red)">你现在是<b>自由身</b>：上一份合同在 <b>${(S.pre.exPro&&S.pre.exPro.team)||"—"}</b> 结束，没人接手。
+      俱乐部看的是你现在的段位、人气和杯赛履历——职业履历封存着，签回去就接上。</div>`:""}
     <div class="ver">${(()=>{const sc=preScore();
       const near=sc/PRE_INVITE;
       // 说清楚「还早」是早在哪——两个赛事各自打没打，状态是分开的
@@ -4760,7 +4810,9 @@ function matchLogCard(){
    数字换周时从旧值滚到新值（400ms，尊重 reduced-motion）。段位门槛那一长串说明只留在「我的」页。 */
 var _hudPrev={}, _lastTab, _lastSc;
 /* ---------- 事件提示条（界面重做第二期 ③）----------
-   pushEvent 里 good / bad / big 三种语气的事件，除了进大事记，还从右上滑进一条提示，3.2 秒淡出，最多三条。
+   pushEvent 里 good / bad / big 三种语气的事件，除了进大事记，还从右上滑进一条提示。
+   停留时间按字数走（6–12 秒；原来一律 3.2 秒，玩家实锤「还来不及看就没了」），
+   鼠标悬着不走、移开再给两秒半、点一下就关；最多四条。完整内容永远在大事记 / 生涯日志里。
    队列是模块变量不进存档；托管连续处理（_renderLock）和无头批测时不弹。 */
 var _toastQ=[];
 function toastPush(ev){
@@ -4770,6 +4822,7 @@ function toastPush(ev){
     _toastQ.push(ev); if(_toastQ.length>4) _toastQ.shift();
   }catch(e){}
 }
+function toastHold(txt){ return Math.min(12000, 6000+String(txt||"").length*70); }   // 中文按字算：40 字约 9 秒
 function flushToasts(){
   try{
     if(!_toastQ.length||typeof document==="undefined"||!document.createElement) return;
@@ -4779,12 +4832,19 @@ function flushToasts(){
     const rm=(typeof matchMedia==="function")&&matchMedia("(prefers-reduced-motion: reduce)").matches;
     _toastQ.splice(0).forEach((ev,i)=>{
       const raw=String(ev.text||"").replace(/<br\s*\/?>/gi," ").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim();
-      const txt=raw.slice(0,96)+(raw.length>96?"…":"");
+      const txt=raw.slice(0,140)+(raw.length>140?"…":"");
       const el=document.createElement("div"); el.className="toast t-"+ev.tone;   // t- 前缀：别和结局页的 .big 大字类撞名（玩家实锤：突破提示条变成 36px 宋体）
+      el.title="点一下关闭 · 完整内容在大事记";
       el.innerHTML=`<span class="tt">${typeof escapeHtml==="function"?escapeHtml(ev.tag||""):(ev.tag||"")}</span><span class="tx">${typeof escapeHtml==="function"?escapeHtml(txt):txt}</span>`;
       box.appendChild(el);
-      while(box.children.length>3) box.removeChild(box.firstChild);
-      setTimeout(()=>{ el.classList.add("out"); setTimeout(()=>{ try{ el.remove(); }catch(e){} }, rm?0:260); }, 3200+i*250);
+      while(box.children.length>4) box.removeChild(box.firstChild);
+      let tm=null, gone=false;
+      const close=()=>{ if(gone) return; gone=true; clearTimeout(tm); el.classList.add("out"); setTimeout(()=>{ try{ el.remove(); }catch(e){} }, rm?0:260); };
+      const arm=ms=>{ clearTimeout(tm); tm=setTimeout(close, ms); };
+      el.onmouseenter=()=>clearTimeout(tm);      // 悬停：不走
+      el.onmouseleave=()=>arm(2500);             // 移开：再给两秒半
+      el.onclick=close;                           // 点击 / 手机上点一下：关掉
+      arm(toastHold(txt)+i*400);
     });
   }catch(e){}
 }
@@ -4798,7 +4858,7 @@ function hud(){
   const isPre=(S.step==="pre"||S.step==="offer"||(!S.career&&S.pre));
   const np=nowPhase();
   const idLine=`<div class="h-id"><div class="who">${meName()}<small>${POSN[S.pos]||""} · ${S.age} 岁</small></div>
-    <div class="team">${isPre?`还没有战队 · 先打上分、攒人气、被人看见`:`效力 <b>${S.team}</b> · 本季 <span class="mono">${S.record?S.record.w:0}–${S.record?S.record.l:0}</span>`}</div></div>`;
+    <div class="team">${isPre?(S.careerBak?`自由身 · 上一站 <b>${(S.pre&&S.pre.exPro&&S.pre.exPro.team)||"—"}</b> · 上分、开播、等电话`:`还没有战队 · 先打上分、攒人气、被人看见`):`效力 <b>${S.team}</b> · 本季 <span class="mono">${S.record?S.record.w:0}–${S.record?S.record.l:0}</span>`}</div></div>`;
   const nowLine=`<div class="h-now ${np.urgent?'urgent':''}"><div class="ph">${np.tag}</div>
     <div class="big">${np.phase}${np.detail?`<small>${np.detail}</small>`:""}</div>
     <button class="h-cta" id="hudcta" hidden></button></div>`;
