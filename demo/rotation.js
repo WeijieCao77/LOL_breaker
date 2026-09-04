@@ -252,7 +252,7 @@ function revertTrial(){
 function confirmStarter(why){
   const sc=scrimState(), inc=S.understudy;
   sc.trial=null; sc.pendingTrial=false;
-  S.promoted=true; S.understudy=null;
+  S.promoted=true; S.understudy=null; S.benchLock=false; S.loseStreak=0;
   const t=myTeam(); if(t&&!t.players.some(q=>q.me)&&inc){ let d=false; t.players=t.players.map(q=>(!d&&(q===inc||q.id===inc.id))?(d=true,meAsPlayer()):q); }
   pushEvent((S.homeLeague||"LPL")==="LDL"
     ? `${why}<b>教练把你正式写进了 ${S.team} 的名单</b>。${inc?inc.id+" 退回替补。":""}`
@@ -260,7 +260,52 @@ function confirmStarter(why){
   if(typeof checkAch==="function") checkAch("promote");
 }
 /* 每场正赛打完（endMatch 里调用） */
+/* ---------- 首发被换下（2026-09-05 玩家点名）----------
+   「你是队里最薄的一环——教练在看替补名单」原来只是一句话。现在兑现：
+   坐着首发、是全队最薄的一环、连输三场（对手账面强太多的那场不算）→ 教练把你换下，
+   替补（有青训队就从二队提人）顶上；你回替补席，而且不能靠数值自动回来——
+   得在训练赛里攒够对位优势（SCRIM_EDGE_NEED）拿到试用，赢下来才是首发。 */
+function weakestLink(){
+  const mates=myRoster().filter(p=>!p.me); if(!mates.length) return false;
+  const me=avg(DIMS.map(d=>S.attrs[d]));
+  const tavg=avg(mates.map(p=>avg(DIMS.map(d=>p.r[d]))));
+  return clamp(55+(me-tavg)*6,5,98)<45;     // 和 roleCard 的「首发竞争」同一把尺
+}
+function pickReplacement(){
+  const t=myTeam(); const mates=t?t.players.filter(p=>!p.me):[];
+  const tavg=mates.length?avg(mates.map(p=>avg(DIMS.map(d=>p.r[d])))):avg(DIMS.map(d=>S.attrs[d]));
+  // 有青训队就从二队提人（同位置），没有就是队里的替补
+  try{
+    const acad=(S.homeLeague||"LPL")!=="LDL"&&S.world.LDL?S.world.LDL.find(x=>x.parent===S.team):null;
+    const p=acad&&acad.players.find(q=>q.pos===S.pos&&!q.me);
+    if(p) return Object.assign({},p,{r:Object.assign({},p.r),lg:S.homeLeague||"LPL",fromAcad:true});
+  }catch(e){}
+  const r=(typeof makeRookie==="function")?makeRookie(S.pos,tavg-2):null;
+  return r||{id:"替补",pos:S.pos,age:20,r:Object.assign({},S.attrs)};
+}
+function demoteCheck(won,gap){
+  if(!S.career||!S.promoted||(S.scrim&&S.scrim.trial)) return;
+  if(won){ S.loseStreak=0; return; }
+  if(gap<-8){ pushEvent(`输给账面强太多的对手（差 ${(-gap).toFixed(1)}），教练没把这场记在你头上。`,"info","轮换"); return; }
+  S.loseStreak=(S.loseStreak||0)+1;
+  if(!weakestLink()) return;
+  if(S.loseStreak===2){
+    pushEvent(`连输两场，而你是队里最薄的一环。<b>教练在看替补名单——再输一场就换人。</b>`,"bad","轮换");
+    return;
+  }
+  if(S.loseStreak<3) return;
+  const inc=pickReplacement(), t=myTeam();
+  if(!t||!inc) return;
+  let done=false; t.players=t.players.map(q=>(!done&&q.me)?(done=true,inc):q);
+  S.promoted=false; S.understudy=inc; S.benchLock=true; S.loseStreak=0; S.rosterSig=null;
+  if(S.scrim){ S.scrim.edge=0; S.scrim.trial=null; S.scrim.pendingTrial=false; }
+  S.benchedSplits=(S.benchedSplits||0);   // 计数在赛段末照旧
+  pushEvent(`<b>连输三场，教练把你换下了。</b>${inc.fromAcad?`二队的 <b>${inc.id}</b> 被提上来`:`<b>${inc.id}</b> 顶上`}，${POSN[S.pos]}位置这周起不是你。<br>
+    <span style="color:var(--ink-3)">回替补席不是数值够了就能回来——训练赛里攒够 ${SCRIM_EDGE_NEED} 次对位优势，教练才会再给你一场试用；试用赢了，首发才重新是你的。</span>`,"bad","轮换");
+  if(typeof checkAch==="function") checkAch("demoted");
+}
 function rotationAfterMatch(won,gap){
+  demoteCheck(won,gap);
   const sc=S.scrim; if(!sc||!sc.trial) return;
   const T=sc.trial;
   if(won){ T.w++; confirmStarter("试用期第一场就赢了。"); return; }

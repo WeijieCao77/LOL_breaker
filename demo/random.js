@@ -407,12 +407,17 @@ const RANDOM_EVENTS=[
       {t:"凑合用",e:()=>{addBuff("train",0.85,2,"设备拖后腿");
         return "接下来两周时不时卡一下，手感很受影响。"}}]},
 
-  {id:"coachDM", rec:1, w:2, when:()=>(S.pre?S.pre.rank>=30:false),
-   q:()=>`一个认证是「青训教练」的号加了你，问你想不想来试训。`,
-   ctx:"这次头像和认证都对得上。",
-   a:[{t:"去", g:"show",e:()=>{addFat(14);addFans(16);
-        if(S.pre) S.pre.tryoutSeen=1;
-        return "打了一下午训练赛。教练说保持联系。"}},
+  /* 2026-09-05 玩家点名：原来写「问你想不想来试训」，去了却只是打一下午训练赛、签不了合同——
+     名不副实。现在说清是训练赛（不是试训），但打得好真的会换来一封正式试训邀请。 */
+  {id:"coachDM", rec:1, w:2, when:()=>(S.pre?S.pre.rank>=30:false)&&!S.career,
+   q:()=>`一个认证是「青训教练」的号加了你，问你想不想来队里<b>打一下午训练赛</b>，看看水平。`,
+   ctx:"这不是试训——但正式的试训邀请，往往就是从这种下午开始的。",
+   a:[{t:"去", g:"show",e:()=>{addFat(14);addFans(10);
+        if(S.pre){ S.pre.tryoutSeen=1; S.pre.scoutSeen=(S.pre.scoutSeen||0)+2; }
+        const good=(typeof myStrength==="function"?myStrength():50)>=50&&rnd()<0.55;
+        if(good&&typeof queueInvite==="function"){ queueInvite("acad","训练赛里被青训教练看中");
+          return "打了一下午训练赛，教练在场边记了不少东西。<b>几天后，正式的试训邀请来了。</b>"; }
+        return "打了一下午训练赛。教练说保持联系——<b>暂时没有下文</b>，但你的名字进了他们的本子（被看见的次数 +2）。"}},
       {t:"先问清楚条件",e:()=>{addFans(5);
         return "对方说了些含糊的话。你没去成，但也没损失。"}}]},
 

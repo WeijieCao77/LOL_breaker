@@ -283,6 +283,15 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260905h", at:"2026-09-05", items:[
+    "全员数据里你的评分改由临场选择说了算（玩家实锤：不管选项成不成永远全队垫底）——原来实力差 10 分就压 −0.4、三个节点全成才 +0.15；现在能力项减半、每个节点 ±0.07、三个全成再加关键局分：实力差 10 分时 3/3 成功抬到全队中游，0/3 才垫底",
+    "LDL 不再儿子比爹强（玩家点名）：强队青训原来能到 73、压过 LPL 后四名；现在 LDL 天花板钉在 LPL 垫底三队的平均——TES.Y/RNG.Y 仍是 LDL 的头，和 LPL 弱队打个五五开，能赢不保证。而且这条天花板每个休赛期重钉一次：二队全是新秀、年年在涨，原来到 S16 末 LDL 均值 83 反超 LPL 75（你看到的 RNG.Y 八十多就是这么来的），现在 S16 末 LDL 70 / LPL 77",
+    "首发会被换下了（玩家点名「薄弱环节不能一直首发」）：坐着首发、是全队最薄的一环、连输三场（对手账面强太多的那场不算），教练就把你换下——有青训队就从二队提人顶上；连输两场时会先警告。回替补席后不能靠数值自动回来，得在训练赛攒够对位优势拿到试用、赢下来才重新是首发；新赛段教练重新看数据",
+    "版本相性不再只是一句顺风逆风（玩家点名）：本周卡换成完整的「版本」块——强势位置、关键属性、你的相性怎么算（关键属性 vs 联赛均线、红利位、适应力缓冲、热修各贡献多少战力）、本队谁站在红利位、全队版本加成、本联赛最吃版本的三支队；备战卡和比赛卡写明「你队 +X · 对手 +Y」；版本关键属性对全联盟生效（高于联赛均线吃红利、低的吃亏）；这一年练关键属性收益 ×1.10，训练按钮直接标「版本 +10%」；换年时大事记播报新版本",
+    "「第一场胜利」成就修好（玩家实锤：赢了很多把没解锁）——老档在成就上线前胜场早过了阈值，条件永远不成立；现在没拿过就任何一场正赛胜利都算，LDL 也是职业生涯",
+    "用词再清一遍（玩家点名少夹英文）：「当前 build」→「当前加点路线」、突破进度「MAX」→「已满」、心态「Tilt」→「心态压力」；KDA / MVP / BO3 / BP 这类圈内通用行话保留",
+    "青训教练私信事件不再名不副实（玩家点名）：说清是去打一下午训练赛而不是试训；打得好（实力≥50 时约五成）真的会换来一封正式试训邀请，没下文也会记「被看见 +2」"
+  ]},
   {v:"v20260905g", at:"2026-09-05", items:[
     "进俱乐部后段位旁也把账算清楚（玩家点名）：顶栏段位下面一行「实力 X · 本段门槛 Y · 下一档要 Z（差 N）」，「我的」页标题同样写明——你随时知道自己离下一档差多少"
   ]},
@@ -816,6 +825,56 @@ function adaptOf(){
    LDL 平均才 40 上下，50 分在二队明明是版本受益者。
    现在和所在联赛的真实平均比：版本抬高某一维的权重，全联盟都在吃，
    比同行强才占得到便宜。 */
+const VER_DIM_W=0.08;    // 版本关键属性：每高于联赛均线 1 分 → 战力 +0.08（全联盟通用，你的那份走 versionFit）
+const VER_TRAIN=1.10;    // 版本答案：本季关键属性的训练收益 ×1.10（教练组重点抓；1.15 批测转会均值 +0.4，收一档）
+/* 版本的账，摊开算给玩家看 */
+function verInfo(){
+  const sea=SEASONS[S.si], d=sea.dim;
+  const bar=leagueDimAvg(d), mine=S.attrs[d];
+  const rel=(mine-bar)/8, posB=sea.fav.includes(S.pos)?1.6:0, cushion=adaptOf()/100;
+  const mini=(typeof miniPatchAdj==="function")?miniPatchAdj():0;
+  return {sea,d,bar,mine,rel,posB,cushion,mini,fit:versionFit(),
+    parts:{dim:rel*2.2*2.0, pos:posB*2.0, cushion:(rel<0?rel*-1*cushion*1.4:0)*2.0, mini}};
+}
+/* 一支队从版本里拿到多少战力（战力口径，显示时乘 PW_SHOW）：强势位置每人 +1.5，关键属性高于联赛均线的部分 ×VER_DIM_W；你的队再加你的相性 */
+function teamVerBonus(team){
+  const sea=SEASONS[S.si]; if(!sea||!team) return 0;
+  const ps=team.players||[]; let v=0;
+  ps.forEach(p=>{
+    if(sea.fav.includes(p.pos)) v+=1.5;
+    if(!p.me){ const bar=(S.baseline&&S.baseline[p.lg])||70; const r=p.r||p; if(r[sea.dim]!==undefined) v+=(r[sea.dim]-bar)*VER_DIM_W; }
+  });
+  if(ps.some(p=>p.me)) v+=versionFit();
+  return v/Math.max(1,ps.length)*5/5;   // 队均口径：和 power 里 s/wt 的除法一致（五人各加，再取均值）
+}
+function verLine(oppName){
+  if(!S.career||!SEASONS[S.si]) return "";
+  const sea=SEASONS[S.si];
+  const mine=myTeam(), opp=oppName?findTeam(oppName):null;
+  const a=pwShow(teamVerBonus(mine)), b=opp?pwShow(teamVerBonus(opp)):null;
+  const f=pwShow(versionFit());
+  return `<div class="ver" style="margin-top:6px;color:var(--ink-2);font-size:12.5px">版本「${sea.ver}」：你队 <b style="color:${a>=0?'var(--cyan)':'var(--red)'}">${a>=0?"+":""}${a.toFixed(1)}</b>（含你 ${f>=0?"+":""}${f.toFixed(1)}）${
+    b!=null?` · 对手 <b style="color:${b>=0?'var(--cyan)':'var(--red)'}">${b>=0?"+":""}${b.toFixed(1)}</b>${b-a>1?'<span style="color:var(--ink-3)">——这个版本更站在他们那边</span>':a-b>1?'<span style="color:var(--ink-3)">——版本站在你们这边</span>':""}`:""}</div>`;
+}
+function versionCard(){
+  const I=verInfo(), sea=I.sea, HL=S.homeLeague||"LPL";
+  const s=v=>(v>=0?"+":"")+pwShow(v).toFixed(1);
+  const mates=myRoster().filter(p=>!p.me);
+  const favMates=mates.filter(p=>sea.fav.includes(p.pos));
+  const lg=(S.world&&S.world[HL])||[];
+  const top=lg.filter(t=>t.name!==S.team).map(t=>({n:t.name,v:pwShow(teamVerBonus(t))})).sort((a,b)=>b.v-a.v).slice(0,3);
+  const label=I.fit>=1.5?"顺风":I.fit>=-0.5?"中性":"逆版本";
+  return `<div class="ver">
+    <div>版本 <b>${sea.ver}</b>（${sea.tag}）— 强势位置 <b>${sea.fav.map(k=>POSN[k]).join("、")}</b> · 关键属性 <b>${sea.dim}</b>${
+      S.miniPatch?`　·　热修 <b>${sea.tag}.${S.miniPatch.n}</b>：${S.miniPatch.dim}权重${S.miniPatch.up?"↑":"↓"}`:""}</div>
+    <div style="margin-top:4px">你的相性 <b style="color:${I.fit>=1.5?'var(--cyan)':I.fit>=-0.5?'var(--ink)':'var(--red)'}">${label} ${s(I.fit)}</b> 战力
+      <span style="color:var(--ink-3)">= ${sea.dim} ${I.mine.toFixed(0)} vs ${HL}均线 ${I.bar.toFixed(0)}（${s(I.parts.dim)}）${
+        I.posB?` + ${POSN[S.pos]}是红利位（${s(I.parts.pos)}）`:""}${I.parts.cushion?` + 适应力缓冲（${s(I.parts.cushion)}）`:""}${I.mini?` + 热修（${s(I.mini)}）`:""}</span></div>
+    <div style="margin-top:4px;color:var(--ink-2)">本队：${favMates.length?`${favMates.map(p=>p.id).join("、")} 站在红利位`:"没有队友在红利位"}，全队版本加成 <b>${s(teamVerBonus(myTeam()))}</b>${
+      top.length?`　·　本联赛最吃版本的队：${top.map(t=>`${t.n} ${t.v>=0?"+":""}${t.v.toFixed(1)}`).join("、")}`:""}</div>
+    <div style="margin-top:4px;color:var(--ink-3);font-size:12px">这一年练 <b>${sea.dim}</b> 收益 ×${VER_TRAIN}（教练组按版本抓训练）；赛后拆解里「版本相性」那一行就是这个数。</div>
+  </div>`;
+}
 function leagueDimAvg(d){
   const lg=S.homeLeague||"LPL";
   const ts=(S.world&&S.world[lg])||[];
@@ -940,6 +999,12 @@ function powerCore(players,fatigue=0,verFav=null,team=null){
     }
     if(!p.me&&typeof mateInjuryHit==="function") v+=mateInjuryHit(p);
     if(verFav&&verFav.includes(p.pos)) v+=1.5;
+    // 版本关键属性对全联盟生效（2026-09-05 玩家点名「版本相性不能只是一句顺风逆风」）：
+    // 队里这一维比本联赛均线高的人吃版本红利、低的人吃亏；你自己的那份走 versionFit
+    if(!p.me&&verFav){
+      const vd=SEASONS[S.si]&&SEASONS[S.si].dim, bar=(S.baseline&&S.baseline[p.lg])||70;
+      if(vd&&r[vd]!==undefined) v+=(r[vd]-bar)*VER_DIM_W;
+    }
     // 人物特质：刺头逆风时更稳，这一下真的进战力
     if(p.me&&typeof traitMul==="function") v+=traitMul("clutch",true);
     // 能力 × 状态：同一个人，今年打成什么样是另一回事
@@ -1048,6 +1113,10 @@ function buildLDL(w){
   const src=(w.LPL||[]);
   const rk=src.map(t=>({t,p:avg(t.players.map(q=>avg(DIMS.map(d=>q.r[d]))))}))
               .sort((a,b)=>b.p-a.p);
+  /* LDL 的天花板钉在「LPL 垫底三队的平均」（2026-09-05 玩家拍板）：原来母队 −8～−4 让
+     TES.Y/RNG.Y 跑到 73，比 LPL 后四名（56-62）强一大截——儿子比爹强。现在强队青训
+     仍是 LDL 的头，但只和 LPL 弱队打个五五开：能赢、不保证。 */
+  const lplLow=rk.length>=3?avg(rk.slice(-3).map(x=>x.p)):62;
   return rk.map(({t,p})=>({
     name:teamCode(t.name)+".Y", parent:t.name, logo:t.logo,
     syn:Math.max(20,(t.syn===undefined?50:t.syn)-10),
@@ -1061,7 +1130,7 @@ function buildLDL(w){
        大师到王者边缘）——强队青训≈王者边的门神，弱队青训跟弱队一样菜，
        宗师实力（60）有得打、没得躺。 */
     players:POS.map(x=>{
-      const pl=Object.assign(makeRookie(x.k,Math.min(Math.max(p-8,60),p-4)),{lg:"LDL",form:52,retired:false});   // 全体系 +5：下限 55→60
+      const pl=Object.assign(makeRookie(x.k,Math.max(56,Math.min(p-8,lplLow))),{lg:"LDL",form:52,retired:false});   // 母队 −8，不高于 LPL 垫底三队均值，下限 56
       const R=LDL_ROSTER[teamCode(t.name)];
       const real=R&&R.find(q=>q.pos===x.k);
       if(real) pl.id=real.id;               // 真名上身；数值不动
@@ -1243,6 +1312,21 @@ function noteForm(team,won){
 }
 
 /* 休赛期：全世界老一岁 */
+/* LDL 天花板每年重钉（2026-09-05 玩家实锤「RNG.Y 八十多」：S16 末 LDL 均值 83 > LPL 75）——
+   二队全是 18-23 岁的新秀，AI 每年都在练、又没有升队/离队，五年后儿子比爹强。
+   每个休赛期把每支二队压回「LPL 垫底三队的平均」以下：强队青训仍是 LDL 的头，但永远只是 LPL 弱队的水平。 */
+function capLDL(){
+  try{
+    const L=S.world&&S.world.LDL, P=S.world&&S.world.LPL; if(!L||!P||!P.length) return;
+    const tavg=t=>avg((t.players||[]).filter(q=>!q.me).map(q=>avg(DIMS.map(d=>q.r[d]))));
+    const low=avg(P.map(tavg).sort((a,b)=>a-b).slice(0,3));
+    L.forEach(t=>{
+      const a=tavg(t); if(!(a>low)) return;
+      const cut=a-low;
+      (t.players||[]).forEach(q=>{ if(q.me) return; DIMS.forEach(d=>{ q.r[d]=q1(clamp(q.r[d]-cut,45,99)); }); });
+    });
+  }catch(e){}
+}
 function ageWorld(){
   const news=[];
   Object.keys(S.world).forEach(lg=>{
@@ -1489,7 +1573,7 @@ function viewCreate(){
       </div>
       <div class="cap mono">×${mult(S.talent[d]).toFixed(2)} 上限${capOf(d)}</div>
     </div>`).join("")}
-    <div class="ver">当前 build 的<b>适应力约 ${Math.round(ad)}</b>：${
+    <div class="ver">当前加点路线的<b>适应力约 ${Math.round(ad)}</b>：${
       ad>62?"很均衡，版本怎么变你都能跟上，但没有一招鲜。":
       ad>45?"有侧重也有兜底，逆版本时会难受一阵但缓得过来。":
       "高度专精。顺版本能炸，逆版本会被针对到怀疑人生。"}</div>
@@ -2063,6 +2147,7 @@ function startSeason(first,split){
   S.split=(split===undefined)?0:split;
   S.carrySplit=0;      // 「院长」次数按赛段算（球探看本赛段）
   S.benchedPO=false;   // 新赛段重置「替补看完季后赛」标记
+  S.loseStreak=0; S.benchLock=false;   // 新赛段：连败清零；被换下的锁也解开（新赛段教练重新看数据）
   const HL=S.homeLeague||"LPL";
   const opp=S.world[HL].filter(t=>t.name!==S.team).map(t=>t.name);
   for(let i=opp.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[opp[i],opp[j]]=[opp[j],opp[i]];}
@@ -2402,7 +2487,9 @@ function doTrain(d){
   // 而进度只在 doTrain 里记——原来一到瓶颈按钮就禁用，
   // 于是提示让你去做的事，你根本点不动，死锁在那儿。
   if(d==="操作"&&typeof btkNote==="function") btkNote("op",1);
-  if(!capped) S.attrs[d]=Math.min(capOf(d),S.attrs[d]+gain(d));
+  // 版本答案：本季关键属性的训练收益 ×VER_TRAIN（职业后；教练组按版本抓训练）
+  const vm=(S.career&&SEASONS[S.si]&&SEASONS[S.si].dim===d)?VER_TRAIN:1;
+  if(!capped) S.attrs[d]=Math.min(capOf(d),S.attrs[d]+gain(d)*vm);
   if(typeof noteAct==='function') noteAct('train',d);
   checkAch("train");
   addFat(9); S.ap-=apCost("train"); render();
@@ -2638,7 +2725,7 @@ function autoSumCard(){
    于是「所有栏目合到一起了」。玩家报的就是这个。 */
 function tabContent(T){
   return `${S.pmView!=null&&typeof pmReplayCard==="function"?pmReplayCard():""}
-    ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+(typeof dataCard==="function"?dataCard():"")+(typeof careerCard==="function"?careerCard():"")+gearCard():""}
+    ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+(typeof dataCard==="function"?dataCard():"")+(typeof matchLogCard==="function"?matchLogCard():"")+(typeof careerCard==="function"?careerCard():"")+gearCard():""}
     ${T==="team"?squadCard()+(typeof roleCard==="function"?roleCard():"")+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
     ${T==="shop"?(typeof economyCards==="function"?economyCards():shopCard()):""}
     ${T==="tx"?(typeof transferPage==="function"?transferPage():""):""}
@@ -2673,13 +2760,7 @@ function viewSeason(){
     ${typeof autoBar==="function"?autoBar():""}
     ${typeof questCard==="function"?questCard():""}
     ${typeof btkChaseNote==="function"?btkChaseNote():""}
-    <div class="ver">版本 <b>${sea.ver}</b> — 本赛季强调 <b>${sea.dim}</b>${
-      sea.fav.includes(S.pos)?`，且<b>${POSN[S.pos]}是版本红利位</b>`:""}。${
-      S.miniPatch?`<br>热修 <b>${sea.tag}.${S.miniPatch.n}</b>：<b>${S.miniPatch.dim}</b>权重${S.miniPatch.up?"↑":"↓"}${
-        (typeof miniPatchAdj==="function"&&Math.abs(miniPatchAdj())>=0.15)?`（对你${miniPatchAdj()>0?"有利":"不利"}）`:""}。`:""}
-      你的版本相性：<b>${fit>=1.5?"顺风":fit>=-0.5?"中性":"逆版本"}</b>
-      <span style="color:var(--ink-3)">（你的${sea.dim} ${S.attrs[sea.dim].toFixed(0)} · ${
-        S.homeLeague||"LPL"}均值 ${leagueDimAvg(sea.dim).toFixed(0)}——顺逆是和同行比出来的）</span></div>
+    ${versionCard()}
     ${fatigueBar()}
     ${typeof tiltNote==="function"?tiltNote():""}
     ${typeof riskHint==="function"?riskHint():""}
@@ -2688,7 +2769,7 @@ function viewSeason(){
     <div class="grid g5">
       ${DIMS.map(d=>{const b=trainBtn(d,S.ap);
         return `<button class="act" data-train="${d}" title="${b.tip||''}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
-        <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
+        <div class="t">${b.title}${(S.career&&SEASONS[S.si]&&SEASONS[S.si].dim===d)?' <i class="apc" title="本季版本关键属性，训练收益 ×'+VER_TRAIN+'">版本 +'+Math.round((VER_TRAIN-1)*100)+'%</i>':''}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-do="solo" ${S.ap<apCost("solo")?'disabled style="opacity:.34"':''}>
         <div class="t">打排位 ${apTag("solo")}</div><div class="d">五项小涨 + 找回手感${
           typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
@@ -2822,7 +2903,7 @@ function attrCard(){
             <span class="bd">${d}</span>
             <span class="bw">${full?"这一维已经推到极限了，天赋决定的终点就在这里。"
               :deadWhy?deadWhy.replace(/<[^>]+>/g,""):P.how}</span>
-            <span class="bp mono">${full?"MAX":deadWhy?"里程碑":P.prog()}</span></div>`}).join("")}
+            <span class="bp mono">${full?"已满":deadWhy?"里程碑":P.prog()}</span></div>`}).join("")}
         <div class="bn">带 <b>·</b> 的是机械条件——肯这么练就一定拿得到，不看运气。</div></div>`;
     })()}
     ${typeof buffChips==="function"?buffChips():""}
@@ -3005,7 +3086,7 @@ function synthSeriesStats(m,won,myPw,opPw){
     pushEvent(`<b>院长局</b>：输给 ${m.oppName}，但你评分 <b>${rating.toFixed(2)}</b> 全队最高，队友场均 ${box.mateAvg.toFixed(2)}${box.worst?`（${box.worst} ${box.worstR.toFixed(2)}）`:""}。<span style="color:var(--ink-3)">这场输球不算在你头上——球探看数据，不只看比分。</span>`,"info","数据");
   }
   if(box&&box.soloWin) S.soloWins=(S.soloWins||0)+1;
-  S.log.push(`<div><span class="hi">个人数据</span> ${k}/${d}/${a} · 分均补刀 ${cs} · 伤害 ${dmg}% · 评分 <b>${rating.toFixed(2)}</b></div>`);
+  S.log.push(`<div><span class="hi">个人数据</span> ${Math.round(k*games)}/${Math.round(d*games)}/${Math.round(a*games)}（${games} 局合计）· 分均补刀 ${cs} · 伤害 ${dmg}% · 评分 <b>${rating.toFixed(2)}</b></div>`);
 }
 /* 我的页 · 比赛档案卡：生涯场均 + 最近八个系列赛 */
 function dataCard(){
@@ -3115,7 +3196,7 @@ function endMatch(){
   S.tilt=clamp((S.tilt||0)+(won?-8:(swept||m.sc[0]===0?18:12)),0,100);
   if(!won&&S.tilt>=60&&!S._tiltWarned){
     S._tiltWarned=true;
-    pushEvent(`连着输球，<b>心态开始起飞</b>（Tilt ${Math.round(S.tilt)}）。<br>
+    pushEvent(`连着输球，<b>心态开始起飞</b>（心态压力 ${Math.round(S.tilt)}）。<br>
       <span style="color:var(--ink-3)">带着这种状态上场是要掉发挥的——休息、心理课、或者赢一场，都能把它压回去。</span>`,"bad","心态");
   }
   if(S.tilt<40) S._tiltWarned=false;
@@ -3221,6 +3302,7 @@ function viewMatch(){
       <div class="side"><div class="nm">${teamLogo(m.oppName,34)}<br>${m.oppName}</div><div class="pw mono">战力 ${pwShow(op).toFixed(1)}</div></div>
     </div>
     ${typeof starLaneBadge==="function"?starLaneBadge(m.oppName):""}
+    ${typeof verLine==="function"?verLine(m.oppName):""}
     ${m.node?`<div class="node"><div class="q">${m.node.q}</div><div class="ctx">${m.node.ctx}</div>
       <div class="grid g2">${m.node.a.map((a,i)=>`<button class="opt" data-node="${i}">
         <div class="t">${a.t}</div><div class="d">吃 <b>${a.dim}</b> · ${a.risk>0.8?'高风险高回报':'稳健'}</div>
@@ -3238,7 +3320,8 @@ function isBenched(){
   // 训练赛攒够资本、或首发受伤你顶上：这周名单上是你（rotation.js）
   if(typeof scrimTrialCheck==="function"&&scrimTrialCheck()) return false;
   const me=avg(DIMS.map(d=>S.attrs[d])), him=avg(DIMS.map(d=>inc.r[d]));
-  if(me>=him-2){
+  // 被换下来的人不能靠数值自动回首发——得走训练赛试用（rotation.js 的 benchLock）
+  if(me>=him-2&&!S.benchLock){
     S.promoted=true;
     const t=myTeam();
     t.players=t.players.map(q=>(q===inc||q.id===inc.id)
@@ -3441,6 +3524,7 @@ function prepPanel(){
         <div class="pw">${oppT?`战力 ${pwShow(power(oppT,0,SEASONS[S.si].fav)).toFixed(1)}`:""}</div></div>
     </div>
     ${typeof starSpotHtml==="function"?starSpotHtml(P.opp):""}
+    ${typeof verLine==="function"?verLine(P.opp):""}
     <p class="note">下一场之前还有一点时间。<b>怎么用是你的事</b>——歇一口气、过一遍录像，
       或者临阵再练一手。</p>
     ${typeof btkChaseNote==="function"?btkChaseNote():""}
@@ -3448,7 +3532,7 @@ function prepPanel(){
     <div class="grid g5">
       ${DIMS.map(d=>{const b=trainBtn(d,S.ap);
         return `<button class="act" data-train="${d}" title="${b.tip||''}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
-        <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
+        <div class="t">${b.title}${(S.career&&SEASONS[S.si]&&SEASONS[S.si].dim===d)?' <i class="apc" title="本季版本关键属性，训练收益 ×'+VER_TRAIN+'">版本 +'+Math.round((VER_TRAIN-1)*100)+'%</i>':''}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-do="solo" ${S.ap<apCost("solo")?'disabled style="opacity:.34"':''}>
         <div class="t">打排位 ${apTag("solo")}</div><div class="d">找回手感${
           typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
@@ -3735,6 +3819,7 @@ function finishOffseason(){
   S.yearBase=0;              // 新的一年，全年计数从头开始
   S.miniPatch=null; S.patchClock=0;   // 新版本年，热修编号从 .1 重数
   const news=ageWorld();
+  capLDL();   // 二队每年重钉天花板：不能越长越比爹强
   // 玩家自己的年龄曲线
   const base=ageCurve(S.age);
   DIMS.forEach(d=>{
@@ -3742,6 +3827,7 @@ function finishOffseason(){
     if(delta<0) S.attrs[d]=clamp(S.attrs[d]+delta,20,capOf(d));
   });
   news.unshift(`<div class="hi">— ${SEASONS[S.si].tag} ${SEASONS[S.si].y}：版本「${SEASONS[S.si].ver}」· ${SEASONS[S.si].story} —</div>`);
+  pushEvent(`<b>${SEASONS[S.si].tag} 版本「${SEASONS[S.si].ver}」</b>：强势位置 <b>${SEASONS[S.si].fav.map(k=>POSN[k]).join("、")}</b>，关键属性 <b>${SEASONS[S.si].dim}</b>——这一维高于联赛均线的人全年吃红利，低的人吃亏；本周卡的「版本」块里有你和本队的账。`,"info","版本");
   S.news=S.news.concat(news);
   S.fatigue=0; S.buff={};
   if(S.gotCut){
@@ -3785,7 +3871,7 @@ function offPanel(){
     <div class="grid g5">
       ${DIMS.map(d=>{const b=trainBtn(d,S.ap);
         return `<button class="act" data-train="${d}" title="${b.tip||''}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
-        <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
+        <div class="t">${b.title}${(S.career&&SEASONS[S.si]&&SEASONS[S.si].dim===d)?' <i class="apc" title="本季版本关键属性，训练收益 ×'+VER_TRAIN+'">版本 +'+Math.round((VER_TRAIN-1)*100)+'%</i>':''}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-do="solo" ${S.ap<apCost("solo")?'disabled style="opacity:.34"':''}>
         <div class="t">打排位 ${apTag("solo")}</div><div class="d">五项小涨 + 找回手感${
           typeof myForm==="function"?`　<b>状态 ${Math.round(myForm())}</b>`:""}${costSolo()}</div></button>
@@ -4111,7 +4197,7 @@ function actPanelPre(){
         <div class="t">${typeof gicon==="function"?gicon("stream",14):""} 直播 ${apTag("stream")}</div><div class="d">涨人气与收入${costStream()}</div></button>
       ${DIMS.map(d=>{const b=trainBtn(d,P.ap);
         return `<button class="act" data-pretrain="${d}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
-        <div class="t">${b.title}</div><div class="d">${b.desc}</div></button>`}).join("")}
+        <div class="t">${b.title}${(S.career&&SEASONS[S.si]&&SEASONS[S.si].dim===d)?' <i class="apc" title="本季版本关键属性，训练收益 ×'+VER_TRAIN+'">版本 +'+Math.round((VER_TRAIN-1)*100)+'%</i>':''}</div><div class="d">${b.desc}</div></button>`}).join("")}
       <button class="act" data-pre="rest" ${P.ap<apCost("rest")?'disabled style="opacity:.34"':''}>
         <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳${costRest()}</div></button>
     </div>
@@ -4321,8 +4407,15 @@ function newsCard(){
   }).join("");
   return `<div class="card"><h2>其他赛区</h2>
     <div class="tw"><table><thead><tr><th>赛区</th><th>当前第一</th><th>战绩</th></tr></thead><tbody>${other}</tbody></table></div>
-    ${S.news.length?`<div class="log" style="max-height:150px;margin-top:12px">${S.news.slice(-6).reverse().join("")}</div>`:""}
-    ${S.log.length?`<div class="log" style="max-height:140px">${S.log.slice(-6).reverse().join("")}</div>`:""}</div>`;
+    ${S.news.length?`<div class="log" style="max-height:150px;margin-top:12px">${S.news.slice(-6).reverse().join("")}</div>`:""}</div>`;
+}
+/* 比赛记录（原来塞在「世界 · 其他赛区」卡底下——玩家原话「个人数据的板为什么在其他赛区的版块里」）：
+   你自己的比赛日志放「我的」页，紧挨着个人数据。 */
+function matchLogCard(){
+  if(!S.career||!S.log||!S.log.length) return "";
+  return `<div class="card"><h2>比赛记录<em>最近 ${Math.min(12,S.log.length)} 条</em></h2>
+    <div class="log" style="max-height:220px">${S.log.slice(-12).reverse().join("")}</div>
+    <p class="note">每场的全员数据与拆解在「世界 · 赛程」表里点「看数据」回看。</p></div>`;
 }
 
 /* ================= 渲染 ================= */

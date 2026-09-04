@@ -13,11 +13,13 @@ const ACHIEVEMENTS=[
   {id:"signed", n:"上岸", d:"签下第一份职业合同。", tag:"里程碑",
    on:"sign", cond:()=>true, r:{fat:-25,fame:8}},
   {id:"debut", n:"首秀", d:"打上职业生涯的第一场正式比赛。", tag:"里程碑",
-   on:"match", cond:()=>((S.career||{}).w||0)+((S.career||{}).l||0)<=3, r:{fat:-15,trust:4}},
+   on:"match", cond:()=>true, r:{fat:-15,trust:4}},   // 同「第一场胜利」：老档阈值早过了，没拿过就任何一场正赛都算
   {id:"starter", n:"拿到首发", d:"从替补席上把首发位抢了过来。", tag:"里程碑",
    on:"promote", cond:()=>true, r:{fat:-30,fame:14,trust:8}},
   {id:"firstwin", n:"第一场胜利", d:"职业生涯的第一个胜场。", tag:"里程碑",
-   on:"win", cond:()=>((S.career||{}).w||0)<=2, r:{fat:-18,trust:5}},
+   // 玩家实锤：赢了很多把却没解锁——老档在成就系统上线前胜场早过了 2，条件永远不成立。
+   // 「第一场胜利」就是还没拿过时的任何一场正赛胜利（LDL 也是职业生涯）
+   on:"win", cond:()=>true, r:{fat:-18,trust:5}},
   {id:"playoff", n:"季后赛", d:"第一次打进季后赛。", tag:"里程碑",
    on:"playoff", cond:()=>true, r:{fat:-25,money:40}},
   {id:"lgtitle", n:"联赛冠军", d:"第一次捧起联赛奖杯。", tag:"里程碑",

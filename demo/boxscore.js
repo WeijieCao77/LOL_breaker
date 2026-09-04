@@ -19,8 +19,10 @@
 
 const BOX_POS_ORDER=["top","jng","mid","bot","sup"];
 function boxAbility(p){
-  const r=p.r||p;
-  const v=(r.操作||50)*0.34+(r.运营||50)*0.28+(r.心态||50)*0.14+(r.体质||50)*0.10;
+  // 「你」直读 S.attrs 并算上装备——名单里的拷贝读档后可能是旧的（玩家实锤：我的 61、队伍 53）
+  const r=(p.me&&typeof S!=="undefined"&&S&&S.attrs)?S.attrs:(p.r||p);
+  const g=(p.me&&typeof gearBonus==="function")?(gearBonus("操作")*0.34+gearBonus("运营")*0.28+gearBonus("体质")*0.10):0;
+  const v=(r.操作||50)*0.34+(r.运营||50)*0.28+(r.心态||50)*0.14+(r.体质||50)*0.10+g;
   const fm=(typeof formMul==="function")?(p.me?myFormMul():formMul(p)):1;
   return v*fm;
 }
@@ -35,8 +37,11 @@ function synthBoxScore(m,won){
   const mateShift=(!won&&okN-failN>=1)?-0.07:(won&&failN-okN>=1)?0.05:0;
   const line=(p,side)=>{
     const T=(typeof POS_STATLINE!=="undefined"?POS_STATLINE[p.pos]:null)||[4.1,2.5,5.2,8.8,0.28];
-    let perf=1+(boxAbility(p)-mean)*0.04+(side==="mine"?(won?0.12:-0.10):(won?-0.10:0.12));
-    if(p.me) perf+=okN*0.05-failN*0.05;
+    /* 你的那一行：能力项减半、临场节点分量翻倍（2026-09-05 玩家实锤：不管选项成不成
+       永远全队垫底——原来实力差 10 分就是 −0.4，三个节点全成才 +0.15，选择只有实力的三分之一分量）。
+       现在实力差 10 分＝−0.25，3/3 成功＝+0.30 再加关键局 +0.08 → 抬到中游；0/3＝垫底。选择说了算。 */
+    let perf=1+(boxAbility(p)-mean)*(p.me?0.025:0.04)+(side==="mine"?(won?0.12:-0.10):(won?-0.10:0.12));
+    if(p.me) perf+=okN*0.07-failN*0.07+((okN>=3&&failN===0)?0.05:0)-0.03;   // 200 次合成实验：差 10 分时 3/3 ≈ 全队中游、0/3 垫底；−0.03 抵消能力项减半带来的场均抬升（批测转会均值 +0.1）
     else if(side==="mine") perf+=mateShift;
     perf+=(rnd()-0.5)*0.28;
     perf=clamp(perf,0.45,1.7);
