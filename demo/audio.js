@@ -249,8 +249,19 @@ function audioMoment(sig, last) {
 /* ---------- 更新日志浮窗 ----------
    点 📜 弹全部历史（CHANGELOG 在模板里维护，每次上线加一条）。
    遮罩直接挂 body，不走 render——创建页也能看。 */
+/* 更新日志的未读点：版本戳变了、还没点开过 📜 就亮；点开即已读（记 localStorage） */
+const LOG_SEEN_KEY = "poxiao_log_seen";
+function logBadge() {
+  try {
+    const b = document.getElementById("aud-log"); if (!b) return;
+    const seen = localStorage.getItem(LOG_SEEN_KEY);
+    b.classList.toggle("new", typeof GAME_VER !== "undefined" && seen !== GAME_VER);
+  } catch (e) {}
+}
 function showChangelog() {
   try {
+    try { if (typeof GAME_VER !== "undefined") localStorage.setItem(LOG_SEEN_KEY, GAME_VER); } catch (e) {}
+    logBadge();
     if (document.getElementById("chlog")) return;
     const log = (typeof CHANGELOG !== "undefined") ? CHANGELOG : [];
     const wrap = document.createElement("div");
@@ -486,6 +497,7 @@ function audioFab(hasSfx, hasBgm) {
     <button id="aud-love" aria-label="支持作者" title="支持作者（爱发电）">♥</button>` : "");
   document.body.appendChild(fab);
   fab.querySelector("#aud-log").onclick = (e) => { e.stopPropagation(); showChangelog(); };
+  logBadge();
   const lv = fab.querySelector("#aud-love"); if (lv) lv.onclick = (e) => { e.stopPropagation(); showSupport(); };
   // 页脚也给一个入口
   try {

@@ -1214,3 +1214,12 @@ button:disabled .apc{opacity:.5}
 .brk-board .bb.adv{border-color:var(--cyan-dim)}
 .brk-board .bb.out{opacity:.6}
 body.moreopen .audiofab{display:none}
+/* ---- 教程说明栏目 ---- */
+.helpsec{display:flex;flex-direction:column;gap:6px}
+.helpsec .hs{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:7px 10px;background:rgba(6,21,32,.55);border-left:2px solid var(--line);font-size:13px;line-height:1.55}
+.helpsec .hs b{color:var(--gold-hi)}
+.helpsec .hs span{color:var(--ink-2)}
+@media(max-width:560px){.helpsec .hs{grid-template-columns:1fr}}
+/* 右下角 📜 的未读点 */
+.audiofab button{position:relative}
+.audiofab button.new::after{content:"";position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--dawn);box-shadow:0 0 6px var(--dawn)}

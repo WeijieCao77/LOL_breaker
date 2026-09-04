@@ -137,9 +137,9 @@ function loadGame() {
     fixScaleV3(S);
     fixScaleV4(S);
     relinkMe(S);
-    // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
-    // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
-    if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
+    // 老档进新版本不再弹「本次更新」（玩家 2026-09-06 实锤：它盖住了教程导览）——
+    // 只在右下角 📜 上打个点，玩家自己点开才看（见 audio.js 的 logBadge）
+    if (typeof GAME_VER !== "undefined") S.patchSeen = GAME_VER;
     S.tab = "act";
     // 读档落在比赛中途会尴尬——回到本周界面
     if (S.step === "match") S.step = S.pre && !S.career ? "pre" : "season";

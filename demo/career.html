@@ -1227,6 +1227,15 @@ button:disabled .apc{opacity:.5}
 .brk-board .bb.adv{border-color:var(--cyan-dim)}
 .brk-board .bb.out{opacity:.6}
 body.moreopen .audiofab{display:none}
+/* ---- 教程说明栏目 ---- */
+.helpsec{display:flex;flex-direction:column;gap:6px}
+.helpsec .hs{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:7px 10px;background:rgba(6,21,32,.55);border-left:2px solid var(--line);font-size:13px;line-height:1.55}
+.helpsec .hs b{color:var(--gold-hi)}
+.helpsec .hs span{color:var(--ink-2)}
+@media(max-width:560px){.helpsec .hs{grid-template-columns:1fr}}
+/* 右下角 📜 的未读点 */
+.audiofab button{position:relative}
+.audiofab button.new::after{content:"";position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;background:var(--dawn);box-shadow:0 0 6px var(--dawn)}
 
 </style>
 
@@ -1361,6 +1370,10 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906b", at:"2026-09-06", items:[
+    "版本更新不再弹窗（玩家实锤：它盖住了教程导览）：更新内容只记在右下角 📜 里，有新版本时 📜 上亮一个点，自己点开才显示",
+    "左栏最下面新增「教程说明」栏目：文字版的各栏目说明、基本概念（行动点 / 体能 / 文字档位 / 天赋瓶颈 / 职业前 / 赛季 / 合同转会 / 托管），以及「重放导览」按钮——一开始跳过了导览的，随时能回来看"
+  ]},
   {v:"v20260906a", at:"2026-09-06", items:[
     "「支持作者」浮窗打开网页不再弹：只有通关、或者这一次玩够 10 分钟（只算标签页可见、进了游戏之后的时间）才提示一次；点过「别再提示」永远不弹，右下角 ♥ 随时能主动打开"
   ]},
@@ -4103,7 +4116,8 @@ function tabContent(T){
     ${T==="world"?(typeof bracketCard==="function"?bracketCard():"")+(typeof fixtureCard==="function"?fixtureCard():"")+standingsCard()+rivalCard()
       +(typeof followUpCard==="function"?followUpCard():"")
       +newsCard()+eventsCard():""}
-    ${T==="ach"?achCard():""}`;
+    ${T==="ach"?achCard():""}
+    ${T==="help"?helpCard():""}`;
 }
 function viewSeason(){
   const sea=SEASONS[S.si], T=curTab(TABS_SEASON);
@@ -5639,7 +5653,8 @@ const TABS_PRE=[
   {k:"shop", n:"经济", z:"money"},
   {k:"ach",  n:"成就", z:"rec"},
   {k:"log",  n:"日志", z:"rec"},
-  {k:"auto", n:"托管", z:"auto", sep:true}
+  {k:"auto", n:"托管", z:"auto", sep:true},
+  {k:"help", n:"教程说明", z:"rec"}
 ];
 const TABS_SEASON=[
   {k:"act",  n:"本周", z:"act"},
@@ -5649,10 +5664,12 @@ const TABS_SEASON=[
   {k:"tx",   n:"转会", z:"money"},   // 试训邀请/报价/挂牌/接触/合同——2026-08-31 玩家点名独立成栏
   {k:"shop", n:"经济", z:"money"},
   {k:"ach",  n:"成就", z:"rec"},
-  {k:"auto", n:"托管", z:"auto", sep:true}
+  {k:"auto", n:"托管", z:"auto", sep:true},
+  {k:"help", n:"教程说明", z:"rec"}
 ];
 /* 导航图标（界面重做第二期 ④）：单线 SVG，跟字色走；竖栏里图标在字上，横条里在字左，手机上只留字 */
 const TAB_ICONS={
+  help:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/></svg>',
   more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
   act:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
   me:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>',
@@ -5844,6 +5861,7 @@ function viewPre(){
         `<p class="note" style="margin:0">私教、理疗师、团队建设、舆论公关——
           进队之后才用得上，也才付得起。</p>`):""}
   ${T==="ach"?achCard():""}
+  ${T==="help"?helpCard():""}
   ${T!=="log"?"":`<div class="card"><h2>生涯日志<em>${nowLabel()}</em></h2>
     <div class="feed">${P.log.slice(-40).reverse().map(l=>`<div class="ev ${l.tone}">
       <span class="tg">${l.stamp||("W"+l.w)}</span><span class="tx">${l.t}</span></div>`).join("")}</div></div>`}`;
@@ -12404,9 +12422,9 @@ function loadGame() {
     fixScaleV3(S);
     fixScaleV4(S);
     relinkMe(S);
-    // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
-    // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
-    if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
+    // 老档进新版本不再弹「本次更新」（玩家 2026-09-06 实锤：它盖住了教程导览）——
+    // 只在右下角 📜 上打个点，玩家自己点开才看（见 audio.js 的 logBadge）
+    if (typeof GAME_VER !== "undefined") S.patchSeen = GAME_VER;
     S.tab = "act";
     // 读档落在比赛中途会尴尬——回到本周界面
     if (S.step === "match") S.step = S.pre && !S.career ? "pre" : "season";
@@ -15104,8 +15122,19 @@ function audioMoment(sig, last) {
 /* ---------- 更新日志浮窗 ----------
    点 📜 弹全部历史（CHANGELOG 在模板里维护，每次上线加一条）。
    遮罩直接挂 body，不走 render——创建页也能看。 */
+/* 更新日志的未读点：版本戳变了、还没点开过 📜 就亮；点开即已读（记 localStorage） */
+const LOG_SEEN_KEY = "poxiao_log_seen";
+function logBadge() {
+  try {
+    const b = document.getElementById("aud-log"); if (!b) return;
+    const seen = localStorage.getItem(LOG_SEEN_KEY);
+    b.classList.toggle("new", typeof GAME_VER !== "undefined" && seen !== GAME_VER);
+  } catch (e) {}
+}
 function showChangelog() {
   try {
+    try { if (typeof GAME_VER !== "undefined") localStorage.setItem(LOG_SEEN_KEY, GAME_VER); } catch (e) {}
+    logBadge();
     if (document.getElementById("chlog")) return;
     const log = (typeof CHANGELOG !== "undefined") ? CHANGELOG : [];
     const wrap = document.createElement("div");
@@ -15341,6 +15370,7 @@ function audioFab(hasSfx, hasBgm) {
     <button id="aud-love" aria-label="支持作者" title="支持作者（爱发电）">♥</button>` : "");
   document.body.appendChild(fab);
   fab.querySelector("#aud-log").onclick = (e) => { e.stopPropagation(); showChangelog(); };
+  logBadge();
   const lv = fab.querySelector("#aud-love"); if (lv) lv.onclick = (e) => { e.stopPropagation(); showSupport(); };
   // 页脚也给一个入口
   try {
@@ -16063,6 +16093,7 @@ const TOUR_PRE=[
   {sel:'[data-tab="shop"]', t:"经济", d:"钱从哪来、往哪花：直播收入、奖金、外设、课程。"},
   {sel:'[data-tab="ach"]', t:"成就 / 日志", d:"成就是你拿到过的东西；日志是这一路发生过的事。"},
   {sel:'[data-tab="auto"]', t:"托管", d:"把重复的事交出去：一键安排、自动推进到下一件需要你拿主意的事。"},
+  {sel:'[data-tab="help"]', t:"教程说明", d:"以后想再看：这里有文字版的栏目说明和「重放导览」按钮。"},
   {sel:".grid.g5", t:"行动", d:"每个按钮是一周里的一件事：练哪一维、打排位、直播、休息……写着它会让什么变好、累不累。点了之后，卡片顶上会留一句这周做了什么。"},
   {sel:"#prenext", t:"推进", d:"行动点用完就进入下一周。年底是转会窗口，试训邀请随时可能来——把段位和人气打上去，让人看见你。"}
 ];
@@ -16073,8 +16104,36 @@ const TOUR_SEASON=[
   {sel:'[data-tab="world"]', t:"赛事", d:"赛程、积分榜、季后赛形势、宿敌、各赛区新闻、大事记。国际赛期间对阵图也在这里。"},
   {sel:'[data-tab="tx"]', t:"转会", d:"别的队来挖你、你挂牌、买断、续约——都在这里。"},
   {sel:'[data-tab="shop"]', t:"经济", d:"年薪、直播、奖金进账；外设、课程、俱乐部资源花钱。"},
+  {sel:'[data-tab="help"]', t:"教程说明", d:"文字版的栏目说明和「重放导览」都在这里，随时回来看。"},
   {sel:"#play", t:"这周的比赛", d:"行动点用完，打这周的比赛。赛后有拆解：赢在哪、输在哪、明天练什么。"}
 ];
+/* 「教程说明」栏目（玩家 2026-09-06 点名：一开始跳过了导览、后面又找不到）：
+   文字版的栏目说明 + 基本概念 + 重放导览按钮。栏目说明直接读导览步骤表，两边不会说两套话。 */
+function helpCard(){
+  const pro=!!S.career;
+  const steps=(pro?TOUR_SEASON:TOUR_PRE).filter(x=>x.sel.indexOf("[data-tab=")===0);
+  const li=(t,d)=>`<div class="hs"><b>${t}</b><span>${d}</span></div>`;
+  return `<div class="card"><h2>教程说明<em>${pro?"赛季":"职业前"}</em></h2>
+    <div class="row" style="margin:0 0 12px">
+      <button class="btn" id="tourreplay">重放导览 →</button>
+      <button class="btn ghost" id="helplog">更新日志</button>
+    </div>
+    <h3 style="font-size:14px">各栏目是干什么的</h3>
+    <div class="helpsec">${steps.map(x=>li(x.t,x.d)).join("")}${
+      li("教程说明","就是这里：文字版说明和导览重放。")}</div>
+    <h3 style="font-size:14px;margin-top:16px">基本概念</h3>
+    <div class="helpsec">
+      ${li("行动点",`每周固定几点（职业前 ${typeof AP_PRE!=="undefined"?AP_PRE:6}、赛季 ${typeof AP_SEASON!=="undefined"?AP_SEASON:8}）。训练 2 点、排位 1 点、直播 2 点、休息 1 点……用完才推进到下一周或开打。`)}
+      ${li("体能","每个行动都累，比赛更累。掉到四成以下状态明显下滑；休息、网吧开黑、换个游戏都能回。")}
+      ${li("五维与文字档位","操作 / 运营 / 心态 / 指挥 / 体质。默认用词描述：生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级（职业级 ≈ LPL 首发）。顶栏「数值」一键看具体数字。")}
+      ${li("天赋与瓶颈","天赋决定成长速度和天花板，不是初始属性。撞到瓶颈后靠特定条件顶开——「我的」属性卡里每一维都写着怎么破。")}
+      ${li("职业前","段位、人气、杯赛履历决定谁来找你：宗师起有青训教练看，城市争霸赛 / 主播杯打进四强也能敲门。试训邀请随时可能来，年底是转会窗口。")}
+      ${li("赛季",`常规赛 ${typeof WEEKS!=="undefined"?WEEKS:7} 周每周一场 BO3，前六进季后赛。春季冠军去 MSI，夏季赛决定世界赛名额。赛后拆解写清赢在哪、输在哪。`)}
+      ${li("合同与转会","合同按赛段签，到期由你续约或进市场；季中和年底两个注册窗可以挂牌、买断、接受别队问询。窗口关了还没人签，就回到路人的日子——履历不清零。")}
+      ${li("托管","一键安排、重复上回合、执行计划；自动推进只跳过「没得选的周」，有事立刻交回给你。")}
+    </div>
+    <p class="note">导览会在第一次进职业前、第一次进赛季各弹一次；这里随时能重放。</p></div>`;
+}
 var _tour=null;
 function tourSeen(k){ try{ return localStorage.getItem("poxiao_tour_"+k)==="1"; }catch(e){ return true; } }
 function tourMark(k){ try{ localStorage.setItem("poxiao_tour_"+k,"1"); }catch(e){} }
@@ -16451,6 +16510,8 @@ function bind(){
     if(x){ DIMS.forEach(d=>S.talent[d]=x.t[d]||0); render(); } });
   st.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;_moreOpen=false;render()});
   st.querySelectorAll("[data-more]").forEach(b=>b.onclick=()=>{_moreOpen=(b.dataset.more==="1")?!_moreOpen:false;render()});
+  const _tr=$("tourreplay"); if(_tr) _tr.onclick=()=>{ S.tab="act"; render(); if(typeof tourStart==="function") setTimeout(()=>tourStart(S.career?"season":"pre"),80); };
+  const _hl=$("helplog"); if(_hl) _hl.onclick=()=>{ if(typeof showChangelog==="function") showChangelog(); };
   const _rok=$("rndok"); if(_rok) _rok.onclick=()=>{S.rndResult=null;render()};
   st.querySelectorAll("[data-rnd]").forEach(b=>b.onclick=()=>resolveRandom(+b.dataset.rnd));
   st.querySelectorAll("[data-locker]").forEach(b=>b.onclick=()=>resolveLocker(+b.dataset.locker));
