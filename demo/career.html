@@ -1375,6 +1375,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906j", at:"2026-09-06", items:[
+    "自由身在注册窗最后一周点「进入下一周」会先提醒：这周过去窗口就关、没合同就回到路人主播身份，桌上还有几家邀请没谈（玩家点名）"
+  ]},
   {v:"v20260906i", at:"2026-09-06", items:[
     "赛事解说 / 品牌拍摄 / 训练营这三单商务也记进经济页的商务账本（玩家实锤：成就说「第一单商务」到了，账本却是 0 单）"
   ]},
@@ -16989,7 +16992,19 @@ function bind(){
     S.patchNote=null; S.patchSeen=(typeof GAME_VER!=="undefined")?GAME_VER:1;
     if(typeof saveGame==="function") saveGame("更新说明已读"); render(); };
   const _pp=$("prepgo"); if(_pp) _pp.onclick=prepGo;
-  const _off=$("offnext"); if(_off) _off.onclick=offNextWeek;
+  const _off=$("offnext"); if(_off) _off.onclick=()=>{
+    // 自由身在窗口的最后一周点「下一周」：先提醒（玩家点名：不然不知不觉就回了路人）
+    const lastWk=S.off&&S.off.week>=S.off.weeks&&typeof txWindowOpen==="function"&&txWindowOpen();
+    if(S.career&&S.freeAgent&&lastWk&&typeof askConfirm==="function"){
+      const n=(S.faOffers||[]).length;
+      askConfirm("注册窗这周就关",
+        `你还没签约。<b>这一周过去窗口就关了</b>——没合同就回到路人主播的身份（排位、直播、杯赛，等下一次试训邀请；履历不清零）。<br>
+         ${n?`桌上还有 <b>${n}</b> 家俱乐部的邀请没谈（本周页顶上的「你是自由身」卡）。`:"桌上没有邀请——「转会」栏里还能挂牌、主动接触。"}`,
+        "我知道，继续", ()=>offNextWeek(), {t:"回去看看", fn:()=>render()}, "fa-last-week");
+      return;
+    }
+    offNextWeek();
+  };
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;
   st.querySelectorAll("[data-fa]").forEach(b=>b.onclick=()=>{ if(typeof takeFaOffer==="function") takeFaOffer(+b.dataset.fa); });
   const _pn=$("pofno"); if(_pn) _pn.onclick=dropProOffer;
