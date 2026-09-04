@@ -3,6 +3,7 @@
    CSS、JS、数据在 build.py 里全部内联进 career.html 了。
 
    所以这里不做「把 URL 拼到磁盘路径上」这件事：只有列在 ROUTES 里的东西能出去。
+   （唯一的例外是 /bgm/：背景音乐文件按白名单名字从 demo/bgm/ 出，见 serveMedia。）
 
    2026-09-02 审计后补的几件事（都在这一个文件里）：
    · 规范域名：正式地址只有 www.poxiao.lol。裸域名和 Railway 域名一律 301 过去——
@@ -57,8 +58,12 @@ function loadAsset(file) {
   try { st = fs.statSync(abs); } catch (e) { cache.delete(file); return null; }
   const hit = cache.get(file);
   if (hit && hit.mtime === st.mtimeMs && hit.size === st.size) return hit;
-  const raw = fs.readFileSync(abs);
   const isHtml = /\.html$/.test(file);
+  /* CRLF 归一（外部测评抓的 P0）：Windows 检出的 career.html 是 CRLF，服务器按 CRLF 字节算
+     CSP 哈希，浏览器却按解析后的 LF 文本算——哈希对不上，整段内联脚本被 CSP 拦掉，本地白屏。
+     发出去的字节和算哈希的字节必须是同一份、且都是 LF。 */
+  let raw = fs.readFileSync(abs);
+  if (isHtml && raw.includes(13)) raw = Buffer.from(raw.toString("utf8").replace(/\r\n/g, "\n"), "utf8");
   const entry = {
     mtime: st.mtimeMs, size: st.size, raw,
     etag: '"' + sha256b64(raw).slice(0, 27) + '"',
@@ -145,6 +150,48 @@ function serveAsset(req, res, url) {
   res.writeHead(200, headers);
   if (req.method === "HEAD") return res.end();
   res.end(body);
+}
+
+/* ---------- 背景音乐文件：/bgm/<名字>.mp3 ----------
+   demo/bgm/ 下的曲子（s12.mp3 … s16.mp3，见 demo/bgm/README.md）。这是 ROUTES 之外
+   唯一按名字出文件的地方：只认白名单后缀，文件名只许 [a-z0-9_-]，不拼任何别的路径段。
+   · 支持 Range（206）：iOS Safari 没有它就不播；不压缩（mp3 压不动）
+   · 一天缓存 + ETag；走 loadAsset 整文件进内存，五首歌也就二三十 MB
+   · CSP 已是 media-src 'self'，不用再放行 */
+const MEDIA_TYPES = { ".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".m4a": "audio/mp4", ".wav": "audio/wav" };
+function serveMedia(req, res, url) {
+  const m = /^\/bgm\/([a-z0-9_-]+)(\.[a-z0-9]+)$/i.exec(url);
+  const type = m && MEDIA_TYPES[m[2].toLowerCase()];
+  if (!type) return send(res, 404, "not found");
+  const entry = loadAsset("demo/bgm/" + m[1] + m[2]);
+  if (!entry) return send(res, 404, "not found");
+  const total = entry.raw.length;
+  const headers = baseHeaders({
+    "content-type": type,
+    "etag": entry.etag,
+    "accept-ranges": "bytes",
+    "cache-control": "public, max-age=86400",
+    "x-frame-options": "DENY",
+  });
+  const inm = req.headers["if-none-match"];
+  if (inm && inm.split(",").map(s => s.trim()).includes(entry.etag)) {
+    res.writeHead(304, headers); return res.end();
+  }
+  let start = 0, end = total - 1, code = 200;
+  const rg = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range || ""));
+  if (rg && (rg[1] || rg[2])) {
+    if (rg[1]) { start = parseInt(rg[1], 10); if (rg[2]) end = Math.min(parseInt(rg[2], 10), total - 1); }
+    else start = Math.max(0, total - parseInt(rg[2], 10));            // bytes=-N：尾部 N 字节
+    if (start > end || start >= total) {
+      res.writeHead(416, baseHeaders({ "content-range": "bytes */" + total })); return res.end();
+    }
+    code = 206;
+    headers["content-range"] = "bytes " + start + "-" + end + "/" + total;
+  }
+  headers["content-length"] = end - start + 1;
+  res.writeHead(code, headers);
+  if (req.method === "HEAD") return res.end();
+  res.end(code === 206 ? entry.raw.subarray(start, end + 1) : entry.raw);
 }
 
 /* ================= 统计与后台看板 =================
@@ -437,6 +484,7 @@ const server = http.createServer((req, res) => {
       { "location": "https://" + CANONICAL + (req.url || "/") });
   }
 
+  if (url.startsWith("/bgm/")) return serveMedia(req, res, url);   // 背景音乐文件
   if (!ROUTES[url]) return send(res, 404, "not found");
   serveAsset(req, res, url);
 });

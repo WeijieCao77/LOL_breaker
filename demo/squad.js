@@ -58,7 +58,12 @@ function watchRoster(){
   const before=S.rosterSig.split("|"), now=ids.split("|");
   const changed=now.filter(x=>!before.includes(x)).length;
   S.rosterSig=ids;
-  if(changed>0) disruptSynergy(changed,`${changed} 人换血`);
+  if(changed>0){
+    disruptSynergy(changed,`${changed} 人换血`);
+    // 名单一变，队友两两关系必须跟着重建——不然新阵容的每一对都取默认 50，
+    // 看板上一排整齐的「50」就是这么来的（玩家实锤：换到 AL 后全是 50）。
+    if(typeof syncRelations==="function") syncRelations();
+  }
 }
 
 /* ---------- 综合实力：base × 各项权重 ---------- */
@@ -93,7 +98,7 @@ function squadWeights(players,fatigue,team){
           *((mine&&typeof langSyn==="function")?langSyn():1)},
     {k:"tac", n:"战术", v:mine?squadOf("tac"):50, mult:1+((mine?squadOf("tac"):50)-50)/1100},
     {k:"mor", n:"士气", v:mine&&typeof avgTrust==="function"?avgTrust():50,
-     mult:1+(((mine&&typeof avgTrust==="function")?avgTrust():50)-50)/380},
+     mult:1+(((mine&&typeof avgTrust==="function")?avgTrust():50)-50)/760},   // 与 trustMod 同步（减半）
     {k:"cmd", n:"指挥", v:cmd, mult:1+(cmd-68)/520},
     {k:"fit", n:"体能", v:100-clamp(fatigue,0,100), mult:1-clamp(fatigue,0,100)*0.0022}
   ];

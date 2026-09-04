@@ -961,6 +961,56 @@ function dropProOffer(){
   S.proOffer = null; render();
 }
 
+/* ---------- 合同到期：续约报价卡（玩家点名：续约/转会看不到、参与不了）----------
+   队伍愿意留你时递上来：新年薪 / 违约金 / 年限摆明，由你签或拒。
+   拒 → 成为自由身，当场开一次转会问询，去哪从报价里自己选。 */
+function renewCard(){
+  const r = S.pendingRenew; if(!r) return "";
+  const up = (a,b)=> (a!==undefined&&b!==undefined&&b>a) ? `<span style="color:var(--good)"> ↑</span>` : "";
+  return `<div class="rankup"><div class="ru-inner" style="max-width:520px;text-align:left;max-height:86vh;overflow-y:auto">
+    <div class="ru-icon" style="text-align:center">${typeof gicon==="function"?gicon("transfer",52):""}</div>
+    <div class="ru-eyebrow" style="text-align:center">合同到期 · 续约报价</div>
+    <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:6px">${
+      typeof teamLogo==="function"?teamLogo(r.team,22):""} <b>${r.team}</b> 想和你续约</div>
+    <p class="note" style="text-align:center;margin:0 0 12px">${
+      r.wonTitle?"你捧回了冠军——他们不想让你走。":"你的表现值得一份新合同。"}</p>
+    <div class="grid g2" style="margin:0 0 12px">
+      <div class="ver"><div class="k">新年薪</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${
+        r.salary!==undefined?r.salary:"—"}<small> 万/赛段</small>${up(r.oldSalary,r.salary)}</div>${
+        r.oldSalary!==undefined?`<div class="k" style="font-size:10px">原 ${r.oldSalary} 万</div>`:""}</div>
+      <div class="ver"><div class="k">年限</div><div class="v mono" style="font-size:20px">${r.years}<small> 个赛段</small></div></div>
+      <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:20px">${
+        r.buyout!==undefined?r.buyout:"—"}<small> 万</small>${up(r.oldBuyout,r.buyout)}</div>${
+        r.oldBuyout!==undefined?`<div class="k" style="font-size:10px">原 ${r.oldBuyout} 万</div>`:""}</div>
+      <div class="ver"><div class="k">违约金的意思</div><div class="k" style="font-size:11px;line-height:1.5">谈得高，别的队买你要付更多，愿意来的就少；想留后路可谈低。</div></div>
+    </div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="rnwyes">签下续约 →</button>
+      <button class="btn ghost" id="rnwno">拒绝，进转会市场</button>
+    </div>
+    <p class="note" style="text-align:center">拒绝没有惩罚，但你就成了自由身——去哪得自己在市场上找。</p>
+  </div></div>`;
+}
+function acceptRenew(){
+  const r = S.pendingRenew; if(!r) return;
+  S.contract = { years:r.years, left:r.years, salary:r.salary, sign:0,
+                 buyout:r.buyout, team:r.team, tier:r.tier, grade:r.grade, clubTier:r.clubTier };
+  S.pendingRenew = null; S.gotCut = false;
+  pushEvent(`<b>${r.team}</b> 与你续约 ${r.years} 个赛段，年薪 <b>${r.salary!==undefined?r.salary:"—"} 万</b>${
+    r.buyout!==undefined?`，违约金 <b>${r.buyout} 万</b>`:""}。`,"good","合同");
+  if(typeof txNote==="function") txNote(`与 ${r.team} 续约，年薪 ${r.salary!==undefined?r.salary:"—"} 万`);
+  render();
+}
+function declineRenew(){
+  const r = S.pendingRenew; if(!r) return;
+  S.pendingRenew = null;
+  S.freeAgent = true; S.gotCut = true;      // 自由身：走自由市场，不再瞬移
+  pushEvent(`你拒绝了 <b>${r.team}</b> 的续约，成为<b>自由身</b>。<br>
+    <span style="color:var(--ink-3)">去哪由你自己在转会市场上找——没人再替你付违约金，也没人拦着你。</span>`,"big","合同");
+  if(typeof rollProOffers==="function"){ S.offerYear=undefined; S.offerWnd=undefined; rollProOffers(); }
+  render();
+}
+
 /* ---------- 六、主动挂牌：转会申请由你发起 ----------
    原来只有被动等人来挖。现在休赛期可以自己放消息出去——
    有没有人接，看你的表现、威望和合同里的违约金。
@@ -1117,6 +1167,8 @@ function signTransfer(){
   if(typeof markTeamJoin==="function") markTeamJoin();   // 换了队，在队时长归零
   S.trust = {}; if(typeof initTrust==="function") initTrust();
   if(typeof syncTrust==="function") syncTrust();
+  if(typeof initRelations==="function") initRelations();   // 新东家：队友关系从头建，别挂一排默认 50
+  S.gotCut = false; S.pendingRenew = null; S.freeAgent = false;   // 签了新约，自由身/被裁状态清掉
   addMoney("sign", d.sign);
   S.contract = { years:d.years, left:d.years, salary:d.salary, sign:d.sign,
                  buyout:d.buyout, team:d.team, tier:d.dealTier, grade:d.grade,

@@ -94,14 +94,21 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .sub{color:var(--ink-2);margin:0;max-width:62ch;font-size:14.5px}
 
 /* ---- HUD ---- */
-.hud{display:flex;flex-wrap:wrap;gap:1px;background:var(--line);margin-bottom:20px;
+/* 网格而不是 flex-wrap：两行格子的竖线必须对齐（玩家实锤「上下不一致宽度」）。
+   赛季 HUD 12 格 = 7 列 × 2 行（「现在」「段位」各占两列）；职业前 HUD 加 .pre = 6 列 × 2 行。 */
+.hud{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line);margin-bottom:20px;
   border:1px solid var(--line);
   clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px)}
-.hud>div{background:linear-gradient(180deg,var(--panel-2),var(--panel));padding:10px 15px;flex:1 1 96px}
+.hud.pre{grid-template-columns:repeat(6,minmax(0,1fr))}
+.hud>div{background:linear-gradient(180deg,var(--panel-2),var(--panel));padding:10px 15px;min-width:0}
+.hud>.hud-now,.hud>.hud-rank,.hud>.hud-next{grid-column:span 2}
 .hud .k{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
   font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
 .hud .v{font-size:16px;font-weight:650;margin-top:1px;color:var(--gold-hi)}
 .hud .v small{font-size:11px;color:var(--ink-3);font-weight:400}
+/* 段位格：徽章横排、门槛说明一行放得下（玩家实锤：原来被挤成一条竖的） */
+.hud .rankbadge{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.hud .gapnote{white-space:normal}
 /* 名气格下面的「还差几次直播」——档位名只说了你在哪，这行说还有多远 */
 .fnext{margin-top:5px;font-size:10px;line-height:1.5;color:var(--ink-3);letter-spacing:.02em}
 .fnext b{color:var(--gold);font-weight:650;font-variant-numeric:tabular-nums}
@@ -111,7 +118,8 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 /* 手机上 8 个格子按 96px 的下限只能排 3 列，折成 4 行占掉 333px——
    一块「你是谁、现在第几周」的信息不值这个价。收紧到 4 列 2 行。 */
 @media(max-width:560px){
-  .hud>div{flex:1 1 74px;padding:6px 9px}
+  .hud,.hud.pre{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .hud>div{padding:6px 9px}
   .hud .k{font-size:8.5px;letter-spacing:.1em}
   .hud .v{font-size:13.5px;line-height:1.35}
   .hud .v small{font-size:10px}
@@ -328,6 +336,8 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 
 /* ---- 表格 ---- */
 .tw{overflow-x:auto;border:1px solid var(--line)}
+/* 手机上表格改成横向滚动，不再把「城市争霸赛」这种中文挤成竖排（外部测评抓的） */
+@media(max-width:560px){.tw table{min-width:540px}.tw td,.tw th{white-space:nowrap}}
 table{width:100%;border-collapse:collapse;background:rgba(6,21,32,.4);font-size:13px}
 th{text-align:left;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dim);
   font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line);
@@ -613,9 +623,9 @@ td .tlogo{margin-right:5px}
 @media(max-width:560px){.brk{grid-template-columns:40px 1fr;}.brk .bp{grid-column:2}}
 
 /* ---- HUD 的「现在」格 ---- */
-.hud .hud-now{flex:1 1 210px;background:linear-gradient(180deg,rgba(201,169,97,.16),var(--panel))}
+.hud .hud-now{background:linear-gradient(180deg,rgba(201,169,97,.16),var(--panel))}
 /* 粉丝格里要塞下「档位名 + 粉丝数」，96px 的基准宽度会把它挤成两行半 */
-.hud .hud-fan{flex:1 1 148px}
+.hud .hud-fan{min-width:0}
 
 /* ---- 托管 ---- */
 .autogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
@@ -792,6 +802,37 @@ ul.dealfx li::marker{color:var(--ink-3)}
 }
 .audiofab button:hover{border-color:var(--gold)}
 .audiofab button.off{opacity:.45;border-color:var(--line)}
+/* 背景音乐浮窗 */
+.bgmpanel{position:fixed;right:14px;bottom:60px;z-index:61;width:264px;max-width:calc(100vw - 28px);
+  background:rgba(12,26,40,.97);border:1px solid var(--line-hot);border-radius:12px;
+  box-shadow:0 6px 24px rgba(0,0,0,.5);color:var(--ink);font-size:13px;overflow:hidden}
+.bp-head{display:flex;align-items:center;gap:8px;padding:9px 11px;border-bottom:1px solid var(--line)}
+.bp-head b{flex:1;color:var(--gold-hi);letter-spacing:.04em}
+.bp-pow{font-size:11px;padding:1px 9px;border-radius:20px;border:1px solid var(--gold);
+  background:transparent;color:var(--gold-hi);cursor:pointer}
+.bp-pow.off{color:var(--ink-3);border-color:var(--line)}
+.bp-x{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:transparent;
+  color:var(--ink-2);cursor:pointer;font-size:15px;line-height:1}
+.bp-x:hover{border-color:var(--gold);color:var(--gold-hi)}
+.bp-now{padding:8px 11px 4px}
+.bp-title{display:block;color:var(--ink);font-weight:600;line-height:1.35;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bp-ctrl{display:flex;align-items:center;gap:8px;padding:2px 11px 9px}
+.bp-ctrl button{width:32px;height:32px;border-radius:50%;border:1px solid var(--line-hot);
+  background:rgba(14,42,62,.9);color:var(--gold-hi);cursor:pointer;font-size:13px;line-height:1}
+.bp-ctrl button:hover{border-color:var(--gold)}
+.bp-hint{flex:1;text-align:right;color:var(--ink-3);font-size:11px}
+.bp-list{max-height:198px;overflow-y:auto;border-top:1px solid var(--line);padding:4px}
+.bp-row{display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+  background:transparent;border:none;color:var(--ink-2);cursor:pointer;
+  padding:6px 8px;border-radius:7px;font-size:12.5px;line-height:1.3}
+.bp-row:hover{background:rgba(255,255,255,.05)}
+.bp-row .bp-dot{width:6px;height:6px;border-radius:50%;background:var(--line-hot);flex:none}
+.bp-row .bp-rt{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bp-row.on{color:var(--gold-hi)}
+.bp-row.on .bp-dot{background:var(--gold)}
+.bp-row.miss{opacity:.34;cursor:not-allowed}
+.bp-row.miss .bp-dot{background:var(--line)}
 .credits{
   text-align:center;color:var(--ink-3);font-size:12px;letter-spacing:.05em;
   padding:26px 0 18px;border-top:1px solid var(--line);margin-top:34px;
@@ -1000,6 +1041,29 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260905p", at:"2026-09-05", items:[
+    "合同到期重做（玩家实锤：TOP 夺冠却不续约、拒了 JDG 还被塞去 AL）：到期时队伍想留你就递「续约报价卡」（新年薪/违约金/年限），签或拒由你；当年拿了任意冠军＝铁续约，报价更高；队伍放你走会当场告知原因，你成自由身走转会市场自己挑下家；整个休赛期都没签成才按表现落到一线弱队或回二队，并写明原因——不再瞬移到随机弱队，你的「留下」也真正生效",
+    "国际赛淘汰赛改成真对阵树（玩家实锤：T1/GEN 一百多分，MSI 决赛却遇 70 分队）：八队按瑞士轮/小组战绩+战力排种子，1v8、4v5 同半区，一二号种子只在决赛相遇；MSI 走完整双败（胜者组→败者组→总决赛），世界赛单败八强→半决赛→决赛；不满八队自动轮空；每轮播报同轮其他对局",
+    "更衣室关系不再一排 50（玩家实锤）：换队、换人后队友两两关系重建并随胜负漂移",
+    "「世界」标签改名「赛事」（赛程 · 积分榜 · 大事记）",
+    "背景音乐重做成浮窗播放器（玩家点名）：右下角 ♪ 点开面板——开关、上一首/播放暂停/下一首、整张歌单随机循环、点哪首放哪首；缺文件的曲目置灰跳过。曲子文件按 demo/bgm/README 的文件名对照表自己放，仓库不带任何音频",
+    "创建页天赋分配加「一键随机分配」；每一维旁边显示进游戏时的起始能力值（随出身/年龄/背景，被天赋上限截住）",
+    "顶部 HUD 改为网格：两行格子竖线对齐（玩家实锤上下宽度不一致），段位徽章一行不再竖着叠",
+    "世界有了转会市场（玩家点名：选手不转会、二队比一队强也不提拔）：季中间歇和休赛期，全联盟二队某位置比一队强 2 分以上就有七成概率提上去、被顶掉的人下放；休赛期还有跨队转会——弱队里高于队均 4 分的 27 岁以下好手会被上半区某支该位置更弱的队买走，被顶掉的人反向流动。换过人的队默契 −6、战术 −2.7，之后每个窗口慢慢回补；你的队也一样，你的位置除外。世界日志有每个窗口的变动清单",
+    "外部测评修复（P0）：Windows 本地 node server.js 白屏——服务器按 CRLF 算 CSP 哈希、浏览器按 LF 算，内联脚本被拦；现在服务端统一归一到 LF 再算再发，CI 加「CSP 哈希 = 浏览器眼里的脚本哈希」断言",
+    "外部测评修复（P1）：常规赛世界模拟换成真循环赛——原来每周把各队按数组顺序固定两两配对、同一对打整季；现在每个联赛圆桌法排轮次表、你的赛程从同一张表取、避开你的轮空轮，积分榜/季后赛/国际赛名额终于建在真赛程上",
+    "外部测评修复：行动点文案不再写死「每个行动 1 点」；打排位的体能显示与实际扣除一致（4）；胜负心态改为胜 +0.6 / 负 +0.7（原负 +1.1 等于鼓励故意输球）；临场节点的「高风险」真的降成功率（约 −6 个点，稳健 +3），摆动倍率照旧",
+    "外部测评修复：出身卡明示路线（青训/主播）与全部修正；选手身份去重（Fudge 双占位、Grell 双队）、Bin 中文名改回陈泽彬；补 LICENSE 与粉丝同人声明；手机端表格改横向滚动不再挤成竖排；README 成就数不再写死",
+    "备战卡与比赛卡的战力口径统一（玩家实锤：备战 82.6、开赛 91.8）：两张卡都写「战力 X · 版本 +Y」，版本行里「你队」的数按模拟真实口径算（你的相性整份计入，不再被五人平均）；段位格改横排一行，不再挤成竖条",
+    "士气不再只偏袒你的队（玩家实锤：青训队战力 85 比 LPL 一线还高）：原来只有你的队有士气乘数、信任 88 白拿 +10%，AI 队永远 ×1.0；现在你的士气幅度减半（88 → ×1.05），AI 队按近六场战绩也有士气（连胜 ×1.05、连败 ×0.95）；比赛卡的「战力」不再把版本加成揉进去，版本单独标"
+  ]},
+  {v:"v20260905o", at:"2026-09-05", items:[
+    "背景音乐换成真正的历年 S 赛主题曲（S12→2022、S13→2023、S14→2024、S15→2025、S16→2026，赛季一换就换歌），不再是合成的原创曲；♪ 仍默认关，想听自己点开，点开才开始加载，不拖慢首屏",
+  ]},
+  {v:"v20260905n", at:"2026-09-05", items:[
+    "世界有了转会市场（玩家点名：选手不转会、二队比一队强也不提拔，世界太死板）：季中间歇和休赛期，全联盟二队某位置比一队强 2 分以上就有七成概率提上去、被顶掉的人下放；休赛期还有跨队转会——弱队里高于队均 4 分的 27 岁以下好手会被上半区某支该位置更弱的队买走，被顶掉的人反向流动（每个联赛最多约三成队数）",
+    "转会有代价：换过人的队默契 −6、战术 −2.7，之后每个窗口慢慢回补；你的队也一样——队友被挖走、二队提人上来、俱乐部买人顶掉队友都会真的发生（你的位置除外，那由替补/换下机制管），默契要重磨、信任和更衣室关系从头建。世界日志里有每个窗口的变动清单"
+  ]},
   {v:"v20260905m", at:"2026-09-05", items:[
     "经济栏新增「商务」账本（玩家点名：大事记和成就说有商务邀约，经济页却看不到是什么、签没签）：直播独家（邀约到达 / 签了 / 拒了）、外设独家、代言、赞助分成、赞助外设——每一单写时间、对象、你的决定、金额、备注；在履行的独家合约和本赛段开播次数也在这张卡",
     "托管页「现在就按推荐执行一次」点了看得见结果（玩家实锤：点击没反应）：按钮下方直接写「执行了 N 件事：…」或「暂时没有该做的事」，说明文字也写清它会处理什么"
@@ -1577,10 +1641,13 @@ function teamVerBonus(team){
   const ps=team.players||[]; let v=0;
   ps.forEach(p=>{
     if(sea.fav.includes(p.pos)) v+=1.5;
-    if(!p.me){ const bar=(S.baseline&&S.baseline[p.lg])||70; const r=p.r||p; if(r[sea.dim]!==undefined) v+=(r[sea.dim]-bar)*VER_DIM_W; }
+    if(!p.me){ const bar=((S.lgAvg||S.baseline)&&(S.lgAvg||S.baseline)[p.lg])||70; const r=p.r||p; if(r[sea.dim]!==undefined) v+=(r[sea.dim]-bar)*VER_DIM_W; }
   });
-  if(ps.some(p=>p.me)) v+=versionFit();
-  return v/Math.max(1,ps.length)*5/5;   // 队均口径：和 power 里 s/wt 的除法一致（五人各加，再取均值）
+  // 队均口径：各人的红利位/关键属性项进 s/wt 的平均；你的相性（versionFit）在模拟里是整份加到全队战力上的，
+  // 不能再除以五（玩家实锤：行里写「你队 +3.5」，比赛卡却比备战卡高了 9）
+  let out=v/Math.max(1,ps.length);
+  if(ps.some(p=>p.me)) out+=versionFit();
+  return out;
 }
 function verLine(oppName){
   if(!S.career||!SEASONS[S.si]) return "";
@@ -1717,6 +1784,14 @@ function power(teamOrPlayers,fatigue=0,verFav=null){
   const players=team?team.players:teamOrPlayers;
   return powerCore(players,fatigue,verFav,team);
 }
+/* AI 队的士气：近六场胜率 → 0.95～1.05（和玩家队的信任士气同量级） */
+function formMorale(team){
+  try{
+    const f=team&&S.teamForm&&S.teamForm[team.name]; if(!f||f.length<3) return 1;
+    const wr=f.reduce((a,b)=>a+b,0)/f.length;
+    return 1+(wr-0.5)*0.10;
+  }catch(e){ return 1; }
+}
 function powerCore(players,fatigue=0,verFav=null,team=null){
   let s=0,wt=0,cmd=0;
   players.forEach(p=>{
@@ -1737,7 +1812,7 @@ function powerCore(players,fatigue=0,verFav=null,team=null){
     // 版本关键属性对全联盟生效（2026-09-05 玩家点名「版本相性不能只是一句顺风逆风」）：
     // 队里这一维比本联赛均线高的人吃版本红利、低的人吃亏；你自己的那份走 versionFit
     if(!p.me&&verFav){
-      const vd=SEASONS[S.si]&&SEASONS[S.si].dim, bar=(S.baseline&&S.baseline[p.lg])||70;
+      const vd=SEASONS[S.si]&&SEASONS[S.si].dim, bar=((S.lgAvg||S.baseline)&&(S.lgAvg||S.baseline)[p.lg])||70;
       if(vd&&r[vd]!==undefined) v+=(r[vd]-bar)*VER_DIM_W;
     }
     // 人物特质：刺头逆风时更稳，这一下真的进战力
@@ -1747,7 +1822,8 @@ function powerCore(players,fatigue=0,verFav=null,team=null){
     s+=v*fm*w; wt+=w; cmd=Math.max(cmd,r.指挥);
   });
   const mine=players.some(x=>x.me);
-  const tm=(mine&&typeof trustMod==="function"&&S.trust)?trustMod():1;
+  // 士气：你的队看信任（trustMod），AI 队看近六场战绩（连胜 ×1.05、连败 ×0.95）——两边都有，不再偏袒
+  const tm=(mine&&typeof trustMod==="function"&&S.trust)?trustMod():formMorale(team);
   // 默契与战术：自己的队看 S.squad，别人的队看它自己的（真实战绩反推）
   const syn=mine?(typeof squadOf==="function"?squadOf("syn"):50):(team&&team.syn!==undefined?team.syn:50);
   const tac=mine?(typeof squadOf==="function"?squadOf("tac"):50):(team&&team.tac!==undefined?team.tac:50);
@@ -1771,6 +1847,9 @@ function leagueBaseline(w){
   });
   return b;
 }
+/* 中文名修正表（外部测评抓的：导出器按不分大小写的 ID 建索引，同名选手后者覆盖前者——
+   RNG 的 Bin 被写成了韩国选手的「이승빈」）。键：赛区/ID */
+const CN_FIX={"LPL/Bin":"陈泽彬"};
 function cloneWorld(){
   const w={};
   Object.keys(DATA.leagues).forEach(lg=>{
@@ -1781,11 +1860,18 @@ function cloneWorld(){
       tac:(t.tac===undefined?50:t.tac)+(REGION_SYN[lg]||0),
       logo:t.logo,
       players:t.players.map(p=>({
-        id:p.id,cn:p.cn,pos:p.pos,age:p.age||22,
+        id:p.id,cn:(CN_FIX[lg+"/"+p.id]!==undefined)?CN_FIX[lg+"/"+p.id]:p.cn,pos:p.pos,age:p.age||22,
         form:(p.form===undefined||p.form===null)?52:p.form,lg:lg,
         r:Object.assign({},p.r),retired:false
       }))
     }));
+    // 选手身份去重（外部测评抓的：Fudge 在 C9 同时占上单和中单、Grell 同时在 LLA 两支队）——
+    // 同一个 ID 在一个联赛里只能出现一次，后出现的换成同水平新秀
+    const seen=new Set();
+    w[lg].forEach(t=>{
+      const lvl=avg(t.players.map(q=>avg(DIMS.map(d=>q.r[d]||50))));
+      t.players=t.players.map(q=>{ if(seen.has(q.id)){ const nr=makeRookie(q.pos,lvl); nr.lg=lg; return nr; } seen.add(q.id); return q; });
+    });
     // 统一标尺：均值锚定 + 明星放大 + 风格重分配（LDL 随后按母队生成，自动继承）
     anchorLeague(lg,w[lg]);
   });
@@ -2047,6 +2133,25 @@ function noteForm(team,won){
 }
 
 /* 休赛期：全世界老一岁 */
+/* 世界水位年漂移上限（2026-09-05 玩家实锤「Knight 94、那 Faker 得多高」）：
+   AI 年轻选手每年在涨，五年下来 LPL 均值从 70 涨到 77——「LPL 平均 = 国服前 10」，段位表失真。
+   每个休赛期把每个联赛的均值压回「赛区锚 + 0.8 × 年数」以内（非主角一律等量下调），
+   世界仍在长（五年 +3.2），但尺子不走样。 */
+const WORLD_DRIFT=0.8;
+function capWorldDrift(){
+  try{
+    Object.keys(S.world||{}).forEach(lg=>{
+      const anchor=REGION_ANCHOR[lg]; if(anchor===undefined) return;   // LDL 走 capLDL
+      const ps=S.world[lg].flatMap(t=>t.players.filter(q=>!q.me&&q.r));
+      if(!ps.length) return;
+      const cur=avg(ps.map(q=>avg(DIMS.map(d=>q.r[d]))));
+      const allowed=anchor+WORLD_DRIFT*(S.si||0);
+      if(cur<=allowed) return;
+      const cut=cur-allowed;
+      ps.forEach(q=>DIMS.forEach(d=>{ q.r[d]=q1(clamp(q.r[d]-cut,30,99)); }));
+    });
+  }catch(e){}
+}
 /* LDL 天花板每年重钉（2026-09-05 玩家实锤「RNG.Y 八十多」：S16 末 LDL 均值 83 > LPL 75）——
    二队全是 18-23 岁的新秀，AI 每年都在练、又没有升队/离队，五年后儿子比爹强。
    每个休赛期把每支二队压回「LPL 垫底三队的平均」以下：强队青训仍是 LDL 的头，但永远只是 LPL 弱队的水平。 */
@@ -2266,10 +2371,32 @@ function summaryCard(){
     </div>
   </div></div>`;
 }
+/* 进游戏时每一维的起始能力值（和「你的起点」弹窗、游戏里个人能力值同一个算法）：
+   出身底子 + 年龄修正 + 背景修正，再被天赋瓶颈（上限）截住。出身/年龄还没选时返回 null。 */
+function startAttrs(){
+  if(S.bgPick==null||S.ageIdx==null) return null;
+  const B=bgOf(S.bgPick), o=ORIGIN[(B&&B.origin)||S.origin]; if(!o) return null;
+  const A=AGES[S.ageIdx];
+  const out={};
+  DIMS.forEach(d=>out[d]=Math.min((o.base[d]-9)+((A.mod&&A.mod[d])||0)+((B.mod&&B.mod[d])||0),capOf(d)));
+  return out;
+}
+/* 一键随机分配：把 20 点天赋随机撒到五维，尊重每维 0–10 的上限 */
+function randomTalent(){
+  DIMS.forEach(d=>S.talent[d]=0);
+  let pts=TOTAL_TALENT, guard=0;
+  while(pts>0 && guard++<2000){
+    const avail=DIMS.filter(d=>S.talent[d]<10);
+    if(!avail.length) break;
+    S.talent[avail[Math.floor(Math.random()*avail.length)]]++; pts--;
+  }
+  render();
+}
 function viewCreate(){
   if(S.showStart) return summaryCard();
   const cont=(typeof continueCard==="function")?continueCard():"";
   const left=talentLeft();
+  const sa=startAttrs();
   const t=DIMS.map(d=>S.talent[d]); const m=avg(t);
   const sd=Math.sqrt(avg(t.map(x=>(x-m)**2)));
   const ad=clamp(52-(sd-1.8)*7.5,18,96);
@@ -2289,16 +2416,21 @@ function viewCreate(){
       <button class="btn ghost sm" id="reroll" style="margin-left:10px">换一批</button></h3>
     <div class="grid g2">${S.bgOffer.map(b=>`
       <button class="opt ${S.bgPick===b.k?'on':''}" data-bg="${b.k}">
-        <div class="t">${b.n}</div>
+        <div class="t">${b.n} <span class="tag">${b.origin==="streamer"?"主播路线":"青训路线"}</span></div>
         <div class="d">${b.d}</div>
+        <div class="d" style="color:var(--cyan);font-size:11.5px">${(typeof bgEffects==="function"?bgEffects(b):[]).join(" · ")||"无额外修正"}</div>
       </button>`).join("")}</div>
+    <p class="note" style="margin-top:6px">路线是出身自带的，选卡就定了（外部测评点名：原来藏着不显示）：<b>青训路线</b>底子厚、训练收益高、起始段位好；<b>主播路线</b>起始粉丝和直播收益高。</p>
     <p class="note">${S.ageIdx!=null?`你现在 ${AGES[S.ageIdx].a} 岁，还没有战队。`:"你还没有战队。"}先用半年时间打上分、攒人气、被人看见——然后才谈签约。
       18–21 岁是成长期，22–24 岁巅峰，25 岁起属性会真的往下掉——只有 21 岁出道会在生涯末尝到它。</p>
   </div>
 
   <div class="card">
     <h2>第二步 · 天赋分配<em>剩余 ${left} 点</em></h2>
-    <p class="note" style="margin:0 0 10px">天赋是<b>成长倍率与瓶颈</b>，不是初始属性。另外：天赋越专精，<b>适应力越低</b>——版本一变你就难受。</p>
+    <p class="note" style="margin:0 0 10px">天赋是<b>成长倍率与瓶颈</b>，不是初始属性。另外：天赋越专精，<b>适应力越低</b>——版本一变你就难受。
+      <button class="btn ghost sm" id="talrand" style="margin-left:8px">一键随机分配</button></p>
+    ${sa?`<p class="note" style="margin:-4px 0 10px;color:var(--ink-3)">下面「起始」是你<b>进游戏时的个人能力值</b>（在「我的」栏目里看到的那个数），随出身/年龄/背景来，被天赋上限截住。</p>`
+      :`<p class="note" style="margin:-4px 0 10px;color:var(--ink-3)">选完<b>出身</b>和<b>起始年龄</b>后，这里会显示每一维<b>进游戏时的起始能力值</b>。</p>`}
     ${DIMS.map(d=>`<div class="tal">
       <div class="nm">${d}</div><div class="desc">${DIM_DESC[d]}</div>
       <div class="ctl">
@@ -2306,7 +2438,7 @@ function viewCreate(){
         <div class="n mono">${S.talent[d]}</div>
         <button data-inc="${d}" ${(left<=0||S.talent[d]>=10)?'disabled':''}>+</button>
       </div>
-      <div class="cap mono">×${mult(S.talent[d]).toFixed(2)} 上限${capOf(d)}</div>
+      <div class="cap mono">${sa?`<b style="color:var(--gold-hi)">起始 ${sa[d].toFixed(0)}</b> · `:""}×${mult(S.talent[d]).toFixed(2)} · 上限${capOf(d)}</div>
     </div>`).join("")}
     <div class="ver">当前加点路线的<b>适应力约 ${Math.round(ad)}</b>：${
       ad>62?"很均衡，版本怎么变你都能跟上，但没有一招鲜。":
@@ -2413,7 +2545,7 @@ function rankGapNote(){
   const nextR=RANKS.find(x=>x.at>S.pre.rank);
   const nx=nextR?rankToSkill(nextR.at):null;
   const gap=nx!=null?nx-me:0;
-  return `<small style="display:block;color:var(--ink-3);font-size:11px;line-height:1.35;margin-top:2px">实力 <b style="color:var(--ink)">${me.toFixed(0)}</b> · 本段门槛 ${cur.toFixed(0)}${
+  return `<small class="gapnote" style="display:block;color:var(--ink-3);font-size:11px;line-height:1.35;margin-top:4px">实力 <b style="color:var(--ink)">${me.toFixed(0)}</b> · 本段门槛 ${cur.toFixed(0)}${
     nx!=null?` · ${nextR.n}要 ${nx.toFixed(0)}<span style="color:${gap<=0?'var(--cyan)':'var(--gold)'}">（${gap<=0?"实力已够，去打排位":"差 "+gap.toFixed(0)}）</span>`:" · 已到顶"}</small>`;
 }
 /* 打一把的胜率：实力压过门槛就赢多输少，差得远就基本打不动 */
@@ -2898,15 +3030,49 @@ function teamTenure(){
 function markTeamJoin(){ S.teamSince=((S.career&&(S.career.w+S.career.l))||0); }
 function myRoster(){ return myTeam().players; }
 
+/* 圆桌法循环赛：奇数队补一个轮空位，每轮每队一场 */
+function roundRobin(names){
+  const a=names.slice(); if(a.length%2) a.push(null);
+  const n=a.length, rounds=[];
+  for(let r=0;r<n-1;r++){
+    const pairs=[];
+    for(let i=0;i<n/2;i++){ const x=a[i], y=a[n-1-i]; if(x&&y) pairs.push(r%2?[y,x]:[x,y]); }
+    rounds.push(pairs);
+    a.splice(1,0,a.pop());   // 第一个固定，其余顺时针转
+  }
+  return rounds;
+}
+function buildFixtures(){
+  S.fixtures={};
+  const HL=S.homeLeague||"LPL";
+  Object.keys(S.world||{}).forEach(lg=>{
+    const names=S.world[lg].map(t=>t.name);
+    for(let i=names.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [names[i],names[j]]=[names[j],names[i]]; }
+    const rounds=roundRobin(names); const R=rounds.length; if(!R) return;
+    let off=Math.floor(rnd()*R);
+    if(lg===HL&&S.team&&names.length%2){
+      // 我的轮空轮不能落在赛季里：选一个起点让 WEEKS 个连续轮避开它
+      const bye=rounds.findIndex(rd=>!rd.some(x=>x[0]===S.team||x[1]===S.team));
+      if(bye>=0&&R>WEEKS){ const span=R-WEEKS; off=(bye+1+Math.floor(rnd()*span))%R; }
+    }
+    S.fixtures[lg]=Array.from({length:WEEKS},(_,i)=>rounds[(off+i)%R]);
+  });
+}
 function startSeason(first,split){
   S.split=(split===undefined)?0:split;
   S.carrySplit=0;      // 「院长」次数按赛段算（球探看本赛段）
   S.benchedPO=false;   // 新赛段重置「替补看完季后赛」标记
   S.loseStreak=0; S.benchLock=false;   // 新赛段：连败清零；被换下的锁也解开（新赛段教练重新看数据）
   const HL=S.homeLeague||"LPL";
-  const opp=S.world[HL].filter(t=>t.name!==S.team).map(t=>t.name);
-  for(let i=opp.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[opp[i],opp[j]]=[opp[j],opp[i]];}
-  S.schedule=opp.slice(0,WEEKS);
+  /* 真循环赛程（外部测评抓的：原来世界模拟每周把队伍按数组顺序两两固定配对，同一对打整季，
+     积分榜/季后赛/国际赛名额全建在假赛程上）。每个联赛用圆桌法排出整轮，取 WEEKS 轮；
+     你的赛程直接从同一张表里取，避开你的轮空轮——世界和你打的是同一份日程。 */
+  buildFixtures();
+  S.schedule=(S.fixtures[HL]||[]).map(round=>{ const pr=round.find(x=>x[0]===S.team||x[1]===S.team); return pr?(pr[0]===S.team?pr[1]:pr[0]):null; });
+  // 兜底：极端情况下某周没排到对手（不该发生），随机补一个
+  const rest=S.world[HL].filter(t=>t.name!==S.team).map(t=>t.name);
+  for(let i=0;i<WEEKS;i++){ if(!S.schedule[i]) S.schedule[i]=rest[Math.floor(rnd()*rest.length)]; }
+  S.schedule=S.schedule.slice(0,WEEKS);
   S.standings={};
   Object.keys(S.world).forEach(lg=>{
     S.standings[lg]={};
@@ -3171,7 +3337,7 @@ function costSolo(){
     const d=((68-S.form)*0.11+1.2)*m;
     if(Math.abs(d)>=0.05) f=`状态<i class="${d>0?"up":"dn"}">${d>0?"+":"−"}${Math.abs(d).toFixed(1)}</i>`;
   }
-  return costBits([_eDn(7*m), f, `五维微涨`]);
+  return costBits([_eDn(4*m), f, `五维微涨`]);   // 和 doAction 里 addFat(4*prepMul) 一致
 }
 /* 一次直播往 addFans() 里送的原始热度值。
    职业前基数跟着段位走、主播出身 ×1.7；赛季中固定 4.5、主播出身 ×1.6。
@@ -3623,7 +3789,7 @@ function fatigueBar(){
     <div class="ebar ${tier}"><div class="efill" style="width:${100-f}%"></div>
       <div class="emark" style="left:25%"></div><div class="emark" style="left:55%"></div></div>
     <div class="enote ${tier}">${txt}</div>
-    <div class="apnote">下面每个行动消耗 <b>1</b> 行动点${
+    <div class="apnote">行动点消耗标在每个按钮上（1～3 点不等）${
       ap!==undefined?`，本周还剩 <b>${ap}</b> 点`:""}。按钮上写的是该行动的体能变化与收益。</div></div>`;
 }
 function attrCard(){
@@ -3762,7 +3928,9 @@ function gameWinP(swing){
 }
 function resolveNode(ai){
   const m=S.match,opt=m.node.a[ai],v=S.attrs[opt.dim];
-  const p=clamp(0.30+(v/100)*0.55,0.15,0.9);
+  // 风险真的影响成功率（外部测评抓的：原来「高风险」只放大摆动、不降成功率，标签骗人）：
+  // risk 0.9 的选项比中性低约 6 个点，0.3 的高约 3 个点；摆动倍率照旧
+  const p=clamp(0.30+(v/100)*0.55-((opt.risk||0.5)-0.5)*0.15,0.12,0.92);
   const ok=rnd()<p;
   const was=gameWinP(m.swing);            // 做决定之前的赢面
   m.swing+=(ok?1:-1)*opt.risk*6.0;
@@ -3887,7 +4055,8 @@ function endMatch(){
   // 出场费按联赛分级：LDL 的钱就是 LDL 的钱（经济重锚）
   const purse=(S.homeLeague||"LPL")==="LDL"?(won?2:1):(won?9:4);
   if(typeof addMoney==='function') addMoney('match',purse); else S.money+=purse;
-  S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+(won?0.5:1.1));
+  // 胜 +0.6 / 负 +0.7（外部测评抓的：原来负 +1.1 是胜的两倍多，等于鼓励故意输球养心态；挫折仍长心态，但不值得故意输）
+  S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+(won?0.6:0.7));
   S.log.push(`<div>${SEASONS[S.si].tag} 第${S.week}周 vs ${m.oppName} <b>${m.sc[0]}:${m.sc[1]}</b> ${won?'<span class="w">胜</span>':'<span class="l">负</span>'}　<span class="hi">${won?"胜场奖金":"出场费"} +${purse} 万</span></div>`);
 
   // ---- 成就追踪 ----
@@ -4008,9 +4177,18 @@ function simWorld(){
     // 排除「你的队和你本周对手」要看你实际在哪个联赛——原来写死 LPL，
     // 玩家在 LDL 时自己的队每周被这里多模拟一场：实测 7 周打出 6-8（14 场），
     // 同联赛别的队才 7-9 场。玩家从积分榜截图里抓出来的。
-    const ts=S.world[lg].filter(t=>!(lg===(S.homeLeague||"LPL")&&(t.name===S.team||(S.match&&t.name===S.match.oppName))));
-    for(let i=0;i<ts.length-1;i+=2){
-      const a=ts[i],b=ts[i+1];
+    // 按本周轮次表打（真循环赛）；没有表的老档退回旧配对
+    const byName=n=>S.world[lg].find(t=>t.name===n);
+    const round=(S.fixtures&&S.fixtures[lg]&&S.fixtures[lg][S.week-1])||null;
+    let pairs;
+    if(round){
+      pairs=round.filter(x=>!(lg===(S.homeLeague||"LPL")&&(x[0]===S.team||x[1]===S.team)))
+                 .map(x=>[byName(x[0]),byName(x[1])]).filter(x=>x[0]&&x[1]);
+    }else{
+      const ts=S.world[lg].filter(t=>!(lg===(S.homeLeague||"LPL")&&(t.name===S.team||(S.match&&t.name===S.match.oppName))));
+      pairs=[]; for(let i=0;i<ts.length-1;i+=2) pairs.push([ts[i],ts[i+1]]);
+    }
+    for(const [a,b] of pairs){
       const p=1/(1+Math.exp(-(power(a,0,sea.fav)-power(b,0,sea.fav))/SPREAD));
       const aw=rnd()<p;
       S.standings[lg][a.name][aw?"w":"l"]++;
@@ -4020,8 +4198,8 @@ function simWorld(){
       if(lg===(S.homeLeague||"LPL")&&!S._upset&&(aw?p<0.33:p>0.67)){
         S._upset = aw ? {winner:a.name,loser:b.name} : {winner:b.name,loser:a.name};
       }
+      const f1=noteForm(a.name,aw), f2=noteForm(b.name,!aw);   // 所有联赛都记近况（AI 士气用）
       if(lg==="LPL"){
-        const f1=noteForm(a.name,aw), f2=noteForm(b.name,!aw);
         const rk=lplRank(), notable=new Set(
           rk.slice(0,4).map(r=>r.n).concat(rk.slice(-3).map(r=>r.n)).concat([S.team]));
         [[a.name,f1],[b.name,f2]].forEach(([tn,f])=>{
@@ -4047,12 +4225,12 @@ function viewMatch(){
     return `${postMatchCard()}
     <div class="row"><button class="btn" id="next">继续 →</button></div>`;
   }
-  const my=power(myRoster(),S.fatigue,sea.fav)+versionFit(),op=power(m.opp.players,0,sea.fav);
+  const my0=power(myRoster(),S.fatigue,sea.fav), vf=versionFit(), my=my0+vf, op=power(m.opp.players,0,sea.fav);   // 版本加成单独标，不揉进「战力」
   return `<div class="card">
     <h2>${sea.tag} ${S.intl?intlStageName():S.playoff?"季后赛":"第 "+S.week+" 周"}<em>${
       m.need===1?"单局定胜负":m.need===2?"三局两胜":"五局三胜"}</em></h2>
     <div class="vs">
-      <div class="side"><div class="nm">${teamLogo(S.team,34)}<br>${S.team}</div><div class="pw mono">战力 ${pwShow(my).toFixed(1)}</div></div>
+      <div class="side"><div class="nm">${teamLogo(S.team,34)}<br>${S.team}</div><div class="pw mono">战力 ${pwShow(my0).toFixed(1)}<small style="color:var(--ink-3)"> 版本 ${vf>=0?"+":""}${pwShow(vf).toFixed(1)}</small></div></div>
       <div class="score">${m.sc[0]} : ${m.sc[1]}</div>
       <div class="side"><div class="nm">${teamLogo(m.oppName,34)}<br>${m.oppName}</div><div class="pw mono">战力 ${pwShow(op).toFixed(1)}</div></div>
     </div>
@@ -4273,7 +4451,7 @@ function prepPanel(){
     ${typeof questCard==="function"?questCard():""}
     <div class="next">
       <div class="sd"><div class="nm">${typeof teamLogo==="function"?teamLogo(S.team,20):""} ${S.team}</div>
-        <div class="pw">战力 ${pwShow(power(myRoster(),S.fatigue,SEASONS[S.si].fav)).toFixed(1)}</div></div>
+        <div class="pw">战力 ${pwShow(power(myRoster(),S.fatigue,SEASONS[S.si].fav)).toFixed(1)}<small style="color:var(--ink-3)"> 版本 ${versionFit()>=0?"+":""}${pwShow(versionFit()).toFixed(1)}</small></div></div>
       <div class="mid">VS</div>
       <div class="sd"><div class="nm">${typeof teamLogo==="function"?teamLogo(P.opp,20):""} ${P.opp}</div>
         <div class="pw">${oppT?`战力 ${pwShow(power(oppT,0,SEASONS[S.si].fav)).toFixed(1)}`:""}</div></div>
@@ -4337,8 +4515,13 @@ function endSeason(result,seed){
   if(typeof rollForm==='function') rollForm();
   if(typeof rollWorldForm==='function'){ rollWorldForm(); formNews(); }
   if(typeof btkSplitEnd==='function') btkSplitEnd();
-  const cut=contractCheck();
-  if(cut) S.gotCut=true;
+  const dc=contractCheck();
+  if(dc==="cut"){
+    S.gotCut=true;              // 队伍放你走 → 休赛期走自由市场
+    pushEvent(`<b>${S.team}</b> 决定<b>不再与你续约</b>。${S.cutReason||""}<br>
+      <span style="color:var(--ink-3)">你成了自由身——休赛期的转会市场上，去哪由你自己找。</span>`,"bad","合同");
+  }
+  // dc==="renew" 时 S.pendingRenew 已挂起，续约报价卡会在休赛期弹出，由你拍板
   S.lastSeason={result,seed,rec:Object.assign({},S.record),
     grow:DIMS.map(d=>({d,g:S.attrs[d]-S.seasonAttr0[d]}))};
   // 赛事奖金：走到哪一档发哪一档，每次都发（见 shop.js 的 PRIZE_*）
@@ -4535,6 +4718,7 @@ function offNextWeek(){
     if(nx==="summer"){
       // 季中间歇也是注册窗口：LDL 打得好，夏季赛能直接调上一队——
       // 现实里升降就是跟着转会/注册窗走的，不用等到年底
+      if(typeof aiMarketWindow==="function") aiMarketWindow(false);   // 全联盟的提拔/下放先走一遍（AI 队）
       if(typeof checkPromote==="function") checkPromote();
       if(S.promoteDeal){
         // 调令没批完不开赛：赛程是按你所在的队排的，先表态再进夏季赛
@@ -4574,7 +4758,10 @@ function finishOffseason(){
   S.yearBase=0;              // 新的一年，全年计数从头开始
   S.miniPatch=null; S.patchClock=0;   // 新版本年，热修编号从 .1 重数
   const news=ageWorld();
+  if(typeof aiMarketWindow==="function") aiMarketWindow(true);   // 休赛期转会窗口：提拔/下放 + 跨队转会
+  capWorldDrift();   // 世界水位年漂移上限：段位表五年不走样
   capLDL();   // 二队每年重钉天花板：不能越长越比爹强
+  try{ S.lgAvg=leagueBaseline(S.world); }catch(e){}   // 年度均值（版本红利算法用；S.baseline 是签约水位，不动）
   // 玩家自己的年龄曲线
   const base=ageCurve(S.age);
   DIMS.forEach(d=>{
@@ -4585,16 +4772,38 @@ function finishOffseason(){
   pushEvent(`<b>${SEASONS[S.si].tag} 版本「${SEASONS[S.si].ver}」</b>：强势位置 <b>${SEASONS[S.si].fav.map(k=>POSN[k]).join("、")}</b>，关键属性 <b>${SEASONS[S.si].dim}</b>——这一维高于联赛均线的人全年吃红利，低的人吃亏；本周卡的「版本」块里有你和本队的账。`,"info","版本");
   S.news=S.news.concat(news);
   S.fatigue=0; S.buff={};
+  // 续约报价整个休赛期都没回应（多半是托管/自动推进）：默认接受，留队比瞬移友好
+  if(S.pendingRenew){
+    const r=S.pendingRenew;
+    S.contract={years:r.years,left:r.years,salary:r.salary,sign:0,buyout:r.buyout,
+                team:r.team,tier:r.tier,grade:r.grade,clubTier:r.clubTier};
+    S.pendingRenew=null; S.gotCut=false;
+    pushEvent(`<b>${r.team}</b> 的续约没等到你的答复，默认接受——续约 ${r.years} 个赛段。`,"info","合同");
+  }
+  // 自由市场走到最后还没签成（队伍放你走 / 你拒了续约，且整个休赛期没接任何报价）：
+  // 按你的表现给一个落点，写清楚原因——不再随机塞一支弱队瞬移。
   if(S.gotCut){
-    S.gotCut=false;
-    const rk=lplRank(), weak=rk[rk.length-1-Math.floor(rnd()*3)];
+    S.gotCut=false; S.everCut=true;
     const old=S.team;
-    S.team=weak.n; S.promoted=true; S.understudy=null; S.offerKind="core";
-    const t=myTeam();
-    t.players=t.players.map(q=>q.pos===S.pos?{id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true}:q);
+    const perf=(typeof proPerf==="function")?proPerf():0;
+    let lg="LPL", dest=(perf>=8&&typeof pickClub==="function")?pickClub("low","LPL"):null;
+    if(!dest||dest===old){
+      // 一线没人给首发：回到二队打 LDL（有母队编制就进母队二队，否则任意二队）
+      const ld=(S.world.LDL||[]);
+      dest=((ld.find(t=>t.parent===old))||ld[Math.floor(rnd()*Math.max(1,ld.length))]||{}).name||old;
+      lg="LDL";
+    }
+    S.team=dest; S.homeLeague=lg; S.promoted=true; S.understudy=null; S.offerKind="core";
+    const t=(S.world[lg]||[]).find(x=>x.name===S.team)||myTeam();
+    if(t&&t.players) t.players=t.players.map(q=>q.pos===S.pos?{id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true}:q);
+    if(typeof markTeamJoin==="function") markTeamJoin();
     S.trust={}; initTrust();
-    S.everCut=true;
-    pushEvent(`<b>${old}</b> 没有和你续约。你最后签到了 <b>${S.team}</b>——从头再来。`,"bad","合同");
+    if(typeof initRelations==="function") initRelations();   // 新东家：队友关系从头建，别让看板挂一排默认 50
+    S.freeAgent=false;
+    S.contract={years:2,left:2,team:S.team,tier:(lg==="LDL"?"acad":"low")};
+    pushEvent(`自由市场走到最后，<b>没有一线队愿意给你首发</b>${S.cutReason?`（${S.cutReason}）`:""}。你最终${
+      lg==="LDL"?`回到二队，在 <b>${S.team}</b> 打 LDL 重新证明自己`:`接了 <b>${S.team}</b> 的合同`}——从头再来。`,"bad","合同");
+    S.cutReason=null;
   }
   syncTrust();
   startSeason(false,0);
@@ -4606,7 +4815,7 @@ function offPanel(){
   if(S.tryout) return tryoutCard();
   if(S.deal)   return dealCard();
   const nx=SEASONS[S.si+1];
-  return `${typeof proOfferCard==="function"?proOfferCard():""}
+  return `${typeof renewCard==="function"?renewCard():""}${typeof proOfferCard==="function"?proOfferCard():""}
   <div class="card">
     <h2>${S.off.label||"休赛期"}<em>第 ${S.off.week}/${S.off.weeks} 周 · 剩余行动点 ${S.ap}</em></h2>
     <p class="note">没有比赛要打。${S.off.next==="playoff"
@@ -4843,7 +5052,7 @@ function rankUpCard(){
 const TABS_PRE=[
   {k:"act",  n:"本周", z:"act"},
   {k:"squad",n:"战队", z:"team"},
-  {k:"world",n:"世界", z:"world"},
+  {k:"world",n:"赛事", z:"world"},
   {k:"tx",   n:"转会", z:"money"},
   {k:"shop", n:"经济", z:"money"},
   {k:"ach",  n:"成就", z:"rec"},
@@ -4854,7 +5063,7 @@ const TABS_SEASON=[
   {k:"act",  n:"本周", z:"act"},
   {k:"me",   n:"我的", z:"me"},
   {k:"team", n:"队伍", z:"team"},
-  {k:"world",n:"世界", z:"world"},
+  {k:"world",n:"赛事", z:"world"},
   {k:"tx",   n:"转会", z:"money"},   // 试训邀请/报价/挂牌/接触/合同——2026-08-31 玩家点名独立成栏
   {k:"shop", n:"经济", z:"money"},
   {k:"ach",  n:"成就", z:"rec"},
@@ -5296,6 +5505,7 @@ function openIntl(type,field,stage){
           double:(type==="msi"&&stage==="knockout"), wins:0, losses:0,
           swiss:{}};
   field.forEach(n=>S.intl.swiss[n]=[0,0]);
+  if(stage==="knockout") brInit(field, S.intl.double);   // MSI 直接淘汰赛：按战力排种子入树
   if(typeof breakthrough==="function")
     breakthrough("运营",2.0,"见过国际赛场的强度，回头看联赛都慢了半拍。","intl"+S.si);
   if(typeof checkAch==="function") checkAch("intl");   // 走出国门（审计：钩子缺失）
@@ -5329,15 +5539,108 @@ function intlBoNeed(){
   const [w,l]=I.record;
   return (w===2||l===2)?2:1;
 }
+/* ---------- 淘汰赛对阵树（2026-09-05 玩家实锤：MSI 决赛遇上 70 分的队）----------
+   原来淘汰赛的对手是「剩余未交手的队按战力升序取第 k 个」，双败还把输给过的队一并排除——
+   胜者组输给 T1 之后决赛就永远遇不到它，T1/GEN 一百多分，决赛却和七十多的打。
+   现在是真正的对阵树：8 队按种子入位（先看瑞士轮/小组战绩，再看战力；1v8、4v5 在上半区，
+   2v7、3v6 在下半区，一二号种子只在决赛相遇），其他对局按战力模拟，你的下一个对手就是树上
+   相邻的胜者。MSI 走完整双败：胜者组三轮 → 掉败者组 → 败者组决赛 → 总决赛。 */
+function brSeed(field){
+  const I=S.intl;
+  const rec=n=>(I&&I.swiss&&I.swiss[n])?I.swiss[n][0]*10-I.swiss[n][1]:0;
+  let seeded=field.slice().sort((a,b)=>(rec(b)-rec(a))||(pw(b)-pw(a)));
+  // 你必须在树上：种子排到 8 名之外就顶掉第 8
+  const mi=seeded.indexOf(S.team);
+  if(mi>=8){ seeded.splice(mi,1); seeded.splice(7,0,S.team); }
+  seeded=seeded.slice(0,8);
+  const order=[0,7,3,4,1,6,2,5];
+  return order.map(i=>seeded[i]||null);   // 不足 8 队的位置留空 = 轮空（MSI 六七支队常见）
+}
+function brInit(field,double){
+  const seeds=brSeed(field);
+  S.intl.br={double:!!double, step:0, ub:double?seeds:seeds.filter(Boolean), lb:[], lbw:[], out:[], champ:null, uL:null, pending:null};
+}
+/* 一场对局的胜者：一边轮空直接晋级，两边都空就继续空着往下传 */
+function brSim(p){ return !p[0]?p[1]||null:!p[1]?p[0]:simBo(p[0],p[1],3); }
+function brStep(){
+  const B=S.intl&&S.intl.br; if(!B) return null;
+  if(!B.double){
+    const n=B.ub.length; if(n<=1) return null;
+    const pairs=[]; for(let i=0;i+1<n;i+=2) pairs.push([B.ub[i],B.ub[i+1]]);
+    return {pairs, label:n>=8?"八强":n>=4?"半决赛":"决赛"};
+  }
+  switch(B.step){
+    case 0: return {pairs:[[B.ub[0],B.ub[1]],[B.ub[2],B.ub[3]],[B.ub[4],B.ub[5]],[B.ub[6],B.ub[7]]], label:"胜者组第一轮"};
+    case 1: return {pairs:[[B.lb[0],B.lb[1]],[B.lb[2],B.lb[3]]], label:"败者组第一轮"};
+    case 2: return {pairs:[[B.ub[0],B.ub[1]],[B.ub[2],B.ub[3]]], label:"胜者组半决赛"};
+    case 3: return {pairs:[[B.lb[0],B.lb[1]],[B.lb[2],B.lb[3]]], label:"败者组第二轮"};
+    case 4: return {pairs:[[B.ub[0],B.ub[1]]], label:"胜者组决赛"};
+    case 5: return {pairs:[[B.lb[0],B.lb[1]]], label:"败者组第三轮"};
+    case 6: return {pairs:[[B.lb[0],B.uL]], label:"败者组决赛"};
+    case 7: return {pairs:[[B.ub[0],B.lb[0]]], label:"总决赛"};
+  }
+  return null;
+}
+function brApply(st,winners){
+  const B=S.intl.br;
+  const win=i=>winners[i]||null;
+  const lose=i=>{ const p=st.pairs[i]; if(!p||!p[0]||!p[1]) return null; return p[0]===winners[i]?p[1]:p[0]; };
+  const real=a=>a.filter(Boolean);
+  if(!B.double){
+    const n=B.ub.length;
+    B.ub=st.pairs.map((p,i)=>win(i)).concat(n%2?[B.ub[n-1]]:[]);   // 奇数队最后一个轮空
+    B.out=B.out.concat(real(st.pairs.map((p,i)=>lose(i))));
+    if(B.ub.length===1) B.champ=B.ub[0];
+    return;
+  }
+  switch(B.step){
+    case 0: B.ub=[win(0),win(1),win(2),win(3)]; B.lb=[lose(0),lose(1),lose(2),lose(3)]; break;
+    case 1: B.lbw=[win(0),win(1)]; B.out=B.out.concat(real([lose(0),lose(1)])); break;
+    case 2: B.ub=[win(0),win(1)]; B.lb=[B.lbw[0],lose(1),B.lbw[1],lose(0)]; break;   // 交叉：胜者组掉下来的不立刻重赛
+    case 3: B.lb=[win(0),win(1)]; B.out=B.out.concat(real([lose(0),lose(1)])); break;
+    case 4: B.uL=lose(0); B.ub=[win(0)]; break;
+    case 5: B.lb=[win(0)]; B.out=B.out.concat(real([lose(0)])); break;
+    case 6: B.lb=[win(0)]; B.out=B.out.concat(real([lose(0)])); break;
+    case 7: B.champ=win(0)||B.ub[0]||B.lb[0]; B.out=B.out.concat(real([lose(0)])); break;
+  }
+  B.step++;
+}
+/* 推进到「有你的那一场」：你不在的对局按战力模拟，你轮空就直接过；返回 {opp,label} 或 null（树跑完） */
+function brNext(){
+  const B=S.intl&&S.intl.br; if(!B) return null;
+  for(let guard=0;guard<12;guard++){
+    const st=brStep(); if(!st||!st.pairs.length) return null;
+    const mine=st.pairs.findIndex(p=>p[0]===S.team||p[1]===S.team);
+    if(mine>=0){
+      const p=st.pairs[mine], opp=p[0]===S.team?p[1]:p[0];
+      if(opp){ B.pending={step:B.step,idx:mine,label:st.label}; return {opp, label:st.label}; }
+    }
+    brApply(st, st.pairs.map(brSim));
+    if(B.champ) return null;
+  }
+  return null;
+}
+/* 你打完了：结果写回树，同一轮其他对局模拟 */
+function brResolveMine(won){
+  const B=S.intl&&S.intl.br; if(!B||!B.pending) return;
+  const st=brStep(); if(!st) return;
+  const winners=st.pairs.map((p,i)=>{ if(i===B.pending.idx) return won?S.team:(p[0]===S.team?p[1]:p[0]); return brSim(p); });
+  brApply(st,winners); B.pending=null;
+}
+function brOthersText(){
+  const st=brStep(); if(!st) return "";
+  const rest=st.pairs.filter(p=>p[0]&&p[1]&&p[0]!==S.team&&p[1]!==S.team);
+  return rest.length?`同轮其他对局：${rest.map(p=>`${p[0]} vs ${p[1]}`).join("、")}`:"";
+}
 function nextIntlOpp(){
   const I=S.intl;
   if(I.stage==="knockout"){
-    const base=(I.knockField||I.field||[]);
-    let pool=base.filter(n=>n!==S.team&&!(I.beaten||[]).includes(n));
-    if(!pool.length) pool=base.filter(n=>n!==S.team);
-    pool.sort((a,b)=>pw(a)-pw(b));
-    const last=I.double?(I.wins>=(I.losses?3:2)):(I.knockRound>=3);
-    return last?pool[pool.length-1]:pool[Math.min(I.knockRound-1,pool.length-1)];
+    if(!I.br) brInit(I.knockField||I.field||[], I.double);
+    const nx=brNext();
+    if(nx) return nx.opp;
+    // 兜底（树跑完却还在问）：剩余最强
+    const base=(I.knockField||I.field||[]).filter(n=>n!==S.team&&!(I.beaten||[]).includes(n));
+    base.sort((a,b)=>pw(b)-pw(a)); return base[0]||(I.field||[]).find(n=>n!==S.team);
   }
   if(I.stage==="playin") return I.queue[Math.min(I.round-1,I.queue.length-1)];
   // 瑞士轮/小组赛：配同战绩、不同赛区的对手
@@ -5608,7 +5911,7 @@ function intlAdvance(){
     I.round++; enterPrep("intl", nextIntlOpp(), intlBoNeed(), `${name}第 ${I.round} 轮 · 赛前备战`); return;
   }
 
-  /* --- 淘汰赛 --- */
+  /* --- 淘汰赛（对阵树）--- */
   if(I.stage==="knockout"){
     I.beaten=(I.beaten||[]).concat([S.match.oppName]);
     if(won){
@@ -5616,26 +5919,36 @@ function intlAdvance(){
       (I.koWins=I.koWins||[]).push(S.match.oppName);
       wlAdd(leagueOf(S.match.oppName),0.10*wlInfluence());   // 你掐断了这个赛区一截世界线
     }
+    if(!I.br) brInit(I.knockField||I.field||[], I.double);
+    const lab=(I.br.pending&&I.br.pending.label)||"淘汰赛";
+    brResolveMine(won);
+    const B=I.br;
     if(I.double){
-      /* MSI：8 队双败。输一场掉败者组，输两场淘汰；
-         胜者组一路赢 3 场夺冠，走过败者组则需要 4 场。 */
       if(!won){
         I.losses++;
-        if(I.losses>=2){ finishIntl(I.wins>=3?"败者组决赛":"败者组","knock"); return; }
-        pushEvent(`MSI：<b>${S.team}</b> 输给 ${S.match.oppName}，掉入败者组。<b>再输一场就回家。</b>`,"bad","MSI");
-        I.knockRound++; enterPrep("intl", nextIntlOpp(), 3, `${name}淘汰赛 · 赛前备战`); return;
+        if(lab==="总决赛"){ finishIntl("总决赛（亚军）","final"); return; }
+        if(I.losses>=2){ finishIntl(lab,I.wins>=3?"final":"knock"); return; }
+        pushEvent(`MSI ${lab}：<b>${S.team}</b> 输给 ${S.match.oppName}，掉入败者组。<b>再输一场就回家。</b>`,"bad","MSI");
+      } else {
+        I.wins++;
+        if(B.champ===S.team){ crownChampion(); return; }
       }
-      I.wins++;
-      if(I.wins>=(I.losses?4:3)){ crownChampion(); return; }
-      I.knockRound++; enterPrep("intl", nextIntlOpp(), 3, `${name}淘汰赛 · 赛前备战`); return;
+      const nx=brNext();
+      if(!nx){ if(B.champ===S.team) crownChampion(); else finishIntl(lab,"knock"); return; }
+      I.knockRound++;
+      pushEvent(`MSI ${nx.label}：对手 <b>${nx.opp}</b>（${leagueOf(nx.opp)}）。${brOthersText()}`,"info","MSI");
+      enterPrep("intl", nx.opp, 3, `${name}${nx.label} · 赛前备战`); return;
     }
-    /* 世界赛：8 强单败 BO5，三轮 */
+    /* 世界赛：8 强单败 BO5 */
     if(!won){
-      const stage=I.knockRound>=3?"决赛":I.knockRound===2?"半决赛":"八强";
-      finishIntl(stage,I.knockRound>=3?"final":I.knockRound===2?"semi":"knock"); return;
+      finishIntl(lab,lab==="决赛"?"final":lab==="半决赛"?"semi":"knock"); return;
     }
-    if(I.knockRound>=3){ crownChampion(); return; }
-    I.knockRound++; enterPrep("intl", nextIntlOpp(), 3, `${name}淘汰赛 · 赛前备战`); return;
+    if(B.champ===S.team){ crownChampion(); return; }
+    const nx=brNext();
+    if(!nx){ crownChampion(); return; }
+    I.knockRound++;
+    pushEvent(`世界赛${nx.label}：对手 <b>${nx.opp}</b>（${leagueOf(nx.opp)}）。${brOthersText()}`,"info","世界赛");
+    enterPrep("intl", nx.opp, 3, `${name}${nx.label} · 赛前备战`); return;
   }
 
   /* --- 瑞士轮 / 小组赛 --- */
@@ -5653,6 +5966,7 @@ function intlAdvance(){
     I.stage="knockout"; I.knockField=[S.team].concat(others);
     if(typeof checkAch==="function") checkAch("intlknock");
     I.knockRound=1; I.beaten=[];
+    brInit(I.knockField,false);   // 八强对阵树：按瑞士轮/小组战绩排种子
     pushEvent(`<b>${S.team}</b> ${wasGroups?"小组出线":"瑞士轮 3 胜晋级"}，进入八强。`,"good",name);
     pushEvent(`八强对阵抽签：你们抽到了 <b>${nextIntlOpp()}</b>（${leagueOf(nextIntlOpp())}）。淘汰赛全部 BO5。`,"info",name);
     enterPrep("intl", nextIntlOpp(), 3, `${name}八强 · 赛前备战`); return;
@@ -5859,7 +6173,9 @@ function trustDecay(){
   });
 }
 /* 信任对战力的修正：更衣室散了，五个人打不出五个人的东西 */
-function trustMod(){ return 1+(avgTrust()-50)/380; }
+/* 士气乘数（2026-09-05 玩家实锤「青训 85 比 LPL 一线还高」：原来只有你的队有士气项、AI 队永远 ×1.0，
+   信任 88 就白拿 +10%）。现在幅度减半（88 → ×1.05），AI 队按近期战绩也有士气（powerCore 的 formMorale） */
+function trustMod(){ return 1+(avgTrust()-50)/760; }
 
 /* 换人后补上新队友的信任（新人不认识你） */
 function syncTrust(){
@@ -6043,31 +6359,41 @@ function payday(){
   if(typeof addMoney==="function") addMoney("salary",pay); else S.money+=pay;
   pushEvent(`赛段结算：薪资到账 <b>${pay} 万</b>（当前人气 ${Math.round(S.fans)}）。`,"info","合同");
 }
-/* 合同：两个赛季一签，到期看表现续约或走人 */
+/* 合同：两个赛季一签，到期不再暗箱判「留/走」，而是走一条你看得见、由你拍板的流程：
+   · 队伍愿意留你 → 递一份「续约报价」，你签 / 拒（拒 → 转自由市场）
+   · 队伍放你走   → 明确告知 + 原因，转自由市场（不再瞬移到随机弱队）
+   返回 "renew"（已挂起 S.pendingRenew）或 "cut"（队伍放走）；未到期返回 null。 */
 function contractCheck(){
   S.contract=S.contract||{years:2,left:2};
   S.contract.left--;
   if(S.contract.left>0) return null;
   const ovr=avg(DIMS.map(d=>S.attrs[d]));
-  const teamAvg=avg(myRoster().filter(p=>!p.me).map(p=>avg(DIMS.map(d=>p.r[d]))));
-  const keep = ovr>=teamAvg-6 && avgTrust()>=35;
-  if(keep){
-    // 续约不是重签一份一样的合同：打得好，年薪和违约金都往上走
-    const raise=clamp(1.15+(ovr-teamAvg)*0.02,1.05,1.7);
-    const old=S.contract.salary;
-    S.contract={
-      years:2, left:2,
-      salary: old!==undefined?Math.round(old*raise):undefined,
-      sign: 0,
-      buyout: S.contract.buyout!==undefined?Math.round(S.contract.buyout*raise):undefined,
-      team:S.team, tier:S.contract.tier, grade:S.contract.grade,
-      clubTier:S.contract.clubTier
+  const mates=myRoster().filter(p=>!p.me);
+  const teamAvg=mates.length?avg(mates.map(p=>avg(DIMS.map(d=>p.r[d])))):ovr;
+  const trust=avgTrust();
+  // 今年拿了任意冠军（联赛/MSI/世界赛）= 铁续约——修「夺冠却被裁」（玩家 TOP 夺冠被裁实锤）
+  const wonTitle = ((S.career&&S.career.lgYears)||[]).includes(S.si)
+                || ((S.career&&S.career.msiYears)||[]).includes(S.si)
+                || ((S.career&&S.career.worldsYears)||[]).includes(S.si);
+  const wantRenew = wonTitle || (ovr>=teamAvg-6 && trust>=35);
+  if(wantRenew){
+    // 续约不是重签一份一样的合同：打得好、拿了冠军，年薪和违约金都往上走
+    const raise=clamp(1.15+(ovr-teamAvg)*0.02+(wonTitle?0.15:0),1.05,1.9);
+    const old=S.contract;
+    S.pendingRenew={
+      team:S.team, years:2,
+      salary: old.salary!==undefined?Math.round(old.salary*raise):undefined,
+      buyout: old.buyout!==undefined?Math.round(old.buyout*raise):undefined,
+      tier:old.tier, grade:old.grade, clubTier:old.clubTier,
+      wonTitle, oldSalary:old.salary, oldBuyout:old.buyout
     };
-    pushEvent(`<b>${S.team}</b> 与你续约两个赛段，薪资涨到 <b>${salaryOf()} 万</b>${
-      S.contract.buyout?`，违约金提到 <b>${S.contract.buyout} 万</b>`:""}。`,"good","合同");
-    return null;
+    return "renew";
   }
-  S.contract={years:2,left:2};
+  // 队伍不再续约：原因写清楚，成为自由身转自由市场
+  S.freeAgent = true;
+  S.cutReason = trust<35
+    ? "更衣室对你的信任跌破了底线，管理层不再给合同。"
+    : "你的水平已经明显跟不上这支队，他们决定不续约。";
   return "cut";
 }
 
@@ -7533,7 +7859,12 @@ function watchRoster(){
   const before=S.rosterSig.split("|"), now=ids.split("|");
   const changed=now.filter(x=>!before.includes(x)).length;
   S.rosterSig=ids;
-  if(changed>0) disruptSynergy(changed,`${changed} 人换血`);
+  if(changed>0){
+    disruptSynergy(changed,`${changed} 人换血`);
+    // 名单一变，队友两两关系必须跟着重建——不然新阵容的每一对都取默认 50，
+    // 看板上一排整齐的「50」就是这么来的（玩家实锤：换到 AL 后全是 50）。
+    if(typeof syncRelations==="function") syncRelations();
+  }
 }
 
 /* ---------- 综合实力：base × 各项权重 ---------- */
@@ -7568,7 +7899,7 @@ function squadWeights(players,fatigue,team){
           *((mine&&typeof langSyn==="function")?langSyn():1)},
     {k:"tac", n:"战术", v:mine?squadOf("tac"):50, mult:1+((mine?squadOf("tac"):50)-50)/1100},
     {k:"mor", n:"士气", v:mine&&typeof avgTrust==="function"?avgTrust():50,
-     mult:1+(((mine&&typeof avgTrust==="function")?avgTrust():50)-50)/380},
+     mult:1+(((mine&&typeof avgTrust==="function")?avgTrust():50)-50)/760},   // 与 trustMod 同步（减半）
     {k:"cmd", n:"指挥", v:cmd, mult:1+(cmd-68)/520},
     {k:"fit", n:"体能", v:100-clamp(fatigue,0,100), mult:1-clamp(fatigue,0,100)*0.0022}
   ];
@@ -10391,6 +10722,13 @@ function autoCareerStep(){
     else { signDeal(); autoNote(`签了 ${d.team}`); }
     return true;
   }
+  // 合同到期续约报价：默认接受（留在一支想留你的队，是稳妥的托管选择）
+  if(S.pendingRenew){
+    const tm=S.pendingRenew.team;
+    if(typeof acceptRenew==="function") acceptRenew();
+    autoNote(`与 ${tm} 续约`);
+    return true;
+  }
   // 转会问询：对方比现在这支强就走
   if(S.proOffer){
     const o=S.proOffer;
@@ -12648,6 +12986,56 @@ function dropProOffer(){
   S.proOffer = null; render();
 }
 
+/* ---------- 合同到期：续约报价卡（玩家点名：续约/转会看不到、参与不了）----------
+   队伍愿意留你时递上来：新年薪 / 违约金 / 年限摆明，由你签或拒。
+   拒 → 成为自由身，当场开一次转会问询，去哪从报价里自己选。 */
+function renewCard(){
+  const r = S.pendingRenew; if(!r) return "";
+  const up = (a,b)=> (a!==undefined&&b!==undefined&&b>a) ? `<span style="color:var(--good)"> ↑</span>` : "";
+  return `<div class="rankup"><div class="ru-inner" style="max-width:520px;text-align:left;max-height:86vh;overflow-y:auto">
+    <div class="ru-icon" style="text-align:center">${typeof gicon==="function"?gicon("transfer",52):""}</div>
+    <div class="ru-eyebrow" style="text-align:center">合同到期 · 续约报价</div>
+    <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:6px">${
+      typeof teamLogo==="function"?teamLogo(r.team,22):""} <b>${r.team}</b> 想和你续约</div>
+    <p class="note" style="text-align:center;margin:0 0 12px">${
+      r.wonTitle?"你捧回了冠军——他们不想让你走。":"你的表现值得一份新合同。"}</p>
+    <div class="grid g2" style="margin:0 0 12px">
+      <div class="ver"><div class="k">新年薪</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${
+        r.salary!==undefined?r.salary:"—"}<small> 万/赛段</small>${up(r.oldSalary,r.salary)}</div>${
+        r.oldSalary!==undefined?`<div class="k" style="font-size:10px">原 ${r.oldSalary} 万</div>`:""}</div>
+      <div class="ver"><div class="k">年限</div><div class="v mono" style="font-size:20px">${r.years}<small> 个赛段</small></div></div>
+      <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:20px">${
+        r.buyout!==undefined?r.buyout:"—"}<small> 万</small>${up(r.oldBuyout,r.buyout)}</div>${
+        r.oldBuyout!==undefined?`<div class="k" style="font-size:10px">原 ${r.oldBuyout} 万</div>`:""}</div>
+      <div class="ver"><div class="k">违约金的意思</div><div class="k" style="font-size:11px;line-height:1.5">谈得高，别的队买你要付更多，愿意来的就少；想留后路可谈低。</div></div>
+    </div>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="rnwyes">签下续约 →</button>
+      <button class="btn ghost" id="rnwno">拒绝，进转会市场</button>
+    </div>
+    <p class="note" style="text-align:center">拒绝没有惩罚，但你就成了自由身——去哪得自己在市场上找。</p>
+  </div></div>`;
+}
+function acceptRenew(){
+  const r = S.pendingRenew; if(!r) return;
+  S.contract = { years:r.years, left:r.years, salary:r.salary, sign:0,
+                 buyout:r.buyout, team:r.team, tier:r.tier, grade:r.grade, clubTier:r.clubTier };
+  S.pendingRenew = null; S.gotCut = false;
+  pushEvent(`<b>${r.team}</b> 与你续约 ${r.years} 个赛段，年薪 <b>${r.salary!==undefined?r.salary:"—"} 万</b>${
+    r.buyout!==undefined?`，违约金 <b>${r.buyout} 万</b>`:""}。`,"good","合同");
+  if(typeof txNote==="function") txNote(`与 ${r.team} 续约，年薪 ${r.salary!==undefined?r.salary:"—"} 万`);
+  render();
+}
+function declineRenew(){
+  const r = S.pendingRenew; if(!r) return;
+  S.pendingRenew = null;
+  S.freeAgent = true; S.gotCut = true;      // 自由身：走自由市场，不再瞬移
+  pushEvent(`你拒绝了 <b>${r.team}</b> 的续约，成为<b>自由身</b>。<br>
+    <span style="color:var(--ink-3)">去哪由你自己在转会市场上找——没人再替你付违约金，也没人拦着你。</span>`,"big","合同");
+  if(typeof rollProOffers==="function"){ S.offerYear=undefined; S.offerWnd=undefined; rollProOffers(); }
+  render();
+}
+
 /* ---------- 六、主动挂牌：转会申请由你发起 ----------
    原来只有被动等人来挖。现在休赛期可以自己放消息出去——
    有没有人接，看你的表现、威望和合同里的违约金。
@@ -12804,6 +13192,8 @@ function signTransfer(){
   if(typeof markTeamJoin==="function") markTeamJoin();   // 换了队，在队时长归零
   S.trust = {}; if(typeof initTrust==="function") initTrust();
   if(typeof syncTrust==="function") syncTrust();
+  if(typeof initRelations==="function") initRelations();   // 新东家：队友关系从头建，别挂一排默认 50
+  S.gotCut = false; S.pendingRenew = null; S.freeAgent = false;   // 签了新约，自由身/被裁状态清掉
   addMoney("sign", d.sign);
   S.contract = { years:d.years, left:d.years, salary:d.salary, sign:d.sign,
                  buyout:d.buyout, team:d.team, tier:d.dealTier, grade:d.grade,
@@ -13681,21 +14071,29 @@ function scoutCard(){
 
 /* ================= 声音 =================
    2026-09-01 玩家要的：按键反馈音 + 很轻的背景音乐 + 右下角开关浮窗。
+   2026-09-04 玩家定的：背景音乐不再合成，换成外置音频文件（历年 S 赛主题曲，
+   S12–S16 各一首），赛季一换就换歌。曲子文件不进 career.html，
+   放 demo/bgm/ 下按名字读（见 demo/bgm/README.md）。
 
    约束与取舍：
-   · 发行物是单文件，塞 MP3 体积直接翻倍——全部用 WebAudio 现场合成，
-     零资产、零请求，Hextech 的「叮」本来就该是合成器味。
+   · 发行物是单文件，音效仍用 WebAudio 现场合成——零资产、零请求，
+     Hextech 的「叮」本来就该是合成器味。
+   · 背景音乐走 <audio>：路径用相对的 bgm/…（Toy 跑在 /toy/<slug>/ 子路径，
+     绝对路径会 404）；preload=none，没点 ♪ 一个字节都不下。
    · 音效不是每个按钮都响：只挂三类——花行动点的动作卡（轻嗒）、
      推进周期的主按钮（双音确认）、庆祝弹窗出现的瞬间（三音琶音）。
      标签栏、小工具按钮一概不响，响多了就是噪音。
-   · 浏览器要求用户先有手势才准出声：AudioContext 在第一次点击时才建。
+   · 浏览器要求用户先有手势才准出声：AudioContext 和 audio.play() 都在点击里做。
    · 开关存 localStorage（不进存档）——音量偏好是设备的事，不是生涯的事。 */
 
 const AUDIO_KEY = "pjz_audio";
 const AU = {
-  ctx: null, master: null, bgmGain: null,
+  ctx: null, master: null,
   sfx: true, bgm: false,          // 音效默认开；音乐默认关，想听的自己点 ♪（玩家定的）
-  bgmTimer: null, bgmStep: 0
+  el: null,                       // <audio> 元素
+  order: [], oi: -1,              // 洗好的播放顺序、当前走到第几个
+  playing: false,                 // 是否正在放（给浮窗的播放/暂停按钮看）
+  missing: {}, panelOpen: false   // 已知缺失的曲目下标；浮窗是否展开
 };
 
 function audioPrefs() {
@@ -13709,7 +14107,7 @@ function audioSave() {
   try { localStorage.setItem(AUDIO_KEY, JSON.stringify({ sfx: AU.sfx, bgm: AU.bgm })); } catch (e) {}
 }
 
-/* 上下文只建一次，且必须在用户手势里建（自动播放策略） */
+/* 上下文只建一次，且必须在用户手势里建（自动播放策略）。只给音效用 */
 function audioCtx() {
   if (AU.ctx) { if (AU.ctx.state === "suspended") { try { AU.ctx.resume(); } catch (e) {} } return AU.ctx; }
   try {
@@ -13717,11 +14115,6 @@ function audioCtx() {
     if (!AC) return null;
     AU.ctx = new AC();
     AU.master = AU.ctx.createGain(); AU.master.gain.value = 1; AU.master.connect(AU.ctx.destination);
-    AU.bgmGain = AU.ctx.createGain(); AU.bgmGain.gain.value = 0.07;    // 有存在感，但仍在人声之下
-    const lp = AU.ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 3400;
-    AU.bgmGain.connect(lp); lp.connect(AU.master);
-    AU._bgmOut = AU.bgmGain;
-    if (AU.bgm) bgmStart();
   } catch (e) { AU.ctx = null; }
   return AU.ctx;
 }
@@ -13756,112 +14149,128 @@ function sfxPlay(kind) {
   }
 }
 
-/* ---------- 背景音乐：每个赛季一首原创主题曲 ----------
-   玩家反馈第一版氛围垫「太沉太静，不像电竞」。真 S 赛主题曲有版权、
-   进不了公开部署，所以照赛事主题曲的路子自己写：鼓点、贝斯线、
-   上行琶音、英雄和弦——S12 到 S16 各一首，调性/速度/动机都不同，
-   赛季一换歌就换；打比赛时（step==="match"）叠一层镲片提强度。
-   全部 WebAudio 逐小节合成，midi 记谱，一个引擎放五首。 */
-const MF = m => 440 * Math.pow(2, (m - 69) / 12);   // midi -> 频率
-/* 每首：bpm / 四小节和弦进行（midi 三和音）/ 主题动机（音+拍长，四小节一次） */
-const BGM_THEMES = [
-  { bpm: 112, name: "S12",                              // A 小调 · 上行的开局之年
-    prog: [[57,60,64],[53,57,60],[48,52,55],[55,59,62]],           // Am F C G
-    hook: [[76,1],[79,1],[81,2],[79,1],[76,1],[72,2]] },
-  { bpm: 120, name: "S13",                              // D 多利亚 · 打野的节奏感
-    prog: [[50,53,57],[48,52,55],[55,59,62],[46,50,53]],           // Dm C G Bb
-    hook: [[74,0.5],[77,0.5],[79,1],[74,0.5],[72,0.5],[74,2]] },
-  { bpm: 100, name: "S14",                              // E 小调 · 沉重的单带
-    prog: [[52,55,59],[48,52,55],[50,54,57],[47,50,54]],           // Em C D Bm
-    hook: [[76,2],[79,2],[78,1],[74,1],[76,4]] },
-  { bpm: 126, name: "S15",                              // 升 F 小调 · 无畏的冲刺
-    prog: [[54,57,61],[50,54,57],[57,61,64],[52,56,59]],           // F#m D A E
-    hook: [[78,0.5],[81,0.5],[85,1],[83,0.5],[81,0.5],[78,1],[81,2]] },
-  { bpm: 116, name: "S16",                              // C 小调 · 最后一年，最重的一首
-    prog: [[48,51,55],[44,48,51],[51,55,58],[46,50,53]],           // Cm Ab Eb Bb
-    hook: [[84,1],[82,1],[79,1],[75,1],[77,1],[79,3]] }
+/* ---------- 背景音乐：随机循环歌单 + 浮窗播放器 ----------
+   玩家 2026-09-04 定的：一整个歌单随机顺序循环播放，右下角做成浮窗，可开关、可手动选曲。
+   歌单只是文件名清单——音频文件本身不进仓库、也不进 career.html，由作者自己放进 demo/bgm/
+   （ascii 小写名，见 README 的对照表）。缺的文件（404 / 解码失败）自动跳过，在列表里置灰。
+   一首播完 onended 自动下一首；一轮放完重新洗牌再循环。
+   同一个 <audio> 元素被手势解锁一次后，换 src 再 play() 就不会被自动播放策略拦。 */
+const BGM_DIR = "bgm/";
+const BGM_VOL = 0.35;                             // 真歌母带都很响，压到人声之下
+const BGM_TRACKS = [
+  { f:"warriors",           t:"Warriors — Imagine Dragons" },
+  { f:"star-walkin",        t:"STAR WALKIN' — Lil Nas X" },
+  { f:"legends-never-die",  t:"Legends Never Die — Against the Current" },
+  { f:"phoenix",            t:"Phoenix — Cailin Russo & Chrissy Costanza" },
+  { f:"rise",               t:"RISE — Mako & The Word Alive" },
+  { f:"take-over",          t:"Take Over 所向无前 — YUKIri" },
+  { f:"gods",               t:"登神 GODS — noli" },
+  { f:"heavy-is-the-crown", t:"Heavy Is the Crown — Linkin Park" },
+  { f:"worlds-collide",     t:"Worlds Collide — Nicki Taylor" },
+  { f:"ignite",             t:"Ignite — Zedd" },
+  { f:"burn-it-all-down",   t:"Burn It All Down — PVRIS" },
+  { f:"sacrifice",          t:"Sacrifice — G.E.M. 邓紫棋" },
+  { f:"hybrid-worlds",      t:"Hybrid — 英雄联盟" },
+  { f:"silver-scrapes",     t:"Silver Scrapes — Danny McCarthy" },
+  { f:"crawling",           t:"Crawling — Linkin Park" },
+  { f:"numb",               t:"Numb — Linkin Park" }
 ];
-function bgmTheme() {
-  try { const i = (typeof S !== "undefined" && S && S.si) || 0; return BGM_THEMES[clampI(i, 0, 4)]; }
-  catch (e) { return BGM_THEMES[0]; }
-}
-function clampI(v, a, b) { return Math.max(a, Math.min(b, v | 0)); }
-/* 打击乐：鼓是掉频正弦，镲是高通白噪 */
-function kick(t0, peak) {
-  const c = AU.ctx, o = c.createOscillator(), g = c.createGain();
-  o.type = "sine";
-  o.frequency.setValueAtTime(130, t0);
-  o.frequency.exponentialRampToValueAtTime(44, t0 + 0.12);
-  g.gain.setValueAtTime(peak, t0);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
-  o.connect(g); g.connect(AU._bgmOut); o.start(t0); o.stop(t0 + 0.2);
-}
-function hat(t0, peak) {
-  const c = AU.ctx;
-  if (!AU._noise) {
-    const buf = c.createBuffer(1, c.sampleRate * 0.05, c.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    AU._noise = buf;
+
+function bgmShuffle() {
+  AU.order = BGM_TRACKS.map((_, i) => i);
+  for (let i = AU.order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [AU.order[i], AU.order[j]] = [AU.order[j], AU.order[i]];
   }
-  const src = c.createBufferSource(); src.buffer = AU._noise;
-  const hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 6500;
-  const g = c.createGain();
-  g.gain.setValueAtTime(peak, t0);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.04);
-  src.connect(hp); hp.connect(g); g.connect(AU._bgmOut); src.start(t0);
+  AU.oi = 0;
 }
-/* 排一小节（4 拍）：鼓 + 贝斯八分 + 和弦垫 + 琶音；每 4 小节唱一遍动机 */
-function bgmBar(t0) {
-  const th = bgmTheme(), spb = 60 / th.bpm, bar = AU.bgmStep % 4;
-  const tri = th.prog[bar];
-  const inMatch = (typeof S !== "undefined" && S && S.step === "match");
-  // 鼓：1、3 重踩；比赛中 2、4 补镲
-  kick(t0, 0.5); kick(t0 + 2 * spb, 0.42);
-  for (let b = 0; b < 4; b++) {
-    hat(t0 + b * spb + spb / 2, inMatch ? 0.10 : 0.05);
-    if (inMatch) hat(t0 + b * spb, 0.07);
-  }
-  // 贝斯：根音八分，隔一个跳八度，往前走的感觉就是它给的
-  for (let i = 0; i < 8; i++) {
-    const f = MF(tri[0] - 12 + (i % 4 === 2 ? 12 : 0));
-    tone(f, t0 + i * spb / 2, spb * 0.42, "sawtooth", 0.10);
-  }
-  // 和弦垫：整小节铺住
-  tri.forEach((m, i) => tone(MF(m), t0, spb * 4 * 0.98, i ? "triangle" : "sine", 0.05));
-  // 琶音：八分上行循环（三和音+八度），电竞主题曲的闪光层
-  const arp = [tri[0] + 12, tri[1] + 12, tri[2] + 12, tri[0] + 24];
-  for (let i = 0; i < 8; i++)
-    tone(MF(arp[i % 4]), t0 + i * spb / 2, spb * 0.5, "triangle", 0.045);
-  // 动机：每四小节的第一小节唱一遍——每个赛季只属于它自己的那句
-  if (bar === 0) {
-    let tt = t0;
-    th.hook.forEach(([m, beats]) => { tone(MF(m), tt, beats * spb * 0.92, "square", 0.035); tt += beats * spb; });
-  }
-  AU.bgmStep++;
-  return spb * 4;
+function bgmCur() { return (AU.order && AU.oi >= 0 && AU.oi < AU.order.length) ? AU.order[AU.oi] : -1; }
+function bgmPlayable() { return BGM_TRACKS.filter((_, i) => !AU.missing[i]).length; }
+function bgmEl() {
+  if (AU.el) return AU.el;
+  if (typeof Audio === "undefined") return null;
+  const el = new Audio();
+  el.loop = false; el.preload = "none"; el.volume = BGM_VOL;
+  el.addEventListener("ended", () => { if (AU.bgm) bgmAdvance(1); });
+  el.addEventListener("error", () => {            // 404 / 解码失败：这首标记缺失，跳到下一首
+    const c = bgmCur(); if (c >= 0) AU.missing[c] = true;
+    if (AU.bgm && bgmPlayable() > 0) bgmAdvance(1); else { AU.playing = false; bgmPaint(); }
+  });
+  AU.el = el;
+  return el;
 }
+/* 装载并播放歌单里第 idx 首（BGM_TRACKS 下标） */
+function bgmLoad(idx, autoplay) {
+  const el = bgmEl(); if (!el || idx < 0) return;
+  const tr = BGM_TRACKS[idx]; if (!tr) return;
+  el.src = BGM_DIR + tr.f + ".mp3";
+  if (autoplay) { try { const p = el.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+  AU.playing = autoplay && AU.bgm;
+  bgmPaint();
+}
+/* 沿洗好的顺序走 dir（+1 下一首 / −1 上一首），跳过缺失；一轮走完重新洗牌 */
+function bgmAdvance(dir) {
+  if (!AU.order || !AU.order.length) bgmShuffle();
+  if (bgmPlayable() <= 0) { AU.playing = false; bgmPaint(); return; }
+  for (let step = 0; step < BGM_TRACKS.length; step++) {
+    AU.oi += dir;
+    if (AU.oi >= AU.order.length) { bgmShuffle(); }        // 放完一轮，重洗再循环
+    else if (AU.oi < 0) { AU.oi = AU.order.length - 1; }
+    if (!AU.missing[bgmCur()]) break;
+  }
+  bgmLoad(bgmCur(), true);
+}
+/* 手动选曲：点歌单里某一首，直接跳过去放 */
+function bgmPickTrack(idx) {
+  if (AU.missing[idx]) return;
+  if (!AU.order || !AU.order.length) bgmShuffle();
+  const pos = AU.order.indexOf(idx);
+  if (pos >= 0) AU.oi = pos;
+  AU.bgm = true; audioSave();
+  bgmLoad(idx, true);
+  bgmPanelPaint();
+}
+/* 开始 / 续播：还没装曲就从洗好的顺序挑第一首能放的；已装就续播 */
 function bgmStart() {
-  if (AU.bgmTimer || !AU.ctx) return;
-  let next = AU.ctx.currentTime + 0.1;
-  next += bgmBar(next);
-  AU.bgmTimer = setInterval(() => {
-    if (!AU.ctx || !AU.bgm) return;
-    if (AU.ctx.currentTime > next - 0.8) next += bgmBar(next);
-  }, 200);
+  if (!AU.bgm) return;
+  const el = bgmEl(); if (!el) return;
+  if (!AU.order || !AU.order.length) bgmShuffle();
+  if (!el.src) { AU.oi = -1; bgmAdvance(1); }
+  else if (el.paused) { try { const p = el.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {} AU.playing = true; }
+  bgmPaint();
 }
 function bgmStop() {
-  if (AU.bgmTimer) { clearInterval(AU.bgmTimer); AU.bgmTimer = null; }
+  if (AU.el && !AU.el.paused) { try { AU.el.pause(); } catch (e) {} }
+  AU.playing = false;
+  bgmPaint();
+}
+function bgmToggle() {
+  AU.bgm = !AU.bgm; audioSave();
+  if (AU.bgm) { if (bgmCur() < 0) bgmAdvance(1); else bgmStart(); }
+  else bgmStop();
+  bgmPanelPaint();
+}
+/* ♪ 浮窗触发钮的样子：关 = ♪ 灰；开 = ♫ 亮 */
+function bgmPaint() {
+  try {
+    const m = document.getElementById("aud-bgm"); if (!m) return;
+    m.textContent = AU.bgm ? "♫" : "♪";
+    m.classList.toggle("off", !AU.bgm);
+    m.title = "背景音乐（点开浮窗）";
+    bgmPanelPaint();
+  } catch (e) {}
 }
 
 /* ---------- 挂钩 ----------
    事件委托一只耳朵听全场：按「按钮长什么样」决定响不响——
    .act/.opt 是花点数和做选择（嗒），.btn 是推进和签字（确认）。
-   .tab/.rt-x 这类小件不配拥有声音。 */
+   .tab/.rt-x 这类小件不配拥有声音。
+   每次点击顺便 bgmStart()：手势里续播，被自动播放策略拦过的也能在下一次点击接上。 */
 function audioClickHandler(ev) {
   try {
     const b = ev.target && ev.target.closest ? ev.target.closest("button") : null;
     audioCtx();                                    // 第一次手势顺便把上下文建了
+    if (AU.bgm) bgmStart();
     if (!b || b.disabled) return;
     const cl = b.classList;
     if (!cl) return;
@@ -13902,37 +14311,101 @@ function showChangelog() {
   } catch (e) {}
 }
 
-/* ---------- 右下角浮窗 ----------
+/* ---------- 背景音乐浮窗 ----------
+   ♪ 钮点开一个小面板：开关、上一首/播放暂停/下一首、当前曲目、可滚动的歌单（点谁放谁）。
+   缺文件的曲目置灰、不可点。面板挂 body，render() 重写 stage 不影响它。 */
+function bgmPanel() {
+  let p = document.getElementById("bgm-panel");
+  if (p) return p;
+  p = document.createElement("div");
+  p.id = "bgm-panel"; p.className = "bgmpanel"; p.hidden = true;
+  p.innerHTML = `
+    <div class="bp-head">
+      <b>背景音乐</b>
+      <button class="bp-pow" id="bp-pow" title="开 / 关"></button>
+      <button class="bp-x" id="bp-x" title="收起" aria-label="收起">×</button>
+    </div>
+    <div class="bp-now"><span class="bp-title" id="bp-title">—</span></div>
+    <div class="bp-ctrl">
+      <button id="bp-prev" title="上一首" aria-label="上一首">⏮</button>
+      <button id="bp-play" title="播放 / 暂停" aria-label="播放/暂停">▶</button>
+      <button id="bp-next" title="下一首" aria-label="下一首">⏭</button>
+      <span class="bp-hint" id="bp-hint"></span>
+    </div>
+    <div class="bp-list" id="bp-list"></div>`;
+  document.body.appendChild(p);
+  p.querySelector("#bp-x").onclick = (e) => { e.stopPropagation(); AU.panelOpen = false; p.hidden = true; };
+  p.querySelector("#bp-pow").onclick = (e) => { e.stopPropagation(); bgmToggle(); };
+  p.querySelector("#bp-prev").onclick = (e) => { e.stopPropagation(); AU.bgm = true; audioSave(); bgmAdvance(-1); bgmPanelPaint(); };
+  p.querySelector("#bp-next").onclick = (e) => { e.stopPropagation(); AU.bgm = true; audioSave(); bgmAdvance(1); bgmPanelPaint(); };
+  p.querySelector("#bp-play").onclick = (e) => {
+    e.stopPropagation();
+    if (AU.playing) { bgmStop(); }
+    else { AU.bgm = true; audioSave(); if (bgmCur() < 0) bgmAdvance(1); else bgmStart(); }
+    bgmPanelPaint();
+  };
+  // 歌单一次性铺好，点哪首放哪首
+  const list = p.querySelector("#bp-list");
+  list.innerHTML = BGM_TRACKS.map((tr, i) =>
+    `<button class="bp-row" data-i="${i}"><span class="bp-dot"></span><span class="bp-rt">${tr.t}</span></button>`).join("");
+  list.querySelectorAll(".bp-row").forEach(b => b.onclick = (e) => {
+    e.stopPropagation(); bgmPickTrack(+b.dataset.i);
+  });
+  return p;
+}
+function bgmPanelPaint() {
+  try {
+    const p = document.getElementById("bgm-panel"); if (!p) return;
+    const cur = bgmCur();
+    const title = p.querySelector("#bp-title");
+    if (title) title.textContent = cur >= 0 ? BGM_TRACKS[cur].t : "未开始";
+    const pow = p.querySelector("#bp-pow");
+    if (pow) { pow.textContent = AU.bgm ? "开" : "关"; pow.classList.toggle("off", !AU.bgm); }
+    const play = p.querySelector("#bp-play");
+    if (play) play.textContent = AU.playing ? "⏸" : "▶";
+    const none = bgmPlayable() <= 0;
+    const hint = p.querySelector("#bp-hint");
+    if (hint) hint.textContent = none ? "没有可播放的音频文件" : "随机循环";
+    p.querySelectorAll(".bp-row").forEach(b => {
+      const i = +b.dataset.i;
+      b.classList.toggle("miss", !!AU.missing[i]);
+      b.classList.toggle("on", i === cur);
+    });
+  } catch (e) {}
+}
+
+/* ---------- 右下角浮窗按钮 ----------
    挂在 #stage 外面：render() 每次重写 stage，浮窗不能跟着死。
-   📜 更新日志永远在；两个声音钮只在浏览器支持 WebAudio 时出现。 */
-function audioFab(hasAudio) {
+   📜 更新日志永远在；🔊 只在浏览器支持 WebAudio 时出现，♪ 只在支持 <audio> 时出现。 */
+function audioFab(hasSfx, hasBgm) {
   const fab = document.createElement("div");
   fab.className = "audiofab";
-  fab.innerHTML = (hasAudio ? `
-    <button id="aud-sfx" aria-label="音效开关" title="按键音效"></button>
-    <button id="aud-bgm" aria-label="音乐开关" title="背景音乐"></button>` : "") + `
+  fab.innerHTML = (hasSfx ? `
+    <button id="aud-sfx" aria-label="音效开关" title="按键音效"></button>` : "") + (hasBgm ? `
+    <button id="aud-bgm" aria-label="背景音乐" title="背景音乐"></button>` : "") + `
     <button id="aud-log" aria-label="更新日志" title="更新日志">📜</button>`;
   document.body.appendChild(fab);
   fab.querySelector("#aud-log").onclick = (e) => { e.stopPropagation(); showChangelog(); };
-  if (!hasAudio) return;
-  const paint = () => {
-    const s = fab.querySelector("#aud-sfx"), m = fab.querySelector("#aud-bgm");
+  const paintSfx = () => {
+    const s = fab.querySelector("#aud-sfx"); if (!s) return;
     s.textContent = AU.sfx ? "🔊" : "🔇";
-    m.textContent = AU.bgm ? "♫" : "♪";
     s.classList.toggle("off", !AU.sfx);
-    m.classList.toggle("off", !AU.bgm);
   };
-  fab.querySelector("#aud-sfx").onclick = (e) => {
+  if (hasSfx) fab.querySelector("#aud-sfx").onclick = (e) => {
     e.stopPropagation();
-    AU.sfx = !AU.sfx; audioSave(); paint();
+    AU.sfx = !AU.sfx; audioSave(); paintSfx();
     if (AU.sfx) sfxPlay("confirm");               // 开的瞬间给一声，立刻知道开了
   };
-  fab.querySelector("#aud-bgm").onclick = (e) => {
-    e.stopPropagation();
-    AU.bgm = !AU.bgm; audioSave(); paint();
-    if (AU.bgm) { audioCtx(); bgmStart(); } else bgmStop();
-  };
-  paint();
+  if (hasBgm) {
+    bgmPanel();                                   // 先建好面板（隐藏）
+    fab.querySelector("#aud-bgm").onclick = (e) => {
+      e.stopPropagation();
+      const p = bgmPanel();
+      AU.panelOpen = !AU.panelOpen; p.hidden = !AU.panelOpen;
+      if (AU.panelOpen) bgmPanelPaint();
+    };
+  }
+  paintSfx(); bgmPaint();
 }
 
 function audioInit() {
@@ -13941,10 +14414,11 @@ function audioInit() {
     // 作者栏版本号
     const cv = document.getElementById("credit-ver");
     if (cv && typeof GAME_VER !== "undefined") cv.textContent = GAME_VER;
-    const hasAudio = !!(window.AudioContext || window.webkitAudioContext);
+    const hasSfx = !!(window.AudioContext || window.webkitAudioContext);
+    const hasBgm = typeof Audio !== "undefined";
     audioPrefs();
-    audioFab(hasAudio);
-    if (hasAudio) document.addEventListener("click", audioClickHandler, true);
+    audioFab(hasSfx, hasBgm);
+    if (hasSfx || hasBgm) document.addEventListener("click", audioClickHandler, true);
   } catch (e) {}
 }
 
@@ -14234,6 +14708,128 @@ function starAfterMatch(m,won,ctx){
 }
 
 
+/* ================= AI 转会市场 =================
+
+   玩家原话：「这个世界的选手不会转会吗？二队实力都超过一队了也不提拔也不转会……
+   转会会造成队伍实力变化、默契降低、选手间关系变化，现在的世界太过于死板。」
+
+   两个窗口，和玩家自己的升队窗口对齐：
+   · 季中间歇（春→夏）：提拔 / 下放——二队某位置比一队强 2 分以上，七成概率换上去，被顶掉的人下放
+   · 休赛期：提拔 / 下放 + 跨队转会——弱队（下半区）里高于队均 4 分、27 岁以下的好手，
+     被上半区某支该位置更弱的队买走，被顶掉的人反向流动（每个联赛最多约 30% 的队数）
+   代价：换过人的 AI 队默契 −6 / 战术 −2.7 一次，之后每个窗口回补 +3 / +1.35 直到回到原水位；
+   主角所在队走 watchRoster → disruptSynergy 那套（默契砸、离队队友事件、新人重建信任与关系）。
+   主角自己的位置 AI 不碰——那由替补/换下机制管。 */
+
+const MKT={promoGap:2, promoP:0.7, xferP:0.35, maxPerLeague:0.3, synHit:6, synHeal:3};
+
+function mktOvr(p){ const r=p.r||p; return avg(DIMS.map(d=>r[d]||0)); }
+function mktIsMine(t){ return !!(S.team&&t&&t.name===S.team); }
+function mktSynHit(t,n){
+  if(!t||t.syn===undefined) return;
+  if(t.synBase===undefined) t.synBase=t.syn;
+  t.syn=Math.max(20,q1(t.syn-MKT.synHit*n));
+  if(t.tac!==undefined){ if(t.tacBase===undefined) t.tacBase=t.tac; t.tac=Math.max(20,q1(t.tac-MKT.synHit*0.45*n)); }
+}
+function mktHeal(){
+  Object.keys(S.world||{}).forEach(lg=>(S.world[lg]||[]).forEach(t=>{
+    if(mktIsMine(t)) return;
+    if(t.synBase!==undefined&&t.syn<t.synBase) t.syn=q1(Math.min(t.synBase,t.syn+MKT.synHeal));
+    if(t.tacBase!==undefined&&t.tac<t.tacBase) t.tac=q1(Math.min(t.tacBase,t.tac+MKT.synHeal*0.45));
+  }));
+}
+
+/* 提拔 / 下放：只在 LPL 与其二队之间 */
+function aiPromotions(){
+  const out=[]; const L=S.world&&S.world.LDL, P=S.world&&S.world.LPL; if(!L||!P) return out;
+  L.forEach(acad=>{
+    const par=P.find(t=>t.name===acad.parent); if(!par) return;
+    POS.forEach(x=>{
+      const a=acad.players.find(q=>q.pos===x.k&&!q.me), f=par.players.find(q=>q.pos===x.k);
+      if(!a||!f||f.me) return;
+      if((mktIsMine(par)||mktIsMine(acad))&&x.k===S.pos) return;   // 主角的位置不由 AI 动
+      if(mktOvr(a)<mktOvr(f)+MKT.promoGap||rnd()>=MKT.promoP) return;
+      par.players=par.players.map(q=>q===f?a:q);
+      acad.players=acad.players.map(q=>q===a?f:q);
+      a.lg=par.players[0]&&par.players[0].lg||"LPL"; f.lg="LDL";
+      mktSynHit(par,1); mktSynHit(acad,1);
+      out.push({kind:"promo",team:par.name,acad:acad.name,up:a.id,down:f.id,pos:x.k});
+    });
+  });
+  return out;
+}
+
+/* 跨队转会：联赛内部；被买走的人与被顶掉的人互换东家 */
+function aiTransfers(){
+  const out=[];
+  Object.keys(S.world||{}).forEach(lg=>{
+    if(lg==="LDL") return;
+    const teams=S.world[lg]; if(!teams||teams.length<4) return;
+    const pw=t=>{ try{ return power(t,0,SEASONS[S.si]&&SEASONS[S.si].fav); }catch(e){ return avg(t.players.map(mktOvr)); } };
+    const rank=teams.slice().sort((a,b)=>pw(b)-pw(a));
+    const half=Math.floor(rank.length/2);
+    const top=rank.slice(0,half), bottom=rank.slice(half);
+    const cap=Math.max(2,Math.round(teams.length*MKT.maxPerLeague));
+    let moves=0;
+    const cands=[];
+    bottom.forEach(t=>{
+      const avgT=avg(t.players.map(mktOvr));
+      t.players.forEach(p=>{
+        if(p.me) return;
+        if(mktIsMine(t)&&p.pos===S.pos) return;
+        if((p.age||22)<=27&&mktOvr(p)>=avgT+4) cands.push({p,t});
+      });
+    });
+    for(let i=cands.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [cands[i],cands[j]]=[cands[j],cands[i]]; }
+    for(const c of cands){
+      if(moves>=cap) break;
+      if(rnd()>=MKT.xferP) continue;
+      const buyers=top.filter(b=>{
+        const cur=b.players.find(q=>q.pos===c.p.pos);
+        return cur&&!cur.me&&!(mktIsMine(b)&&c.p.pos===S.pos)&&mktOvr(cur)<mktOvr(c.p)-1;
+      });
+      if(!buyers.length) continue;
+      const b=buyers[Math.floor(rnd()*buyers.length)];
+      const cur=b.players.find(q=>q.pos===c.p.pos);
+      b.players=b.players.map(q=>q===cur?c.p:q);
+      c.t.players=c.t.players.map(q=>q===c.p?cur:q);
+      mktSynHit(b,1); mktSynHit(c.t,1); moves++;
+      out.push({kind:"xfer",lg,who:c.p.id,from:c.t.name,to:b.name,swap:cur.id,pos:c.p.pos});
+    }
+  });
+  return out;
+}
+
+/* 一个窗口：full=true 是休赛期（提拔+转会），false 是季中（只提拔） */
+function aiMarketWindow(full){
+  if(!S.world) return [];
+  mktHeal();
+  const moves=aiPromotions().concat(full?aiTransfers():[]);
+  const news=[];
+  moves.forEach(m=>{
+    if(m.kind==="promo") news.push(`<div>${m.team}：二队 <b>${m.up}</b> 提上一队（${POSN[m.pos]}），${m.down} 下放 ${m.acad}</div>`);
+    else news.push(`<div>${m.lg}：<b>${m.who}</b>（${POSN[m.pos]}）从 ${m.from} 转会 ${m.to}，${m.swap} 反向加盟 ${m.from}</div>`);
+    if(S.team&&[m.team,m.acad,m.from,m.to].includes(S.team)){
+      const txt=m.kind==="promo"
+        ? (m.team===S.team?`<b>队内调动</b>：二队的 <b>${m.up}</b> 提上来了，${m.down} 下放 ${m.acad}。`
+                           :`<b>队内调动</b>：一队把 <b>${m.up}</b> 提走了，${m.down} 下放到队里。`)
+        : (m.to===S.team?`<b>转会</b>：俱乐部签下 <b>${m.who}</b>（${POSN[m.pos]}），${m.swap} 被送去 ${m.from}。`
+                        :`<b>转会</b>：<b>${m.who}</b> 转会去了 ${m.to}，${m.swap} 加盟顶上。`);
+      pushEvent(txt+`<span style="color:var(--ink-3)">新面孔进来，默契要重新磨，信任和更衣室关系也从头来。</span>`,"bad","转会");
+      if(typeof syncTrust==="function") syncTrust();
+      if(typeof syncRelations==="function") syncRelations();
+    }
+  });
+  if(moves.length){
+    S.news=(S.news||[]).concat([`<div class="hi">— ${full?"休赛期":"季中"}转会窗口：${moves.length} 笔变动 —</div>`]).concat(news.slice(0,14));
+  }
+  // 注意：这里绝不能重算 S.baseline——它是「签约时的联赛水位」，proPerf 拿它算你的相对表现；
+  // 第一版在这里重算，水位被年年抬高，问询归零、转会均值从 4.4 掉到 2.1（120 局批测抓的）。
+  // 年度均值另存 S.lgAvg（finishOffseason 里更新），给版本关键属性的红利算法用。
+  return moves;
+}
+
+
 /* ================= 侧栏 ================= */
 function formBar(team){
   const f=S.teamForm[team]||[];
@@ -14325,16 +14921,18 @@ function hud(){
   const h=$("hud");
   if(!S||S.step==="create"){h.classList.add("hide");return;}
   h.classList.remove("hide");
-  if(S.step==="pre"||S.step==="offer"||(!S.career&&S.pre)){
+  const isPre=(S.step==="pre"||S.step==="offer"||(!S.career&&S.pre));
+  if(isPre) h.classList.add("pre"); else h.classList.remove("pre");   // 职业前 6 列 / 赛季 7 列，两行格子的竖线对齐
+  if(isPre){
     h.innerHTML=`
       <div><div class="k">选手</div><div class="v">${meName()} <small>${POSN[S.pos]}</small></div></div>
       <div><div class="k">年龄</div><div class="v mono">${S.age}</div></div>
       <div class="hud-now ${nowPhase().urgent?'urgent':''}"><div class="k">现在</div>
         <div class="v">${nowPhase().tag} ${nowPhase().phase} <small>${nowPhase().detail}</small></div></div>
-      <div><div class="k">段位</div><div class="v">${rankBadge(S.pre.rank,26)}</div>${rankGapNote()}</div>
+      <div class="hud-rank"><div class="k">段位</div><div class="v">${rankBadge(S.pre.rank,26)}</div>${rankGapNote()}</div>
       <div class="hud-fan"><div class="k">粉丝</div><div class="v" style="font-size:13px">${fanTier()}<small class="mono"> ${fansText()}</small></div>${fanNextNote()}</div>
       <div><div class="k">热度</div><div class="v" style="font-size:13px">${heatTier()}</div>${heatNote()}</div>
-      <div><div class="k">下一节点</div><div class="v">${(()=>{const n=nextMilestone();
+      <div class="hud-next"><div class="k">下一节点</div><div class="v">${(()=>{const n=nextMilestone();
         if(!n) return "—";
         // 只给「还有 N 周」很容易被算错——没有锚点，玩家会拿开局那个数
         // 去减当前周次。把目标周次直接写出来，就没什么可算的了。
@@ -14359,7 +14957,7 @@ function hud(){
     <div><div class="k">战队</div><div class="v">${S.team}</div></div>
     <div><div class="k">本季</div><div class="v mono">${S.record.w}−${S.record.l}</div></div>
     <div title="${(typeof ringTitles==="function"&&ringTitles().length)?`其中 ${ringTitles().length} 座是替补席随队`:""}"><div class="k">冠军</div><div class="v mono">${typeof titleCount==="function"?titleCount():S.career.titles.length}</div></div>
-    <div><div class="k">段位</div><div class="v">${
+    <div class="hud-rank"><div class="k">段位</div><div class="v">${
       (S.pre&&S.pre.rank!==undefined)?rankBadge(S.pre.rank,26):"—"}</div>${rankGapNote()}</div>
     <div class="hud-fan"><div class="k">粉丝</div><div class="v" style="font-size:13px">${fanTier()}<small class="mono"> ${fansText()}</small></div>${fanNextNote()}</div>
       <div><div class="k">热度</div><div class="v" style="font-size:13px">${heatTier()}</div>${heatNote()}</div>
@@ -14469,6 +15067,7 @@ function bind(){
     const bb=bgOf(S.bgPick); if(bb&&bb.origin) S.origin=bb.origin;   // 出身随背景走
     render()});
   const rr=$("reroll"); if(rr) rr.onclick=()=>{S.bgOffer=drawBackgrounds();S.bgPick=null;render()};
+  const trd=$("talrand"); if(trd) trd.onclick=()=>{ if(typeof randomTalent==="function") randomTalent(); };
   const ru=$("rankupok"); if(ru) ru.onclick=()=>{S.rankUp=null;render()};
   const sy=$("signyes"); if(sy) sy.onclick=()=>{
     const m=S.signup; S.signup=null;
@@ -14604,6 +15203,8 @@ function bind(){
   const _off=$("offnext"); if(_off) _off.onclick=offNextWeek;
   const _pg=$("pofgo"); if(_pg) _pg.onclick=takeProOffer;
   const _pn=$("pofno"); if(_pn) _pn.onclick=dropProOffer;
+  const _rwy=$("rnwyes"); if(_rwy) _rwy.onclick=()=>{ if(typeof acceptRenew==="function") acceptRenew(); };
+  const _rwn=$("rnwno");  if(_rwn) _rwn.onclick=()=>{ if(typeof declineRenew==="function") declineRenew(); };
   const _at=$("askTransfer"); if(_at) _at.onclick=()=>askTransfer();
   st.querySelectorAll("[data-approach]").forEach(b=>b.onclick=()=>{
     if(typeof approachTeam==="function") approachTeam(b.dataset.approach); });

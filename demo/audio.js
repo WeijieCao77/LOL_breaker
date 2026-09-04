@@ -1,20 +1,28 @@
 /* ================= 声音 =================
    2026-09-01 玩家要的：按键反馈音 + 很轻的背景音乐 + 右下角开关浮窗。
+   2026-09-04 玩家定的：背景音乐不再合成，换成外置音频文件（历年 S 赛主题曲，
+   S12–S16 各一首），赛季一换就换歌。曲子文件不进 career.html，
+   放 demo/bgm/ 下按名字读（见 demo/bgm/README.md）。
 
    约束与取舍：
-   · 发行物是单文件，塞 MP3 体积直接翻倍——全部用 WebAudio 现场合成，
-     零资产、零请求，Hextech 的「叮」本来就该是合成器味。
+   · 发行物是单文件，音效仍用 WebAudio 现场合成——零资产、零请求，
+     Hextech 的「叮」本来就该是合成器味。
+   · 背景音乐走 <audio>：路径用相对的 bgm/…（Toy 跑在 /toy/<slug>/ 子路径，
+     绝对路径会 404）；preload=none，没点 ♪ 一个字节都不下。
    · 音效不是每个按钮都响：只挂三类——花行动点的动作卡（轻嗒）、
      推进周期的主按钮（双音确认）、庆祝弹窗出现的瞬间（三音琶音）。
      标签栏、小工具按钮一概不响，响多了就是噪音。
-   · 浏览器要求用户先有手势才准出声：AudioContext 在第一次点击时才建。
+   · 浏览器要求用户先有手势才准出声：AudioContext 和 audio.play() 都在点击里做。
    · 开关存 localStorage（不进存档）——音量偏好是设备的事，不是生涯的事。 */
 
 const AUDIO_KEY = "pjz_audio";
 const AU = {
-  ctx: null, master: null, bgmGain: null,
+  ctx: null, master: null,
   sfx: true, bgm: false,          // 音效默认开；音乐默认关，想听的自己点 ♪（玩家定的）
-  bgmTimer: null, bgmStep: 0
+  el: null,                       // <audio> 元素
+  order: [], oi: -1,              // 洗好的播放顺序、当前走到第几个
+  playing: false,                 // 是否正在放（给浮窗的播放/暂停按钮看）
+  missing: {}, panelOpen: false   // 已知缺失的曲目下标；浮窗是否展开
 };
 
 function audioPrefs() {
@@ -28,7 +36,7 @@ function audioSave() {
   try { localStorage.setItem(AUDIO_KEY, JSON.stringify({ sfx: AU.sfx, bgm: AU.bgm })); } catch (e) {}
 }
 
-/* 上下文只建一次，且必须在用户手势里建（自动播放策略） */
+/* 上下文只建一次，且必须在用户手势里建（自动播放策略）。只给音效用 */
 function audioCtx() {
   if (AU.ctx) { if (AU.ctx.state === "suspended") { try { AU.ctx.resume(); } catch (e) {} } return AU.ctx; }
   try {
@@ -36,11 +44,6 @@ function audioCtx() {
     if (!AC) return null;
     AU.ctx = new AC();
     AU.master = AU.ctx.createGain(); AU.master.gain.value = 1; AU.master.connect(AU.ctx.destination);
-    AU.bgmGain = AU.ctx.createGain(); AU.bgmGain.gain.value = 0.07;    // 有存在感，但仍在人声之下
-    const lp = AU.ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 3400;
-    AU.bgmGain.connect(lp); lp.connect(AU.master);
-    AU._bgmOut = AU.bgmGain;
-    if (AU.bgm) bgmStart();
   } catch (e) { AU.ctx = null; }
   return AU.ctx;
 }
@@ -75,112 +78,128 @@ function sfxPlay(kind) {
   }
 }
 
-/* ---------- 背景音乐：每个赛季一首原创主题曲 ----------
-   玩家反馈第一版氛围垫「太沉太静，不像电竞」。真 S 赛主题曲有版权、
-   进不了公开部署，所以照赛事主题曲的路子自己写：鼓点、贝斯线、
-   上行琶音、英雄和弦——S12 到 S16 各一首，调性/速度/动机都不同，
-   赛季一换歌就换；打比赛时（step==="match"）叠一层镲片提强度。
-   全部 WebAudio 逐小节合成，midi 记谱，一个引擎放五首。 */
-const MF = m => 440 * Math.pow(2, (m - 69) / 12);   // midi -> 频率
-/* 每首：bpm / 四小节和弦进行（midi 三和音）/ 主题动机（音+拍长，四小节一次） */
-const BGM_THEMES = [
-  { bpm: 112, name: "S12",                              // A 小调 · 上行的开局之年
-    prog: [[57,60,64],[53,57,60],[48,52,55],[55,59,62]],           // Am F C G
-    hook: [[76,1],[79,1],[81,2],[79,1],[76,1],[72,2]] },
-  { bpm: 120, name: "S13",                              // D 多利亚 · 打野的节奏感
-    prog: [[50,53,57],[48,52,55],[55,59,62],[46,50,53]],           // Dm C G Bb
-    hook: [[74,0.5],[77,0.5],[79,1],[74,0.5],[72,0.5],[74,2]] },
-  { bpm: 100, name: "S14",                              // E 小调 · 沉重的单带
-    prog: [[52,55,59],[48,52,55],[50,54,57],[47,50,54]],           // Em C D Bm
-    hook: [[76,2],[79,2],[78,1],[74,1],[76,4]] },
-  { bpm: 126, name: "S15",                              // 升 F 小调 · 无畏的冲刺
-    prog: [[54,57,61],[50,54,57],[57,61,64],[52,56,59]],           // F#m D A E
-    hook: [[78,0.5],[81,0.5],[85,1],[83,0.5],[81,0.5],[78,1],[81,2]] },
-  { bpm: 116, name: "S16",                              // C 小调 · 最后一年，最重的一首
-    prog: [[48,51,55],[44,48,51],[51,55,58],[46,50,53]],           // Cm Ab Eb Bb
-    hook: [[84,1],[82,1],[79,1],[75,1],[77,1],[79,3]] }
+/* ---------- 背景音乐：随机循环歌单 + 浮窗播放器 ----------
+   玩家 2026-09-04 定的：一整个歌单随机顺序循环播放，右下角做成浮窗，可开关、可手动选曲。
+   歌单只是文件名清单——音频文件本身不进仓库、也不进 career.html，由作者自己放进 demo/bgm/
+   （ascii 小写名，见 README 的对照表）。缺的文件（404 / 解码失败）自动跳过，在列表里置灰。
+   一首播完 onended 自动下一首；一轮放完重新洗牌再循环。
+   同一个 <audio> 元素被手势解锁一次后，换 src 再 play() 就不会被自动播放策略拦。 */
+const BGM_DIR = "bgm/";
+const BGM_VOL = 0.35;                             // 真歌母带都很响，压到人声之下
+const BGM_TRACKS = [
+  { f:"warriors",           t:"Warriors — Imagine Dragons" },
+  { f:"star-walkin",        t:"STAR WALKIN' — Lil Nas X" },
+  { f:"legends-never-die",  t:"Legends Never Die — Against the Current" },
+  { f:"phoenix",            t:"Phoenix — Cailin Russo & Chrissy Costanza" },
+  { f:"rise",               t:"RISE — Mako & The Word Alive" },
+  { f:"take-over",          t:"Take Over 所向无前 — YUKIri" },
+  { f:"gods",               t:"登神 GODS — noli" },
+  { f:"heavy-is-the-crown", t:"Heavy Is the Crown — Linkin Park" },
+  { f:"worlds-collide",     t:"Worlds Collide — Nicki Taylor" },
+  { f:"ignite",             t:"Ignite — Zedd" },
+  { f:"burn-it-all-down",   t:"Burn It All Down — PVRIS" },
+  { f:"sacrifice",          t:"Sacrifice — G.E.M. 邓紫棋" },
+  { f:"hybrid-worlds",      t:"Hybrid — 英雄联盟" },
+  { f:"silver-scrapes",     t:"Silver Scrapes — Danny McCarthy" },
+  { f:"crawling",           t:"Crawling — Linkin Park" },
+  { f:"numb",               t:"Numb — Linkin Park" }
 ];
-function bgmTheme() {
-  try { const i = (typeof S !== "undefined" && S && S.si) || 0; return BGM_THEMES[clampI(i, 0, 4)]; }
-  catch (e) { return BGM_THEMES[0]; }
-}
-function clampI(v, a, b) { return Math.max(a, Math.min(b, v | 0)); }
-/* 打击乐：鼓是掉频正弦，镲是高通白噪 */
-function kick(t0, peak) {
-  const c = AU.ctx, o = c.createOscillator(), g = c.createGain();
-  o.type = "sine";
-  o.frequency.setValueAtTime(130, t0);
-  o.frequency.exponentialRampToValueAtTime(44, t0 + 0.12);
-  g.gain.setValueAtTime(peak, t0);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
-  o.connect(g); g.connect(AU._bgmOut); o.start(t0); o.stop(t0 + 0.2);
-}
-function hat(t0, peak) {
-  const c = AU.ctx;
-  if (!AU._noise) {
-    const buf = c.createBuffer(1, c.sampleRate * 0.05, c.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-    AU._noise = buf;
+
+function bgmShuffle() {
+  AU.order = BGM_TRACKS.map((_, i) => i);
+  for (let i = AU.order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [AU.order[i], AU.order[j]] = [AU.order[j], AU.order[i]];
   }
-  const src = c.createBufferSource(); src.buffer = AU._noise;
-  const hp = c.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 6500;
-  const g = c.createGain();
-  g.gain.setValueAtTime(peak, t0);
-  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.04);
-  src.connect(hp); hp.connect(g); g.connect(AU._bgmOut); src.start(t0);
+  AU.oi = 0;
 }
-/* 排一小节（4 拍）：鼓 + 贝斯八分 + 和弦垫 + 琶音；每 4 小节唱一遍动机 */
-function bgmBar(t0) {
-  const th = bgmTheme(), spb = 60 / th.bpm, bar = AU.bgmStep % 4;
-  const tri = th.prog[bar];
-  const inMatch = (typeof S !== "undefined" && S && S.step === "match");
-  // 鼓：1、3 重踩；比赛中 2、4 补镲
-  kick(t0, 0.5); kick(t0 + 2 * spb, 0.42);
-  for (let b = 0; b < 4; b++) {
-    hat(t0 + b * spb + spb / 2, inMatch ? 0.10 : 0.05);
-    if (inMatch) hat(t0 + b * spb, 0.07);
-  }
-  // 贝斯：根音八分，隔一个跳八度，往前走的感觉就是它给的
-  for (let i = 0; i < 8; i++) {
-    const f = MF(tri[0] - 12 + (i % 4 === 2 ? 12 : 0));
-    tone(f, t0 + i * spb / 2, spb * 0.42, "sawtooth", 0.10);
-  }
-  // 和弦垫：整小节铺住
-  tri.forEach((m, i) => tone(MF(m), t0, spb * 4 * 0.98, i ? "triangle" : "sine", 0.05));
-  // 琶音：八分上行循环（三和音+八度），电竞主题曲的闪光层
-  const arp = [tri[0] + 12, tri[1] + 12, tri[2] + 12, tri[0] + 24];
-  for (let i = 0; i < 8; i++)
-    tone(MF(arp[i % 4]), t0 + i * spb / 2, spb * 0.5, "triangle", 0.045);
-  // 动机：每四小节的第一小节唱一遍——每个赛季只属于它自己的那句
-  if (bar === 0) {
-    let tt = t0;
-    th.hook.forEach(([m, beats]) => { tone(MF(m), tt, beats * spb * 0.92, "square", 0.035); tt += beats * spb; });
-  }
-  AU.bgmStep++;
-  return spb * 4;
+function bgmCur() { return (AU.order && AU.oi >= 0 && AU.oi < AU.order.length) ? AU.order[AU.oi] : -1; }
+function bgmPlayable() { return BGM_TRACKS.filter((_, i) => !AU.missing[i]).length; }
+function bgmEl() {
+  if (AU.el) return AU.el;
+  if (typeof Audio === "undefined") return null;
+  const el = new Audio();
+  el.loop = false; el.preload = "none"; el.volume = BGM_VOL;
+  el.addEventListener("ended", () => { if (AU.bgm) bgmAdvance(1); });
+  el.addEventListener("error", () => {            // 404 / 解码失败：这首标记缺失，跳到下一首
+    const c = bgmCur(); if (c >= 0) AU.missing[c] = true;
+    if (AU.bgm && bgmPlayable() > 0) bgmAdvance(1); else { AU.playing = false; bgmPaint(); }
+  });
+  AU.el = el;
+  return el;
 }
+/* 装载并播放歌单里第 idx 首（BGM_TRACKS 下标） */
+function bgmLoad(idx, autoplay) {
+  const el = bgmEl(); if (!el || idx < 0) return;
+  const tr = BGM_TRACKS[idx]; if (!tr) return;
+  el.src = BGM_DIR + tr.f + ".mp3";
+  if (autoplay) { try { const p = el.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+  AU.playing = autoplay && AU.bgm;
+  bgmPaint();
+}
+/* 沿洗好的顺序走 dir（+1 下一首 / −1 上一首），跳过缺失；一轮走完重新洗牌 */
+function bgmAdvance(dir) {
+  if (!AU.order || !AU.order.length) bgmShuffle();
+  if (bgmPlayable() <= 0) { AU.playing = false; bgmPaint(); return; }
+  for (let step = 0; step < BGM_TRACKS.length; step++) {
+    AU.oi += dir;
+    if (AU.oi >= AU.order.length) { bgmShuffle(); }        // 放完一轮，重洗再循环
+    else if (AU.oi < 0) { AU.oi = AU.order.length - 1; }
+    if (!AU.missing[bgmCur()]) break;
+  }
+  bgmLoad(bgmCur(), true);
+}
+/* 手动选曲：点歌单里某一首，直接跳过去放 */
+function bgmPickTrack(idx) {
+  if (AU.missing[idx]) return;
+  if (!AU.order || !AU.order.length) bgmShuffle();
+  const pos = AU.order.indexOf(idx);
+  if (pos >= 0) AU.oi = pos;
+  AU.bgm = true; audioSave();
+  bgmLoad(idx, true);
+  bgmPanelPaint();
+}
+/* 开始 / 续播：还没装曲就从洗好的顺序挑第一首能放的；已装就续播 */
 function bgmStart() {
-  if (AU.bgmTimer || !AU.ctx) return;
-  let next = AU.ctx.currentTime + 0.1;
-  next += bgmBar(next);
-  AU.bgmTimer = setInterval(() => {
-    if (!AU.ctx || !AU.bgm) return;
-    if (AU.ctx.currentTime > next - 0.8) next += bgmBar(next);
-  }, 200);
+  if (!AU.bgm) return;
+  const el = bgmEl(); if (!el) return;
+  if (!AU.order || !AU.order.length) bgmShuffle();
+  if (!el.src) { AU.oi = -1; bgmAdvance(1); }
+  else if (el.paused) { try { const p = el.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {} AU.playing = true; }
+  bgmPaint();
 }
 function bgmStop() {
-  if (AU.bgmTimer) { clearInterval(AU.bgmTimer); AU.bgmTimer = null; }
+  if (AU.el && !AU.el.paused) { try { AU.el.pause(); } catch (e) {} }
+  AU.playing = false;
+  bgmPaint();
+}
+function bgmToggle() {
+  AU.bgm = !AU.bgm; audioSave();
+  if (AU.bgm) { if (bgmCur() < 0) bgmAdvance(1); else bgmStart(); }
+  else bgmStop();
+  bgmPanelPaint();
+}
+/* ♪ 浮窗触发钮的样子：关 = ♪ 灰；开 = ♫ 亮 */
+function bgmPaint() {
+  try {
+    const m = document.getElementById("aud-bgm"); if (!m) return;
+    m.textContent = AU.bgm ? "♫" : "♪";
+    m.classList.toggle("off", !AU.bgm);
+    m.title = "背景音乐（点开浮窗）";
+    bgmPanelPaint();
+  } catch (e) {}
 }
 
 /* ---------- 挂钩 ----------
    事件委托一只耳朵听全场：按「按钮长什么样」决定响不响——
    .act/.opt 是花点数和做选择（嗒），.btn 是推进和签字（确认）。
-   .tab/.rt-x 这类小件不配拥有声音。 */
+   .tab/.rt-x 这类小件不配拥有声音。
+   每次点击顺便 bgmStart()：手势里续播，被自动播放策略拦过的也能在下一次点击接上。 */
 function audioClickHandler(ev) {
   try {
     const b = ev.target && ev.target.closest ? ev.target.closest("button") : null;
     audioCtx();                                    // 第一次手势顺便把上下文建了
+    if (AU.bgm) bgmStart();
     if (!b || b.disabled) return;
     const cl = b.classList;
     if (!cl) return;
@@ -221,37 +240,101 @@ function showChangelog() {
   } catch (e) {}
 }
 
-/* ---------- 右下角浮窗 ----------
+/* ---------- 背景音乐浮窗 ----------
+   ♪ 钮点开一个小面板：开关、上一首/播放暂停/下一首、当前曲目、可滚动的歌单（点谁放谁）。
+   缺文件的曲目置灰、不可点。面板挂 body，render() 重写 stage 不影响它。 */
+function bgmPanel() {
+  let p = document.getElementById("bgm-panel");
+  if (p) return p;
+  p = document.createElement("div");
+  p.id = "bgm-panel"; p.className = "bgmpanel"; p.hidden = true;
+  p.innerHTML = `
+    <div class="bp-head">
+      <b>背景音乐</b>
+      <button class="bp-pow" id="bp-pow" title="开 / 关"></button>
+      <button class="bp-x" id="bp-x" title="收起" aria-label="收起">×</button>
+    </div>
+    <div class="bp-now"><span class="bp-title" id="bp-title">—</span></div>
+    <div class="bp-ctrl">
+      <button id="bp-prev" title="上一首" aria-label="上一首">⏮</button>
+      <button id="bp-play" title="播放 / 暂停" aria-label="播放/暂停">▶</button>
+      <button id="bp-next" title="下一首" aria-label="下一首">⏭</button>
+      <span class="bp-hint" id="bp-hint"></span>
+    </div>
+    <div class="bp-list" id="bp-list"></div>`;
+  document.body.appendChild(p);
+  p.querySelector("#bp-x").onclick = (e) => { e.stopPropagation(); AU.panelOpen = false; p.hidden = true; };
+  p.querySelector("#bp-pow").onclick = (e) => { e.stopPropagation(); bgmToggle(); };
+  p.querySelector("#bp-prev").onclick = (e) => { e.stopPropagation(); AU.bgm = true; audioSave(); bgmAdvance(-1); bgmPanelPaint(); };
+  p.querySelector("#bp-next").onclick = (e) => { e.stopPropagation(); AU.bgm = true; audioSave(); bgmAdvance(1); bgmPanelPaint(); };
+  p.querySelector("#bp-play").onclick = (e) => {
+    e.stopPropagation();
+    if (AU.playing) { bgmStop(); }
+    else { AU.bgm = true; audioSave(); if (bgmCur() < 0) bgmAdvance(1); else bgmStart(); }
+    bgmPanelPaint();
+  };
+  // 歌单一次性铺好，点哪首放哪首
+  const list = p.querySelector("#bp-list");
+  list.innerHTML = BGM_TRACKS.map((tr, i) =>
+    `<button class="bp-row" data-i="${i}"><span class="bp-dot"></span><span class="bp-rt">${tr.t}</span></button>`).join("");
+  list.querySelectorAll(".bp-row").forEach(b => b.onclick = (e) => {
+    e.stopPropagation(); bgmPickTrack(+b.dataset.i);
+  });
+  return p;
+}
+function bgmPanelPaint() {
+  try {
+    const p = document.getElementById("bgm-panel"); if (!p) return;
+    const cur = bgmCur();
+    const title = p.querySelector("#bp-title");
+    if (title) title.textContent = cur >= 0 ? BGM_TRACKS[cur].t : "未开始";
+    const pow = p.querySelector("#bp-pow");
+    if (pow) { pow.textContent = AU.bgm ? "开" : "关"; pow.classList.toggle("off", !AU.bgm); }
+    const play = p.querySelector("#bp-play");
+    if (play) play.textContent = AU.playing ? "⏸" : "▶";
+    const none = bgmPlayable() <= 0;
+    const hint = p.querySelector("#bp-hint");
+    if (hint) hint.textContent = none ? "没有可播放的音频文件" : "随机循环";
+    p.querySelectorAll(".bp-row").forEach(b => {
+      const i = +b.dataset.i;
+      b.classList.toggle("miss", !!AU.missing[i]);
+      b.classList.toggle("on", i === cur);
+    });
+  } catch (e) {}
+}
+
+/* ---------- 右下角浮窗按钮 ----------
    挂在 #stage 外面：render() 每次重写 stage，浮窗不能跟着死。
-   📜 更新日志永远在；两个声音钮只在浏览器支持 WebAudio 时出现。 */
-function audioFab(hasAudio) {
+   📜 更新日志永远在；🔊 只在浏览器支持 WebAudio 时出现，♪ 只在支持 <audio> 时出现。 */
+function audioFab(hasSfx, hasBgm) {
   const fab = document.createElement("div");
   fab.className = "audiofab";
-  fab.innerHTML = (hasAudio ? `
-    <button id="aud-sfx" aria-label="音效开关" title="按键音效"></button>
-    <button id="aud-bgm" aria-label="音乐开关" title="背景音乐"></button>` : "") + `
+  fab.innerHTML = (hasSfx ? `
+    <button id="aud-sfx" aria-label="音效开关" title="按键音效"></button>` : "") + (hasBgm ? `
+    <button id="aud-bgm" aria-label="背景音乐" title="背景音乐"></button>` : "") + `
     <button id="aud-log" aria-label="更新日志" title="更新日志">📜</button>`;
   document.body.appendChild(fab);
   fab.querySelector("#aud-log").onclick = (e) => { e.stopPropagation(); showChangelog(); };
-  if (!hasAudio) return;
-  const paint = () => {
-    const s = fab.querySelector("#aud-sfx"), m = fab.querySelector("#aud-bgm");
+  const paintSfx = () => {
+    const s = fab.querySelector("#aud-sfx"); if (!s) return;
     s.textContent = AU.sfx ? "🔊" : "🔇";
-    m.textContent = AU.bgm ? "♫" : "♪";
     s.classList.toggle("off", !AU.sfx);
-    m.classList.toggle("off", !AU.bgm);
   };
-  fab.querySelector("#aud-sfx").onclick = (e) => {
+  if (hasSfx) fab.querySelector("#aud-sfx").onclick = (e) => {
     e.stopPropagation();
-    AU.sfx = !AU.sfx; audioSave(); paint();
+    AU.sfx = !AU.sfx; audioSave(); paintSfx();
     if (AU.sfx) sfxPlay("confirm");               // 开的瞬间给一声，立刻知道开了
   };
-  fab.querySelector("#aud-bgm").onclick = (e) => {
-    e.stopPropagation();
-    AU.bgm = !AU.bgm; audioSave(); paint();
-    if (AU.bgm) { audioCtx(); bgmStart(); } else bgmStop();
-  };
-  paint();
+  if (hasBgm) {
+    bgmPanel();                                   // 先建好面板（隐藏）
+    fab.querySelector("#aud-bgm").onclick = (e) => {
+      e.stopPropagation();
+      const p = bgmPanel();
+      AU.panelOpen = !AU.panelOpen; p.hidden = !AU.panelOpen;
+      if (AU.panelOpen) bgmPanelPaint();
+    };
+  }
+  paintSfx(); bgmPaint();
 }
 
 function audioInit() {
@@ -260,9 +343,10 @@ function audioInit() {
     // 作者栏版本号
     const cv = document.getElementById("credit-ver");
     if (cv && typeof GAME_VER !== "undefined") cv.textContent = GAME_VER;
-    const hasAudio = !!(window.AudioContext || window.webkitAudioContext);
+    const hasSfx = !!(window.AudioContext || window.webkitAudioContext);
+    const hasBgm = typeof Audio !== "undefined";
     audioPrefs();
-    audioFab(hasAudio);
-    if (hasAudio) document.addEventListener("click", audioClickHandler, true);
+    audioFab(hasSfx, hasBgm);
+    if (hasSfx || hasBgm) document.addEventListener("click", audioClickHandler, true);
   } catch (e) {}
 }

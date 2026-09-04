@@ -238,6 +238,13 @@ function autoCareerStep(){
     else { signDeal(); autoNote(`签了 ${d.team}`); }
     return true;
   }
+  // 合同到期续约报价：默认接受（留在一支想留你的队，是稳妥的托管选择）
+  if(S.pendingRenew){
+    const tm=S.pendingRenew.team;
+    if(typeof acceptRenew==="function") acceptRenew();
+    autoNote(`与 ${tm} 续约`);
+    return true;
+  }
   // 转会问询：对方比现在这支强就走
   if(S.proOffer){
     const o=S.proOffer;

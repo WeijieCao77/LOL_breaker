@@ -81,14 +81,21 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .sub{color:var(--ink-2);margin:0;max-width:62ch;font-size:14.5px}
 
 /* ---- HUD ---- */
-.hud{display:flex;flex-wrap:wrap;gap:1px;background:var(--line);margin-bottom:20px;
+/* 网格而不是 flex-wrap：两行格子的竖线必须对齐（玩家实锤「上下不一致宽度」）。
+   赛季 HUD 12 格 = 7 列 × 2 行（「现在」「段位」各占两列）；职业前 HUD 加 .pre = 6 列 × 2 行。 */
+.hud{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line);margin-bottom:20px;
   border:1px solid var(--line);
   clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px)}
-.hud>div{background:linear-gradient(180deg,var(--panel-2),var(--panel));padding:10px 15px;flex:1 1 96px}
+.hud.pre{grid-template-columns:repeat(6,minmax(0,1fr))}
+.hud>div{background:linear-gradient(180deg,var(--panel-2),var(--panel));padding:10px 15px;min-width:0}
+.hud>.hud-now,.hud>.hud-rank,.hud>.hud-next{grid-column:span 2}
 .hud .k{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
   font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
 .hud .v{font-size:16px;font-weight:650;margin-top:1px;color:var(--gold-hi)}
 .hud .v small{font-size:11px;color:var(--ink-3);font-weight:400}
+/* 段位格：徽章横排、门槛说明一行放得下（玩家实锤：原来被挤成一条竖的） */
+.hud .rankbadge{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.hud .gapnote{white-space:normal}
 /* 名气格下面的「还差几次直播」——档位名只说了你在哪，这行说还有多远 */
 .fnext{margin-top:5px;font-size:10px;line-height:1.5;color:var(--ink-3);letter-spacing:.02em}
 .fnext b{color:var(--gold);font-weight:650;font-variant-numeric:tabular-nums}
@@ -98,7 +105,8 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 /* 手机上 8 个格子按 96px 的下限只能排 3 列，折成 4 行占掉 333px——
    一块「你是谁、现在第几周」的信息不值这个价。收紧到 4 列 2 行。 */
 @media(max-width:560px){
-  .hud>div{flex:1 1 74px;padding:6px 9px}
+  .hud,.hud.pre{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .hud>div{padding:6px 9px}
   .hud .k{font-size:8.5px;letter-spacing:.1em}
   .hud .v{font-size:13.5px;line-height:1.35}
   .hud .v small{font-size:10px}
@@ -315,6 +323,8 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 
 /* ---- 表格 ---- */
 .tw{overflow-x:auto;border:1px solid var(--line)}
+/* 手机上表格改成横向滚动，不再把「城市争霸赛」这种中文挤成竖排（外部测评抓的） */
+@media(max-width:560px){.tw table{min-width:540px}.tw td,.tw th{white-space:nowrap}}
 table{width:100%;border-collapse:collapse;background:rgba(6,21,32,.4);font-size:13px}
 th{text-align:left;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dim);
   font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line);
@@ -600,9 +610,9 @@ td .tlogo{margin-right:5px}
 @media(max-width:560px){.brk{grid-template-columns:40px 1fr;}.brk .bp{grid-column:2}}
 
 /* ---- HUD 的「现在」格 ---- */
-.hud .hud-now{flex:1 1 210px;background:linear-gradient(180deg,rgba(201,169,97,.16),var(--panel))}
+.hud .hud-now{background:linear-gradient(180deg,rgba(201,169,97,.16),var(--panel))}
 /* 粉丝格里要塞下「档位名 + 粉丝数」，96px 的基准宽度会把它挤成两行半 */
-.hud .hud-fan{flex:1 1 148px}
+.hud .hud-fan{min-width:0}
 
 /* ---- 托管 ---- */
 .autogrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
@@ -779,6 +789,37 @@ ul.dealfx li::marker{color:var(--ink-3)}
 }
 .audiofab button:hover{border-color:var(--gold)}
 .audiofab button.off{opacity:.45;border-color:var(--line)}
+/* 背景音乐浮窗 */
+.bgmpanel{position:fixed;right:14px;bottom:60px;z-index:61;width:264px;max-width:calc(100vw - 28px);
+  background:rgba(12,26,40,.97);border:1px solid var(--line-hot);border-radius:12px;
+  box-shadow:0 6px 24px rgba(0,0,0,.5);color:var(--ink);font-size:13px;overflow:hidden}
+.bp-head{display:flex;align-items:center;gap:8px;padding:9px 11px;border-bottom:1px solid var(--line)}
+.bp-head b{flex:1;color:var(--gold-hi);letter-spacing:.04em}
+.bp-pow{font-size:11px;padding:1px 9px;border-radius:20px;border:1px solid var(--gold);
+  background:transparent;color:var(--gold-hi);cursor:pointer}
+.bp-pow.off{color:var(--ink-3);border-color:var(--line)}
+.bp-x{width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:transparent;
+  color:var(--ink-2);cursor:pointer;font-size:15px;line-height:1}
+.bp-x:hover{border-color:var(--gold);color:var(--gold-hi)}
+.bp-now{padding:8px 11px 4px}
+.bp-title{display:block;color:var(--ink);font-weight:600;line-height:1.35;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bp-ctrl{display:flex;align-items:center;gap:8px;padding:2px 11px 9px}
+.bp-ctrl button{width:32px;height:32px;border-radius:50%;border:1px solid var(--line-hot);
+  background:rgba(14,42,62,.9);color:var(--gold-hi);cursor:pointer;font-size:13px;line-height:1}
+.bp-ctrl button:hover{border-color:var(--gold)}
+.bp-hint{flex:1;text-align:right;color:var(--ink-3);font-size:11px}
+.bp-list{max-height:198px;overflow-y:auto;border-top:1px solid var(--line);padding:4px}
+.bp-row{display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+  background:transparent;border:none;color:var(--ink-2);cursor:pointer;
+  padding:6px 8px;border-radius:7px;font-size:12.5px;line-height:1.3}
+.bp-row:hover{background:rgba(255,255,255,.05)}
+.bp-row .bp-dot{width:6px;height:6px;border-radius:50%;background:var(--line-hot);flex:none}
+.bp-row .bp-rt{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bp-row.on{color:var(--gold-hi)}
+.bp-row.on .bp-dot{background:var(--gold)}
+.bp-row.miss{opacity:.34;cursor:not-allowed}
+.bp-row.miss .bp-dot{background:var(--line)}
 .credits{
   text-align:center;color:var(--ink-3);font-size:12px;letter-spacing:.05em;
   padding:26px 0 18px;border-top:1px solid var(--line);margin-top:34px;

@@ -33,6 +33,17 @@ jobs:
           curl -fsS http://localhost:3000/healthz | grep -q ok
           curl -fsSI -H 'Accept-Encoding: br' http://localhost:3000/ | grep -qi 'content-encoding: br'
           curl -fsSI http://localhost:3000/ | grep -qi 'content-security-policy: '
+          # CSP 哈希必须等于「浏览器眼里的脚本」（LF 归一后）的哈希——外部测评抓的 Windows 白屏就是这里对不上
+          node -e "
+            const http=require('http'),crypto=require('crypto');
+            http.get('http://localhost:3000/',res=>{let b='';res.setEncoding('utf8');res.on('data',c=>b+=c);res.on('end',()=>{
+              const csp=String(res.headers['content-security-policy']||'');
+              const re=/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi; let m,bad=0,n=0;
+              while((m=re.exec(b))){ n++; const h=crypto.createHash('sha256').update(Buffer.from(m[1].replace(/\r\n/g,'\n'),'utf8')).digest('base64'); if(!csp.includes(h)) bad++; }
+              if(!n||bad){ console.error('CSP 哈希与内联脚本不匹配', {n,bad}); process.exit(1); }
+              console.log('CSP 哈希匹配', n, '段');
+            });}).on('error',e=>{console.error(e);process.exit(1);});
+          "
           curl -sSI -H 'Host: poxiao.lol' http://localhost:3000/ | grep -q '301'
           curl -sSI -H 'Host: poxiao.lol' http://localhost:3000/ | grep -qi 'location: https://www.poxiao.lol/'
           curl -fsS -H 'Host: poxiao.lol' http://localhost:3000/xfer | grep -q 'poxiao-xfer'

@@ -248,6 +248,7 @@ function openIntl(type,field,stage){
           double:(type==="msi"&&stage==="knockout"), wins:0, losses:0,
           swiss:{}};
   field.forEach(n=>S.intl.swiss[n]=[0,0]);
+  if(stage==="knockout") brInit(field, S.intl.double);   // MSI 直接淘汰赛：按战力排种子入树
   if(typeof breakthrough==="function")
     breakthrough("运营",2.0,"见过国际赛场的强度，回头看联赛都慢了半拍。","intl"+S.si);
   if(typeof checkAch==="function") checkAch("intl");   // 走出国门（审计：钩子缺失）
@@ -281,15 +282,108 @@ function intlBoNeed(){
   const [w,l]=I.record;
   return (w===2||l===2)?2:1;
 }
+/* ---------- 淘汰赛对阵树（2026-09-05 玩家实锤：MSI 决赛遇上 70 分的队）----------
+   原来淘汰赛的对手是「剩余未交手的队按战力升序取第 k 个」，双败还把输给过的队一并排除——
+   胜者组输给 T1 之后决赛就永远遇不到它，T1/GEN 一百多分，决赛却和七十多的打。
+   现在是真正的对阵树：8 队按种子入位（先看瑞士轮/小组战绩，再看战力；1v8、4v5 在上半区，
+   2v7、3v6 在下半区，一二号种子只在决赛相遇），其他对局按战力模拟，你的下一个对手就是树上
+   相邻的胜者。MSI 走完整双败：胜者组三轮 → 掉败者组 → 败者组决赛 → 总决赛。 */
+function brSeed(field){
+  const I=S.intl;
+  const rec=n=>(I&&I.swiss&&I.swiss[n])?I.swiss[n][0]*10-I.swiss[n][1]:0;
+  let seeded=field.slice().sort((a,b)=>(rec(b)-rec(a))||(pw(b)-pw(a)));
+  // 你必须在树上：种子排到 8 名之外就顶掉第 8
+  const mi=seeded.indexOf(S.team);
+  if(mi>=8){ seeded.splice(mi,1); seeded.splice(7,0,S.team); }
+  seeded=seeded.slice(0,8);
+  const order=[0,7,3,4,1,6,2,5];
+  return order.map(i=>seeded[i]||null);   // 不足 8 队的位置留空 = 轮空（MSI 六七支队常见）
+}
+function brInit(field,double){
+  const seeds=brSeed(field);
+  S.intl.br={double:!!double, step:0, ub:double?seeds:seeds.filter(Boolean), lb:[], lbw:[], out:[], champ:null, uL:null, pending:null};
+}
+/* 一场对局的胜者：一边轮空直接晋级，两边都空就继续空着往下传 */
+function brSim(p){ return !p[0]?p[1]||null:!p[1]?p[0]:simBo(p[0],p[1],3); }
+function brStep(){
+  const B=S.intl&&S.intl.br; if(!B) return null;
+  if(!B.double){
+    const n=B.ub.length; if(n<=1) return null;
+    const pairs=[]; for(let i=0;i+1<n;i+=2) pairs.push([B.ub[i],B.ub[i+1]]);
+    return {pairs, label:n>=8?"八强":n>=4?"半决赛":"决赛"};
+  }
+  switch(B.step){
+    case 0: return {pairs:[[B.ub[0],B.ub[1]],[B.ub[2],B.ub[3]],[B.ub[4],B.ub[5]],[B.ub[6],B.ub[7]]], label:"胜者组第一轮"};
+    case 1: return {pairs:[[B.lb[0],B.lb[1]],[B.lb[2],B.lb[3]]], label:"败者组第一轮"};
+    case 2: return {pairs:[[B.ub[0],B.ub[1]],[B.ub[2],B.ub[3]]], label:"胜者组半决赛"};
+    case 3: return {pairs:[[B.lb[0],B.lb[1]],[B.lb[2],B.lb[3]]], label:"败者组第二轮"};
+    case 4: return {pairs:[[B.ub[0],B.ub[1]]], label:"胜者组决赛"};
+    case 5: return {pairs:[[B.lb[0],B.lb[1]]], label:"败者组第三轮"};
+    case 6: return {pairs:[[B.lb[0],B.uL]], label:"败者组决赛"};
+    case 7: return {pairs:[[B.ub[0],B.lb[0]]], label:"总决赛"};
+  }
+  return null;
+}
+function brApply(st,winners){
+  const B=S.intl.br;
+  const win=i=>winners[i]||null;
+  const lose=i=>{ const p=st.pairs[i]; if(!p||!p[0]||!p[1]) return null; return p[0]===winners[i]?p[1]:p[0]; };
+  const real=a=>a.filter(Boolean);
+  if(!B.double){
+    const n=B.ub.length;
+    B.ub=st.pairs.map((p,i)=>win(i)).concat(n%2?[B.ub[n-1]]:[]);   // 奇数队最后一个轮空
+    B.out=B.out.concat(real(st.pairs.map((p,i)=>lose(i))));
+    if(B.ub.length===1) B.champ=B.ub[0];
+    return;
+  }
+  switch(B.step){
+    case 0: B.ub=[win(0),win(1),win(2),win(3)]; B.lb=[lose(0),lose(1),lose(2),lose(3)]; break;
+    case 1: B.lbw=[win(0),win(1)]; B.out=B.out.concat(real([lose(0),lose(1)])); break;
+    case 2: B.ub=[win(0),win(1)]; B.lb=[B.lbw[0],lose(1),B.lbw[1],lose(0)]; break;   // 交叉：胜者组掉下来的不立刻重赛
+    case 3: B.lb=[win(0),win(1)]; B.out=B.out.concat(real([lose(0),lose(1)])); break;
+    case 4: B.uL=lose(0); B.ub=[win(0)]; break;
+    case 5: B.lb=[win(0)]; B.out=B.out.concat(real([lose(0)])); break;
+    case 6: B.lb=[win(0)]; B.out=B.out.concat(real([lose(0)])); break;
+    case 7: B.champ=win(0)||B.ub[0]||B.lb[0]; B.out=B.out.concat(real([lose(0)])); break;
+  }
+  B.step++;
+}
+/* 推进到「有你的那一场」：你不在的对局按战力模拟，你轮空就直接过；返回 {opp,label} 或 null（树跑完） */
+function brNext(){
+  const B=S.intl&&S.intl.br; if(!B) return null;
+  for(let guard=0;guard<12;guard++){
+    const st=brStep(); if(!st||!st.pairs.length) return null;
+    const mine=st.pairs.findIndex(p=>p[0]===S.team||p[1]===S.team);
+    if(mine>=0){
+      const p=st.pairs[mine], opp=p[0]===S.team?p[1]:p[0];
+      if(opp){ B.pending={step:B.step,idx:mine,label:st.label}; return {opp, label:st.label}; }
+    }
+    brApply(st, st.pairs.map(brSim));
+    if(B.champ) return null;
+  }
+  return null;
+}
+/* 你打完了：结果写回树，同一轮其他对局模拟 */
+function brResolveMine(won){
+  const B=S.intl&&S.intl.br; if(!B||!B.pending) return;
+  const st=brStep(); if(!st) return;
+  const winners=st.pairs.map((p,i)=>{ if(i===B.pending.idx) return won?S.team:(p[0]===S.team?p[1]:p[0]); return brSim(p); });
+  brApply(st,winners); B.pending=null;
+}
+function brOthersText(){
+  const st=brStep(); if(!st) return "";
+  const rest=st.pairs.filter(p=>p[0]&&p[1]&&p[0]!==S.team&&p[1]!==S.team);
+  return rest.length?`同轮其他对局：${rest.map(p=>`${p[0]} vs ${p[1]}`).join("、")}`:"";
+}
 function nextIntlOpp(){
   const I=S.intl;
   if(I.stage==="knockout"){
-    const base=(I.knockField||I.field||[]);
-    let pool=base.filter(n=>n!==S.team&&!(I.beaten||[]).includes(n));
-    if(!pool.length) pool=base.filter(n=>n!==S.team);
-    pool.sort((a,b)=>pw(a)-pw(b));
-    const last=I.double?(I.wins>=(I.losses?3:2)):(I.knockRound>=3);
-    return last?pool[pool.length-1]:pool[Math.min(I.knockRound-1,pool.length-1)];
+    if(!I.br) brInit(I.knockField||I.field||[], I.double);
+    const nx=brNext();
+    if(nx) return nx.opp;
+    // 兜底（树跑完却还在问）：剩余最强
+    const base=(I.knockField||I.field||[]).filter(n=>n!==S.team&&!(I.beaten||[]).includes(n));
+    base.sort((a,b)=>pw(b)-pw(a)); return base[0]||(I.field||[]).find(n=>n!==S.team);
   }
   if(I.stage==="playin") return I.queue[Math.min(I.round-1,I.queue.length-1)];
   // 瑞士轮/小组赛：配同战绩、不同赛区的对手
@@ -560,7 +654,7 @@ function intlAdvance(){
     I.round++; enterPrep("intl", nextIntlOpp(), intlBoNeed(), `${name}第 ${I.round} 轮 · 赛前备战`); return;
   }
 
-  /* --- 淘汰赛 --- */
+  /* --- 淘汰赛（对阵树）--- */
   if(I.stage==="knockout"){
     I.beaten=(I.beaten||[]).concat([S.match.oppName]);
     if(won){
@@ -568,26 +662,36 @@ function intlAdvance(){
       (I.koWins=I.koWins||[]).push(S.match.oppName);
       wlAdd(leagueOf(S.match.oppName),0.10*wlInfluence());   // 你掐断了这个赛区一截世界线
     }
+    if(!I.br) brInit(I.knockField||I.field||[], I.double);
+    const lab=(I.br.pending&&I.br.pending.label)||"淘汰赛";
+    brResolveMine(won);
+    const B=I.br;
     if(I.double){
-      /* MSI：8 队双败。输一场掉败者组，输两场淘汰；
-         胜者组一路赢 3 场夺冠，走过败者组则需要 4 场。 */
       if(!won){
         I.losses++;
-        if(I.losses>=2){ finishIntl(I.wins>=3?"败者组决赛":"败者组","knock"); return; }
-        pushEvent(`MSI：<b>${S.team}</b> 输给 ${S.match.oppName}，掉入败者组。<b>再输一场就回家。</b>`,"bad","MSI");
-        I.knockRound++; enterPrep("intl", nextIntlOpp(), 3, `${name}淘汰赛 · 赛前备战`); return;
+        if(lab==="总决赛"){ finishIntl("总决赛（亚军）","final"); return; }
+        if(I.losses>=2){ finishIntl(lab,I.wins>=3?"final":"knock"); return; }
+        pushEvent(`MSI ${lab}：<b>${S.team}</b> 输给 ${S.match.oppName}，掉入败者组。<b>再输一场就回家。</b>`,"bad","MSI");
+      } else {
+        I.wins++;
+        if(B.champ===S.team){ crownChampion(); return; }
       }
-      I.wins++;
-      if(I.wins>=(I.losses?4:3)){ crownChampion(); return; }
-      I.knockRound++; enterPrep("intl", nextIntlOpp(), 3, `${name}淘汰赛 · 赛前备战`); return;
+      const nx=brNext();
+      if(!nx){ if(B.champ===S.team) crownChampion(); else finishIntl(lab,"knock"); return; }
+      I.knockRound++;
+      pushEvent(`MSI ${nx.label}：对手 <b>${nx.opp}</b>（${leagueOf(nx.opp)}）。${brOthersText()}`,"info","MSI");
+      enterPrep("intl", nx.opp, 3, `${name}${nx.label} · 赛前备战`); return;
     }
-    /* 世界赛：8 强单败 BO5，三轮 */
+    /* 世界赛：8 强单败 BO5 */
     if(!won){
-      const stage=I.knockRound>=3?"决赛":I.knockRound===2?"半决赛":"八强";
-      finishIntl(stage,I.knockRound>=3?"final":I.knockRound===2?"semi":"knock"); return;
+      finishIntl(lab,lab==="决赛"?"final":lab==="半决赛"?"semi":"knock"); return;
     }
-    if(I.knockRound>=3){ crownChampion(); return; }
-    I.knockRound++; enterPrep("intl", nextIntlOpp(), 3, `${name}淘汰赛 · 赛前备战`); return;
+    if(B.champ===S.team){ crownChampion(); return; }
+    const nx=brNext();
+    if(!nx){ crownChampion(); return; }
+    I.knockRound++;
+    pushEvent(`世界赛${nx.label}：对手 <b>${nx.opp}</b>（${leagueOf(nx.opp)}）。${brOthersText()}`,"info","世界赛");
+    enterPrep("intl", nx.opp, 3, `${name}${nx.label} · 赛前备战`); return;
   }
 
   /* --- 瑞士轮 / 小组赛 --- */
@@ -605,6 +709,7 @@ function intlAdvance(){
     I.stage="knockout"; I.knockField=[S.team].concat(others);
     if(typeof checkAch==="function") checkAch("intlknock");
     I.knockRound=1; I.beaten=[];
+    brInit(I.knockField,false);   // 八强对阵树：按瑞士轮/小组战绩排种子
     pushEvent(`<b>${S.team}</b> ${wasGroups?"小组出线":"瑞士轮 3 胜晋级"}，进入八强。`,"good",name);
     pushEvent(`八强对阵抽签：你们抽到了 <b>${nextIntlOpp()}</b>（${leagueOf(nextIntlOpp())}）。淘汰赛全部 BO5。`,"info",name);
     enterPrep("intl", nextIntlOpp(), 3, `${name}八强 · 赛前备战`); return;

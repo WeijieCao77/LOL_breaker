@@ -29,7 +29,9 @@ function trustDecay(){
   });
 }
 /* 信任对战力的修正：更衣室散了，五个人打不出五个人的东西 */
-function trustMod(){ return 1+(avgTrust()-50)/380; }
+/* 士气乘数（2026-09-05 玩家实锤「青训 85 比 LPL 一线还高」：原来只有你的队有士气项、AI 队永远 ×1.0，
+   信任 88 就白拿 +10%）。现在幅度减半（88 → ×1.05），AI 队按近期战绩也有士气（powerCore 的 formMorale） */
+function trustMod(){ return 1+(avgTrust()-50)/760; }
 
 /* 换人后补上新队友的信任（新人不认识你） */
 function syncTrust(){
@@ -213,30 +215,40 @@ function payday(){
   if(typeof addMoney==="function") addMoney("salary",pay); else S.money+=pay;
   pushEvent(`赛段结算：薪资到账 <b>${pay} 万</b>（当前人气 ${Math.round(S.fans)}）。`,"info","合同");
 }
-/* 合同：两个赛季一签，到期看表现续约或走人 */
+/* 合同：两个赛季一签，到期不再暗箱判「留/走」，而是走一条你看得见、由你拍板的流程：
+   · 队伍愿意留你 → 递一份「续约报价」，你签 / 拒（拒 → 转自由市场）
+   · 队伍放你走   → 明确告知 + 原因，转自由市场（不再瞬移到随机弱队）
+   返回 "renew"（已挂起 S.pendingRenew）或 "cut"（队伍放走）；未到期返回 null。 */
 function contractCheck(){
   S.contract=S.contract||{years:2,left:2};
   S.contract.left--;
   if(S.contract.left>0) return null;
   const ovr=avg(DIMS.map(d=>S.attrs[d]));
-  const teamAvg=avg(myRoster().filter(p=>!p.me).map(p=>avg(DIMS.map(d=>p.r[d]))));
-  const keep = ovr>=teamAvg-6 && avgTrust()>=35;
-  if(keep){
-    // 续约不是重签一份一样的合同：打得好，年薪和违约金都往上走
-    const raise=clamp(1.15+(ovr-teamAvg)*0.02,1.05,1.7);
-    const old=S.contract.salary;
-    S.contract={
-      years:2, left:2,
-      salary: old!==undefined?Math.round(old*raise):undefined,
-      sign: 0,
-      buyout: S.contract.buyout!==undefined?Math.round(S.contract.buyout*raise):undefined,
-      team:S.team, tier:S.contract.tier, grade:S.contract.grade,
-      clubTier:S.contract.clubTier
+  const mates=myRoster().filter(p=>!p.me);
+  const teamAvg=mates.length?avg(mates.map(p=>avg(DIMS.map(d=>p.r[d])))):ovr;
+  const trust=avgTrust();
+  // 今年拿了任意冠军（联赛/MSI/世界赛）= 铁续约——修「夺冠却被裁」（玩家 TOP 夺冠被裁实锤）
+  const wonTitle = ((S.career&&S.career.lgYears)||[]).includes(S.si)
+                || ((S.career&&S.career.msiYears)||[]).includes(S.si)
+                || ((S.career&&S.career.worldsYears)||[]).includes(S.si);
+  const wantRenew = wonTitle || (ovr>=teamAvg-6 && trust>=35);
+  if(wantRenew){
+    // 续约不是重签一份一样的合同：打得好、拿了冠军，年薪和违约金都往上走
+    const raise=clamp(1.15+(ovr-teamAvg)*0.02+(wonTitle?0.15:0),1.05,1.9);
+    const old=S.contract;
+    S.pendingRenew={
+      team:S.team, years:2,
+      salary: old.salary!==undefined?Math.round(old.salary*raise):undefined,
+      buyout: old.buyout!==undefined?Math.round(old.buyout*raise):undefined,
+      tier:old.tier, grade:old.grade, clubTier:old.clubTier,
+      wonTitle, oldSalary:old.salary, oldBuyout:old.buyout
     };
-    pushEvent(`<b>${S.team}</b> 与你续约两个赛段，薪资涨到 <b>${salaryOf()} 万</b>${
-      S.contract.buyout?`，违约金提到 <b>${S.contract.buyout} 万</b>`:""}。`,"good","合同");
-    return null;
+    return "renew";
   }
-  S.contract={years:2,left:2};
+  // 队伍不再续约：原因写清楚，成为自由身转自由市场
+  S.freeAgent = true;
+  S.cutReason = trust<35
+    ? "更衣室对你的信任跌破了底线，管理层不再给合同。"
+    : "你的水平已经明显跟不上这支队，他们决定不续约。";
   return "cut";
 }
