@@ -517,10 +517,11 @@ function makeDeal(){
     team:t.team, clubTier:t.tier, dealTier:rt, grade:r.g, kind:D.k,
     salary: Math.round(lerp(T.pay[0], T.pay[1], q) * mul),
     sign:   Math.round(lerp(T.sign[0], T.sign[1], q) * mul),
-    years:  T.years,
+    years:  S.shortDeal ? 1 : T.years,   // 顶班短约：一个赛段（赛段注册期的规则）
     buyout: Math.round(lerp(T.buyout[0], T.buyout[1], q) * mul),
-    asks: 0, leverage: dealLeverage(r.g), dead:false, signed:false, log:[]
+    asks: 0, leverage: dealLeverage(r.g), dead:false, signed:false, log:S.shortDeal?[`<div><span class="hi">顶班短约</span> — <span class="l">一个赛段，打出来再谈长的</span></div>`]:[]
   };
+  S.shortDeal = null;
   S.tryout = null;
   render();
 }
@@ -949,7 +950,8 @@ function proOfferCard(){
       ${o.direct
         ? "他们看过你这个赛段的比赛，<b>不需要试训</b>，直接想谈合同。"
         : "他们想先让你去队里试训四天再决定。"}
-      ${o.buyout?`<br>要带走你，得先付 <b>${o.buyout} 万</b>违约金——这笔钱归你现在的俱乐部。`:""}
+      ${o.buyout?`<br>要带走你，得先付 <b>${o.buyout} 万</b>违约金${o.reg?"（赛段里换队按 1.2 倍算）":""}——这笔钱归你现在的俱乐部。`:""}${
+        o.reg?`<br><b style="color:var(--gold)">赛段注册期的单</b>：没有签字费，进队默契从头磨，现在谈成下周就换队衣。`:""}
       ${(o.league&&o.league!=="LPL")?`<br><b style="color:var(--gold)">这是 ${o.league}。</b>${
         (o.league==="LCK"&&typeof hasCourse==="function"&&hasCourse("kr"))?"你会韩语，沟通不是问题。"
         :(o.league!=="LCK"&&typeof hasCourse==="function"&&hasCourse("en"))?"你会英语，沟通不是问题。"
@@ -1025,6 +1027,7 @@ function faCard(){
 function takeProOffer(){
   const o = S.proOffer; if(!o) return;
   S.proOffer = null;
+  S._regDeal = !!o.reg;   // 赛段注册期的单：1.2 倍违约金、没签字费
   if(o.direct){ makeProDeal(o.tier, o.team, "A", o.league); return; }
   // 职业转会试训是简化流程：免单排考核，三个环节
   S.tryout = { tier:o.tier, team:o.team, expect:CLUB_TIERS[o.tier].expect,
@@ -1129,6 +1132,50 @@ function txWindowOpen(){
   // 季中窗：MSI 还在打的那几周不算（S.off.wndFrom 是开窗的周）
   return !!(S.off && (S.off.next==="year" || (S.off.next==="summer" && S.off.week>=(S.off.wndFrom||1))));
 }
+/* ---------- 三层窗口（2026-09-06 玩家拍板，照现实：自由无约日 + 冬夏转会期 + 赛段内有限注册 + 名单锁定）----------
+   window：转会期（年底 / MSI 后）——主市场，什么都能做；
+   reg：   赛段注册期（常规赛第 1–REG_WEEKS 周）——自由身能签短约顶班、赛段里被挖要付 1.2 倍违约金且没签字费、AI 队升降；
+   lock：  名单锁定（常规赛最后两周、季后赛、国际赛、MSI / 世界赛进行中）——什么都不动。 */
+const REG_WEEKS=5;
+function txPhase(){
+  if(txWindowOpen()) return "window";
+  if(S.step==="season"&&!S.playoff&&!S.intl&&(S.week||1)<=REG_WEEKS) return "reg";
+  return "lock";
+}
+function txPhaseName(){
+  const ph=txPhase();
+  return ph==="window"?txWindowName():ph==="reg"?`赛段注册期 第 ${S.week}/${REG_WEEKS} 周`:"名单锁定";
+}
+/* 赛段注册期里被挖：概率比窗口低得多，买你的队要付 1.2 倍违约金、你拿不到签字费、进队默契从头磨。每个赛段最多摇一次。 */
+function regRollOffer(){
+  if(!S.career||!S.team||S.proOffer||S.deal||S.tryout||S.freeAgent) return;
+  const key=S.si+"-"+(S.split||0)+"-reg"; if(S.regWnd===key) return; S.regWnd=key;
+  const inLDL=(S.homeLeague||"LPL")==="LDL";
+  const perf=proPerf()-buyoutDrag()*1.2;
+  if(inLDL&&perf<10) return;
+  const p=clamp(0.04+perf*0.012,0.02,0.35);
+  if(rnd()>=p) return;
+  const tier=perf>=19?"top":perf>=10?"mid":"low";
+  const HL=inLDL?"LPL":(S.homeLeague||"LPL");
+  const team=pickClub(tier,HL); if(!team||team===S.team) return;
+  S.proOffer={team,tier,league:HL,perf:Math.round(perf),direct:perf>=15,
+              buyout:Math.round(((S.contract&&S.contract.buyout)||0)*1.2),reg:true};
+  pushEvent(`赛段注册期：<b>${team}</b> 递了问询。<span style="color:var(--ink-3)">赛段里换队要付 <b>1.2 倍违约金</b>、没有签字费，进队默契从头磨——现在谈成，下周就换队衣。</span>${
+    S.proOffer.direct?"":"他们想先让你去试训几天。"}`,"big","转会");
+}
+/* 回到路人的前职业选手：赛段注册期里有队受伤缺人，会来找你顶班——短约一个赛段，打出来再谈 */
+function checkTopUpInvite(){
+  const P=S.pre; if(!P||!S.careerBak) return;
+  const w=P.week, reg=(w>=2&&w<=6)||(w>=11&&w<=15);   // 职业前日历上大致对应春 / 夏常规赛的前五周
+  if(!reg||rnd()>=0.14) return;
+  if(!canInvite("low")) return;
+  const tier=fitTier("mid");
+  const team=pickClub(tier); if(!team) return;
+  P.invite={tier,team,league:null,reason:"队里有人受伤，需要人顶班",pending:true,week:w,expect:CLUB_TIERS[tier].expect,short:true};
+  P.inviteCd=w+2; P.inviteN=(P.inviteN||0)+1;
+  preLog(`<b>${team}</b> 的首发受伤了，他们想让你去<b>顶班</b>——<b>短约一个赛段</b>，打出来再谈长的。`,"big");
+  if(typeof render==="function") render();
+}
 /* ---------- 合同的起止（玩家 2026-09-06 点名：写清从什么时候到什么时候，不只是「几个赛段」）----------
    赛段序号 = 赛季×2 + (0 春 / 1 夏)。春季赛段在 MSI 结束时到期，夏季赛段在世界赛结束时到期。 */
 function splitIdxNow(){
@@ -1159,7 +1206,7 @@ function txWindowName(){
 }
 function canAskTransfer(){
   if(!S.career||!S.team) return {ok:false,why:"还没签约"};
-  if(!txWindowOpen()) return {ok:false,why:"注册窗没开——季中间歇和年底休赛期才能挂牌，赛段中提转会俱乐部直接按违约处理"};
+  if(!txWindowOpen()&&txPhase()!=="reg") return {ok:false,why:"名单已锁定——常规赛最后两周、季后赛和国际赛期间不能挂牌；赛段注册期（前 5 周）和转会期可以"};
   if(S.askedTransfer) return {ok:false,why:"这个注册窗已经挂过一次牌了"};
   if(S.proOffer||S.deal||S.tryout) return {ok:false,why:"手上还有没谈完的事"};
   return {ok:true};
@@ -1255,7 +1302,7 @@ function makeProDeal(tier, team, grade, league){
   const q = clamp((proPerf() + 6) / 30, 0.15, 1);
   // 违约金进谈判桌（2026-08-31 玩家拍板）：
   // 定太高的话，试训评级再好，对面也可能付不起这笔转会费。
-  const fee = S.freeAgent ? 0 : ((S.contract && S.contract.buyout) || 0);
+  const fee = S.freeAgent ? 0 : Math.round(((S.contract && S.contract.buyout) || 0) * (S._regDeal ? 1.2 : 1));
   const budget = transferBudget(tier, grade);
   if(fee > budget * 1.5){
     pushEvent(`<b>${team}</b> 谈到最后一步还是收手了：<b>${fee} 万违约金他们付不起</b>
@@ -1266,8 +1313,8 @@ function makeProDeal(tier, team, grade, league){
     render(); return;
   }
   let salary = Math.round(lerp(T.pay[0], T.pay[1], q));
-  let sign   = Math.round(lerp(T.sign[0], T.sign[1], q));
-  let feeCutNote = "";
+  let sign   = S._regDeal ? 0 : Math.round(lerp(T.sign[0], T.sign[1], q));   // 赛段里换队没有签字费
+  let feeCutNote = S._regDeal ? `<div><span class="hi">赛段注册期</span> — <span class="l">买断按 1.2 倍算、没有签字费、进队默契从头磨</span></div>` : "";
   if(fee > budget){
     // 超预算不到五成：帮你付，但从你的条件里扣 20–40%
     const cut = clamp(0.2 + 0.4 * (fee - budget) / (budget * 0.5), 0.2, 0.4);
@@ -1281,7 +1328,7 @@ function makeProDeal(tier, team, grade, league){
     salary, sign,
     years:  T.years,
     buyout: Math.round(lerp(T.buyout[0], T.buyout[1], q)),
-    asks:0, dead:false, signed:false, log:feeCutNote?[feeCutNote]:[],
+    asks:0, dead:false, signed:false, log:feeCutNote?[feeCutNote]:[], reg:!!S._regDeal,
     // 已经打出成绩的人，谈判底气不该再看职业前那点排位分
     leverage: clamp(14 + proPerf()*0.9 + Math.min(S.fans,400)*0.03, 8, 70)
   };
@@ -1311,6 +1358,11 @@ function signTransfer(){
                  clubTier:d.clubTier };
   S.rosterSig = myRoster().map(x=>x.id).sort().join("|");
   if(typeof disruptSynergy==="function") disruptSynergy(1, `<b>${meName()}</b> 转会加盟`);
+  if(d.reg&&S.step==="season"){   // 赛段注册期换队：剩下的常规赛按新队的轮次表打，默契从头磨
+    if(typeof rebuildMySchedule==="function") rebuildMySchedule();
+    if(S.squad){ S.squad.syn=Math.min(S.squad.syn,40); S.squad.tac=Math.min(S.squad.tac,42); }
+  }
+  S._regDeal=false;
   pushEvent(`<b>${meName()}</b> 从 <b>${old}</b> 转会到 <b>${d.team}</b>${
     (d.league&&d.league!==oldLg)?`，去了 <b>${d.league}</b>`:""}。${
     fee?`对方付了 <b>${fee} 万</b>违约金。`:""}年薪 ${d.salary} 万，${d.years} 个赛段。`,
@@ -1395,6 +1447,7 @@ function acceptPromote(){
   pt.players = pt.players.map(q => q.pos === S.pos
     ? {id:S.name||"你", cn:"", pos:S.pos, age:S.age, r:S.attrs, me:true} : q);
   if(typeof markTeamJoin==="function") markTeamJoin();   // 换了队，在队时长归零
+  if(S.step==="season"&&typeof rebuildMySchedule==="function") rebuildMySchedule();
   S.trust = {}; if(typeof initTrust === "function") initTrust();
   if(typeof syncTrust === "function") syncTrust();
   if(S.contract){
@@ -1636,7 +1689,7 @@ function transferPage(){
       <td>${typeof teamLogo==="function"?teamLogo(x.team,18):""}${x.team}${x.asked?'<span class="tag">你去接触的</span>':""}</td>
       <td>${CLUB_TIERS[x.tier]?CLUB_TIERS[x.tier].n:x.tier}${x.league&&x.league!=="LPL"?` · ${x.league}`:""}</td>
       <td class="n">${SEASONS[x.si]?SEASONS[x.si].tag:""}</td></tr>`).join("") : "";
-  const intentCard = `<div class="card"><h2>转会意向<em>${wnd?txWindowName()+" · 开着":"注册窗未开"}</em></h2>
+  const intentCard = `<div class="card"><h2>转会意向<em>${wnd?txWindowName()+" · 开着":txPhaseName()}</em></h2>
     ${intents.length?`<div class="tw"><table>
       <thead><tr><th>战队</th><th>档次</th><th>记录于</th></tr></thead>
       <tbody>${intentRows}</tbody></table></div>

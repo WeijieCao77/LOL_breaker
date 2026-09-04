@@ -283,6 +283,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906m", at:"2026-09-06", items:[
+    "三层转会窗口（玩家拍板，照现实规则）：转会期（MSI 后、世界赛后）是主市场，什么都能做；赛段注册期（常规赛前 5 周）——回到路人的前职业选手会接到「顶班」邀请（短约一个赛段，打出来再谈长的），赛段里也可能有队来挖你（概率低、买断按 1.2 倍、没签字费、进队默契从头磨、下周就换队衣），AI 队第 3 周做一次升降；常规赛最后两周、季后赛、国际赛名单锁定。本周卡标题写着现在处于哪一层"
+  ]},
   {v:"v20260906l", at:"2026-09-06", items:[
     "「弱队冲榜」方案 A 上线（玩家拍板）：你的版本相性压回 AI 同一把尺——每高联赛均线 1 分 +0.16 战力（原 0.55，AI 是 0.08），整体封顶 ±6；比赛节点的成功率七成看你、三成看队友同一维的均值，摆动从 ±风险×6 收到 ±风险×4.5。一个人拉不动四个人；你在队里的权重 1.6 不变"
   ]},
@@ -2150,6 +2153,7 @@ function advancePreWeek(){
   if(typeof cupTick==='function') cupTick();
   if(typeof wndOfferTick==='function') wndOfferTick();   // 转会窗口滴灌：一周最多一家
   if(typeof checkRankInvite==='function') checkRankInvite();
+  if(typeof checkTopUpInvite==='function') checkTopUpInvite();   // 前职业选手：赛段注册期里有队缺人来找你顶班
   // 突破进度也要在职业前结算。原来 btkWeekEnd 只在赛季的 nextWeek 里调，
   // 职业前那条「连续 3 周投操作」的提示就永远是 0/3——提示让你做的事做了也不算数。
   if(typeof btkWeekEnd==='function') btkWeekEnd();
@@ -2481,6 +2485,19 @@ function startSeason(first,split){
   render();
 }
 
+/* 赛段里换了队：剩下的常规赛按新队在轮次表里的对手打（转会 / 升队都用） */
+function rebuildMySchedule(){
+  try{
+    const HL=S.homeLeague||"LPL";
+    if(!S.fixtures||!S.fixtures[HL]||!S.world[HL]) return;
+    const sch=(S.fixtures[HL]||[]).map(round=>{ const pr=round.find(x=>x[0]===S.team||x[1]===S.team); return pr?(pr[0]===S.team?pr[1]:pr[0]):null; });
+    const rest=S.world[HL].filter(t=>t.name!==S.team).map(t=>t.name);
+    for(let i=0;i<WEEKS;i++){ if(!sch[i]) sch[i]=rest[Math.floor(rnd()*rest.length)]; }
+    S.schedule=sch.slice(0,WEEKS);
+    if(!S.standings[HL]) S.standings[HL]={};
+    if(!S.standings[HL][S.team]) S.standings[HL][S.team]={w:0,l:0};
+  }catch(e){}
+}
 /* ================= 赛季回合 ================= */
 /* 打排位带来的成长：五项都涨，但每一项都比专项训练浅。
    权重按「一局排位里各项用得多不多」来分：对线和运营用得最多，
@@ -3130,7 +3147,7 @@ function viewSeason(){
   ${tabBar(TABS_SEASON)}
   ${nextMatchCard()}
   <div class="card">
-    <h2>${sea.tag} ${SPLITS[S.split||0]} · 第 ${S.week}/${WEEKS} 周<em>剩余行动点 ${S.ap}</em></h2>
+    <h2>${sea.tag} ${SPLITS[S.split||0]} · 第 ${S.week}/${WEEKS} 周<em>剩余行动点 ${S.ap}${typeof txPhaseName==="function"?" · "+txPhaseName():""}</em></h2>
     ${typeof autoBar==="function"?autoBar():""}
     ${typeof questCard==="function"?questCard():""}
     ${weekDiary()}
@@ -3795,6 +3812,11 @@ function nextWeek(){
     return;
   }
   S.week++; S.ap=apFor('season'); S.step="season"; S.match=null; addFat(-10);
+  // 赛段注册期（前 REG_WEEKS 周）：第 3 周 AI 队做一次升降；第 2 周起可能有队来挖（概率远低于窗口，且要付 1.2 倍违约金）
+  if(typeof REG_WEEKS!=="undefined"&&S.week<=REG_WEEKS&&S.career){
+    if(S.week===3&&typeof aiMarketWindow==="function") aiMarketWindow(false);
+    if(S.week>=2&&typeof regRollOffer==="function") regRollOffer();
+  }
   if(S.assets&&S.assets.apt) addFat(-4);           // 电竞公寓：住得好，恢复就是快
   if(typeof weeklyEcho==="function") weeklyEcho(); // 事件链/周报/商业机会的周节拍
   if(typeof injuryTick==="function") injuryTick();
@@ -5338,7 +5360,7 @@ const TOUR_SEASON=[
   {sel:'[data-tab="me"]', t:"我的", d:"五维属性、状态曲线、个人数据、比赛记录、生涯与外设——你自己的一切。"},
   {sel:'[data-tab="team"]', t:"队伍", d:"队友、默契、战术、士气、信任与话语权——这是五个人的游戏，队友弱你再强也赢不了。"},
   {sel:'[data-tab="world"]', t:"赛事", d:"赛程、积分榜、季后赛形势、宿敌、各赛区新闻、大事记。国际赛期间对阵图也在这里。"},
-  {sel:'[data-tab="tx"]', t:"转会", d:"别的队来挖你、你挂牌、买断、续约——都在这里。注册窗只在 MSI 结束后和世界赛结束后开。"},
+  {sel:'[data-tab="tx"]', t:"转会", d:"别的队来挖你、你挂牌、买断、续约——都在这里。转会期在 MSI 后和世界赛后；常规赛前 5 周是注册期，能被挖但要付 1.2 倍违约金；之后名单锁定。"},
   {sel:'[data-tab="news"]', t:"新闻", d:"电竞周报和生涯大事记：圈子里在写谁、发生过的每一件事。"},
   {sel:'[data-tab="shop"]', t:"经济", d:"年薪、直播、奖金进账；外设、课程、俱乐部资源花钱。"},
   {sel:'[data-tab="help"]', t:"教程说明", d:"文字版的栏目说明和「重放导览」都在这里，随时回来看。"},
@@ -5390,7 +5412,7 @@ function helpCard(){
       ${li("天赋与瓶颈","天赋决定成长速度和天花板，不是初始属性。撞到瓶颈后靠特定条件顶开——「我的」属性卡里每一维都写着怎么破。")}
       ${li("职业前","段位、人气、杯赛履历决定谁来找你：宗师起有青训教练看，城市争霸赛 / 主播杯打进四强也能敲门。试训邀请随时可能来，年底是转会窗口。")}
       ${li("赛季",`常规赛 ${typeof WEEKS!=="undefined"?WEEKS:7} 周每周一场 BO3，前六进季后赛。春季冠军去 MSI，夏季赛决定世界赛名额。赛后拆解写清赢在哪、输在哪。`)}
-      ${li("合同与转会","合同按赛段签，到期由你续约或进市场；季中和年底两个注册窗可以挂牌、买断、接受别队问询。窗口关了还没人签，就回到路人的日子——履历不清零。")}
+      ${li("合同与转会","合同按赛段签、到期日是 MSI 结束 / 世界赛结束。三层窗口：转会期（MSI 后、世界赛后）什么都能做；赛段注册期（常规赛前 5 周）自由身能签短约顶班、被挖要付 1.2 倍违约金且没签字费；常规赛最后两周、季后赛、国际赛名单锁定。窗口关了还没人签，就回到路人的日子——履历不清零。")}
       ${li("托管","一键安排、重复上回合、执行计划；自动推进只跳过「没得选的周」，有事立刻交回给你。")}
     </div>
     <p class="note">导览会在第一次进职业前、第一次进赛季各弹一次；这里随时能重放。</p></div>`;
@@ -5828,6 +5850,7 @@ function bind(){
   /* ---- 试训 · 谈判 ---- */
   const _ivg=$("ivgo"); if(_ivg) _ivg.onclick=()=>{
     const iv=S.pre.invite; iv.pending=false;
+    S.shortDeal=!!iv.short;   // 顶班：签的是一个赛段的短约
     startTryout(iv.tier, iv.team, iv.expect);
   };
   const _ivn=$("ivno"); if(_ivn) _ivn.onclick=()=>{

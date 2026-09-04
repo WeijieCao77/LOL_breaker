@@ -44,7 +44,7 @@ try {
     + "GEAR,SLOTS,COURSES,RELAX,SPEND,screenCreate,startPre,preAct,preNextWeek,acceptOffer,"
     + "render,bracketCard,intlBracketCard,playoffBracketCard,cupLadder,weekDiary,attrCard,tabBar,uiSetNum,uiNum,dimWord,TABS_PRE,TABS_SEASON,dropToStreets,tourMaybe,TAL_PRESETS,"
     + "renewNegotiate,signRenewDeal,renewCollapse,poBrInit,poMyOpp,poCanon,contractSpanText,contractLeftText,txWindowOpen,TOUR_PRE_FULL,TOUR_SEASON_FULL,"
-    + "faRollOffers,takeFaOffer,dropFaOffer,faCard,faResume,"
+    + "faRollOffers,takeFaOffer,dropFaOffer,faCard,faResume,txPhase,txPhaseName,regRollOffer,checkTopUpInvite,rebuildMySchedule,REG_WEEKS,"
     + "doTrain,doAction,startMatch,resolveNode,playGame,nextWeek,doOffseason,offNextWeek,prepGo,enterPrep,finishOffseason,OFF_WEEKS,isBenched,benchWeek,"
     + "resolveLocker,ending,cap,rankFull,nowLabel,nowPhase,yearWeek,yearTotal,rankIcon,fanTier,scoutTier,preScore,hasAch,pickClub,power,ageWorld,myTeam,myRoster,leagueBaseline,fanCap,fanFill,fansWan,fansText,fanWeek,addFans,heatTier,fanToNext,"
     + "buyGear,buyCourse,buyRelax,gearBonus,streamIncome,drawBackgrounds,advancePreWeek,capOf,"
@@ -168,6 +168,7 @@ function playOne(opts) {
       const tier = { sub:"top", foreign:"top", start:"mid", core:"low" }[of.k] || "mid";
       A.startTryout(tier, of.team, A.CLUB_TIERS[tier].expect);
     } else if (S.step === "season") {
+      if (S.proOffer && !opts.noOffers) { transfers++; A.takeProOffer(); continue; }   // 赛段注册期的问询也接（测赛程重排）
       for (const x of A.SPEND) if (S.money >= x.cost && !(S.buff && S.buff[x.k])) { S.money -= x.cost; x.run(); break; }
       // 替补：有点数就先打一场训练赛对位（跑通对位挑战与试用链路）
       if (!S.promoted && S.understudy && A.scrimCanStart().ok) {
