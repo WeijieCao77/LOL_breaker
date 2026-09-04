@@ -283,6 +283,10 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906n", at:"2026-09-06", items:[
+    "天赋瓶颈随经验上抬（玩家点名「练满也只到 71」）：每打完一个赛段，五维上限各 +0.3，最多 +3——练满能到 74，再靠突破到 86；配套：离上限 5 分以内训练收益衰减到 25%（最后几分要用巅峰期去够）。批测冠军率在噪声带内",
+    "转会问询更勤（玩家点名）：赛季里被问询的底数 0.10 → 0.18、表现分系数 0.030 → 0.035；机器人生涯转会 4.1 → 5.0 次"
+  ]},
   {v:"v20260906m", at:"2026-09-06", items:[
     "三层转会窗口（玩家拍板，照现实规则）：转会期（MSI 后、世界赛后）是主市场，什么都能做；赛段注册期（常规赛前 5 周）——回到路人的前职业选手会接到「顶班」邀请（短约一个赛段，打出来再谈长的），赛段里也可能有队来挖你（概率低、买断按 1.2 倍、没签字费、进队默契从头磨、下周就换队衣），AI 队第 3 周做一次升降；常规赛最后两周、季后赛、国际赛名单锁定。本周卡标题写着现在处于哪一层"
   ]},
@@ -712,8 +716,11 @@ const CAP_MILE_MAX=7;     // 里程碑经历（夺冠这类一辈子没几次的
 const CAP_MAX_BONUS=CAP_MECH_MAX+CAP_MILE_MAX;
 
 /* 实际瓶颈 = 天赋上限 + 经历顶开的部分 */
+/* 经验顶瓶颈（2026-09-06 玩家拍板，变体 B4）：每打完一个赛段所有维度上限 +0.3，最多 +3——练满从 71 到 74，明星线留给突破。
+   B（+1/赛段）把世界赛冠军率打到 36%、B′（+0.5）26%、B″（+0.5 + 贴顶衰减 35%）19%——上限就是难度本身；B4 在噪声带内。 */
+const CAP_EXP_STEP=0.3, CAP_EXP_MAX=3;
 function capOf(d){
-  return cap(S.talent[d])+((S.capBonus&&S.capBonus[d])||0);
+  return cap(S.talent[d])+((S.capBonus&&S.capBonus[d])||0)+((S&&S.capExp)||0);
 }
 function initCapBonus(){ S.capBonus={}; S.capMile={}; DIMS.forEach(d=>{S.capBonus[d]=0;S.capMile[d]=0;}); }
 function capMileOf(d){ return (S.capMile&&S.capMile[d])||0; }
@@ -2578,7 +2585,9 @@ function gain(d){
   // 职业前还是 6 点没动，不吃这个折扣。
   const apComp=S.career?0.80:1.00;
   const asset=(S.assets&&S.assets.station)?1.04:1;   // 数据分析工作站
-  return apComp*asset*mult(t)*(0.20+0.80*room)*bonus*ageM*coach*ag*bg*cs*tb*tt*ij;
+  // 最后 5 分越练越慢（贴顶只剩 25%）——抬上限的配套，不然练到上限零成本（B4）
+  const gap=capOf(d)-S.attrs[d], near=gap<5?(0.25+0.15*Math.max(0,gap)):1;
+  return apComp*asset*mult(t)*(0.20+0.80*room)*near*bonus*ageM*coach*ag*bg*cs*tb*tt*ij;
 }
 /* ---------- 本周流水（叙事层）----------
    点了「练操作」之后原来只有数字悄悄变了一下（玩家反馈：反馈太直接、没有游戏性）。
@@ -4048,6 +4057,7 @@ function prepPanel(){
 
 function endSeason(result,seed){
   payday();
+  S.capExp=Math.min(CAP_EXP_MAX,q1((S.capExp||0)+CAP_EXP_STEP));   // 经验顶瓶颈（B4）
   // 世界线张力弛豫：你不在的联赛，每个赛段往史实弹回 ×0.6
   if(typeof wlRelax==="function") wlRelax();
   const up=(S.bg&&S.bg.upkeep)||0;

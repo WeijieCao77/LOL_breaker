@@ -823,7 +823,7 @@ function rollProOffers(wnd){
   // 赛季里攒下的关注度直接折成概率：被盯了一个赛段，注册窗不该毫无动静
   const heat = Math.min(S.scoutHeat || 0, 6);
   const intents = (S.txIntents||[]).filter(x=>x.si>=S.si-1);
-  let p = clamp(0.10 + perf * 0.030 + heat * 0.075 + Math.min(intents.length,3)*0.12, 0.02, 0.92);
+  let p = clamp(0.18 + perf * 0.035 + heat * 0.075 + Math.min(intents.length,3)*0.12, 0.02, 0.95);   // 2026-09-06 玩家拍板（变体 C）：问询更勤
   // 保底：打得确实好，却连着两个窗没有任何人来问，说不过去
   const dry = S.offerDry || 0;
   if(perf >= 13 && dry >= 2) p = Math.max(p, 0.92);
