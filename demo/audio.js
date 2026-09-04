@@ -276,7 +276,7 @@ function showSupport(source) {
         <div class="support-copy">
           <a class="support-link" id="support-link" target="_blank" rel="noopener noreferrer">打开爱发电 <span aria-hidden="true">↗</span></a>
           <p>手机扫码，或直接点击上面的按钮。</p>
-          <p><b>5 元起，也可以自选金额。</b>选择赞助 1 个月即可作为一次支持，不会自动续费。</p>
+          <p>金额随意。选择赞助 1 个月即可作为一次支持，不会自动续费。</p>
         </div>
       </div>
       <footer class="support-foot">

@@ -737,12 +737,21 @@ td .tlogo{margin-right:5px}
 @media(min-width:900px){
   #stage{display:grid;grid-template-columns:96px minmax(0,1fr);gap:0 16px;align-items:start}
   #stage>*{grid-column:2;min-width:0}
+  /* 高度算 0：右列卡片少时不被竖栏撑出空当（玩家实锤：经济页两张卡中间空一屏）。
+     高度为 0 的盒子不能再带 clip-path / 边框 / 背景——那会把溢出的按钮整列裁没（玩家实锤：侧边栏消失）。
+     切角、边框、分隔线全部挪到按钮自己身上。 */
   #stage>.tabs{
-    grid-column:1;grid-row:1/-1;align-self:start;height:0;min-height:0;   /* 高度算 0：右列卡片少时不被竖栏撑出空当（玩家实锤：经济页两张卡中间空一屏） */
+    grid-column:1;grid-row:1/-1;align-self:start;height:0;min-height:0;
     position:sticky;top:calc(var(--pin-h,0px) + 8px);
-    flex-direction:column;gap:1px;margin:0;overflow:visible}
+    flex-direction:column;flex-wrap:nowrap;gap:0;margin:0;overflow:visible;   /* nowrap：高度 0 的列容器若允许换行，每个按钮都会换到下一列横着排 */
+    clip-path:none;border:none;background:transparent}
   #stage>.tabs .tab{flex:none;width:100%;min-width:0;text-align:center;
-    padding:13px 6px;font-size:13.5px;letter-spacing:.08em}
+    padding:13px 6px;font-size:13.5px;letter-spacing:.08em;
+    border:1px solid var(--line);border-top:none}
+  #stage>.tabs .tab:first-child{border-top:1px solid var(--line);
+    clip-path:polygon(9px 0,100% 0,100% 100%,0 100%,0 9px)}
+  #stage>.tabs .tab:last-child{clip-path:polygon(0 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%)}
+  #stage>.tabs .tab.sep{margin-top:10px;border-top:1px solid var(--line)}
   /* 竖栏里下划线改成左边一道竖线，方向对得上 */
   #stage>.tabs .tab.on::after{left:0;right:auto;top:0;bottom:0;width:2px;height:auto}
   #stage>.tabs .tcount{display:block;margin:4px auto 0}
@@ -1538,7 +1547,7 @@ const GAME_VER=CHANGELOG[0].v+" · 回声";
    玩家点「不用了，别再提示」后停止自动弹出，但仍可点 ♥ 主动打开。
    SUPPORT_QR 可选：爱发电主页二维码图的 data URI（站点 CSP 只放行 self/data:，外链图不显示）。 */
 const SUPPORT_URL="https://ifdian.net/a/poxiao_lol";   // 玩家 2026-09-05 给的爱发电主页
-const SUPPORT_QR="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQgAAAEIAQMAAACZOPi8AAAABlBMVEUhHxv///8MgZmDAAABEUlEQVR42u2ZwQ7DMAhDrf3/PzOtAQOTpt73mh5Co5wssA1R3C09N9g3dNaJw1GdvnS3/umGCrQLgoNGIpMBEI/PprNX4FMuHhFGYZ5y8yNL5grQeETmRsZZL1j+yODrw+pLa2/myD7m4aFk0ioXk6qQeEzPkeVzsiSo9dIs4kRRUStSXzRE1/YjgSLyR1tU660JhckfjUZskMD6Uqqi9mZcP2YDUuaDWy9Rrt0aEyNFkPyhNT0aLgTr17cdsyOD4jE9iAlEAfbrPRGK4VbJ/a37lmnTwPOP6NmpzSp6vp5C2x0uVG93K9fDMWg/Nxy6nCN+moK/NxR/+Bc8X1c3cwLPP5bCqienVD593vefGz/XG3+oKcMv8c6DAAAAAElFTkSuQmCC";   // 上面链接的二维码（segno 生成，PNG 内嵌）
+const SUPPORT_QR="data:image/png;base64,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";   // 玩家 2026-09-05 给的爱发电官方分享卡，裁出二维码、二值化内嵌
 const AP_SEASON=8, AP_PRE=12, AP_OFF=8, AP_HURT=4;
 /* 异化点数（2026-09-03 玩家拍板）：按现实时间精力定价。
    轻 1 = 碎片时间（排位几把 / 双排 / 发简历）；
@@ -14844,7 +14853,7 @@ function showSupport(source) {
         <div class="support-copy">
           <a class="support-link" id="support-link" target="_blank" rel="noopener noreferrer">打开爱发电 <span aria-hidden="true">↗</span></a>
           <p>手机扫码，或直接点击上面的按钮。</p>
-          <p><b>5 元起，也可以自选金额。</b>选择赞助 1 个月即可作为一次支持，不会自动续费。</p>
+          <p>金额随意。选择赞助 1 个月即可作为一次支持，不会自动续费。</p>
         </div>
       </div>
       <footer class="support-foot">

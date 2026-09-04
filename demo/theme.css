@@ -724,12 +724,21 @@ td .tlogo{margin-right:5px}
 @media(min-width:900px){
   #stage{display:grid;grid-template-columns:96px minmax(0,1fr);gap:0 16px;align-items:start}
   #stage>*{grid-column:2;min-width:0}
+  /* 高度算 0：右列卡片少时不被竖栏撑出空当（玩家实锤：经济页两张卡中间空一屏）。
+     高度为 0 的盒子不能再带 clip-path / 边框 / 背景——那会把溢出的按钮整列裁没（玩家实锤：侧边栏消失）。
+     切角、边框、分隔线全部挪到按钮自己身上。 */
   #stage>.tabs{
-    grid-column:1;grid-row:1/-1;align-self:start;height:0;min-height:0;   /* 高度算 0：右列卡片少时不被竖栏撑出空当（玩家实锤：经济页两张卡中间空一屏） */
+    grid-column:1;grid-row:1/-1;align-self:start;height:0;min-height:0;
     position:sticky;top:calc(var(--pin-h,0px) + 8px);
-    flex-direction:column;gap:1px;margin:0;overflow:visible}
+    flex-direction:column;flex-wrap:nowrap;gap:0;margin:0;overflow:visible;   /* nowrap：高度 0 的列容器若允许换行，每个按钮都会换到下一列横着排 */
+    clip-path:none;border:none;background:transparent}
   #stage>.tabs .tab{flex:none;width:100%;min-width:0;text-align:center;
-    padding:13px 6px;font-size:13.5px;letter-spacing:.08em}
+    padding:13px 6px;font-size:13.5px;letter-spacing:.08em;
+    border:1px solid var(--line);border-top:none}
+  #stage>.tabs .tab:first-child{border-top:1px solid var(--line);
+    clip-path:polygon(9px 0,100% 0,100% 100%,0 100%,0 9px)}
+  #stage>.tabs .tab:last-child{clip-path:polygon(0 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%)}
+  #stage>.tabs .tab.sep{margin-top:10px;border-top:1px solid var(--line)}
   /* 竖栏里下划线改成左边一道竖线，方向对得上 */
   #stage>.tabs .tab.on::after{left:0;right:auto;top:0;bottom:0;width:2px;height:auto}
   #stage>.tabs .tcount{display:block;margin:4px auto 0}
