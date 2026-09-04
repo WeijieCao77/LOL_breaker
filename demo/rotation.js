@@ -53,12 +53,15 @@ function fixtureCard(){
     const now=x.w===S.week&&S.step==="season";
     const res=x.r?`<b class="${x.r.won?'w':'l'}">${x.r.won?"胜":"负"}</b> ${x.r.sc[0]}:${x.r.sc[1]}`:now?"本周":"—";
     const me=x.r?(x.r.played?"上场":`<span style="color:var(--ink-3)">替补席</span>`):"";
+    // 打过的场次可以回看当场的全员数据与拆解（玩家点名）——档案里按 赛季/赛段/周 找那一行
+    const ai=(S.archive||[]).findIndex(r=>r.si===S.si&&r.sp===(S.split||0)&&r.w===x.w&&r.opp===x.opp);
+    const look=(x.r&&x.r.played&&ai>=0&&S.archive[ai].pm)?`<button class="btn ghost sm" data-pmv="${ai}" title="当场的全员数据与赛后拆解">看数据</button>`:"";
     return `<tr class="${now?'me':''}" style="${x.r?'':'opacity:.8'}">
       <td class="n">${x.w}</td><td>${typeof teamLogo==="function"?teamLogo(x.opp,18):""}${x.opp}</td>
-      <td class="n mono">${pw}</td><td class="n mono">${st.w}−${st.l}</td><td class="n">${res}</td><td class="n">${me}</td></tr>`;
+      <td class="n mono">${pw}</td><td class="n mono">${st.w}−${st.l}</td><td class="n">${res}</td><td class="n">${me}</td><td class="n">${look}</td></tr>`;
   }).join("");
   return `<div class="card"><h2>赛程<em>${sea.tag} ${SPLITS[S.split||0]} · ${rec.w}胜 ${rec.l}负</em></h2>
-    <div class="tw"><table><thead><tr><th class="n">周</th><th>对手</th><th class="n">实力</th><th class="n">对手战绩</th><th class="n">结果</th><th class="n">你</th></tr></thead>
+    <div class="tw"><table><thead><tr><th class="n">周</th><th>对手</th><th class="n">实力</th><th class="n">对手战绩</th><th class="n">结果</th><th class="n">你</th><th class="n"></th></tr></thead>
     <tbody>${trs}</tbody></table></div>
     <p class="note">常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。「替补席」的场次不计入你的个人战绩。</p></div>`;
 }

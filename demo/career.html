@@ -1000,6 +1000,13 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260905f", at:"2026-09-05", items:[
+    "自动推进重做（玩家点名：推到赛季结束/推 6 周总被周中事件截断）：路上的际遇、更衣室、直播报价、试训邀请、转会问询、合同、转正、确认框全部按托管规则代办，不再中途停下（不动你的采购开关，不替你花钱）；推满周数或常规赛打完时弹「推进总结」——战绩、每场比分、属性变化、突破、替你做的每个决定、大事记",
+    "自动推进不再把替补偷偷排上场：还在替补席就按替补周走（和季后赛那次同一个坑）",
+    "全员数据的 KDA 改成系列赛合计的整数（玩家点名：杀人不能杀 0.2 个），补刀列标明「分均」",
+    "赛程表每场打过的比赛加「看数据」按钮，点开当场的全员数据与赛后拆解（玩家点名）",
+    "「我的」页与队伍页的数值统一：读档后名单里「你」的属性会重新挂回本体（原来存档一读回来就变成两份，队伍页停在存档那一刻），两页都含装备加成"
+  ]},
   {v:"v20260905e", at:"2026-09-05", items:[
     "明星聚光灯改写履历（玩家点名：明星之所以是明星是因为履历）：备战卡的对位明星不再标段位，写他到 2022 赛季前的真实荣誉——世界冠军 / MSI / 联赛冠军 / 决赛 MVP；本作世界线里新拿的 MSI、世界赛、联赛冠军也会自动写进去，你改写了历史，他们的履历就跟着变"
   ]},
@@ -1633,7 +1640,7 @@ function power(teamOrPlayers,fatigue=0,verFav=null){
 function powerCore(players,fatigue=0,verFav=null,team=null){
   let s=0,wt=0,cmd=0;
   players.forEach(p=>{
-    const r=p.r||p;
+    const r=(p.me&&S&&S.attrs)?S.attrs:(p.r||p);   // 「你」直读 S.attrs：读档后名单里的拷贝可能是旧的
     // 玩家定的哲学（2026-09-02）：这是五个人的游戏——队友弱，你再强也赢不了。
     // 权重只比普通队友略高（你是拿了行动点培养的那个人），
     // 冠军资格靠转会去强队挣，不靠一个人扛穿弱队。
@@ -1923,7 +1930,12 @@ function ovrOf(p){ return avg(DIMS.map(d=>p.r[d])); }
    段位是它的函数（RANK_CURVE 一张表，tierOf）。
    战力（power）内部权重和是 0.86、不含指挥——那是比赛模拟的口径，对外显示一律
    乘 PW_SHOW 归一到实力尺，免得「LPL 首发 47」这种读数把人骗到。 */
-function strength(r){ const x=(r&&r.r)?r.r:r; return avg(DIMS.map(d=>(x&&x[d])||0)); }
+function strength(r){
+  // 「你」一律直读 S.attrs 并含装备（和「我的」页的综合同一口径）——名单里那份 r 在读档后
+  // 可能是断了引用的旧拷贝（玩家实锤：我的页 61、队伍页 53）
+  if(r&&r.me&&S&&S.attrs) return myStrength();
+  const x=(r&&r.r)?r.r:r; return avg(DIMS.map(d=>(x&&x[d])||0));
+}
 function myStrength(){
   return strength(S.attrs)+(typeof gearBonus==="function"?avg(DIMS.map(d=>gearBonus(d)||0)):0);
 }
@@ -3171,10 +3183,10 @@ function autoStop(){
   // 「自动推进到下一件事」会直接冲过去，机会就这么没了。
   return !!(S.rndEv||S.rndResult||S.locker||S.signup||S.rankUp
            ||S.cupResult||S.cupMatch||S.confirm||S.streamOffer||S.intlChamp||S.contentPick
-           ||S.promoteDeal||S.patchNote
+           ||S.promoteDeal||S.patchNote||S.autoSum
            ||(S.pre&&S.pre.invite&&S.pre.invite.pending));
 }
-function autoRest(focus,weeks){
+function autoRestLegacy(focus,weeks){
   const lim=weeks||AUTO_MAX;
   const w0=S.week, s0=S.step;
   let w=0;
@@ -3214,11 +3226,120 @@ function autoRest(focus,weeks){
   render();
 }
 
+/* ================= 自动推进（2026-09-05 重做）=================
+   玩家原话：「推到赛季结束没有意义，每次都会被周中的事件截断」「推六周也是一样的问题」。
+   现在两种推进都不会被打断：路上的际遇、更衣室、直播报价、试训邀请、转会问询、
+   合同、转正、确认框，全部按托管规则代办（不动你的采购开关——不替你花钱），
+   推满周数或到赛季末停下，弹一份「推进总结」：战绩、每场比分、属性变化、
+   突破、替你做的决定、大事记。 */
+function autoClear(){
+  const saved=S.auto;
+  S.auto={buy:!!(saved&&saved.buy), biz:true, daily:true, career:true};
+  try{
+    for(let i=0;i<40;i++){
+      let did=false;
+      if(S.rankUp){ S.rankUp=null; did=true; }
+      else if(S.patchNote){ S.patchNote=false; did=true; }
+      else if(S.intlChamp){ S.intlChamp=null; did=true; }
+      else if(S.rndResult){ S.rndResult=null; did=true; }
+      else if(S.contentPick){ S.contentPick=null; did=true; }
+      else if(S.promoteDeal){
+        if(typeof acceptPromote==="function"){ acceptPromote(); if(typeof autoNote==="function") autoNote("首发合同：接受了"); }
+        else S.promoteDeal=null;
+        did=true;
+      }
+      else if(S.confirm){
+        const c=S.confirm;
+        if(c.tag==="senddown"&&typeof autoCareerStep==="function"&&autoCareerStep()) did=true;
+        else { S.confirm=null; if(typeof autoNote==="function") autoNote(`「${c.title}」：先放着（取消）`); did=true; }
+      }
+      else if(typeof autoStep==="function"&&S.step!=="match"&&autoStep()) did=true;
+      if(!did) break;
+    }
+  }catch(e){ S._autoErr=(e&&e.message)||String(e); }
+  finally{ S.auto=saved; }
+}
+function autoRest(focus,weeks){
+  const lim=weeks||AUTO_MAX;
+  const w0=S.week, s0=S.step, si0=S.si, sp0=S.split||0;
+  const snap={ attrs:Object.assign({},S.attrs), money:S.money, fat:S.fatigue,
+    rec:Object.assign({w:0,l:0},S.record||{}), ev:(S.events||[]).length,
+    log:(S.autoLog||[]).length, arc:(S.archive||[]).length, ach:(S.achLog||[]).length };
+  let w=0, guard=0, stuck="";
+  while(S.step==="season"&&w<lim&&guard++<80){
+    autoClear();
+    if(autoStop()){ stuck="有件事托管处理不了"; break; }
+    while(S.ap>0){
+      const _b=S.ap;
+      const av=DIMS.filter(d=>S.attrs[d]<capOf(d));
+      const fbp=(typeof BREAK_PATHS!=="undefined")?BREAK_PATHS[focus]:null;
+      if(S.fatigue>70) doAction("rest");
+      else if(av.includes(focus)) doTrain(focus);
+      else if(fbp&&fbp.by==="train"&&S.attrs[focus]>=capOf(focus)
+              &&typeof capMechOf==="function"&&capMechOf(focus)<CAP_MECH_MAX) doTrain(focus);
+      else if(av.length) doTrain(av.slice().sort((a,b)=>S.attrs[a]-S.attrs[b])[0]);
+      else doAction("stream");
+      if(S.ap===_b) doAction("solo");
+      if(S.ap===_b) break;
+      autoClear();
+    }
+    if(S.ap>0){ stuck="行动点花不出去"; break; }
+    if(autoStop()){ stuck="有件事托管处理不了"; break; }
+    // 替补就是替补——自动推进不能把你偷偷排上场（和季后赛那次是同一个坑）
+    if(typeof isBenched==="function"&&isBenched()) benchWeek();
+    else { startMatch(); autoMatch(); }
+    w++;
+    if(typeof saveGame==="function") saveGame("自动推进");
+  }
+  autoClear();
+  if(w>0||stuck){
+    const rec={w:(S.record?S.record.w:0)-snap.rec.w, l:(S.record?S.record.l:0)-snap.rec.l};
+    const matches=(S.archive||[]).slice(snap.arc).filter(r=>r.si===si0&&r.sp===sp0);
+    const ev=(S.events||[]).slice(snap.ev);
+    const why=stuck?stuck+"。"
+             :S.step!==s0?"常规赛打完了。"
+             :w>=lim?`推满了 ${lim} 周。`:"";
+    S.autoSum={ w0, w1:w0+Math.max(0,w-1), weeks:w, why, rec,   // 赛季一结束 S.week 会归 1，按推进周数算末周
+      matches:matches.map(r=>({w:r.w,opp:r.opp,sc:r.sc,win:r.win})),
+      attrs:DIMS.map(d=>({d,a:snap.attrs[d],b:S.attrs[d]})),
+      strength:{a:strength(snap.attrs),b:strength(S.attrs)},
+      money:(S.money||0)-(snap.money||0), fat:S.fatigue,
+      breaks:ev.filter(e=>e.tag==="突破").map(e=>e.text),
+      notes:(S.autoLog||[]).slice(snap.log),
+      big:ev.filter(e=>e.tone==="big"||e.tone==="bad").map(e=>e.text).slice(-10),
+      achs:(S.achLog||[]).slice(snap.ach).map(a=>a.n||a.id),
+      injury:S.injury?(S.injury.n||"伤病"):"" ,
+      seasonOver:S.step!==s0 };
+    pushEvent(`自动推进了 <b>${w} 周</b>（第 ${w0}–${S.autoSum.w1} 周），${why}<span style="color:var(--ink-3)">这段时间的详情见推进总结。</span>`,"info","推进");
+  }
+  render();
+}
+function autoSumCard(){
+  const A=S.autoSum; if(!A) return "";
+  const d1=v=>(v>=0?"+":"")+(Math.round(v*10)/10);
+  const strip=s=>String(s).replace(/<[^>]+>/g,"");
+  const rows=A.matches.slice(-12).map(m=>`<span class="tag" style="margin:2px">第${m.w}周 ${escapeHtml(String(m.opp||""))} ${m.sc?m.sc.join(":"):""} ${m.win?'<b style="color:var(--cyan)">胜</b>':'<b style="color:var(--red)">负</b>'}</span>`).join("");
+  return `<div class="rankup"><div class="ru-inner" style="max-width:600px;max-height:88vh;overflow-y:auto;text-align:left">
+    <div class="ru-eyebrow">${A.seasonOver?"常规赛打完了":"自动推进"}</div>
+    <h2 style="margin:0 0 4px">推进总结 · 第 ${A.w0}–${A.w1} 周<em style="float:right">${A.rec.w} 胜 ${A.rec.l} 负</em></h2>
+    <p class="note" style="margin:0 0 10px">${A.why}${A.injury?`　<span style="color:var(--red)">目前带伤（${escapeHtml(A.injury)}）</span>`:""}</p>
+    ${rows?`<div style="margin-bottom:10px">${rows}</div>`:""}
+    <div class="ver" style="margin-bottom:8px"><b>属性</b>　${A.attrs.map(x=>`${x.d} ${Math.round(x.b)}<small style="color:${x.b-x.a>0.05?'var(--cyan)':'var(--ink-3)'}">(${d1(x.b-x.a)})</small>`).join("　")}
+      　·　实力 <b>${A.strength.b.toFixed(1)}</b><small style="color:var(--cyan)">(${d1(A.strength.b-A.strength.a)})</small>
+      　·　资金 ${d1(A.money)} 万　·　体能 ${Math.round(100-A.fat)}/100</div>
+    ${A.breaks.length?`<div class="ver" style="margin-bottom:8px"><b>突破</b><br>${A.breaks.map(t=>`· ${t}`).join("<br>")}</div>`:""}
+    ${A.notes.length?`<div class="ver" style="margin-bottom:8px"><b>替你做的决定</b>（按托管规则）<br>${A.notes.map(t=>`· ${escapeHtml(strip(t))}`).join("<br>")}</div>`:""}
+    ${A.achs.length?`<div class="ver" style="margin-bottom:8px"><b>成就</b>　${A.achs.map(escapeHtml).join("、")}</div>`:""}
+    ${A.big.length?`<div class="ver" style="margin-bottom:8px"><b>大事记</b><br>${A.big.map(t=>`· ${t}`).join("<br>")}</div>`:""}
+    <div class="row" style="justify-content:center;margin-top:8px"><button class="btn" id="autosumok">知道了</button></div>
+  </div></div>`;
+}
+
 /* 非「本周」标签的内容。赛季和休赛期共用同一份——
    原来休赛期没有标签栏，把财务总览和商城直接拼在行动卡下面，
    于是「所有栏目合到一起了」。玩家报的就是这个。 */
 function tabContent(T){
-  return `${T==="me"&&S.pmView!=null&&typeof pmReplayCard==="function"?pmReplayCard():""}
+  return `${S.pmView!=null&&typeof pmReplayCard==="function"?pmReplayCard():""}
     ${T==="me"?attrCard()+(typeof formCard==="function"?formCard():"")+(typeof dataCard==="function"?dataCard():"")+(typeof careerCard==="function"?careerCard():"")+gearCard():""}
     ${T==="team"?squadCard()+(typeof roleCard==="function"?roleCard():"")+(typeof promoteCard==="function"?promoteCard():"")+teamCard()+(typeof relCard==="function"?relCard():"")+(typeof cloutCard==="function"?cloutCard():""):""}
     ${T==="shop"?(typeof economyCards==="function"?economyCards():shopCard()):""}
@@ -3234,7 +3355,8 @@ function viewSeason(){
   const champ=((S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"")
     +((S.contentPick&&typeof contentCard==="function")?contentCard():"")
     +((S.promoteDeal&&typeof promoteDealCard==="function")?promoteDealCard():"")
-    +((S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():"");
+    +((S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():"")
+    +((S.autoSum&&typeof autoSumCard==="function")?autoSumCard():"");
   const scrimPop=(typeof scrimCard==="function")?scrimCard():"";
   if(T!=="act") return `${champ}${scrimPop}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
     ${tabBar(TABS_SEASON)}
@@ -3999,7 +4121,7 @@ function prepGo(){
    而这一屏原来什么导航都没有——只能上场或者干等。 */
 function viewPrep(){
   const T=curTab(TABS_SEASON);
-  const pops=`${(S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():""}${
+  const pops=`${(S.autoSum&&typeof autoSumCard==="function")?autoSumCard():""}${(S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():""}${
     S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
   if(T!=="act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
   return `${pops}${tabBar(TABS_SEASON)}${prepPanel()}`;
@@ -4145,7 +4267,8 @@ function viewOffseason(){
   const champ=((S.intlChamp&&typeof intlChampCard==="function")?intlChampCard():"")
     +((S.contentPick&&typeof contentCard==="function")?contentCard():"")
     +((S.promoteDeal&&typeof promoteDealCard==="function")?promoteDealCard():"")
-    +((S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():"");
+    +((S.patchNote&&typeof patchNoteCard==="function")?patchNoteCard():"")
+    +((S.autoSum&&typeof autoSumCard==="function")?autoSumCard():"");
   if(S.off){
     const T=curTab(TABS_SEASON);
     const pops=`${champ}${typeof scrimCard==="function"?scrimCard():""}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
@@ -8511,7 +8634,7 @@ function boxScoreHtml(box,won,oppName){
     return `<tr class="${x.me?'me':''}">
       <td class="n" style="color:var(--ink-3)">${POSN[x.pos]||x.pos}</td>
       <td>${x.me?`<b style="color:var(--gold-hi)">${x.id}</b>`:x.id}${tag}</td>
-      <td class="n mono">${x.k}/${x.d}/${x.a}</td>
+      <td class="n mono">${Math.round(x.k*box.games)}/${Math.round(x.d*box.games)}/${Math.round(x.a*box.games)}</td>
       <td class="n mono">${x.cs}</td>
       <td><span class="bxbar"><i style="width:${x.dmg}%"></i></span><span class="mono">${x.dmg}%</span></td>
       <td class="n mono" style="color:${rc};font-weight:700">${x.rating.toFixed(2)}</td></tr>`;
@@ -8528,7 +8651,7 @@ function boxScoreHtml(box,won,oppName){
     else if(won&&mates.length&&box.mvp&&mates.some(x=>x.id===box.mvp)) verdict=`这场赢在 <b>${box.mvp}</b>，你是跟着赢的。`;
   }
   return `<div class="box"><div class="rv-h">全员数据 · BO${box.games}${oppName?` · vs ${oppName}`:""}</div>
-    <div class="tw"><table class="bxt"><thead><tr><th class="n">位置</th><th>选手</th><th class="n">KDA</th><th class="n">补刀</th><th>伤害占比</th><th class="n">评分</th></tr></thead>
+    <div class="tw"><table class="bxt"><thead><tr><th class="n">位置</th><th>选手</th><th class="n">KDA<small style="font-weight:400;color:var(--ink-3)">（${box.games} 局合计）</small></th><th class="n">分均补刀</th><th>伤害占比</th><th class="n">评分</th></tr></thead>
     <tbody>${box.mine.map(x=>row(x,"mine")).join("")}
     <tr class="bxsep"><td colspan="6">${oppName||"对手"}</td></tr>
     ${box.opp.map(x=>row(x,"opp")).join("")}</tbody></table></div>
@@ -8680,12 +8803,15 @@ function fixtureCard(){
     const now=x.w===S.week&&S.step==="season";
     const res=x.r?`<b class="${x.r.won?'w':'l'}">${x.r.won?"胜":"负"}</b> ${x.r.sc[0]}:${x.r.sc[1]}`:now?"本周":"—";
     const me=x.r?(x.r.played?"上场":`<span style="color:var(--ink-3)">替补席</span>`):"";
+    // 打过的场次可以回看当场的全员数据与拆解（玩家点名）——档案里按 赛季/赛段/周 找那一行
+    const ai=(S.archive||[]).findIndex(r=>r.si===S.si&&r.sp===(S.split||0)&&r.w===x.w&&r.opp===x.opp);
+    const look=(x.r&&x.r.played&&ai>=0&&S.archive[ai].pm)?`<button class="btn ghost sm" data-pmv="${ai}" title="当场的全员数据与赛后拆解">看数据</button>`:"";
     return `<tr class="${now?'me':''}" style="${x.r?'':'opacity:.8'}">
       <td class="n">${x.w}</td><td>${typeof teamLogo==="function"?teamLogo(x.opp,18):""}${x.opp}</td>
-      <td class="n mono">${pw}</td><td class="n mono">${st.w}−${st.l}</td><td class="n">${res}</td><td class="n">${me}</td></tr>`;
+      <td class="n mono">${pw}</td><td class="n mono">${st.w}−${st.l}</td><td class="n">${res}</td><td class="n">${me}</td><td class="n">${look}</td></tr>`;
   }).join("");
   return `<div class="card"><h2>赛程<em>${sea.tag} ${SPLITS[S.split||0]} · ${rec.w}胜 ${rec.l}负</em></h2>
-    <div class="tw"><table><thead><tr><th class="n">周</th><th>对手</th><th class="n">实力</th><th class="n">对手战绩</th><th class="n">结果</th><th class="n">你</th></tr></thead>
+    <div class="tw"><table><thead><tr><th class="n">周</th><th>对手</th><th class="n">实力</th><th class="n">对手战绩</th><th class="n">结果</th><th class="n">你</th><th class="n"></th></tr></thead>
     <tbody>${trs}</tbody></table></div>
     <p class="note">常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。「替补席」的场次不计入你的个人战绩。</p></div>`;
 }
@@ -10915,6 +11041,7 @@ function loadGame() {
     fixWl(S);
     fixScaleV3(S);
     fixScaleV4(S);
+    relinkMe(S);
     // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
     // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
     if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
@@ -10956,6 +11083,17 @@ function fixScaleV3(s) {
     const adj = o => { if (o && typeof o.expect === "number") o.expect = Math.max(40, o.expect - 2); };
     if (s.pre) adj(s.pre.invite);
     adj(s.tryout); adj(s.deal);
+  } catch (e) {}
+}
+
+/* 名单里的「你」重新挂回 S.attrs。代码里到处是 {me:true, r:S.attrs}——同一个对象的引用，
+   但存档一 JSON 化就变成两份拷贝，读回来之后名单里那份永远停在存档那一刻：
+   队伍页显示 53、我的页 61（玩家实锤），战力也按旧数算。读档后统一重挂。 */
+function relinkMe(s) {
+  try {
+    if (!s || !s.attrs) return;
+    [s.world, s.pre && s.pre.world].filter(Boolean).forEach(w => Object.keys(w).forEach(lg =>
+      (w[lg] || []).forEach(t => (t.players || []).forEach(p => { if (p && p.me) p.r = s.attrs; }))));
   } catch (e) {}
 }
 
@@ -14189,6 +14327,7 @@ function bind(){
   const _cd=$("cupdone"); if(_cd) _cd.onclick=cupDismissMatch;
   const _cr=$("cupresok"); if(_cr) _cr.onclick=()=>{S.cupResult=null;render()};
   const _ic=$("intlchampok"); if(_ic) _ic.onclick=()=>{S.intlChamp=null;render()};
+  const _as=$("autosumok"); if(_as) _as.onclick=()=>{S.autoSum=null;render()};
   st.querySelectorAll("[data-content]").forEach(b=>b.onclick=()=>{
     if(typeof doContent==="function") doContent(b.dataset.content); });
   const _cc=$("contentcancel"); if(_cc) _cc.onclick=()=>{S.contentPick=null;render()};
@@ -14305,7 +14444,8 @@ function bind(){
     const f=DIMS.reduce((a,b)=>S.talent[a]>=S.talent[b]?a:b);
     askConfirm("自动推进",
       `由系统替你安排：疲劳高就休息，否则练 <b>${f}</b>（练满就转去补最短的板），然后打完比赛。<br>
-       <b>一旦有事情需要你决定，会立刻停下来交回给你</b>——推几周不影响这一点。<br>
+       <b>路上的际遇、更衣室、报价、试训、转会问询、合同，全部按托管规则替你决定</b>——不会中途停下（不动你的采购开关，不替你花钱）。<br>
+       推满周数或常规赛打完时，弹一份<b>推进总结</b>：战绩、每场比分、属性变化、替你做的每个决定。<br>
        <span class="note">这期间的训练和临场决策都不是你做的。</span>`,
       "推 6 周", ()=>autoRest(f,AUTO_MAX),
       {t:"推到赛季结束", fn:()=>autoRest(f,AUTO_FAR)});

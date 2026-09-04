@@ -136,6 +136,7 @@ function loadGame() {
     fixWl(S);
     fixScaleV3(S);
     fixScaleV4(S);
+    relinkMe(S);
     // 老档第一次进新版本：弹一张「本次更新」清单，指路新功能在哪。
     // 玩家原话「p0 的改动我根本没看到」——没有版本戳和更新说明，看不到是应该的。
     if (typeof GAME_VER !== "undefined" && S.patchSeen !== GAME_VER) S.patchNote = true;
@@ -177,6 +178,17 @@ function fixScaleV3(s) {
     const adj = o => { if (o && typeof o.expect === "number") o.expect = Math.max(40, o.expect - 2); };
     if (s.pre) adj(s.pre.invite);
     adj(s.tryout); adj(s.deal);
+  } catch (e) {}
+}
+
+/* 名单里的「你」重新挂回 S.attrs。代码里到处是 {me:true, r:S.attrs}——同一个对象的引用，
+   但存档一 JSON 化就变成两份拷贝，读回来之后名单里那份永远停在存档那一刻：
+   队伍页显示 53、我的页 61（玩家实锤），战力也按旧数算。读档后统一重挂。 */
+function relinkMe(s) {
+  try {
+    if (!s || !s.attrs) return;
+    [s.world, s.pre && s.pre.world].filter(Boolean).forEach(w => Object.keys(w).forEach(lg =>
+      (w[lg] || []).forEach(t => (t.players || []).forEach(p => { if (p && p.me) p.r = s.attrs; }))));
   } catch (e) {}
 }
 

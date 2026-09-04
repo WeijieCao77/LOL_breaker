@@ -71,7 +71,7 @@ function boxScoreHtml(box,won,oppName){
     return `<tr class="${x.me?'me':''}">
       <td class="n" style="color:var(--ink-3)">${POSN[x.pos]||x.pos}</td>
       <td>${x.me?`<b style="color:var(--gold-hi)">${x.id}</b>`:x.id}${tag}</td>
-      <td class="n mono">${x.k}/${x.d}/${x.a}</td>
+      <td class="n mono">${Math.round(x.k*box.games)}/${Math.round(x.d*box.games)}/${Math.round(x.a*box.games)}</td>
       <td class="n mono">${x.cs}</td>
       <td><span class="bxbar"><i style="width:${x.dmg}%"></i></span><span class="mono">${x.dmg}%</span></td>
       <td class="n mono" style="color:${rc};font-weight:700">${x.rating.toFixed(2)}</td></tr>`;
@@ -88,7 +88,7 @@ function boxScoreHtml(box,won,oppName){
     else if(won&&mates.length&&box.mvp&&mates.some(x=>x.id===box.mvp)) verdict=`这场赢在 <b>${box.mvp}</b>，你是跟着赢的。`;
   }
   return `<div class="box"><div class="rv-h">全员数据 · BO${box.games}${oppName?` · vs ${oppName}`:""}</div>
-    <div class="tw"><table class="bxt"><thead><tr><th class="n">位置</th><th>选手</th><th class="n">KDA</th><th class="n">补刀</th><th>伤害占比</th><th class="n">评分</th></tr></thead>
+    <div class="tw"><table class="bxt"><thead><tr><th class="n">位置</th><th>选手</th><th class="n">KDA<small style="font-weight:400;color:var(--ink-3)">（${box.games} 局合计）</small></th><th class="n">分均补刀</th><th>伤害占比</th><th class="n">评分</th></tr></thead>
     <tbody>${box.mine.map(x=>row(x,"mine")).join("")}
     <tr class="bxsep"><td colspan="6">${oppName||"对手"}</td></tr>
     ${box.opp.map(x=>row(x,"opp")).join("")}</tbody></table></div>
