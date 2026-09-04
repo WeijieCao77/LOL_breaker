@@ -267,6 +267,65 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .apnote{grid-column:1/-1;margin-top:7px;font-size:11.5px;color:var(--ink-3);line-height:1.6}
 .apnote b{color:var(--gold)}
 
+/* ---- 界面重做第二期 ---- */
+/* ② 比赛开打：比分变化的那次渲染，两侧向中线撞一下，结果字砸出来；系列赛打完的字留在比分上方 */
+.vs .mid{position:relative;text-align:center}
+.vs.hit .side:first-child{animation:clash-l .7s cubic-bezier(.2,.8,.2,1)}
+.vs.hit .side:last-child{animation:clash-r .7s cubic-bezier(.2,.8,.2,1)}
+@keyframes clash-l{0%{transform:none}35%{transform:translateX(18px)}60%{transform:translateX(-6px)}100%{transform:none}}
+@keyframes clash-r{0%{transform:none}35%{transform:translateX(-18px)}60%{transform:translateX(6px)}100%{transform:none}}
+.stamp{position:absolute;left:50%;top:50%;pointer-events:none;white-space:nowrap;
+  font-size:44px;font-weight:900;letter-spacing:.2em;padding:0 .15em 0 .35em;line-height:1.1;
+  border:3px solid currentColor;color:var(--cyan);text-shadow:0 0 18px currentColor;opacity:0;
+  transform:translate(-50%,-50%) rotate(-8deg) scale(2.2);
+  animation:stamp-in 1.15s cubic-bezier(.2,.9,.2,1) .2s forwards}
+.vs.loss .stamp{color:var(--red)}
+@keyframes stamp-in{
+  0%{opacity:0;transform:translate(-50%,-50%) rotate(-8deg) scale(2.2)}
+  28%{opacity:1;transform:translate(-50%,-50%) rotate(-8deg) scale(1)}
+  70%{opacity:1}
+  100%{opacity:0;transform:translate(-50%,-50%) rotate(-8deg) scale(1)}}
+.stamp.final{top:0;font-size:30px;letter-spacing:.14em;
+  transform:translate(-50%,-115%) rotate(-8deg) scale(2);
+  animation:stamp-hold .9s cubic-bezier(.2,.9,.2,1) .2s forwards}
+@keyframes stamp-hold{
+  0%{opacity:0;transform:translate(-50%,-115%) rotate(-8deg) scale(2)}
+  40%{opacity:1;transform:translate(-50%,-115%) rotate(-8deg) scale(1)}
+  100%{opacity:.95;transform:translate(-50%,-115%) rotate(-8deg) scale(1)}}
+/* ③ 事件提示条：右上滑入，3.2 秒淡出，最多三条 */
+.toasts{position:fixed;right:14px;top:14px;z-index:70;display:flex;flex-direction:column;gap:8px;
+  width:min(340px,calc(100vw - 28px));pointer-events:none}
+.toast{display:flex;gap:9px;align-items:flex-start;background:rgba(12,26,40,.96);border:1px solid var(--line-hot);
+  border-left:3px solid var(--gold);color:var(--ink);padding:9px 12px;font-size:13px;line-height:1.45;
+  box-shadow:0 6px 22px rgba(0,0,0,.45);animation:toast-in .26s cubic-bezier(.2,.8,.2,1)}
+.toast.good{border-left-color:var(--cyan)}
+.toast.bad{border-left-color:var(--red)}
+.toast.big{border-left-color:var(--dawn)}
+.toast .tt{flex:none;margin-top:3px;font-size:10px;letter-spacing:.14em;color:var(--ink-3);
+  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
+.toast .tx{min-width:0}
+.toast.out{animation:toast-out .26s ease-in forwards}
+@keyframes toast-in{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes toast-out{to{opacity:0;transform:translateX(16px)}}
+@media(max-width:560px){.toasts{top:auto;bottom:58px;right:8px}}
+@media(prefers-reduced-motion:reduce){
+  .toast,.toast.out,.vs.hit .side,.stamp,.stamp.final{animation:none}
+  .stamp{opacity:0}.stamp.final{opacity:.95;transform:translate(-50%,-115%) rotate(-8deg)}
+}
+/* 卡片三形：叙事卡（默认）/ 数据卡（含表格）/ 行动卡（含行动按钮）——同一种事长一样、不同的事长不一样 */
+.card:has(.tw) h2{color:var(--ink-2)}
+.card:has(.tw) tbody tr:nth-child(even) td{background:rgba(255,255,255,.025)}
+.card:has(.act) h2{letter-spacing:.24em}
+.card:has(.act) .grid{gap:10px}
+/* ④ 导航图标 */
+.tab .ti{display:inline-block;width:15px;height:15px;vertical-align:-3px;margin-right:6px;opacity:.85}
+.tab .ti svg{display:block;width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media(min-width:900px){
+  #stage>.tabs .tab .ti{display:block;margin:0 auto 4px;width:17px;height:17px}
+  #stage>.tabs .tab .ti svg{width:17px;height:17px}
+}
+@media(max-width:560px){.tab .ti{display:none}}
+
 /* ---- 生涯名片（结局） ---- */
 .poster{position:relative;max-width:720px;margin:0 auto;padding:26px 28px 20px;color:var(--ink);
   background:radial-gradient(120% 90% at 50% 0%,rgba(201,169,97,.14),transparent 55%),linear-gradient(180deg,#0B2438,#071626);
@@ -1136,6 +1195,7 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
   {v:"v20260905p", at:"2026-09-05", items:[
+    "界面重做第二期：比赛开打有了编排——比分一变，两侧战力向中线撞一下、「胜 / 负」砸出来，系列赛打完「胜出 / 落败」留在比分上方；好事坏事大事从右上滑进一条提示（3 秒淡出，最多三条），不用再翻大事记；左侧导航加了单线图标；卡片按性质分形：数据卡表格斑马行、行动卡按钮间距更松。全部尊重系统的「减少动态效果」设置",
     "界面重做第一期（玩家批的设计稿「黎明前的战术板」）：新增「晨光橙」——整套界面里唯一表示「正在发生 / 该你了」的颜色，只给本页主行动按钮（推进周 / 备战 / 开赛 / 休赛期下一周）；顶部 HUD 从十二个同样重的格子改成三层：你是谁 → 现在（赛季 · 阶段大字 · 主按钮镜像）→ 资源六格；换标签 160ms 淡入；换周时 HUD 数字从旧值滚到新值。第二期（卡片分形、比赛开打编排、事件提示条、导航图标）和第三期（宋体标题、手机底栏）接着上",
     "结局页改成「生涯名片」（玩家点名：没故事、成绩不显眼、没法截图炫耀）：结局称号大字＋一句故事，奖杯墙按含金量排（世界赛 > MSI > 联赛，随队另标），五年一行五格（每年哪支队、第几名、国际赛走到哪），底下五个数和签名，加载时依次浮现；原来的五年成长、成就、五年后的世界仍在名片下面",
     "士气微调（批测后只动数值）：AI 队战绩士气幅度 ±0.05→±0.03，新队友信任从中性 46–53 起步，不再转会即扣士气",
@@ -2224,6 +2284,7 @@ function pushEvent(text,tone,tag){
   S.events.push({s:(typeof nowStamp==="function")?nowStamp():SEASONS[S.si].tag,
                  w:S.week,text,tone:tone||"info",tag:tag||"联赛"});
   if(S.events.length>420) S.events.shift();   // 五年十个赛段，160 条会把早期记录挤掉
+  if(typeof toastPush==="function") toastPush({text,tone:tone||"info",tag:tag||"联赛"});   // 界面提示条（第二期 ③）
 }
 function noteForm(team,won){
   const f=S.teamForm[team]||(S.teamForm[team]=[]);   // 各队近期战绩；玩家状态用 S.form
@@ -4328,12 +4389,17 @@ function viewMatch(){
     <div class="row"><button class="btn primary" id="next">继续 →</button></div>`;
   }
   const my0=power(myRoster(),S.fatigue,sea.fav), vf=versionFit(), my=my0+vf, op=power(m.opp.players,0,sea.fav);   // 版本加成单独标，不揉进「战力」
+  // 开打编排（界面重做第二期 ②）：比分刚变的那次渲染，两侧向中线撞一下、结果字砸出来；系列赛打完的字留住
+  const scKey=m.sc.join(":"); let hit="";
+  if(_lastSc!==undefined&&_lastSc!==scKey&&scKey!=="0:0"){ const a=+String(_lastSc).split(":")[0]; hit=m.sc[0]>a?"hit win":"hit loss"; }
+  _lastSc=scKey;
+  const stamp=hit?`<div class="stamp${m.done?' final':''}">${hit.endsWith("win")?(m.done?"胜出":"胜"):(m.done?"落败":"负")}</div>`:"";
   return `<div class="card">
     <h2>${sea.tag} ${S.intl?intlStageName():S.playoff?"季后赛":"第 "+S.week+" 周"}<em>${
       m.need===1?"单局定胜负":m.need===2?"三局两胜":"五局三胜"}</em></h2>
-    <div class="vs">
+    <div class="vs ${hit}">
       <div class="side"><div class="nm">${teamLogo(S.team,34)}<br>${S.team}</div><div class="pw mono">战力 ${pwShow(my0).toFixed(1)}<small style="color:var(--ink-3)"> 版本 ${vf>=0?"+":""}${pwShow(vf).toFixed(1)}</small></div></div>
-      <div class="score">${m.sc[0]} : ${m.sc[1]}</div>
+      <div class="mid"><div class="score">${m.sc[0]} : ${m.sc[1]}</div>${stamp}</div>
       <div class="side"><div class="nm">${teamLogo(m.oppName,34)}<br>${m.oppName}</div><div class="pw mono">战力 ${pwShow(op).toFixed(1)}</div></div>
     </div>
     ${typeof starLaneBadge==="function"?starLaneBadge(m.oppName):""}
@@ -5223,10 +5289,23 @@ const TABS_SEASON=[
   {k:"ach",  n:"成就", z:"rec"},
   {k:"auto", n:"托管", z:"auto", sep:true}
 ];
+/* 导航图标（界面重做第二期 ④）：单线 SVG，跟字色走；竖栏里图标在字上，横条里在字左，手机上只留字 */
+const TAB_ICONS={
+  act:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  me:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>',
+  team:'<svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c1-3 3-5 6-5s5 2 6 5M10 20c1-3 3-5 6-5s5 2 6 5"/></svg>',
+  squad:'<svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c1-3 3-5 6-5s5 2 6 5M10 20c1-3 3-5 6-5s5 2 6 5"/></svg>',
+  world:'<svg viewBox="0 0 24 24"><path d="M7 4h10v4a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4"/></svg>',
+  tx:'<svg viewBox="0 0 24 24"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>',
+  shop:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 8l4 6 4-6M12 14v5M9 16h6"/></svg>',
+  ach:'<svg viewBox="0 0 24 24"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/></svg>',
+  log:'<svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg>',
+  auto:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4z"/></svg>'
+};
 function tabBar(list){
   const cur=curTab(list);
   return `<div class="tabs">${list.map(t=>
-    `<button class="tab z-${t.z||"act"} ${t.sep?"sep":""} ${t.k===cur?'on':''}" data-tab="${t.k}">${t.n}${
+    `<button class="tab z-${t.z||"act"} ${t.sep?"sep":""} ${t.k===cur?'on':''}" data-tab="${t.k}">${TAB_ICONS[t.k]?`<i class="ti">${TAB_ICONS[t.k]}</i>`:""}${t.n}${
       t.k==="ach"?`<span class="tcount">${ACHIEVEMENTS.filter(a=>hasAch(a.id)).length}</span>`:""}</button>`
   ).join("")}</div>`;
 }
@@ -15116,7 +15195,36 @@ function matchLogCard(){
    中：现在（赛季标签 · 阶段大字 · 细节 | 主行动按钮——全页唯一的晨光橙，是本页 .btn.primary 的镜像）；
    下：资源（赛季六格：冠军/段位/粉丝/资金/体能/状态；职业前七格：段位/粉丝/热度/资金/体能/下一节点×2）。
    数字换周时从旧值滚到新值（400ms，尊重 reduced-motion）。段位门槛那一长串说明只留在「我的」页。 */
-var _hudPrev={}, _lastTab;
+var _hudPrev={}, _lastTab, _lastSc;
+/* ---------- 事件提示条（界面重做第二期 ③）----------
+   pushEvent 里 good / bad / big 三种语气的事件，除了进大事记，还从右上滑进一条提示，3.2 秒淡出，最多三条。
+   队列是模块变量不进存档；托管连续处理（_renderLock）和无头批测时不弹。 */
+var _toastQ=[];
+function toastPush(ev){
+  try{
+    if(typeof document==="undefined"||!document.body||!document.body.appendChild) return;
+    if(ev.tone!=="good"&&ev.tone!=="bad"&&ev.tone!=="big") return;
+    _toastQ.push(ev); if(_toastQ.length>4) _toastQ.shift();
+  }catch(e){}
+}
+function flushToasts(){
+  try{
+    if(!_toastQ.length||typeof document==="undefined"||!document.createElement) return;
+    if(typeof _renderLock!=="undefined"&&_renderLock>0){ _toastQ.length=0; return; }
+    let box=document.getElementById("toasts");
+    if(!box){ box=document.createElement("div"); box.id="toasts"; box.className="toasts"; document.body.appendChild(box); }
+    const rm=(typeof matchMedia==="function")&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+    _toastQ.splice(0).forEach((ev,i)=>{
+      const raw=String(ev.text||"").replace(/<br\s*\/?>/gi," ").replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim();
+      const txt=raw.slice(0,96)+(raw.length>96?"…":"");
+      const el=document.createElement("div"); el.className="toast "+ev.tone;
+      el.innerHTML=`<span class="tt">${typeof escapeHtml==="function"?escapeHtml(ev.tag||""):(ev.tag||"")}</span><span class="tx">${typeof escapeHtml==="function"?escapeHtml(txt):txt}</span>`;
+      box.appendChild(el);
+      while(box.children.length>3) box.removeChild(box.firstChild);
+      setTimeout(()=>{ el.classList.add("out"); setTimeout(()=>{ try{ el.remove(); }catch(e){} }, rm?0:260); }, 3200+i*250);
+    });
+  }catch(e){}
+}
 function hudNum(k,v,suffix,cls){
   return `<div><div class="k">${k}</div><div class="v mono ${cls||""}"><span class="num" data-k="${k}" data-count="${v}">${v}</span>${suffix?`<small>${suffix}</small>`:""}</div></div>`;
 }
@@ -15322,6 +15430,7 @@ function render(){
   if(_st.setAttribute) _st.setAttribute("data-zone", curZone());
   if(typeof hudCta==="function") hudCta();               // HUD 主按钮镜像本页的 .btn.primary
   if(typeof stageSwitchFx==="function") stageSwitchFx(); // 换标签 160ms 淡入
+  if(typeof flushToasts==="function") flushToasts();     // 事件提示条
   /* 大标题只在创建页和结局页铺开。
      进了游戏之后它每一屏都在重复占 237px，而首屏总共才 900px——
      收成一条窄横幅，把地方让给内容。 */

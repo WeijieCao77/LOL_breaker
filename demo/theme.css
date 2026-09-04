@@ -254,6 +254,65 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .apnote{grid-column:1/-1;margin-top:7px;font-size:11.5px;color:var(--ink-3);line-height:1.6}
 .apnote b{color:var(--gold)}
 
+/* ---- 界面重做第二期 ---- */
+/* ② 比赛开打：比分变化的那次渲染，两侧向中线撞一下，结果字砸出来；系列赛打完的字留在比分上方 */
+.vs .mid{position:relative;text-align:center}
+.vs.hit .side:first-child{animation:clash-l .7s cubic-bezier(.2,.8,.2,1)}
+.vs.hit .side:last-child{animation:clash-r .7s cubic-bezier(.2,.8,.2,1)}
+@keyframes clash-l{0%{transform:none}35%{transform:translateX(18px)}60%{transform:translateX(-6px)}100%{transform:none}}
+@keyframes clash-r{0%{transform:none}35%{transform:translateX(-18px)}60%{transform:translateX(6px)}100%{transform:none}}
+.stamp{position:absolute;left:50%;top:50%;pointer-events:none;white-space:nowrap;
+  font-size:44px;font-weight:900;letter-spacing:.2em;padding:0 .15em 0 .35em;line-height:1.1;
+  border:3px solid currentColor;color:var(--cyan);text-shadow:0 0 18px currentColor;opacity:0;
+  transform:translate(-50%,-50%) rotate(-8deg) scale(2.2);
+  animation:stamp-in 1.15s cubic-bezier(.2,.9,.2,1) .2s forwards}
+.vs.loss .stamp{color:var(--red)}
+@keyframes stamp-in{
+  0%{opacity:0;transform:translate(-50%,-50%) rotate(-8deg) scale(2.2)}
+  28%{opacity:1;transform:translate(-50%,-50%) rotate(-8deg) scale(1)}
+  70%{opacity:1}
+  100%{opacity:0;transform:translate(-50%,-50%) rotate(-8deg) scale(1)}}
+.stamp.final{top:0;font-size:30px;letter-spacing:.14em;
+  transform:translate(-50%,-115%) rotate(-8deg) scale(2);
+  animation:stamp-hold .9s cubic-bezier(.2,.9,.2,1) .2s forwards}
+@keyframes stamp-hold{
+  0%{opacity:0;transform:translate(-50%,-115%) rotate(-8deg) scale(2)}
+  40%{opacity:1;transform:translate(-50%,-115%) rotate(-8deg) scale(1)}
+  100%{opacity:.95;transform:translate(-50%,-115%) rotate(-8deg) scale(1)}}
+/* ③ 事件提示条：右上滑入，3.2 秒淡出，最多三条 */
+.toasts{position:fixed;right:14px;top:14px;z-index:70;display:flex;flex-direction:column;gap:8px;
+  width:min(340px,calc(100vw - 28px));pointer-events:none}
+.toast{display:flex;gap:9px;align-items:flex-start;background:rgba(12,26,40,.96);border:1px solid var(--line-hot);
+  border-left:3px solid var(--gold);color:var(--ink);padding:9px 12px;font-size:13px;line-height:1.45;
+  box-shadow:0 6px 22px rgba(0,0,0,.45);animation:toast-in .26s cubic-bezier(.2,.8,.2,1)}
+.toast.good{border-left-color:var(--cyan)}
+.toast.bad{border-left-color:var(--red)}
+.toast.big{border-left-color:var(--dawn)}
+.toast .tt{flex:none;margin-top:3px;font-size:10px;letter-spacing:.14em;color:var(--ink-3);
+  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
+.toast .tx{min-width:0}
+.toast.out{animation:toast-out .26s ease-in forwards}
+@keyframes toast-in{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes toast-out{to{opacity:0;transform:translateX(16px)}}
+@media(max-width:560px){.toasts{top:auto;bottom:58px;right:8px}}
+@media(prefers-reduced-motion:reduce){
+  .toast,.toast.out,.vs.hit .side,.stamp,.stamp.final{animation:none}
+  .stamp{opacity:0}.stamp.final{opacity:.95;transform:translate(-50%,-115%) rotate(-8deg)}
+}
+/* 卡片三形：叙事卡（默认）/ 数据卡（含表格）/ 行动卡（含行动按钮）——同一种事长一样、不同的事长不一样 */
+.card:has(.tw) h2{color:var(--ink-2)}
+.card:has(.tw) tbody tr:nth-child(even) td{background:rgba(255,255,255,.025)}
+.card:has(.act) h2{letter-spacing:.24em}
+.card:has(.act) .grid{gap:10px}
+/* ④ 导航图标 */
+.tab .ti{display:inline-block;width:15px;height:15px;vertical-align:-3px;margin-right:6px;opacity:.85}
+.tab .ti svg{display:block;width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media(min-width:900px){
+  #stage>.tabs .tab .ti{display:block;margin:0 auto 4px;width:17px;height:17px}
+  #stage>.tabs .tab .ti svg{width:17px;height:17px}
+}
+@media(max-width:560px){.tab .ti{display:none}}
+
 /* ---- 生涯名片（结局） ---- */
 .poster{position:relative;max-width:720px;margin:0 auto;padding:26px 28px 20px;color:var(--ink);
   background:radial-gradient(120% 90% at 50% 0%,rgba(201,169,97,.14),transparent 55%),linear-gradient(180deg,#0B2438,#071626);
