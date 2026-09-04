@@ -284,6 +284,8 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
   {v:"v20260905p", at:"2026-09-05", items:[
+    "结局页改成「生涯名片」（玩家点名：没故事、成绩不显眼、没法截图炫耀）：结局称号大字＋一句故事，奖杯墙按含金量排（世界赛 > MSI > 联赛，随队另标），五年一行五格（每年哪支队、第几名、国际赛走到哪），底下五个数和签名，加载时依次浮现；原来的五年成长、成就、五年后的世界仍在名片下面",
+    "士气微调（批测后只动数值）：AI 队战绩士气幅度 ±0.05→±0.03，新队友信任从中性 46–53 起步，不再转会即扣士气",
     "合同到期重做（玩家实锤：TOP 夺冠却不续约、拒了 JDG 还被塞去 AL）：到期时队伍想留你就递「续约报价卡」（新年薪/违约金/年限），签或拒由你；当年拿了任意冠军＝铁续约，报价更高；队伍放你走会当场告知原因，你成自由身走转会市场自己挑下家；整个休赛期都没签成才按表现落到一线弱队或回二队，并写明原因——不再瞬移到随机弱队，你的「留下」也真正生效",
     "国际赛淘汰赛改成真对阵树（玩家实锤：T1/GEN 一百多分，MSI 决赛却遇 70 分队）：八队按瑞士轮/小组战绩+战力排种子，1v8、4v5 同半区，一二号种子只在决赛相遇；MSI 走完整双败（胜者组→败者组→总决赛），世界赛单败八强→半决赛→决赛；不满八队自动轮空；每轮播报同轮其他对局",
     "更衣室关系不再一排 50（玩家实锤）：换队、换人后队友两两关系重建并随胜负漂移",
@@ -527,6 +529,10 @@ const CHANGELOG=[
 ];
 /* 版本戳：印在存档栏和作者栏。玩家对不上这个号，就是开了旧页面。 */
 const GAME_VER=CHANGELOG[0].v+" · 回声";
+/* 支持作者（爱发电）：填上主页链接就会出现右下角 ♥ 和页脚入口；留空一律不显示。
+   SUPPORT_QR 可选：爱发电二维码图的 data URI（站点 CSP 只放行 self/data:，外链图不显示）。 */
+const SUPPORT_URL="";
+const SUPPORT_QR="";
 const AP_SEASON=8, AP_PRE=12, AP_OFF=8, AP_HURT=4;
 /* 异化点数（2026-09-03 玩家拍板）：按现实时间精力定价。
    轻 1 = 碎片时间（排位几把 / 双排 / 发简历）；
@@ -1026,12 +1032,13 @@ function power(teamOrPlayers,fatigue=0,verFav=null){
   const players=team?team.players:teamOrPlayers;
   return powerCore(players,fatigue,verFav,team);
 }
-/* AI 队的士气：近六场胜率 → 0.95～1.05（和玩家队的信任士气同量级） */
+/* AI 队的士气：近六场胜率 → 0.97～1.03。首版 ±0.05 叠上真对阵树把联赛/国际冠军率压过头（批测 2026-09-05），
+   幅度收到 ±0.03——结构不动、只调数值 */
 function formMorale(team){
   try{
     const f=team&&S.teamForm&&S.teamForm[team.name]; if(!f||f.length<3) return 1;
     const wr=f.reduce((a,b)=>a+b,0)/f.length;
-    return 1+(wr-0.5)*0.10;
+    return 1+(wr-0.5)*0.06;
   }catch(e){ return 1; }
 }
 function powerCore(players,fatigue=0,verFav=null,team=null){
@@ -3766,6 +3773,9 @@ function endSeason(result,seed){
   // dc==="renew" 时 S.pendingRenew 已挂起，续约报价卡会在休赛期弹出，由你拍板
   S.lastSeason={result,seed,rec:Object.assign({},S.record),
     grow:DIMS.map(d=>({d,g:S.attrs[d]-S.seasonAttr0[d]}))};
+  // 生涯轨迹（结局名片的「五年一行」用）：每个赛段记一条——哪支队、第几名、季后赛走到哪
+  S.career.log=(S.career.log||[]).concat([{si:S.si,split:S.split||0,team:S.team,lg:S.homeLeague||"LPL",
+    seed,result,w:S.record.w,l:S.record.l}]);
   // 赛事奖金：走到哪一档发哪一档，每次都发（见 shop.js 的 PRIZE_*）
   if(typeof addMoney==="function"&&typeof PRIZE_PO!=="undefined"){
     const tbl=(S.homeLeague||"LPL")==="LDL"?PRIZE_PO_LDL:PRIZE_PO;
@@ -4142,16 +4152,66 @@ function ending(){
   if(best<=4) return {n:"常青树",d:"四强常客。你在联赛里站稳了，不是所有人都能做到这件事。"};
   return {n:"至暗未破",d:"S12 到 S16，五年。你打过、拼过、被记住过，但那座墙始终没有倒。<b>至暗时刻，最终写进了历史。</b>"};
 }
+/* ---------- 生涯名片（结局）----------
+   玩家点名（2026-09-05）：结局总结没故事、成绩不显眼、不好看、没有一块能截图转发去炫耀。
+   一张独立的名片：结局称号做大字＋一句故事，奖杯墙按含金量排（世界赛 > MSI > 联赛），
+   五年一行五格（每年哪支队、第几名、国际赛走到哪），底下五个数和签名。
+   动效只有一处：加载时元素依次浮现（尊重 prefers-reduced-motion）。 */
+const INTL_DEPTH_N={1:"小组赛",2:"八强",3:"四强",4:"决赛",5:"冠军"};
+function careerPoster(){
+  const e=ending(), C=S.career||{};
+  const own=C.titles||[], ring=C.ringTitles||[];
+  const kind=t=>/世界赛/.test(t)?"worlds":/MSI/.test(t)?"msi":"lg";
+  const yearOf=t=>{ const m=t.match(/S(\d\d)/); return m?+m[1]:0; };
+  const rank={worlds:0,msi:1,lg:2};
+  const troph=own.map(t=>({t,k:kind(t),y:yearOf(t),ring:false}))
+    .concat(ring.map(t=>({t,k:kind(t),y:yearOf(t),ring:true})))
+    .sort((a,b)=>(rank[a.k]-rank[b.k])||(a.y-b.y));
+  const wall=troph.length?troph.map((x,i)=>`<div class="tp ${x.k}${x.ring?' ring':''}" style="--i:${i}">
+      <div class="tp-ic">${x.k==="worlds"?"🏆":x.k==="msi"?"🥇":"🏅"}</div>
+      <div class="tp-n">${x.t.replace(/^S\d\d\s*/,"")}</div>
+      <div class="tp-y">S${x.y}${x.ring?' · 随队':''}</div></div>`).join("")
+    :`<div class="tp none" style="--i:0"><div class="tp-ic">—</div><div class="tp-n">无冠</div><div class="tp-y">${
+        C.bestIntl?`国际赛最远走到${INTL_DEPTH_N[C.bestIntl]||""}`:(C.best&&C.best<99)?`常规赛最好第 ${C.best} 名`:"那扇门没有为你开"}</div></div>`;
+  const log=C.log||[], il=C.intlLog||[];
+  const years=SEASONS.map((sea,si)=>{
+    const rows=log.filter(x=>x.si===si);
+    const team=rows.length?rows[rows.length-1].team:(S.career&&si===S.si?S.team:null);
+    const res=rows.map(r=>`${SPLITS[r.split]?SPLITS[r.split][0]:""}${
+      r.result==="champion"?"冠":r.result===3?"亚":r.result===2?"四强":r.seed>6?`第${r.seed}`:"季后赛"}`).join(" · ");
+    const best={}; il.filter(x=>x.si===si).forEach(x=>{ best[x.type]=Math.max(best[x.type]||0,x.d); });
+    const it=Object.entries(best).map(([t,d])=>`${t==="msi"?"MSI":"世界赛"}${INTL_DEPTH_N[d]||""}`).join(" · ");
+    const won=(C.lgYears||[]).includes(si)||(C.msiYears||[]).includes(si)||(C.worldsYears||[]).includes(si);
+    return `<div class="yr${won?' won':''}" style="--i:${si}">
+      <div class="yr-t">${sea.tag}<small>${sea.y}</small></div>
+      <div class="yr-team">${team?`${typeof teamLogo==="function"?teamLogo(team,16):""}<span>${team}</span>`:`<span class="dim">未签约</span>`}</div>
+      <div class="yr-r">${res||(team?"—":"")}</div>
+      ${it?`<div class="yr-i">${it}</div>`:""}</div>`;
+  }).join("");
+  const stats=[
+    ["生涯小分",`${C.w||0}<small>–</small>${C.l||0}`],
+    ["冠军",`${typeof titleCount==="function"?titleCount():own.length}`],
+    ["转会",`${(S.txLog||[]).length}<small> 站</small>`],
+    ["段位",`<span style="font-size:14px">${rankFull(S.pre?S.pre.rank:0)}</span>`],
+    ["粉丝",`<span style="font-size:14px">${fanTier()}</span>`]
+  ];
+  const now=new Date();
+  return `<div class="poster">
+    <div class="po-top" style="--i:0"><span class="po-mark">破晓</span><span>生涯名片 · S12–S16 · 2022–2026</span></div>
+    <div class="po-hero" style="--i:1"><div class="po-title">${e.n}</div><div class="po-story">${e.d}</div></div>
+    <div class="po-id" style="--i:2"><b>${meName()}</b> · ${POSN[S.pos]||""} · ${(ORIGIN[S.origin]||{}).n||""}${S.career?` · ${S.team||"—"}`:""} · ${S.age} 岁</div>
+    <div class="po-wall">${wall}</div>
+    <div class="po-years">${years}</div>
+    <div class="po-stats" style="--i:9">${stats.map(([k,v])=>`<div><div class="k">${k}</div><div class="v mono">${v}</div></div>`).join("")}</div>
+    <div class="po-sign" style="--i:10"><span>www.poxiao.lol</span><span>#破晓生涯</span><span class="mono">${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,"0")}</span></div>
+  </div>`;
+}
 function viewEnd(){
   const e=ending();
+  const again=`<div class="row" style="justify-content:center;align-items:center;margin:14px 0 22px;gap:14px">
+    <button class="btn" id="again">再开一局</button><span class="note" style="margin:0">上面这张名片，截图就能发。</span></div>`;
   if(!S.career){                       // 从未签约：没有战队也没有战绩可展示
-    return `<div class="card">
-      <h2>生涯总结 · S12–S16</h2>
-      <div class="big">${e.n}</div>
-      <p>${e.d}</p>
-      <p class="note">${meName()} · ${POSN[S.pos]} · ${S.age} 岁 · 最高 ${rankFull(S.pre?S.pre.rank:0)} · ${fanTier()}</p>
-      <div class="row"><button class="btn" id="again">再开一局</button></div>
-    </div>${achCard()}`;
+    return `${careerPoster()}${again}${achCard()}`;
   }
   const champs=Object.keys(S.world).map(lg=>{
     const r=Object.entries(S.standings[lg]).map(([n,x])=>({n,...x,p:(x.w+x.l)?x.w/(x.w+x.l):0}))
@@ -4160,11 +4220,10 @@ function viewEnd(){
   }).join("");
   const vets=S.world.LPL.flatMap(t=>t.players.filter(p=>p.age>=26).map(p=>({...p,t:t.name})))
     .sort((a,b)=>b.age-a.age).slice(0,5);
-  return `<div class="card">
-    <h2>生涯总结 · S12–S16</h2>
-    <div class="big">${e.n}</div>
-    <p>${e.d}</p>
-    <p class="note">${meName()} · ${POSN[S.pos]} · ${S.age} 岁 · 生涯小分 ${S.career.w}−${S.career.l}${
+  return `${careerPoster()}${again}
+  <div class="card">
+    <h2>五年成长<em>${meName()} · ${POSN[S.pos]}</em></h2>
+    <p class="note">生涯小分 ${S.career.w}−${S.career.l}${
       (S.career.w+S.career.l)<18?'<span class="tag l">出场极少</span>':''} ·
       最佳常规赛排名 第 ${S.career.best===99?"—":S.career.best} 名${(typeof titleCount==="function"?titleCount():S.career.titles.length)?` · 冠军 ${typeof titlesText==="function"?titlesText():S.career.titles.join("、")}`:""}</p>
     <div class="attrs" style="margin-top:16px">${DIMS.map(d=>{

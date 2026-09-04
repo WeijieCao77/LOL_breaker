@@ -240,6 +240,32 @@ function showChangelog() {
   } catch (e) {}
 }
 
+/* ---------- 支持作者（爱发电）----------
+   玩家 2026-09-05 点名，仿 VAL Manager：右下角 ♥ 弹一张卡——一句话、去爱发电的按钮、可选二维码。
+   链接在模板的 SUPPORT_URL；为空时按钮和页脚入口都不渲染。 */
+function supportUrl() { try { return (typeof SUPPORT_URL === "string" && SUPPORT_URL.trim()) ? SUPPORT_URL.trim() : ""; } catch (e) { return ""; } }
+function showSupport() {
+  try {
+    const url = supportUrl(); if (!url || document.getElementById("suplove")) return;
+    const qr = (typeof SUPPORT_QR === "string" && SUPPORT_QR) ? SUPPORT_QR : "";
+    const wrap = document.createElement("div");
+    wrap.id = "suplove"; wrap.className = "rankup";
+    wrap.innerHTML = `<div class="ru-inner" style="max-width:440px;text-align:center">
+      <div class="ru-eyebrow">支持作者</div>
+      <div class="ru-tier" style="font-size:22px;margin:6px 0 10px">破晓是免费的同人作品</div>
+      <p class="note" style="margin:0 0 14px">一个人写的：世界、数值、一千多条文案。觉得它值一杯奶茶，可以去爱发电请作者喝一杯——
+        不解锁任何内容，游戏永远免费。</p>
+      ${qr ? `<img src="${qr}" alt="爱发电二维码" style="width:180px;height:180px;border:1px solid var(--line);margin:0 auto 12px;display:block">` : ""}
+      <div class="row" style="justify-content:center;gap:10px">
+        <a class="btn" href="${url}" target="_blank" rel="noopener noreferrer">去爱发电 →</a>
+        <button class="btn ghost" id="suplove-x">下次一定</button></div></div>`;
+    document.body.appendChild(wrap);
+    wrap.querySelector("#suplove-x").onclick = () => wrap.remove();
+    wrap.onclick = (e) => { if (e.target === wrap) wrap.remove(); };
+    if (typeof statEvent === "function") statEvent("support");
+  } catch (e) {}
+}
+
 /* ---------- 背景音乐浮窗 ----------
    ♪ 钮点开一个小面板：开关、上一首/播放暂停/下一首、当前曲目、可滚动的歌单（点谁放谁）。
    缺文件的曲目置灰、不可点。面板挂 body，render() 重写 stage 不影响它。 */
@@ -312,9 +338,20 @@ function audioFab(hasSfx, hasBgm) {
   fab.innerHTML = (hasSfx ? `
     <button id="aud-sfx" aria-label="音效开关" title="按键音效"></button>` : "") + (hasBgm ? `
     <button id="aud-bgm" aria-label="背景音乐" title="背景音乐"></button>` : "") + `
-    <button id="aud-log" aria-label="更新日志" title="更新日志">📜</button>`;
+    <button id="aud-log" aria-label="更新日志" title="更新日志">📜</button>` + (supportUrl() ? `
+    <button id="aud-love" aria-label="支持作者" title="支持作者（爱发电）">♥</button>` : "");
   document.body.appendChild(fab);
   fab.querySelector("#aud-log").onclick = (e) => { e.stopPropagation(); showChangelog(); };
+  const lv = fab.querySelector("#aud-love"); if (lv) lv.onclick = (e) => { e.stopPropagation(); showSupport(); };
+  // 页脚也给一个入口
+  try {
+    const cr = document.querySelector("footer.credits");
+    if (cr && supportUrl() && !document.getElementById("credit-love")) {
+      const a = document.createElement("a"); a.id = "credit-love"; a.href = supportUrl(); a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.textContent = "支持作者 ♥"; a.style.marginLeft = "10px"; a.style.color = "var(--gold)";
+      cr.appendChild(a);
+    }
+  } catch (e) {}
   const paintSfx = () => {
     const s = fab.querySelector("#aud-sfx"); if (!s) return;
     s.textContent = AU.sfx ? "🔊" : "🔇";

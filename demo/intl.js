@@ -739,6 +739,8 @@ const INTL_DEPTH={"main":1,"knock":2,"semi":3,"final":4,"champion":5};
 function noteDepth(kind){
   const d=INTL_DEPTH[kind]||0;
   S.career.bestIntl=Math.max(S.career.bestIntl||0,d);
+  // 逐年国际赛走到哪（结局名片用；同一届会记多条，取最深的那条）
+  if(S.intl) S.career.intlLog=(S.career.intlLog||[]).concat([{si:S.si,type:S.intl.type,d}]);
 }
 function crownChampion(){
   const I=S.intl, name=I.type==="msi"?"MSI":"世界赛";

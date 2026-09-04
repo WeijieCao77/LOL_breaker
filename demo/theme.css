@@ -224,6 +224,63 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .apnote{grid-column:1/-1;margin-top:7px;font-size:11.5px;color:var(--ink-3);line-height:1.6}
 .apnote b{color:var(--gold)}
 
+/* ---- 生涯名片（结局） ---- */
+.poster{position:relative;max-width:720px;margin:0 auto;padding:26px 28px 20px;color:var(--ink);
+  background:radial-gradient(120% 90% at 50% 0%,rgba(201,169,97,.14),transparent 55%),linear-gradient(180deg,#0B2438,#071626);
+  border:1px solid var(--line-hot);
+  clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.poster::before{content:"";position:absolute;inset:6px;border:1px solid rgba(201,169,97,.25);pointer-events:none;
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+.poster>*,.poster .tp,.poster .yr{opacity:0;transform:translateY(8px);
+  animation:po-in .55s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:calc(var(--i,0)*90ms)}
+.poster .tp,.poster .yr{animation-delay:calc(260ms + var(--i,0)*70ms)}
+.poster .po-wall,.poster .po-years{animation:none;opacity:1;transform:none}
+@keyframes po-in{to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.poster>*,.poster .tp,.poster .yr{animation:none;opacity:1;transform:none}}
+.po-top{display:flex;justify-content:space-between;align-items:baseline;
+  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:10.5px;letter-spacing:.28em;color:var(--gold)}
+.po-mark{font-size:14px;letter-spacing:.4em;color:var(--gold-hi)}
+.po-hero{text-align:center;margin:22px 0 10px}
+.po-title{font-size:54px;font-weight:800;letter-spacing:.12em;color:var(--gold-hi);line-height:1.1;
+  text-shadow:0 0 28px rgba(201,169,97,.35);text-wrap:balance}
+.po-story{max-width:34em;margin:10px auto 0;color:var(--ink-2);font-size:14px;line-height:1.7}
+.po-id{text-align:center;color:var(--ink-3);font-size:12.5px;letter-spacing:.06em;margin-bottom:18px}
+.po-id b{color:var(--ink)}
+.po-wall{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;padding:14px 0 16px;
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.tp{width:118px;padding:10px 8px;text-align:center;background:rgba(14,42,62,.7);border:1px solid var(--line)}
+.tp.worlds{width:150px;border-color:var(--gold);background:linear-gradient(180deg,rgba(201,169,97,.22),rgba(14,42,62,.7))}
+.tp.msi{border-color:var(--line-hot)}
+.tp.ring{opacity:.72}
+.tp.none{width:auto;padding:12px 26px;border-style:dashed}
+.tp-ic{font-size:26px;line-height:1}
+.tp.worlds .tp-ic{font-size:34px}
+.tp-n{font-weight:700;font-size:13px;margin-top:6px;color:var(--gold-hi)}
+.tp-y{font-size:10.5px;color:var(--ink-3);letter-spacing:.08em;margin-top:2px}
+.po-years{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);margin:16px 0 14px;border:1px solid var(--line)}
+.yr{background:rgba(10,32,51,.92);padding:9px 8px;min-width:0;font-size:11.5px}
+.yr.won{background:linear-gradient(180deg,rgba(201,169,97,.18),rgba(10,32,51,.92))}
+.yr-t{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:11px;letter-spacing:.14em;color:var(--gold)}
+.yr-t small{margin-left:5px;color:var(--ink-3);letter-spacing:0}
+.yr-team{display:flex;align-items:center;gap:5px;margin-top:5px;color:var(--ink);white-space:nowrap;overflow:hidden}
+.yr-team span{overflow:hidden;text-overflow:ellipsis}
+.yr .dim{color:var(--ink-3)}
+.yr-r{margin-top:4px;color:var(--ink-2)}
+.yr-i{margin-top:3px;color:var(--cyan)}
+.po-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;text-align:center}
+.po-stats .k{font-size:9.5px;letter-spacing:.16em;color:var(--ink-3);text-transform:uppercase}
+.po-stats .v{font-size:18px;font-weight:700;color:var(--gold-hi);margin-top:2px}
+.po-stats .v small{font-size:11px;color:var(--ink-3);font-weight:400}
+.po-sign{display:flex;justify-content:space-between;margin-top:18px;padding-top:10px;border-top:1px solid var(--line);
+  font-size:11px;letter-spacing:.12em;color:var(--ink-3)}
+@media(max-width:560px){
+  .poster{padding:18px 14px 14px}
+  .po-title{font-size:38px}
+  .yr{font-size:10px;padding:6px 4px}
+  .po-stats{gap:6px}.po-stats .v{font-size:15px}
+  .po-top{font-size:9px;letter-spacing:.18em}
+}
+
 /* ---- 天赋分配 ---- */
 .tal{display:flex;align-items:center;gap:13px;padding:10px 0;border-bottom:1px solid var(--line)}
 .tal:last-child{border-bottom:none}
