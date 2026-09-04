@@ -280,11 +280,15 @@ function bizWeek(){
   const cl=(typeof cloutOf==="function")?cloutOf():40;
   const seen=S.bizDone=S.bizDone||{};
   const tiers=[
+    // 这三单也要进商务账本（玩家实锤：成就说「第一单商务」到了，经济页却写「0 单」）
     {k:"cast", at:()=>S.fans>=260||cl>=55, run(){ addMoney("other",10); addFans(12); S.heat=(S.heat||0)+8;
+      bizNote("赛事解说","联赛官方","接了",10,"二路解说一场，圈内混个脸熟");
       pushEvent(`官方邀你做了一场<b>赛事二路解说</b>：出场费 <b>10 万</b>，圈内混了个脸熟。`,"good","商业"); }},
     {k:"brand", at:()=>S.fans>=420||cl>=65, run(){ addMoney("other",30); addFans(15);
+      bizNote("品牌拍摄","外设品牌","接了",30,"一天棚拍，上了电商详情页");
       pushEvent(`<b>外设品牌拍摄</b>找上门：一天棚拍，<b>30 万</b>到账。你的脸出现在了电商详情页上。`,"good","商业"); }},
     {k:"camp", at:()=>S.fans>=600, run(){ addMoney("other",45); addFat(10); addFans(20);
+      bizNote("训练营","挂名青训训练营","接了",45,"开营一期，累是真累");
       pushEvent(`你挂名的<b>青训训练营</b>开营：<b>45 万</b>入账，累是真累，但台下那些眼神你认得——几年前你也那样看着别人。`,"good","商业"); }}
   ];
   for(const t of tiers){

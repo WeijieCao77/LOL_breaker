@@ -1375,6 +1375,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906i", at:"2026-09-06", items:[
+    "赛事解说 / 品牌拍摄 / 训练营这三单商务也记进经济页的商务账本（玩家实锤：成就说「第一单商务」到了，账本却是 0 单）"
+  ]},
   {v:"v20260906h", at:"2026-09-06", items:[
     "新秀改用按赛区分的名字池（玩家实锤：「新秀王1」出戏）：LPL / LDL 中文风 ID 带中文名，LCK 韩式，LEC / LCS 欧美，VCS / PCS / LJL / CBLOL / LLA / LCO / TCL 各有各的；同赛区不重名"
   ]},
@@ -7696,11 +7699,15 @@ function bizWeek(){
   const cl=(typeof cloutOf==="function")?cloutOf():40;
   const seen=S.bizDone=S.bizDone||{};
   const tiers=[
+    // 这三单也要进商务账本（玩家实锤：成就说「第一单商务」到了，经济页却写「0 单」）
     {k:"cast", at:()=>S.fans>=260||cl>=55, run(){ addMoney("other",10); addFans(12); S.heat=(S.heat||0)+8;
+      bizNote("赛事解说","联赛官方","接了",10,"二路解说一场，圈内混个脸熟");
       pushEvent(`官方邀你做了一场<b>赛事二路解说</b>：出场费 <b>10 万</b>，圈内混了个脸熟。`,"good","商业"); }},
     {k:"brand", at:()=>S.fans>=420||cl>=65, run(){ addMoney("other",30); addFans(15);
+      bizNote("品牌拍摄","外设品牌","接了",30,"一天棚拍，上了电商详情页");
       pushEvent(`<b>外设品牌拍摄</b>找上门：一天棚拍，<b>30 万</b>到账。你的脸出现在了电商详情页上。`,"good","商业"); }},
     {k:"camp", at:()=>S.fans>=600, run(){ addMoney("other",45); addFat(10); addFans(20);
+      bizNote("训练营","挂名青训训练营","接了",45,"开营一期，累是真累");
       pushEvent(`你挂名的<b>青训训练营</b>开营：<b>45 万</b>入账，累是真累，但台下那些眼神你认得——几年前你也那样看着别人。`,"good","商业"); }}
   ];
   for(const t of tiers){
