@@ -1375,6 +1375,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906e", at:"2026-09-06", items:[
+    "左栏新增「新闻」栏目：电竞周报和生涯大事记搬到这里（玩家点名周报不见了——原来压在本周页最底下）。赛事栏只留赛程、积分榜、对阵图、宿敌和各赛区新闻"
+  ]},
   {v:"v20260906d", at:"2026-09-06", items:[
     "教程导览分简明 / 详细两版，第一次进职业前、第一次进赛季先让你选：简明只讲栏目；详细把仪表盘、实力条、每个行动按钮（排位 / 训练 / 直播 / 休息 / 代练 / 网吧 / 换游戏 / 看录像）、体能、本周流水、处境卡、杯赛、一键安排都过一遍。「教程说明」栏目里两版都能重放",
     "注册窗只在 MSI 结束、世界赛结束之后才开（玩家点名：那两段不是转会时间）：MSI 进行中的季中间歇拉到 3 周，第 3 周冠军揭晓、注册窗同时开门，续约卡、问询、挂牌都从那一周起；合同到期点就是 MSI 结束 / 世界赛结束。合同谈判卡和「我的合同」写清从哪个赛段起、到哪个赛段止，不再只写「几个赛段」",
@@ -4132,7 +4135,8 @@ function tabContent(T){
     ${T==="auto"?(typeof autoPage==="function"?autoPage():""):""}
     ${T==="world"?(typeof bracketCard==="function"?bracketCard():"")+(typeof fixtureCard==="function"?fixtureCard():"")+standingsCard()+rivalCard()
       +(typeof followUpCard==="function"?followUpCard():"")
-      +newsCard()+eventsCard():""}
+      +newsCard():""}
+    ${T==="news"?(typeof pressCard==="function"?pressCard():"")+eventsCard():""}
     ${T==="ach"?achCard():""}
     ${T==="help"?helpCard():""}`;
 }
@@ -4193,7 +4197,6 @@ function viewSeason(){
     ${opp&&uiNum()?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(power(opp,0,sea.fav)).toFixed(1)}）
       vs 你队 ${pwShow(power(myRoster(),S.fatigue,sea.fav)).toFixed(1)}</p>`:""}
   </div>
-  ${typeof pressCard==="function"?pressCard():""}
   ${typeof injuryCard==="function"?injuryCard():""}`;
 }
 
@@ -5157,7 +5160,7 @@ function viewOffseason(){
     const T=curTab(TABS_SEASON);
     const pops=`${champ}${typeof scrimCard==="function"?scrimCard():""}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
     if(T!=="act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
-    return `${pops}${tabBar(TABS_SEASON)}${typeof breakAgendaCard==="function"?breakAgendaCard():""}${offPanel()}${typeof pressCard==="function"?pressCard():""}`;
+    return `${pops}${tabBar(TABS_SEASON)}${typeof breakAgendaCard==="function"?breakAgendaCard():""}${offPanel()}`;
   }
   const ls=S.lastSeason,sea=SEASONS[S.si];
   let label=ls.result==="champion"?`<span class="tag g">LPL 冠军</span>`
@@ -5742,6 +5745,7 @@ const TABS_PRE=[
   {k:"squad",n:"战队", z:"team"},
   {k:"world",n:"赛事", z:"world"},
   {k:"tx",   n:"转会", z:"money"},
+  {k:"news", n:"新闻", z:"world"},   // 电竞周报 + 生涯大事记（2026-09-06 玩家点名单独成栏）
   {k:"shop", n:"经济", z:"money"},
   {k:"ach",  n:"成就", z:"rec"},
   {k:"log",  n:"日志", z:"rec"},
@@ -5754,6 +5758,7 @@ const TABS_SEASON=[
   {k:"team", n:"队伍", z:"team"},
   {k:"world",n:"赛事", z:"world"},
   {k:"tx",   n:"转会", z:"money"},   // 试训邀请/报价/挂牌/接触/合同——2026-08-31 玩家点名独立成栏
+  {k:"news", n:"新闻", z:"world"},   // 电竞周报 + 生涯大事记
   {k:"shop", n:"经济", z:"money"},
   {k:"ach",  n:"成就", z:"rec"},
   {k:"auto", n:"托管", z:"auto", sep:true},
@@ -5761,6 +5766,7 @@ const TABS_SEASON=[
 ];
 /* 导航图标（界面重做第二期 ④）：单线 SVG，跟字色走；竖栏里图标在字上，横条里在字左，手机上只留字 */
 const TAB_ICONS={
+  news:'<svg viewBox="0 0 24 24"><path d="M4 5h13v14H4zM17 8h3v9a2 2 0 0 1-2 2M7 9h7M7 12h7M7 15h4"/></svg>',
   help:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7M12 17h.01"/></svg>',
   more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
   act:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
@@ -5930,9 +5936,9 @@ function viewPre(){
   ${S.cupMatch?cupMatchCard():""}
   ${T==="act"&&!S.cupMatch?actPanelPre():""}
   ${T==="act"&&!S.cupMatch?(typeof cupCard==="function"?cupCard():""):""}
-  ${T==="act"&&!S.cupMatch?(typeof pressCard==="function"?pressCard():""):""}
   ${T==="act"&&!S.cupMatch?(typeof injuryCard==="function"?injuryCard():"")+attrCard():""}
-  ${T==="world"?scheduleCard()+proCard()+eventsCard():""}
+  ${T==="world"?scheduleCard()+proCard():""}
+  ${T==="news"?(typeof pressCard==="function"?pressCard():"")+eventsCard():""}
   ${T==="tx"?(typeof preTransferPage==="function"?preTransferPage():""):""}
   ${T==="squad"&&S.pre.mates&&S.pre.mates.length&&typeof preSquadCard==="function"?preSquadCard():""}
   ${T==="squad"&&!(S.pre.mates&&S.pre.mates.length)?lockedCard("战队实力","报名城市争霸赛或主播杯，抽到车队后解锁；签约职业战队后是完整版。",
@@ -16260,6 +16266,7 @@ const TOUR_PRE=[
   {sel:'[data-tab="squad"]', t:"战队", d:"报名城市争霸赛或主播杯会抽到一支路人车队——默契、战术、士气在这里练。签约职业队后，这里变成「队伍」。"},
   {sel:'[data-tab="world"]', t:"赛事", d:"外面的世界：各赛区积分榜、赛程、大事记。你没在打，联赛也在打。"},
   {sel:'[data-tab="tx"]', t:"转会", d:"试训邀请、合同、各档俱乐部要什么水平的人——什么时候够格，电话什么时候来。"},
+  {sel:'[data-tab="news"]', t:"新闻", d:"电竞周报（圈子里在写谁）和生涯大事记（发生过的每一件事，可按类别筛）。"},
   {sel:'[data-tab="shop"]', t:"经济", d:"钱从哪来、往哪花：直播收入、奖金、外设、课程。"},
   {sel:'[data-tab="ach"]', t:"成就 / 日志", d:"成就是你拿到过的东西；日志是这一路发生过的事。"},
   {sel:'[data-tab="auto"]', t:"托管", d:"把重复的事交出去：一键安排、自动推进到下一件需要你拿主意的事。"},
@@ -16272,7 +16279,7 @@ const TOUR_PRE_FULL=[
   TOUR_PRE[0],
   {sel:".h-res", t:"资源格", d:"段位是俱乐部看你的第一把尺；粉丝慢涨几乎不掉、热度快涨快跌（每周回落一成，直播趁热最值钱）；资金买外设和课程；体能是每周的本钱；「下一节点」告诉你下一个赛事或窗口还有几周、门槛够不够。"},
   TOUR_PRE[1],
-  TOUR_PRE[2],TOUR_PRE[3],TOUR_PRE[4],TOUR_PRE[5],TOUR_PRE[6],TOUR_PRE[7],TOUR_PRE[8],TOUR_PRE[9],
+  TOUR_PRE[2],TOUR_PRE[3],TOUR_PRE[4],TOUR_PRE[5],TOUR_PRE[6],TOUR_PRE[7],TOUR_PRE[8],TOUR_PRE[9],TOUR_PRE[10],
   {sel:".diary", t:"本周流水", d:"你这周做过的事都会在这里留一句话——做了什么、手感怎么样。一周开始时它是空的。"},
   {sel:".ver", t:"处境卡", d:"现在谁看得到你：差在段位还是差在曝光、离转会窗口还有几周、哪一档俱乐部会来找你。练段位还是去露脸，看这里定。"},
   {sel:".energy", t:"体能", d:"每个行动都累，比赛更累。掉到四成以下状态明显下滑；休息、网吧开黑、换个游戏都能回。行动点写在每个按钮上。"},
@@ -16287,9 +16294,9 @@ const TOUR_PRE_FULL=[
   {sel:".card.cup", t:"杯赛", d:"报了名的赛事卡：对手水位、赢面、还有几周开打、针对性备战。下面的阶梯写着每一轮打谁、赢了打谁。"},
   {sel:"#quickap", t:"一键安排", d:"懒得一个个点：按最稳妥的路数花掉剩余行动点（累了休息、没累补短板、练无可练打排位）。"},
   {sel:".routine", t:"重复上回合 / 计划", d:"把上周的安排再来一遍，或者存一套「没事发生时的默认安排」一键执行。有事打断会停下来交回给你。"},
-  TOUR_PRE[10],
+  TOUR_PRE[11],
   {sel:"#uinum", t:"数值开关", d:"默认用文字描述实力；想看具体数字点这里，随时切回来。"},
-  TOUR_PRE[11]
+  TOUR_PRE[12]
 ];
 const TOUR_SEASON=[
   {sel:"#hud", t:"赛季仪表盘", d:"效力的队、本季战绩、冠军数、段位、粉丝、资金、体能、状态。"},
@@ -16297,6 +16304,7 @@ const TOUR_SEASON=[
   {sel:'[data-tab="team"]', t:"队伍", d:"队友、默契、战术、士气、信任与话语权——这是五个人的游戏，队友弱你再强也赢不了。"},
   {sel:'[data-tab="world"]', t:"赛事", d:"赛程、积分榜、季后赛形势、宿敌、各赛区新闻、大事记。国际赛期间对阵图也在这里。"},
   {sel:'[data-tab="tx"]', t:"转会", d:"别的队来挖你、你挂牌、买断、续约——都在这里。注册窗只在 MSI 结束后和世界赛结束后开。"},
+  {sel:'[data-tab="news"]', t:"新闻", d:"电竞周报和生涯大事记：圈子里在写谁、发生过的每一件事。"},
   {sel:'[data-tab="shop"]', t:"经济", d:"年薪、直播、奖金进账；外设、课程、俱乐部资源花钱。"},
   {sel:'[data-tab="help"]', t:"教程说明", d:"文字版的栏目说明和「重放导览」都在这里，随时回来看。"},
   {sel:"#play", t:"这周的比赛", d:"行动点用完，打这周的比赛。赛后有拆解：赢在哪、输在哪、明天练什么。"}
@@ -16305,10 +16313,10 @@ const TOUR_SEASON_FULL=[
   TOUR_SEASON[0],
   {sel:".h-res", t:"资源格", d:"冠军数、段位、粉丝、资金、体能、状态。状态是「今年打成什么样」——排位找手感、休息护状态，它直接乘在战力上。"},
   {sel:"#pin", t:"实力条", d:"你的水平、本周剩下的行动点、体能、状态。文字档位：生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级；点「数值」看具体数。"},
-  TOUR_SEASON[1],TOUR_SEASON[2],TOUR_SEASON[3],TOUR_SEASON[4],TOUR_SEASON[5],
+  TOUR_SEASON[1],TOUR_SEASON[2],TOUR_SEASON[3],TOUR_SEASON[4],TOUR_SEASON[5],TOUR_SEASON[6],
   {sel:'[data-tab="ach"]', t:"成就", d:"八十多项成就：拿到过的东西，有的给钱、给名气、给信任。"},
   {sel:'[data-tab="auto"]', t:"托管", d:"把重复的事交出去：一键安排、执行计划、自动推进到下一件需要你拿主意的事。"},
-  TOUR_SEASON[6],
+  TOUR_SEASON[7],
   {sel:".next", t:"下一场", d:"本周对手：两队战力对比、对面核心和你的对位、差距判断。战力 = 五人实力加权 × 默契 × 战术 × 士气 × 指挥 × 体能。"},
   {sel:".diary", t:"本周流水", d:"这周做过的事都会在这里留一句话。"},
   {sel:".ver", t:"版本", d:"这一年的强势位置和关键属性：高于联赛均线的人吃红利、低的人吃亏。练关键属性收益更高，赛后拆解里「版本相性」那一行就是它。"},
@@ -16322,7 +16330,7 @@ const TOUR_SEASON_FULL=[
   {sel:".routine", t:"重复上回合 / 计划", d:"把上周的安排再来一遍，或存一套默认安排一键执行。"},
   {sel:"#quickap", t:"一键安排", d:"按最稳妥的路数花掉剩余行动点。"},
   {sel:"#auto", t:"自动推进", d:"只替你跳过「没得选的周」，一有事（际遇、更衣室、报价）立刻交回给你。"},
-  TOUR_SEASON[7]
+  TOUR_SEASON[8]
 ];
 /* 「教程说明」栏目（玩家 2026-09-06 点名：一开始跳过了导览、后面又找不到）：
    文字版的栏目说明 + 基本概念 + 重放导览按钮。栏目说明直接读导览步骤表，两边不会说两套话。 */
