@@ -723,7 +723,7 @@ td .tlogo{margin-right:5px}
   #stage{display:grid;grid-template-columns:96px minmax(0,1fr);gap:0 16px;align-items:start}
   #stage>*{grid-column:2;min-width:0}
   #stage>.tabs{
-    grid-column:1;grid-row:1/-1;align-self:start;
+    grid-column:1;grid-row:1/-1;align-self:start;height:0;min-height:0;   /* 高度算 0：右列卡片少时不被竖栏撑出空当（玩家实锤：经济页两张卡中间空一屏） */
     position:sticky;top:calc(var(--pin-h,0px) + 8px);
     flex-direction:column;gap:1px;margin:0;overflow:visible}
   #stage>.tabs .tab{flex:none;width:100%;min-width:0;text-align:center;
