@@ -1375,6 +1375,10 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906g", at:"2026-09-06", items:[
+    "训练赛对位挑战限次（玩家点名：2 点一次、一周能打三轮不合理）：每周最多 2 次、连着两周最多 3 次，教练要看常规训练",
+    "外赛区修正（玩家实锤：加盟 LCK 的 DRX，推进总结写「0 胜 0 负」、大事记全是 LPL 的冷门）：连胜 / 冷门播报改成你所在的联赛；俱乐部排名按队伍所属联赛算（问询卡、谈判卡不再一律写「LPL 第 x/17」）；推进总结顶上写队伍本赛段战绩，替补就写「你在替补席」"
+  ]},
   {v:"v20260906f", at:"2026-09-06", items:[
     "自由身市场（玩家实锤：世界赛八强、被放走后一家来问的都没有，不知不觉就回了路人）：被放走 / 拒续约 / 买断之后，注册窗一开就按履历铺一桌邀请——今年国际赛八强 +1 家、四强 +2、决赛 +3、冠军 +4，联赛冠军、表现分、粉丝各加一家，最多五家，第一家最高档往下铺；履历平平才按老规矩摇一次。本周页顶上挂着醒目的「你是自由身」卡：窗口还剩几周、关了没签就回路人、桌上有哪几家——一次谈一家",
     "回到路人的前职业选手：试训邀请看职业履历（国际赛四强或拿过冠军＝豪门档，打过正赛＝中游档），不再只看杯赛",
@@ -4093,6 +4097,8 @@ function autoRest(focus,weeks){
              :S.step!==s0?"常规赛打完了。"
              :w>=lim?`推满了 ${lim} 周。`:"";
     S.autoSum={ w0, w1:w0+Math.max(0,w-1), weeks:w, why, rec,   // 赛季一结束 S.week 会归 1，按推进周数算末周
+      team:S.team, teamRec:((S.standings[S.homeLeague||"LPL"]||{})[S.team])?Object.assign({},(S.standings[S.homeLeague||"LPL"]||{})[S.team]):null,
+      benched:(typeof isBenched==="function")?isBenched():false,   // 替补的「0 胜 0 负」是你没上场，不是队伍没打（玩家实锤）
       matches:matches.map(r=>({w:r.w,opp:r.opp,sc:r.sc,win:r.win})),
       attrs:DIMS.map(d=>({d,a:snap.attrs[d],b:S.attrs[d]})),
       strength:{a:strength(snap.attrs),b:strength(S.attrs)},
@@ -4114,7 +4120,9 @@ function autoSumCard(){
   const rows=A.matches.slice(-12).map(m=>`<span class="tag" style="margin:2px">第${m.w}周 ${escapeHtml(String(m.opp||""))} ${m.sc?m.sc.join(":"):""} ${m.win?'<b style="color:var(--cyan)">胜</b>':'<b style="color:var(--red)">负</b>'}</span>`).join("");
   return `<div class="rankup"><div class="ru-inner" style="max-width:600px;max-height:88vh;overflow-y:auto;text-align:left">
     <div class="ru-eyebrow">${A.seasonOver?"常规赛打完了":"自动推进"}</div>
-    <h2 style="margin:0 0 4px">推进总结 · 第 ${A.w0}–${A.w1} 周<em style="float:right">${A.rec.w} 胜 ${A.rec.l} 负</em></h2>
+    <h2 style="margin:0 0 4px">推进总结 · 第 ${A.w0}–${A.w1} 周<em style="float:right">${A.teamRec
+      ?`${escapeHtml(String(A.team||S.team||""))} 本赛段 ${A.teamRec.w}–${A.teamRec.l}${A.benched?"　·　你在替补席":`　·　你上场 ${A.rec.w} 胜 ${A.rec.l} 负`}`
+      :`${A.rec.w} 胜 ${A.rec.l} 负`}</em></h2>
     <p class="note" style="margin:0 0 10px">${A.why}${A.injury?`　<span style="color:var(--red)">目前带伤（${escapeHtml(A.injury)}）</span>`:""}</p>
     ${rows?`<div style="margin-bottom:10px">${rows}</div>`:""}
     <div class="ver" style="margin-bottom:8px"><b>属性</b>　${A.attrs.map(x=>`${x.d} ${Math.round(x.b)}<small style="color:${x.b-x.a>0.05?'var(--cyan)':'var(--ink-3)'}">(${d1(x.b-x.a)})</small>`).join("　")}
@@ -4704,7 +4712,7 @@ function simWorld(){
         S._upset = aw ? {winner:a.name,loser:b.name} : {winner:b.name,loser:a.name};
       }
       const f1=noteForm(a.name,aw), f2=noteForm(b.name,!aw);   // 所有联赛都记近况（AI 士气用）
-      if(lg==="LPL"){
+      if(lg===(S.homeLeague||"LPL")){   // 播的是你所在联赛的战况（玩家实锤：在 LCK 打球却一直弹 LPL 的冷门）
         const rk=lplRank(), notable=new Set(
           rk.slice(0,4).map(r=>r.n).concat(rk.slice(-3).map(r=>r.n)).concat([S.team]));
         [[a.name,f1],[b.name,f2]].forEach(([tn,f])=>{
@@ -10131,7 +10139,17 @@ function scrimCanStart(){
   const cost=(typeof apCost==="function")?apCost("duel"):2;
   if((S.ap||0)<cost) return {ok:false,why:`要 ${cost} 个行动点`};
   if(S.injury) return {ok:false,why:"带伤打不了对位"};
+  // 限次（玩家 2026-09-06 点名：2 点一次、一周能打三轮不合理）：每周最多 2 次，连着两周最多 3 次
+  const wk=scrimWeekKey(0), prev=scrimWeekKey(-1), log=sc.log||[];
+  const thisWk=log.filter(k=>k===wk).length, twoWk=log.filter(k=>k===wk||k===prev).length;
+  if(thisWk>=2) return {ok:false,why:"这周已经打了两次对位，教练不会再排"};
+  if(twoWk>=3) return {ok:false,why:"两周内最多三次对位挑战——教练要看常规训练"};
   return {ok:true,cost};
+}
+function scrimWeekKey(d){
+  d=d||0;
+  if(S.step==="offseason"&&S.off) return "o"+S.si+"-"+S.off.next+"-"+((S.off.week||1)+d);
+  return "s"+S.si+"-"+(S.split||0)+"w"+((S.week||1)+d);
 }
 /* 每局成功率：看你那一维和首发那一维的差距——这是极端加点的人的主场 */
 function scrimOptP(opt){
@@ -10146,6 +10164,7 @@ function scrimOptP(opt){
 function startScrim(){
   const c=scrimCanStart(); if(!c.ok) return;
   const sc=scrimState();
+  (sc.log=sc.log||[]).push(scrimWeekKey(0)); if(sc.log.length>12) sc.log.shift();   // 限次用
   S.ap-=c.cost; addFat(12);
   const pool=SCRIM_POOL.slice(); for(let i=pool.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
   sc.live={sc:[0,0],round:1,flash:0,lines:[],pool:pool.slice(0,5).map(n=>SCRIM_POOL.indexOf(n)),done:false};
@@ -13242,14 +13261,17 @@ function addInvite(tier, reason, lg){
    但 2022 的 IG 战力排 15/17，确实是弱队。得把真实位置摆出来。 */
 function clubStanding(name){
   try{
-    const lg = S.world && S.world.LPL; if(!lg) return null;
+    if(!S.world) return null;
     // 二队队名是 EDG.Y 这种，还原母队要查 LDL 条目上的 parent，
     // 不能再靠剥「青训队」后缀——那个后缀已经没有了
-    const ld = (S.world && S.world.LDL || []).find(t=>t.name===name);
+    const ld = (S.world.LDL || []).find(t=>t.name===name);
     const bare = ld ? ld.parent : String(name);
+    // 队伍属于哪个联赛就按哪个联赛排（玩家实锤：在 LCK 打球，页面上全是「LPL 第 x/17」）
+    const key = Object.keys(S.world).find(k=>k!=="LDL"&&(S.world[k]||[]).some(t=>t.name===bare)) || "LPL";
+    const lg = S.world[key]; if(!lg) return null;
     const rk = lg.map(t=>({n:t.name, p:power(t)})).sort((a,b)=>b.p-a.p);
     const i = rk.findIndex(t=>t.n===bare);
-    return i<0 ? null : { pos:i+1, of:rk.length, power:rk[i].p };
+    return i<0 ? null : { pos:i+1, of:rk.length, power:rk[i].p, lg:key };
   }catch(e){ return null; }
 }
 
@@ -13508,7 +13530,7 @@ function dealCard(){
   const lev = d.leverage;
   const st=clubStanding(d.team);
   return `<div class="card"><h2>${d.renew?"续约谈判":"合同谈判"}<em>${d.team} · ${T.n}${
-    st?` · LPL 第 ${st.pos}/${st.of}`:""}</em></h2>
+    st?` · ${st.lg||"LPL"} 第 ${st.pos}/${st.of}`:""}</em></h2>
     <h3>${D.n}<span class="tag g">${d.renew?"续约":"试训 "+d.grade}</span></h3>
     <div class="grid g2" style="margin:12px 0">
       <div class="ver"><div class="k">年薪</div><div class="v mono" style="font-size:22px;color:var(--gold-hi)">${d.salary}<small> 万/赛段</small></div></div>
@@ -13867,8 +13889,8 @@ function proOfferCard(){
     <div class="ru-eyebrow" style="text-align:center">${o.asked?"有人接了你的牌":"转会问询"} · ${T.n}</div>
     <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:12px">${
       typeof teamLogo==="function"?teamLogo(o.team,22):""} <b>${o.team}</b>${
-      (o.league&&o.league!=="LPL")?`<span class="tag g">${o.league}</span>`
-      :(st?`<span class="tag">LPL 第 ${st.pos}/${st.of}</span>`:"")}</div>
+      (o.league&&o.league!=="LPL")?`<span class="tag g">${o.league}${st?` 第 ${st.pos}/${st.of}`:""}</span>`
+      :(st?`<span class="tag">${st.lg||"LPL"} 第 ${st.pos}/${st.of}</span>`:"")}</div>
     <p class="note" style="margin:0 0 10px">
       你现在在 <b>${S.team}</b>${cur?`（第 ${cur.pos}/${cur.of}）`:""}。
       ${o.direct

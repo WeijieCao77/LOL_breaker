@@ -109,7 +109,17 @@ function scrimCanStart(){
   const cost=(typeof apCost==="function")?apCost("duel"):2;
   if((S.ap||0)<cost) return {ok:false,why:`要 ${cost} 个行动点`};
   if(S.injury) return {ok:false,why:"带伤打不了对位"};
+  // 限次（玩家 2026-09-06 点名：2 点一次、一周能打三轮不合理）：每周最多 2 次，连着两周最多 3 次
+  const wk=scrimWeekKey(0), prev=scrimWeekKey(-1), log=sc.log||[];
+  const thisWk=log.filter(k=>k===wk).length, twoWk=log.filter(k=>k===wk||k===prev).length;
+  if(thisWk>=2) return {ok:false,why:"这周已经打了两次对位，教练不会再排"};
+  if(twoWk>=3) return {ok:false,why:"两周内最多三次对位挑战——教练要看常规训练"};
   return {ok:true,cost};
+}
+function scrimWeekKey(d){
+  d=d||0;
+  if(S.step==="offseason"&&S.off) return "o"+S.si+"-"+S.off.next+"-"+((S.off.week||1)+d);
+  return "s"+S.si+"-"+(S.split||0)+"w"+((S.week||1)+d);
 }
 /* 每局成功率：看你那一维和首发那一维的差距——这是极端加点的人的主场 */
 function scrimOptP(opt){
@@ -124,6 +134,7 @@ function scrimOptP(opt){
 function startScrim(){
   const c=scrimCanStart(); if(!c.ok) return;
   const sc=scrimState();
+  (sc.log=sc.log||[]).push(scrimWeekKey(0)); if(sc.log.length>12) sc.log.shift();   // 限次用
   S.ap-=c.cost; addFat(12);
   const pool=SCRIM_POOL.slice(); for(let i=pool.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
   sc.live={sc:[0,0],round:1,flash:0,lines:[],pool:pool.slice(0,5).map(n=>SCRIM_POOL.indexOf(n)),done:false};

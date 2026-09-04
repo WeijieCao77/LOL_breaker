@@ -314,14 +314,17 @@ function addInvite(tier, reason, lg){
    但 2022 的 IG 战力排 15/17，确实是弱队。得把真实位置摆出来。 */
 function clubStanding(name){
   try{
-    const lg = S.world && S.world.LPL; if(!lg) return null;
+    if(!S.world) return null;
     // 二队队名是 EDG.Y 这种，还原母队要查 LDL 条目上的 parent，
     // 不能再靠剥「青训队」后缀——那个后缀已经没有了
-    const ld = (S.world && S.world.LDL || []).find(t=>t.name===name);
+    const ld = (S.world.LDL || []).find(t=>t.name===name);
     const bare = ld ? ld.parent : String(name);
+    // 队伍属于哪个联赛就按哪个联赛排（玩家实锤：在 LCK 打球，页面上全是「LPL 第 x/17」）
+    const key = Object.keys(S.world).find(k=>k!=="LDL"&&(S.world[k]||[]).some(t=>t.name===bare)) || "LPL";
+    const lg = S.world[key]; if(!lg) return null;
     const rk = lg.map(t=>({n:t.name, p:power(t)})).sort((a,b)=>b.p-a.p);
     const i = rk.findIndex(t=>t.n===bare);
-    return i<0 ? null : { pos:i+1, of:rk.length, power:rk[i].p };
+    return i<0 ? null : { pos:i+1, of:rk.length, power:rk[i].p, lg:key };
   }catch(e){ return null; }
 }
 
@@ -580,7 +583,7 @@ function dealCard(){
   const lev = d.leverage;
   const st=clubStanding(d.team);
   return `<div class="card"><h2>${d.renew?"续约谈判":"合同谈判"}<em>${d.team} · ${T.n}${
-    st?` · LPL 第 ${st.pos}/${st.of}`:""}</em></h2>
+    st?` · ${st.lg||"LPL"} 第 ${st.pos}/${st.of}`:""}</em></h2>
     <h3>${D.n}<span class="tag g">${d.renew?"续约":"试训 "+d.grade}</span></h3>
     <div class="grid g2" style="margin:12px 0">
       <div class="ver"><div class="k">年薪</div><div class="v mono" style="font-size:22px;color:var(--gold-hi)">${d.salary}<small> 万/赛段</small></div></div>
@@ -939,8 +942,8 @@ function proOfferCard(){
     <div class="ru-eyebrow" style="text-align:center">${o.asked?"有人接了你的牌":"转会问询"} · ${T.n}</div>
     <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:12px">${
       typeof teamLogo==="function"?teamLogo(o.team,22):""} <b>${o.team}</b>${
-      (o.league&&o.league!=="LPL")?`<span class="tag g">${o.league}</span>`
-      :(st?`<span class="tag">LPL 第 ${st.pos}/${st.of}</span>`:"")}</div>
+      (o.league&&o.league!=="LPL")?`<span class="tag g">${o.league}${st?` 第 ${st.pos}/${st.of}`:""}</span>`
+      :(st?`<span class="tag">${st.lg||"LPL"} 第 ${st.pos}/${st.of}</span>`:"")}</div>
     <p class="note" style="margin:0 0 10px">
       你现在在 <b>${S.team}</b>${cur?`（第 ${cur.pos}/${cur.of}）`:""}。
       ${o.direct
