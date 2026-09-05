@@ -1241,7 +1241,7 @@ header.top .keyart{position:absolute;inset:0;z-index:0;pointer-events:none;
 header.top:not(.compact){min-height:clamp(300px,27vw,440px);padding-top:clamp(190px,18vw,300px);padding-bottom:18px}
 header.top:not(.compact) .brand{display:none}
 header.top>*:not(.keyart){position:relative;z-index:1}
-header.top:not(.compact) .tagline,header.top:not(.compact) .pillars{text-shadow:0 2px 14px rgba(3,12,20,.95),0 0 3px rgba(3,12,20,.95)}
+header.top:not(.compact) .tagline,header.top:not(.compact) .pillars{text-shadow:0 2px 14px rgba(3,12,20,.95),0 0 3px rgba(3,12,20,.95);padding-left:30px;padding-right:30px}   /* 别贴着图的左沿（玩家点名） */
 header.top.compact .keyart{display:none}
-@media(max-width:560px){header.top .keyart{background-image:url("/img/keyart-m.jpg");background-position:center 22%}header.top:not(.compact){min-height:260px;padding-top:170px}}
+@media(max-width:560px){header.top .keyart{background-image:url("/img/keyart-m.jpg");background-position:center 22%}header.top:not(.compact){min-height:260px;padding-top:170px}header.top:not(.compact) .tagline,header.top:not(.compact) .pillars{padding-left:16px;padding-right:16px}}
 
