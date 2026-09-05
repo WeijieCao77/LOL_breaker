@@ -38,7 +38,7 @@ npm start
 
 浏览器访问 [http://localhost:3000](http://localhost:3000)。`/play` 也会进入游戏，`/healthz` 用于部署健康检查。
 
-线上运行零依赖：`npm start` 不需要先装任何包。只有改代码、构建、跑测试时才需要 `npm ci` 装开发工具链（esbuild、TypeScript、tsx、jsdom）。
+线上运行零依赖：`npm start` 不需要先装任何包。只有改代码、构建、跑测试时才需要 `npm ci` 装开发工具链（esbuild、TypeScript、tsx、jsdom）。开发工具链要 Node 22 或更高（jsdom 的依赖），线上 `node server.js` 仍然 18 就够。
 
 ## 开发与测试
 
