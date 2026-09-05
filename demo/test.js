@@ -3,6 +3,20 @@
 const fs = require("fs");
 const path = require("path");
 
+/* 随机数固定种子：SEED 环境变量给了就用它，没给就用时间戳并打印出来——
+   回归跑挂了拿这个种子能原样重放（原来 Math.random 没固定，结果不可复现）。mulberry32 够用。 */
+const SEED = process.env.SEED ? (parseInt(process.env.SEED, 10) >>> 0) : (Date.now() >>> 0);
+(function (seed) {
+  let a = seed >>> 0;
+  Math.random = function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+})(SEED);
+
 const html = fs.readFileSync(path.join(__dirname, "career.html"), "utf8");
 // 文件已经很大，正则回溯会爆栈——用 indexOf 切
 const a = html.indexOf("<script>"), b = html.lastIndexOf("</script>");
@@ -42,7 +56,7 @@ const code = m[1];
 try {
   new Function(code + "\n;globalThis.__api={S:()=>S,SEASONS,SPLITS,DIMS,AGES,BACKGROUNDS,ACHIEVEMENTS,RANKS,"
     + "GEAR,SLOTS,COURSES,RELAX,SPEND,screenCreate,startPre,preAct,preNextWeek,acceptOffer,"
-    + "render,bracketCard,intlBracketCard,playoffBracketCard,cupLadder,weekDiary,attrCard,tabBar,uiSetNum,uiNum,dimWord,TABS_PRE,TABS_SEASON,dropToStreets,tourMaybe,TAL_PRESETS,"
+    + "render,bracketCard,intlBracketCard,playoffBracketCard,cupLadder,weekDiary,attrCard,tabBar,uiSetNum,uiNum,dimWord,TABS_PRE,TABS_SEASON,dropToStreets,tourMaybe,tourLayout,sanitizeSave,TAL_PRESETS,"
     + "renewNegotiate,signRenewDeal,renewCollapse,poBrInit,poMyOpp,poCanon,contractSpanText,contractLeftText,txWindowOpen,TOUR_PRE_FULL,TOUR_SEASON_FULL,"
     + "faRollOffers,takeFaOffer,dropFaOffer,faCard,faResume,txPhase,txPhaseName,regRollOffer,checkTopUpInvite,rebuildMySchedule,REG_WEEKS,"
     + "doTrain,doAction,startMatch,resolveNode,playGame,nextWeek,doOffseason,offNextWeek,prepGo,enterPrep,finishOffseason,OFF_WEEKS,isBenched,benchWeek,"
@@ -252,7 +266,43 @@ function playOne(opts) {
 }
 module.exports.playOne = playOne;
 
+/* 不碰 DOM 的几何与消毒：导览说明卡永远不能盖在聚光框上；导入的存档只能带几个排版标签 */
+function unitChecks() {
+  const bad = [];
+  const overlap = (h, c, ch, cw, vw) => {
+    const cl = c.left === null ? 10 : c.left, cr = c.left === null ? vw - 10 : c.left + cw;
+    return !(c.top >= h.top + h.height || c.top + ch <= h.top || cl >= h.left + h.width || cr <= h.left);
+  };
+  // 目标高过一屏（行动区）、目标贴底（底栏）、目标在上半屏：手机与桌面各量一遍
+  [[320, 568, 300, 209], [375, 812, 355, 244], [390, 844, 370, 180], [1280, 720, 380, 220], [1024, 600, 380, 300]].forEach(([vw, vh, cw, ch]) => {
+    const mobile = vw <= 560;
+    [{ left: 0, top: 39, right: vw, bottom: vh }, { left: 0, top: vh - 52, right: vw, bottom: vh }, { left: 12, top: 80, right: vw - 12, bottom: 200 }, { left: 0, top: 0, right: vw, bottom: vh }].forEach(r => {
+      const L = A.tourLayout(r, vw, vh, cw, ch, mobile);
+      if (!(L.card.top >= 10 && L.card.top + ch <= vh - 10 + 1)) bad.push(`导览说明卡出屏 ${vw}×${vh} r=${r.top}-${r.bottom} top=${L.card.top}`);
+      if (L.hole.height < 12) bad.push(`导览聚光框裁没了 ${vw}×${vh} r=${r.top}-${r.bottom}`);
+      if (overlap(L.hole, L.card, ch, cw, vw)) bad.push(`导览说明卡压住聚光框 ${vw}×${vh} r=${r.top}-${r.bottom} hole=${L.hole.top}+${L.hole.height} card=${L.card.top}`);
+    });
+  });
+  const dirty = { S: { name: "x", log: ['<div class="hi">ok</div> <span style="color:var(--cyan)">c</span> <b>b</b><br>',
+    '<img src=x onerror=alert(1)><a href="https://evil">link</a><div style="position:fixed;inset:0;background:#000">cover</div><span class="hi" onclick="x()">t</span><!-- c --><script>bad()</script>'] } };
+  const out = A.sanitizeSave(dirty).S.log;
+  if (out[0] !== '<div class="hi">ok</div> <span style="color:var(--cyan)">c</span> <b>b</b><br>') bad.push("消毒把正常标签弄坏了：" + out[0]);
+  if (/<img|<a\b|href|onerror|onclick|position:fixed|<script|<!--/.test(out[1])) bad.push("消毒漏了危险标签：" + out[1]);
+  if (out[1] !== 'link<div>cover</div><span class="hi">t</span>') bad.push("消毒结果和预期不同：" + out[1]);
+  // 段位徽章 / 队标 / 头像是游戏自己写进战报的内嵌图，必须原样保留；外链图、javascript: 图整个去掉
+  const badge = '<span class="rankbadge"><img class="rankicon" src="data:image/png;base64,iVBORw0KGgo=" width="18" height="18" alt="钻石一"><b>钻石一</b></span>';
+  const img = A.sanitizeSave({ S: { log: [badge, '<img src="https://evil.example/x.png" onerror="x()"><img src="javascript:alert(1)"><img class="tlogo" src="data:image/svg+xml;base64,PHN2Zz4=">ok'] } }).S.log;
+  if (img[0] !== badge) bad.push("消毒弄丢了段位徽章：" + img[0]);
+  if (img[1] !== "ok") bad.push("消毒放过了外链 / 非 png 图：" + img[1]);
+  return bad;
+}
+module.exports.unitChecks = unitChecks;
+
 if (require.main === module) {
+  console.log("随机种子：", SEED, "（SEED=" + SEED + " npm test 可原样重放）");
+  const unit = unitChecks();
+  if (unit.length) { console.error("单元检查失败：\n - " + unit.join("\n - ")); process.exit(1); }
+  console.log("单元检查通过：导览几何 · 存档消毒");
   // 背景卡折算表（资金 60 万 / 人气 10 / 信任 3 ≈ 1 点，属性 1 点 = 1 点）：各卡并不等值，差异在形状——见 origins.js 顶部注释
   console.log("背景折算：", A.BACKGROUNDS.map(b => b.k + " " + (Object.values(b.mod || {}).reduce((a, v) => a + v, 0)
     + (b.money || 0) / 60 + (b.fame || 0) / 10 + (b.trust || 0) / 3).toFixed(1)).join(" · "));

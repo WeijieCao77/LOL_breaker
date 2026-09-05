@@ -56,10 +56,40 @@ function statEvent(e) {
   } catch (err) {}
 }
 
+/* 心跳：每分钟最多记 1 分钟游玩时长，而且要同时满足（外部审计：原来只要标签页可见就发，
+   看板上的「游玩时长」其实是「所有可见标签页累计打开的时间」）：
+   · 标签页可见；
+   · 已经开局（建档页不算）；
+   · 最近 3 分钟里有过操作（点击 / 按键 / 触摸 / 滚轮）——挂着不动的不算；
+   · 同源开几个标签页只有一个在数：localStorage 里一把 90 秒的租约，谁拿着谁发。 */
+const BEAT_IDLE_MS = 3 * 60000, BEAT_LEASE_MS = 90000, BEAT_LEASE_KEY = "poxiao_beat";
+const BEAT_TAB = Math.random().toString(36).slice(2, 10);
+let _beatLast = Date.now();
+function beatTouch() { _beatLast = Date.now(); }
+function beatLease() {
+  try {
+    const now = Date.now(), raw = localStorage.getItem(BEAT_LEASE_KEY) || "";
+    const i = raw.indexOf(":"), who = i > 0 ? raw.slice(0, i) : "", t = i > 0 ? +raw.slice(i + 1) : 0;
+    if (who && who !== BEAT_TAB && now - t < BEAT_LEASE_MS) return false;   // 别的标签页正在数
+    localStorage.setItem(BEAT_LEASE_KEY, BEAT_TAB + ":" + now);
+    return true;
+  } catch (e) { return true; }   // 存不了（隐私模式）：只能各数各的
+}
+function beatDue() {
+  try {
+    if (document.visibilityState !== "visible") return false;
+    if (typeof S === "undefined" || !S || S.step === "create") return false;
+    if (Date.now() - _beatLast > BEAT_IDLE_MS) return false;
+    return beatLease();
+  } catch (e) { return false; }
+}
+
 if (STATS_ON) {
   statSend("view");
-  // 心跳：页面可见的每一分钟记 1 分钟游玩时长；切后台就不算
+  ["pointerdown", "keydown", "touchstart", "wheel"].forEach(function (ev) {
+    try { document.addEventListener(ev, beatTouch, { passive: true, capture: true }); } catch (e) {}
+  });
   setInterval(function () {
-    try { if (document.visibilityState === "visible") statSend("beat"); } catch (e) {}
+    try { if (beatDue()) statSend("beat"); } catch (e) {}
   }, 60000);
 }

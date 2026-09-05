@@ -16,6 +16,14 @@
    · 安全头：CSP 用内联脚本的 sha256 白名单（不用 unsafe-inline），导入别人的存档
      就算夹带 <img onerror> 也跑不起来；再加 HSTS / frame-ancestors / Referrer-Policy。
 
+   2026-09-07 第二轮审计（Codex）后补的：
+   · 信标限流只在受信代理后面看 X-Forwarded-For、且取代理追加的最后一段（第一段是客户端自己写的），
+     另加全站每分钟总量封顶，限流表满了清过期项而不是整表清空；
+   · 聚合表异步落盘期间来的新事件不再被旧回调的 dirty=false 抹掉（按代数判断），两次落盘不并发；
+   · 看板钥匙不再留在 URL：?key= 只用来第一次登录，换成 12 小时的 HttpOnly Cookie 再 302 掉；
+     脚本用 Authorization 头（curl -u :钥匙）；
+   · /api/bgm 报歌单里实际存在的文件，客户端据此藏掉没有音乐的 ♪ 钮。
+
    Railway 会注入 PORT，本地默认 3000。 */
 const http = require("http");
 const fs = require("fs");
@@ -218,8 +226,9 @@ const VOLATILE = !process.env.RAILWAY_VOLUME_MOUNT_PATH && !process.env.STATS_DI
 const STATS_KEY = process.env.STATS_KEY || "";
 try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
 
-const EVENTS = ["view", "beat", "start", "career", "end"];
-const ST = { days: {}, devices: new Set(), todayIds: new Set(), day: "", dirty: false, flushedAt: 0 };
+const EVENTS = ["view", "beat", "start", "career", "end", "support"];   // support：点开「支持作者」（客户端一直在发，原来服务端没收）
+/* gen：每记一笔加一；异步落盘拿着开始时的代数，写完只有代数没变才敢把 dirty 放下 */
+const ST = { days: {}, devices: new Set(), todayIds: new Set(), day: "", dirty: false, flushedAt: 0, gen: 0, flushedGen: 0, flushing: false };
 
 /* 按北京时间归日：玩家几乎全在国内，看板上的「一天」要和他们的一天对齐 */
 function dayStr(t) { return new Date((t || Date.now()) + 8 * 3600e3).toISOString().slice(0, 10); }
@@ -227,7 +236,7 @@ function evFile(day) { return path.join(DATA_DIR, "ev-" + day + ".jsonl"); }
 const STATS_FILE = path.join(DATA_DIR, "stats.json");
 const DEV_FILE = path.join(DATA_DIR, "devices.log");
 
-function blankDay() { return { pv: 0, uv: 0, nu: 0, min: 0, start: 0, career: 0, end: 0, ver: {} }; }
+function blankDay() { return { pv: 0, uv: 0, nu: 0, min: 0, start: 0, career: 0, end: 0, support: 0, ver: {} }; }
 
 function loadStats() {
   for (const f of [STATS_FILE, STATS_FILE + ".bak"]) {
@@ -267,7 +276,7 @@ function rebuildToday() {
   agg.uv = ST.todayIds.size;
   agg.nu = newToday.size;
   ST.days[day] = agg;
-  ST.dirty = true;
+  ST.dirty = true; ST.gen++;
 }
 
 function applyEvent(agg, ids, o) {
@@ -277,7 +286,7 @@ function applyEvent(agg, ids, o) {
     if (o.v) agg.ver[o.v] = (agg.ver[o.v] || 0) + 1;
   }
   else if (o.e === "beat") agg.min++;
-  else if (o.e === "start" || o.e === "career" || o.e === "end") agg[o.e]++;
+  else if (o.e === "start" || o.e === "career" || o.e === "end" || o.e === "support") agg[o.e] = (agg[o.e] || 0) + 1;   // 老聚合表没有 support 字段
 }
 
 function record(e, id, v) {
@@ -299,27 +308,41 @@ function record(e, id, v) {
       try { fs.appendFile(DEV_FILE, day + " " + id + "\n", () => {}); } catch (err) {}
     }
   }
-  ST.dirty = true;
+  ST.dirty = true; ST.gen++;
 }
 
+/* 落盘。异步路径原来有个丢数据的竞态（外部审计 P2）：写盘开始前快照，写完无条件 dirty=false——
+   写盘期间来的事件把 dirty 置回 true 又被旧回调抹掉；之后没流量、跨日后重启，这些事件不再从 JSONL 重放。
+   现在：写完只有代数没变才放下 dirty；两次异步落盘不并发（/dash 每次都会触发一次）；
+   同步落盘（退出、跨日）用自己的临时文件名，异步那份如果落在它后面、代数更旧，就丢掉不覆盖。 */
 function flush(sync) {
   if (!ST.dirty) return;
+  const gen = ST.gen;
   const body = JSON.stringify({ days: ST.days, savedAt: Date.now() });
-  const tmp = STATS_FILE + ".tmp";
   try {
     if (sync) {
+      const tmp = STATS_FILE + ".tmp-sync";
       try { fs.copyFileSync(STATS_FILE, STATS_FILE + ".bak"); } catch (e) {}
       fs.writeFileSync(tmp, body); fs.renameSync(tmp, STATS_FILE);
-      ST.dirty = false; ST.flushedAt = Date.now();
+      ST.dirty = false; ST.flushedAt = Date.now(); ST.flushedGen = gen;
     } else {
+      if (ST.flushing) return;
+      ST.flushing = true;
+      const tmp = STATS_FILE + ".tmp";
       fs.writeFile(tmp, body, err => {
-        if (err) return;
+        if (err) { ST.flushing = false; return; }
         fs.copyFile(STATS_FILE, STATS_FILE + ".bak", () => {
-          fs.rename(tmp, STATS_FILE, e2 => { if (!e2) { ST.dirty = false; ST.flushedAt = Date.now(); } });
+          if (gen < ST.flushedGen) { ST.flushing = false; fs.unlink(tmp, () => {}); return; }   // 中途已有更新的一份同步落了盘
+          fs.rename(tmp, STATS_FILE, e2 => {
+            ST.flushing = false;
+            if (e2) return;
+            ST.flushedAt = Date.now(); ST.flushedGen = gen;
+            if (ST.gen === gen) ST.dirty = false;   // 写盘期间又记了事件：dirty 留着，30 秒后再落
+          });
         });
       });
     }
-  } catch (e) {}
+  } catch (e) { ST.flushing = false; }
 }
 setInterval(() => flush(false), 30e3).unref();
 process.on("SIGTERM", () => { flush(true); process.exit(0); });
@@ -336,17 +359,39 @@ function pruneEvents() {
   } catch (e) {}
 }
 
-/* ---------- 信标入口（POST /api/t）---------- */
+/* ---------- 信标入口（POST /api/t）----------
+   客户端 IP：X-Forwarded-For 只在受信代理（Railway 边缘）后面才看，而且取代理追加的最后一段——
+   第一段是客户端自己想写什么写什么，原来取第一段等于限流可以随手绕过（外部审计 P1）。
+   本地直连只认 socket 地址。别的托管把 TRUST_PROXY=1 设上即可。 */
+const BEHIND_PROXY = !!(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID || process.env.TRUST_PROXY);
+function clientIp(req) {
+  if (BEHIND_PROXY) {
+    const xff = String(req.headers["x-forwarded-for"] || "").split(",").map(s => s.trim()).filter(Boolean);
+    if (xff.length) return xff[xff.length - 1];
+  }
+  return String(req.socket.remoteAddress || "");
+}
+/* 限流：每个来源每分钟 240 次，全站每分钟 3000 次封顶（就算来源伪造成功也灌不满卷）；
+   表满了先清过期项、还满就拒绝新来源——原来是整表清空，正好给刷子放行 */
 const RATE = new Map();   // ip -> {n, t0}
+const RATE_PER_IP = 240, RATE_GLOBAL = 3000, RATE_MAX_KEYS = 5000;
+const RATE_ALL = { n: 0, t0: 0 };
 function rateOk(ip) {
   const now = Date.now();
+  if (now - RATE_ALL.t0 > 60e3) { RATE_ALL.n = 0; RATE_ALL.t0 = now; }
+  if (++RATE_ALL.n > RATE_GLOBAL) return false;
   let r = RATE.get(ip);
-  if (!r || now - r.t0 > 60e3) { r = { n: 0, t0: now }; RATE.set(ip, r); }
-  if (RATE.size > 5000) RATE.clear();
-  return ++r.n <= 240;
+  if (!r || now - r.t0 > 60e3) {
+    if (!r && RATE.size >= RATE_MAX_KEYS) {
+      for (const [k, v] of RATE) if (now - v.t0 > 60e3) RATE.delete(k);
+      if (RATE.size >= RATE_MAX_KEYS) return false;
+    }
+    r = { n: 0, t0: now }; RATE.set(ip, r);
+  }
+  return ++r.n <= RATE_PER_IP;
 }
 function handleBeacon(req, res) {
-  const ip = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
+  const ip = clientIp(req);
   if (!rateOk(ip)) return send(res, 429, "");
   let buf = [], len = 0;
   req.on("data", c => { len += c.length; if (len <= 512) buf.push(c); else req.destroy(); });
@@ -364,13 +409,45 @@ function handleBeacon(req, res) {
   req.on("error", () => {});
 }
 
-/* ---------- 看板鉴权：常量时间比较，没配钥匙就当这页不存在 ---------- */
-function authOk(req) {
-  if (!STATS_KEY) return false;
-  let key = "";
-  try { key = new URL(req.url, "http://x").searchParams.get("key") || ""; } catch (e) {}
-  const a = Buffer.from(String(key)), b = Buffer.from(STATS_KEY);
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+/* ---------- 看板鉴权：常量时间比较，没配钥匙就当这页不存在 ----------
+   钥匙不再留在 URL 里（会进浏览器历史、代理 / Railway 请求日志、截图、复制出去的链接——外部审计 P2）：
+   · 脚本走 Authorization 头：Bearer <钥匙>，或 Basic（用户名随便、密码填钥匙）—— curl -u :钥匙 …/api/export
+   · 浏览器第一次仍可以 /dash?key=… 进来：钥匙对了就下发一个 12 小时的 HttpOnly Cookie
+     （HMAC 派生的到期令牌，不是钥匙本身），再 302 到不带 key 的同一路径；之后 /dash、/api/stats、/api/export 都认这个 Cookie。 */
+const DASH_COOKIE = "poxiao_dash", DASH_TTL = 12 * 3600e3;
+function sameSecret(a, b) { a = Buffer.from(String(a || "")); b = Buffer.from(String(b || "")); return a.length === b.length && crypto.timingSafeEqual(a, b); }
+function dashToken(exp) { return exp + "." + crypto.createHmac("sha256", STATS_KEY).update("dash:" + exp).digest("base64url"); }
+function tokenOk(tok) {
+  const m = /^(\d{1,16})\.[A-Za-z0-9_-]{20,}$/.exec(String(tok || "")); if (!m) return false;
+  const exp = +m[1];
+  return exp > Date.now() && sameSecret(m[0], dashToken(exp));
+}
+function cookieOf(req, name) {
+  const m = new RegExp("(?:^|;\\s*)" + name + "=([^;]*)").exec(String(req.headers.cookie || ""));
+  return m ? m[1].trim() : "";
+}
+/* 返回 "ok"（放行）/ "login"（?key 正确：发 Cookie 并跳转）/ ""（装作没有这页） */
+function dashAuth(req) {
+  if (!STATS_KEY) return "";
+  const auth = String(req.headers.authorization || "");
+  let m;
+  if ((m = /^Bearer\s+(.+)$/i.exec(auth)) && sameSecret(m[1].trim(), STATS_KEY)) return "ok";
+  if ((m = /^Basic\s+(.+)$/i.exec(auth))) {
+    let pw = ""; try { pw = Buffer.from(m[1].trim(), "base64").toString("utf8").split(":").slice(1).join(":"); } catch (e) {}
+    if (sameSecret(pw, STATS_KEY)) return "ok";
+  }
+  if (tokenOk(cookieOf(req, DASH_COOKIE))) return "ok";
+  let key = ""; try { key = new URL(req.url, "http://x").searchParams.get("key") || ""; } catch (e) {}
+  return sameSecret(key, STATS_KEY) ? "login" : "";
+}
+function dashLogin(req, res, url) {
+  const proto = String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim().toLowerCase();
+  const secure = proto === "https" || (req.socket && req.socket.encrypted);
+  const exp = Date.now() + DASH_TTL;
+  return send(res, 302, "", "text/plain; charset=utf-8", {
+    "set-cookie": DASH_COOKIE + "=" + dashToken(exp) + "; Path=/; HttpOnly; SameSite=Strict; Max-Age=" + Math.floor(DASH_TTL / 1000) + (secure ? "; Secure" : ""),
+    "location": url,
+  });
 }
 
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
@@ -401,8 +478,8 @@ function dashHtml() {
   const today = ST.days[dayStr()] || blankDay();
   const d30 = lastDays(30);
   const d7 = lastDays(7);
-  const tot = { pv: 0, min: 0, start: 0, career: 0, end: 0 };
-  Object.values(ST.days).forEach(a => { tot.pv += a.pv; tot.min += a.min; tot.start += a.start; tot.career += a.career; tot.end += a.end; });
+  const tot = { pv: 0, min: 0, start: 0, career: 0, end: 0, support: 0 };
+  Object.values(ST.days).forEach(a => { tot.pv += a.pv; tot.min += a.min; tot.start += a.start; tot.career += a.career; tot.end += a.end; tot.support += a.support || 0; });
   const ver = {};
   d7.forEach(r => Object.entries(r.a.ver || {}).forEach(([k, n]) => ver[k] = (ver[k] || 0) + n));
   const verRows = Object.entries(ver).sort((a, b) => b[1] - a[1]).slice(0, 8)
@@ -433,20 +510,35 @@ th{color:#8fa2b8;font-weight:600}.num{text-align:right}
 <div class="sub">只有拿着钥匙的你能看到这页 · 每 5 分钟自动刷新 · 北京时间归日</div>
 ${VOLATILE ? '<div class="warn">⚠ 未检测到持久化卷（Railway Volume）——数据现在只存在容器磁盘上，<b>重新部署或重启就会清零</b>。到 Railway 服务设置里挂一个 Volume 即可。</div>' : ""}
 <h2>今日</h2>
-<div class="grid">${stat(today.pv, "浏览量 PV")}${stat(today.uv, "访客 UV")}${stat(today.nu, "新设备")}${stat(fmtMin(today.min), "游玩时长")}${stat(today.start, "开新档")}${stat(today.career, "签约上岸")}${stat(today.end, "打出结局")}</div>
+<div class="grid">${stat(today.pv, "浏览量 PV")}${stat(today.uv, "访客 UV")}${stat(today.nu, "新设备")}${stat(fmtMin(today.min), "游玩时长")}${stat(today.start, "开新档")}${stat(today.career, "签约上岸")}${stat(today.end, "打出结局")}${stat(today.support || 0, "点开支持")}</div>
 <h2>累计</h2>
-<div class="grid">${stat(tot.pv, "总浏览量")}${stat(ST.devices.size, "设备总数")}${stat(fmtMin(tot.min), "总游玩时长")}${stat(tot.start, "开档")}${stat(tot.career + " · " + pc(tot.career, tot.start), "上岸 · 转化")}${stat(tot.end + " · " + pc(tot.end, tot.start), "通关 · 转化")}</div>
+<div class="grid">${stat(tot.pv, "总浏览量")}${stat(ST.devices.size, "设备总数")}${stat(fmtMin(tot.min), "总游玩时长")}${stat(tot.start, "开档")}${stat(tot.career + " · " + pc(tot.career, tot.start), "上岸 · 转化")}${stat(tot.end + " · " + pc(tot.end, tot.start), "通关 · 转化")}${stat(tot.support, "点开支持")}</div>
 <h2>近 30 天 · 访客 UV</h2><div class="chart">${svgBars(d30, a => a.uv, "#5bc6cf")}</div>
 <h2>近 30 天 · 游玩分钟</h2><div class="chart">${svgBars(d30, a => a.min, "#c9a86a")}</div>
 <h2>近 14 天明细</h2>
 <table><tr><th>日期</th><th class="num">PV</th><th class="num">UV</th><th class="num">新设备</th><th class="num">分钟</th><th class="num">开档</th><th class="num">上岸</th><th class="num">通关</th></tr>${tblRows}</table>
 <h2>版本分布（近 7 天 PV）</h2>
 <table><tr><th>版本</th><th class="num">次数</th></tr>${verRows || '<tr><td colspan="2">还没有数据</td></tr>'}</table>
-<div class="foot">数据目录 ${esc(DATA_DIR)} · 上次落盘 ${ST.flushedAt ? new Date(ST.flushedAt + 8 * 3600e3).toISOString().slice(11, 19) : "尚未"} (UTC+8) · 备份：<a style="color:#5bc6cf" href="/api/export?key=${encodeURIComponent(STATS_KEY)}">下载聚合数据 JSON</a></div>
+<div class="foot">数据目录 ${esc(DATA_DIR)} · 上次落盘 ${ST.flushedAt ? new Date(ST.flushedAt + 8 * 3600e3).toISOString().slice(11, 19) : "尚未"} (UTC+8) · 备份：<a style="color:#5bc6cf" href="/api/export">下载聚合数据 JSON</a>（登录 Cookie 12 小时有效；脚本用 <code>curl -u :钥匙</code>）</div>
 </body></html>`;
 }
 
 const DASH_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+
+/* ---------- 歌单探测：/api/bgm ----------
+   仓库不带任何 mp3（.gitignore），干净部署上 demo/bgm/ 只有 README；原来客户端只看浏览器支不支持 <audio>，
+   ♪ 钮永远在，点播放连吃 21 个 404 之后按钮还亮着「已开启」（外部审计 P2）。
+   这里把目录里实际存在的、符合白名单文件名的曲子报出去；目录扫描 60 秒缓存一次。 */
+const BGM = { at: 0, list: [] };
+function bgmList() {
+  const now = Date.now();
+  if (now - BGM.at < 60e3) return BGM.list;
+  BGM.at = now;
+  try {
+    BGM.list = fs.readdirSync(path.join(ROOT, "demo", "bgm")).filter(f => /^[a-z0-9_-]+\.mp3$/.test(f)).map(f => f.slice(0, -4)).sort();
+  } catch (e) { BGM.list = []; }
+  return BGM.list;
+}
 
 const server = http.createServer((req, res) => {
   let url;
@@ -472,9 +564,15 @@ const server = http.createServer((req, res) => {
     return send(res, 200, JSON.stringify({ v: entry ? entry.etag : null, boot: BOOT_AT }),
       "application/json; charset=utf-8", { "cache-control": "no-store" });
   }
+  // 歌单探测：demo/bgm/ 里实际有哪些曲子（仓库不带 mp3，干净部署上是空表，客户端据此藏掉 ♪）
+  if (url === "/api/bgm") {
+    return send(res, 200, JSON.stringify({ tracks: bgmList() }), "application/json; charset=utf-8", { "cache-control": "no-cache" });
+  }
   // 作者后台：没配 STATS_KEY 或钥匙不对，一律装作没有这页
   if (url === "/dash" || url === "/api/stats" || url === "/api/export") {
-    if (!authOk(req)) return send(res, 404, "not found");
+    const auth = dashAuth(req);
+    if (!auth) return send(res, 404, "not found");
+    if (auth === "login") return dashLogin(req, res, url);
     flush(false);
     if (url === "/dash")
       return send(res, 200, dashHtml(), "text/html; charset=utf-8",
@@ -503,7 +601,7 @@ const server = http.createServer((req, res) => {
 
 loadStats();
 server.listen(PORT, () => {
-  console.log(`看板：${STATS_KEY ? "已配钥匙，/dash?key=…" : "未配 STATS_KEY，看板关闭（信标照记）"} · 数据目录 ${DATA_DIR}${VOLATILE ? "（⚠ 无持久化卷）" : ""} · 已记 ${ST.devices.size} 台设备`);
+  console.log(`看板：${STATS_KEY ? "已配钥匙，浏览器 /dash?key=… 登录一次换 Cookie；脚本 curl -u :钥匙 /api/export" : "未配 STATS_KEY，看板关闭（信标照记）"} · 数据目录 ${DATA_DIR}${VOLATILE ? "（⚠ 无持久化卷）" : ""} · 已记 ${ST.devices.size} 台设备${BEHIND_PROXY ? " · 受信代理后（X-Forwarded-For 取末段）" : ""} · 歌单 ${bgmList().length} 首`);
   const e = loadAsset("demo/career.html");
   console.log(`破晓 listening on ${PORT}` + (e
     ? ` · career.html ${(e.raw.length / 1024).toFixed(0)} KB → gzip ${(e.gz.length / 1024).toFixed(0)} KB / br ${(e.br.length / 1024).toFixed(0)} KB · ${e.scriptSrc.length} 段内联脚本进 CSP`

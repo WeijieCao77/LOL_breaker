@@ -325,7 +325,8 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .updbar .ub-t span{color:var(--ink-2)}
 .updbar .ub-b{display:flex;gap:8px;flex:none}
 @media(max-width:560px){
-  .updbar{top:auto;bottom:130px;right:8px;flex-wrap:wrap;gap:8px}
+  /* 手机上放页顶：原来贴在底部 130px 处，正好压在「更多」抽屉和浮窗上（模拟器实测） */
+  .updbar{top:calc(8px + env(safe-area-inset-top));bottom:auto;left:8px;right:8px;width:auto;flex-wrap:wrap;gap:8px}
   .updbar .ub-b{width:100%;justify-content:flex-end}
 }
 @media(prefers-reduced-motion:reduce){.updbar{animation:none}}
@@ -994,6 +995,7 @@ ul.dealfx li::marker{color:var(--ink-3)}
 }
 .audiofab button:hover{border-color:var(--gold)}
 .audiofab button.off{opacity:.45;border-color:var(--line)}
+.audiofab>#aud-more{display:none}   /* 只在手机折叠态出现（见文末手机修补块） */
 
 /* 支持作者：结构参考常见的独立游戏赞助浮窗。
    这一张刻意用暖白纸面，与游戏的冷蓝背景拉开层级；爱发电只负责跳转，不在游戏里收集支付信息。 */
@@ -1262,4 +1264,50 @@ header.top.compact .keyart{display:none}
 @media(min-width:900px) and (max-height:700px){
   #stage>.tabs .tab{padding:7px 4px;font-size:12px}
   #stage>.tabs .tab .ti{display:none}
+}
+
+/* ---- 2026-09-06 手机端修补（iOS 模拟器实测）---- */
+@media(max-width:560px){
+  /* iOS Safari：输入框字号小于 16px，聚焦时整页放大，之后不会自己缩回（建档页填完 ID 右边就被裁掉） */
+  input[type=text],.renamer input{font-size:16px}
+  /* 建档页天赋分配行：名称 + 加减按钮一行，说明和成长档各占一整行
+     （原来四样挤一行，说明列只剩一个字宽，「对线压制与个人输出」竖着排了十行） */
+  .tal{flex-wrap:wrap;gap:6px 10px}
+  .tal .nm{order:1;width:auto;min-width:54px}
+  .tal .ctl{order:2;margin-left:auto}
+  .tal .desc{order:3;flex:1 1 100%}
+  .tal .cap{order:4;flex:1 1 100%;width:auto;text-align:left}
+  /* 职业前 HUD 资源格：5 格 + 下一节点按 3 列排会空出一格；改 6 列铺满（3+2+1 行） */
+  .h-res.pre{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .h-res.pre>div{grid-column:span 2}
+  .h-res.pre>div:nth-child(4),.h-res.pre>div:nth-child(5){grid-column:span 3}
+  .h-res.pre>.h-next{grid-column:span 6}
+  /* 属性条上「数值 / 导览」两颗按钮 25px 高，手指点不准；触控目标统一往 40px 靠（外部审计实测 32–43px），
+     底栏 48px，右下角浮窗 40px；属性条上下留白收一点，整条别太高 */
+  .pvb{min-height:40px;padding:5px 9px;font-size:12px}
+  .pinbar{padding-top:4px;padding-bottom:4px}
+  .btn.sm{min-height:40px}
+  .rt-x{min-height:36px;padding:5px 10px}
+  #stage>.tabs .tab{min-height:48px}
+  .audiofab button{width:40px;height:40px}
+  /* 底栏、抽屉、浮窗、提示条、页底留白：全部避开 iPhone 底部安全区（viewport-fit=cover 之后 env() 才有值） */
+  #stage>.tabs{padding-bottom:env(safe-area-inset-bottom)}
+  .tabsheet{bottom:calc(44px + env(safe-area-inset-bottom))}
+  html body{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+  body .audiofab{bottom:calc(60px + env(safe-area-inset-bottom))}
+  .toasts{bottom:calc(122px + env(safe-area-inset-bottom))}
+  /* 导览说明卡：别高过一屏 */
+  .tour-card{max-height:calc(100vh - 20px);overflow:auto;overscroll-behavior:contain}
+  /* 右下角浮窗：四颗横排 178px 宽，永远压着卡片右下角的文字（玩家截图里压住了「青训教练就会来」）。
+     手机上收成一颗「⋯」，点开再展开四颗；展开后再点一次或点别处收回 */
+  .audiofab.fold{flex-direction:column-reverse;align-items:flex-end;gap:8px}
+  .audiofab.fold:not(.open)>button:not(#aud-more){display:none}
+  .audiofab.fold>#aud-more{display:block;width:40px;height:40px;font-size:18px;line-height:1}
+  .audiofab.fold.open>#aud-more{border-color:var(--gold);color:var(--gold)}
+}
+@media(max-width:380px){
+  /* 320–380px 的手机：属性条排不下，「导览」按钮被推到屏幕外——藏掉「最强」项、收紧间距 */
+  .pinbar{gap:7px;padding:6px 8px}
+  .pinbar .pv.pv-top2{display:none}
+  .pvb{padding:5px 7px}
 }

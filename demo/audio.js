@@ -151,7 +151,9 @@ function bgmEl() {
   el.addEventListener("ended", () => { if (AU.bgm) bgmAdvance(1); });
   el.addEventListener("error", () => {            // 404 / 解码失败：这首标记缺失，跳到下一首
     const c = bgmCur(); if (c >= 0) AU.missing[c] = true;
-    if (AU.bgm && bgmPlayable() > 0) bgmAdvance(1); else { AU.playing = false; bgmPaint(); }
+    if (AU.bgm && bgmPlayable() > 0) bgmAdvance(1);
+    else if (bgmPlayable() <= 0) bgmUnavailable();   // 一首都放不了：♪ 收掉、开关复位（原来按钮还亮着「已开启」）
+    else { AU.playing = false; bgmPaint(); }
   });
   AU.el = el;
   return el;
@@ -218,6 +220,35 @@ function bgmPaint() {
   } catch (e) {}
 }
 
+/* ---------- 歌单探测 ----------
+   仓库不带任何 mp3（.gitignore），干净部署上 demo/bgm/ 只有 README；原来只看浏览器支不支持 <audio>，
+   ♪ 钮永远在，点播放连吃 21 个 404 之后按钮还亮着「已开启」（外部审计 P2）。
+   有服务端就先问一声 /api/bgm，谁在谁不在一次说清：不在的直接置灰，一首都没有就把 ♪ 钮藏掉。
+   单文件发布（Toy）没有这个接口：请求失败就保持原来的「点了才知道」，全都放不了也会收掉。 */
+function bgmProbe() {
+  try {
+    if (typeof fetch !== "function" || typeof location === "undefined" || !/^https?:$/.test(location.protocol)) return;
+    fetch("api/bgm", { cache: "no-store" })
+      .then(r => { if (!r.ok) throw new Error("bad"); return r.json(); })
+      .then(j => {
+        if (!j || !Array.isArray(j.tracks)) return;
+        const have = new Set(j.tracks.map(String));
+        BGM_TRACKS.forEach((tr, i) => { if (!have.has(tr.f)) AU.missing[i] = true; });
+        if (bgmPlayable() <= 0) bgmUnavailable(); else bgmPanelPaint();
+      }).catch(() => {});
+  } catch (e) {}
+}
+/* 一首都放不了：♪ 钮拿掉、面板收起、偏好复位为关——不然按钮一直亮着「♫ 已开启」却没声 */
+function bgmUnavailable() {
+  try {
+    if (AU.bgm) { AU.bgm = false; audioSave(); }
+    AU.playing = false;
+    const m = document.getElementById("aud-bgm"); if (m) m.remove();
+    const p = document.getElementById("bgm-panel"); if (p) { p.hidden = true; AU.panelOpen = false; }
+    bgmPanelPaint();
+  } catch (e) {}
+}
+
 /* ---------- 挂钩 ----------
    事件委托一只耳朵听全场：按「按钮长什么样」决定响不响——
    .act/.opt 是花点数和做选择（嗒），.btn 是推进和签字（确认）。
@@ -255,7 +286,9 @@ function logBadge() {
   try {
     const b = document.getElementById("aud-log"); if (!b) return;
     const seen = localStorage.getItem(LOG_SEEN_KEY);
-    b.classList.toggle("new", typeof GAME_VER !== "undefined" && seen !== GAME_VER);
+    const fresh = typeof GAME_VER !== "undefined" && seen !== GAME_VER;
+    b.classList.toggle("new", fresh);
+    const m = document.getElementById("aud-more"); if (m) m.classList.toggle("new", fresh);   // 手机上折叠着，红点亮在「⋯」上
   } catch (e) {}
 }
 function showChangelog() {
@@ -402,6 +435,7 @@ function updCheck() {
 function updShow(v) {
   try {
     if (UPD.shown || document.getElementById("updbar")) return;
+    if (document.getElementById("tour")) return;   // 导览正在走：别插进来（下一次检查或导览结束时再提）
     let later = ""; try { later = sessionStorage.getItem("poxiao_upd_later") || ""; } catch (e) {}
     if (later && later === v) return;
     UPD.shown = true;
@@ -490,12 +524,32 @@ function bgmPanelPaint() {
 function audioFab(hasSfx, hasBgm) {
   const fab = document.createElement("div");
   fab.className = "audiofab";
-  fab.innerHTML = (hasSfx ? `
+  // 手机（≤560px）：四颗横排会压住卡片右下角的文字，收成一颗「⋯」，点开再展开（列表倒排：它在最下面，其余往上叠）
+  fab.innerHTML = `
+    <button id="aud-more" aria-label="更多工具" aria-expanded="false" title="声音 / 更新日志 / 支持作者">⋯</button>` + (hasSfx ? `
     <button id="aud-sfx" aria-label="音效开关" title="按键音效"></button>` : "") + (hasBgm ? `
     <button id="aud-bgm" aria-label="背景音乐" title="背景音乐"></button>` : "") + `
     <button id="aud-log" aria-label="更新日志" title="更新日志">📜</button>` + (supportUrl() ? `
     <button id="aud-love" aria-label="支持作者" title="支持作者（爱发电）">♥</button>` : "");
   document.body.appendChild(fab);
+  const more = fab.querySelector("#aud-more");
+  const foldSet = () => {
+    try {
+      const m = window.innerWidth <= 560;
+      fab.classList.toggle("fold", m);
+      if (!m) { fab.classList.remove("open"); more.setAttribute("aria-expanded", "false"); }
+    } catch (e) {}
+  };
+  const foldClose = () => { fab.classList.remove("open"); more.setAttribute("aria-expanded", "false"); };
+  more.onclick = (e) => {
+    e.stopPropagation();
+    const open = !fab.classList.contains("open");
+    fab.classList.toggle("open", open); more.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+  // 展开后点了任意一颗就收回；点浮窗外面也收回（捕获阶段，不受各按钮 stopPropagation 影响）
+  fab.addEventListener("click", (e) => { const b = e.target && e.target.closest ? e.target.closest("button") : null; if (b && b !== more && fab.classList.contains("fold")) setTimeout(foldClose, 0); }, true);
+  document.addEventListener("click", (e) => { if (fab.classList.contains("open") && !(e.target && fab.contains(e.target))) foldClose(); }, true);
+  foldSet(); window.addEventListener("resize", foldSet);
   fab.querySelector("#aud-log").onclick = (e) => { e.stopPropagation(); showChangelog(); };
   logBadge();
   const lv = fab.querySelector("#aud-love"); if (lv) lv.onclick = (e) => { e.stopPropagation(); showSupport(); };
@@ -540,6 +594,7 @@ function audioInit() {
     const hasBgm = typeof Audio !== "undefined";
     audioPrefs();
     audioFab(hasSfx, hasBgm);
+    if (hasBgm) bgmProbe();                       // 服务器上一首都没有就把 ♪ 收掉
     scheduleSupport();
     bgmSeasonTick();
     updInit();                                    // 新版本上线时提示刷新

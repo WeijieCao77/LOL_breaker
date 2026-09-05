@@ -345,7 +345,8 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .updbar .ub-t span{color:var(--ink-2)}
 .updbar .ub-b{display:flex;gap:8px;flex:none}
 @media(max-width:560px){
-  .updbar{top:auto;bottom:130px;right:8px;flex-wrap:wrap;gap:8px}
+  /* 手机上放页顶：原来贴在底部 130px 处，正好压在「更多」抽屉和浮窗上（模拟器实测） */
+  .updbar{top:calc(8px + env(safe-area-inset-top));bottom:auto;left:8px;right:8px;width:auto;flex-wrap:wrap;gap:8px}
   .updbar .ub-b{width:100%;justify-content:flex-end}
 }
 @media(prefers-reduced-motion:reduce){.updbar{animation:none}}
@@ -1014,6 +1015,7 @@ ul.dealfx li::marker{color:var(--ink-3)}
 }
 .audiofab button:hover{border-color:var(--gold)}
 .audiofab button.off{opacity:.45;border-color:var(--line)}
+.audiofab>#aud-more{display:none}   /* 只在手机折叠态出现（见文末手机修补块） */
 
 /* 支持作者：结构参考常见的独立游戏赞助浮窗。
    这一张刻意用暖白纸面，与游戏的冷蓝背景拉开层级；爱发电只负责跳转，不在游戏里收集支付信息。 */
@@ -1284,6 +1286,52 @@ header.top.compact .keyart{display:none}
   #stage>.tabs .tab .ti{display:none}
 }
 
+/* ---- 2026-09-06 手机端修补（iOS 模拟器实测）---- */
+@media(max-width:560px){
+  /* iOS Safari：输入框字号小于 16px，聚焦时整页放大，之后不会自己缩回（建档页填完 ID 右边就被裁掉） */
+  input[type=text],.renamer input{font-size:16px}
+  /* 建档页天赋分配行：名称 + 加减按钮一行，说明和成长档各占一整行
+     （原来四样挤一行，说明列只剩一个字宽，「对线压制与个人输出」竖着排了十行） */
+  .tal{flex-wrap:wrap;gap:6px 10px}
+  .tal .nm{order:1;width:auto;min-width:54px}
+  .tal .ctl{order:2;margin-left:auto}
+  .tal .desc{order:3;flex:1 1 100%}
+  .tal .cap{order:4;flex:1 1 100%;width:auto;text-align:left}
+  /* 职业前 HUD 资源格：5 格 + 下一节点按 3 列排会空出一格；改 6 列铺满（3+2+1 行） */
+  .h-res.pre{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .h-res.pre>div{grid-column:span 2}
+  .h-res.pre>div:nth-child(4),.h-res.pre>div:nth-child(5){grid-column:span 3}
+  .h-res.pre>.h-next{grid-column:span 6}
+  /* 属性条上「数值 / 导览」两颗按钮 25px 高，手指点不准；触控目标统一往 40px 靠（外部审计实测 32–43px），
+     底栏 48px，右下角浮窗 40px；属性条上下留白收一点，整条别太高 */
+  .pvb{min-height:40px;padding:5px 9px;font-size:12px}
+  .pinbar{padding-top:4px;padding-bottom:4px}
+  .btn.sm{min-height:40px}
+  .rt-x{min-height:36px;padding:5px 10px}
+  #stage>.tabs .tab{min-height:48px}
+  .audiofab button{width:40px;height:40px}
+  /* 底栏、抽屉、浮窗、提示条、页底留白：全部避开 iPhone 底部安全区（viewport-fit=cover 之后 env() 才有值） */
+  #stage>.tabs{padding-bottom:env(safe-area-inset-bottom)}
+  .tabsheet{bottom:calc(44px + env(safe-area-inset-bottom))}
+  html body{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+  body .audiofab{bottom:calc(60px + env(safe-area-inset-bottom))}
+  .toasts{bottom:calc(122px + env(safe-area-inset-bottom))}
+  /* 导览说明卡：别高过一屏 */
+  .tour-card{max-height:calc(100vh - 20px);overflow:auto;overscroll-behavior:contain}
+  /* 右下角浮窗：四颗横排 178px 宽，永远压着卡片右下角的文字（玩家截图里压住了「青训教练就会来」）。
+     手机上收成一颗「⋯」，点开再展开四颗；展开后再点一次或点别处收回 */
+  .audiofab.fold{flex-direction:column-reverse;align-items:flex-end;gap:8px}
+  .audiofab.fold:not(.open)>button:not(#aud-more){display:none}
+  .audiofab.fold>#aud-more{display:block;width:40px;height:40px;font-size:18px;line-height:1}
+  .audiofab.fold.open>#aud-more{border-color:var(--gold);color:var(--gold)}
+}
+@media(max-width:380px){
+  /* 320–380px 的手机：属性条排不下，「导览」按钮被推到屏幕外——藏掉「最强」项、收紧间距 */
+  .pinbar{gap:7px;padding:6px 8px}
+  .pinbar .pv.pv-top2{display:none}
+  .pvb{padding:5px 7px}
+}
+
 </style>
 
 </head>
@@ -1418,6 +1466,18 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260907a", at:"2026-09-07", items:[
+    "导览真正做成模态了（外部审计）：开着时背景整页不可点、不可聚焦、读屏也不读（inert），Tab 只在说明卡里转，关掉后焦点回到原来的按钮（原来焦点在「详细」上按一下 Tab 就跳到弹窗外面去了）；说明卡不再压住聚光区——整块行动区高过一屏时聚光框只留说明卡上方那一截（320×568 实测原来重叠 209px），桌面上上下都放不下时先试着放到目标侧面；这套几何拆成了纯函数进无头自检",
+    "手机触控目标加高：属性条「数值 / 导览」40px、小按钮 40px、存档栏小钮 36px、底栏 48px、右下角浮窗 40px",
+    "没有音乐文件的部署不再显示 ♪ 钮（原来点播放会连吃 21 个 404、按钮还亮着「已开启」）：页面打开时问一次服务器歌单，一首都没有就藏掉；单文件发布没有这个接口，照旧点了才知道，全都放不了也会把钮收掉、开关复位",
+    "导入存档更严：先看文件大小（超过 8 MB 直接拒），阶段和五维都得对得上；存档里的文字只保留 div / span / b / i / br 等几个排版标签和 class，链接、图片、内联样式一律去掉——别人给的存档不该能改写界面",
+    "看板「游玩时长」不再虚高：心跳只在标签页可见、已开局、最近 3 分钟有操作时才发，同一浏览器开几个标签页只算一个；「支持作者」的点开次数原来服务端没收，现在看板上有",
+    "服务端：信标限流不再能靠伪造 X-Forwarded-For 绕过，另加全站每分钟总量封顶；统计落盘的丢数据竞态修掉；看板钥匙不再留在 URL（?key= 登录一次换成 12 小时 Cookie，脚本走 Authorization 头）"
+  ]},
+  {v:"v20260906z", at:"2026-09-06", items:[
+    "教程导览修了一轮（玩家截图：「实力条」那一步框住的是 HUD 的「下一节点」）：聚光框跟着滚动、iOS 地址栏伸缩和缩放实时重量；手机上「新闻 / 经济 / 成就 / 托管 / 教程说明」收在「更多」抽屉里，原来这几步被整个跳过，现在导览会替你把抽屉打开再讲；步数只数页面上真有的东西（原来写 13 步实际只走 8 步）；整块行动区比屏幕还高时说明卡不再压在它身上；成就解锁、确认框、推进总结还开着时不再弹导览选择卡（原来两张叠在一起，成就卡点不到）；赛季详细版里那步永远不存在的「自动推进到年底」删掉",
+    "手机端修补（iOS 模拟器实测）：建档页填 ID 时整页被放大且不缩回（输入框字号改 16px）；天赋分配行说明列只剩一个字宽、竖着排十行（改成两行布局）；职业前 HUD 资源格空出一格（改 6 列铺满）；右下角四颗浮窗永远压着卡片右下角的字、滑动时还会误触「支持作者」（收成一颗「⋯」点开再展开）；属性条「数值 / 导览」按钮加高到 32px；底栏、抽屉、浮窗、提示条避开 iPhone 底部安全区；「游戏更新了」提示条挪到页顶（原来压在「更多」抽屉上），导览进行中不插话；320–380px 的窄屏藏掉属性条「最强」项，「导览」按钮不再被推出屏幕"
+  ]},
   {v:"v20260906y", at:"2026-09-06", items:[
     "职业前也能自动推进（玩家点名：有的玩家就是喜欢看故事，赛季里能一键推到赛季末、职业前却只能一周一周点）：行动卡上新增「自动推进到年底」，推 6 周或一路推到关窗结算；报名、杯赛（节点按你最强的一维选）、际遇、直播报价、试训邀请、合同全按托管规则代办，签进俱乐部就停；停下弹推进总结（段位、人气、属性、替你做的决定、这段时间的大事）"
   ]},
@@ -13041,16 +13101,52 @@ function fixSeasonAttr0(s) {
    存档里的日志、事件本来就是带 HTML 的字符串，读回来直接 innerHTML。
    别人给的文件可能夹带 <img onerror=…> 这类东西——CSP 已经不让它跑，
    这里再把明显的脚本载体剥掉一遍，两道闸。 */
+/* 存档里的文字会被拼进 innerHTML（战报、新闻、试训日志……游戏自己写的只有 div / span / b 和 class="hi|w|l"、
+   color:var(--xx) 这一种内联色）。原来是黑名单——script / iframe / on* 去掉，别的都放行，
+   一份恶意存档仍能塞 <a href> / 外链 <img> / 任意 style 把界面盖掉（外部审计）。改成白名单：
+   只留几个排版标签，属性只留 class（字母数字）和 color:var(--…) 这一种 style；
+   <img> 单独放行——段位徽章、队标、像素头像都是游戏自己写进战报的 data:image/…;base64 内嵌图，
+   只认这种 src（外链、javascript: 一律整个去掉），属性只留 class / width / height / alt。 */
+const SAVE_TAGS = /^(div|span|b|i|em|strong|small|br|u|s|p|sub|sup)$/;
+const SAVE_IMG_SRC = /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/;
+function attrOf(attrs, name) {
+  const m = new RegExp("\\s" + name + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))", "i").exec(attrs);
+  return m ? (m[1] !== undefined ? m[1] : m[2] !== undefined ? m[2] : m[3] || "") : "";
+}
+function sanitizeTag(m, close, tag, attrs) {
+  tag = tag.toLowerCase();
+  if (tag === "img") {
+    if (close) return "";
+    const src = attrOf(attrs, "src").trim();
+    if (!SAVE_IMG_SRC.test(src)) return "";
+    let out = "<img";   // 属性按游戏自己写的顺序（class, src, width, height, alt）输出：自己导出的存档导回来一字不改
+    const cv = attrOf(attrs, "class"); if (cv && /^[\w -]{1,80}$/.test(cv)) out += ' class="' + cv + '"';
+    out += ' src="' + src + '"';
+    ["width", "height"].forEach(k => { const v = attrOf(attrs, k); if (/^\d{1,4}$/.test(v)) out += " " + k + '="' + v + '"'; });
+    const alt = attrOf(attrs, "alt"); if (/^[^"'<>\\&]{0,80}$/.test(alt)) out += ' alt="' + alt + '"';
+    const sv = attrOf(attrs, "style").trim();   // 像素头像那一种内联样式（avatar.js）原样放行，别的不要
+    if (/^vertical-align:middle;border-radius:50%;image-rendering:pixelated;border:1px solid var\(--(gold|line)\);?$/.test(sv)) out += ' style="' + sv + '"';
+    return out + ">";
+  }
+  if (!SAVE_TAGS.test(tag)) return "";
+  if (close) return "</" + tag + ">";
+  let out = "<" + tag;
+  const cv = attrOf(attrs, "class");
+  if (cv && /^[\w -]{1,80}$/.test(cv)) out += ' class="' + cv + '"';
+  const sv = attrOf(attrs, "style").trim();
+  if (sv && /^color:\s*var\(--[a-z0-9-]{1,32}\);?$/.test(sv)) out += ' style="' + sv + '"';
+  return out + ">";
+}
 function sanitizeSave(v, depth) {
   depth = depth || 0;
   if (depth > 40) return null;
   if (typeof v === "string") {
     if (v.length > 200000) v = v.slice(0, 200000);
     return v
-      .replace(/<script[\s\S]*?>[\s\S]*?<\/script\s*>/gi, "")
-      .replace(/<\/?(script|iframe|object|embed|link|meta|base|form|style|svg|math)\b[^>]*>/gi, "")
-      .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-      .replace(/(javascript|vbscript|data\s*:\s*text\/html)\s*:/gi, "");
+      .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "")   // 脚本 / 样式块连内容一起去掉
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<[!?][^>]*>/g, "")
+      .replace(/<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g, sanitizeTag);
   }
   if (Array.isArray(v)) return v.map(x => sanitizeSave(x, depth + 1));
   if (v && typeof v === "object") {
@@ -13173,6 +13269,19 @@ function exportSave() {
     document.body.appendChild(a); a.click(); a.remove();
   } catch (e) {}
 }
+/* 导入前先看大小：一整局跑完的存档约 0.5 MB，8 MB 以上不是存档——超大 JSON 一 parse 整页冻住 */
+const IMPORT_MAX = 8 * 1024 * 1024;
+const SAVE_STEPS = ["create", "pre", "offer", "season", "prep", "match", "offseason", "end"];
+/* 结构校验：阶段得是认识的，五维得是 0–100 的数——消毒只管标签，管不了「attrs 是个字符串」这种 */
+function saveShapeOk(blob) {
+  try {
+    const s = blob.S;
+    if (!s || typeof s !== "object" || SAVE_STEPS.indexOf(s.step) < 0) return false;
+    if (!s.attrs || typeof s.attrs !== "object") return false;
+    const dims = (typeof DIMS !== "undefined" && DIMS) ? DIMS : Object.keys(s.attrs);
+    return dims.every(d => { const v = s.attrs[d]; return typeof v === "number" && isFinite(v) && v >= 0 && v <= 100; });
+  } catch (e) { return false; }
+}
 function importSave() {
   try {
     const inp = document.createElement("input");
@@ -13180,14 +13289,16 @@ function importSave() {
     inp.onchange = () => {
       const f = inp.files && inp.files[0];
       if (!f) return;
+      if (typeof f.size === "number" && f.size > IMPORT_MAX) { alert("文件太大，不像是存档。"); return; }
       const rd = new FileReader();
       rd.onload = () => {
         try {
+          if (typeof rd.result === "string" && rd.result.length > IMPORT_MAX) { alert("文件太大，不像是存档。"); return; }
           let blob = JSON.parse(rd.result);
           if (!blob || typeof blob !== "object" || !blob.S || typeof blob.S !== "object") { alert("这个文件不像是存档。"); return; }
           blob = migrate(sanitizeSave(blob));
           if (blob.ver !== SAVE_VER) { alert("存档版本不符，读不了。"); return; }
-          if (!blob.S.step || !blob.S.attrs) { alert("存档内容缺失。"); return; }
+          if (!saveShapeOk(blob)) { alert("存档内容缺失或异常。"); return; }
           if (typeof blob.at !== "number") blob.at = Date.now();
           localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
           loadGame();
@@ -15638,7 +15749,9 @@ function bgmEl() {
   el.addEventListener("ended", () => { if (AU.bgm) bgmAdvance(1); });
   el.addEventListener("error", () => {            // 404 / 解码失败：这首标记缺失，跳到下一首
     const c = bgmCur(); if (c >= 0) AU.missing[c] = true;
-    if (AU.bgm && bgmPlayable() > 0) bgmAdvance(1); else { AU.playing = false; bgmPaint(); }
+    if (AU.bgm && bgmPlayable() > 0) bgmAdvance(1);
+    else if (bgmPlayable() <= 0) bgmUnavailable();   // 一首都放不了：♪ 收掉、开关复位（原来按钮还亮着「已开启」）
+    else { AU.playing = false; bgmPaint(); }
   });
   AU.el = el;
   return el;
@@ -15705,6 +15818,35 @@ function bgmPaint() {
   } catch (e) {}
 }
 
+/* ---------- 歌单探测 ----------
+   仓库不带任何 mp3（.gitignore），干净部署上 demo/bgm/ 只有 README；原来只看浏览器支不支持 <audio>，
+   ♪ 钮永远在，点播放连吃 21 个 404 之后按钮还亮着「已开启」（外部审计 P2）。
+   有服务端就先问一声 /api/bgm，谁在谁不在一次说清：不在的直接置灰，一首都没有就把 ♪ 钮藏掉。
+   单文件发布（Toy）没有这个接口：请求失败就保持原来的「点了才知道」，全都放不了也会收掉。 */
+function bgmProbe() {
+  try {
+    if (typeof fetch !== "function" || typeof location === "undefined" || !/^https?:$/.test(location.protocol)) return;
+    fetch("api/bgm", { cache: "no-store" })
+      .then(r => { if (!r.ok) throw new Error("bad"); return r.json(); })
+      .then(j => {
+        if (!j || !Array.isArray(j.tracks)) return;
+        const have = new Set(j.tracks.map(String));
+        BGM_TRACKS.forEach((tr, i) => { if (!have.has(tr.f)) AU.missing[i] = true; });
+        if (bgmPlayable() <= 0) bgmUnavailable(); else bgmPanelPaint();
+      }).catch(() => {});
+  } catch (e) {}
+}
+/* 一首都放不了：♪ 钮拿掉、面板收起、偏好复位为关——不然按钮一直亮着「♫ 已开启」却没声 */
+function bgmUnavailable() {
+  try {
+    if (AU.bgm) { AU.bgm = false; audioSave(); }
+    AU.playing = false;
+    const m = document.getElementById("aud-bgm"); if (m) m.remove();
+    const p = document.getElementById("bgm-panel"); if (p) { p.hidden = true; AU.panelOpen = false; }
+    bgmPanelPaint();
+  } catch (e) {}
+}
+
 /* ---------- 挂钩 ----------
    事件委托一只耳朵听全场：按「按钮长什么样」决定响不响——
    .act/.opt 是花点数和做选择（嗒），.btn 是推进和签字（确认）。
@@ -15742,7 +15884,9 @@ function logBadge() {
   try {
     const b = document.getElementById("aud-log"); if (!b) return;
     const seen = localStorage.getItem(LOG_SEEN_KEY);
-    b.classList.toggle("new", typeof GAME_VER !== "undefined" && seen !== GAME_VER);
+    const fresh = typeof GAME_VER !== "undefined" && seen !== GAME_VER;
+    b.classList.toggle("new", fresh);
+    const m = document.getElementById("aud-more"); if (m) m.classList.toggle("new", fresh);   // 手机上折叠着，红点亮在「⋯」上
   } catch (e) {}
 }
 function showChangelog() {
@@ -15889,6 +16033,7 @@ function updCheck() {
 function updShow(v) {
   try {
     if (UPD.shown || document.getElementById("updbar")) return;
+    if (document.getElementById("tour")) return;   // 导览正在走：别插进来（下一次检查或导览结束时再提）
     let later = ""; try { later = sessionStorage.getItem("poxiao_upd_later") || ""; } catch (e) {}
     if (later && later === v) return;
     UPD.shown = true;
@@ -15977,12 +16122,32 @@ function bgmPanelPaint() {
 function audioFab(hasSfx, hasBgm) {
   const fab = document.createElement("div");
   fab.className = "audiofab";
-  fab.innerHTML = (hasSfx ? `
+  // 手机（≤560px）：四颗横排会压住卡片右下角的文字，收成一颗「⋯」，点开再展开（列表倒排：它在最下面，其余往上叠）
+  fab.innerHTML = `
+    <button id="aud-more" aria-label="更多工具" aria-expanded="false" title="声音 / 更新日志 / 支持作者">⋯</button>` + (hasSfx ? `
     <button id="aud-sfx" aria-label="音效开关" title="按键音效"></button>` : "") + (hasBgm ? `
     <button id="aud-bgm" aria-label="背景音乐" title="背景音乐"></button>` : "") + `
     <button id="aud-log" aria-label="更新日志" title="更新日志">📜</button>` + (supportUrl() ? `
     <button id="aud-love" aria-label="支持作者" title="支持作者（爱发电）">♥</button>` : "");
   document.body.appendChild(fab);
+  const more = fab.querySelector("#aud-more");
+  const foldSet = () => {
+    try {
+      const m = window.innerWidth <= 560;
+      fab.classList.toggle("fold", m);
+      if (!m) { fab.classList.remove("open"); more.setAttribute("aria-expanded", "false"); }
+    } catch (e) {}
+  };
+  const foldClose = () => { fab.classList.remove("open"); more.setAttribute("aria-expanded", "false"); };
+  more.onclick = (e) => {
+    e.stopPropagation();
+    const open = !fab.classList.contains("open");
+    fab.classList.toggle("open", open); more.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+  // 展开后点了任意一颗就收回；点浮窗外面也收回（捕获阶段，不受各按钮 stopPropagation 影响）
+  fab.addEventListener("click", (e) => { const b = e.target && e.target.closest ? e.target.closest("button") : null; if (b && b !== more && fab.classList.contains("fold")) setTimeout(foldClose, 0); }, true);
+  document.addEventListener("click", (e) => { if (fab.classList.contains("open") && !(e.target && fab.contains(e.target))) foldClose(); }, true);
+  foldSet(); window.addEventListener("resize", foldSet);
   fab.querySelector("#aud-log").onclick = (e) => { e.stopPropagation(); showChangelog(); };
   logBadge();
   const lv = fab.querySelector("#aud-love"); if (lv) lv.onclick = (e) => { e.stopPropagation(); showSupport(); };
@@ -16027,6 +16192,7 @@ function audioInit() {
     const hasBgm = typeof Audio !== "undefined";
     audioPrefs();
     audioFab(hasSfx, hasBgm);
+    if (hasBgm) bgmProbe();                       // 服务器上一首都没有就把 ♪ 收掉
     scheduleSupport();
     bgmSeasonTick();
     updInit();                                    // 新版本上线时提示刷新
@@ -16093,11 +16259,41 @@ function statEvent(e) {
   } catch (err) {}
 }
 
+/* 心跳：每分钟最多记 1 分钟游玩时长，而且要同时满足（外部审计：原来只要标签页可见就发，
+   看板上的「游玩时长」其实是「所有可见标签页累计打开的时间」）：
+   · 标签页可见；
+   · 已经开局（建档页不算）；
+   · 最近 3 分钟里有过操作（点击 / 按键 / 触摸 / 滚轮）——挂着不动的不算；
+   · 同源开几个标签页只有一个在数：localStorage 里一把 90 秒的租约，谁拿着谁发。 */
+const BEAT_IDLE_MS = 3 * 60000, BEAT_LEASE_MS = 90000, BEAT_LEASE_KEY = "poxiao_beat";
+const BEAT_TAB = Math.random().toString(36).slice(2, 10);
+let _beatLast = Date.now();
+function beatTouch() { _beatLast = Date.now(); }
+function beatLease() {
+  try {
+    const now = Date.now(), raw = localStorage.getItem(BEAT_LEASE_KEY) || "";
+    const i = raw.indexOf(":"), who = i > 0 ? raw.slice(0, i) : "", t = i > 0 ? +raw.slice(i + 1) : 0;
+    if (who && who !== BEAT_TAB && now - t < BEAT_LEASE_MS) return false;   // 别的标签页正在数
+    localStorage.setItem(BEAT_LEASE_KEY, BEAT_TAB + ":" + now);
+    return true;
+  } catch (e) { return true; }   // 存不了（隐私模式）：只能各数各的
+}
+function beatDue() {
+  try {
+    if (document.visibilityState !== "visible") return false;
+    if (typeof S === "undefined" || !S || S.step === "create") return false;
+    if (Date.now() - _beatLast > BEAT_IDLE_MS) return false;
+    return beatLease();
+  } catch (e) { return false; }
+}
+
 if (STATS_ON) {
   statSend("view");
-  // 心跳：页面可见的每一分钟记 1 分钟游玩时长；切后台就不算
+  ["pointerdown", "keydown", "touchstart", "wheel"].forEach(function (ev) {
+    try { document.addEventListener(ev, beatTouch, { passive: true, capture: true }); } catch (e) {}
+  });
   setInterval(function () {
-    try { if (document.visibilityState === "visible") statSend("beat"); } catch (e) {}
+    try { if (beatDue()) statSend("beat"); } catch (e) {}
   }, 60000);
 }
 
@@ -16739,6 +16935,7 @@ const TOUR_PRE_FULL=[
   {sel:".diary", t:"本周流水", d:"你这周做过的事都会在这里留一句话——做了什么、手感怎么样。一周开始时它是空的。"},
   {sel:".ver", t:"处境卡", d:"现在谁看得到你：差在段位还是差在曝光、离转会窗口还有几周、哪一档俱乐部会来找你。练段位还是去露脸，看这里定。"},
   {sel:".energy", t:"体能", d:"每个行动都累，比赛更累。掉到四成以下状态明显下滑；休息、网吧开黑、换个游戏都能回。行动点写在每个按钮上。"},
+  TOUR_PRE[11],
   {sel:'[data-pre="rank"]', t:"打排位（1 点）", d:"三把排位：赢了涨分、输了掉分，五维都小涨一点。实力压得住分段就冲，卡在门槛附近先练。段位到宗师起，青训教练才会看你。"},
   {sel:'[data-pretrain="操作"]', t:"训练（2 点）", d:"五个按钮各练一维：操作是对线与输出，运营是视野与节奏，心态是抗压与翻盘，指挥是全队乘数（比赛只取队内最高），体质是耐久。撞到天赋瓶颈会提示怎么突破。"},
   {sel:'[data-pre="stream"]', t:"直播（2 点）", d:"涨热度、赚礼物；热度沉淀成粉丝，粉丝决定谁来邀请你、也决定薪水的浮动。主播出身直播收益更高。"},
@@ -16751,7 +16948,6 @@ const TOUR_PRE_FULL=[
   {sel:"#quickap", t:"一键安排", d:"懒得一个个点：按最稳妥的路数花掉剩余行动点（累了休息、没累补短板、练无可练打排位）。"},
   {sel:"#autopre", t:"自动推进", d:"只想看故事：推 6 周或一路推到年底，报名、杯赛、际遇、试训、合同全按托管规则代办，停下来给你一份推进总结。"},
   {sel:".routine", t:"重复上回合 / 计划", d:"把上周的安排再来一遍，或者存一套「没事发生时的默认安排」一键执行。有事打断会停下来交回给你。"},
-  TOUR_PRE[11],
   {sel:"#uinum", t:"数值开关", d:"默认用文字描述实力；想看具体数字点这里，随时切回来。"},
   TOUR_PRE[12]
 ];
@@ -16786,7 +16982,6 @@ const TOUR_SEASON_FULL=[
   {sel:"[data-squad]", t:"战队行动", d:"训练赛、战术复盘、战队合练、队友双排：默契和战术直接乘在全队战力上，信任决定士气。"},
   {sel:".routine", t:"重复上回合 / 计划", d:"把上周的安排再来一遍，或存一套默认安排一键执行。"},
   {sel:"#quickap", t:"一键安排", d:"按最稳妥的路数花掉剩余行动点。"},
-  {sel:"#autopre", t:"自动推进", d:"推 6 周或推到年底，路上的事全按托管规则代办。"},
   {sel:"#auto", t:"自动推进", d:"只替你跳过「没得选的周」，一有事（际遇、更衣室、报价）立刻交回给你。"},
   TOUR_SEASON[8]
 ];
@@ -16819,6 +17014,62 @@ function helpCard(){
     <p class="note">导览会在第一次进职业前、第一次进赛季各弹一次；这里随时能重放。</p></div>`;
 }
 var _tour=null;
+var _tourDrawer=false;   // 手机「更多」抽屉是导览替玩家打开的（结束时要收回）
+/* 手机底栏只放四个主入口，其余栏目收在「更多」抽屉里、DOM 里暂时没有——
+   但它们是导览要讲的栏目：走到那一步时把抽屉打开。这里只判断「是不是当前栏目表里的一栏」。 */
+function tourTabAvail(sel){
+  try{
+    const m=/^\[data-tab="(\w+)"\]$/.exec(sel); if(!m) return false;
+    const list=(S.step==="pre"||S.step==="offer")?TABS_PRE:TABS_SEASON;
+    return list.some(t=>t.k===m[1]);
+  }catch(e){ return false; }
+}
+function tourHas(sel){ try{ return !!document.querySelector(sel)||tourTabAvail(sel); }catch(e){ return false; } }
+/* 目标在抽屉里就开抽屉，不在就把导览自己开的抽屉收掉。改了 DOM 要重画，重画完目标才在页面上。 */
+function tourDrawer(sel){
+  try{
+    if(!(typeof window!=="undefined"&&window.innerWidth<=560)) return;
+    const el=document.querySelector(sel);
+    const need=el?!!(el.closest&&el.closest(".tabsheet")):tourTabAvail(sel);
+    if(need&&!_moreOpen){ _moreOpen=true; _tourDrawer=true; render(); }
+    else if(!need&&_tourDrawer&&_moreOpen){ _moreOpen=false; _tourDrawer=false; render(); }
+  }catch(e){}
+}
+/* 滚动、iOS 地址栏伸缩、双指缩放都会让目标挪位置——聚光框跟着量，不然框住的是别的东西
+   （玩家实锤：「实力条」那一步框住了 HUD 的「下一节点」）。一帧最多量一次。 */
+var _tourRaf=0;
+function tourTrack(){ if(_tourRaf) return; _tourRaf=requestAnimationFrame(()=>{ _tourRaf=0; tourPlace(); }); }
+/* 导览是模态的：role=dialog + aria-modal 之外还得真把背景关掉（外部审计 P2：原来焦点在「详细」上按一下 Tab
+   就跳到弹窗外面，读屏的可访问树里整页还在）。
+   · 背景：body 下除导览层以外的直接子元素全部 inert（不可点、不可聚焦、读屏不读；老浏览器没有 inert 就只靠焦点圈）；
+   · 焦点：Tab / Shift+Tab 只在说明卡里的按钮之间转；
+   · 关闭：焦点还给打开导览前的那个元素。 */
+var _tourInert=[], _tourFocus=null;
+function tourModalOn(ov){
+  try{
+    const a=document.activeElement;
+    _tourFocus=(a&&a!==document.body&&!(ov&&ov.contains(a)))?a:_tourFocus;
+    tourModalOff(true);
+    Array.prototype.forEach.call(document.body.children,el=>{
+      if(el===ov||el.inert) return;
+      try{ el.inert=true; _tourInert.push(el); }catch(e){}
+    });
+  }catch(e){}
+}
+function tourModalOff(keepFocus){
+  try{ _tourInert.forEach(el=>{ try{ el.inert=false; }catch(e){} }); }catch(e){}
+  _tourInert=[];
+  if(keepFocus) return;
+  try{ const f=_tourFocus; _tourFocus=null; if(f&&f.isConnected&&typeof f.focus==="function") f.focus({preventScroll:true}); }catch(e){}
+}
+function tourTrap(e){
+  if(e.key!=="Tab") return;
+  const ov=document.getElementById("tour"); if(!ov) return;
+  const fs=ov.querySelectorAll("button:not([disabled])"); if(!fs.length){ e.preventDefault(); return; }
+  const first=fs[0], last=fs[fs.length-1], cur=document.activeElement, inside=ov.contains(cur);
+  if(e.shiftKey){ if(!inside||cur===first){ e.preventDefault(); last.focus(); } }
+  else if(!inside||cur===last){ e.preventDefault(); first.focus(); }
+}
 function tourSeen(k){ try{ return localStorage.getItem("poxiao_tour_"+k)==="1"; }catch(e){ return true; } }
 function tourMark(k){ try{ localStorage.setItem("poxiao_tour_"+k,"1"); }catch(e){} }
 /* 先问一句：简明（约 1 分钟，只讲栏目）还是详细（约 3 分钟，把行动面板里每个按钮都过一遍）——玩家 2026-09-06 点名 */
@@ -16827,85 +17078,140 @@ function tourAsk(kind){
     if(typeof document==="undefined"||!document.body||!document.body.appendChild) return;
     tourEnd(false);
     const ov=document.createElement("div"); ov.className="tour ask"; ov.id="tour";
-    ov.innerHTML=`<div class="tour-card center"><div class="tour-k">导览</div><div class="tour-t">${kind==="season"?"签约了，要不要先看看赛季怎么玩？":"要不要先看看怎么玩？"}</div>
+    ov.innerHTML=`<div class="tour-card center" role="dialog" aria-modal="true" aria-labelledby="tour-t"><div class="tour-k">导览</div><div class="tour-t" id="tour-t">${kind==="season"?"签约了，要不要先看看赛季怎么玩？":"要不要先看看怎么玩？"}</div>
       <div class="tour-d">简明版只讲每个栏目是干什么的；详细版把仪表盘、每个行动按钮、体能、杯赛都过一遍。以后在「教程说明」栏目里随时能重放。</div>
       <div class="tour-b"><button class="btn ghost sm" id="tour-skip">跳过</button><span class="tour-n"></span>
       <button class="btn ghost sm" id="tour-lite">简明</button><button class="btn sm" id="tour-full">详细</button></div></div>`;
     document.body.appendChild(ov);
+    tourModalOn(ov);
     ov.querySelector("#tour-skip").onclick=()=>{ tourMark(kind); tourEnd(false); };
     ov.querySelector("#tour-lite").onclick=()=>tourStart(kind,"lite");
     ov.querySelector("#tour-full").onclick=()=>tourStart(kind,"full");
+    _tourAskKey=e=>{ if(e.key==="Escape"){ tourMark(kind); tourEnd(false); } else tourTrap(e); };
+    document.addEventListener("keydown",_tourAskKey);
+    try{ ov.querySelector("#tour-full").focus({preventScroll:true}); }catch(e){}
   }catch(e){}
 }
+var _tourAskKey=null;
 function tourStart(kind,mode){
   try{
     if(typeof document==="undefined"||!document.body||!document.body.appendChild||!document.querySelector) return;
     tourEnd(false);
     const full=(mode==="full");
-    _tour={kind,steps:kind==="season"?(full?TOUR_SEASON_FULL:TOUR_SEASON):(full?TOUR_PRE_FULL:TOUR_PRE),i:0};
+    const all=kind==="season"?(full?TOUR_SEASON_FULL:TOUR_SEASON):(full?TOUR_PRE_FULL:TOUR_PRE);
+    const steps=all.filter(s=>tourHas(s.sel));   // 本周没有的东西（没报杯赛、没存计划）不算步数
+    if(!steps.length) return;
+    _tour={kind,steps,i:0};
     const ov=document.createElement("div"); ov.className="tour"; ov.id="tour";
-    ov.innerHTML=`<div class="tour-hole"></div><div class="tour-card"><div class="tour-k"></div><div class="tour-t"></div><div class="tour-d"></div>
+    ov.innerHTML=`<div class="tour-hole"></div><div class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-t"><div class="tour-k"></div><div class="tour-t" id="tour-t"></div><div class="tour-d"></div>
       <div class="tour-b"><button class="btn ghost sm" id="tour-skip">跳过</button><span class="tour-n"></span>
       <button class="btn ghost sm" id="tour-prev">上一步</button><button class="btn sm" id="tour-next">下一步</button></div></div>`;
     document.body.appendChild(ov);
+    tourModalOn(ov);
     ov.querySelector("#tour-skip").onclick=()=>tourEnd(true);
     ov.querySelector("#tour-prev").onclick=()=>tourGo(-1);
     ov.querySelector("#tour-next").onclick=()=>tourGo(1);
     ov.onclick=e=>{ if(e.target===ov) tourGo(1); };
     document.addEventListener("keydown",tourKey);
     window.addEventListener("resize",tourPlace);
+    window.addEventListener("scroll",tourTrack,{passive:true});
+    if(window.visualViewport){ window.visualViewport.addEventListener("resize",tourTrack); window.visualViewport.addEventListener("scroll",tourTrack); }
     tourShow();
   }catch(e){}
 }
-function tourKey(e){ if(e.key==="Escape") tourEnd(true); else if(e.key==="ArrowRight"||e.key==="Enter") tourGo(1); else if(e.key==="ArrowLeft") tourGo(-1); }
+function tourKey(e){ if(e.key==="Tab") tourTrap(e); else if(e.key==="Escape") tourEnd(true); else if(e.key==="ArrowRight"||e.key==="Enter") tourGo(1); else if(e.key==="ArrowLeft") tourGo(-1); }
 function tourGo(d){ if(!_tour) return; const n=_tour.i+d; if(n<0) return; if(n>=_tour.steps.length){ tourEnd(true); return; } _tour.i=n; tourShow(d<0?-1:1); }
 function tourShow(dir){
   if(!_tour) return;
   dir=dir||1;
-  let s=_tour.steps[_tour.i], el=document.querySelector(s.sel), guard=0;
-  while(!el&&guard++<20){   // 这一步的目标不在页面上：跳过
+  let s=_tour.steps[_tour.i], el, guard=0;
+  tourDrawer(s.sel); el=document.querySelector(s.sel);
+  while(!el&&guard++<20){   // 这一步的目标不在页面上（开始后页面变了）：跳过
     _tour.i+=dir; if(_tour.i<0){ _tour.i=0; break; }
     if(_tour.i>=_tour.steps.length){ tourEnd(true); return; }
-    s=_tour.steps[_tour.i]; el=document.querySelector(s.sel);
+    s=_tour.steps[_tour.i]; tourDrawer(s.sel); el=document.querySelector(s.sel);
   }
   if(!el){ tourEnd(true); return; }
-  try{ el.scrollIntoView({block:"center"}); }catch(e){ try{ el.scrollIntoView(); }catch(e2){} }
+  try{
+    const tall=el.getBoundingClientRect().height>window.innerHeight*0.6;   // 整块行动区比屏幕还高：顶到上沿，说明卡压在底部
+    el.scrollIntoView({block:tall?"start":"center"});
+  }catch(e){ try{ el.scrollIntoView(); }catch(e2){} }
   const ov=document.getElementById("tour"); if(!ov) return;
   ov.querySelector(".tour-k").textContent=`导览 ${_tour.i+1} / ${_tour.steps.length}`;
   ov.querySelector(".tour-t").textContent=s.t;
   ov.querySelector(".tour-d").textContent=s.d;
   ov.querySelector("#tour-next").textContent=(_tour.i>=_tour.steps.length-1)?"开始吧":"下一步";
   ov.querySelector("#tour-prev").disabled=(_tour.i===0);
-  setTimeout(tourPlace,60);   // 等 scrollIntoView 落定再量位置
+  try{ ov.querySelector("#tour-next").focus({preventScroll:true}); }catch(e){}
+  tourPlace();
+  setTimeout(tourPlace,60);   // 等 scrollIntoView 落定再量一次
+  setTimeout(tourPlace,300);  // iOS 地址栏收起要一会儿
 }
 function tourPlace(){
   try{
     if(!_tour) return;
     const ov=document.getElementById("tour"); if(!ov) return;
     const s=_tour.steps[_tour.i], el=document.querySelector(s.sel); if(!el) return;
-    const r=el.getBoundingClientRect(), pad=6;
+    const r0=el.getBoundingClientRect(), pad=6;
+    const vw=window.innerWidth, vh=window.innerHeight;
+    // 框住的部分只取屏幕里的那一截（底栏贴着屏幕边、行动区高过一屏）；贴顶的属性条盖在内容上，也不算进去
+    let minTop=0;
+    try{ const pin=document.getElementById("pin"); if(pin&&!pin.classList.contains("hide")&&!pin.contains(el)){ const pr=pin.getBoundingClientRect(); if(pr.top<=0&&pr.bottom>0) minTop=pr.bottom; } }catch(e){}
+    const r={left:Math.max(0,r0.left),top:Math.max(minTop,r0.top),right:Math.min(vw,r0.right),bottom:Math.min(vh,r0.bottom)};
     const hole=ov.querySelector(".tour-hole"), card=ov.querySelector(".tour-card");
-    hole.style.left=(r.left-pad)+"px"; hole.style.top=(r.top-pad)+"px";
-    hole.style.width=(r.width+pad*2)+"px"; hole.style.height=(r.height+pad*2)+"px";
-    const vw=window.innerWidth, vh=window.innerHeight, cw=card.offsetWidth, ch=card.offsetHeight;
-    if(vw<=560){
-      card.style.left="10px"; card.style.right="10px";
-      // 目标在下半屏（比如底栏）就把卡片放上面，否则放下面
-      if(r.top>vh*0.5){ card.style.top=Math.max(10,r.top-pad-12-ch)+"px"; }
-      else { card.style.top=Math.min(vh-ch-10,r.bottom+pad+12)+"px"; }
-    } else {
-      card.style.right="auto";
-      card.style.left=Math.max(10,Math.min(vw-cw-10,r.left))+"px";
-      const below=r.bottom+pad+12;
-      card.style.top=((below+ch<vh-10)?below:Math.max(10,r.top-pad-12-ch))+"px";
-    }
+    const L=tourLayout(r,vw,vh,card.offsetWidth,card.offsetHeight,vw<=560);
+    hole.style.left=L.hole.left+"px"; hole.style.top=L.hole.top+"px";
+    hole.style.width=L.hole.width+"px"; hole.style.height=L.hole.height+"px";
+    if(L.card.left===null){ card.style.left="10px"; card.style.right="10px"; }
+    else { card.style.right="auto"; card.style.left=L.card.left+"px"; }
+    card.style.top=L.card.top+"px";
   }catch(e){}
+}
+/* 纯几何：目标框 r（已裁到屏幕内）、屏幕 vw×vh、说明卡 cw×ch → 聚光框与说明卡的位置。
+   拆出来不碰 DOM，是为了能在无头自检里量（外部审计实测 320×568 说明卡压住聚光区 209px，
+   代码注释却写着「不再压住」）。规则：说明卡永远不盖在聚光框上——
+   · 手机：目标在下半屏就放上面，否则放下面；上下都放不下（整块行动区高过一屏）就贴底，
+     聚光框裁到说明卡上方那一截；上面留不下 56px 就反过来贴顶、框留下面那截
+   · 桌面：先下、再上、再右侧 / 左侧，都不行就同手机
+   返回 {hole:{left,top,width,height}, card:{left,top}}，card.left 为 null 表示手机上左右各留 10px */
+function tourLayout(r,vw,vh,cw,ch,mobile){
+  const pad=6, gap=12, MIN=56;
+  r={left:r.left,top:r.top,right:r.right,bottom:r.bottom};
+  const below=r.bottom+pad+gap, above=r.top-pad-gap-ch;
+  let top, left=null;
+  const squeeze=()=>{   // 上下都放不下：贴底并裁框；裁完不到 MIN 就贴顶裁上面
+    top=Math.max(10,vh-ch-10);
+    const cut=top-gap-pad;
+    if(cut-r.top>=MIN){ r.bottom=cut; return; }
+    top=10; const cut2=top+ch+gap+pad;
+    if(r.bottom-cut2>=MIN) r.top=cut2;
+  };
+  if(mobile){
+    if(r.top>vh*0.5&&above>=10) top=above;
+    else if(below+ch<=vh-10) top=below;
+    else if(above>=10) top=above;
+    else squeeze();
+  } else {
+    left=Math.max(10,Math.min(vw-cw-10,r.left));
+    if(below+ch<=vh-10) top=below;
+    else if(above>=10) top=above;
+    else if(r.right+pad+gap+cw<=vw-10){ left=r.right+pad+gap; top=Math.max(10,Math.min(vh-ch-10,r.top)); }
+    else if(r.left-pad-gap-cw>=10){ left=r.left-pad-gap-cw; top=Math.max(10,Math.min(vh-ch-10,r.top)); }
+    else squeeze();
+  }
+  const w=Math.max(0,r.right-r.left), h=Math.max(0,r.bottom-r.top);
+  return {hole:{left:r.left-pad,top:r.top-pad,width:w+pad*2,height:h+pad*2},card:{left,top}};
 }
 function tourEnd(mark){
   if(_tour&&mark) tourMark(_tour.kind);
   _tour=null;
   try{ const ov=document.getElementById("tour"); if(ov) ov.remove(); }catch(e){}
-  try{ document.removeEventListener("keydown",tourKey); window.removeEventListener("resize",tourPlace); }catch(e){}
+  try{ if(_tourAskKey){ document.removeEventListener("keydown",_tourAskKey); _tourAskKey=null; } }catch(e){}
+  try{ document.removeEventListener("keydown",tourKey); window.removeEventListener("resize",tourPlace); window.removeEventListener("scroll",tourTrack); }catch(e){}
+  tourModalOff(false);
+  try{ if(window.visualViewport){ window.visualViewport.removeEventListener("resize",tourTrack); window.visualViewport.removeEventListener("scroll",tourTrack); } }catch(e){}
+  try{ if(_tourDrawer){ _tourDrawer=false; if(_moreOpen){ _moreOpen=false; render(); } } }catch(e){}
+  try{ if(typeof updCheck==="function") setTimeout(updCheck,800); }catch(e){}   // 导览期间压住的「游戏更新了」现在可以提了
 }
 /* render() 末尾调：第一次到职业前 / 第一次到赛季，且页面上没有别的弹窗时，开导览 */
 function tourMaybe(){
@@ -16914,6 +17220,10 @@ function tourMaybe(){
     if(typeof _renderLock!=="undefined"&&_renderLock>0) return;
     if(S.rndEv||S.rndResult||S.locker||S.signup||S.rankUp||S.cupMatch||S.cupResult||S.tryout||S.deal||S.showStart) return;
     if(S.pre&&S.pre.invite&&S.pre.invite.pending) return;
+    // 成就解锁 / 特质 / 直播报价 / 确认框 / 推进总结 / 更新日志 / 支持作者：这些悬浮卡还开着就别开导览
+    //（实测：签约后「上岸」成就卡和导览选择卡叠在一起，成就卡被压暗、点不到）。它们关掉会重画，到时再问。
+    if((S.achPop&&S.achPop.length)||S.traitUp||S.streamOffer||S.confirm||S.autoSum||S.proOffer) return;
+    if(document.querySelector&&document.querySelector(".rankup,.support-overlay,#chlog,.tabsheet")) return;
     if(S.step==="pre"&&!tourSeen("pre")){ setTimeout(()=>{ if(!_tour&&S.step==="pre"&&!document.getElementById("tour")) tourAsk("pre"); },600); }
     else if(S.step==="season"&&S.career&&!tourSeen("season")){ setTimeout(()=>{ if(!_tour&&S.step==="season"&&!document.getElementById("tour")) tourAsk("season"); },600); }
   }catch(e){}
@@ -17063,7 +17373,7 @@ function pinbar(){
   p.innerHTML=(ap!==null&&ap!==undefined?`<span class="pv ${ap>0?'top':'dim'}"><i>行动</i><b>${ap}</b></span>`:"")
   +(num
     ? DIMS.map(d=>`<span class="pv ${d===top?'top':''}"><i>${d}</i><b>${S.attrs[d].toFixed(0)}</b></span>`).join("")
-    : `<span class="pv top"><i>实力</i><b>${dimWord(st)}</b></span><span class="pv"><i>最强</i><b>${top}</b></span>`)
+    : `<span class="pv top"><i>实力</i><b>${dimWord(st)}</b></span><span class="pv pv-top2"><i>最强</i><b>${top}</b></span>`)
   +`<span class="pv dim"><i>体能</i><b>${100-Math.round(S.fatigue)}</b></span>`
   +(S.form!==undefined&&S.career?`<span class="pv dim"><i>状态</i><b>${Math.round(myForm())}</b></span>`:"")
   +`<span class="pv tools"><button class="pvb ${num?'on':''}" id="uinum" title="${num?"切回文字描述":"显示具体数值"}">${num?"数值 开":"数值 关"}</button><button class="pvb" id="tourbtn" title="重看一遍导览">导览</button></span>`;

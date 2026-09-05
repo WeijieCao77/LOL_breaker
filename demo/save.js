@@ -332,16 +332,52 @@ function fixSeasonAttr0(s) {
    存档里的日志、事件本来就是带 HTML 的字符串，读回来直接 innerHTML。
    别人给的文件可能夹带 <img onerror=…> 这类东西——CSP 已经不让它跑，
    这里再把明显的脚本载体剥掉一遍，两道闸。 */
+/* 存档里的文字会被拼进 innerHTML（战报、新闻、试训日志……游戏自己写的只有 div / span / b 和 class="hi|w|l"、
+   color:var(--xx) 这一种内联色）。原来是黑名单——script / iframe / on* 去掉，别的都放行，
+   一份恶意存档仍能塞 <a href> / 外链 <img> / 任意 style 把界面盖掉（外部审计）。改成白名单：
+   只留几个排版标签，属性只留 class（字母数字）和 color:var(--…) 这一种 style；
+   <img> 单独放行——段位徽章、队标、像素头像都是游戏自己写进战报的 data:image/…;base64 内嵌图，
+   只认这种 src（外链、javascript: 一律整个去掉），属性只留 class / width / height / alt。 */
+const SAVE_TAGS = /^(div|span|b|i|em|strong|small|br|u|s|p|sub|sup)$/;
+const SAVE_IMG_SRC = /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/;
+function attrOf(attrs, name) {
+  const m = new RegExp("\\s" + name + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))", "i").exec(attrs);
+  return m ? (m[1] !== undefined ? m[1] : m[2] !== undefined ? m[2] : m[3] || "") : "";
+}
+function sanitizeTag(m, close, tag, attrs) {
+  tag = tag.toLowerCase();
+  if (tag === "img") {
+    if (close) return "";
+    const src = attrOf(attrs, "src").trim();
+    if (!SAVE_IMG_SRC.test(src)) return "";
+    let out = "<img";   // 属性按游戏自己写的顺序（class, src, width, height, alt）输出：自己导出的存档导回来一字不改
+    const cv = attrOf(attrs, "class"); if (cv && /^[\w -]{1,80}$/.test(cv)) out += ' class="' + cv + '"';
+    out += ' src="' + src + '"';
+    ["width", "height"].forEach(k => { const v = attrOf(attrs, k); if (/^\d{1,4}$/.test(v)) out += " " + k + '="' + v + '"'; });
+    const alt = attrOf(attrs, "alt"); if (/^[^"'<>\\&]{0,80}$/.test(alt)) out += ' alt="' + alt + '"';
+    const sv = attrOf(attrs, "style").trim();   // 像素头像那一种内联样式（avatar.js）原样放行，别的不要
+    if (/^vertical-align:middle;border-radius:50%;image-rendering:pixelated;border:1px solid var\(--(gold|line)\);?$/.test(sv)) out += ' style="' + sv + '"';
+    return out + ">";
+  }
+  if (!SAVE_TAGS.test(tag)) return "";
+  if (close) return "</" + tag + ">";
+  let out = "<" + tag;
+  const cv = attrOf(attrs, "class");
+  if (cv && /^[\w -]{1,80}$/.test(cv)) out += ' class="' + cv + '"';
+  const sv = attrOf(attrs, "style").trim();
+  if (sv && /^color:\s*var\(--[a-z0-9-]{1,32}\);?$/.test(sv)) out += ' style="' + sv + '"';
+  return out + ">";
+}
 function sanitizeSave(v, depth) {
   depth = depth || 0;
   if (depth > 40) return null;
   if (typeof v === "string") {
     if (v.length > 200000) v = v.slice(0, 200000);
     return v
-      .replace(/<script[\s\S]*?>[\s\S]*?<\/script\s*>/gi, "")
-      .replace(/<\/?(script|iframe|object|embed|link|meta|base|form|style|svg|math)\b[^>]*>/gi, "")
-      .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-      .replace(/(javascript|vbscript|data\s*:\s*text\/html)\s*:/gi, "");
+      .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "")   // 脚本 / 样式块连内容一起去掉
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<[!?][^>]*>/g, "")
+      .replace(/<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g, sanitizeTag);
   }
   if (Array.isArray(v)) return v.map(x => sanitizeSave(x, depth + 1));
   if (v && typeof v === "object") {
@@ -464,6 +500,19 @@ function exportSave() {
     document.body.appendChild(a); a.click(); a.remove();
   } catch (e) {}
 }
+/* 导入前先看大小：一整局跑完的存档约 0.5 MB，8 MB 以上不是存档——超大 JSON 一 parse 整页冻住 */
+const IMPORT_MAX = 8 * 1024 * 1024;
+const SAVE_STEPS = ["create", "pre", "offer", "season", "prep", "match", "offseason", "end"];
+/* 结构校验：阶段得是认识的，五维得是 0–100 的数——消毒只管标签，管不了「attrs 是个字符串」这种 */
+function saveShapeOk(blob) {
+  try {
+    const s = blob.S;
+    if (!s || typeof s !== "object" || SAVE_STEPS.indexOf(s.step) < 0) return false;
+    if (!s.attrs || typeof s.attrs !== "object") return false;
+    const dims = (typeof DIMS !== "undefined" && DIMS) ? DIMS : Object.keys(s.attrs);
+    return dims.every(d => { const v = s.attrs[d]; return typeof v === "number" && isFinite(v) && v >= 0 && v <= 100; });
+  } catch (e) { return false; }
+}
 function importSave() {
   try {
     const inp = document.createElement("input");
@@ -471,14 +520,16 @@ function importSave() {
     inp.onchange = () => {
       const f = inp.files && inp.files[0];
       if (!f) return;
+      if (typeof f.size === "number" && f.size > IMPORT_MAX) { alert("文件太大，不像是存档。"); return; }
       const rd = new FileReader();
       rd.onload = () => {
         try {
+          if (typeof rd.result === "string" && rd.result.length > IMPORT_MAX) { alert("文件太大，不像是存档。"); return; }
           let blob = JSON.parse(rd.result);
           if (!blob || typeof blob !== "object" || !blob.S || typeof blob.S !== "object") { alert("这个文件不像是存档。"); return; }
           blob = migrate(sanitizeSave(blob));
           if (blob.ver !== SAVE_VER) { alert("存档版本不符，读不了。"); return; }
-          if (!blob.S.step || !blob.S.attrs) { alert("存档内容缺失。"); return; }
+          if (!saveShapeOk(blob)) { alert("存档内容缺失或异常。"); return; }
           if (typeof blob.at !== "number") blob.at = Date.now();
           localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
           loadGame();
