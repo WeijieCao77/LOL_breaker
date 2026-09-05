@@ -19,13 +19,14 @@ const NO_AVATARS = args.includes("--no-avatars");
 const WATCH = args.includes("--watch");
 
 /* 像素头像：data/avatars.json 不进仓库（肖像素材）。写成一行 JSON 字符串常量，
-   check_build.py 比对时按这一行归一（本地有头像、CI 没有，其余逐字节相同）。 */
+   check_build.py 比对时按这一行归一（本地有头像、CI 没有，其余逐字节相同）。
+   生成的是 gen/avatars.js（不进仓库）；类型在 gen/avatars.d.ts（进仓库），这样 tsc 不用先构建。 */
 function writeAvatars() {
   const src = path.join(ROOT, "data", "avatars.json");
   const json = (!NO_AVATARS && fs.existsSync(src)) ? JSON.stringify(JSON.parse(fs.readFileSync(src, "utf8"))) : "{}";
   fs.mkdirSync(path.join(DEMO, "src", "gen"), { recursive: true });
-  fs.writeFileSync(path.join(DEMO, "src", "gen", "avatars.ts"),
-    "/* 由 demo/bundle.mjs 生成，不进仓库 */\nexport const AVATARS_JSON = " + JSON.stringify(json) + ";\n");
+  fs.writeFileSync(path.join(DEMO, "src", "gen", "avatars.js"),
+    "/* 由 demo/bundle.mjs 生成，不进仓库；类型见 avatars.d.ts */\nexport const AVATARS_JSON = " + JSON.stringify(json) + ";\n");
 }
 
 /* 和原 build.py 一样的拼装：样式、页头、脚本、外层文档结构 */

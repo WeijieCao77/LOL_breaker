@@ -113,7 +113,7 @@ railway config apply
 │     ├─ boot.ts                # 浏览器入口：开局、声音、存档接力、控制台调试口 window.poxiao
 │     ├─ state.ts               # 全局状态 S（GameState 类型）与 setS
 │     ├─ rng.ts                 # 带种子的随机数，种子进存档
-│     ├─ data.ts                # 赛事数据与像素头像（gen/avatars.ts 由构建生成，不进仓库）
+│     ├─ data.ts                # 赛事数据与像素头像（gen/avatars.js 由构建生成，不进仓库；gen/avatars.d.ts 是它的类型）
 │     ├─ main.ts                # 主循环、视图、职业前与赛季流程（原模板里的脚本）
 │     ├─ intl.ts                # MSI 与全球总决赛
 │     ├─ squad.ts               # 阵容、队伍实力、默契与战术

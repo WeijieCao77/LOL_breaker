@@ -37,9 +37,9 @@ g.localStorage = {
 g.alert = () => {};
 
 /* 头像表由 bundle.mjs 生成；没跑过构建时先放一个空表 */
-if (!fs.existsSync(path.join(HERE, "src", "gen", "avatars.ts"))) {
+if (!fs.existsSync(path.join(HERE, "src", "gen", "avatars.js"))) {
   fs.mkdirSync(path.join(HERE, "src", "gen"), { recursive: true });
-  fs.writeFileSync(path.join(HERE, "src", "gen", "avatars.ts"), 'export const AVATARS_JSON = "{}";\n');
+  fs.writeFileSync(path.join(HERE, "src", "gen", "avatars.js"), 'export const AVATARS_JSON = "{}";\n');
 }
 
 /* 把所有模块的导出合成一个 API 对象（原来 __api 那张手写名单） */

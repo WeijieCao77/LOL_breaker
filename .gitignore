@@ -44,4 +44,4 @@ lol游戏背景音乐/
 demo/bgm/*.mp3
 
 # 构建时生成的头像模块（data/avatars.json 不进仓库）
-demo/src/gen/
+demo/src/gen/avatars.js
