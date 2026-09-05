@@ -29,5 +29,5 @@ if a == b:
 i = next((k for k in range(min(len(a), len(b))) if a[k] != b[k]), min(len(a), len(b)))
 line = a.count("\n", 0, i) + 1
 print(f"build consistency: MISMATCH（提交产物 {len(a)} 字节，构建产物 {len(b)} 字节，第一处差异在第 {line} 行）")
-print("请本地运行 python demo/build.py 后把 demo/career.html 一起提交。")
+print("请本地运行 npm run bundle 后把 demo/career.html 一起提交。")
 sys.exit(1)
