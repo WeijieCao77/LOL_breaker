@@ -1,14 +1,27 @@
 {
   "name": "pojuzhe",
   "version": "1.0.0",
-  "description": "破局者 · LOL 电竞生涯模拟",
+  "description": "\u7834\u5c40\u8005 \u00b7 LOL \u7535\u7ade\u751f\u6daf\u6a21\u62df",
   "private": true,
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node demo/test.js"
+    "bundle": "node demo/bundle.mjs",
+    "dev": "node demo/bundle.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx demo/test.ts && tsx demo/test-ui.ts",
+    "test:engine": "tsx demo/test.ts",
+    "test:ui": "tsx demo/test-ui.ts"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^20.19.43",
+    "esbuild": "^0.28.2",
+    "jsdom": "^30.0.1",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3"
   }
 }

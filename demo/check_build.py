@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""构建一致性检查：提交的 demo/career.html 必须等于 build.py 的产物。
+"""构建一致性检查：提交的 demo/career.html 必须等于 bundle.mjs 的产物。
 
    像素头像（data/avatars.json）不进仓库，CI 上构建出来的是空表；比较时把
-   两边的 `const AVATARS = {...};` 都抹成同一个占位，其余逐字节比对。
-   退出码 0 = 一致；1 = 不一致（先本地 `python demo/build.py` 再提交）。"""
+   两边的 AVATARS_JSON 那一行都抹成同一个占位，其余逐字节比对。
+   退出码 0 = 一致；1 = 不一致（先本地 `npm run bundle` 再提交）。"""
 import io, os, re, subprocess, sys, tempfile
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -12,13 +12,14 @@ if not os.path.exists(committed):
     print("demo/career.html 不存在"); sys.exit(1)
 
 tmp = os.path.join(tempfile.mkdtemp(), "career.html")
-subprocess.check_call([sys.executable, os.path.join(BASE, "build.py"), "--out", tmp, "--no-avatars"],
+subprocess.check_call(["node", os.path.join(BASE, "bundle.mjs"), "--out", tmp, "--no-avatars"],
                       stdout=subprocess.DEVNULL)
 
 def norm(p):
     s = io.open(p, encoding="utf-8").read()
-    s, n = re.subn(r"const AVATARS = \{.*?\};\n", "const AVATARS = {};\n", s, count=1, flags=re.S)
-    assert n == 1, "AVATARS 声明没找到：" + p
+    # 头像表是 bundle.mjs 写进 src/gen/avatars.ts 的一行 JSON 字符串；本地有、CI 没有，比对前抹平
+    s, n = re.subn(r'AVATARS_JSON = "(?:[^"\\]|\\.)*";', 'AVATARS_JSON = "{}";', s, count=1)
+    assert n == 1, "AVATARS_JSON 声明没找到：" + p
     return s
 
 a, b = norm(committed), norm(tmp)

@@ -42,3 +42,6 @@ lol游戏背景音乐/
 
 # 背景音乐 mp3：商用歌曲不进仓库、不上公开站（作者本机自备；确认版权后要上线再 git add -f）
 demo/bgm/*.mp3
+
+# 构建时生成的头像模块（data/avatars.json 不进仓库）
+demo/src/gen/

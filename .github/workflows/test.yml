@@ -16,7 +16,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      # 提交的 career.html 必须和模板+模块的构建产物一致——
+      # 构建工具链（esbuild / TypeScript / tsx）只在开发和 CI 用；线上仍是零依赖的 node server.js
+      - name: install toolchain
+        run: npm ci
+
+      # 类型检查：strict 还没开，但已经没有任何 @ts-nocheck
+      - name: typecheck
+        run: npm run typecheck
+
+      # 提交的 career.html 必须和 demo/src 的构建产物一致——
       # Railway 只跑 node server.js，直接发仓库里的产物，漏提交不会被部署发现
       - name: build consistency
         run: python demo/check_build.py

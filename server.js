@@ -20,8 +20,8 @@
    · 信标限流只在受信代理后面看 X-Forwarded-For、且取代理追加的最后一段（第一段是客户端自己写的），
      另加全站每分钟总量封顶，限流表满了清过期项而不是整表清空；
    · 聚合表异步落盘期间来的新事件不再被旧回调的 dirty=false 抹掉（按代数判断），两次落盘不并发；
-   · 看板钥匙不再留在 URL：?key= 只用来第一次登录，换成 12 小时的 HttpOnly Cookie 再 302 掉；
-     脚本用 Authorization 头（curl -u :钥匙）；
+   · 看板钥匙不再留在 URL：改成浏览器自带的密码框（HTTP Basic），打开 /dash 输一次钥匙就记住；
+     脚本 curl -u :钥匙；
    · /api/bgm 报歌单里实际存在的文件，客户端据此藏掉没有音乐的 ♪ 钮。
 
    Railway 会注入 PORT，本地默认 3000。 */
@@ -409,45 +409,46 @@ function handleBeacon(req, res) {
   req.on("error", () => {});
 }
 
-/* ---------- 看板鉴权：常量时间比较，没配钥匙就当这页不存在 ----------
-   钥匙不再留在 URL 里（会进浏览器历史、代理 / Railway 请求日志、截图、复制出去的链接——外部审计 P2）：
-   · 脚本走 Authorization 头：Bearer <钥匙>，或 Basic（用户名随便、密码填钥匙）—— curl -u :钥匙 …/api/export
-   · 浏览器第一次仍可以 /dash?key=… 进来：钥匙对了就下发一个 12 小时的 HttpOnly Cookie
-     （HMAC 派生的到期令牌，不是钥匙本身），再 302 到不带 key 的同一路径；之后 /dash、/api/stats、/api/export 都认这个 Cookie。 */
-const DASH_COOKIE = "poxiao_dash", DASH_TTL = 12 * 3600e3;
+/* ---------- 看板鉴权：浏览器自带的密码框（HTTP Basic）----------
+   作者嫌 ?key= + Cookie 那套绕：现在打开 /dash 浏览器弹密码框，用户名随便（留空也行）、密码填 STATS_KEY，
+   浏览器整个会话记住，还会问要不要存进密码管理器。钥匙走 Authorization 头，不进 URL、不进日志。
+   脚本：curl -u :钥匙 https://www.poxiao.lol/api/export
+   · 没配 STATS_KEY：仍然 404，当这页不存在
+   · 钥匙错 / 没给：401 + WWW-Authenticate，浏览器就会（再）弹框；常量时间比较
+   · 同一来源 10 分钟里错 30 次就 429 十分钟，别让人拿密码框慢慢猜 */
 function sameSecret(a, b) { a = Buffer.from(String(a || "")); b = Buffer.from(String(b || "")); return a.length === b.length && crypto.timingSafeEqual(a, b); }
-function dashToken(exp) { return exp + "." + crypto.createHmac("sha256", STATS_KEY).update("dash:" + exp).digest("base64url"); }
-function tokenOk(tok) {
-  const m = /^(\d{1,16})\.[A-Za-z0-9_-]{20,}$/.exec(String(tok || "")); if (!m) return false;
-  const exp = +m[1];
-  return exp > Date.now() && sameSecret(m[0], dashToken(exp));
+const AUTH_FAILS = new Map();   // ip -> {n, t0}
+const AUTH_FAIL_MAX = 30, AUTH_FAIL_WIN = 10 * 60e3;
+function authFail(ip) {
+  const now = Date.now();
+  let r = AUTH_FAILS.get(ip);
+  if (!r || now - r.t0 > AUTH_FAIL_WIN) { r = { n: 0, t0: now }; AUTH_FAILS.set(ip, r); }
+  if (AUTH_FAILS.size > 2000) for (const [k, v] of AUTH_FAILS) if (now - v.t0 > AUTH_FAIL_WIN) AUTH_FAILS.delete(k);
+  r.n++;
 }
-function cookieOf(req, name) {
-  const m = new RegExp("(?:^|;\\s*)" + name + "=([^;]*)").exec(String(req.headers.cookie || ""));
-  return m ? m[1].trim() : "";
-}
-/* 返回 "ok"（放行）/ "login"（?key 正确：发 Cookie 并跳转）/ ""（装作没有这页） */
+function authBlocked(ip) { const r = AUTH_FAILS.get(ip); return !!(r && Date.now() - r.t0 <= AUTH_FAIL_WIN && r.n >= AUTH_FAIL_MAX); }
+/* 返回 "ok"（放行）/ "ask"（弹密码框）/ "blocked"（猜太多次）/ ""（装作没有这页） */
 function dashAuth(req) {
   if (!STATS_KEY) return "";
+  const ip = clientIp(req);
+  if (authBlocked(ip)) return "blocked";
   const auth = String(req.headers.authorization || "");
-  let m;
-  if ((m = /^Bearer\s+(.+)$/i.exec(auth)) && sameSecret(m[1].trim(), STATS_KEY)) return "ok";
-  if ((m = /^Basic\s+(.+)$/i.exec(auth))) {
-    let pw = ""; try { pw = Buffer.from(m[1].trim(), "base64").toString("utf8").split(":").slice(1).join(":"); } catch (e) {}
-    if (sameSecret(pw, STATS_KEY)) return "ok";
+  let m, given = "";
+  if ((m = /^Bearer\s+(.+)$/i.exec(auth))) given = m[1].trim();
+  else if ((m = /^Basic\s+(.+)$/i.exec(auth))) {
+    let raw = ""; try { raw = Buffer.from(m[1].trim(), "base64").toString("utf8"); } catch (e) {}
+    const i = raw.indexOf(":");
+    const user = i < 0 ? raw : raw.slice(0, i), pw = i < 0 ? "" : raw.slice(i + 1);
+    given = pw || user;   // 密码填钥匙；有人把钥匙填在用户名、密码留空也认
   }
-  if (tokenOk(cookieOf(req, DASH_COOKIE))) return "ok";
-  let key = ""; try { key = new URL(req.url, "http://x").searchParams.get("key") || ""; } catch (e) {}
-  return sameSecret(key, STATS_KEY) ? "login" : "";
+  if (!auth) return "ask";
+  if (sameSecret(given, STATS_KEY)) return "ok";
+  authFail(ip);
+  return "ask";
 }
-function dashLogin(req, res, url) {
-  const proto = String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim().toLowerCase();
-  const secure = proto === "https" || (req.socket && req.socket.encrypted);
-  const exp = Date.now() + DASH_TTL;
-  return send(res, 302, "", "text/plain; charset=utf-8", {
-    "set-cookie": DASH_COOKIE + "=" + dashToken(exp) + "; Path=/; HttpOnly; SameSite=Strict; Max-Age=" + Math.floor(DASH_TTL / 1000) + (secure ? "; Secure" : ""),
-    "location": url,
-  });
+function dashAsk(res) {
+  return send(res, 401, "需要密码：用户名留空，密码填 STATS_KEY。", "text/plain; charset=utf-8",
+    { "www-authenticate": 'Basic realm="poxiao dash", charset="UTF-8"' });
 }
 
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
@@ -519,7 +520,7 @@ ${VOLATILE ? '<div class="warn">⚠ 未检测到持久化卷（Railway Volume）
 <table><tr><th>日期</th><th class="num">PV</th><th class="num">UV</th><th class="num">新设备</th><th class="num">分钟</th><th class="num">开档</th><th class="num">上岸</th><th class="num">通关</th></tr>${tblRows}</table>
 <h2>版本分布（近 7 天 PV）</h2>
 <table><tr><th>版本</th><th class="num">次数</th></tr>${verRows || '<tr><td colspan="2">还没有数据</td></tr>'}</table>
-<div class="foot">数据目录 ${esc(DATA_DIR)} · 上次落盘 ${ST.flushedAt ? new Date(ST.flushedAt + 8 * 3600e3).toISOString().slice(11, 19) : "尚未"} (UTC+8) · 备份：<a style="color:#5bc6cf" href="/api/export">下载聚合数据 JSON</a>（登录 Cookie 12 小时有效；脚本用 <code>curl -u :钥匙</code>）</div>
+<div class="foot">数据目录 ${esc(DATA_DIR)} · 上次落盘 ${ST.flushedAt ? new Date(ST.flushedAt + 8 * 3600e3).toISOString().slice(11, 19) : "尚未"} (UTC+8) · 备份：<a style="color:#5bc6cf" href="/api/export">下载聚合数据 JSON</a>（脚本：<code>curl -u :钥匙 …/api/export</code>）</div>
 </body></html>`;
 }
 
@@ -572,7 +573,8 @@ const server = http.createServer((req, res) => {
   if (url === "/dash" || url === "/api/stats" || url === "/api/export") {
     const auth = dashAuth(req);
     if (!auth) return send(res, 404, "not found");
-    if (auth === "login") return dashLogin(req, res, url);
+    if (auth === "blocked") return send(res, 429, "猜太多次了，十分钟后再试。");
+    if (auth === "ask") return dashAsk(res);
     flush(false);
     if (url === "/dash")
       return send(res, 200, dashHtml(), "text/html; charset=utf-8",
@@ -601,7 +603,7 @@ const server = http.createServer((req, res) => {
 
 loadStats();
 server.listen(PORT, () => {
-  console.log(`看板：${STATS_KEY ? "已配钥匙，浏览器 /dash?key=… 登录一次换 Cookie；脚本 curl -u :钥匙 /api/export" : "未配 STATS_KEY，看板关闭（信标照记）"} · 数据目录 ${DATA_DIR}${VOLATILE ? "（⚠ 无持久化卷）" : ""} · 已记 ${ST.devices.size} 台设备${BEHIND_PROXY ? " · 受信代理后（X-Forwarded-For 取末段）" : ""} · 歌单 ${bgmList().length} 首`);
+  console.log(`看板：${STATS_KEY ? "已配钥匙，打开 /dash 在浏览器密码框里填钥匙；脚本 curl -u :钥匙 /api/export" : "未配 STATS_KEY，看板关闭（信标照记）"} · 数据目录 ${DATA_DIR}${VOLATILE ? "（⚠ 无持久化卷）" : ""} · 已记 ${ST.devices.size} 台设备${BEHIND_PROXY ? " · 受信代理后（X-Forwarded-For 取末段）" : ""} · 歌单 ${bgmList().length} 首`);
   const e = loadAsset("demo/career.html");
   console.log(`破晓 listening on ${PORT}` + (e
     ? ` · career.html ${(e.raw.length / 1024).toFixed(0)} KB → gzip ${(e.gz.length / 1024).toFixed(0)} KB / br ${(e.br.length / 1024).toFixed(0)} KB · ${e.scriptSrc.length} 段内联脚本进 CSP`

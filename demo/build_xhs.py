@@ -19,7 +19,7 @@ SRC = os.path.join(BASE, "career.html")
 OUT = os.path.join(BASE, "xhs")
 
 if not os.path.exists(SRC):
-    sys.exit("先跑 build.py 生成 career.html")
+    sys.exit("先跑 npm run bundle 生成 career.html")
 
 html = io.open(SRC, encoding="utf-8").read()
 

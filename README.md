@@ -38,29 +38,36 @@ npm start
 
 浏览器访问 [http://localhost:3000](http://localhost:3000)。`/play` 也会进入游戏，`/healthz` 用于部署健康检查。
 
-项目没有运行时 npm 依赖，因此无需执行 `npm install`。
+线上运行零依赖：`npm start` 不需要先装任何包。只有改代码、构建、跑测试时才需要 `npm ci` 装开发工具链（esbuild、TypeScript、tsx、jsdom）。
 
 ## 开发与测试
 
-游戏源码由 HTML 模板、样式、功能模块和精简赛事数据组成。修改这些源文件后，需要重新生成浏览器实际加载的 `demo/career.html`：
+游戏源码是 `demo/src/` 下的 TypeScript ES 模块（引擎、界面、数据），加上 HTML 模板、样式和精简赛事数据。
+修改后要重新生成浏览器实际加载的单文件 `demo/career.html`（esbuild 打包，样式、脚本、数据全部内联，产出形态和以前一样）：
 
 ```bash
-python demo/build.py
+npm ci               # 第一次
+npm run bundle       # 产出 demo/career.html
+npm run dev          # 改一处源码就重新产出；另开一个终端 npm start 看效果
 ```
 
-运行无头自检：
+类型检查与测试：
 
 ```bash
-npm test
+npm run typecheck    # tsc，strict 还没开，但没有任何 @ts-nocheck
+npm test             # 两层：无头引擎测试 + jsdom 界面测试
 ```
 
-测试脚本会在模拟 DOM 环境中自动跑完一局生涯，检查主要模块能否共同工作；跑不完或数值异常会以非零退出码失败。
+- `demo/test.ts`：直接 import 引擎模块，在没有 DOM 的 Node 里跑完整局生涯，另有导览几何、存档消毒、同种子两局必须一样的单元检查。随机种子会打印出来，`SEED=123 npm test` 原样重放。
+- `demo/test-ui.ts`：把构建产物装进 jsdom，用页面上的按钮建档、开导览、推周、存档，检查焦点圈、手机折叠等只在浏览器里才有的东西。
 
-检查提交的 `demo/career.html` 是否与模板一致（CI 也跑这一步；Railway 直接部署仓库里的产物，漏提交不会被发现）：
+检查提交的 `demo/career.html` 是否与源码一致（CI 也跑这一步；Railway 直接部署仓库里的产物，漏提交不会被发现）：
 
 ```bash
 python demo/check_build.py
 ```
+
+存档里带着这一局的随机种子（`S.seed` / `S.rng`），同一份存档、同样的操作，结果一样——玩家发存档就能复现问题。
 
 ## 数据重建
 
@@ -93,26 +100,37 @@ railway config apply
 .
 ├─ server.js                    # 零依赖静态服务器
 ├─ railway.json                 # Railway 构建、启动与健康检查配置
+├─ tsconfig.json                # 类型检查（strict 未开）
 ├─ demo/
-│  ├─ career_template.html      # 主循环、界面、职业前与赛季流程
-│  ├─ career.html               # 构建产物，也是线上实际运行的游戏
+│  ├─ career_template.html      # 页面骨架：页头、HUD、属性条、舞台；脚本由 bundle.mjs 塞进去
+│  ├─ career.html               # 构建产物，也是线上实际运行的游戏（单文件，必须提交）
 │  ├─ theme.css                 # 界面主题
-│  ├─ build.py                  # 拼装模板、模块、样式与数据
-│  ├─ test.js                   # 完整生涯无头测试
-│  ├─ intl.js                   # MSI 与全球总决赛
-│  ├─ squad.js                  # 阵容、队伍实力、默契与战术
-│  ├─ team.js                   # 队友信任、合同、薪资与更衣室
-│  ├─ clout.js                  # 话语权、教练/经理关系与引援
-│  ├─ form.js                   # 能力与竞技状态
-│  ├─ rivals.js                 # 宿敌与复仇关系
-│  ├─ injury.js                 # 伤病系统
-│  ├─ nodes.js                  # 比赛节点决策
-│  ├─ random.js                 # 随机事件
-│  ├─ postmatch.js              # 赛后归因
-│  ├─ routine.js                # 训练计划
-│  ├─ shop.js                   # 装备、课程与休闲消费
-│  ├─ origins.js                # 出身背景
-│  └─ achieve*.js               # 成就系统
+│  ├─ bundle.mjs                # 构建：esbuild 打包 src/boot.ts，拼进模板
+│  ├─ check_build.py            # 提交的产物是否等于源码的构建结果
+│  ├─ test.ts                   # 无头引擎测试（不需要 DOM）
+│  ├─ test-ui.ts                # jsdom 界面测试
+│  └─ src/
+│     ├─ boot.ts                # 浏览器入口：开局、声音、存档接力、控制台调试口 window.poxiao
+│     ├─ state.ts               # 全局状态 S（GameState 类型）与 setS
+│     ├─ rng.ts                 # 带种子的随机数，种子进存档
+│     ├─ data.ts                # 赛事数据与像素头像（gen/avatars.ts 由构建生成，不进仓库）
+│     ├─ main.ts                # 主循环、视图、职业前与赛季流程（原模板里的脚本）
+│     ├─ intl.ts                # MSI 与全球总决赛
+│     ├─ squad.ts               # 阵容、队伍实力、默契与战术
+│     ├─ team.ts                # 队友信任、合同、薪资与更衣室
+│     ├─ clout.ts               # 话语权、教练/经理关系与引援
+│     ├─ form.ts                # 能力与竞技状态
+│     ├─ rivals.ts              # 宿敌与复仇关系
+│     ├─ injury.ts              # 伤病系统
+│     ├─ nodes.ts               # 比赛节点决策
+│     ├─ random.ts              # 随机事件
+│     ├─ postmatch.ts           # 赛后归因
+│     ├─ routine.ts             # 训练计划
+│     ├─ shop.ts                # 装备、课程与休闲消费
+│     ├─ origins.ts             # 出身背景
+│     ├─ save.ts                # 存档、导入导出、消毒、老域名接力
+│     ├─ audio.ts               # 音效、背景音乐、更新提示、支持作者
+│     └─ achieve*.ts …          # 成就等其余模块
 └─ data/
    ├─ csv/game_data_2022.json   # 游戏使用的精简数据集
    ├─ fit_v2.py                 # 五维能力拟合
@@ -124,16 +142,16 @@ railway config apply
    └─ build_leaguepedia.py      # Leaguepedia 赛季名单整理
 ```
 
-`demo/build.py` 的构建关系如下：
+`demo/bundle.mjs` 的构建关系如下：
 
 ```text
-career_template.html
-        + theme.css
-        + 功能模块
-        + game_data_2022.json
+demo/src/boot.ts ──esbuild──▶ 一段脚本（含 game_data_2022.json、头像表）
+career_template.html + theme.css + header.html + 这段脚本
         ↓
-demo/career.html
+demo/career.html（单文件）
 ```
+
+注意事项：Railway 只跑 `node server.js`，不会重新构建，所以 `career.html` 必须和源码一起提交（`package.json` 里刻意没有名为 `build` 的脚本，免得托管平台自作主张去跑）。
 
 ## 数据说明
 
