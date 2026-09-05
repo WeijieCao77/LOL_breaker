@@ -208,12 +208,15 @@ function autoDaily(){
 /* ---------- 四、生涯（默认关，开的时候会警告） ---------- */
 function autoCareerStep(){
   const P=S.pre;
-  // 试训邀请：差得不太远就去。去了不一定过，那是试训自己的事
+  // 试训邀请：能拿到合同就去。原来「差 4 分以上就不去」——可试训评级差 9 分以内都能签青训合同，
+  // 职业前的人离期望值常常差七八分，于是托管两年一场试训都没去、城市赛夺冠也没上岸（玩家实锤）。
+  // 现在：差 10 分以内去；青训 / 弱队档一律去；年底窗口开着也去（错过就是一年）
   if(P && P.invite && P.invite.pending){
     const iv=P.invite; iv.pending=false;
     const gap=(typeof tryoutSkill==="function")?(tryoutSkill()-iv.expect):0;
-    if(gap>=-4){ startTryout(iv.tier, iv.team, iv.expect); autoNote(`去了 ${iv.team} 的试训`); }
-    else { autoNote(`没去 ${iv.team} 的试训（差得太远）`); render(); }
+    const wndOpen=(typeof WND_OPEN!=="undefined")&&P.week>=WND_OPEN;
+    if(gap>=-10||iv.tier==="acad"||iv.tier==="low"||wndOpen){ startTryout(iv.tier, iv.team, iv.expect); autoNote(`去了 ${iv.team} 的试训`); }
+    else { autoNote(`没去 ${iv.team} 的试训（离他们的期望差 ${Math.round(-gap)} 分，评不上）`); render(); }
     return true;
   }
   // 试训四天：每天选和自己最强那一维对上的选项
@@ -350,7 +353,7 @@ const AUTO_RULES={
     "<b>注意</b>：事件的选择会累积成人物特质，托管替你选＝特质也由它决定"
   ],
   career:[
-    "试训邀请：离对方期望值差 4 分以内就去",
+    "试训邀请：离对方期望值差 10 分以内就去；青训 / 弱队档一律去；年底窗口开着也去",
     "转会问询：对方队战力比现在这支强就接",
     "合同：还一次价（要求加薪），然后签",
     "下放二队：连着两个赛段没打上首发就接受"

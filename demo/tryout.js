@@ -172,8 +172,10 @@ function fitTier(tier){
   let i = TIER_ORDER.indexOf(tier);
   // 往上：明显够得着更高一档，更好的队会来抢
   while(i < TIER_ORDER.length-1 && me >= CLUB_TIERS[TIER_ORDER[i+1]].expect + 6) i++;
-  // 往下：只有差到离谱才降档；「够不着但被叫去试试」是允许的
-  while(i > 0 && me < CLUB_TIERS[TIER_ORDER[i]].expect - 22) i--;
+  // 往下：差到评不上（评级 C 的线是期望 −9，试训四天最多再补几分）就降一档——
+  // 原来要差 22 分才降，城市赛夺冠的 55 分选手被叫去中游队（期望 74）试训，去了也是 D，
+  // 托管一推、真人一去一个下场（玩家实锤：全托管两年、城市赛夺冠也没上岸）
+  while(i > 0 && me < CLUB_TIERS[TIER_ORDER[i]].expect - 14) i--;
   // 再被天花板封顶：曝光是硬的（没人看见过你，谁也不会来）；
   // 段位和履历取更宽的那个——天梯不够但比赛打出来了，照样有人看。
   const merit = Math.max(TIER_ORDER.indexOf(rankCap()),
