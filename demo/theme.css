@@ -726,6 +726,7 @@ td .tlogo{margin-right:5px}
 @media(min-width:900px){
   #stage{display:grid;grid-template-columns:96px minmax(0,1fr);gap:0 16px;align-items:start}
   #stage>*{grid-column:2;min-width:0}
+  #stage:not(:has(>.tabs)){display:block}   /* 建档 / 结局页没有标签栏：单列，别空着左边 */
   /* 高度算 0：右列卡片少时不被竖栏撑出空当（玩家实锤：经济页两张卡中间空一屏）。
      高度为 0 的盒子不能再带 clip-path / 边框 / 背景——那会把溢出的按钮整列裁没（玩家实锤：侧边栏消失）。
      切角、边框、分隔线全部挪到按钮自己身上。 */
@@ -1233,14 +1234,14 @@ body.moreopen .audiofab{display:none}
    图从 /img/ 出（单文件发布没有这个目录时 404 静默，页头照旧）；上面压一层渐变，保证标题和标语可读。 ---- */
 header.top{overflow:hidden}
 header.top .keyart{position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:url("/img/keyart.jpg") center 42% / cover no-repeat;opacity:.9;
+  background:url("/img/keyart.jpg") center 12% / cover no-repeat;opacity:.9;
   -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,1) 0%,rgba(0,0,0,.9) 60%,rgba(0,0,0,0) 100%);
           mask-image:linear-gradient(180deg,rgba(0,0,0,1) 0%,rgba(0,0,0,.9) 60%,rgba(0,0,0,0) 100%)}
 /* 图上已经有「破晓 · 电竞选手生涯模拟」的标题，页头铺开时自己的字标就让位；标语和四个词压在图的下沿 */
-header.top:not(.compact){min-height:300px;padding-top:190px;padding-bottom:18px}
+header.top:not(.compact){min-height:clamp(300px,27vw,440px);padding-top:clamp(190px,18vw,300px);padding-bottom:18px}
 header.top:not(.compact) .brand{display:none}
 header.top>*:not(.keyart){position:relative;z-index:1}
 header.top:not(.compact) .tagline,header.top:not(.compact) .pillars{text-shadow:0 2px 14px rgba(3,12,20,.95),0 0 3px rgba(3,12,20,.95)}
 header.top.compact .keyart{display:none}
 @media(max-width:560px){header.top .keyart{background-image:url("/img/keyart-m.jpg");background-position:center 22%}header.top:not(.compact){min-height:260px;padding-top:170px}}
-@media(min-width:1100px){header.top:not(.compact){min-height:340px;padding-top:230px}header.top .keyart{background-position:center 45%}}
+
