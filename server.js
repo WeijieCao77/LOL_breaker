@@ -159,13 +159,15 @@ function serveAsset(req, res, url) {
    · 一天缓存 + ETag；走 loadAsset 整文件进内存，五首歌也就二三十 MB
    · CSP 已是 media-src 'self'，不用再放行 */
 const MEDIA_TYPES = { ".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".m4a": "audio/mp4", ".wav": "audio/wav",
-                      ".woff": "font/woff", ".woff2": "font/woff2" };   // /fonts/：界面重做第三期的自托管宋体子集
+                      ".woff": "font/woff", ".woff2": "font/woff2",   // /fonts/：界面重做第三期的自托管宋体子集
+                      ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp" };   // /img/：主视觉、分享图
 function serveMedia(req, res, url) {
-  const m = /^\/(bgm|fonts)\/([a-z0-9_-]+)(\.[a-z0-9]+)$/i.exec(url);
+  const m = /^\/(bgm|fonts|img)\/([a-z0-9_-]+)(\.[a-z0-9]+)$/i.exec(url);   // /img/：主视觉、分享图（demo/img/）
   const type = m && MEDIA_TYPES[m[3].toLowerCase()];
   if (!type) return send(res, 404, "not found");
   if (m[1] === "fonts" && !/^font\//.test(type)) return send(res, 404, "not found");
   if (m[1] === "bgm" && !/^audio\//.test(type)) return send(res, 404, "not found");
+  if (m[1] === "img" && !/^image\//.test(type)) return send(res, 404, "not found");
   const entry = loadAsset("demo/" + m[1] + "/" + m[2] + m[3]);
   if (!entry) return send(res, 404, "not found");
   const total = entry.raw.length;
@@ -494,7 +496,7 @@ const server = http.createServer((req, res) => {
       { "location": "https://" + CANONICAL + (req.url || "/") });
   }
 
-  if (url.startsWith("/bgm/") || url.startsWith("/fonts/")) return serveMedia(req, res, url);   // 背景音乐 / 自托管字体
+  if (url.startsWith("/bgm/") || url.startsWith("/fonts/") || url.startsWith("/img/")) return serveMedia(req, res, url);   // 背景音乐 / 自托管字体 / 主视觉
   if (!ROUTES[url]) return send(res, 404, "not found");
   serveAsset(req, res, url);
 });
