@@ -1375,6 +1375,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906q", at:"2026-09-06", items:[
+    "生涯总结最底下的「再开一局」点不了（和名片下面那颗撞了 id）——修好"
+  ]},
   {v:"v20260906p", at:"2026-09-06", items:[
     "「弱队冲榜」方案 B 上线（玩家拍板）：AI 队赛季里也练默契 / 战术——每周 +0.6、只往 62 靠，换人后照旧砸、再回补。原来只有你的队在练，明星个人进垫底队靠默契差还能冲前二"
   ]},
@@ -5759,7 +5762,7 @@ function viewEnd(){
     <tbody>${vets.map(p=>`<tr><td>${p.id}${p.cn?`<span class="tag">${p.cn}</span>`:""}</td><td>${p.t}</td>
       <td class="n">${p.age}</td><td class="n">${p.r.操作.toFixed(0)}</td><td class="n">${p.r.指挥.toFixed(0)}</td></tr>`).join("")}</tbody></table></div>`:""}
     <p class="note">老将的操作在掉、指挥在涨——这是年龄曲线跑出来的，不是写死的。</p>
-    <div class="row"><button class="btn" id="again">再开一局</button></div>
+    <div class="row"><button class="btn" id="again2">再开一局</button></div>
   </div>`;
 }
 
@@ -17261,6 +17264,7 @@ function bind(){
   const of=$("off"); if(of) of.onclick=doOffseason;
   st.querySelectorAll("[data-ef]").forEach(b=>b.onclick=()=>{S.evFilter=b.dataset.ef;render()});
   const ag=$("again"); if(ag) ag.onclick=screenCreate;
+  const ag2=$("again2"); if(ag2) ag2.onclick=screenCreate;   // 结局页最底下那颗（原来和名片下那颗撞了 id，点不动）
 }
 
 let S=null;
