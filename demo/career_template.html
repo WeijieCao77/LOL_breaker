@@ -290,6 +290,9 @@ const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2）�
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 const CHANGELOG=[
+  {v:"v20260906w", at:"2026-09-06", items:[
+    "左侧栏目多过一屏时自己滚动、屏幕矮时按钮收紧（玩家实锤：贴到页边底部，「教程说明」看不见）；导览选择只写「简明 / 详细」"
+  ]},
   {v:"v20260906v", at:"2026-09-06", items:[
     "出身卡不再列效果清单，故事本身就是说明；路线那句话也收短（玩家点名「还是太详细」）"
   ]},
@@ -4847,7 +4850,7 @@ function tabBar(list){
   // 外部测评量的：八个入口挤在 375px 里每个 47px，能用但拥挤。当前栏目在后面就顶替第四格。
   const mob=(typeof window!=="undefined"&&window.innerWidth&&window.innerWidth<=560);
   try{ if(typeof document!=="undefined"&&document.body&&document.body.classList) document.body.classList.toggle("moreopen",!!(mob&&_moreOpen)); }catch(e){}   // 抽屉开着时右下角浮窗让位
-  if(!mob) return `<div class="tabs">${list.map(btn).join("")}</div>`;
+  if(!mob) return `<div class="tabs"><div class="tabcol">${list.map(btn).join("")}</div></div>`;
   let prim=list.slice(0,4);
   const ci=list.findIndex(t=>t.k===cur);
   if(ci>=4) prim=prim.slice(0,3).concat([list[ci]]);
@@ -5482,7 +5485,7 @@ function tourAsk(kind){
     ov.innerHTML=`<div class="tour-card center"><div class="tour-k">导览</div><div class="tour-t">${kind==="season"?"签约了，要不要先看看赛季怎么玩？":"要不要先看看怎么玩？"}</div>
       <div class="tour-d">简明版只讲每个栏目是干什么的；详细版把仪表盘、每个行动按钮、体能、杯赛都过一遍。以后在「教程说明」栏目里随时能重放。</div>
       <div class="tour-b"><button class="btn ghost sm" id="tour-skip">跳过</button><span class="tour-n"></span>
-      <button class="btn ghost sm" id="tour-lite">简明 · 1 分钟</button><button class="btn sm" id="tour-full">详细 · 3 分钟</button></div></div>`;
+      <button class="btn ghost sm" id="tour-lite">简明</button><button class="btn sm" id="tour-full">详细</button></div></div>`;
     document.body.appendChild(ov);
     ov.querySelector("#tour-skip").onclick=()=>{ tourMark(kind); tourEnd(false); };
     ov.querySelector("#tour-lite").onclick=()=>tourStart(kind,"lite");

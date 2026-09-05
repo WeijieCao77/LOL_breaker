@@ -1245,3 +1245,21 @@ header.top:not(.compact) .tagline,header.top:not(.compact) .pillars{text-shadow:
 header.top.compact .keyart{display:none}
 @media(max-width:560px){header.top .keyart{background-image:url("/img/keyart-m.jpg");background-position:center 22%}header.top:not(.compact){min-height:260px;padding-top:170px}header.top:not(.compact) .tagline,header.top:not(.compact) .pillars{padding-left:16px;padding-right:16px}}
 
+
+/* ---- 竖栏内层 .tabcol：默认 display:contents（横条 / 手机底栏里按钮仍是 .tabs 的直接 flex 项）；
+   宽屏竖栏里它是真正的盒子：高度限在一屏内、自己滚动，.tabs 仍是高度 0 的粘性占位。屏幕矮时按钮收紧。 ---- */
+.tabcol{display:contents}
+@media(min-width:900px){
+  #stage>.tabs .tabcol{display:flex;flex-direction:column;flex:none;height:auto;min-height:0;width:100%;
+    max-height:calc(100vh - var(--pin-h,0px) - 24px);overflow-y:auto;overflow-x:hidden;
+    scrollbar-width:thin;scrollbar-color:var(--line-hot) transparent}   /* flex:none：父级 .tabs 高度是 0，别把它压扁 */
+}
+@media(min-width:900px) and (max-height:860px){
+  #stage>.tabs .tab{padding:9px 6px;font-size:12.5px}
+  #stage>.tabs .tab .ti{width:15px;height:15px;margin-bottom:2px}
+  #stage>.tabs .tab.sep{margin-top:6px}
+}
+@media(min-width:900px) and (max-height:700px){
+  #stage>.tabs .tab{padding:7px 4px;font-size:12px}
+  #stage>.tabs .tab .ti{display:none}
+}
