@@ -94,7 +94,22 @@ function drawBackgrounds(){
 }
 function bgOf(k){ return BACKGROUNDS.find(x=>x.k===k)||BACKGROUNDS[0]; }
 
-/* 背景卡文案：把数值翻译成人话 */
+/* 背景卡文案 · 文字版（2026-09-06 玩家点名：建档页不要详细数字）：只说方向和量级 */
+function bgEffectsWords(b){
+  const out=[];
+  DIMS.forEach(d=>{ const v=b.mod&&b.mod[d]; if(!v) return; out.push(d+(v>=5?"↑↑":v>0?"↑":v<=-5?"↓↓":"↓")); });
+  const m=b.money||0;
+  out.push(m>=250?"家底厚":m>=100?"有些积蓄":m>=40?"一点本钱":m>0?"几乎白手起家":"身无分文");
+  if(b.fame){ const f=b.fame; out.push(f>=25?"已经有些人气":f>0?"小有名气":"名声不太好"); }
+  if(b.trust) out.push(b.trust>0?"队友信得过你":"队友有戒心");
+  if(b.train) out.push("练得快");
+  if(b.rest) out.push("恢复快");
+  if(b.upkeep) out.push("要往家里寄钱");
+  if(b.course) out.push("自带"+COURSES.find(c=>c.k===b.course).n);
+  if(b.rival) out.push("开局就有一个想超越的人");
+  return out;
+}
+/* 背景卡文案：把数值翻译成人话（数值版，建档页不再用） */
 function bgEffects(b){
   const out=[];
   DIMS.forEach(d=>{ if(b.mod&&b.mod[d]) out.push(`${d} ${b.mod[d]>0?"+":""}${b.mod[d]}`); });
