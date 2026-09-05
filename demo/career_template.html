@@ -3234,13 +3234,12 @@ function autoSumCard(){
   const rows=(A.matches||[]).slice(-12).map(m=>`<span class="tag" style="margin:2px">第${m.w}周 ${escapeHtml(String(m.opp||""))} ${m.sc?m.sc.join(":"):""} ${m.win?'<b style="color:var(--cyan)">胜</b>':'<b style="color:var(--red)">负</b>'}</span>`).join("");
   return `<div class="rankup"><div class="ru-inner" style="max-width:600px;max-height:88vh;overflow-y:auto;text-align:left">
     <div class="ru-eyebrow">${A.signed?"签约了":A.yearEnd?"年度结算":A.seasonOver?"常规赛打完了":"自动推进"}</div>
-    <h2 style="margin:0 0 4px">推进总结 · ${A.pre?"赛季前 ":""}第 ${A.w0}–${A.w1} 周<em style="float:right">${A.pre
-      ?`段位 ${rankName(A.rank.a)} → <b>${rankName(A.rank.b)}</b>　·　人气 ${Math.round(A.fans.a)} → ${Math.round(A.fans.b)}`
-      :A.teamRec
+    <h2 style="margin:0 0 4px">推进总结 · ${A.pre?"赛季前 ":""}第 ${A.w0}–${A.w1} 周<em style="float:right">${A.pre?"":A.teamRec
       ?`${escapeHtml(String(A.team||S.team||""))} 本赛段 ${A.teamRec.w}–${A.teamRec.l}${A.benched?"　·　你在替补席":`　·　你上场 ${A.rec.w} 胜 ${A.rec.l} 负`}`
       :`${A.rec.w} 胜 ${A.rec.l} 负`}</em></h2>
     <p class="note" style="margin:0 0 10px">${A.why}${A.injury?`　<span style="color:var(--red)">目前带伤（${escapeHtml(A.injury)}）</span>`:""}</p>
     ${rows?`<div style="margin-bottom:10px">${rows}</div>`:""}
+    ${A.pre?`<div class="ver" style="margin-bottom:8px"><b>段位</b> ${rankName(A.rank.a)} → <b>${rankName(A.rank.b)}</b>　·　<b>人气</b> ${Math.round(A.fans.a)} → ${Math.round(A.fans.b)}</div>`:""}
     <div class="ver" style="margin-bottom:8px"><b>属性</b>　${A.attrs.map(x=>`${x.d} ${Math.round(x.b)}<small style="color:${x.b-x.a>0.05?'var(--cyan)':'var(--ink-3)'}">(${d1(x.b-x.a)})</small>`).join("　")}
       　·　实力 <b>${A.strength.b.toFixed(1)}</b><small style="color:var(--cyan)">(${d1(A.strength.b-A.strength.a)})</small>
       　·　资金 ${d1(A.money)} 万　·　体能 ${Math.round(100-A.fat)}/100</div>
