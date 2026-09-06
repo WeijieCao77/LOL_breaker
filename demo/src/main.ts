@@ -106,6 +106,15 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260907f", at:"2026-09-07", items:[
+    "【测试中】五年之后可以再打三年（玩家实锤「刚到巅峰就退役」，尤其是 S15、S16 才发力的加点）：S16 收官页多了「再打三年 / 退役」，之后每年年末都能选退役，S19 年末强制退役；自由身年末桌上没报价的只能退役。S17–S19 三年全部活模拟，版本主题是拟的。26 岁起每周恢复打八折、28 岁起六五折，伤病风险本来就按年龄加",
+    "结局层级改了：连续三年世界冠军才叫「王朝」，三连再加 MSI 和 26 岁以后的冠军是「传奇」；原来两座世界冠军的「王朝」改叫「两冠」。新成就：三连 S 冠、再战、老骥伏枥（26 岁以后拿国际冠军）、大器晚成（第一座在 26 岁以后）、最后一舞（再战的年份里夺冠）",
+    "生涯名片按实际打了几年排（最多八年，手机上两行）；页头标语与结局文案不再写死「五年」"
+  ]},
+  {v:"v20260907e", at:"2026-09-07", items:[
+    "职业前一年从 20 周压到 16 周（玩家实锤「培养冗长」：玩了三个档，每个档都要先点满一年才进赛季）：每周行动点 12→10，训练收益 ×1.5、排位涨分 ×2.2、人气 ×1.9，训练顺带练第二维（操作带体质、运营带指挥、心态带体质、指挥带运营、体质带心态），进队时提示「职业训练更细、越往上越难」；城市争霸赛第 6 周、主播杯第 11 周、全明星第 14 周、转会窗口第 13–16 周，邀请冷却 2 周→1 周。批测 40 局对照 20 周：一年内上岸 63%（原 78%），上岸中位第 15 周（原 17），五年内全部上岸，上岸时段位 / 人气略高于原来。正在职业前的老档读取时按比例换算周数，已签约的档不受影响",
+    "职业前多了 16 件日常事（网吧联赛、直播间黑粉、家里催找工作、职业替补的小号、键盘连点、切片爆火、假经纪人、期末考、给二队当陪练、车队内讧、观众送外设、平台小合同、天梯宿敌 solo、手腕发麻、青训教练要录像、大主播连麦），每周摇中率 22%→30%——压了周数，空周更不能空"
+  ]},
   {v:"v20260907d", at:"2026-09-07", items:[
     "界面可以换成浅色或米色了（玩家点名「亮色看着舒服」「借鉴隔壁 VCT 电竞经理」）：顶栏最右边「深 / 浅 / 米」随时切，手机上是一颗循环键，「教程说明」栏目里有带说明的完整版，建档页右上角也有。两套浅底不是反色：金、青、橙、红和七个域色全部按白底重调过，正文到域色都过 4.5:1（自检里量）；按钮、结局名片、页头主视觉照旧是深的。选择记在这台设备上，不进存档"
   ]},
@@ -485,7 +494,7 @@ export const GAME_VER=CHANGELOG[0].v+" · 回声";
    SUPPORT_QR 可选：爱发电主页二维码图的 data URI（站点 CSP 只放行 self/data:，外链图不显示）。 */
 export const SUPPORT_URL="https://ifdian.net/a/poxiao_lol";   // 玩家 2026-09-05 给的爱发电主页
 export const SUPPORT_QR="data:image/png;base64,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";   // 玩家 2026-09-05 给的爱发电官方分享卡，裁出二维码、二值化内嵌
-export const AP_SEASON=8, AP_PRE=12, AP_OFF=8, AP_HURT=4;
+export const AP_SEASON=8, AP_PRE=10, AP_OFF=8, AP_HURT=4;   // 职业前 12→10（2026-09-06 压年：每周少点两下）
 /* 异化点数（2026-09-03 玩家拍板）：按现实时间精力定价。
    轻 1 = 碎片时间（排位几把 / 双排 / 发简历）；
    中 2 = 半天（专项训练 / 直播一开就是四小时 / 做内容 / 真歇半天 / 合练 / 复盘 / 杯赛备战）；
@@ -523,8 +532,52 @@ export const SEASONS=[
   {y:2026,tag:"S16",ver:"中野联动",fav:["mid","jng"],dim:"运营",fearless:true,
    story:"最后一年。再拿不下，至暗时刻就写进历史了。",
    msi:{mode:"double",playin:{teams:4,take:1,bo:3}},      // 2026 入围只取 1
-   worlds:{playin:{teams:4,take:1,bo:3},main:"swiss"}}    // 2026 入围 4 队取 1
+   worlds:{playin:{teams:4,take:1,bo:3},main:"swiss"}},   // 2026 入围 4 队取 1
+  /* ---- 再战三年（2026-09-07 玩家拍板）：S16 收官后可以选退役或再打，每年年末再问一次，S19 年末强制退役。
+     这三年没有史实可依（INTL_CANON / WORLDS_CANON 只到 S15），全部活模拟；版本主题是拟的。 ---- */
+  {y:2027,tag:"S17",ver:"野核回归",fav:["jng"],dim:"操作",fearless:true,
+   story:"第六年。和你同期出道的人大多已经退役——你还在。",
+   msi:{mode:"double",playin:{teams:4,take:1,bo:3}},
+   worlds:{playin:{teams:4,take:1,bo:3},main:"swiss"}},
+  {y:2028,tag:"S18",ver:"双人路时代",fav:["bot","sup"],dim:"心态",fearless:true,
+   story:"新人一年比一年快。你得靠别的东西赢。",
+   msi:{mode:"double",playin:{teams:4,take:1,bo:3}},
+   worlds:{playin:{teams:4,take:1,bo:3},main:"swiss"}},
+  {y:2029,tag:"S19",ver:"全能中单",fav:["mid"],dim:"指挥",fearless:true,
+   story:"最后一年。这一次是真的。",
+   msi:{mode:"double",playin:{teams:4,take:1,bo:3}},
+   worlds:{playin:{teams:4,take:1,bo:3},main:"swiss"}}
 ];
+/* 生涯长度：默认五年（S12–S16，下标 4）；S16 收官时选了「再打」就到 S19（下标 7）。
+   凡是原来写 SEASONS.length-1 的地方都改成这个——没选之前媒体不该说「还有三年」。 */
+export const BASE_LAST=4;
+export function lastSeason(){ return (S&&S.extended)?SEASONS.length-1:BASE_LAST; }
+/* 年纪大了恢复慢（26+ 八成、28+ 六五折）：每周的自然恢复都乘它；伤病风险 injuryRisk 里本来就按年龄加 */
+export function ageRecoverMul(){ const a=(S&&S.age)||20; return a>=28?0.65:a>=26?0.8:1; }
+/* 世界赛连冠：从夺冠年份表里数最长的一串连续赛季 */
+export function worldsStreakBest(){
+  const ys=((S.career&&S.career.worldsYears)||[]).slice().sort((a,b)=>a-b);
+  let best=0,run=0,prev=-9;
+  ys.forEach(y=>{ run=(y===prev+1)?run+1:1; prev=y; if(run>best) best=run; });
+  return best;
+}
+/* 26 岁以后拿过国际冠军（年龄按赛季倒推：第 k 季时的年龄 = 现在年龄 − (当前季 − k)） */
+export function lateTitle(){
+  const C=S.career||{}; const ys=((C.worldsYears||[]).concat(C.msiYears||[]));
+  return ys.some(k=>(S.age-(S.si-k))>=26);
+}
+/* S16 收官时选了「再打三年」 */
+export function encore(){
+  S.extended=true; S.encoreAt=S.si;
+  pushEvent(`<b>五年到了，你没有退役。</b>再打三年——年纪会一年比一年大，新人一年比一年快；但王朝也只有这样才建得起来。`,"big","生涯");
+  checkAch("extend");
+  doOffseason();
+}
+export function retireNow(){
+  S.retired=true;
+  pushEvent(`<b>${meName()} 宣布退役。</b>`,"big","生涯");
+  S.step="end"; render();
+}
 
 /* ================= 工具 ================= */
 export const $=(id: string): HTMLElement|null=>(typeof document==="undefined")?null:document.getElementById(id);   // 无头测试里没有 document：返回 null，调用方都得能吃 null
@@ -1677,7 +1730,7 @@ export function viewCreate(){
         <div class="d">${b.d}</div>
       </button>`).join("")}</div>
     <p class="note" style="margin-top:6px">路线是出身自带的：<b>青训路线</b>偏赛场，<b>主播路线</b>偏赛场外、难一些。每张卡的故事就是它的长处和代价。</p>
-    <p class="note">${S.ageIdx!=null?`你现在 ${AGES[S.ageIdx].a} 岁，还没有战队。`:"你还没有战队。"}先用半年时间打上分、攒人气、被人看见——然后才谈签约。
+    <p class="note">${S.ageIdx!=null?`你现在 ${AGES[S.ageIdx].a} 岁，还没有战队。`:"你还没有战队。"}先用几个月打上分、攒人气、被人看见——然后才谈签约。
       生涯末期随着年龄上涨，属性会往下掉——出道越晚，尝到它越早。</p>
   </div>
 
@@ -1718,10 +1771,25 @@ export const RANKS=[{n:"黄金",at:0},{n:"铂金",at:12},{n:"钻石",at:26},{n:"
              {n:"宗师",at:60},{n:"王者",at:74},{n:"国服前 100",at:86},{n:"国服前 10",at:95}];
 /* 没有死线：一年一个转会窗口，这次没签就接着打，等明年。
    代价是你又老了一岁——巅峰期是有限的，而这个世界只跑到 2026。 */
-export const PRE_YEAR=20;
-export const PRE_AP=AP_PRE;       // 一个「职业前年度」20 周，年末是转会窗口
+/* 职业前一年 20 周 → 16 周（2026-09-06 玩家实锤「培养冗长」：三个档都要先点满一年才进赛季）。
+   先试过 14 周：按点数等价换算（×1.71）一年内上岸率从 73% 掉到 50%，把产出抬到 ×1.9 才回到 68%，
+   但 40 局里有 3 局五年都没上岸——压得太狠。玩家拍板的备选是 16 周 + 把训练合并成「一次收获更多」：
+   一年的行动点从 20×12=240 压到 16×10=160，每一点的产出按 PRE_PACE=1.5 抬回去，
+   训练再顺带练第二维（PRE_SPLASH），进队之后每一项单独练、越往上越难。
+   一年内上岸的概率、上岸时的段位和人气要和压之前持平——demo/test.ts --batch 改前改后各跑一遍对比。 */
+export const PRE_YEAR=16;
+export const PRE_PACE=(20*12)/(PRE_YEAR*AP_PRE);   // =1.5：训练与排位的属性收益
+/* 段位和粉丝不是「按点数线性累计」的量：排位涨分随段位递减，粉丝是每周朝天花板收敛——
+   同样的点数塞进更少的周里，开窗那周的段位和粉丝会落后（仪表化批测：段位 54→50.6、粉丝 203→171）。
+   这两样单独给系数，目标是第一年开窗时的段位 / 粉丝 / 综合评估和 20 周时持平。 */
+export const PRE_RANK_PACE=2.2;
+export const PRE_FAN_PACE=1.9;
+/* 职业前的训练是粗放的：练一项顺带练另一项。操作带体质（打得多身体也在练）、运营带指挥、心态带体质、
+   指挥带运营、体质带心态。进队后没有顺带——职业训练更细，练到高处每一分都更难（签约时会告诉玩家）。 */
+export const PRE_SPLASH: Record<string,{d:string;k:number}>={操作:{d:"体质",k:0.35},运营:{d:"指挥",k:0.5},心态:{d:"体质",k:0.4},指挥:{d:"运营",k:0.4},体质:{d:"心态",k:0.3}};
+export const PRE_AP=AP_PRE;       // 一个「职业前年度」16 周，年末是转会窗口
 export const PRE_INVITE=118;               // 综合评估到这个水平，才有俱乐部来谈
-export const PRE_EARLIEST=13;             // 主播杯打完之前，没人会下判断
+export const PRE_EARLIEST=10;             // 主播杯（第 11 周报名）之前，没人会下判断
 export const PRE_WEEKS=PRE_YEAR;
 
 /* 起始段位不是所有人都从黄金爬：
@@ -1749,6 +1817,7 @@ export function rankFull(v){
   return cur.n+DIV[d];
 }
 export function startPre(){
+  S.preLen=PRE_YEAR;   // 这一档的职业前年长；老档（20 周）读取时 save.ts 按它换算周数
   S.patchSeen=GAME_VER;   // 新开局不弹更新说明
   statEvent("start");
   const o=ORIGIN[S.origin], A=AGES[S.ageIdx], B=bgOf(S.bgPick);
@@ -1823,7 +1892,7 @@ export function preAct(k,dim?){
     const beforeT=rankName(P.rank), beforeF=rankFull(P.rank);
     // 异化点数配平：1 点＝几把排位，单次涨跌 ×0.55（12 点预算下可刷，不配平会通胀）
     const lightMul=0.50;
-    const p=soloWinP(), step=rankStep()*lightMul;
+    const p=soloWinP(), step=rankStep()*lightMul*PRE_RANK_PACE;
     let w=0,l=0;
     for(let i=0;i<3;i++){
       if(rnd()<p){ w++; P.rank=clamp(P.rank+step,0,100); }
@@ -1833,11 +1902,11 @@ export function preAct(k,dim?){
     // 排位打多了本身就会变强，而且是全面的——一局排位里对线、
     // 运营、心态、指挥、体力都在用，只是每一样都不如专项训练练得深。
     // （这也让「冲分」和「训练」不再是纯粹互抢行动点的关系。）
-    rankGain(w,lightMul);
+    rankGain(w,lightMul*PRE_PACE);
     ladderEncounter(0.50);   // 天梯撞车：按场次折算
 
     const afterT=rankName(P.rank), afterF=rankFull(P.rank);
-    addFans(w*0.25);      // 赢下来的分才带来关注
+    addFans(w*0.25*PRE_FAN_PACE);      // 赢下来的分才带来关注
     P.lastQ={w,l,p}; checkAch("rank");
     const up=RANKS.findIndex(r=>r.n===afterT)>RANKS.findIndex(r=>r.n===beforeT);
     if(afterT!==beforeT&&up){
@@ -1859,8 +1928,8 @@ export function preAct(k,dim?){
     const m=S.origin==="streamer"?1.7:1.0;
     // 单纯开播涨得很慢；真正让人记住你的是段位和战绩
     const pop=1.9+S.pre.rank*0.05;
-    const gift=streamIncome();
-    addFans(pop*m*(streamFansMul()));
+    const gift=streamIncome()*PRE_PACE;   // 职业前节奏系数：一年的点数少了，每一点的产出按比例抬
+    addFans(pop*m*(streamFansMul())*PRE_FAN_PACE);
     addMoney('stream',gift);
     addFat(4); checkAch("stream");
     if(S.streamDeal) S.streamDeal.done=(S.streamDeal.done||0)+1;   // 开播条款按次数记
@@ -1872,12 +1941,14 @@ export function preAct(k,dim?){
   } else if(k==="train"){
     const c=capOf(dim);
     if(dim==="操作"&&true) btkNote("op",1);   // 到瓶颈也要能攒突破进度
-    if(S.attrs[dim]<c) S.attrs[dim]=Math.min(c,S.attrs[dim]+gain(dim)*0.85);
+    if(S.attrs[dim]<c) S.attrs[dim]=Math.min(c,S.attrs[dim]+gain(dim)*0.85*PRE_PACE);
+    const sub=PRE_SPLASH[dim];   // 职业前练一项顺带练另一项（进队后没有）
+    if(sub){ const sc=capOf(sub.d); if(S.attrs[sub.d]<sc) S.attrs[sub.d]=Math.min(sc,S.attrs[sub.d]+gain(sub.d)*0.85*PRE_PACE*sub.k); }
     addFat(9);
   } else if(k==="boost"){
     /* 接代练（2026-09-05 玩家点名「职业前第二年只有训练可做」）：来钱快，但手会糙、心会累，
        接多了就是一笔旧账——职业后有概率被扒（走 daida 回响） */
-    const cash=Math.round(3+P.rank*0.06);
+    const cash=Math.round((3+P.rank*0.06)*PRE_PACE);
     addMoney('boost',cash);
     addFat(8); S.attrs.心态=Math.max(20,S.attrs.心态-0.15); S.heat=Math.max(0,(S.heat||0)-1);
     S.flags=S.flags||{}; S.flags.boostN=(S.flags.boostN||0)+1;
@@ -1885,16 +1956,16 @@ export function preAct(k,dim?){
     else if(S.flags.boostN===1) preLog(`接了一单代练，到手 <b>${cash} 万</b>。钱是真的，风险也是——接多了会留下记录。`,"info");
   } else if(k==="cafe"){
     /* 和朋友上网：清疲劳、稳心态，网吧里认识的人也是人气；有车队的话默契一起涨 */
-    addFat(-8); S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.25); addFans(1.5);
-    if(P.mates&&P.mates.length&&true) addSquad("syn",1.2);
+    addFat(-8); S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.25*PRE_PACE); addFans(1.5*PRE_PACE);
+    if(P.mates&&P.mates.length&&true) addSquad("syn",1.2*PRE_PACE);
   } else if(k==="chill"){
     /* 换个游戏放松：疲劳掉得最快，但手感会生一点 */
-    addFat(-12); S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.2); S.attrs.操作=Math.max(20,q1(S.attrs.操作-0.08));
+    addFat(-12); S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.2*PRE_PACE); S.attrs.操作=Math.max(20,q1(S.attrs.操作-0.08*PRE_PACE));
   } else if(k==="watch"){
     /* 看职业比赛录像：运营和指挥的便宜课，战术素养也涨一点 */
-    S.attrs.运营=Math.min(capOf("运营"),q1(S.attrs.运营+0.18)); S.attrs.指挥=Math.min(capOf("指挥"),q1(S.attrs.指挥+0.18));
-    addFat(2); tacAdd(0.3,"看职业比赛录像");
-  } else { addFat(-18); S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.3); }   // 1 点碎片休息 ×0.55
+    S.attrs.运营=Math.min(capOf("运营"),q1(S.attrs.运营+0.18*PRE_PACE)); S.attrs.指挥=Math.min(capOf("指挥"),q1(S.attrs.指挥+0.18*PRE_PACE));
+    addFat(2); tacAdd(0.3*PRE_PACE,"看职业比赛录像");
+  } else { addFat(-18); S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.3*PRE_PACE); }   // 1 点碎片休息 ×0.55
   P.ap-=_c; render();
 }
 
@@ -1904,31 +1975,31 @@ export function preAct(k,dim?){
 
 /* 职业前的时间节点：都有明确门槛和倒计时 */
 export const PRE_MILESTONES=[
-  {w:8, name:"城市争霸赛", tag:"赛事", open:true, signup:"city", fee:8, prize:[0,2,8,20,50],
+  {w:6, name:"城市争霸赛", tag:"赛事", open:true, signup:"city", fee:8, prize:[0,2,8,20,50],
    need:()=>S.pre.rank>=RANKS[2].at, needTxt:"钻石及以上",
    cur:()=>rankFull(S.pre.rank),
    desc:"市级公开赛，报名要钻石。职业俱乐部的青训教练常来看台",
    run:()=>enterCup("city"),
    fail:()=>preLog("城市争霸赛报名截止了——<b>段位不够，你连报名资格都没有</b>。","bad")},
-  {w:9, name:"青训教练私信", tag:"人脉", open:false,
+  {w:7, name:"青训教练私信", tag:"人脉", open:false,
    need:()=>preScore()>=34, needTxt:"—",
    cur:()=>"—",
    desc:"有人开始注意到你了",
    run:()=>preLog("有个自称 <b>战队青训教练</b> 的人加了你好友，问你有没有想过打职业。","good"),
    fail:()=>{}},
-  {w:14, name:"主播杯", tag:"赛事", open:true, vague:true, signup:"stream", fee:15, prize:[0,10,30,80],
+  {w:11, name:"主播杯", tag:"赛事", open:true, vague:true, signup:"stream", fee:15, prize:[0,10,30,80],
    need:()=>S.fans>=60, needTxt:"邀请制 · 看人气",
    cur:()=>fanTier(),
    desc:"邀请制，名气不够连门都进不去",
    run:()=>enterCup("stream"),
    fail:()=>preLog("主播杯是邀请制。<b>你的人气还不够，没收到邀请</b>。","bad")},
-  {w:15, name:"青训教练到场", tag:"人脉", open:false,
+  {w:12, name:"青训教练到场", tag:"人脉", open:false,
    need:()=>preScore()>=62, needTxt:"—",
    cur:()=>"—",
    desc:"俱乐部开始正式评估你",
    run:()=>preLog("两家俱乐部的青训教练同时出现在你的直播间。<b>试训邀请快来了。</b>","big"),
    fail:()=>{}},
-  {w:17, name:"全明星周末 · 主播表演赛", tag:"赛事", open:true, vague:true, signup:"show", fee:0,
+  {w:14, name:"全明星周末 · 主播表演赛", tag:"赛事", open:true, vague:true, signup:"show", fee:0,
    need:()=>S.fans>=95, needTxt:"邀请制 · 大主播才有请柬",
    cur:()=>fanTier(),
    desc:"年度盛典的娱乐表演赛（现实里就是全明星周末的主播对抗）。不打职业的大主播，一年就这一次主舞台",
@@ -2035,7 +2106,7 @@ export function advancePreWeek(){
     preNextYear(); return;
   }
   archiveWeek();
-  P.week++; P.ap=apFor('pre'); addFat(-9);
+  P.week++; P.ap=apFor('pre'); addFat(-9*ageRecoverMul());
   weeklyEcho();
   injuryTick();
   cupTick();
@@ -2050,7 +2121,7 @@ export function advancePreWeek(){
   fanWeek();
   questWeek();
   simWorldPre();
-  if(rnd()<0.22) tryRandomEvent();   // 职业前 0.22（玩家点名前期无聊；伏笔事件池已扩）
+  if(rnd()<0.30) tryRandomEvent();   // 职业前 0.30（2026-09-06 压到 14 周并补了 16 件日常事，空周要有事发生）
   saveGame('第'+P.week+'周');
   // 提前预告：还有 3 周 / 1 周时提醒，并说清差多少
   PRE_MILESTONES.forEach(m=>{
@@ -2094,7 +2165,7 @@ export function preScore(){
 /* 这一年没签成：世界往前走一年，你也老一岁。没有死线，只有代价。 */
 export function preNextYear(){
   const P=S.pre;
-  if(S.si>=SEASONS.length-1){
+  if(S.si>=lastSeason()){   // 自由身年末没人签：桌上没报价就只能退役（再战期也一样）
     // 曾打过职业的人走到时间尽头：履历接回来，结局按职业生涯算，不是「没能上岸」
     if(S.careerBak){ S.career=S.careerBak; S.careerBak=null; } else S.neverSigned=true;
     S.step="end"; render(); return;
@@ -2267,6 +2338,7 @@ export function acceptOffer(i){
   disruptSynergy(1,`<b>${meName()}</b> 加盟`);
   pushEvent(`<b>${meName()}</b> 正式签约 <b>${of.team}</b>（${of.t}）。${back?"重返职业赛场——上一段履历接着算。":"职业生涯从这里开始。"}`,"big","签约");
   if(!back) checkAch("sign");   // 重返职业不是「第一份合同」——野路子那类成就不该再发（玩家实锤）
+  if(!back) pushEvent(`<b>职业队的训练和路人不一样。</b>路人时练一项顺带练另一项，进了队每一项单独练、按教练组的表来；越往高处每一分越难。`,"info","训练");
   startSeason(true);
 }
 
@@ -2600,7 +2672,7 @@ export function fanWeek(){
   // 职业前只有 19 周，用赛季的底速根本收敛不动——实测主播杯参与率
   // 从 92% 掉到 27%、全明星从 17% 掉到 3%，等于把业余赛线掐断了。
   // 那是「模型太慢」，不是「玩家不够格」，所以职业前单独给一档底速。
-  let rate=(S.career?0.012:0.055)+clamp((S.heat||0)/9000,0,0.045);
+  let rate=(S.career?0.012:0.055*(20/PRE_YEAR)*1.2)+clamp((S.heat||0)/9000,0,0.045);   // 职业前底速按 20 周调的，压到 16 周后按周数抬，再补两成（收敛不是线性的）
   // 人物特质在这里落地：粉丝是「朝天花板收敛」的，所以「涨粉 +18%」
   // 改的是收敛速度，不是某一次事件的加值。
   // （这条一开始接错了地方——接在早就被收敛模型换掉的 addFans 上，
@@ -3806,7 +3878,7 @@ export function nextWeek(){
     enterBreak("playoff", 1, "常规赛结束 · 季后赛前");
     return;
   }
-  S.week++; S.ap=apFor('season'); S.step="season"; S.match=null; addFat(-10);
+  S.week++; S.ap=apFor('season'); S.step="season"; S.match=null; addFat(-10*ageRecoverMul());
   // 赛段注册期（前 REG_WEEKS 周）：第 3 周 AI 队做一次升降；第 2 周起可能有队来挖（概率远低于窗口，且要付 1.2 倍违约金）
   if(S.week<=REG_WEEKS&&S.career){
     if(S.week===3&&true) aiMarketWindow(false);
@@ -4172,7 +4244,14 @@ export function viewOffseason(){
   const msiYear=(S.career&&S.career.msiYears||[]).includes(S.si);
   if(wcYear) label=`<b style="color:var(--gold-hi)">世界冠军</b> · 联赛${label}`;
   else if(msiYear) label=`<b style="color:var(--gold-hi)">MSI 冠军</b> · 联赛${label}`;
-  const last=S.si>=SEASONS.length-1;
+  const last=S.si>=lastSeason();
+  // 五年到了：退役还是再打（玩家拍板：三年、每年都问、两座改叫「两冠」、三连才是王朝）
+  const fork=(S.si===BASE_LAST&&!S.extended)?`<div class="ver" style="margin-top:14px"><b>五年到了。</b><span class="tag" title="再战三年刚上线，还在测试：S17–S19 全部活模拟，数值和事件还会调；玩到哪里不对劲请到群里说">测试中</span> 你 ${S.age} 岁${
+      S.age>=26?"，手速已经在往下走":S.age>=24?"，操作从明年起每年往下掉":"，还在平台期"}。
+      退役就看生涯名片；再打三年，年纪会一年比一年大、新人一年比一年快——但三连世界冠军只有这样才拿得到，没拿过冠军的也还有一整个周期。</div>
+    <div class="row"><button class="btn primary" id="encore">再打三年（测试中）→</button><button class="btn ghost" id="retire">退役，看生涯名片 →</button></div>`
+    :(S.extended&&!last)?`<div class="row"><button class="btn primary" id="off">再打一年 · ${SEASONS[S.si+1].tag} 备战 →</button><button class="btn ghost" id="retire">就到这里，退役 →</button></div>`
+    :`<div class="row"><button class="btn primary" id="off">${last?"生涯总结 →":`进入休赛期 · ${SEASONS[S.si+1].tag} 备战 →`}</button></div>`;
   return `${champ}<div class="card">
     <h2>${sea.tag} ${sea.y} 赛季结算</h2>
     <h3>${S.team} — ${label}</h3>
@@ -4185,9 +4264,7 @@ export function viewOffseason(){
         <div class="capline" style="left:${clamp(c,0,100)}%"></div></div>
         <div class="vn mono"><b>${v.toFixed(1)}</b>${Math.abs(g)>=0.05?` <span class="${g>0?'up':'dn'}">${g>0?'+':''}${g.toFixed(1)}</span>`:""}</div></div>`}).join("")}
     </div>
-    <div class="row">
-      <button class="btn primary" id="off">${last?"生涯总结 →":`进入休赛期 · ${SEASONS[S.si+1].tag} 备战 →`}</button>
-    </div>
+    ${fork}
   </div>
   ${eventsCard()}`;
 }
@@ -4243,7 +4320,7 @@ export function flushBreakNews(week){
 }
 export function doOffseason(){
   if(S.off) return;          // 已经在休赛期里了，别把周数重置回第 1 周
-  if(S.si>=SEASONS.length-1){ S.step="end"; render(); return; }
+  if(S.si>=lastSeason()){ S.step="end"; render(); return; }
   S.off={week:1, weeks:OFF_WEEKS, next:"year", label:"休赛期"};
   S.ap=apFor("off");
   S.askedTransfer=false;             // 每个休赛期能主动挂牌一次
@@ -4318,7 +4395,7 @@ export function offNextWeek(){
   if(S.off.next==="intl"&&S.btk) S.btk.apWeek=4;
   if(S.assets&&S.assets.apt) addFat(-4);
   weeklyEcho();
-  if(S.off.next!=="intl") addFat(-14);
+  if(S.off.next!=="intl") addFat(-14*ageRecoverMul());
   // 休赛期/间歇周也要结算突破进度——原来只有赛季周结算，
   // 玩家在休赛期连练三周操作，计数器纹丝不动。
   // 出征周只有 1 点，练不满是制度问题不是玩家问题：不计数也不清零。
@@ -4493,9 +4570,13 @@ export function ending(){
     if(msi+worlds+lg>=1) return {n:"板凳冠军",d:"四年里你大部分时间坐在替补席上。队伍捧起了奖杯，合影里有你，但那不是你打下来的。"};
     return {n:"泯然众人",d:"四年过去，你始终没能拿到稳定的首发位。这条路本来就不是所有人都能走通。"};
   }
+  const streak=worldsStreakBest();
+  if(streak>=3&&msi>=1&&lateTitle()) return {n:"传奇",
+    d:"三连世界冠军，MSI 也拿过，二十六岁以后还在捧杯。这个赛区的历史从此分成你之前和你之后。"};
+  if(streak>=3) return {n:"王朝",d:"连续三年的世界冠军。人们不再用年份来划分时代，用你的名字。"};
   if(msi>=1&&worlds>=1) return {n:"破局者",
-    d:"MSI 与世界赛，你都拿到了。至暗五年结束在你手上——这个赛区终于有人做到了。"};
-  if(worlds>=2) return {n:"王朝",d:"两座世界冠军奖杯。人们开始用你的名字来划分时代。"};
+    d:"MSI 与世界赛，你都拿到了。至暗时刻结束在你手上——这个赛区终于有人做到了。"};
+  if(worlds>=2) return {n:"两冠",d:"两座世界冠军奖杯。离王朝只差一年——连续的那一年。"};
   if(worlds===1) return {n:"世界冠军",
     d:"你捧起了那座奖杯。MSI 还差一座，但没人会因此少记你一分。"};
   if(msi>=1) return {n:"半程加冕",
@@ -4511,7 +4592,7 @@ export function ending(){
     d:"你带队打进过世界赛正赛。没能走远，但这五年 LPL 没有塌，有你一份。"};
   if(lg>=1) return {n:"内战之王",d:"你拿过联赛冠军，却始终没能在国际赛场证明什么。五年里，最重的那一步始终没迈出去。"};
   if(best<=4) return {n:"常青树",d:"四强常客。你在联赛里站稳了，不是所有人都能做到这件事。"};
-  return {n:"至暗未破",d:"S12 到 S16，五年。你打过、拼过、被记住过，但那座墙始终没有倒。<b>至暗时刻，最终写进了历史。</b>"};
+  return {n:"至暗未破",d:`${SEASONS[0].tag} 到 ${SEASONS[Math.min(S.si,SEASONS.length-1)].tag}，${S.si+1} 年。你打过、拼过、被记住过，但那座墙始终没有倒。<b>至暗时刻，最终写进了历史。</b>`};
 }
 /* ---------- 生涯名片（结局）----------
    玩家点名（2026-09-05）：结局总结没故事、成绩不显眼、不好看、没有一块能截图转发去炫耀。
@@ -4552,7 +4633,8 @@ export function careerPoster(){
     return null;
   };
   let prevTeam=null;   // 没记录又没转会的年份，沿用上一年的东家
-  const years=SEASONS.map((sea,si)=>{
+  const played=SEASONS.slice(0,Math.min(SEASONS.length,(S.si||0)+1));   // 退役在哪一年，名片就排到哪一年
+  const years=played.map((sea,si)=>{
     const rows=log.filter(x=>x.si===si);
     const H=S.honors||{};
     let team=rows.length?rows[rows.length-1].team:null;
@@ -4592,7 +4674,7 @@ export function careerPoster(){
     <div class="po-hero" style="--i:1"><div class="po-title">${e.n}</div><div class="po-story">${e.d}</div></div>
     <div class="po-id" style="--i:2"><b>${meName()}</b> · ${POSN[S.pos]||""} · ${(ORIGIN[S.origin]||{}).n||""}${S.career?` · ${S.team||"—"}`:""} · ${S.age} 岁</div>
     <div class="po-wall">${wall}</div>
-    <div class="po-years">${years}</div>
+    <div class="po-years${played.length>5?' many':''}" style="grid-template-columns:repeat(${played.length},minmax(0,1fr))">${years}</div>
     <div class="po-stats" style="--i:9">${stats.map(([k,v])=>`<div><div class="k">${k}</div><div class="v mono">${v}</div></div>`).join("")}</div>
     <div class="po-sign" style="--i:10"><span>www.poxiao.lol</span><span>#破晓生涯</span><span class="mono">${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,"0")}</span></div>
   </div>`;
@@ -4613,7 +4695,7 @@ export function viewEnd(){
     .sort((a,b)=>b.age-a.age).slice(0,5);
   return `${careerPoster()}${again}
   <div class="card">
-    <h2>五年成长<em>${meName()} · ${POSN[S.pos]}</em></h2>
+    <h2>生涯成长<em>${meName()} · ${POSN[S.pos]} · ${S.si+1} 年</em></h2>
     <p class="note">生涯小分 ${S.career.w}−${S.career.l}${
       (S.career.w+S.career.l)<18?'<span class="tag l">出场极少</span>':''} ·
       最佳常规赛排名 第 ${S.career.best===99?"—":S.career.best} 名${(titleCount())?` · 冠军 ${titlesText()}`:""}</p>
@@ -4892,7 +4974,7 @@ export function actPanelPre(){
         <div class="t">${gicon("stream",14)} 直播 ${apTag("stream")}</div><div class="d">涨人气与收入${costStream()}</div></button>
       ${DIMS.map(d=>{const b=trainBtn(d,P.ap);
         return `<button class="act" data-pretrain="${d}" ${b.dis?'disabled style="opacity:.34"':''} ${b.style}>
-        <div class="t">${b.title}${(S.career&&SEASONS[S.si]&&SEASONS[S.si].dim===d)?' <i class="apc" title="本季版本关键属性，训练收益 ×'+VER_TRAIN+'">版本 +'+Math.round((VER_TRAIN-1)*100)+'%</i>':''}</div><div class="d">${b.desc}</div></button>`}).join("")}
+        <div class="t">${b.title}${(S.career&&SEASONS[S.si]&&SEASONS[S.si].dim===d)?' <i class="apc" title="本季版本关键属性，训练收益 ×'+VER_TRAIN+'">版本 +'+Math.round((VER_TRAIN-1)*100)+'%</i>':''}</div><div class="d">${b.desc}${PRE_SPLASH[d]?` · 顺带练${PRE_SPLASH[d].d}`:""}</div></button>`}).join("")}
       <button class="act" data-pre="rest" ${P.ap<apCost("rest")?'disabled style="opacity:.34"':''}>
         <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳${costRest()}</div></button>
       <button class="act" data-pre="boost" ${P.ap<apCost("boost")?'disabled style="opacity:.34"':''} title="来钱快；手会糙、心会累，接多了会留下记录">
@@ -5312,7 +5394,7 @@ export const TOUR_PRE_FULL=[
   {sel:".energy", t:"体能", d:"每个行动都累，比赛更累。掉到四成以下状态明显下滑；休息、网吧开黑、换个游戏都能回。行动点写在每个按钮上。"},
   TOUR_PRE[11],
   {sel:'[data-pre="rank"]', t:"打排位（1 点）", d:"三把排位：赢了涨分、输了掉分，五维都小涨一点。实力压得住分段就冲，卡在门槛附近先练。段位到宗师起，青训教练才会看你。"},
-  {sel:'[data-pretrain="操作"]', t:"训练（2 点）", d:"五个按钮各练一维：操作是对线与输出，运营是视野与节奏，心态是抗压与翻盘，指挥是全队乘数（比赛只取队内最高），体质是耐久。撞到天赋瓶颈会提示怎么突破。"},
+  {sel:'[data-pretrain="操作"]', t:"训练（2 点）", d:"五个按钮各练一维：操作是对线与输出，运营是视野与节奏，心态是抗压与翻盘，指挥是全队乘数（比赛只取队内最高），体质是耐久。职业前练一项还会顺带练另一项（操作带体质、运营带指挥）；进队以后每一项单独练，越往上越难。撞到天赋瓶颈会提示怎么突破。"},
   {sel:'[data-pre="stream"]', t:"直播（2 点）", d:"涨热度、赚礼物；热度沉淀成粉丝，粉丝决定谁来邀请你、也决定薪水的浮动。主播出身直播收益更高。"},
   {sel:'[data-pre="rest"]', t:"休息（1 点）", d:"清疲劳、稳心态。累了硬练收益会打折，还容易受伤。"},
   {sel:'[data-pre="boost"]', t:"接代练（2 点）", d:"来钱快，但手会糙、心会累；接到第三单会留下记录，进职业后可能被扒出来。"},
@@ -6147,6 +6229,8 @@ export function bind(){
   st.querySelectorAll("[data-txlg]").forEach((b: any)=>b.onclick=()=>{S.txLgPick=b.dataset.txlg;render()});
   const pc=$("pmclose"); if(pc) pc.onclick=()=>{S.pmView=null;render()};
   const of=$("off"); if(of) of.onclick=doOffseason;
+  const _enc=$("encore"); if(_enc) _enc.onclick=encore;
+  const _ret=$("retire"); if(_ret) _ret.onclick=()=>askConfirm("退役",`<b>${meName()}</b> 就此挂靴？之后是生涯名片，不能再回来。`,"退役",retireNow);
   st.querySelectorAll("[data-ef]").forEach((b: any)=>b.onclick=()=>{S.evFilter=b.dataset.ef;render()});
   const ag=$("again"); if(ag) ag.onclick=()=>screenCreate();
   const ag2=$("again2"); if(ag2) ag2.onclick=()=>screenCreate();   // 结局页最底下那颗（原来和名片下那颗撞了 id，点不动）

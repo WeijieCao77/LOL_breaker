@@ -1,5 +1,5 @@
 import { addStaff, coachTrust, mgrTrust } from "./clout";
-import { CHANGELOG, DIMS, SEASONS, addFans, avg, clamp, ending, leagueDimAvg, myRoster, nowLabel, power, preLog, pushEvent, q1, soloSkill } from "./main";
+import { CHANGELOG, DIMS, SEASONS, addFans, avg, clamp, ending, lastSeason, leagueDimAvg, myRoster, nowLabel, power, preLog, pushEvent, q1, soloSkill } from "./main";
 import { rnd } from "./rng";
 import { ringTitles, titleCount, titlesText } from "./rotation";
 import { meName } from "./save";
@@ -170,7 +170,7 @@ export function careerCard(){
   let e=null; try{ e=ending(); }catch(err){}
   const st=S.stats||{n:0};
   const titles=(S.career.titles||[]);
-  const left=SEASONS.length-1-S.si;
+  const left=lastSeason()-S.si;
   return `<div class="card"><h2>生涯一览<em>如果今天挂靴</em></h2>
     ${e?`<h3 style="margin:4px 0 2px">「${e.n}」</h3>
     <p class="note" style="margin:0 0 10px">${e.d}</p>`:""}

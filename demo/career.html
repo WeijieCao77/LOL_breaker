@@ -425,6 +425,7 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .tp-n{font-weight:700;font-size:13px;margin-top:6px;color:var(--gold-hi)}
 .tp-y{font-size:10.5px;color:var(--ink-3);letter-spacing:.08em;margin-top:2px}
 .po-years{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);margin:16px 0 14px;border:1px solid var(--line)}
+@media(max-width:560px){.po-years.many{grid-template-columns:repeat(4,minmax(0,1fr))!important}}   /* 再战到 S19 是 8 年：手机上两行 */
 .yr{background:rgba(var(--deep-rgb),.92);padding:9px 8px;min-width:0;font-size:11.5px}
 .yr.won{background:linear-gradient(180deg,rgba(var(--gold-rgb),.18),rgba(var(--deep-rgb),.92))}
 .yr-t{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:11px;letter-spacing:.14em;color:var(--gold)}
@@ -1464,7 +1465,7 @@ header.top.compact>.theme-top{display:none}
         <p class="game-en">www.poxiao.lol</p>
       </div>
     </div>
-    <p class="tagline">S12 到 S16，五年。一段有限的职业生涯，去终结那个王朝。</p>
+    <p class="tagline">S12 起，五年，或者再多三年。一段有限的职业生涯，去终结那个王朝——或者建一个。</p>
     <p class="pillars">自建选手 · 世界自运转 · 版本更迭 · 新老换血</p>
   </header>
   <div id="hud" class="hud hide"></div>
@@ -2879,6 +2880,7 @@ header.top.compact>.theme-top{display:none}
     return P.rank >= need || resumeCap() !== "none";
   }
   var TIER_RANK = { acad: 76, low: 87, mid: 91, top: 94 };
+  var INVITE_CD = 1;
   function rankCap() {
     const r = S.pre && S.pre.rank || 0;
     let t = TIER_ORDER[0];
@@ -2921,7 +2923,7 @@ header.top.compact>.theme-top{display:none}
     for (let i = 0; i < 8 && team && noRe[team]; i++) team = pickClub(tier, lg || void 0);
     if (!team || noRe[team]) return;
     P.invite = { tier, team, league: lg || null, reason, pending: true, week: P.week, expect: T.expect };
-    P.inviteCd = P.week + 2;
+    P.inviteCd = P.week + INVITE_CD;
     P.inviteN = (P.inviteN || 0) + 1;
     preLog(`<b>${team}</b>${lg && lg !== "LPL" ? `（${lg} 赛区）` : ""} 看了你的比赛录像——${reason}。<b>他们邀请你去队里试训。</b>${lg && lg !== "LPL" ? `<br><span style="color:var(--ink-3)">跨国邀请：签了就是出海打职业。</span>` : ""}`, "big");
     render();
@@ -3773,14 +3775,14 @@ header.top.compact>.theme-top{display:none}
   function checkTopUpInvite() {
     const P = S.pre;
     if (!P || !S.careerBak) return;
-    const w = P.week, reg = w >= 2 && w <= 6 || w >= 11 && w <= 15;
+    const w = P.week, reg = w >= 2 && w <= 5 || w >= 9 && w <= 12;
     if (!reg || rnd() >= 0.14) return;
     if (!canInvite("low")) return;
     const tier = fitTier("mid");
     const team = pickClub(tier);
     if (!team) return;
     P.invite = { tier, team, league: null, reason: "队里有人受伤，需要人顶班", pending: true, week: w, expect: CLUB_TIERS[tier].expect, short: true };
-    P.inviteCd = w + 2;
+    P.inviteCd = w + INVITE_CD;
     P.inviteN = (P.inviteN || 0) + 1;
     preLog(`<b>${team}</b> 的首发受伤了，他们想让你去<b>顶班</b>——<b>短约一个赛段</b>，打出来再谈长的。`, "big");
     render();
@@ -5460,6 +5462,339 @@ header.top.compact>.theme-top{display:none}
           return "一周里你在训练室后排坐了六天。<b>原来职业队的复盘是这么开的。</b>战术素养 +3，教练组也记住了这张脸。";
         } },
         { t: "不去，要打排位", g: "grind", e: () => "你觉得分更重要。观摩证过期了。" }
+      ]
+    },
+    /* ================= 职业前的日常（2026-09-06 玩家实锤「培养冗长」）=================
+       一年压到 14 周之后，空周更不能空。这十六件事只在职业前出现，效果都不致命：
+       一两周的临时增益、一笔小钱、一点人气、教练组多记住你一次（scoutSeen）。 */
+    {
+      id: "cafecup",
+      rec: 0,
+      w: 2.2,
+      max: 1,
+      when: () => !!S.pre && !S.career && S.pre.rank >= 30,
+      q: () => `常去的网吧周末办<b>店内联赛</b>，冠军 <b>2 万</b>加一年免费上网。老板点名要你来。`,
+      ctx: "对手是隔壁几家网吧的常客。不算比赛，但有人看。",
+      a: [
+        { t: "去打", g: "show", e: () => {
+          addFat(6);
+          addFans(3);
+          if (S.pre.mates && S.pre.mates.length) addSquad("syn", 1);
+          const win = rnd() < 0.45 + S.pre.rank * 4e-3;
+          if (win) {
+            S.money += 2;
+            return "决赛 2:0。<b>两万到手</b>，老板把你的 ID 贴在了前台。人气 +3。";
+          }
+          return "决赛输给了一支打了三年的固定队。<b>但看台上有人开始叫你的 ID。</b>人气 +3。";
+        } },
+        { t: "不去，周末打排位", g: "grind", e: () => "老板有点失望。你多打了十把排位。" }
+      ]
+    },
+    {
+      id: "hater",
+      rec: 0,
+      w: 2,
+      when: () => !!S.pre && !S.career && (S.fans || 0) >= 40,
+      q: () => `直播间来了个黑粉，连着三天在弹幕刷「代打号」「买的分」。今天他开始点名骂你家里人。`,
+      ctx: "回怼会有人看。不回也会有人看。",
+      a: [
+        { t: "当场回怼，开麦对线", g: "hard", e: () => {
+          S.heat = (S.heat || 0) + 12;
+          S.attrs.心态 = Math.max(20, q1(S.attrs.心态 - 0.3));
+          (S.flags = S.flags || {}).beefy = 1;
+          return "切片当晚就传开了。<b>热度 +12，心态 −0.3。</b>你也出了名——出的是「脾气」的名。";
+        } },
+        { t: "拉黑，继续打", g: "grind", e: () => {
+          S.attrs.心态 = Math.min(capOf("心态"), q1(S.attrs.心态 + 0.3));
+          return "你把他拉黑，继续补刀。弹幕安静了一会儿。<b>心态 +0.3。</b>";
+        } }
+      ]
+    },
+    {
+      id: "family",
+      rec: 0,
+      w: 2,
+      max: 1,
+      when: () => !!S.pre && !S.career && (S.fans || 0) < 150 && S.pre.week >= 4,
+      q: () => `家里打来电话：亲戚介绍了一份工作，让你下周去面试。「打游戏能打到什么时候？」`,
+      ctx: "你没法拿出一份合同来证明什么。",
+      a: [
+        { t: "「再给我一年」", g: "hard", e: () => {
+          addBuff("mood", 1.08, 3, "憋着一口气");
+          S.attrs.心态 = Math.max(20, q1(S.attrs.心态 - 0.2));
+          return "电话那头沉默了很久，最后说「随你」。<b>接下来三周你练得比谁都狠。</b>心态 −0.2。";
+        } },
+        { t: "先去面试，稳住家里", g: "grind", e: () => {
+          S.money += 2;
+          addFat(5);
+          S.heat = Math.max(0, (S.heat || 0) - 3);
+          return "面试通过了，你没去上班，但家里的火先压下去了。<b>那一周排位一把没打。</b>资金 +2。";
+        } }
+      ]
+    },
+    {
+      id: "duopro",
+      rec: 0,
+      w: 2,
+      max: 1,
+      when: () => !!S.pre && !S.career && S.pre.rank >= 65,
+      q: () => `排位里连着两把碰到同一个人，ID 是空的，操作不像路人。打完他发来好友申请：<b>「一起排两天？」</b>`,
+      ctx: "后来你才知道，那是某支队的替补在练小号。",
+      a: [
+        { t: "双排一周", g: "grind", e: () => {
+          addFat(5);
+          S.attrs.操作 = Math.min(capOf("操作"), q1(S.attrs.操作 + 0.4));
+          S.attrs.运营 = Math.min(capOf("运营"), q1(S.attrs.运营 + 0.2));
+          S.pre.scoutSeen = (S.pre.scoutSeen || 0) + 1;
+          return "一周里他教了你三套打线的节奏。<b>操作 +0.4，运营 +0.2</b>，他回队后在群里提过你的名字。";
+        } },
+        { t: "打完就散", g: "grind", e: () => {
+          S.attrs.操作 = Math.min(capOf("操作"), q1(S.attrs.操作 + 0.1));
+          return "两把之后你们再没排过。那两把你学到一点东西。操作 +0.1。";
+        } }
+      ]
+    },
+    {
+      id: "keyboard",
+      rec: 0,
+      w: 1.8,
+      max: 1,
+      when: () => !!S.pre && !S.career && S.money >= 3,
+      q: () => `键盘的 Q 键开始连点，关键团战放两次技能。修不好，换一把要 <b>3 万</b>。`,
+      ctx: "凑合能用。但每一把都在赌它今天不出问题。",
+      a: [
+        { t: "换新的", cost: 3, e: () => {
+          pay(3);
+          addBuff("train", 1.06, 3, "新键盘");
+          return "新键盘到了，手感对了。<b>训练收益 +6%，三周。</b>";
+        } },
+        { t: "凑合用", g: "grind", e: () => {
+          addBuff("train", 0.94, 2, "键盘连点");
+          return "又连点了两次。<b>训练收益 −6%，两周</b>——直到你自己也习惯了。";
+        } }
+      ]
+    },
+    {
+      id: "viral",
+      rec: 0,
+      w: 2,
+      when: () => !!S.pre && !S.career && (S.heat || 0) >= 25,
+      q: () => `昨晚一波 1v3 的切片被搬上短视频平台，一夜 <b>八十万播放</b>。评论区在问「这人是谁」。`,
+      ctx: "热度这种东西，三天就没。",
+      a: [
+        { t: "趁热连播三天", g: "show", e: () => {
+          addFans(10);
+          S.heat = (S.heat || 0) + 18;
+          addFat(6);
+          return "三天直播间人数都是平时的五倍。<b>人气 +10，热度 +18</b>，也累。";
+        } },
+        { t: "照常练，不管它", g: "grind", e: () => {
+          addFans(3);
+          return "播放量第四天就停了。<b>留下来的人不多，但都是真看你打的。</b>人气 +3。";
+        } }
+      ]
+    },
+    {
+      id: "fakeagent",
+      rec: 0,
+      w: 1.8,
+      max: 1,
+      when: () => !!S.pre && !S.career && (S.fans || 0) >= 80,
+      q: () => `一个自称「某俱乐部经纪人」的人私信你：交 <b>8 万</b>「试训保证金」，下个月安排进青训。`,
+      ctx: "他的头像是那家俱乐部的队标。他没有工牌。",
+      a: [
+        { t: "交钱，别错过机会", cost: 8, g: "hard", e: () => {
+          pay(8);
+          S.attrs.心态 = Math.max(20, q1(S.attrs.心态 - 0.4));
+          (S.flags = S.flags || {}).scammed = 1;
+          return "转账之后他再也没上线。<b>八万没了，心态 −0.4。</b>真正的俱乐部从来不收钱。";
+        } },
+        { t: "查一下再说", g: "grind", e: () => "你查了那家「公司」，注册地址是一家奶茶店。你把聊天记录发到了圈子群里，救了两个人。" }
+      ]
+    },
+    {
+      id: "exam",
+      rec: 0,
+      w: 2,
+      max: 1,
+      when: () => !!S.pre && !S.career && S.age <= 18,
+      q: () => `学校的期末考在下周。请假两周专心练，还是回去把试考了？`,
+      ctx: "班主任说：「你要是真能打出来，我不拦你。」",
+      a: [
+        { t: "请假，专心练", g: "hard", e: () => {
+          addBuff("train", 1.1, 2, "请了两周假");
+          (S.flags = S.flags || {}).skipExam = 1;
+          return "两周没人管你，练到凌晨三点。<b>训练收益 +10%，两周。</b>成绩单上那一栏空着。";
+        } },
+        { t: "回去考试", g: "grind", e: () => {
+          addFat(-10);
+          S.attrs.心态 = Math.min(capOf("心态"), q1(S.attrs.心态 + 0.4));
+          S.pre.rank = Math.max(0, S.pre.rank - 1.5);
+          return "考完试你歇了几天，手生了一点。<b>体能回了不少，心态 +0.4，段位 −1.5。</b>";
+        } }
+      ]
+    },
+    {
+      id: "acadscrim",
+      rec: 0,
+      w: 2,
+      max: 1,
+      when: () => !!S.pre && !S.career && preScore() >= 40,
+      q: () => `一支俱乐部的<b>二队缺人打训练赛</b>，教练在群里找陪练：「不算钱，管饭，打一周。」`,
+      ctx: "陪练不上名单。但你会坐在他们的训练室里。",
+      a: [
+        { t: "去打一周", g: "grind", e: () => {
+          addFat(6);
+          tacAdd(2, "给二队当陪练");
+          S.attrs.运营 = Math.min(capOf("运营"), q1(S.attrs.运营 + 0.2));
+          S.pre.scoutSeen = (S.pre.scoutSeen || 0) + 2;
+          return "一周里你被他们打了三十把，也看懂了他们怎么复盘。<b>战术素养 +2，运营 +0.2</b>，教练记住了你。";
+        } },
+        { t: "不去，自己冲分", g: "grind", e: () => "你觉得替人当靶子不划算。他们找了别人。" }
+      ]
+    },
+    {
+      id: "crewfight",
+      rec: 0,
+      w: 2,
+      max: 1,
+      when: () => !!S.pre && !S.career && !!(S.pre.mates && S.pre.mates.length),
+      q: () => `车队里两个人吵起来了——一个嫌另一个不做视野，另一个说他从不听指挥。群里已经开始互相拉黑。`,
+      ctx: "业余车队散伙，一般就是这么散的。",
+      a: [
+        { t: "把两个人拉进语音，劝到半夜", g: "grind", e: () => {
+          addSquad("syn", 1.5);
+          S.attrs.心态 = Math.max(20, q1(S.attrs.心态 - 0.1));
+          return "凌晨两点他们终于把话说开了。<b>默契 +1.5</b>，你少睡了一晚。";
+        } },
+        { t: "随他们去，散了再找", g: "hard", e: () => {
+          addSquad("syn", -2);
+          return "第二天少了一个人。剩下的人练得更沉默了。<b>默契 −2。</b>";
+        } }
+      ]
+    },
+    {
+      id: "giftgear",
+      rec: 0,
+      w: 1.6,
+      max: 1,
+      when: () => !!S.pre && !S.career && (S.fans || 0) >= 120,
+      q: () => `一个常来直播间的观众寄来一套<b>职业选手同款外设</b>，附了张纸条：「等你上岸。」`,
+      ctx: "东西不便宜。你不知道该不该收。",
+      a: [
+        { t: "收下，好好用", g: "show", e: () => {
+          addBuff("train", 1.04, 4, "观众送的外设");
+          addFans(2);
+          return "你在直播里认真谢了他。<b>训练收益 +4%，四周。</b>";
+        } },
+        { t: "退回去", g: "grind", e: () => {
+          addFans(4);
+          S.attrs.心态 = Math.min(capOf("心态"), q1(S.attrs.心态 + 0.2));
+          return "你把东西退了回去，在直播里说了原因。<b>弹幕刷了一屏「有原则」。</b>人气 +4，心态 +0.2。";
+        } }
+      ]
+    },
+    {
+      id: "platform",
+      rec: 0,
+      w: 1.8,
+      max: 1,
+      when: () => !!S.pre && !S.career && (S.fans || 0) >= 70 && !S.streamDeal,
+      q: () => `直播平台的运营找上门：一份<b>小合同</b>，一次性 <b>10 万</b>，条件是接下来每周至少开播两次。`,
+      ctx: "不是独家，也没有分成——就是要你露脸。",
+      a: [
+        { t: "签", g: "show", e: () => {
+          addMoney("stream", 10);
+          S.heat = (S.heat || 0) + 5;
+          (S.flags = S.flags || {}).smallDeal = 1;
+          return "十万到账。<b>接下来每周你都得开播</b>——练的时间被挤掉一块。热度 +5。";
+        } },
+        { t: "不签，先把分打上去", g: "grind", e: () => "运营说「那你打出来再聊」。你觉得这话没错。" }
+      ]
+    },
+    {
+      id: "ladderrival",
+      rec: 0,
+      w: 2,
+      max: 1,
+      when: () => !!S.pre && !S.career && S.pre.rank >= 55,
+      q: () => `天梯上有个人连着三把在对面，把你打得很难受，赛后加你好友：<b>「solo 一把？」</b>`,
+      ctx: "他直播间三千人在看。",
+      a: [
+        { t: "solo", g: "hard", e: () => {
+          const win = rnd() < 0.5 + (S.attrs.操作 - 55) * 0.012;
+          if (win) {
+            S.attrs.操作 = Math.min(capOf("操作"), q1(S.attrs.操作 + 0.3));
+            S.heat = (S.heat || 0) + 8;
+            return "你赢了。他的直播间刷了一屏问号。<b>操作 +0.3，热度 +8。</b>";
+          }
+          S.attrs.心态 = Math.max(20, q1(S.attrs.心态 - 0.2));
+          S.attrs.操作 = Math.min(capOf("操作"), q1(S.attrs.操作 + 0.15));
+          return "你输了，输得不难看。<b>心态 −0.2，操作 +0.15</b>——输给强的人也是练。";
+        } },
+        { t: "不理他", g: "grind", e: () => {
+          S.heat = (S.heat || 0) + 3;
+          return "他在直播里说了你两周。<b>热度 +3</b>，你一句没回。";
+        } }
+      ]
+    },
+    {
+      id: "wristache",
+      rec: 0,
+      w: 2,
+      when: () => !!S.pre && !S.career && S.fatigue >= 60,
+      q: () => `右手手腕开始发麻，握鼠标半小时就得甩两下。你知道这是什么信号。`,
+      ctx: "这个年纪的手，坏起来很快。",
+      a: [
+        { t: "停一周，去看医生", g: "grind", e: () => {
+          addFat(-16);
+          S.pre.rank = Math.max(0, S.pre.rank - 1);
+          return "医生说没大事，就是累。<b>体能回了一大截，段位掉了 1</b>——分是能打回来的。";
+        } },
+        { t: "硬撑，分不能掉", g: "hard", e: () => {
+          addFat(6);
+          S.attrs.操作 = Math.max(20, q1(S.attrs.操作 - 0.15));
+          (S.flags = S.flags || {}).wristRisk = 1;
+          return "你换了个鼠标垫继续打。<b>操作 −0.15</b>，手腕的事没解决，只是先不提。";
+        } }
+      ]
+    },
+    {
+      id: "coachfollow",
+      rec: 0,
+      w: 2,
+      max: 1,
+      when: () => !!S.pre && !S.career && S.pre.week >= 6 && preScore() >= 38,
+      q: () => `那个加过你的青训教练又发来消息：<b>「发几场你最近的录像给我看看。」</b>`,
+      ctx: "他没说会怎么样。但他问了。",
+      a: [
+        { t: "挑三场发过去", g: "grind", e: () => {
+          S.pre.scoutSeen = (S.pre.scoutSeen || 0) + 2;
+          S.attrs.运营 = Math.min(capOf("运营"), q1(S.attrs.运营 + 0.2));
+          return "两天后他回了三条语音，全是挑毛病。<b>运营 +0.2</b>，他说「继续练，我在看」。";
+        } },
+        { t: "没回", g: "hard", e: () => "你觉得还没到给人看的时候。他没再问。" }
+      ]
+    },
+    {
+      id: "collab",
+      rec: 0,
+      w: 2,
+      max: 1,
+      when: () => !!S.pre && !S.career && (S.fans || 0) >= 50,
+      q: () => `一个粉丝比你多二十倍的主播发来邀请：<b>连麦双排一晚</b>。他的观众会看到你。`,
+      ctx: "他打得一般，但会聊。",
+      a: [
+        { t: "连", g: "show", e: () => {
+          addFans(14);
+          S.heat = (S.heat || 0) + 14;
+          addFat(5);
+          return "那晚你的直播间涌进来几千人。<b>人气 +14，热度 +14。</b>他说下次还找你。";
+        } },
+        { t: "想先把分打上去", g: "grind", e: () => {
+          S.attrs.心态 = Math.min(capOf("心态"), q1(S.attrs.心态 + 0.1));
+          return "你回了「下次」。他没生气。<b>心态 +0.1。</b>";
+        } }
       ]
     },
     /* ---------- 回响：职业后兑现 ---------- */
@@ -7228,6 +7563,19 @@ header.top.compact>.theme-top{display:none}
     if (blob.S && blob.S.career && blob.S.yearBase === void 0) {
       blob.S.yearBase = PRE_YEAR;
     }
+    if (blob.S && blob.S.step === "pre" && blob.S.pre && (blob.S.preLen || 20) !== PRE_YEAR) {
+      const from = blob.S.preLen || 20, k = PRE_YEAR / from, P = blob.S.pre;
+      const sc = (w) => Math.max(1, Math.min(PRE_YEAR, Math.round(w * k)));
+      if (typeof P.week === "number") P.week = sc(P.week);
+      ["inviteCd", "selfRecCd"].forEach((f) => {
+        if (typeof P[f] === "number") P[f] = sc(P[f]);
+      });
+      if (P.invite && typeof P.invite.week === "number") P.invite.week = sc(P.invite.week);
+      Object.values(blob.S.cups || {}).forEach((c) => {
+        if (c && typeof c.nextWeek === "number") c.nextWeek = Math.max(P.week + 1, sc(c.nextWeek));
+      });
+    }
+    if (blob.S) blob.S.preLen = PRE_YEAR;
     if (blob.ver === 3) {
       const s = blob.S;
       if (s.step === "pre" && typeof s.age === "number") s.age += 1;
@@ -7960,7 +8308,7 @@ header.top.compact>.theme-top{display:none}
     }
     const st = S.stats || { n: 0 };
     const titles = S.career.titles || [];
-    const left = SEASONS.length - 1 - S.si;
+    const left = lastSeason() - S.si;
     return `<div class="card"><h2>生涯一览<em>如果今天挂靴</em></h2>
     ${e ? `<h3 style="margin:4px 0 2px">「${e.n}」</h3>
     <p class="note" style="margin:0 0 10px">${e.d}</p>` : ""}
@@ -10464,6 +10812,58 @@ header.top.compact>.theme-top{display:none}
       cond: () => (S.career.lgStreak || 0) >= 3,
       r: { money: 600, fame: 90 }
     },
+    /* ---------- 再战三年（2026-09-07）---------- */
+    {
+      id: "threepeat",
+      n: "三连 S 冠",
+      d: "连续三年世界冠军。王朝。",
+      tag: "荣誉",
+      on: "crown",
+      cond: () => {
+        const ys = S.career.worldsYears || [];
+        return ys.includes(S.si) && ys.includes(S.si - 1) && ys.includes(S.si - 2);
+      },
+      r: { money: 5e3, fame: 500, fat: -99 }
+    },
+    {
+      id: "encore",
+      n: "再战",
+      d: "五年到了，你选择再打三年。",
+      tag: "生涯",
+      on: "extend",
+      cond: () => true,
+      r: { fame: 60 }
+    },
+    {
+      id: "oldguard",
+      n: "老骥伏枥",
+      d: "二十六岁以后拿下国际冠军。",
+      tag: "荣誉",
+      on: "crown",
+      cond: () => S.age >= 26 && ((S.career.worldsYears || []).includes(S.si) || (S.career.msiYears || []).includes(S.si)),
+      r: { money: 1500, fame: 200 }
+    },
+    {
+      id: "latebloom",
+      n: "大器晚成",
+      d: "生涯第一座国际冠军在二十六岁以后。",
+      tag: "荣誉",
+      on: "crown",
+      cond: () => {
+        const ys = (S.career.worldsYears || []).concat(S.career.msiYears || []);
+        return S.age >= 26 && ys.length > 0 && ys.every((k) => S.age - (S.si - k) >= 26);
+      },
+      r: { money: 1200, fame: 160 }
+    },
+    {
+      id: "lastdance",
+      n: "最后一舞",
+      d: "再战的年份里捧起国际冠军。",
+      tag: "荣誉",
+      on: "crown",
+      cond: () => !!S.extended && S.si > 4 && ((S.career.worldsYears || []).includes(S.si) || (S.career.msiYears || []).includes(S.si)),
+      r: { money: 1500, fame: 220 }
+    },
     /* ---------- 战绩 ---------- */
     {
       id: "perfect",
@@ -10793,10 +11193,10 @@ header.top.compact>.theme-top{display:none}
     {
       id: "allver",
       n: "什么版本都打过",
-      d: "经历全部五个赛季的版本。",
+      d: "经历 S12 到 S16 五个赛季的版本。",
       tag: "世界",
       on: "splitend",
-      cond: () => S.si >= SEASONS.length - 1,
+      cond: () => S.si >= 4,
       r: { money: 300, fame: 50 }
     },
     // LDL 是国内二级联赛，不是外赛区——这个判定写在 LDL 存在之前，
@@ -12629,6 +13029,15 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 28;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260907f", at: "2026-09-07", items: [
+      "【测试中】五年之后可以再打三年（玩家实锤「刚到巅峰就退役」，尤其是 S15、S16 才发力的加点）：S16 收官页多了「再打三年 / 退役」，之后每年年末都能选退役，S19 年末强制退役；自由身年末桌上没报价的只能退役。S17–S19 三年全部活模拟，版本主题是拟的。26 岁起每周恢复打八折、28 岁起六五折，伤病风险本来就按年龄加",
+      "结局层级改了：连续三年世界冠军才叫「王朝」，三连再加 MSI 和 26 岁以后的冠军是「传奇」；原来两座世界冠军的「王朝」改叫「两冠」。新成就：三连 S 冠、再战、老骥伏枥（26 岁以后拿国际冠军）、大器晚成（第一座在 26 岁以后）、最后一舞（再战的年份里夺冠）",
+      "生涯名片按实际打了几年排（最多八年，手机上两行）；页头标语与结局文案不再写死「五年」"
+    ] },
+    { v: "v20260907e", at: "2026-09-07", items: [
+      "职业前一年从 20 周压到 16 周（玩家实锤「培养冗长」：玩了三个档，每个档都要先点满一年才进赛季）：每周行动点 12→10，训练收益 ×1.5、排位涨分 ×2.2、人气 ×1.9，训练顺带练第二维（操作带体质、运营带指挥、心态带体质、指挥带运营、体质带心态），进队时提示「职业训练更细、越往上越难」；城市争霸赛第 6 周、主播杯第 11 周、全明星第 14 周、转会窗口第 13–16 周，邀请冷却 2 周→1 周。批测 40 局对照 20 周：一年内上岸 63%（原 78%），上岸中位第 15 周（原 17），五年内全部上岸，上岸时段位 / 人气略高于原来。正在职业前的老档读取时按比例换算周数，已签约的档不受影响",
+      "职业前多了 16 件日常事（网吧联赛、直播间黑粉、家里催找工作、职业替补的小号、键盘连点、切片爆火、假经纪人、期末考、给二队当陪练、车队内讧、观众送外设、平台小合同、天梯宿敌 solo、手腕发麻、青训教练要录像、大主播连麦），每周摇中率 22%→30%——压了周数，空周更不能空"
+    ] },
     { v: "v20260907d", at: "2026-09-07", items: [
       "界面可以换成浅色或米色了（玩家点名「亮色看着舒服」「借鉴隔壁 VCT 电竞经理」）：顶栏最右边「深 / 浅 / 米」随时切，手机上是一颗循环键，「教程说明」栏目里有带说明的完整版，建档页右上角也有。两套浅底不是反色：金、青、橙、红和七个域色全部按白底重调过，正文到域色都过 4.5:1（自检里量）；按钮、结局名片、页头主视觉照旧是深的。选择记在这台设备上，不进存档"
     ] },
@@ -13005,7 +13414,7 @@ header.top.compact>.theme-top{display:none}
   var SUPPORT_URL = "https://ifdian.net/a/poxiao_lol";
   var SUPPORT_QR = "data:image/png;base64,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";
   var AP_SEASON = 8;
-  var AP_PRE = 12;
+  var AP_PRE = 10;
   var AP_OFF = 8;
   var AP_HURT = 4;
   var AP_COST = { train: 2, solo: 1, stream: 2, content: 2, rest: 1, scrim: 3, vod: 2, drill: 2, duo: 1, cupprep: 2, duel: 2, boost: 2, cafe: 1, chill: 1, watch: 1 };
@@ -13079,9 +13488,80 @@ header.top.compact>.theme-top{display:none}
       msi: { mode: "double", playin: { teams: 4, take: 1, bo: 3 } },
       // 2026 入围只取 1
       worlds: { playin: { teams: 4, take: 1, bo: 3 }, main: "swiss" }
-    }
+    },
     // 2026 入围 4 队取 1
+    /* ---- 再战三年（2026-09-07 玩家拍板）：S16 收官后可以选退役或再打，每年年末再问一次，S19 年末强制退役。
+       这三年没有史实可依（INTL_CANON / WORLDS_CANON 只到 S15），全部活模拟；版本主题是拟的。 ---- */
+    {
+      y: 2027,
+      tag: "S17",
+      ver: "野核回归",
+      fav: ["jng"],
+      dim: "操作",
+      fearless: true,
+      story: "第六年。和你同期出道的人大多已经退役——你还在。",
+      msi: { mode: "double", playin: { teams: 4, take: 1, bo: 3 } },
+      worlds: { playin: { teams: 4, take: 1, bo: 3 }, main: "swiss" }
+    },
+    {
+      y: 2028,
+      tag: "S18",
+      ver: "双人路时代",
+      fav: ["bot", "sup"],
+      dim: "心态",
+      fearless: true,
+      story: "新人一年比一年快。你得靠别的东西赢。",
+      msi: { mode: "double", playin: { teams: 4, take: 1, bo: 3 } },
+      worlds: { playin: { teams: 4, take: 1, bo: 3 }, main: "swiss" }
+    },
+    {
+      y: 2029,
+      tag: "S19",
+      ver: "全能中单",
+      fav: ["mid"],
+      dim: "指挥",
+      fearless: true,
+      story: "最后一年。这一次是真的。",
+      msi: { mode: "double", playin: { teams: 4, take: 1, bo: 3 } },
+      worlds: { playin: { teams: 4, take: 1, bo: 3 }, main: "swiss" }
+    }
   ];
+  var BASE_LAST = 4;
+  function lastSeason() {
+    return S && S.extended ? SEASONS.length - 1 : BASE_LAST;
+  }
+  function ageRecoverMul() {
+    const a = S && S.age || 20;
+    return a >= 28 ? 0.65 : a >= 26 ? 0.8 : 1;
+  }
+  function worldsStreakBest() {
+    const ys = (S.career && S.career.worldsYears || []).slice().sort((a, b) => a - b);
+    let best = 0, run = 0, prev = -9;
+    ys.forEach((y) => {
+      run = y === prev + 1 ? run + 1 : 1;
+      prev = y;
+      if (run > best) best = run;
+    });
+    return best;
+  }
+  function lateTitle() {
+    const C = S.career || {};
+    const ys = (C.worldsYears || []).concat(C.msiYears || []);
+    return ys.some((k) => S.age - (S.si - k) >= 26);
+  }
+  function encore() {
+    S.extended = true;
+    S.encoreAt = S.si;
+    pushEvent(`<b>五年到了，你没有退役。</b>再打三年——年纪会一年比一年大，新人一年比一年快；但王朝也只有这样才建得起来。`, "big", "生涯");
+    checkAch("extend");
+    doOffseason();
+  }
+  function retireNow() {
+    S.retired = true;
+    pushEvent(`<b>${meName()} 宣布退役。</b>`, "big", "生涯");
+    S.step = "end";
+    render();
+  }
   var $ = (id) => typeof document === "undefined" ? null : document.getElementById(id);
   var clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   var q1 = (v) => Math.round(v * 10) / 10;
@@ -14168,7 +14648,7 @@ header.top.compact>.theme-top{display:none}
         <div class="d">${b.d}</div>
       </button>`).join("")}</div>
     <p class="note" style="margin-top:6px">路线是出身自带的：<b>青训路线</b>偏赛场，<b>主播路线</b>偏赛场外、难一些。每张卡的故事就是它的长处和代价。</p>
-    <p class="note">${S.ageIdx != null ? `你现在 ${AGES[S.ageIdx].a} 岁，还没有战队。` : "你还没有战队。"}先用半年时间打上分、攒人气、被人看见——然后才谈签约。
+    <p class="note">${S.ageIdx != null ? `你现在 ${AGES[S.ageIdx].a} 岁，还没有战队。` : "你还没有战队。"}先用几个月打上分、攒人气、被人看见——然后才谈签约。
       生涯末期随着年龄上涨，属性会往下掉——出道越晚，尝到它越早。</p>
   </div>
 
@@ -14203,7 +14683,11 @@ header.top.compact>.theme-top{display:none}
     { n: "国服前 100", at: 86 },
     { n: "国服前 10", at: 95 }
   ];
-  var PRE_YEAR = 20;
+  var PRE_YEAR = 16;
+  var PRE_PACE = 20 * 12 / (PRE_YEAR * AP_PRE);
+  var PRE_RANK_PACE = 2.2;
+  var PRE_FAN_PACE = 1.9;
+  var PRE_SPLASH = { 操作: { d: "体质", k: 0.35 }, 运营: { d: "指挥", k: 0.5 }, 心态: { d: "体质", k: 0.4 }, 指挥: { d: "运营", k: 0.4 }, 体质: { d: "心态", k: 0.3 } };
   var PRE_AP = AP_PRE;
   var PRE_INVITE = 118;
   var PRE_WEEKS = PRE_YEAR;
@@ -14236,6 +14720,7 @@ header.top.compact>.theme-top{display:none}
     return cur.n + DIV[d];
   }
   function startPre() {
+    S.preLen = PRE_YEAR;
     S.patchSeen = GAME_VER;
     statEvent("start");
     const o = ORIGIN[S.origin], A = AGES[S.ageIdx], B = bgOf(S.bgPick);
@@ -14318,7 +14803,7 @@ header.top.compact>.theme-top{display:none}
     if (k === "rank") {
       const beforeT = rankName(P.rank), beforeF = rankFull(P.rank);
       const lightMul = 0.5;
-      const p = soloWinP(), step = rankStep() * lightMul;
+      const p = soloWinP(), step = rankStep() * lightMul * PRE_RANK_PACE;
       let w = 0, l = 0;
       for (let i = 0; i < 3; i++) {
         if (rnd() < p) {
@@ -14330,10 +14815,10 @@ header.top.compact>.theme-top{display:none}
         }
       }
       addFat(4);
-      rankGain(w, lightMul);
+      rankGain(w, lightMul * PRE_PACE);
       ladderEncounter(0.5);
       const afterT = rankName(P.rank), afterF = rankFull(P.rank);
-      addFans(w * 0.25);
+      addFans(w * 0.25 * PRE_FAN_PACE);
       P.lastQ = { w, l, p };
       checkAch("rank");
       const up = RANKS.findIndex((r) => r.n === afterT) > RANKS.findIndex((r) => r.n === beforeT);
@@ -14363,8 +14848,8 @@ header.top.compact>.theme-top{display:none}
     } else if (k === "stream") {
       const m = S.origin === "streamer" ? 1.7 : 1;
       const pop = 1.9 + S.pre.rank * 0.05;
-      const gift = streamIncome();
-      addFans(pop * m * streamFansMul());
+      const gift = streamIncome() * PRE_PACE;
+      addFans(pop * m * streamFansMul() * PRE_FAN_PACE);
       addMoney("stream", gift);
       addFat(4);
       checkAch("stream");
@@ -14382,10 +14867,15 @@ header.top.compact>.theme-top{display:none}
     } else if (k === "train") {
       const c = capOf(dim);
       if (dim === "操作" && true) btkNote("op", 1);
-      if (S.attrs[dim] < c) S.attrs[dim] = Math.min(c, S.attrs[dim] + gain2(dim) * 0.85);
+      if (S.attrs[dim] < c) S.attrs[dim] = Math.min(c, S.attrs[dim] + gain2(dim) * 0.85 * PRE_PACE);
+      const sub = PRE_SPLASH[dim];
+      if (sub) {
+        const sc = capOf(sub.d);
+        if (S.attrs[sub.d] < sc) S.attrs[sub.d] = Math.min(sc, S.attrs[sub.d] + gain2(sub.d) * 0.85 * PRE_PACE * sub.k);
+      }
       addFat(9);
     } else if (k === "boost") {
-      const cash = Math.round(3 + P.rank * 0.06);
+      const cash = Math.round((3 + P.rank * 0.06) * PRE_PACE);
       addMoney("boost", cash);
       addFat(8);
       S.attrs.心态 = Math.max(20, S.attrs.心态 - 0.15);
@@ -14398,28 +14888,28 @@ header.top.compact>.theme-top{display:none}
       } else if (S.flags.boostN === 1) preLog(`接了一单代练，到手 <b>${cash} 万</b>。钱是真的，风险也是——接多了会留下记录。`, "info");
     } else if (k === "cafe") {
       addFat(-8);
-      S.attrs.心态 = Math.min(capOf("心态"), S.attrs.心态 + 0.25);
-      addFans(1.5);
-      if (P.mates && P.mates.length && true) addSquad("syn", 1.2);
+      S.attrs.心态 = Math.min(capOf("心态"), S.attrs.心态 + 0.25 * PRE_PACE);
+      addFans(1.5 * PRE_PACE);
+      if (P.mates && P.mates.length && true) addSquad("syn", 1.2 * PRE_PACE);
     } else if (k === "chill") {
       addFat(-12);
-      S.attrs.心态 = Math.min(capOf("心态"), S.attrs.心态 + 0.2);
-      S.attrs.操作 = Math.max(20, q1(S.attrs.操作 - 0.08));
+      S.attrs.心态 = Math.min(capOf("心态"), S.attrs.心态 + 0.2 * PRE_PACE);
+      S.attrs.操作 = Math.max(20, q1(S.attrs.操作 - 0.08 * PRE_PACE));
     } else if (k === "watch") {
-      S.attrs.运营 = Math.min(capOf("运营"), q1(S.attrs.运营 + 0.18));
-      S.attrs.指挥 = Math.min(capOf("指挥"), q1(S.attrs.指挥 + 0.18));
+      S.attrs.运营 = Math.min(capOf("运营"), q1(S.attrs.运营 + 0.18 * PRE_PACE));
+      S.attrs.指挥 = Math.min(capOf("指挥"), q1(S.attrs.指挥 + 0.18 * PRE_PACE));
       addFat(2);
-      tacAdd(0.3, "看职业比赛录像");
+      tacAdd(0.3 * PRE_PACE, "看职业比赛录像");
     } else {
       addFat(-18);
-      S.attrs.心态 = Math.min(capOf("心态"), S.attrs.心态 + 0.3);
+      S.attrs.心态 = Math.min(capOf("心态"), S.attrs.心态 + 0.3 * PRE_PACE);
     }
     P.ap -= _c;
     render();
   }
   var PRE_MILESTONES = [
     {
-      w: 8,
+      w: 6,
       name: "城市争霸赛",
       tag: "赛事",
       open: true,
@@ -14434,7 +14924,7 @@ header.top.compact>.theme-top{display:none}
       fail: () => preLog("城市争霸赛报名截止了——<b>段位不够，你连报名资格都没有</b>。", "bad")
     },
     {
-      w: 9,
+      w: 7,
       name: "青训教练私信",
       tag: "人脉",
       open: false,
@@ -14447,7 +14937,7 @@ header.top.compact>.theme-top{display:none}
       }
     },
     {
-      w: 14,
+      w: 11,
       name: "主播杯",
       tag: "赛事",
       open: true,
@@ -14463,7 +14953,7 @@ header.top.compact>.theme-top{display:none}
       fail: () => preLog("主播杯是邀请制。<b>你的人气还不够，没收到邀请</b>。", "bad")
     },
     {
-      w: 15,
+      w: 12,
       name: "青训教练到场",
       tag: "人脉",
       open: false,
@@ -14476,7 +14966,7 @@ header.top.compact>.theme-top{display:none}
       }
     },
     {
-      w: 17,
+      w: 14,
       name: "全明星周末 · 主播表演赛",
       tag: "赛事",
       open: true,
@@ -14609,7 +15099,7 @@ header.top.compact>.theme-top{display:none}
     archiveWeek();
     P.week++;
     P.ap = apFor("pre");
-    addFat(-9);
+    addFat(-9 * ageRecoverMul());
     weeklyEcho();
     injuryTick();
     cupTick();
@@ -14622,7 +15112,7 @@ header.top.compact>.theme-top{display:none}
     fanWeek();
     questWeek();
     simWorldPre();
-    if (rnd() < 0.22) tryRandomEvent();
+    if (rnd() < 0.3) tryRandomEvent();
     saveGame("第" + P.week + "周");
     PRE_MILESTONES.forEach((m) => {
       const d = m.w - P.week;
@@ -14660,7 +15150,7 @@ header.top.compact>.theme-top{display:none}
   }
   function preNextYear() {
     const P = S.pre;
-    if (S.si >= SEASONS.length - 1) {
+    if (S.si >= lastSeason()) {
       if (S.careerBak) {
         S.career = S.careerBak;
         S.careerBak = null;
@@ -14866,6 +15356,7 @@ header.top.compact>.theme-top{display:none}
     disruptSynergy(1, `<b>${meName()}</b> 加盟`);
     pushEvent(`<b>${meName()}</b> 正式签约 <b>${of.team}</b>（${of.t}）。${back ? "重返职业赛场——上一段履历接着算。" : "职业生涯从这里开始。"}`, "big", "签约");
     if (!back) checkAch("sign");
+    if (!back) pushEvent(`<b>职业队的训练和路人不一样。</b>路人时练一项顺带练另一项，进了队每一项单独练、按教练组的表来；越往高处每一分越难。`, "info", "训练");
     startSeason(true);
   }
   function myTeam() {
@@ -15139,7 +15630,7 @@ header.top.compact>.theme-top{display:none}
   function fanWeek() {
     if (S.heat === void 0) S.heat = 0;
     const cap5 = fanCap();
-    let rate = (S.career ? 0.012 : 0.055) + clamp((S.heat || 0) / 9e3, 0, 0.045);
+    let rate = (S.career ? 0.012 : 0.055 * (20 / PRE_YEAR) * 1.2) + clamp((S.heat || 0) / 9e3, 0, 0.045);
     rate *= traitMul("fan");
     rate *= streamPushMul();
     const gap = cap5 - (S.fans || 0);
@@ -16298,7 +16789,7 @@ header.top.compact>.theme-top{display:none}
     S.ap = apFor("season");
     S.step = "season";
     S.match = null;
-    addFat(-10);
+    addFat(-10 * ageRecoverMul());
     if (S.week <= REG_WEEKS && S.career) {
       if (S.week === 3 && true) aiMarketWindow(false);
       if (S.week >= 2 && true) regRollOffer();
@@ -16686,7 +17177,10 @@ header.top.compact>.theme-top{display:none}
     const msiYear = (S.career && S.career.msiYears || []).includes(S.si);
     if (wcYear) label = `<b style="color:var(--gold-hi)">世界冠军</b> · 联赛${label}`;
     else if (msiYear) label = `<b style="color:var(--gold-hi)">MSI 冠军</b> · 联赛${label}`;
-    const last = S.si >= SEASONS.length - 1;
+    const last = S.si >= lastSeason();
+    const fork = S.si === BASE_LAST && !S.extended ? `<div class="ver" style="margin-top:14px"><b>五年到了。</b><span class="tag" title="再战三年刚上线，还在测试：S17–S19 全部活模拟，数值和事件还会调；玩到哪里不对劲请到群里说">测试中</span> 你 ${S.age} 岁${S.age >= 26 ? "，手速已经在往下走" : S.age >= 24 ? "，操作从明年起每年往下掉" : "，还在平台期"}。
+      退役就看生涯名片；再打三年，年纪会一年比一年大、新人一年比一年快——但三连世界冠军只有这样才拿得到，没拿过冠军的也还有一整个周期。</div>
+    <div class="row"><button class="btn primary" id="encore">再打三年（测试中）→</button><button class="btn ghost" id="retire">退役，看生涯名片 →</button></div>` : S.extended && !last ? `<div class="row"><button class="btn primary" id="off">再打一年 · ${SEASONS[S.si + 1].tag} 备战 →</button><button class="btn ghost" id="retire">就到这里，退役 →</button></div>` : `<div class="row"><button class="btn primary" id="off">${last ? "生涯总结 →" : `进入休赛期 · ${SEASONS[S.si + 1].tag} 备战 →`}</button></div>`;
     return `${champ}<div class="card">
     <h2>${sea.tag} ${sea.y} 赛季结算</h2>
     <h3>${S.team} — ${label}</h3>
@@ -16701,9 +17195,7 @@ header.top.compact>.theme-top{display:none}
         <div class="vn mono"><b>${v.toFixed(1)}</b>${Math.abs(g) >= 0.05 ? ` <span class="${g > 0 ? "up" : "dn"}">${g > 0 ? "+" : ""}${g.toFixed(1)}</span>` : ""}</div></div>`;
     }).join("")}
     </div>
-    <div class="row">
-      <button class="btn primary" id="off">${last ? "生涯总结 →" : `进入休赛期 · ${SEASONS[S.si + 1].tag} 备战 →`}</button>
-    </div>
+    ${fork}
   </div>
   ${eventsCard()}`;
   }
@@ -16742,7 +17234,7 @@ header.top.compact>.theme-top{display:none}
   }
   function doOffseason() {
     if (S.off) return;
-    if (S.si >= SEASONS.length - 1) {
+    if (S.si >= lastSeason()) {
       S.step = "end";
       render();
       return;
@@ -16830,7 +17322,7 @@ header.top.compact>.theme-top{display:none}
     if (S.off.next === "intl" && S.btk) S.btk.apWeek = 4;
     if (S.assets && S.assets.apt) addFat(-4);
     weeklyEcho();
-    if (S.off.next !== "intl") addFat(-14);
+    if (S.off.next !== "intl") addFat(-14 * ageRecoverMul());
     {
       if (S.off.next === "intl") {
         if (S.btk) S.btk.opThisWeek = 0;
@@ -17020,11 +17512,17 @@ header.top.compact>.theme-top{display:none}
       if (msi + worlds + lg >= 1) return { n: "板凳冠军", d: "四年里你大部分时间坐在替补席上。队伍捧起了奖杯，合影里有你，但那不是你打下来的。" };
       return { n: "泯然众人", d: "四年过去，你始终没能拿到稳定的首发位。这条路本来就不是所有人都能走通。" };
     }
+    const streak = worldsStreakBest();
+    if (streak >= 3 && msi >= 1 && lateTitle()) return {
+      n: "传奇",
+      d: "三连世界冠军，MSI 也拿过，二十六岁以后还在捧杯。这个赛区的历史从此分成你之前和你之后。"
+    };
+    if (streak >= 3) return { n: "王朝", d: "连续三年的世界冠军。人们不再用年份来划分时代，用你的名字。" };
     if (msi >= 1 && worlds >= 1) return {
       n: "破局者",
-      d: "MSI 与世界赛，你都拿到了。至暗五年结束在你手上——这个赛区终于有人做到了。"
+      d: "MSI 与世界赛，你都拿到了。至暗时刻结束在你手上——这个赛区终于有人做到了。"
     };
-    if (worlds >= 2) return { n: "王朝", d: "两座世界冠军奖杯。人们开始用你的名字来划分时代。" };
+    if (worlds >= 2) return { n: "两冠", d: "两座世界冠军奖杯。离王朝只差一年——连续的那一年。" };
     if (worlds === 1) return {
       n: "世界冠军",
       d: "你捧起了那座奖杯。MSI 还差一座，但没人会因此少记你一分。"
@@ -17052,7 +17550,7 @@ header.top.compact>.theme-top{display:none}
     };
     if (lg >= 1) return { n: "内战之王", d: "你拿过联赛冠军，却始终没能在国际赛场证明什么。五年里，最重的那一步始终没迈出去。" };
     if (best <= 4) return { n: "常青树", d: "四强常客。你在联赛里站稳了，不是所有人都能做到这件事。" };
-    return { n: "至暗未破", d: "S12 到 S16，五年。你打过、拼过、被记住过，但那座墙始终没有倒。<b>至暗时刻，最终写进了历史。</b>" };
+    return { n: "至暗未破", d: `${SEASONS[0].tag} 到 ${SEASONS[Math.min(S.si, SEASONS.length - 1)].tag}，${S.si + 1} 年。你打过、拼过、被记住过，但那座墙始终没有倒。<b>至暗时刻，最终写进了历史。</b>` };
   }
   var INTL_DEPTH_N = { 1: "小组赛", 2: "八强", 3: "四强", 4: "决赛", 5: "冠军" };
   function careerPoster() {
@@ -17087,7 +17585,8 @@ header.top.compact>.theme-top{display:none}
       return null;
     };
     let prevTeam = null;
-    const years = SEASONS.map((sea, si) => {
+    const played = SEASONS.slice(0, Math.min(SEASONS.length, (S.si || 0) + 1));
+    const years = played.map((sea, si) => {
       const rows = log.filter((x) => x.si === si);
       const H = S.honors || {};
       let team = rows.length ? rows[rows.length - 1].team : null;
@@ -17128,7 +17627,7 @@ header.top.compact>.theme-top{display:none}
     <div class="po-hero" style="--i:1"><div class="po-title">${e.n}</div><div class="po-story">${e.d}</div></div>
     <div class="po-id" style="--i:2"><b>${meName()}</b> · ${POSN[S.pos] || ""} · ${(ORIGIN[S.origin] || {}).n || ""}${S.career ? ` · ${S.team || "—"}` : ""} · ${S.age} 岁</div>
     <div class="po-wall">${wall}</div>
-    <div class="po-years">${years}</div>
+    <div class="po-years${played.length > 5 ? " many" : ""}" style="grid-template-columns:repeat(${played.length},minmax(0,1fr))">${years}</div>
     <div class="po-stats" style="--i:9">${stats.map(([k, v]) => `<div><div class="k">${k}</div><div class="v mono">${v}</div></div>`).join("")}</div>
     <div class="po-sign" style="--i:10"><span>www.poxiao.lol</span><span>#破晓生涯</span><span class="mono">${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}</span></div>
   </div>`;
@@ -17147,7 +17646,7 @@ header.top.compact>.theme-top{display:none}
     const vets = S.world.LPL.flatMap((t) => t.players.filter((p) => p.age >= 26).map((p) => ({ ...p, t: t.name }))).sort((a, b) => b.age - a.age).slice(0, 5);
     return `${careerPoster()}${again}
   <div class="card">
-    <h2>五年成长<em>${meName()} · ${POSN[S.pos]}</em></h2>
+    <h2>生涯成长<em>${meName()} · ${POSN[S.pos]} · ${S.si + 1} 年</em></h2>
     <p class="note">生涯小分 ${S.career.w}−${S.career.l}${S.career.w + S.career.l < 18 ? '<span class="tag l">出场极少</span>' : ""} ·
       最佳常规赛排名 第 ${S.career.best === 99 ? "—" : S.career.best} 名${titleCount() ? ` · 冠军 ${titlesText()}` : ""}</p>
     <div class="attrs" style="margin-top:16px">${DIMS.map((d) => {
@@ -17402,7 +17901,7 @@ header.top.compact>.theme-top{display:none}
       ${DIMS.map((d) => {
       const b = trainBtn(d, P.ap);
       return `<button class="act" data-pretrain="${d}" ${b.dis ? 'disabled style="opacity:.34"' : ""} ${b.style}>
-        <div class="t">${b.title}${S.career && SEASONS[S.si] && SEASONS[S.si].dim === d ? ' <i class="apc" title="本季版本关键属性，训练收益 ×' + VER_TRAIN + '">版本 +' + Math.round((VER_TRAIN - 1) * 100) + "%</i>" : ""}</div><div class="d">${b.desc}</div></button>`;
+        <div class="t">${b.title}${S.career && SEASONS[S.si] && SEASONS[S.si].dim === d ? ' <i class="apc" title="本季版本关键属性，训练收益 ×' + VER_TRAIN + '">版本 +' + Math.round((VER_TRAIN - 1) * 100) + "%</i>" : ""}</div><div class="d">${b.desc}${PRE_SPLASH[d] ? ` · 顺带练${PRE_SPLASH[d].d}` : ""}</div></button>`;
     }).join("")}
       <button class="act" data-pre="rest" ${P.ap < apCost("rest") ? 'disabled style="opacity:.34"' : ""}>
         <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳${costRest()}</div></button>
@@ -17835,7 +18334,7 @@ header.top.compact>.theme-top{display:none}
     { sel: ".energy", t: "体能", d: "每个行动都累，比赛更累。掉到四成以下状态明显下滑；休息、网吧开黑、换个游戏都能回。行动点写在每个按钮上。" },
     TOUR_PRE[11],
     { sel: '[data-pre="rank"]', t: "打排位（1 点）", d: "三把排位：赢了涨分、输了掉分，五维都小涨一点。实力压得住分段就冲，卡在门槛附近先练。段位到宗师起，青训教练才会看你。" },
-    { sel: '[data-pretrain="操作"]', t: "训练（2 点）", d: "五个按钮各练一维：操作是对线与输出，运营是视野与节奏，心态是抗压与翻盘，指挥是全队乘数（比赛只取队内最高），体质是耐久。撞到天赋瓶颈会提示怎么突破。" },
+    { sel: '[data-pretrain="操作"]', t: "训练（2 点）", d: "五个按钮各练一维：操作是对线与输出，运营是视野与节奏，心态是抗压与翻盘，指挥是全队乘数（比赛只取队内最高），体质是耐久。职业前练一项还会顺带练另一项（操作带体质、运营带指挥）；进队以后每一项单独练，越往上越难。撞到天赋瓶颈会提示怎么突破。" },
     { sel: '[data-pre="stream"]', t: "直播（2 点）", d: "涨热度、赚礼物；热度沉淀成粉丝，粉丝决定谁来邀请你、也决定薪水的浮动。主播出身直播收益更高。" },
     { sel: '[data-pre="rest"]', t: "休息（1 点）", d: "清疲劳、稳心态。累了硬练收益会打折，还容易受伤。" },
     { sel: '[data-pre="boost"]', t: "接代练（2 点）", d: "来钱快，但手会糙、心会累；接到第三单会留下记录，进职业后可能被扒出来。" },
@@ -19110,6 +19609,10 @@ header.top.compact>.theme-top{display:none}
     };
     const of = $("off");
     if (of) of.onclick = doOffseason;
+    const _enc = $("encore");
+    if (_enc) _enc.onclick = encore;
+    const _ret = $("retire");
+    if (_ret) _ret.onclick = () => askConfirm("退役", `<b>${meName()}</b> 就此挂靴？之后是生涯名片，不能再回来。`, "退役", retireNow);
     st.querySelectorAll("[data-ef]").forEach((b) => b.onclick = () => {
       S.evFilter = b.dataset.ef;
       render();

@@ -278,6 +278,8 @@ export function inviteFloorOk(){
    在新曲线上是 76 / 87 / 91 / 94。不翻译的话中游队会在实力 62 就来签人（LPL 首发 70），
    机器人坐穿替补席，2×120 批测世界赛率从 21 掉到 12——被抓出来的。 */
 export const TIER_RANK = { acad:76, low:87, mid:91, top:94 };
+/* 两次邀请之间的冷却。原来 2 周；职业前压到 16 周后按周数缩到 1 周——批测抓的：一年里收到的邀请从 1.63 次掉到 1.25 次，上岸率跟着掉 */
+export const INVITE_CD = 1;
 export function rankCap(){
   const r = (S.pre && S.pre.rank) || 0;
   let t = TIER_ORDER[0];
@@ -322,7 +324,7 @@ export function addInvite(tier, reason, lg?){
   for(let i = 0; i < 8 && team && noRe[team]; i++) team = pickClub(tier, lg || undefined);
   if(!team || noRe[team]) return;
   P.invite = { tier, team, league: lg || null, reason, pending:true, week:P.week, expect:T.expect };
-  P.inviteCd = P.week + 2;
+  P.inviteCd = P.week + INVITE_CD;
   P.inviteN = (P.inviteN || 0) + 1;
   preLog(`<b>${team}</b>${lg&&lg!=="LPL"?`（${lg} 赛区）`:""} 看了你的比赛录像——${reason}。<b>他们邀请你去队里试训。</b>${
     lg&&lg!=="LPL"?`<br><span style="color:var(--ink-3)">跨国邀请：签了就是出海打职业。</span>`:""}`, "big");
@@ -1185,13 +1187,13 @@ export function regRollOffer(){
 /* 回到路人的前职业选手：赛段注册期里有队受伤缺人，会来找你顶班——短约一个赛段，打出来再谈 */
 export function checkTopUpInvite(){
   const P=S.pre; if(!P||!S.careerBak) return;
-  const w=P.week, reg=(w>=2&&w<=6)||(w>=11&&w<=15);   // 职业前日历上大致对应春 / 夏常规赛的前五周
+  const w=P.week, reg=(w>=2&&w<=5)||(w>=9&&w<=12);   // 职业前日历（16 周）上大致对应春 / 夏常规赛的前几周
   if(!reg||rnd()>=0.14) return;
   if(!canInvite("low")) return;
   const tier=fitTier("mid");
   const team=pickClub(tier); if(!team) return;
   P.invite={tier,team,league:null,reason:"队里有人受伤，需要人顶班",pending:true,week:w,expect:CLUB_TIERS[tier].expect,short:true};
-  P.inviteCd=w+2; P.inviteN=(P.inviteN||0)+1;
+  P.inviteCd=w+INVITE_CD; P.inviteN=(P.inviteN||0)+1;
   preLog(`<b>${team}</b> 的首发受伤了，他们想让你去<b>顶班</b>——<b>短约一个赛段</b>，打出来再谈长的。`,"big");
   render();
 }

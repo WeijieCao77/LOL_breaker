@@ -404,6 +404,7 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 .tp-n{font-weight:700;font-size:13px;margin-top:6px;color:var(--gold-hi)}
 .tp-y{font-size:10.5px;color:var(--ink-3);letter-spacing:.08em;margin-top:2px}
 .po-years{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);margin:16px 0 14px;border:1px solid var(--line)}
+@media(max-width:560px){.po-years.many{grid-template-columns:repeat(4,minmax(0,1fr))!important}}   /* 再战到 S19 是 8 年：手机上两行 */
 .yr{background:rgba(var(--deep-rgb),.92);padding:9px 8px;min-width:0;font-size:11.5px}
 .yr.won{background:linear-gradient(180deg,rgba(var(--gold-rgb),.18),rgba(var(--deep-rgb),.92))}
 .yr-t{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:11px;letter-spacing:.14em;color:var(--gold)}

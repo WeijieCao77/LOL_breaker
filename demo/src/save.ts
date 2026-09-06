@@ -48,6 +48,17 @@ export function migrate(blob) {
   if (blob.S && blob.S.career && blob.S.yearBase === undefined) {
     blob.S.yearBase = PRE_YEAR;
   }
+  // 职业前一年 20 周 → 14 周（2026-09-06）。正在职业前的老档按比例换算周数、冷却和赛程，
+  // 别让一个停在第 17 周的档读出来变成「第 17/14 周」。已签约的档不受影响。
+  if (blob.S && blob.S.step === "pre" && blob.S.pre && (blob.S.preLen || 20) !== PRE_YEAR) {
+    const from = blob.S.preLen || 20, k = PRE_YEAR / from, P = blob.S.pre;
+    const sc = (w) => Math.max(1, Math.min(PRE_YEAR, Math.round(w * k)));
+    if (typeof P.week === "number") P.week = sc(P.week);
+    ["inviteCd", "selfRecCd"].forEach((f) => { if (typeof P[f] === "number") P[f] = sc(P[f]); });
+    if (P.invite && typeof P.invite.week === "number") P.invite.week = sc(P.invite.week);
+    Object.values(blob.S.cups || {}).forEach((c: any) => { if (c && typeof c.nextWeek === "number") c.nextWeek = Math.max(P.week + 1, sc(c.nextWeek)); });
+  }
+  if (blob.S) blob.S.preLen = PRE_YEAR;
   if (blob.ver === 3) {
     const s = blob.S;
     if (s.step === "pre" && typeof s.age === "number") s.age += 1;

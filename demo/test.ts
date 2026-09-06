@@ -62,12 +62,20 @@ function playOne(opts?) {
   S = A.S();
 
   let guard = 0, preYears = 0, rankUps = 0, lockers = 0;
+  let lastPreWeek = 1, signAt = 0, signRank = 0, signFans = 0;   // 第一次签约：职业前累计第几周、当时段位读数与粉丝
+  let w1: any = null, y1Inv = 0, y1Try = 0, y1Pass = 0;   // 第一年开窗那周的快照、第一年收到几次邀请 / 试训几次 / 过几次
   let signups = 0, cupMatches = 0, preps = 0, cupPick = 0;
   let invites = 0, tryPick = 0, dealPick = 0, transfers = 0, renewTalks = 0;
   let maxRank = 0, scrims = 0, trials = 0, trialWins = 0, mateInj = 0, benchWeeks = 0, _trialOn = false, _injOn = false;
   const cupRuns = [], grades = [], deals = [];
   while (A.S().step !== "end" && guard++ < 40000) {
     S = A.S();
+    if (S.step === "pre" && S.pre) lastPreWeek = S.pre.week;
+    if (S.step === "pre" && S.pre && preYears === 0 && !w1 && S.pre.week >= A.WND_OPEN) {
+      const av = A.DIMS.reduce((a: number, d: string) => a + S.attrs[d], 0) / A.DIMS.length;
+      w1 = { rank: Math.round(S.pre.rank * 10) / 10, fans: Math.round(S.fans), score: Math.round(A.preScore()), attrs: Math.round(av * 10) / 10, fat: Math.round(S.fatigue) };
+    }
+    if (!signAt && S.career) { signAt = preYears * A.PRE_YEAR + lastPreWeek; signRank = Math.round(((S.pre && S.pre.rank) || 0) * 10) / 10; signFans = Math.round(S.fans || 0); }
     if (opts.hook) opts.hook(S, A, guard);   // 场景测试用：每步先给外部一次改状态的机会
     if (S.scrim && S.scrim.trial) { if (!_trialOn) trials++; _trialOn = true; }
     else { if (_trialOn && S.promoted && !S.understudy) trialWins++; _trialOn = false; }
@@ -102,13 +110,13 @@ function playOne(opts?) {
       // 就把整年的比赛机会扔掉——反正拒了后面还会有别的队来。
       // （机器人如果一律接受，测出来的就永远是「最贪」那条路。）
       if (iv.tier === "acad" && S.pre.week < 15) continue;
-      invites++;
+      invites++; if (preYears === 0 && !signAt) y1Inv++;
       A.startTryout(iv.tier, iv.team, iv.expect);   // 来了就去，测试要覆盖到
       continue;
     }
     if (S.tryout) {
       const t = S.tryout;
-      if (t.done) { grades.push(t.result.g); A.afterTryout(); }
+      if (t.done) { grades.push(t.result.g); if (preYears === 0 && !signAt) { y1Try++; if (/[AB]/.test(String(t.result.g))) y1Pass++; } A.afterTryout(); }
       else A.resolveTryoutDay(tryPick++ % 3);       // 轮着选，覆盖三种选项
       continue;
     }
@@ -141,7 +149,7 @@ function playOne(opts?) {
           preps++; A.doSquad(["scrim", "vod", "drill", "duo"][preps % 4]);
         }
         else if (S.fatigue > 75) A.preAct("rest");
-        else A.preAct(S.pre.week % 4 === 0 ? "stream" : "rank");
+        else A.preAct(S.pre.week % Math.max(2, Math.round(A.PRE_YEAR / 5)) === 0 ? "stream" : "rank");   // 每年约五分之一的周开播（跟年长走，20 周时是每 4 周一次）
         // 异化点数后剩 1 点付不起 2 点行动：落到 1 点的排位，别空转
         if (S.pre.ap === _b) A.preAct("rank");
         if (S.pre.ap === _b) S.pre.ap = 0;
@@ -192,7 +200,7 @@ function playOne(opts?) {
       else A.playGame();
     } else if (S.step === "offseason") {
       // 休赛期现在是可玩的几周：先把结算页点掉，再把每周的行动点用完
-      if (!S.off) { A.doOffseason(); continue; }
+      if (!S.off) { if (opts.encore && S.si === A.BASE_LAST && !S.extended) A.encore(); else A.doOffseason(); continue; }
       // 合同到期续约：测试里默认接受（留在想留你的队）；opts.declineRenew 走「拒绝进市场」
       if (S.pendingRenew && !S.deal) {
         if (opts.declineRenew) A.declineRenew();
@@ -219,7 +227,8 @@ function playOne(opts?) {
   }
   S = A.S();
   return {
-    ok: S.step === "end", steps: guard, preYears, rankUps, lockers,
+    ok: S.step === "end", steps: guard, preYears, rankUps, lockers, signAt, signRank, signFans, w1, y1Inv, y1Try, y1Pass,
+    si: S.si, extended: !!S.extended,
     signups, cupMatches, preps, cupRuns,
     invites, grades, deals, transfers,
     scrims, trials, trialWins, mateInj, benchWeeks, maxRank: Math.round(maxRank*10)/10,
@@ -288,12 +297,50 @@ function unitChecks() {
   if (pick(r1) !== pick(r2)) bad.push("同种子两局结果不同（有随机没走 rnd）：\n     " + pick(r1) + "\n     " + pick(r2));
   const r3 = playOne({ seed: 4243 });
   if (pick(r1) === pick(r3)) bad.push("换了种子结果还一样（种子没起作用）");
+  // 再战三年：五年到了选「再打」，要能一路打到 S19 收官、结局照常出；没选的档仍然停在 S16
+  const r4 = playOne({ seed: 4242, encore: true });
+  if (!r4.ok) bad.push("再战三年没走到结局");
+  if (r4.signAt && !r4.extended) bad.push("机器人选了再战但 S.extended 没记上");
+  if (r4.signAt && r4.extended && r4.si !== A.SEASONS.length - 1) bad.push("再战后没打到 S19 就结束了：si=" + r4.si);
+  if (r4.signAt && r4.steps > 4000) bad.push("再战一局的步数异常：" + r4.steps);
+  if (r1.si !== A.BASE_LAST && r1.signAt) bad.push("没选再战的档没停在 S16：si=" + r1.si);
   return bad;
 }
 
 export { playOne, unitChecks, A, SEED };
 
-if (isMain) {
+/* 批测：npx tsx demo/test.ts --batch 30
+   固定种子 1..N 各跑一局，只打统计不做断言。用来校准职业前压缩（20→14 周）前后的上岸节奏：
+   一年内上岸率、上岸周数 p50/p90、上岸时段位读数、结局分布——改前改后各跑一次对比。 */
+function batch(n: number) {
+  const rs = [];
+  for (let i = 1; i <= n; i++) { rs.push(playOne({ seed: 1000 + i })); process.stderr.write("."); }
+  process.stderr.write("\n");
+  const q = (arr: number[], p: number) => { const a = arr.slice().sort((x, y) => x - y); return a.length ? a[Math.min(a.length - 1, Math.floor(p * (a.length - 1)))] : 0; };
+  const signed = rs.filter(r => r.signAt > 0);
+  const weeks = signed.map(r => r.signAt);
+  const yr = A.PRE_YEAR;
+  const count = (f: (r: any) => string) => { const m: Record<string, number> = {}; rs.forEach(r => { const k = f(r); m[k] = (m[k] || 0) + 1; }); return m; };
+  console.log(JSON.stringify({
+    runs: n, preYear: yr, apPre: A.AP_PRE,
+    signedRate: +(signed.length / n).toFixed(2),
+    signedYear1: +(signed.filter(r => r.signAt <= yr).length / n).toFixed(2),
+    signAtP50: q(weeks, 0.5), signAtP90: q(weeks, 0.9), signAtMean: +(weeks.reduce((a, b) => a + b, 0) / Math.max(1, weeks.length)).toFixed(1),
+    signRankMean: +(signed.reduce((a, r) => a + r.signRank, 0) / Math.max(1, signed.length)).toFixed(1),
+    signFansMean: Math.round(signed.reduce((a, r) => a + r.signFans, 0) / Math.max(1, signed.length)),
+    preYears: count(r => String(r.preYears)),
+    w1: (() => { const ws = rs.map(r => r.w1).filter(Boolean); const m = (k: string) => +(ws.reduce((a, w) => a + w[k], 0) / Math.max(1, ws.length)).toFixed(1); return { n: ws.length, rank: m("rank"), fans: m("fans"), score: m("score"), attrs: m("attrs"), fat: m("fat") }; })(),
+    y1: { invites: +(rs.reduce((a, r) => a + r.y1Inv, 0) / n).toFixed(2), tryouts: +(rs.reduce((a, r) => a + r.y1Try, 0) / n).toFixed(2), passed: +(rs.reduce((a, r) => a + r.y1Pass, 0) / n).toFixed(2) },
+    endings: count(r => r.ending),
+    titlesMean: +(rs.reduce((a, r) => a + r.titles.length, 0) / n).toFixed(2),
+    stepsMean: Math.round(rs.reduce((a, r) => a + r.steps, 0) / n),
+  }, null, 1));
+}
+
+if (isMain && process.argv.includes("--batch")) {
+  const i = process.argv.indexOf("--batch");
+  batch(parseInt(process.argv[i + 1] || "20", 10) || 20);
+} else if (isMain) {
   console.log("随机种子：", SEED, "（SEED=" + SEED + " npm test 可原样重放）");
   const unit = unitChecks();
   if (unit.length) { console.error("单元检查失败：\n - " + unit.join("\n - ")); process.exit(1); }
