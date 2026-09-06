@@ -1,6 +1,6 @@
 import { checkAch } from "./achieve";
 import { addStaff, syncRelations } from "./clout";
-import { DIMS, addFans, addFat, avg, capOf, clamp, makeRookie, myRoster, myTeam, pushEvent, q1, render, tacOf, teamTenure } from "./main";
+import { DIMS, addFans, addFat, avg, capOf, clamp, makeRookie, myRoster, myTeam, pushEvent, q1, render, tacOf, teamTenure, champCoreOn } from "./main";
 import { rnd } from "./rng";
 import { queueFollowUp } from "./press";
 import { diffOf, pay, snapshot } from "./random";
@@ -67,6 +67,7 @@ export function syncTrust(){
    人走得突然是运气，人走得有征兆才是后果。                            */
 export function checkMateExit(){
   if(!S.career||!S.team||!S.trust) return;
+  if(champCoreOn()) return;   // 冠军班底：这一年谁也不走
   const t=myTeam();
   if(!t||!t.players) return;
   const mates=t.players.filter(p=>!p.me);

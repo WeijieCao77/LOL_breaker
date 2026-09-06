@@ -110,6 +110,9 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260907i", at:"2026-09-07", items:[
+    "冠军班底：拿到国际冠军之后的一年，转会窗口不动你的队、队友不会离队、休赛期默契不回落，同一套人接着打整队多一截底气，连冠之后更多；你自己的转会照旧由你选——走了，班底自然散。顶栏「效力」一行会标「冠军班底」。王朝从这里开始"
+  ]},
   {v:"v20260907h", at:"2026-09-07", items:[
     "天花板上抬（玩家实锤：练到 S16 综合只有 76——那就是天赋上限，不是练得不够）：每一维的上限都抬了一截，赛段经验顶开上限的池子更大，24–25 岁的训练折扣放松。练到底的人现在能站到明星那一档，再战三年的老将也还在长"
   ]},
@@ -1119,13 +1122,47 @@ export function powerCore(players,fatigue=0,verFav=null,team=null){
      而现实里他们是中下游。玩家原话：「一线联赛的队伍实力包括外赛区的队伍实力
      要重新设计思考」——这就是那个缺口。 */
   const wrAdj = (team && team.wr!==undefined) ? (team.wr-0.5)*WR_WEIGHT : 0;
-  const raw=(s/wt+dynastyBonus(players)+wrAdj)*(1+(cmd-68)/520)*(1-clamp(fatigue,0,100)*0.0022)*tm*sq;
+  const core=mine?dynCoreBonus():0;   // 冠军班底：同一套人接着打，整队多一截底气（连冠更多）
+  const raw=(s/wt+dynastyBonus(players)+wrAdj+core)*(1+(cmd-68)/520)*(1-clamp(fatigue,0,100)*0.0022)*tm*sq;
   /* 2026-09-07 难度调整：顶端压缩。五个 85–90 的明星凑在一起战力 87，世界第八才 73——第一名对谁都是天堑，
      五年世界冠军率 5%、双冠 0。78 分以上的部分按 0.45 折算（所有队一视同仁，你的队到了那里也一样）：
      87 → 82，第八名不动。强队仍然强，但赢它不再是 BO5 里 20% 的事。 */
   return raw>POWER_KNEE?POWER_KNEE+(raw-POWER_KNEE)*POWER_SLOPE:raw;
 }
 export const POWER_KNEE=78, POWER_SLOPE=0.45;
+/* ---------- 冠军班底（2026-09-07 作者拍板：王朝要到 10–15%）----------
+   批测抓的病因：拿了冠军之后队伍会散——转会 AI 给你的队买人换人、二队提人顶掉队友、休赛期默契回落、
+   你自己也被豪门叫走。现实里的王朝都是同一套人打三年。所以国际冠军之后的一年（每再夺一次续一年）：
+   · 转会 AI 不动你的队（不买人换首发、不从二队提人顶掉队友）；队友不因信任低而离队
+   · 休赛期默契 / 战术不回落
+   · 只要首发里至少 3 个还是夺冠时的人、你还在这支队，整队战力 +DYN_CORE（「冠军底气」）
+   你自己的转会不拦——豪门照样来叫，走不走是你的选择；走了班底自然散。 */
+export const DYN_CORE=4, DYN_CORE_2=5;   // 第一年 +4，连冠之后 +5（批测：+2.5 时王朝仍是 0，+5/6.5 到 22% 过头，+4/5 落在 10–15%）
+/* 当前连冠数：到上个赛季为止连着拿了几年世界冠军（这个赛季还没打） */
+export function worldsStreakNow(){
+  const ys=(S.career&&S.career.worldsYears)||[]; let n=0;
+  for(let k=S.si-1;k>=0&&ys.includes(k);k--) n++;
+  return n;
+}
+export function dynCoreBonus(){ return champCoreOn()?(worldsStreakNow()>=2?DYN_CORE_2:DYN_CORE):0; }
+export function champCoreStart(){
+  try{
+    const ids=myRoster().filter(p=>!p.me).map(p=>p.id);
+    S.champCore={si:S.si,team:S.team,ids};
+    pushEvent(`<b>冠军班底。</b>俱乐部宣布留住这套首发：接下来一年转会窗口不会动你的队，默契不会回落，
+      整队带着冠军底气上场。<span style="color:var(--ink-3)">王朝都是同一套人打出来的——你不走，他们就都在。</span>`,"big","王朝");
+    if(typeof addTrustAll==="function") addTrustAll(6);
+  }catch(e){}
+}
+export function champCoreOn(){
+  const c=S&&S.champCore; if(!c||!S.career||!S.team) return false;
+  if(S.team!==c.team||S.si>c.si+1) return false;
+  try{
+    const now=myRoster().filter(p=>!p.me).map(p=>p.id);
+    const keep=now.filter(id=>c.ids.includes(id)).length;
+    return keep>=3;
+  }catch(e){ return false; }
+}
 
 /* ================= 世界 ================= */
 export function leagueBaseline(w){
@@ -5718,7 +5755,7 @@ export function hud(){
   const isPre=(S.step==="pre"||S.step==="offer"||(!S.career&&S.pre));
   const np=nowPhase();
   const idLine=`<div class="h-id"><div class="who">${meName()}<small>${POSN[S.pos]||""} · ${S.age} 岁</small></div>
-    <div class="team">${isPre?(S.careerBak?`自由身 · 上一站 <b>${(S.pre&&S.pre.exPro&&S.pre.exPro.team)||"—"}</b> · 上分、开播、等电话`:`还没有战队 · 先打上分、攒人气、被人看见`):`效力 <b>${S.team}</b> · 本季 <span class="mono">${S.record?S.record.w:0}–${S.record?S.record.l:0}</span>`}</div></div>`;
+    <div class="team">${isPre?(S.careerBak?`自由身 · 上一站 <b>${(S.pre&&S.pre.exPro&&S.pre.exPro.team)||"—"}</b> · 上分、开播、等电话`:`还没有战队 · 先打上分、攒人气、被人看见`):`效力 <b>${S.team}</b> · 本季 <span class="mono">${S.record?S.record.w:0}–${S.record?S.record.l:0}</span>${champCoreOn()?' · <span class="tag g" title="夺冠班底还在：转会窗口不动你的队、默契不回落、整队带着冠军底气">冠军班底</span>':''}`}</div></div>`;
   const nowLine=`<div class="h-now ${np.urgent?'urgent':''}"><div class="ph">${np.tag}</div>
     <div class="big">${np.phase}${np.detail?`<small>${np.detail}</small>`:""}</div>
     <button class="h-cta" id="hudcta" hidden></button></div>`;

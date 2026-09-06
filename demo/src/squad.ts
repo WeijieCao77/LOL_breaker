@@ -3,7 +3,7 @@ import { relMod, syncRelations } from "./clout";
 import { cupTeamName } from "./cup";
 import { formMul, myFormMul } from "./form";
 import { findTeam } from "./intl";
-import { POSN, PW_SHOW, SEASONS, addFat, apCost, apTag, btkNote, cap, capOf, clamp, costBits, dynastyBonus, myRoster, power, pushEvent, pwShow, q1, render, strength, tacAdd, tacOf, versionFit } from "./main";
+import { POSN, PW_SHOW, SEASONS, addFat, apCost, apTag, btkNote, cap, capOf, clamp, costBits, dynastyBonus, myRoster, power, pushEvent, pwShow, q1, render, strength, tacAdd, tacOf, versionFit, champCoreOn } from "./main";
 import { rnd } from "./rng";
 import { fireEvent } from "./random";
 import { mateInjuryHit } from "./rotation";
@@ -45,6 +45,7 @@ export function addSquad(k,n){
 }
 export function squadDecay(){
   if(!S.squad) return;
+  if(champCoreOn()) return;   // 冠军班底：同一套人接着打，默契不回落
   ["syn","tac"].forEach(k=>{ S.squad[k]=q1(clamp(S.squad[k]+(50-S.squad[k])*SQUAD_DECAY,0,100)); });
 }
 

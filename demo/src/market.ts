@@ -1,6 +1,6 @@
 import { syncRelations } from "./clout";
 import { pw } from "./intl";
-import { DIMS, POS, POSN, SEASONS, avg, cap, power, pushEvent, q1 } from "./main";
+import { DIMS, POS, POSN, SEASONS, avg, cap, power, pushEvent, q1, champCoreOn } from "./main";
 import { rnd } from "./rng";
 import { S } from "./state";
 import { syncTrust } from "./team";
@@ -44,7 +44,7 @@ export function aiPromotions(){
     POS.forEach(x=>{
       const a=acad.players.find(q=>q.pos===x.k&&!q.me), f=par.players.find(q=>q.pos===x.k);
       if(!a||!f||f.me) return;
-      if((mktIsMine(par)||mktIsMine(acad))&&x.k===S.pos) return;   // 主角的位置不由 AI 动
+      if((mktIsMine(par)||mktIsMine(acad))&&(x.k===S.pos||champCoreOn())) return;   // 主角的位置不由 AI 动；冠军班底期间整队不动
       if(mktOvr(a)<mktOvr(f)+MKT.promoGap||rnd()>=MKT.promoP) return;
       par.players=par.players.map(q=>q===f?a:q);
       acad.players=acad.players.map(q=>q===a?f:q);
@@ -83,7 +83,7 @@ export function aiTransfers(){
       if(rnd()>=MKT.xferP) continue;
       const buyers=top.filter(b=>{
         const cur=b.players.find(q=>q.pos===c.p.pos);
-        return cur&&!cur.me&&!(mktIsMine(b)&&c.p.pos===S.pos)&&mktOvr(cur)<mktOvr(c.p)-1;
+        return cur&&!cur.me&&!(mktIsMine(b)&&(c.p.pos===S.pos||champCoreOn()))&&mktOvr(cur)<mktOvr(c.p)-1;
       });
       if(!buyers.length) continue;
       const b=buyers[Math.floor(rnd()*buyers.length)];

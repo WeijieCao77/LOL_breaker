@@ -4974,6 +4974,7 @@ header.top.compact>.theme-top{display:none}
   }
   function squadDecay() {
     if (!S.squad) return;
+    if (champCoreOn()) return;
     ["syn", "tac"].forEach((k) => {
       S.squad[k] = q1(clamp(S.squad[k] + (50 - S.squad[k]) * SQUAD_DECAY, 0, 100));
     });
@@ -8640,6 +8641,7 @@ header.top.compact>.theme-top{display:none}
   }
   function checkMateExit() {
     if (!S.career || !S.team || !S.trust) return;
+    if (champCoreOn()) return;
     const t = myTeam();
     if (!t || !t.players) return;
     const mates = t.players.filter((p) => !p.me);
@@ -10328,6 +10330,7 @@ header.top.compact>.theme-top{display:none}
     }
     S.career.titles.push(`${SEASONS[S.si].tag} ${name}`);
     S.career[I.type] = (S.career[I.type] || 0) + 1;
+    champCoreStart();
     const yk = I.type === "msi" ? "msiYears" : "worldsYears";
     S.career[yk] = (S.career[yk] || []).concat([S.si]);
     {
@@ -12289,7 +12292,7 @@ header.top.compact>.theme-top{display:none}
       POS.forEach((x) => {
         const a = acad.players.find((q) => q.pos === x.k && !q.me), f = par.players.find((q) => q.pos === x.k);
         if (!a || !f || f.me) return;
-        if ((mktIsMine(par) || mktIsMine(acad)) && x.k === S.pos) return;
+        if ((mktIsMine(par) || mktIsMine(acad)) && (x.k === S.pos || champCoreOn())) return;
         if (mktOvr(a) < mktOvr(f) + MKT.promoGap || rnd() >= MKT.promoP) return;
         par.players = par.players.map((q) => q === f ? a : q);
         acad.players = acad.players.map((q) => q === a ? f : q);
@@ -12338,7 +12341,7 @@ header.top.compact>.theme-top{display:none}
         if (rnd() >= MKT.xferP) continue;
         const buyers = top.filter((b2) => {
           const cur2 = b2.players.find((q) => q.pos === c.p.pos);
-          return cur2 && !cur2.me && !(mktIsMine(b2) && c.p.pos === S.pos) && mktOvr(cur2) < mktOvr(c.p) - 1;
+          return cur2 && !cur2.me && !(mktIsMine(b2) && (c.p.pos === S.pos || champCoreOn())) && mktOvr(cur2) < mktOvr(c.p) - 1;
         });
         if (!buyers.length) continue;
         const b = buyers[Math.floor(rnd() * buyers.length)];
@@ -13029,6 +13032,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260907i", at: "2026-09-07", items: [
+      "冠军班底：拿到国际冠军之后的一年，转会窗口不动你的队、队友不会离队、休赛期默契不回落，同一套人接着打整队多一截底气，连冠之后更多；你自己的转会照旧由你选——走了，班底自然散。顶栏「效力」一行会标「冠军班底」。王朝从这里开始"
+    ] },
     { v: "v20260907h", at: "2026-09-07", items: [
       "天花板上抬（玩家实锤：练到 S16 综合只有 76——那就是天赋上限，不是练得不够）：每一维的上限都抬了一截，赛段经验顶开上限的池子更大，24–25 岁的训练折扣放松。练到底的人现在能站到明星那一档，再战三年的老将也还在长"
     ] },
@@ -14051,11 +14057,45 @@ header.top.compact>.theme-top{display:none}
     const rm = mine && true ? relMod() : 1;
     const sq = (1 + (syn - 50) / 950) * (1 + (tac - 50) / 1100) * rm;
     const wrAdj = team && team.wr !== void 0 ? (team.wr - 0.5) * WR_WEIGHT : 0;
-    const raw = (s / wt + dynastyBonus(players) + wrAdj) * (1 + (cmd - 68) / 520) * (1 - clamp(fatigue, 0, 100) * 22e-4) * tm * sq;
+    const core = mine ? dynCoreBonus() : 0;
+    const raw = (s / wt + dynastyBonus(players) + wrAdj + core) * (1 + (cmd - 68) / 520) * (1 - clamp(fatigue, 0, 100) * 22e-4) * tm * sq;
     return raw > POWER_KNEE ? POWER_KNEE + (raw - POWER_KNEE) * POWER_SLOPE : raw;
   }
   var POWER_KNEE = 78;
   var POWER_SLOPE = 0.45;
+  var DYN_CORE = 4;
+  var DYN_CORE_2 = 5;
+  function worldsStreakNow() {
+    const ys = S.career && S.career.worldsYears || [];
+    let n = 0;
+    for (let k = S.si - 1; k >= 0 && ys.includes(k); k--) n++;
+    return n;
+  }
+  function dynCoreBonus() {
+    return champCoreOn() ? worldsStreakNow() >= 2 ? DYN_CORE_2 : DYN_CORE : 0;
+  }
+  function champCoreStart() {
+    try {
+      const ids = myRoster().filter((p) => !p.me).map((p) => p.id);
+      S.champCore = { si: S.si, team: S.team, ids };
+      pushEvent(`<b>冠军班底。</b>俱乐部宣布留住这套首发：接下来一年转会窗口不会动你的队，默契不会回落，
+      整队带着冠军底气上场。<span style="color:var(--ink-3)">王朝都是同一套人打出来的——你不走，他们就都在。</span>`, "big", "王朝");
+      if (typeof addTrustAll === "function") addTrustAll(6);
+    } catch (e) {
+    }
+  }
+  function champCoreOn() {
+    const c = S && S.champCore;
+    if (!c || !S.career || !S.team) return false;
+    if (S.team !== c.team || S.si > c.si + 1) return false;
+    try {
+      const now = myRoster().filter((p) => !p.me).map((p) => p.id);
+      const keep = now.filter((id) => c.ids.includes(id)).length;
+      return keep >= 3;
+    } catch (e) {
+      return false;
+    }
+  }
   function leagueBaseline(w) {
     const b = {};
     Object.keys(w).forEach((lg) => {
@@ -18821,7 +18861,7 @@ header.top.compact>.theme-top{display:none}
     const isPre = S.step === "pre" || S.step === "offer" || !S.career && S.pre;
     const np = nowPhase();
     const idLine = `<div class="h-id"><div class="who">${meName()}<small>${POSN[S.pos] || ""} · ${S.age} 岁</small></div>
-    <div class="team">${isPre ? S.careerBak ? `自由身 · 上一站 <b>${S.pre && S.pre.exPro && S.pre.exPro.team || "—"}</b> · 上分、开播、等电话` : `还没有战队 · 先打上分、攒人气、被人看见` : `效力 <b>${S.team}</b> · 本季 <span class="mono">${S.record ? S.record.w : 0}–${S.record ? S.record.l : 0}</span>`}</div></div>`;
+    <div class="team">${isPre ? S.careerBak ? `自由身 · 上一站 <b>${S.pre && S.pre.exPro && S.pre.exPro.team || "—"}</b> · 上分、开播、等电话` : `还没有战队 · 先打上分、攒人气、被人看见` : `效力 <b>${S.team}</b> · 本季 <span class="mono">${S.record ? S.record.w : 0}–${S.record ? S.record.l : 0}</span>${champCoreOn() ? ' · <span class="tag g" title="夺冠班底还在：转会窗口不动你的队、默契不回落、整队带着冠军底气">冠军班底</span>' : ""}`}</div></div>`;
     const nowLine = `<div class="h-now ${np.urgent ? "urgent" : ""}"><div class="ph">${np.tag}</div>
     <div class="big">${np.phase}${np.detail ? `<small>${np.detail}</small>` : ""}</div>
     <button class="h-cta" id="hudcta" hidden></button></div>`;

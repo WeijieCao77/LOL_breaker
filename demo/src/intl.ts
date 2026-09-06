@@ -1,7 +1,7 @@
 import { checkAch } from "./achieve";
 import { gicon } from "./avatar";
 import { DATA } from "./data";
-import { FAN_TIERS, MID_WEEKS, SEASONS, SPREAD, breakthrough, clamp, enterBreak, enterPrep, isBenched, power, pushEvent, q1, queueBreakNews, render } from "./main";
+import { FAN_TIERS, MID_WEEKS, SEASONS, SPREAD, breakthrough, clamp, enterBreak, enterPrep, isBenched, power, pushEvent, q1, queueBreakNews, render, champCoreStart } from "./main";
 import { rnd } from "./rng";
 import { addRingTitle, setBreakAgenda } from "./rotation";
 import { PRIZE_MSI, PRIZE_W, addMoney } from "./shop";
@@ -765,6 +765,7 @@ export function crownChampion(){
   }
   S.career.titles.push(`${SEASONS[S.si].tag} ${name}`);
   S.career[I.type]= (S.career[I.type]||0)+1;
+  champCoreStart();   // 冠军班底：接下来一年这套人不散
   // 记年份，供「双冠王 / 卫冕 / 三冠」判定
   const yk=I.type==="msi"?"msiYears":"worldsYears";
   S.career[yk]=(S.career[yk]||[]).concat([S.si]);
