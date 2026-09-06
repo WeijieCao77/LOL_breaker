@@ -1,8 +1,10 @@
 /* 浏览器入口：装数据、开局、挂声音与存档接力。引擎模块本身不在这里执行任何东西，无头测试直接 import 它们。 */
 import { audioInit } from "./audio";
+import { bindTheme } from "./theme";
 import { screenCreate } from "./main";
 import { xferPull } from "./save";
 
+bindTheme();    // 深 / 浅 / 米：读设备上的选择，挂上切换控件的委托
 screenCreate();
 audioInit();   // 声音、作者栏版本号、更新日志浮窗
 xferPull();     // 老域名上的存档接力（只在 www 上生效）

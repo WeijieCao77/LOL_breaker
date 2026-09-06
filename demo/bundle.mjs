@@ -46,7 +46,9 @@ function assemble(js) {
   out = out.replace(/<title>[\s\S]*?<\/title>[ \t]*\n?/, "");
   const head = '<!doctype html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n'
     + '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
-    + '<meta name="theme-color" content="#0B1220">\n<meta name="color-scheme" content="dark">\n'
+    + '<meta name="theme-color" content="#0B1220">\n<meta name="color-scheme" content="dark light">\n'
+    // 深 / 浅 / 米：首屏前就把设备上记的主题画上去，浅色页面不会先黑一下再变白（server.js 会把这段内联脚本的 sha256 加进 CSP）
+    + '<script>try{var t=localStorage.getItem("poxiao_theme");if(t==="light"||t==="cream"){document.documentElement.setAttribute("data-theme",t);document.querySelector(\'meta[name="theme-color"]\').setAttribute("content",t==="light"?"#E6EAF0":"#E9E1D0");}}catch(e){}</script>\n'
     + '<link rel="icon" href="/favicon.ico">\n<title>' + title + "</title>\n";
   if (!out.includes('<div class="wrap">')) throw new Error("wrap div not found");
   out = head + out.replace('<div class="wrap">', '</head>\n<body>\n<div class="wrap">') + "\n</body>\n</html>\n";

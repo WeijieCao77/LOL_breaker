@@ -255,6 +255,22 @@ function unitChecks() {
       if (overlap(L.hole, L.card, ch, cw, vw)) bad.push(`导览说明卡压住聚光框 ${vw}×${vh} r=${r.top}-${r.bottom} hole=${L.hole.top}+${L.hole.height} card=${L.card.top}`);
     });
   });
+  // 三套配色（theme.css）：浅色 / 米色里正文三档、金、青、红、橙和七个域色在面板和地面上都得 ≥ 4.5:1；
+  // 深色只查三档墨色（红在深色面板上本来就只有 3.3，是历史问题，不在这次范围里）。改 token 时这里先炸。
+  try {
+    const css = fs.readFileSync(path.join(HERE, "theme.css"), "utf8");
+    const block = (sel: string) => { const i = css.indexOf(sel + "{"); return i < 0 ? "" : css.slice(i, css.indexOf("}", i)); };
+    const toks = (b: string) => { const m: Record<string, string> = {}; b.replace(/--([a-z0-9-]+):\s*(#[0-9a-fA-F]{6})/g, (_: string, k: string, v: string) => { m[k] = v; return ""; }); return m; };
+    const lum = (h: string) => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+    const cr = (a: string, b: string) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    const root = toks(block(":root"));
+    const ALL = ["ink", "ink-2", "ink-3", "gold", "gold-hi", "cyan", "red", "dawn", "z-act", "z-me", "z-team", "z-world", "z-money", "z-rec", "z-auto"];
+    for (const [name, sel, keys] of [["深色", ":root", ["ink", "ink-2", "ink-3"]], ["浅色", '[data-theme="light"]', ALL], ["米色", '[data-theme="cream"]', ALL]] as [string, string, string[]][]) {
+      const t = { ...root, ...toks(block(sel)) };
+      if (!t.panel || !t.void) { bad.push("配色块 " + name + " 缺 --panel / --void"); continue; }
+      for (const k of keys) for (const bg of ["panel", "void"]) { const r = cr(t[k], t[bg]); if (!(r >= 4.5)) bad.push(`${name} --${k} ${t[k]} 在 --${bg} ${t[bg]} 上只有 ${r.toFixed(2)}:1`); }
+    }
+  } catch (e) { bad.push("配色对比度自检没跑起来：" + e); }
   const dirty = { S: { name: "x", log: ['<div class="hi">ok</div> <span style="color:var(--cyan)">c</span> <b>b</b><br>',
     '<img src=x onerror=alert(1)><a href="https://evil">link</a><div style="position:fixed;inset:0;background:#000">cover</div><span class="hi" onclick="x()">t</span><!-- c --><script>bad()</script>'] } };
   const out = A.sanitizeSave(dirty).S.log;

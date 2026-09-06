@@ -12,7 +12,7 @@ const html = fs.readFileSync(path.join(HERE, "career.html"), "utf8");
 const bad: string[] = [];
 const tick = (ms = 0) => new Promise(r => setTimeout(r, ms));
 
-function boot(opts: { width?: number; tracks?: string[] } = {}) {
+function boot(opts: { width?: number; tracks?: string[]; theme?: string } = {}) {
   const errors: string[] = [];
   const vc = new VirtualConsole();
   vc.on("jsdomError", (e: any) => errors.push(String(e && (e.detail && e.detail.stack || e.message) || e)));
@@ -28,6 +28,7 @@ function boot(opts: { width?: number; tracks?: string[] } = {}) {
       };
       window.scrollTo = () => {};
       window.HTMLElement.prototype.scrollIntoView = function () {};
+      if (opts.theme) { try { window.localStorage.setItem("poxiao_theme", opts.theme); } catch (e) {} }   // 设备上记的配色
     },
   });
   const w: any = dom.window;
@@ -121,6 +122,32 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
   dom.window.close();
 }
 
+/* ---------------- 配色：深 / 浅 / 米 ---------------- */
+{
+  const { dom, w, d, errors } = boot({ theme: "light" });
+  await tick(50);
+  const root = d.documentElement;
+  if (root.getAttribute("data-theme") !== "light") bad.push("设备上记的浅色首屏没画上（<head> 里那行脚本）：" + root.getAttribute("data-theme"));
+  const meta = d.querySelector('meta[name="theme-color"]');
+  if (!meta || meta.getAttribute("content") !== "#E6EAF0") bad.push("浅色的 theme-color 没跟上：" + (meta && meta.getAttribute("content")));
+  const top = d.querySelector<HTMLElement>('.theme-top [data-theme-set="light"]');
+  if (!top) bad.push("页头没有配色控件"); else if (!top.classList.contains("on") || top.getAttribute("aria-checked") !== "true") bad.push("页头控件没按当前配色对齐");
+  d.querySelector<HTMLElement>('.theme-top [data-theme-set="cream"]')!.click();
+  if (root.getAttribute("data-theme") !== "cream") bad.push("点「米」没换成米色");
+  if (w.localStorage.getItem("poxiao_theme") !== "cream") bad.push("换配色没记到 localStorage");
+  d.querySelector<HTMLElement>(".theme-top [data-theme-cycle]")!.click();   // 米 → 深
+  if (root.hasAttribute("data-theme")) bad.push("循环键从米色没回到深色：" + root.getAttribute("data-theme"));
+  if (meta && meta.getAttribute("content") !== "#0B1220") bad.push("回深色后 theme-color 没跟上");
+  if (w.poxiao && createChar(w, d, "配色")) {
+    if (!d.querySelector("#pin [data-theme-set]")) bad.push("进游戏后属性条上没有「深 / 浅 / 米」");
+    d.querySelector<HTMLElement>('#pin [data-theme-set="light"]')!.click();
+    if (root.getAttribute("data-theme") !== "light") bad.push("属性条上的配色键不管用");
+    if (!d.querySelector<HTMLElement>('.theme-top [data-theme-set="light"]')!.classList.contains("on")) bad.push("属性条换了配色，页头的控件没同步");
+  }
+  if (errors.length) bad.push("配色：页面脚本报错 " + errors.length + " 条：" + errors.slice(0, 3).join(" | "));
+  dom.window.close();
+}
+
 /* ---------------- 手机（375px） ---------------- */
 {
   const { dom, w, d, errors } = boot({ width: 375 });
@@ -150,5 +177,5 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
 }
 
 if (bad.length) { console.error("界面测试失败：\n - " + bad.join("\n - ")); process.exit(1); }
-console.log("界面测试通过：建档按钮 · 导览模态与焦点圈 · 浮窗与歌单探测 · 更新日志 · 推周 · 存档 · 手机折叠与抽屉");
+console.log("界面测试通过：建档按钮 · 导览模态与焦点圈 · 浮窗与歌单探测 · 更新日志 · 推周 · 存档 · 配色切换 · 手机折叠与抽屉");
 process.exit(0);

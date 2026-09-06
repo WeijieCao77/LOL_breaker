@@ -16,6 +16,7 @@ import { attribute, pmLuckLines, pmReplayCard, postMatchCard, reviewAdvice } fro
 import { careerCard, followUpCard, ladderEncounter, miniPatchAdj, noteRivalBeat, patchNoteCard, pressCard, queueFollowUp, roleCard, weeklyEcho } from "./press";
 import { questCard, questWeek, questWin } from "./quest";
 import { buffChips, buffVal, fireEvent, randomCard, randomResultCard, resolveRandom, tickBuffs, tryRandomEvent } from "./random";
+import { themeSeg, themeFull } from "./theme";
 import { rankBadge, rankIcon, teamLogo } from "./rankicon";
 import { noteGrudge, noteRevenge, rivalBoost, rivalCard } from "./rivals";
 import { addRingTitle, breakAgendaCard, fixNote, fixtureCard, fixtureStrip, mateInjuryHit, mateInjuryNote, mateInjuryRoll, mateInjuryTag, mateInjuryTick, ringTitles, rotationAfterMatch, scrimCard, scrimPanel, scrimPick, scrimTrialCheck, setBreakAgenda, startScrim, titleCount, titlesText } from "./rotation";
@@ -105,6 +106,9 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260907d", at:"2026-09-07", items:[
+    "界面可以换成浅色或米色了（玩家点名「亮色看着舒服」「借鉴隔壁 VCT 电竞经理」）：顶栏最右边「深 / 浅 / 米」随时切，手机上是一颗循环键，「教程说明」栏目里有带说明的完整版，建档页右上角也有。两套浅底不是反色：金、青、橙、红和七个域色全部按白底重调过，正文到域色都过 4.5:1（自检里量）；按钮、结局名片、页头主视觉照旧是深的。选择记在这台设备上，不进存档"
+  ]},
   {v:"v20260907c", at:"2026-09-07", items:[
     "存档带随机种子：同一份存档、同样的操作，结果一模一样——玩家发存档就能复现问题（原来随机数不可控，报的 bug 复现不了）",
     "「用下一场说话」任务成功时经理信任原来会被扣 8（字段写重了，把 +6 盖掉了），现在成功 +6、失败 -6",
@@ -5368,6 +5372,9 @@ export function helpCard(){
       <button class="btn" id="tourreplayfull">重放导览 · 详细 →</button>
       <button class="btn ghost" id="helplog">更新日志</button>
     </div>
+    <h3 style="font-size:14px">界面配色</h3>
+    ${themeFull()}
+    <p class="note" style="margin:0 0 12px">记在这台设备上，不进存档；顶栏最右边随时切。</p>
     <h3 style="font-size:14px">各栏目是干什么的</h3>
     <div class="helpsec">${steps.map(x=>li(x.t,x.d)).join("")}${
       li("教程说明","就是这里：文字版说明和导览重放。")}</div>
@@ -5748,7 +5755,7 @@ export function pinbar(){
     : `<span class="pv top"><i>实力</i><b>${dimWord(st)}</b></span><span class="pv pv-top2"><i>最强</i><b>${top}</b></span>`)
   +`<span class="pv dim"><i>体能</i><b>${100-Math.round(S.fatigue)}</b></span>`
   +(S.form!==undefined&&S.career?`<span class="pv dim"><i>状态</i><b>${Math.round(myForm())}</b></span>`:"")
-  +`<span class="pv tools"><button class="pvb ${num?'on':''}" id="uinum" title="${num?"切回文字描述":"显示具体数值"}">${num?"数值 开":"数值 关"}</button><button class="pvb" id="tourbtn" title="重看一遍导览">导览</button></span>`;
+  +`<span class="pv tools">${themeSeg()}<button class="pvb ${num?'on':''}" id="uinum" title="${num?"切回文字描述":"显示具体数值"}">${(typeof window!=="undefined"&&window.innerWidth<=560)?"数值":(num?"数值 开":"数值 关")}</button><button class="pvb" id="tourbtn" title="重看一遍导览">导览</button></span>`;
   if(!p) return;
   p.innerHTML=html;
   try{
