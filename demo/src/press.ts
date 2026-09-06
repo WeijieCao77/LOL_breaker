@@ -177,7 +177,7 @@ export function careerCard(){
     <div class="tw"><table><tbody>
       <tr><td>生涯战绩</td><td class="n">${S.career.w}−${S.career.l}${st.n?` · 场均评分 ${(st.r/st.n).toFixed(2)}`:""}</td></tr>
       <tr><td>冠军</td><td>${(titleCount())
-        ?`${titlesText()}${(ringTitles().length)?`<br><span style="color:var(--ink-3);font-size:11.5px">「随队」是球队夺冠时你在替补席——戒指是你的；成就、突破和转会筹码只认你亲手打的。</span>`:""}`
+        ?`${titlesText()}${(ringTitles().length)?`<br><span style="color:var(--ink-3);font-size:11.5px">「随队」是战队夺冠时你在替补席——戒指是你的；成就、突破和转会筹码只认你亲手打的。</span>`:""}`
         :"还没有"}</td></tr>
       <tr><td>转会轨迹</td><td>${(S.txLog&&S.txLog.length)?S.txLog.length+" 站":"一队待到底"}</td></tr>
       <tr><td>剩下的时间</td><td class="n">${left>0?left+" 个赛季":"这是最后一年"} · ${S.age} 岁</td></tr>
@@ -426,7 +426,7 @@ export function scoutCard(){
         <div class="vn mono"><b>${perf.toFixed(0)}</b></div></div>
     </div>
     <p class="note">本赛季正赛样本 <b>${n}</b> 个系列赛${n?`，场均评分 <b>${avgR.toFixed(2)}</b>（置信度 ${conf}%）`:"——还没有能拿去谈的数据"}${
-      S.carrySplit?`；本赛段<b>院长局 ${S.carrySplit} 次</b>——输球但你全队最高，球探会翻这些录像`:""}。<br>
+      S.carrySplit?`；本赛段<b>院长局 ${S.carrySplit} 次</b>——输比赛但你全队最高，教练组会翻这些录像`:""}。<br>
       <span style="color:var(--ink-3)">教练组看的是样本：打得少，评分再高也只是「有潜力」；样本够了，数字才变成筹码。
       看台上被记下的关注会在注册窗兑现成问询。</span></p></div>`;
 }

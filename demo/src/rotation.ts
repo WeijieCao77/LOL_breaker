@@ -445,5 +445,5 @@ export function ringTitles(){ return (S.career&&S.career.ringTitles)||[]; }
 export function titleCount(){ return ((S.career&&S.career.titles)||[]).length+ringTitles().length; }
 export function titlesText(){
   const own=(S.career&&S.career.titles)||[], ring=ringTitles();
-  return own.concat(ring.map(t=>`${t}<span class="tag" title="球队夺冠时你在替补席">随队</span>`)).join("、");
+  return own.concat(ring.map(t=>`${t}<span class="tag" title="战队夺冠时你在替补席">随队</span>`)).join("、");
 }

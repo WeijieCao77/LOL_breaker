@@ -57,13 +57,17 @@ function playOne(opts?) {
   S.name = "T"; S.pos = opts.pos || "mid"; S.origin = opts.origin || "academy";
   S.ageIdx = opts.ageIdx === undefined ? 1 : opts.ageIdx;
   S.bgPick = S.bgOffer[0].k;
-  S.talent = Object.assign({}, opts.talent || { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 });
+  S.talent = Object.assign({}, opts.talent || (opts.strong ? { 操作: 8, 运营: 6, 心态: 3, 指挥: 2, 体质: 1 } : { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 }));
   A.startPre();
   S = A.S();
+  // --strong：模拟一个把加点和训练都用对了的强玩家（起步属性 +8、封顶不超），量「强玩家眼里的难度」
+  if (opts.strong) A.DIMS.forEach((d: string) => { S.attrs[d] = Math.min(A.capOf(d), S.attrs[d] + 8); });
 
   let guard = 0, preYears = 0, rankUps = 0, lockers = 0;
   let lastPreWeek = 1, signAt = 0, signRank = 0, signFans = 0;   // 第一次签约：职业前累计第几周、当时段位读数与粉丝
   let w1: any = null, y1Inv = 0, y1Try = 0, y1Pass = 0;   // 第一年开窗那周的快照、第一年收到几次邀请 / 试训几次 / 过几次
+  const worldsSeen = new Set<number>(), msiSeen = new Set<number>();   // 进过世界赛 / MSI 的赛季（含随队）
+  const tierYears: Record<string, number> = {};   // 每个赛季结算时所在俱乐部的档次
   let signups = 0, cupMatches = 0, preps = 0, cupPick = 0;
   let invites = 0, tryPick = 0, dealPick = 0, transfers = 0, renewTalks = 0;
   let maxRank = 0, scrims = 0, trials = 0, trialWins = 0, mateInj = 0, benchWeeks = 0, _trialOn = false, _injOn = false;
@@ -71,6 +75,9 @@ function playOne(opts?) {
   while (A.S().step !== "end" && guard++ < 40000) {
     S = A.S();
     if (S.step === "pre" && S.pre) lastPreWeek = S.pre.week;
+    if (S.intl && S.intl.type === "worlds") worldsSeen.add(S.si);
+    if (S.intl && S.intl.type === "msi") msiSeen.add(S.si);
+    if (S.step === "offseason" && !S.off && S.career && S.contract) { const k = S.contract.clubTier || S.contract.tier || "?"; tierYears[S.si + ":" + k] = 1; }
     if (S.step === "pre" && S.pre && preYears === 0 && !w1 && S.pre.week >= A.WND_OPEN) {
       const av = A.DIMS.reduce((a: number, d: string) => a + S.attrs[d], 0) / A.DIMS.length;
       w1 = { rank: Math.round(S.pre.rank * 10) / 10, fans: Math.round(S.fans), score: Math.round(A.preScore()), attrs: Math.round(av * 10) / 10, fat: Math.round(S.fatigue) };
@@ -229,6 +236,15 @@ function playOne(opts?) {
   return {
     ok: S.step === "end", steps: guard, preYears, rankUps, lockers, signAt, signRank, signFans, w1, y1Inv, y1Try, y1Pass,
     si: S.si, extended: !!S.extended,
+    worlds: (S.career && S.career.worlds) || 0, msi: (S.career && S.career.msi) || 0, lg: (S.career && S.career.leagueTitles) || 0,
+    worldsApps: worldsSeen.size, msiApps: msiSeen.size, bestIntl: (S.career && S.career.bestIntl) || 0, bestRank: (S.career && S.career.best) || 99,
+    tiers: Object.keys(tierYears).map(k => k.split(":")[1]),
+    attrsAvg: +(A.DIMS.reduce((a: number, d: string) => a + S.attrs[d], 0) / A.DIMS.length).toFixed(1),
+    teamGap: (() => { try { const all: number[] = []; let mine = 0, lgBest = 0, lgRank = 0; const hl = S.homeLeague || "LPL";
+      Object.keys(S.world || {}).forEach(lg => (S.world[lg] || []).forEach((t: any) => { const p = A.power(t, 0, A.SEASONS[Math.min(S.si, A.SEASONS.length - 1)].fav); all.push(p); if (t.name === S.team) mine = p; if (lg === hl && p > lgBest) lgBest = p; }));
+      all.sort((a, b) => b - a); const wr = mine ? all.indexOf(mine) + 1 : 0; const lgAll = (S.world[hl] || []).map((t: any) => A.power(t, 0, A.SEASONS[Math.min(S.si, A.SEASONS.length - 1)].fav)).sort((a: number, b: number) => b - a); lgRank = mine ? lgAll.indexOf(mine) + 1 : 0;
+      return { mine: +mine.toFixed(1), worldRank: wr, lgRank, top1: +all[0].toFixed(1), top8: +all[7].toFixed(1) }; } catch (e) { return null; } })(),
+    streak: A.worldsStreakBest ? A.worldsStreakBest() : 0,
     signups, cupMatches, preps, cupRuns,
     invites, grades, deals, transfers,
     scrims, trials, trialWins, mateInj, benchWeeks, maxRank: Math.round(maxRank*10)/10,
@@ -312,9 +328,9 @@ export { playOne, unitChecks, A, SEED };
 /* 批测：npx tsx demo/test.ts --batch 30
    固定种子 1..N 各跑一局，只打统计不做断言。用来校准职业前压缩（20→14 周）前后的上岸节奏：
    一年内上岸率、上岸周数 p50/p90、上岸时段位读数、结局分布——改前改后各跑一次对比。 */
-function batch(n: number) {
+function batch(n: number, encore = false, strong = false) {
   const rs = [];
-  for (let i = 1; i <= n; i++) { rs.push(playOne({ seed: 1000 + i })); process.stderr.write("."); }
+  for (let i = 1; i <= n; i++) { rs.push(playOne({ seed: 1000 + i, encore, strong })); process.stderr.write("."); }
   process.stderr.write("\n");
   const q = (arr: number[], p: number) => { const a = arr.slice().sort((x, y) => x - y); return a.length ? a[Math.min(a.length - 1, Math.floor(p * (a.length - 1)))] : 0; };
   const signed = rs.filter(r => r.signAt > 0);
@@ -331,15 +347,27 @@ function batch(n: number) {
     preYears: count(r => String(r.preYears)),
     w1: (() => { const ws = rs.map(r => r.w1).filter(Boolean); const m = (k: string) => +(ws.reduce((a, w) => a + w[k], 0) / Math.max(1, ws.length)).toFixed(1); return { n: ws.length, rank: m("rank"), fans: m("fans"), score: m("score"), attrs: m("attrs"), fat: m("fat") }; })(),
     y1: { invites: +(rs.reduce((a, r) => a + r.y1Inv, 0) / n).toFixed(2), tryouts: +(rs.reduce((a, r) => a + r.y1Try, 0) / n).toFixed(2), passed: +(rs.reduce((a, r) => a + r.y1Pass, 0) / n).toFixed(2) },
+    // 冠军率的病因：队伍档次、世界排名、你的属性、进过几次国际赛、走到多深
+    end: (() => { const m = (f: (r: any) => number) => +(rs.reduce((a, r) => a + (f(r) || 0), 0) / n).toFixed(2);
+      const tiers: Record<string, number> = {}; rs.forEach(r => (r.tiers || []).forEach((t: string) => { tiers[t] = (tiers[t] || 0) + 1; }));
+      const depth: Record<string, number> = {}; rs.forEach(r => { depth[String(r.bestIntl)] = (depth[String(r.bestIntl)] || 0) + 1; });
+      return { attrsAvg: m(r => r.attrsAvg), myTeamPower: m(r => r.teamGap && r.teamGap.mine), worldTop1: m(r => r.teamGap && r.teamGap.top1), worldTop8: m(r => r.teamGap && r.teamGap.top8),
+        teamWorldRank: m(r => r.teamGap && r.teamGap.worldRank), teamLgRank: m(r => r.teamGap && r.teamGap.lgRank), inWorldTop8: +(rs.filter(r => r.teamGap && r.teamGap.worldRank > 0 && r.teamGap.worldRank <= 8).length / n).toFixed(2),
+        worldsApps: m(r => r.worldsApps), msiApps: m(r => r.msiApps), bestIntlDist: depth, bestRankMean: m(r => r.bestRank), tierSeasons: tiers }; })(),
     endings: count(r => r.ending),
     titlesMean: +(rs.reduce((a, r) => a + r.titles.length, 0) / n).toFixed(2),
+    // 夺冠概率：任一冠军 / 联赛 / MSI / 世界赛 / 破局者（MSI+世界赛各一）/ 两冠 / 三连（王朝）
+    rates: (() => { const f = (g: (r: any) => boolean) => +(rs.filter(g).length / n).toFixed(3); return {
+      anyTitle: f(r => r.titles.length > 0), league: f(r => r.lg > 0), msi: f(r => r.msi > 0), worlds: f(r => r.worlds > 0),
+      worlds2: f(r => r.worlds >= 2), breaker: f(r => r.msi > 0 && r.worlds > 0), dynasty: f(r => r.streak >= 3),
+      legend: f(r => r.ending === "传奇"), extended: f(r => r.extended) }; })(),
     stepsMean: Math.round(rs.reduce((a, r) => a + r.steps, 0) / n),
   }, null, 1));
 }
 
 if (isMain && process.argv.includes("--batch")) {
   const i = process.argv.indexOf("--batch");
-  batch(parseInt(process.argv[i + 1] || "20", 10) || 20);
+  batch(parseInt(process.argv[i + 1] || "20", 10) || 20, process.argv.includes("--encore"), process.argv.includes("--strong"));   // --encore：五年到了一律再战；--strong：强玩家
 } else if (isMain) {
   console.log("随机种子：", SEED, "（SEED=" + SEED + " npm test 可原样重放）");
   const unit = unitChecks();

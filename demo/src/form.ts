@@ -34,14 +34,14 @@ export function formTier(f){
 }
 
 /* ---------- 每个赛段重算状态 ---------- */
-/* 状态不是随机数：赢球、体能、更衣室都会推它，但也留了不小的随机项——
+/* 状态不是随机数：赢比赛、体能、更衣室都会推它，但也留了不小的随机项——
    这就是为什么强队也会有打不动的赛季。 */
 export function rollForm(){
   const prev=myForm();
   let base=FORM_NEUTRAL;
   // 上赛段成绩
   const g=(S.record?S.record.w+S.record.l:0);
-  if(g>0) base+=((S.record.w/g)-0.5)*20;   // 别做太大，否则赢球→状态→再赢会滚起来
+  if(g>0) base+=((S.record.w/g)-0.5)*20;   // 别做太大，否则赢比赛→状态→再赢会滚起来
   // 体能：透支会写在状态上
   base-=clamp(S.fatigue-40,0,60)*0.20;
   // 更衣室
@@ -109,7 +109,7 @@ export function formCard(){
       <div class="vn mono"><b>${f}</b> ×${myFormMul().toFixed(3)}</div>
     </div>
     <p class="note">能力是你练出来的水位，状态是<b>今年打成什么样</b>。
-      状态每个赛段重算——赢球、体能、更衣室都会推它，但也有运气成分。
+      状态每个赛段重算——赢比赛、体能、更衣室都会推它，但也有运气成分。
       ${f>=78?"现在这个手感，能打的比赛都去打。":
         f<=34?"能力没掉，只是打不出来。休息、稳住更衣室，等它回来。":""}</p>
   </div>`;

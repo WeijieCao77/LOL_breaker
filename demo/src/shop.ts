@@ -142,7 +142,7 @@ export const GEAR={
 
 /* 课程：一次性买断，永久生效 */
 export const COURSES=[
-  {k:"kr",   n:"韩语课",       cost:150, d:"看得懂韩援的沟通，去 LCK 打球不再是聋子"},
+  {k:"kr",   n:"韩语课",       cost:150, d:"看得懂韩援的沟通，去 LCK 打比赛不再是聋子"},
   {k:"en",   n:"英语课",       cost:120, d:"LEC / LCS 的更衣室能听懂了"},
   {k:"psy",  n:"运动心理课",   cost:190, d:"心态训练效率提升"},
   {k:"vod",  n:"复盘方法课",   cost:180, d:"运营训练效率提升"},
@@ -169,7 +169,7 @@ export function gearBonus(dim){
   return v;
 }
 export function hasCourse(k){ return !!(S.courses&&S.courses[k]); }
-/* 语言课：在对应赛区打球才有用 */
+/* 语言课：在对应赛区打比赛才有用 */
 export function langBonus(){
   const hl=S.homeLeague||"LPL";
   if(hl==="LCK"&&hasCourse("kr")) return 2.6;
@@ -177,7 +177,7 @@ export function langBonus(){
   return 0;
 }
 /* 语言对默契的影响。
-   在外赛区打球，听不懂更衣室就是磨不出配合；会说当地话则明显更顺。
+   在外赛区打比赛，听不懂更衣室就是磨不出配合；会说当地话则明显更顺。
    本赛区当然没有这个问题。 */
 export function langSyn(){
   const hl=S.homeLeague||"LPL";
@@ -357,7 +357,7 @@ export function streamIncome(){
   // 封在 600（「顶流」之上），不签独家的上限 ~135/次，
   // 仍比独家保底高一截，「自由身上限更高」的承诺不变，但有边界。
   // 底盘看粉丝（有多少人会来看），当天的量看热度（最近有没有人在讨论你）。
-  // 这就是「礼物 = f(粉丝基数) × g(当下热度)」——赢球那几周直播特别值钱，
+  // 这就是「礼物 = f(粉丝基数) × g(当下热度)」——赢比赛那几周直播特别值钱，
   // 冷下来之后同样的粉丝掉一半收入，直播因此有了「趁热打铁」这个决策。
   const f=Math.min(Math.max(S.fans||0,0),600);
   // 以常态热度（实测中位约 400）为 1.0 上下浮动。原来 /260 让中位就顶到

@@ -400,7 +400,7 @@ export const RANDOM_EVENTS=[
         return "律师函发出去了，帖子没了。但「心虚」两个字也留在了评论区。"}},
       {t:"不回应，用下一场说话", g:"grind",e:()=>{addBuff("train",1.3,2,"用成绩说话");
         addQuest({id:"matchfix",n:"用下一场说话",
-          d:"传闻还挂在论坛上，只有赢球能压下去",kind:"win",need:2,due:3,
+          d:"传闻还挂在论坛上，只有赢比赛能压下去",kind:"win",need:2,due:3,
           fans:60,mgr:6,trust:6,okTxt:"两场打完，帖子沉了——没人再提那波走位。",
           failTxt:"传闻越传越像真的。",penFans:70});   // mgr 只写一次：任务系统里同一个字段管奖惩（成功 +6、失败 -6）；原来重复写了 mgr:-8，把成功奖励也盖成了 -8
         return "你什么都没说。下一场的准备做得格外细。"}}]},
@@ -615,7 +615,7 @@ export const RANDOM_EVENTS=[
    q:()=>`赢下强队之后，官方采访点名要你。`,
    ctx:"镜头已经架好了，导播在倒计时。",
    a:[{t:"把功劳给队友", g:"warm",e:()=>{addTrustAll(9);addFans(8);
-        return "队友在后台听到了。这句话比赢球本身更管用。"}},
+        return "队友在后台听到了。这句话比赢比赛本身更管用。"}},
       {t:"放狠话，点名下一个对手", g:"hard",e:()=>{addFans(26);
         0;
         return "热搜挂了一天。下一场对面打得格外凶。"}},

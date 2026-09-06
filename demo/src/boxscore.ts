@@ -7,7 +7,7 @@ import { S } from "./state";
 /* ================= 全员数据（Box Score） =================
 
    玩家点名（2026-09-02）：在弱队里数值很突出却赢不了，「这是队友的问题」——
-   可赛后只有你一个人的 KDA，谁在坑看不出来；球探也只看战绩，弱队里的强个人
+   可赛后只有你一个人的 KDA，谁在坑看不出来；青训教练也只看战绩，弱队里的强个人
    永远没人来问。
 
    现在每个系列赛为双方十个人各合成一行数据：K/D/A、分均补刀、伤害占比、评分。
@@ -20,7 +20,7 @@ import { S } from "./state";
    · 位置画像：辅助的 K 低 A 高，AD 的伤害占比天然最高，等等
    伤害占比在队内归一到 100%。评分口径和原来一样（0.2–2.0，1.0 是及格线）。
 
-   这些数据三处用：赛后拆解的「全员数据」表、比赛档案回放、球探评分
+   这些数据三处用：赛后拆解的「全员数据」表、比赛档案回放、教练组评分
    （proPerf 看你本赛段的场均评分和「院长」次数，不再只看队伍战绩）。 */
 
 export const BOX_POS_ORDER=["top","jng","mid","bot","sup"];
@@ -91,9 +91,9 @@ export function boxScoreHtml(box,won,oppName){
   let verdict="";
   if(me){
     const mates=box.mine.filter(x=>!x.me);
-    if(box.carry) verdict=`你评分 <b>${me.rating.toFixed(2)}</b> 全队最高，队友场均只有 <b>${box.mateAvg.toFixed(2)}</b>${box.worst?`，<b>${box.worst}</b>（${box.worstR.toFixed(2)}）是这场的洞`:""}。<b>这场输球不算在你头上</b>——数据球探看得到。`;
+    if(box.carry) verdict=`你评分 <b>${me.rating.toFixed(2)}</b> 全队最高，队友场均只有 <b>${box.mateAvg.toFixed(2)}</b>${box.worst?`，<b>${box.worst}</b>（${box.worstR.toFixed(2)}）是这场的洞`:""}。<b>这场输比赛不算在你头上</b>——数据教练组看得到。`;
     else if(box.soloWin) verdict=`队友没有一个及格，你 <b>${me.rating.toFixed(2)}</b> 硬把比赛拿下来了。`;
-    else if(!won&&me.rating<0.85) verdict=`你这场 <b>${me.rating.toFixed(2)}</b>，队里${box.worst&&box.worst!==me.id&&box.worstR<me.rating?`还有更差的（${box.worst} ${box.worstR.toFixed(2)}）`:"没人比你更差"}。输球有你的一份。`;
+    else if(!won&&me.rating<0.85) verdict=`你这场 <b>${me.rating.toFixed(2)}</b>，队里${box.worst&&box.worst!==me.id&&box.worstR<me.rating?`还有更差的（${box.worst} ${box.worstR.toFixed(2)}）`:"没人比你更差"}。输比赛有你的一份。`;
     else if(!won&&box.okN>box.failN&&box.mateAvg<0.95) verdict=`你临场 ${box.okN} 成 ${box.failN} 败，选择没错；队友场均 <b>${box.mateAvg.toFixed(2)}</b>，这场是他们丢的。`;
     else if(won&&me.id===box.mvp) verdict=`全场 MVP 是你。`;
     else if(won&&mates.length&&box.mvp&&mates.some(x=>x.id===box.mvp)) verdict=`这场赢在 <b>${box.mvp}</b>，你是跟着赢的。`;
@@ -108,7 +108,7 @@ export function boxScoreHtml(box,won,oppName){
   </div>`;
 }
 
-/* 本赛段的场均评分与院长次数——球探看的是这个，不只看队伍战绩 */
+/* 本赛段的场均评分与院长次数——教练组看的是这个，不只看队伍战绩 */
 export function splitRating(){
   const rows=(S.archive||[]).filter(x=>x.si===S.si&&x.sp===(S.split||0)&&(x.tag==="联赛"||x.tag==="LDL"));
   if(!rows.length) return null;

@@ -173,7 +173,7 @@ export function startIntl(type,playerResult){
   const HL=S.homeLeague||"LPL";
   const F=SEASONS[S.si];
   /* 替补随队（玩家实锤的漏洞的另一半）：出征前教练用最新训练赛数据
-     再看一眼——还没压过首发，就整届坐替补席，球队用真首发阵容打。 */
+     再看一眼——还没压过首发，就整届坐替补席，战队用真首发阵容打。 */
   if(isBenched()&&S.understudy){
     return benchedIntl(type,playerResult);
   }
@@ -523,9 +523,9 @@ export function intlChampEvent(name,champ){
       lck?"LCK 又一次站在了最高处。":"你在屏幕外看完了颁奖。"}`,
     tone:lck?"bad":"info", tag:name};
 }
-/* ---------- 替补随队：球队去打，你在场边 ----------
+/* ---------- 替补随队：战队去打，你在场边 ----------
    名单构造和亲历版一致（自己的队占真实名额），赛果整届模拟＋世界线收束，
-   按周揭晓；球队夺冠只发团队新闻，不进你的生涯表、不触发夺冠突破。 */
+   按周揭晓；战队夺冠只发团队新闻，不进你的生涯表、不触发夺冠突破。 */
 export function benchedIntl(type,playerResult){
   const F=SEASONS[S.si];
   const name=type==="msi"?"MSI":"世界赛";

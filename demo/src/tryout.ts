@@ -340,7 +340,7 @@ export function clubStanding(name){
     // 不能再靠剥「青训队」后缀——那个后缀已经没有了
     const ld = (S.world.LDL || []).find(t=>t.name===name);
     const bare = ld ? ld.parent : String(name);
-    // 队伍属于哪个联赛就按哪个联赛排（玩家实锤：在 LCK 打球，页面上全是「LPL 第 x/17」）
+    // 队伍属于哪个联赛就按哪个联赛排（玩家实锤：在 LCK 打比赛，页面上全是「LPL 第 x/17」）
     const key = Object.keys(S.world).find(k=>k!=="LDL"&&(S.world[k]||[]).some(t=>t.name===bare)) || "LPL";
     const lg = S.world[key]; if(!lg) return null;
     const rk = lg.map(t=>({n:t.name, p:power(t)})).sort((a,b)=>b.p-a.p);
@@ -780,7 +780,7 @@ export function proPerf(){
   if(g >= 3) v += ((S.record.w / g) - 0.5) * 20 * 0.55;   // 这个赛段的战绩
   const sr = splitRating();
   if(sr !== null) v += (sr - 1.0) * 26;                    // 场均 1.2 → +5.2；0.8 → −5.2
-  v += Math.min(S.carrySplit || 0, 4) * 1.5;               // 院长局：球探会把录像翻出来看
+  v += Math.min(S.carrySplit || 0, 4) * 1.5;               // 院长局：教练组会把录像翻出来看
   v += ((S.career.titles || []).length) * 4;
   v += (((S.career.msi || 0) + (S.career.worlds || 0))) * 9;
   v += (myForm() - 52) * 0.18;

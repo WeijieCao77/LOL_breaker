@@ -108,7 +108,7 @@ export function checkMateExit(){
 /* ---------- 更衣室事件 ---------- */
 export const LOCKER=[
   {id:"blame", rec:0, when:()=>S.record.l>=2&&rnd()<0.5,
-   q:t=>`输球后复盘，<b>${t.id}</b> 说那波团是你先开的。`,
+   q:t=>`输比赛后复盘，<b>${t.id}</b> 说那波团是你先开的。`,
    ctx:"所有人都在看你怎么回。",
    /* 玩家 2026-09-06 点名：每个选项都得有对应的好处和坏处，不能有纯亏的 */
    a:[{t:"认下来，这波我的问题", g:"warm",e:(t)=>{addTrustAll(6);S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.8);addFans(-3);

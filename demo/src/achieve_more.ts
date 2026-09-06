@@ -152,9 +152,9 @@ export const ACH_MORE=[
    on:"rank", cond:()=>S.pre&&S.pre.rank>=99, r:{money:300,fame:110}},
 
   /* ---------- 逆境 · 院长（2026-09-02 玩家点名：弱队里数值突出却赢不了，是队友的问题） ---------- */
-  {id:"carry1", n:"院长", d:"输了球，但全场数据最亮的是你：评分全队最高，队友集体拉胯。", tag:"逆境",
+  {id:"carry1", n:"院长", d:"输了比赛，但全场数据最亮的是你：评分全队最高，队友集体拉胯。", tag:"逆境",
    on:"match", cond:(c)=>!!(c&&c.carry), r:{fame:22,fat:-10}},
-  {id:"carry5", n:"院长，救不了", d:"五场输球都是你在扛。这些数据球探都记着。", tag:"逆境",
+  {id:"carry5", n:"院长，救不了", d:"五场败局都是你在扛。这些数据教练组都记着。", tag:"逆境",
    on:"match", cond:()=>(S.carries||0)>=5, r:{fame:60,money:80}},
   {id:"solowin", n:"一人成军", d:"队友场均评分不到 0.9、没一个及格，你硬把比赛赢了下来。", tag:"逆境",
    on:"win", cond:(c)=>!!(c&&c.soloWin), r:{fame:40,trust:10}},

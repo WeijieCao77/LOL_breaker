@@ -82,7 +82,11 @@ export const TOTAL_TALENT=20, WEEKS=7;   // 一个赛段 7 周 x 2 赛段 x 5 �
    权重给到 28：LPL 的 wr 跨度 0.27–0.68，折成 ±5.7 分，
    足以让「真实成绩好的队」稳稳排在前面——玩家报的
    「RA 拿 S12 世界赛冠军」正是因为这一项以前完全没有参与战力。 */
-export const WR_WEIGHT=28;
+/* 2026-09-07 难度调整（批测：五年世界冠军率 5%、MSI 5%、双冠 0、王朝 0——作者拍板「太难了」）。
+   诊断：机器人生涯末队伍战力 69.5，世界第八 72.9，世界第一 87.3——第一和第八差 14 分，
+   来源是 2022 真实胜率 ×28（T1 那年 0.97 → +13，每年只衰减 28%）叠上 LCK 王朝加成。
+   胜率权重 28→18：数据里的强队仍然强，但不再是一道天堑。 */
+export const WR_WEIGHT=18;
 export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×2.2），sigmoid 的坡跟着放宽——
                    // 13.5 时强队碾压一切（MSI 12%），20 又把主角建立的优势也磨平了（4%），16 居中
 /* 行动力按「实际有多少事可做」给，不是固定值：
@@ -106,6 +110,10 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260907g", at:"2026-09-07", items:[
+    "难度下调（作者拍板：批测里五年世界冠军率 5%、MSI 5%、双冠 0、王朝 0，太难了）。病因两处：战力里 2022 真实胜率 ×28、每年只衰减 28%，王朝队 S12 就比世界第八高 14 分；你自己在五人战力里只算 1.3 个人，76 分的你坐在 69 分的队里。改法：真实胜率权重 28→18、LCK 王朝加成峰值 2.2→1.6、78 分以上的战力按 0.45 折算（世界第一 87→82，第八名不动，你的队到了那里也一样）、你在全队战力里的权重 1.3 / 1.6→3.0 / 3.4（核心）、临场决策摆动 5.5→7。批测 40 局对照——加点用对的强玩家：五年世界冠军 15%→33%、MSI 8%→20%、破局者 3%→8%；再战三年：世界冠军 20%→43%、双冠 0→10%、破局者 3%→13%；随手玩的：五年世界冠军 5%→5–8%、MSI 5%→10%。三连冠仍然没人拿到——王朝就该是最难的那个",
+    "全游戏再清一遍足球词（作者点名）：球队→战队、球探→青训教练 / 教练组、赢球 / 输球 / 打球→比赛、「把球给我」→「这波我来打」，共 59 处"
+  ]},
   {v:"v20260907f", at:"2026-09-07", items:[
     "【测试中】五年之后可以再打三年（玩家实锤「刚到巅峰就退役」，尤其是 S15、S16 才发力的加点）：S16 收官页多了「再打三年 / 退役」，之后每年年末都能选退役，S19 年末强制退役；自由身年末桌上没报价的只能退役。S17–S19 三年全部活模拟，版本主题是拟的。26 岁起每周恢复打八折、28 岁起六五折，伤病风险本来就按年龄加",
     "结局层级改了：连续三年世界冠军才叫「王朝」，三连再加 MSI 和 26 岁以后的冠军是「传奇」；原来两座世界冠军的「王朝」改叫「两冠」。新成就：三连 S 冠、再战、老骥伏枥（26 岁以后拿国际冠军）、大器晚成（第一座在 26 岁以后）、最后一舞（再战的年份里夺冠）",
@@ -256,7 +264,7 @@ export const CHANGELOG=[
     "世界有了转会市场（玩家点名：选手不转会、二队比一队强也不提拔）：季中间歇和休赛期，全联盟二队某位置比一队强 2 分以上就有七成概率提上去、被顶掉的人下放；休赛期还有跨队转会——弱队里高于队均 4 分的 27 岁以下好手会被上半区某支该位置更弱的队买走，被顶掉的人反向流动。换过人的队默契 −6、战术 −2.7，之后每个窗口慢慢回补；你的队也一样，你的位置除外。世界日志有每个窗口的变动清单",
     "外部测评修复（P0）：Windows 本地 node server.js 白屏——服务器按 CRLF 算 CSP 哈希、浏览器按 LF 算，内联脚本被拦；现在服务端统一归一到 LF 再算再发，CI 加「CSP 哈希 = 浏览器眼里的脚本哈希」断言",
     "外部测评修复（P1）：常规赛世界模拟换成真循环赛——原来每周把各队按数组顺序固定两两配对、同一对打整季；现在每个联赛圆桌法排轮次表、你的赛程从同一张表取、避开你的轮空轮，积分榜/季后赛/国际赛名额终于建在真赛程上",
-    "外部测评修复：行动点文案不再写死「每个行动 1 点」；打排位的体能显示与实际扣除一致（4）；胜负心态改为胜 +0.6 / 负 +0.7（原负 +1.1 等于鼓励故意输球）；临场节点的「高风险」真的降成功率（约 −6 个点，稳健 +3），摆动倍率照旧",
+    "外部测评修复：行动点文案不再写死「每个行动 1 点」；打排位的体能显示与实际扣除一致（4）；胜负心态改为胜 +0.6 / 负 +0.7（原负 +1.1 等于鼓励故意输比赛）；临场节点的「高风险」真的降成功率（约 −6 个点，稳健 +3），摆动倍率照旧",
     "外部测评修复：出身卡明示路线（青训/主播）与全部修正；选手身份去重（Fudge 双占位、Grell 双队）、Bin 中文名改回陈泽彬；补 LICENSE 与粉丝同人声明；手机端表格改横向滚动不再挤成竖排；README 成就数不再写死",
     "备战卡与比赛卡的战力口径统一（玩家实锤：备战 82.6、开赛 91.8）：两张卡都写「战力 X · 版本 +Y」，版本行里「你队」的数按模拟真实口径算（你的相性整份计入，不再被五人平均）；段位格改横排一行，不再挤成竖条",
     "士气不再只偏袒你的队（玩家实锤：青训队战力 85 比 LPL 一线还高）：原来只有你的队有士气乘数、信任 88 白拿 +10%，AI 队永远 ×1.0；现在你的士气幅度减半（88 → ×1.05），AI 队按近六场战绩也有士气（连胜 ×1.05、连败 ×0.95）；比赛卡的「战力」不再把版本加成揉进去，版本单独标"
@@ -343,8 +351,8 @@ export const CHANGELOG=[
   {v:"v20260904h", at:"2026-09-02", items:[
     "赛后拆解新增「全员数据」：双方十个人的 KDA、补刀、伤害占比、评分一张表，谁是 MVP、谁是这场的洞一眼看出；比赛档案回放也带这张表",
     "数据怎么来的写在明面上：各人数值 × 状态 × 胜负 × 你的临场选择——你选对了却输，多出来的那份「输」记在队友头上；你砸了却赢，功劳分给队友",
-    "球探改看数据：本赛段场均评分进表现分（1.2 → +5，0.8 → −5），队伍战绩的权重减半；「院长」场次额外加分——弱队里的强个人一样会有俱乐部来问",
-    "新增「逆境」成就：院长（输球但你全队最高、队友集体拉胯）、院长，救不了（五次）、一人成军（队友全员不及格你硬赢）"
+    "教练组改看数据：本赛段场均评分进表现分（1.2 → +5，0.8 → −5），队伍战绩的权重减半；「院长」场次额外加分——弱队里的强个人一样会有俱乐部来问",
+    "新增「逆境」成就：院长（输比赛但你全队最高、队友集体拉胯）、院长，救不了（五次）、一人成军（队友全员不及格你硬赢）"
   ]},
   {v:"v20260904g", at:"2026-09-02", items:[
     "修复（严重）：新开的局第一次「继续上次」会被当成旧版本存档整体 +15 并重排世界——新档现在自带标尺版本；读档时再加一道保险：世界已经在新标尺上的档一律不迁移",
@@ -375,8 +383,8 @@ export const CHANGELOG=[
     "复盘也说长项：对位账里先列你压过对位的项（那是本钱，临场节点多选它），短板只点真正进战力公式的四维并写明权重；极端加点的玩家会明确看到：战力是加权和、没有短板惩罚，补不补短板看权重划不划算"
   ]},
   {v:"v20260904a", at:"2026-09-02", items:[
-    "替补不再莫名其妙打季后赛（玩家实锤：常规赛全程没抢下首发，季后赛却被安排上场、还和同位置首发同框）——教练的名单是连续的：没压过他，季后赛/MSI/世界赛就整届坐替补席，球队用真首发阵容打，你按周在场边看结果",
-    "随队夺冠算球队的：戒指有你一枚，但生涯冠军表、夺冠突破、转会保送都不记——想让奖杯写你的名字，先把首发抢下来（训练赛数据压过对位，出征前教练会重新看一次）"
+    "替补不再莫名其妙打季后赛（玩家实锤：常规赛全程没抢下首发，季后赛却被安排上场、还和同位置首发同框）——教练的名单是连续的：没压过他，季后赛/MSI/世界赛就整届坐替补席，战队用真首发阵容打，你按周在场边看结果",
+    "随队夺冠算战队的：戒指有你一枚，但生涯冠军表、夺冠突破、转会保送都不记——想让奖杯写你的名字，先把首发抢下来（训练赛数据压过对位，出征前教练会重新看一次）"
   ]},
   {v:"v20260903j", at:"2026-09-02", items:[
     "大陆直连打通：正式地址改为 www.poxiao.lol——原裸域名的边缘 IP 被运营商国际出口单独拉黑（同服务换主机名重新分配 IP 后实测国内 WiFi/流量免代理可开）；裸域名保留，挂代理仍可用"
@@ -417,7 +425,7 @@ export const CHANGELOG=[
     "全游戏用语电竞化（玩家点名）：我们做的是 LOL 不是足球篮球——「球探」全部改为青训教练/教练组/俱乐部（按语境），「球队」改「战队」，「球探观察」卡改名「俱乐部关注」"
   ]},
   {v:"v20260902l", at:"2026-09-03", items:[
-    "世界线张力系统上线（玩家拍板的通用机制，无任何写死特判）：每个联赛一个张力值，0=完全按真实历史走、1=完全因你而变。你在哪打球哪里就被你改写；国际赛淘汰谁、夺冠，张力注入都不同；你离开的联赛每赛段往史实弹回",
+    "世界线张力系统上线（玩家拍板的通用机制，无任何写死特判）：每个联赛一个张力值，0=完全按真实历史走、1=完全因你而变。你在哪打比赛哪里就被你改写；国际赛淘汰谁、夺冠，张力注入都不同；你离开的联赛每赛段往史实弹回",
     "史实数据层：S12-S15 四届世界赛/MSI 的完整参赛名单与冠军、LPL/LCK/LEC/LCS 各赛段冠军，全部按 Leaguepedia 逐条取证接入——无干预时 S12 世界赛就是 DRX 从入围赛杀上来夺冠、S13-S15 T1 三连、MSI RNG/JDG/GEN/GEN，联赛冠军也照史实",
     "影响力随生涯放大：同一件事，无名新秀和三冠王掀起的涟漪不同；直接出道外赛区则 LPL 五年全程按史实走。你亲自打的每一场比赛永远真打——正典永不替你赢，也永不拦你赢",
     "S16 没有剧本：最后一年留给你，或留给至暗延续"
@@ -965,7 +973,7 @@ export function versionFit(){
    这不是随便配的难度旋钮，它就是「至暗四年」这个设定本身。
    统一标尺后拆成两层：基础实力走赛区锚（LCK 66.5，比 LPL 高 1.5），
    年份状态走这条曲线——S16 归零，主角破局的窗口敞开。 */
-export const LCK_DYNASTY=[0.8,1.6,2.2,1.2,0];
+export const LCK_DYNASTY=[0.6,1.2,1.6,0.9,0];   // 2026-09-07 难度调整：峰值 2.2→1.6（配合 WR_WEIGHT 28→18）
 
 /* ---------- 赛区定锚与风格（2026-09-02 玩家拍板） ----------
    各赛区数据原本是联赛内标准化（每个联赛平均都是 50）——VCS 的平均值
@@ -1067,7 +1075,9 @@ export function powerCore(players,fatigue=0,verFav=null,team=null){
     // 玩家定的哲学（2026-09-02）：这是五个人的游戏——队友弱，你再强也赢不了。
     // 权重只比普通队友略高（你是拿了行动点培养的那个人），
     // 冠军资格靠转会去强队挣，不靠一个人扛穿弱队。
-    const w=p.me?(S.offerKind==="core"?1.6:1.3):1.0;
+    // 2026-09-07 难度调整：1.3/1.6 → 1.8/2.2。批测里你 76 分坐在 69.5 分的队里，五年世界冠军率 5%——
+    // 「五个人的游戏」不变，但拿了行动点培养的那个人得真的能把队抬起来一截
+    const w=p.me?(S.offerKind==="core"?3.4:3.0):1.0;
     let v=r.操作*0.34+r.运营*0.28+r.心态*0.14+r.体质*0.10;
     if(p.me&&true){
       v+=injuryHit("操作")*0.34+injuryHit("运营")*0.28+injuryHit("心态")*0.14+injuryHit("体质")*0.10;
@@ -1104,8 +1114,13 @@ export function powerCore(players,fatigue=0,verFav=null,team=null){
      而现实里他们是中下游。玩家原话：「一线联赛的队伍实力包括外赛区的队伍实力
      要重新设计思考」——这就是那个缺口。 */
   const wrAdj = (team && team.wr!==undefined) ? (team.wr-0.5)*WR_WEIGHT : 0;
-  return (s/wt+dynastyBonus(players)+wrAdj)*(1+(cmd-68)/520)*(1-clamp(fatigue,0,100)*0.0022)*tm*sq;
+  const raw=(s/wt+dynastyBonus(players)+wrAdj)*(1+(cmd-68)/520)*(1-clamp(fatigue,0,100)*0.0022)*tm*sq;
+  /* 2026-09-07 难度调整：顶端压缩。五个 85–90 的明星凑在一起战力 87，世界第八才 73——第一名对谁都是天堑，
+     五年世界冠军率 5%、双冠 0。78 分以上的部分按 0.45 折算（所有队一视同仁，你的队到了那里也一样）：
+     87 → 82，第八名不动。强队仍然强，但赢它不再是 BO5 里 20% 的事。 */
+  return raw>POWER_KNEE?POWER_KNEE+(raw-POWER_KNEE)*POWER_SLOPE:raw;
 }
+export const POWER_KNEE=78, POWER_SLOPE=0.45;
 
 /* ================= 世界 ================= */
 export function leagueBaseline(w){
@@ -2262,7 +2277,7 @@ export function makeOffers(forced){
   if(score>=32) offers.push({k:"start",team:rk[6+Math.floor(rnd()*4)].t.name,
      t:"中游首发",d:"稳定首发位置，队伍中规中矩。最普通的一条路。",note:"稳，但很难摸到冠军"});
   offers.push({k:"core",team:rk[rk.length-1-Math.floor(rnd()*4)].t.name,
-     t:"弱队核心",d:"全队资源向你倾斜，但队友确实弱。赢球要靠你自己。",
+     t:"弱队核心",d:"全队资源向你倾斜，但队友确实弱。赢比赛要靠你自己。",
      note:"成长最快，战绩最难看"});
   if(score>=92){
     const foreign=(rnd()<0.5?world.LCK:world.LEC);
@@ -2408,7 +2423,7 @@ export function buildFixtures(){
 }
 export function startSeason(first,split?){
   S.split=(split===undefined)?0:split;
-  S.carrySplit=0;      // 「院长」次数按赛段算（球探看本赛段）
+  S.carrySplit=0;      // 「院长」次数按赛段算（教练组看本赛段）
   S.benchedPO=false;   // 新赛段重置「替补看完季后赛」标记
   S.loseStreak=0; S.benchLock=false;   // 新赛段：连败清零；被换下的锁也解开（新赛段教练重新看数据）
   const HL=S.homeLeague||"LPL";
@@ -2799,7 +2814,7 @@ export function fanToNext(){
 export function heatNote(){
   const h=S.heat||0;
   const pct=clamp(h/450*100,0,100);
-  const txt = h<40 ? `直播和赢球都能涨` : h>=400 ? `趁现在直播最值钱` : `每周回落一成`;
+  const txt = h<40 ? `直播和赢比赛都能涨` : h>=400 ? `趁现在直播最值钱` : `每周回落一成`;
   return `<div class="fnext" title="热度决定直播收入，也决定粉丝沉淀得多快；每周自然回落 10%">
     <span class="fbar"><i style="width:${pct.toFixed(0)}%"></i></span>${txt}</div>`;
 }
@@ -3268,7 +3283,7 @@ export function teamCard(){
       </div>`}).join("")}</div>
     ${mateInjuryNote()}
     <p class="note">这是<b>他们对你</b>的信任，撑的是全队士气。<b>${
-      avgTrust()>=62?"他们服你，关键球敢交到你手上。":
+      avgTrust()>=62?"他们服你，关键团敢交给你打。":
       avgTrust()>=40?"还行，但也谈不上多信你。":
       "他们不信你——你说的话在这个队里没有分量。"}</b><br>
       <span style="color:var(--ink-3)">队友<b>互相之间</b>的关系是另一回事，看「更衣室关系」那一栏。</span></p></div>`;
@@ -3465,7 +3480,7 @@ export function gameWinP(swing){
 }
 /* 节点摆动倍率与成功率里的队友占比（2026-09-06 方案 A）：一个人拉不动四个人——
    成功率七成看你、三成看队友同一维的均值；摆动从 ±风险×6 收到 ±风险×4.5。操作 92 配 55 分队友：75% → 67%，期望每节点 +2.7 → +1.5 */
-export const NODE_SWING=5.5, NODE_MATE_W=0.3;   // 2026-09-06 夜：4.5 把国际冠军率压回 3–4%，5.5 是「一个人拉不动垫底队」和「国际赛还打得赢」之间的折中（批测 H）
+export const NODE_SWING=7.0, NODE_MATE_W=0.3;   // 2026-09-07 难度调整：5.5→7.0，临场决策多算一截   // 2026-09-06 夜：4.5 把国际冠军率压回 3–4%，5.5 是「一个人拉不动垫底队」和「国际赛还打得赢」之间的折中（批测 H）
 export function nodeSkill(dim){
   const mine=S.attrs[dim];
   try{
@@ -3531,7 +3546,7 @@ export function synthSeriesStats(m,won,myPw,opPw){
   if(!S.career) return;
   const games=m.sc[0]+m.sc[1];
   /* 全员数据（boxscore.js）：双方十个人一起合成，你的那一行从里面取——
-     这样你的数据、队友的数据、球探看的数据是同一份。没有模块时退回旧算法。 */
+     这样你的数据、队友的数据、教练组看的数据是同一份。没有模块时退回旧算法。 */
   const box=synthBoxScore(m,won);
   let k,d,a,cs,dmg,rating;
   if(box){ const me=box.mine.find(x=>x.me)||box.mine[0]; k=me.k;d=me.d;a=me.a;cs=me.cs;dmg=me.dmg;rating=me.rating; }
@@ -3555,7 +3570,7 @@ export function synthSeriesStats(m,won,myPw,opPw){
   m.myline={k,d,a,cs,dmg,rating}; m.box=box;
   if(box&&box.carry){
     S.carries=(S.carries||0)+1; S.carrySplit=(S.carrySplit||0)+1;
-    pushEvent(`<b>院长局</b>：输给 ${m.oppName}，但你评分 <b>${rating.toFixed(2)}</b> 全队最高，队友场均 ${box.mateAvg.toFixed(2)}${box.worst?`（${box.worst} ${box.worstR.toFixed(2)}）`:""}。<span style="color:var(--ink-3)">这场输球不算在你头上——球探看数据，不只看比分。</span>`,"info","数据");
+    pushEvent(`<b>院长局</b>：输给 ${m.oppName}，但你评分 <b>${rating.toFixed(2)}</b> 全队最高，队友场均 ${box.mateAvg.toFixed(2)}${box.worst?`（${box.worst} ${box.worstR.toFixed(2)}）`:""}。<span style="color:var(--ink-3)">这场输比赛不算在你头上——教练组看数据，不只看比分。</span>`,"info","数据");
   }
   if(box&&box.soloWin) S.soloWins=(S.soloWins||0)+1;
   S.log.push(`<div><span class="hi">个人数据</span> ${Math.round(k*games)}/${Math.round(d*games)}/${Math.round(a*games)}（${games} 局合计）· 分均补刀 ${cs} · 伤害 ${dmg}% · 评分 <b>${rating.toFixed(2)}</b></div>`);
@@ -3604,7 +3619,7 @@ export function endMatch(){
   // 出场费按联赛分级：LDL 的钱就是 LDL 的钱（经济重锚）
   const purse=(S.homeLeague||"LPL")==="LDL"?(won?2:1):(won?9:4);
   addMoney('match',purse);
-  // 胜 +0.6 / 负 +0.7（外部测评抓的：原来负 +1.1 是胜的两倍多，等于鼓励故意输球养心态；挫折仍长心态，但不值得故意输）
+  // 胜 +0.6 / 负 +0.7（外部测评抓的：原来负 +1.1 是胜的两倍多，等于鼓励故意输比赛养心态；挫折仍长心态，但不值得故意输）
   S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+(won?0.6:0.7));
   S.log.push(`<div>${SEASONS[S.si].tag} 第${S.week}周 vs ${m.oppName} <b>${m.sc[0]}:${m.sc[1]}</b> ${won?'<span class="w">胜</span>':'<span class="l">负</span>'}　<span class="hi">${won?"胜场奖金":"出场费"} +${purse} 万</span></div>`);
 
@@ -3665,11 +3680,11 @@ export function endMatch(){
   // ---- 世界的回声（2026-08-31 竞品拆解移植）----
   // 宿敌账本：赢下有明星选手的队要被记住
   noteRivalBeat(m.opp.players,won);
-  // 心态气压：输球攒 Tilt，赢球泄压。0:2 被横扫压力翻倍。
+  // 心态气压：输比赛攒 Tilt，赢比赛泄压。0:2 被横扫压力翻倍。
   S.tilt=clamp((S.tilt||0)+(won?-8:(swept||m.sc[0]===0?18:12)),0,100);
   if(!won&&S.tilt>=60&&!S._tiltWarned){
     S._tiltWarned=true;
-    pushEvent(`连着输球，<b>心态开始起飞</b>（心态压力 ${Math.round(S.tilt)}）。<br>
+    pushEvent(`连着输比赛，<b>心态开始起飞</b>（心态压力 ${Math.round(S.tilt)}）。<br>
       <span style="color:var(--ink-3)">带着这种状态上场是要掉发挥的——休息、心理课、或者赢一场，都能把它压回去。</span>`,"bad","心态");
   }
   if(S.tilt<40) S._tiltWarned=false;
@@ -3764,7 +3779,7 @@ export function simWorld(){
         S._upset = aw ? {winner:a.name,loser:b.name} : {winner:b.name,loser:a.name};
       }
       const f1=noteForm(a.name,aw), f2=noteForm(b.name,!aw);   // 所有联赛都记近况（AI 士气用）
-      if(lg===(S.homeLeague||"LPL")){   // 播的是你所在联赛的战况（玩家实锤：在 LCK 打球却一直弹 LPL 的冷门）
+      if(lg===(S.homeLeague||"LPL")){   // 播的是你所在联赛的战况（玩家实锤：在 LCK 打比赛却一直弹 LPL 的冷门）
         const rk=lplRank(), notable=new Set(
           rk.slice(0,4).map(r=>r.n).concat(rk.slice(-3).map(r=>r.n)).concat([S.team]));
         [[a.name,f1],[b.name,f2]].forEach(([tn,f])=>{
@@ -3931,7 +3946,7 @@ export function startPlayoff(){
   checkAch("playoff");
   /* 替补不打季后赛（玩家实锤：常规赛全程没抢下首发，季后赛却被莫名安排上场，
      还和同位置首发同框）。教练的名单是连续的：你没压过他，季后赛还是他打。
-     球队用真首发阵容模拟，你在替补席按周看结果；夺冠算球队的，不进你的生涯表。 */
+     战队用真首发阵容模拟，你在替补席按周看结果；夺冠算战队的，不进你的生涯表。 */
   if(isBenched()){
     const tmp: any={round:1,seed,alive:true,beaten:[S.team]};
     S.playoff=tmp;
@@ -3956,7 +3971,7 @@ export function startPlayoff(){
        这几周你坐在替补席上，时间是自己的：练，把差距补上。`);
     runNews.forEach((t,i)=>queueBreakNews(Math.min(1+i,2),t,/不敌/.test(t)?"bad":"info","季后赛"));
     setBreakAgenda(agenda,
-      `首发还是 <b>${S.understudy?S.understudy.id:"他"}</b>，你在替补席。球队按真首发阵容打，赛果按周揭晓。`);
+      `首发还是 <b>${S.understudy?S.understudy.id:"他"}</b>，你在替补席。战队按真首发阵容打，赛果按周揭晓。`);
     return;
   }
   S.playoff={round:1,seed,alive:true,beaten:[S.team]};
@@ -4170,7 +4185,7 @@ export function endSeason(result,seed){
       pushEvent(`${SPLITS[S.split||0]}季后赛奖金到账 <b>${amt} 万</b>。`,"good","奖金"); }
   }
   if(result==="champion"&&S.benchedPO){
-    /* 球队夺冠、你全程替补：荣誉是球队的（现实里替补也有戒指，
+    /* 战队夺冠、你全程替补：荣誉是战队的（现实里替补也有戒指，
        但这游戏的生涯表只记你亲手打下的——五人哲学的另一面）。 */
     const sp=SPLITS[S.split||0];
     addRingTitle(`${SEASONS[S.si].tag} ${S.homeLeague||"LPL"}${sp}`);
@@ -5280,7 +5295,7 @@ export function eventsCard(){
 export function standingsCard(){
   const rows=lplRank();
   const HL=S.homeLeague||"LPL";
-  // 在 LDL 打球不代表看不见一线——现实里二队选手天天看一队比赛。
+  // 在 LDL 打比赛不代表看不见一线——现实里二队选手天天看一队比赛。
   // 玩家原话：「看不到一线队的排名但是又能看到其他赛区排名就很奇怪」。
   const lpl = HL==="LDL" ? `<div class="card"><h2>LPL 积分榜<em>一线联赛</em></h2>
     <div class="tw"><table><thead><tr><th>#</th><th>战队</th><th>战绩</th></tr></thead><tbody>
