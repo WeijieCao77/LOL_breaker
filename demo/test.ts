@@ -218,7 +218,9 @@ function playOne(opts?) {
       // 自由身桌上的邀请：先谈第一家（opts.noOffers 一律回绝）
       if (S.faOffers && S.faOffers.length && !S.proOffer && !S.tryout && !S.deal) { if (opts.noOffers) A.dropFaOffer(0); else { transfers++; A.takeFaOffer(0); } continue; }
       // 有队来挖：表现好就走人（测试里一律接受，用来量频率）；opts.noOffers 一律回绝（逼出自由身没人签）
-      if (S.proOffer) { if (opts.noOffers) { A.dropProOffer(); } else { transfers++; A.takeProOffer(); } continue; }
+      if (S.proOffer) {
+        const champ = ((S.career && S.career.worldsYears) || []).some((y: number) => y >= S.si - 1) || ((S.career && S.career.msiYears) || []).some((y: number) => y >= S.si - 1);
+        if (opts.noOffers || (opts.loyal && champ)) { A.dropProOffer(); } else { transfers++; A.takeProOffer(); } continue; }
       if (S.tryout) { const t=S.tryout; if(t.done) A.afterTryout(); else A.resolveTryoutDay(1); continue; }
       if (S.deal) { if(S.deal.transfer) A.signTransfer(); else A.signDeal(); continue; }
       if (S.ap > 0) {
@@ -328,9 +330,9 @@ export { playOne, unitChecks, A, SEED };
 /* 批测：npx tsx demo/test.ts --batch 30
    固定种子 1..N 各跑一局，只打统计不做断言。用来校准职业前压缩（20→14 周）前后的上岸节奏：
    一年内上岸率、上岸周数 p50/p90、上岸时段位读数、结局分布——改前改后各跑一次对比。 */
-function batch(n: number, encore = false, strong = false) {
+function batch(n: number, encore = false, strong = false, loyal = false) {
   const rs = [];
-  for (let i = 1; i <= n; i++) { rs.push(playOne({ seed: 1000 + i, encore, strong })); process.stderr.write("."); }
+  for (let i = 1; i <= n; i++) { rs.push(playOne({ seed: 1000 + i, encore, strong, loyal })); process.stderr.write("."); }
   process.stderr.write("\n");
   const q = (arr: number[], p: number) => { const a = arr.slice().sort((x, y) => x - y); return a.length ? a[Math.min(a.length - 1, Math.floor(p * (a.length - 1)))] : 0; };
   const signed = rs.filter(r => r.signAt > 0);
@@ -360,6 +362,9 @@ function batch(n: number, encore = false, strong = false) {
     rates: (() => { const f = (g: (r: any) => boolean) => +(rs.filter(g).length / n).toFixed(3); return {
       anyTitle: f(r => r.titles.length > 0), league: f(r => r.lg > 0), msi: f(r => r.msi > 0), worlds: f(r => r.worlds > 0),
       worlds2: f(r => r.worlds >= 2), breaker: f(r => r.msi > 0 && r.worlds > 0), dynasty: f(r => r.streak >= 3),
+      backToBack: f(r => r.streak >= 2), worldsPerCareer: +(rs.reduce((a, r) => a + r.worlds, 0) / n).toFixed(2),
+      worldsPerApp: +(rs.reduce((a, r) => a + r.worlds, 0) / Math.max(1, rs.reduce((a, r) => a + r.worldsApps, 0))).toFixed(3),
+      appsPerCareer: +(rs.reduce((a, r) => a + r.worldsApps, 0) / n).toFixed(2),
       legend: f(r => r.ending === "传奇"), extended: f(r => r.extended) }; })(),
     stepsMean: Math.round(rs.reduce((a, r) => a + r.steps, 0) / n),
   }, null, 1));
@@ -367,7 +372,7 @@ function batch(n: number, encore = false, strong = false) {
 
 if (isMain && process.argv.includes("--batch")) {
   const i = process.argv.indexOf("--batch");
-  batch(parseInt(process.argv[i + 1] || "20", 10) || 20, process.argv.includes("--encore"), process.argv.includes("--strong"));   // --encore：五年到了一律再战；--strong：强玩家
+  batch(parseInt(process.argv[i + 1] || "20", 10) || 20, process.argv.includes("--encore"), process.argv.includes("--strong"), process.argv.includes("--loyal"));   // --encore：再战；--strong：强玩家；--loyal：夺冠后不走
 } else if (isMain) {
   console.log("随机种子：", SEED, "（SEED=" + SEED + " npm test 可原样重放）");
   const unit = unitChecks();
