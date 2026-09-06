@@ -13029,6 +13029,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260907h", at: "2026-09-07", items: [
+      "天花板上抬（玩家实锤：练到 S16 综合只有 76——那就是天赋上限，不是练得不够）：每一维的上限都抬了一截，赛段经验顶开上限的池子更大，24–25 岁的训练折扣放松。练到底的人现在能站到明星那一档，再战三年的老将也还在长"
+    ] },
     { v: "v20260907g", at: "2026-09-07", items: [
       "难度下调：顶级战队不再是天堑——真实胜率和王朝加成的分量调低，超强阵容的战力顶端压平；你在全队战力里的分量明显提高，临场决策更算数。练到顶尖并待在一支强队里，国际冠军现在真的走得通",
       "全游戏再清一遍足球词：球队→战队、球探→青训教练 / 教练组、赢球 / 输球 / 打球→比赛"
@@ -13595,14 +13598,14 @@ header.top.compact>.theme-top{display:none}
     return C[C.length - 1][0];
   }
   var SCALE_SHIFT = 5;
-  var cap4 = (t) => 55 + t * 4;
+  var cap4 = (t) => 57 + t * 4.3;
   var CAP_MECH_MAX = 6;
   var CAP_MILE_MAX = 7;
   var CAP_MAX_BONUS = CAP_MECH_MAX + CAP_MILE_MAX;
-  var CAP_EXP_STEP = 0.3;
-  var CAP_EXP_MAX = 3;
+  var CAP_EXP_STEP = 0.5;
+  var CAP_EXP_MAX = 5;
   function capOf(d) {
-    return cap4(S.talent[d]) + (S.capBonus && S.capBonus[d] || 0) + (S && S.capExp || 0);
+    return Math.min(99, cap4(S.talent[d]) + (S.capBonus && S.capBonus[d] || 0) + (S && S.capExp || 0));
   }
   function initCapBonus() {
     S.capBonus = {};
@@ -15522,7 +15525,7 @@ header.top.compact>.theme-top{display:none}
   }
   function gain2(d) {
     const t = S.talent[d], c = cap4(t), room = clamp(1 - (S.attrs[d] - SCALE_SHIFT) / (c - SCALE_SHIFT), 0, 1);
-    const ageM = S.age <= 21 ? 1.15 : S.age <= 23 ? 1 : 0.6;
+    const ageM = S.age <= 21 ? 1.15 : S.age <= 23 ? 1 : S.age <= 25 ? 0.8 : 0.6;
     const bonus = S.origin === "academy" ? 1.2 : 1;
     const coach = S.buff && S.buff.coach ? 1.22 : 1;
     const tb = buffVal("train") * buffVal("mood");

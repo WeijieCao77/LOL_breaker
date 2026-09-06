@@ -110,6 +110,9 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260907h", at:"2026-09-07", items:[
+    "天花板上抬（玩家实锤：练到 S16 综合只有 76——那就是天赋上限，不是练得不够）：每一维的上限都抬了一截，赛段经验顶开上限的池子更大，24–25 岁的训练折扣放松。练到底的人现在能站到明星那一档，再战三年的老将也还在长"
+  ]},
   {v:"v20260907g", at:"2026-09-07", items:[
     "难度下调：顶级战队不再是天堑——真实胜率和王朝加成的分量调低，超强阵容的战力顶端压平；你在全队战力里的分量明显提高，临场决策更算数。练到顶尖并待在一支强队里，国际冠军现在真的走得通",
     "全游戏再清一遍足球词：球队→战队、球探→青训教练 / 教练组、赢球 / 输球 / 打球→比赛"
@@ -643,7 +646,9 @@ export function rankToSkill(r){
    均衡 4 点 71+13=84 ≈ 明星下沿。试过再多抬 5（60+4t）：机器人末态五维全顶上限、实力 81.5，
    MSI/世界赛率从 16/21 飙到 45/45——上限每多 1 分都是难度决策，不在这次换尺里偷渡 */
 export const SCALE_SHIFT=5;   // 2026-09-05 全体系平移量：凡是「属性/上限」这种比值，都先减掉它再算
-export const cap=t=>55+t*4;
+/* 2026-09-07 天花板上抬（玩家实锤：练到 S16 综合只有 76——批测证实五维里四维贴着上限，76 就是 20 点天赋的均值上限）：
+   55+4t → 57+4.3t。天赋 4 → 74（原 71），8 → 91（原 87），10 → 100（封 99）。配合经验池 3→5、24 岁折扣松一档。 */
+export const cap=t=>57+t*4.3;
 /* 上限池分两个：机械/环境路径一个，里程碑经历一个。
    原来只有一个 6 点的池，强队、老将、复盘这些「肯做就有」的来源先到先得，
    等你真的捧起 MSI 奖杯，池子里只剩零头——玩家实测夺冠时刻只 +0.7，
@@ -659,9 +664,9 @@ export const CAP_MAX_BONUS=CAP_MECH_MAX+CAP_MILE_MAX;
 /* 实际瓶颈 = 天赋上限 + 经历顶开的部分 */
 /* 经验顶瓶颈（2026-09-06 玩家拍板，变体 B4）：每打完一个赛段所有维度上限 +0.3，最多 +3——练满从 71 到 74，明星线留给突破。
    B（+1/赛段）把世界赛冠军率打到 36%、B′（+0.5）26%、B″（+0.5 + 贴顶衰减 35%）19%——上限就是难度本身；B4 在噪声带内。 */
-export const CAP_EXP_STEP=0.3, CAP_EXP_MAX=3;
+export const CAP_EXP_STEP=0.5, CAP_EXP_MAX=5;   // 2026-09-07：0.3/3 → 0.5/5，越打越老练，再战三年的人也还在长
 export function capOf(d){
-  return cap(S.talent[d])+((S.capBonus&&S.capBonus[d])||0)+((S&&S.capExp)||0);
+  return Math.min(99,cap(S.talent[d])+((S.capBonus&&S.capBonus[d])||0)+((S&&S.capExp)||0));   // 99 封顶：上限加突破池不能越过 100
 }
 export function initCapBonus(){ S.capBonus={}; S.capMile={}; DIMS.forEach(d=>{S.capBonus[d]=0;S.capMile[d]=0;}); }
 export function capMileOf(d){ return (S.capMile&&S.capMile[d])||0; }
@@ -2537,7 +2542,7 @@ export function gain(d){
   // 余量按「平移后的尺」算：全体系 +5 之后 attr/cap 的比值会缩小、全程收益慢 6%
   //（2×120 批测世界赛率掉 5 个点抓出来的）——减掉平移量再算，与换尺前逐点等价
   const t=S.talent[d],c=cap(t),room=clamp(1-((S.attrs[d]-SCALE_SHIFT)/(c-SCALE_SHIFT)),0,1);
-  const ageM=S.age<=21?1.15:S.age<=23?1.0:0.6;   // 训练收益也从 24 岁起打折
+  const ageM=S.age<=21?1.15:S.age<=23?1.0:S.age<=25?0.8:0.6;   // 训练收益 24–25 岁八折、26 起六折（2026-09-07 松一档，原来 24 起六折）
   const bonus=S.origin==="academy"?1.2:1.0;
   const coach=(S.buff&&S.buff.coach)?1.22:1;
   const tb=buffVal('train')*buffVal('mood');
