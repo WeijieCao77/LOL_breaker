@@ -4432,11 +4432,12 @@ header.top.compact>.theme-top{display:none}
     {
       k: "pay",
       n: "要求加薪",
-      d: "年薪 +25%",
+      d: "薪资 +25%",
       hint: "最直接，也最容易谈崩",
       cost: 16,
+      // 加薪也封在档次天花板里——不然续约那条乘法堵上了，谈判这条又能无限往上叠
       run: (d) => {
-        d.salary = Math.round(d.salary * 1.25);
+        d.salary = Math.min(Math.round(d.salary * 1.25), payCapOf(d.clubTier));
       }
     },
     {
@@ -4509,10 +4510,10 @@ header.top.compact>.theme-top{display:none}
     return `<div class="card"><h2>${d.renew ? "续约谈判" : "合同谈判"}<em>${d.team} · ${T.n}${st ? ` · ${st.lg || "LPL"} 第 ${st.pos}/${st.of}` : ""}</em></h2>
     <h3>${D.n}<span class="tag g">${d.renew ? "续约" : "试训 " + d.grade}</span></h3>
     <div class="grid g2" style="margin:12px 0">
-      <div class="ver"><div class="k">年薪</div><div class="v mono" style="font-size:22px;color:var(--gold-hi)">${d.salary}<small> 万/赛段</small></div></div>
-      <div class="ver"><div class="k">签字费</div><div class="v mono" style="font-size:22px">${d.sign}<small> 万</small></div></div>
+      <div class="ver"><div class="k">赛段薪资</div><div class="v mono" style="font-size:22px;color:var(--gold-hi)">${wanHtml(d.salary)}</div><div class="k" style="font-size:10px">${yearPayText(d.salary)}（一年两个赛段）</div></div>
+      <div class="ver"><div class="k">签字费</div><div class="v mono" style="font-size:22px">${wanHtml(d.sign)}</div></div>
       <div class="ver"><div class="k">合同年限</div><div class="v mono" style="font-size:22px">${d.years}<small> 赛段</small></div><div class="k" style="font-size:10px;line-height:1.4">${contractSpanText(d.years)}</div></div>
-      <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:22px">${d.buyout}<small> 万</small></div></div>
+      <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:22px">${wanHtml(d.buyout)}</div></div>
     </div>
     <p class="note">你的底气 <b>${lev.toFixed(0)}</b>——${d.renew ? "来自表现分、人气、当年冠军和教练的信任" : "来自试训评级、人气和段位"}。
       已经提了 <b>${d.asks}</b> 次要求，<b>提得越多越容易谈崩</b>${d.renew ? "——谈崩了报价就收回，你成自由身" : ""}。</p>
@@ -4527,7 +4528,7 @@ header.top.compact>.theme-top{display:none}
       <button class="btn" id="dealsign">就这么签 →</button>
       <button class="btn ghost" id="dealno">${d.renew ? "不续约，进转会市场" : "不签，再练一年"}</button>
     </div>
-    <p class="note">签字费当场到账，年薪每个赛段结算一次。违约金越高，以后别队越难把你买走。<br>
+    <p class="note">签字费当场到账，薪资每个赛段结算一次（一年两个赛段）。违约金越高，以后别队越难把你买走。<br>
       ${d.dealTier === "acad" ? `<b>青训合同去的是 LDL 二队</b>——在二队打首发攒数据，压过一队对位才升上去。` : d.dealTier === "sub" ? `<b>替补合同意味着板凳</b>——训练赛压过首发才轮得到你上场。` : ""}
       <b>不签也是一条路</b>——再练一年换一家更好的队未必更亏。但这家今年不会再来了。</p>
   </div>`;
@@ -4536,7 +4537,7 @@ header.top.compact>.theme-top{display:none}
     const d = S.deal;
     if (!d) return;
     const D = DEAL_TIERS[d.dealTier];
-    preLog(`拒绝了 <b>${d.team}</b> 的${D.n}（年薪 ${d.salary} 万）。
+    preLog(`拒绝了 <b>${d.team}</b> 的${D.n}（赛段薪资 ${wanText(d.salary)}）。
     你觉得自己值更多——那就得在剩下的时间里证明它。`, "info");
     dropDeal();
   }
@@ -4597,7 +4598,7 @@ header.top.compact>.theme-top{display:none}
       clubTier: d.clubTier
     };
     preLog(`和 <b>${teamName}</b> 签下 <b>${D.n}</b> 合同：
-    年薪 ${d.salary} 万 · ${d.years} 个赛段 · 违约金 ${d.buyout} 万。`, "big");
+    赛段薪资 ${wanText(d.salary)}（${yearPayText(d.salary)}）· ${d.years} 个赛段 · 违约金 ${wanText(d.buyout)}。`, "big");
     S.deal = null;
     acceptOffer(0);
   }
@@ -4934,9 +4935,9 @@ header.top.compact>.theme-top{display:none}
     <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:6px">${teamLogo(r.team, 22)} <b>${r.team}</b> 想和你续约</div>
     <p class="note" style="text-align:center;margin:0 0 12px">${r.wonTitle ? "你捧回了冠军——他们不想让你走。" : "你的表现值得一份新合同。"}</p>
     <div class="grid g2" style="margin:0 0 12px">
-      <div class="ver"><div class="k">新年薪</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${r.salary !== void 0 ? r.salary : "—"}<small> 万/赛段</small>${up(r.oldSalary, r.salary)}</div>${r.oldSalary !== void 0 ? `<div class="k" style="font-size:10px">原 ${r.oldSalary} 万</div>` : ""}</div>
+      <div class="ver"><div class="k">新赛段薪资</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${r.salary !== void 0 ? wanHtml(r.salary) : "—"}${up(r.oldSalary, r.salary)}</div>${r.salary !== void 0 ? `<div class="k" style="font-size:10px">${yearPayText(r.salary)}${r.oldSalary !== void 0 ? ` · 原 ${wanText(r.oldSalary)}/赛段` : ""}</div>` : ""}</div>
       <div class="ver"><div class="k">年限</div><div class="v mono" style="font-size:20px">${r.years}<small> 个赛段</small></div><div class="k" style="font-size:10px;line-height:1.4">${contractSpanText(r.years)}</div></div>
-      <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:20px">${r.buyout !== void 0 ? r.buyout : "—"}<small> 万</small>${up(r.oldBuyout, r.buyout)}</div>${r.oldBuyout !== void 0 ? `<div class="k" style="font-size:10px">原 ${r.oldBuyout} 万</div>` : ""}</div>
+      <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:20px">${r.buyout !== void 0 ? wanHtml(r.buyout) : "—"}${up(r.oldBuyout, r.buyout)}</div>${r.oldBuyout !== void 0 ? `<div class="k" style="font-size:10px">原 ${wanText(r.oldBuyout)}</div>` : ""}</div>
       <div class="ver"><div class="k">违约金的意思</div><div class="k" style="font-size:11px;line-height:1.5">谈得高，别的队买你要付更多，愿意来的就少；想留后路可谈低。</div></div>
     </div>
     <div class="row" style="justify-content:center">
@@ -4963,8 +4964,8 @@ header.top.compact>.theme-top{display:none}
     };
     S.pendingRenew = null;
     S.gotCut = false;
-    pushEvent(`<b>${r.team}</b> 与你续约 ${r.years} 个赛段，年薪 <b>${r.salary !== void 0 ? r.salary : "—"} 万</b>${r.buyout !== void 0 ? `，违约金 <b>${r.buyout} 万</b>` : ""}。`, "good", "合同");
-    txNote(`与 ${r.team} 续约，年薪 ${r.salary !== void 0 ? r.salary : "—"} 万`);
+    pushEvent(`<b>${r.team}</b> 与你续约 ${r.years} 个赛段，赛段薪资 <b>${r.salary !== void 0 ? wanText(r.salary) : "—"}</b>${r.buyout !== void 0 ? `，违约金 <b>${r.buyout} 万</b>` : ""}。`, "good", "合同");
+    txNote(`与 ${r.team} 续约，赛段薪资 ${r.salary !== void 0 ? wanText(r.salary) : "—"}`);
     render();
   }
   function renewNegotiate() {
@@ -5224,7 +5225,8 @@ header.top.compact>.theme-top{display:none}
       render();
       return;
     }
-    let salary = Math.round(lerp(T.pay[0], T.pay[1], q));
+    const payFloor = Math.round((S.contract && S.contract.salary || 0) * 0.85);
+    let salary = Math.min(Math.max(Math.round(lerp(T.pay[0], T.pay[1], q)), payFloor), payCapOf(tier));
     let sign = S._regDeal ? 0 : Math.round(lerp(T.sign[0], T.sign[1], q));
     let feeCutNote = S._regDeal ? `<div><span class="hi">赛段注册期</span> — <span class="l">买断按 1.2 倍算、没有签字费、进队默契从头磨</span></div>` : "";
     if (fee > budget) {
@@ -5301,13 +5303,13 @@ header.top.compact>.theme-top{display:none}
     }
     S._regDeal = false;
     pushEvent(
-      `<b>${meName()}</b> 从 <b>${old}</b> 转会到 <b>${d.team}</b>${d.league && d.league !== oldLg ? `，去了 <b>${d.league}</b>` : ""}。${fee ? `对方付了 <b>${fee} 万</b>违约金。` : ""}年薪 ${d.salary} 万，${d.years} 个赛段。`,
+      `<b>${meName()}</b> 从 <b>${old}</b> 转会到 <b>${d.team}</b>${d.league && d.league !== oldLg ? `，去了 <b>${d.league}</b>` : ""}。${fee ? `对方付了 <b>${wanText(fee)}</b>违约金。` : ""}赛段薪资 ${wanText(d.salary)}（${yearPayText(d.salary)}），${d.years} 个赛段。`,
       "big",
       "转会"
     );
     checkAch("transfer", { to: d.team });
     checkAch("sign");
-    txNote(`${old} → <b>${d.team}</b>${d.league && d.league !== oldLg ? `（${d.league}）` : ""}，年薪 ${d.salary} 万${fee ? `，转会费 ${fee} 万` : ""}`);
+    txNote(`${old} → <b>${d.team}</b>${d.league && d.league !== oldLg ? `（${d.league}）` : ""}，赛段薪资 ${wanText(d.salary)}${fee ? `，转会费 ${wanText(fee)}` : ""}`);
     S.deal = null;
     render();
   }
@@ -5362,7 +5364,7 @@ header.top.compact>.theme-top{display:none}
     if (rnd() < p) {
       const T = CLUB_TIERS[d.clubTier] || CLUB_TIERS.mid;
       d.salary = Math.max(Math.round(d.salary * 1.35), Math.round(T.pay[0] * 0.8));
-      pushEvent(`经纪人把你的 LDL 数据拍在了桌上——俱乐部认了：<b>年薪提到 ${d.salary} 万/赛段</b>。`, "good", "升队");
+      pushEvent(`经纪人把你的 LDL 数据拍在了桌上——俱乐部认了：<b>赛段薪资提到 ${wanText(d.salary)}</b>。`, "good", "升队");
     } else {
       addStaff("mgr", -4);
       pushEvent(`你要了更高的数，管理层没接：「一队还没打过一场，先证明再谈」。<b>原提案不变</b>，经理记了一笔。`, "info", "升队");
@@ -5400,9 +5402,9 @@ header.top.compact>.theme-top{display:none}
       S.contract.clubTier = d.clubTier;
     }
     S.rosterSig = myRoster().map((x) => x.id).sort().join("|");
-    pushEvent(`<b>${d.team}</b> 把你从 <b>${old}</b> 调上了一队，新合同：年薪 <b>${d.salary} 万/赛段</b> · 违约金 ${d.buyout} 万。
+    pushEvent(`<b>${d.team}</b> 把你从 <b>${old}</b> 调上了一队，新合同：赛段薪资 <b>${wanText(d.salary)}</b>（${yearPayText(d.salary)}）· 违约金 ${wanText(d.buyout)}。
     ${d.incumbent} 让出了首发位——你在 LDL 打的那些比赛，有人一直在看。`, "big", "升队");
-    txNote(`${old} → <b>${d.team}</b>（升上一队 · 年薪 ${d.salary} 万/赛段）`);
+    txNote(`${old} → <b>${d.team}</b>（升上一队 · 赛段薪资 ${wanText(d.salary)}）`);
     checkAch("promote");
     render();
   }
@@ -5428,8 +5430,8 @@ header.top.compact>.theme-top{display:none}
     <p class="note" style="margin:0 0 10px">一队${POSN[S.pos]} <b>${d.incumbent}</b> 让位。你的底气：
       综合压过对位 <b>${d.gap > 0 ? "+" : ""}${d.gap}</b>${d.wr !== null ? ` · LDL 胜率 <b>${d.wr}%</b>` : ""} · 本赛季场均评分 <b>${avgR}</b></p>
     <div class="grid g2" style="margin:10px 0">
-      <div class="ver"><div class="k">新年薪</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${d.salary}<small> 万/赛段</small></div></div>
-      <div class="ver"><div class="k">新违约金</div><div class="v mono" style="font-size:20px">${d.buyout}<small> 万</small></div></div>
+      <div class="ver"><div class="k">新赛段薪资</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${wanHtml(d.salary)}</div><div class="k" style="font-size:10px">${yearPayText(d.salary)}</div></div>
+      <div class="ver"><div class="k">新违约金</div><div class="v mono" style="font-size:20px">${wanHtml(d.buyout)}</div></div>
     </div>
     <div class="row" style="justify-content:center">
       <button class="btn" id="promoteok">签字上一队 →</button>
@@ -5612,7 +5614,7 @@ header.top.compact>.theme-top{display:none}
     const targets = approachTargets();
     const contract = `<div class="card"><h2>我的合同<em>${S.team}</em></h2>
     <div class="grid g2" style="margin:10px 0">
-      <div class="ver"><div class="k">年薪</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${c.salary !== void 0 ? c.salary : "—"}<small> 万/赛段</small></div></div>
+      <div class="ver"><div class="k">赛段薪资</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${c.salary !== void 0 ? wanHtml(c.salary) : "—"}</div>${c.salary !== void 0 ? `<div class="k" style="font-size:10px">${yearPayText(c.salary)}</div>` : ""}</div>
       <div class="ver"><div class="k">剩余</div><div class="v mono" style="font-size:20px">${c.left !== void 0 ? c.left : "—"}<small> 赛段</small></div></div>
       <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:20px">${fee}<small> 万</small></div></div>
       <div class="ver"><div class="k">本赛段表现分</div><div class="v mono" style="font-size:20px">${perf.toFixed(0)}</div></div>
@@ -6583,10 +6585,18 @@ header.top.compact>.theme-top{display:none}
       }
     }
   ];
+  var PAY_CAP = { top: 1500, mid: 700, low: 300, acad: 40 };
+  function payCapOf(clubTier) {
+    return PAY_CAP[clubTier] !== void 0 ? PAY_CAP[clubTier] : PAY_CAP.mid;
+  }
+  function buyoutRatio(c) {
+    const s = c && c.salary, b = c && c.buyout;
+    return s && b && s > 0 ? clamp(b / s, 3, 9) : 6;
+  }
   function salaryOf() {
     const c = S.contract || {};
     const bonus = Math.round(Math.min(S.fans, 6e3) * 0.012) + (S.career.leagueTitles || 0) * 6 + ((S.career.msi || 0) + (S.career.worlds || 0)) * 14;
-    if (c.salary !== void 0) return Math.round(c.salary + bonus);
+    if (c.salary !== void 0) return Math.round(Math.min(c.salary, payCapOf(c.clubTier)) + bonus);
     const kindMul = { sub: 1.25, start: 1, core: 0.85, foreign: 1.15 }[S.offerKind] || 1;
     return Math.round((26 + bonus) * kindMul);
   }
@@ -6606,13 +6616,16 @@ header.top.compact>.theme-top{display:none}
     const wonTitle = (S.career && S.career.lgYears || []).includes(S.si) || (S.career && S.career.msiYears || []).includes(S.si) || (S.career && S.career.worldsYears || []).includes(S.si);
     const wantRenew = wonTitle || ovr >= teamAvg - 6 && trust >= 35;
     if (wantRenew) {
-      const raise = clamp(1.15 + (ovr - teamAvg) * 0.02 + (wonTitle ? 0.15 : 0), 1.05, 1.9);
+      const raise = clamp(1.12 + (ovr - teamAvg) * 0.02 + (wonTitle ? 0.12 : 0), 1.02, 1.35);
       const old = S.contract;
+      const cap5 = payCapOf(old.clubTier);
+      const sal = old.salary !== void 0 ? Math.min(Math.round(old.salary * raise), cap5) : void 0;
+      const k = buyoutRatio(old);
       S.pendingRenew = {
         team: S.team,
         years: 2,
-        salary: old.salary !== void 0 ? Math.round(old.salary * raise) : void 0,
-        buyout: old.buyout !== void 0 ? Math.round(old.buyout * raise) : void 0,
+        salary: sal,
+        buyout: sal !== void 0 ? Math.round(sal * k) : old.buyout !== void 0 ? old.buyout : void 0,
         tier: old.tier,
         grade: old.grade,
         clubTier: old.clubTier,
@@ -8325,6 +8338,17 @@ header.top.compact>.theme-top{display:none}
     ["fee", "报名费"],
     ["other", "其他开销"]
   ];
+  function wanText(n) {
+    const v = Math.round(Number(n) || 0);
+    return Math.abs(v) >= 1e4 ? `${(v / 1e4).toFixed(2)} 亿` : `${v} 万`;
+  }
+  function wanHtml(n) {
+    const v = Math.round(Number(n) || 0);
+    return Math.abs(v) >= 1e4 ? `${(v / 1e4).toFixed(2)}<small> 亿</small>` : `${v}<small> 万</small>`;
+  }
+  function yearPayText(n) {
+    return `年薪 ${wanText((Number(n) || 0) * 2)}`;
+  }
   function _emptyLedger() {
     return { in: {}, out: {} };
   }
@@ -8367,7 +8391,7 @@ header.top.compact>.theme-top{display:none}
     const rows = LEDGER_IN.filter(([k]) => cur.in[k]).map(([k, n]) => row(n, cur.in[k], false)).join("") + LEDGER_OUT.filter(([k]) => cur.out[k]).map(([k, n]) => row(n, cur.out[k], true)).join("");
     return `<div class="card"><h2>财务总览<em>${led.label || ""}</em></h2>
     <div class="fin-cash mono">${Math.round(S.money)}<small> 万</small></div>
-    ${S.career && true ? `<p class="note" style="margin:2px 0 10px">下赛段工资预计 <b>${salaryOf()} 万</b>（合同年薪 ${S.contract && S.contract.salary || "—"} ＋ 人气与荣誉浮动）</p>` : ""}
+    ${S.career && true ? `<p class="note" style="margin:2px 0 10px">下赛段工资预计 <b>${wanText(salaryOf())}</b>（合同赛段薪资 ${S.contract && S.contract.salary !== void 0 ? wanText(S.contract.salary) : "—"} ＋ 人气与荣誉浮动）</p>` : ""}
     ${rows ? `<div class="fin-tab">${rows}
       <div class="fin-r fin-net"><span>本赛段净</span>
         <span class="mono ${net >= 0 ? "up" : "dn"}">${net >= 0 ? "+" : "−"}${Math.abs(net)}</span></div></div>` : `<p class="note">本赛段还没有进出账。</p>`}
@@ -8973,7 +8997,7 @@ header.top.compact>.theme-top{display:none}
         <div class="t">${x.n} <span class="tag">${x.cost} 万</span></div>
         <div class="d">${has ? "本赛段已生效" : x.d}</div></button>`;
     }).join("")}</div>`}
-    <p class="note">${S.career ? `薪资按名气与荣誉每赛段结算，当前预计 <b>${salaryOf()} 万</b>。` : `还没签约，暂时没有薪资。`}
+    <p class="note">${S.career ? `薪资按名气与荣誉每赛段结算，当前预计 <b>${wanText(salaryOf())}</b>。` : `还没签约，暂时没有薪资。`}
       ${S.streamDeal ? `直播签了<b>${S.streamDeal.n}</b>：每次直播保底 <b>${Math.round(streamIncome())} 万</b>，旱涝保收，但人气再涨也不加钱。` : `直播现在是<b>${STREAM_CUTS[S.streamCutIdx || 0].n}</b>，每次约 <b>${Math.round(streamIncome())} 万</b>——咖位上去了平台会主动上调分成。`}</p></div>`;
   }
 
@@ -9704,6 +9728,8 @@ header.top.compact>.theme-top{display:none}
     if (!r || r.si !== S.si) return 1;
     return S.intl || S.off && S.off.next === "intl" ? r.mul : 1;
   }
+  var AWARD_BONUS = { worlds: 3, msi: 1.5, league: 2, top4: 1 };
+  var AWARD_TEAM_CAP = 3;
   function computeAwards() {
     const HL = S.homeLeague || "LPL";
     if (HL === "LDL") return null;
@@ -9725,7 +9751,7 @@ header.top.compact>.theme-top{display:none}
     const wc = H.worlds && H.worlds[S.si] || ((S.career && S.career.worldsYears || []).includes(S.si) ? S.team : null);
     const mc = H.msi && H.msi[S.si] || ((S.career && S.career.msiYears || []).includes(S.si) ? S.team : null);
     const lc = top[0] || rk[0] || null;
-    const bonus = (n) => (n === wc ? 8 : 0) + (n === mc ? 4 : 0) + (n === lc ? 5 : 0) + (rk.indexOf(n) >= 0 && rk.indexOf(n) < 4 ? 2 : 0);
+    const bonus = (n) => (n === wc ? AWARD_BONUS.worlds : 0) + (n === mc ? AWARD_BONUS.msi : 0) + (n === lc ? AWARD_BONUS.league : 0) + (rk.indexOf(n) >= 0 && rk.indexOf(n) < 4 ? AWARD_BONUS.top4 : 0);
     const bench = isBenched();
     const rows = [];
     teams.forEach((t) => t.players.forEach((p) => {
@@ -9737,19 +9763,41 @@ header.top.compact>.theme-top{display:none}
         const sr = splitRating();
         if (sr !== null) sc += (sr - 1) * 6;
       }
-      rows.push({ id: p.me ? meName() : p.id, cn: p.me ? "" : p.cn || "", pos: p.pos, team: t.name, age: p.age || 22, me: !!p.me, sc });
+      rows.push({
+        id: p.me ? meName() : p.id,
+        cn: p.me ? "" : p.cn || "",
+        pos: p.pos,
+        team: t.name,
+        age: p.age || 22,
+        me: !!p.me,
+        debut: p.debutSi !== void 0 && p.debutSi === S.si,
+        sc
+      });
     }));
     if (!rows.length) return null;
     rows.sort((a, b) => b.sc - a.sc);
     const POS2 = ["top", "jng", "mid", "bot", "sup"];
-    const first = [], second = [];
+    const byPos = {};
     POS2.forEach((ps) => {
-      const c = rows.filter((x) => x.pos === ps);
-      if (c[0]) first.push(c[0]);
-      if (c[1]) second.push(c[1]);
+      byPos[ps] = rows.filter((x) => x.pos === ps);
     });
-    const mvp = rows[0];
-    const rookie = rows.find((x) => x.age <= 20) || null;
+    const order = POS2.slice().sort((a, b) => (byPos[b][0] || { sc: -1e9 }).sc - (byPos[a][0] || { sc: -1e9 }).sc);
+    const used = /* @__PURE__ */ new Set();
+    const fill = () => {
+      const out = {}, cnt = {};
+      order.forEach((ps) => {
+        const c = byPos[ps].find((x) => !used.has(x) && (cnt[x.team] || 0) < AWARD_TEAM_CAP) || byPos[ps].find((x) => !used.has(x));
+        if (c) {
+          out[ps] = c;
+          used.add(c);
+          cnt[c.team] = (cnt[c.team] || 0) + 1;
+        }
+      });
+      return POS2.map((ps) => out[ps]).filter(Boolean);
+    };
+    const first = fill(), second = fill();
+    const mvp = first.slice().sort((a, b) => b.sc - a.sc)[0] || rows[0];
+    const rookie = rows.find((x) => x.debut) || rows.find((x) => x.age <= 20) || null;
     const mine = [];
     if (mvp && mvp.me) mine.push("mvp");
     if (first.some((x) => x.me)) mine.push("first");
@@ -9834,19 +9882,14 @@ header.top.compact>.theme-top{display:none}
   }
   function awardsBody(a) {
     if (!a) return `<div class="cer-eyebrow">年度颁奖夜</div><div class="row cer-btns"><button class="btn primary" data-cer="close">散场 →</button></div>`;
-    const row = (x, i2) => x ? `<div class="aw-row${x.me ? " me" : ""}" style="--i:${i2}"><span class="aw-pos">${POSN[x.pos] || x.pos}</span><b>${x.id}</b><span class="aw-team">${x.team}</span></div>` : "";
     let i = 0;
-    const sec = a.second.map((x) => row(x, i++)).join("");
-    const fir = a.first.map((x) => row(x, i++)).join("");
-    const rk = a.rookie ? `<div class="aw-row${a.rookie.me ? " me" : ""}" style="--i:${i++}"><span class="aw-pos">新秀</span><b>${a.rookie.id}</b><span class="aw-team">${a.rookie.team}</span></div>` : "";
-    const mv = a.mvp ? `<div class="aw-row big${a.mvp.me ? " me" : ""}" style="--i:${i++}"><span class="aw-pos">MVP</span><b>${a.mvp.id}</b><span class="aw-team">${a.mvp.team}</span></div>` : "";
+    const row = (x, label, big) => x ? `<div class="aw-row${big ? " big" : ""}${x.me ? " me" : ""}" style="--i:${i++}"><span class="aw-pos">${label || POSN[x.pos] || x.pos}</span><b>${x.id}</b><span class="aw-team">${x.team}</span></div>` : "";
+    const block = (title, list, label, big) => list && list.length ? `<div class="aw-sec" style="--i:${i++}">${title}</div><div class="aw-list">${list.map((x) => row(x, label, big)).join("")}</div>` : "";
+    const blocks = block("年度一阵", a.first) + block("年度二阵", a.second) + block("最佳新秀", a.rookie ? [a.rookie] : [], "新秀") + block("年度 MVP", a.mvp ? [a.mvp] : [], "MVP", true);
     const mine = a.mine.length ? `你拿到 <b>${a.mine.map((k) => AWARD_N[k]).join("、")}</b>，人气跟着涨。` : `名单上没有你的名字。<span style="color:var(--ink-3)">明年让他们念。</span>`;
     return `${scene("trophy")}<div class="cer-eyebrow">${a.tag} ${a.lg} · 年度颁奖夜</div>
-    <div class="aw-sec" style="--i:0">年度二阵</div><div class="aw-list">${sec}</div>
-    <div class="aw-sec" style="--i:${i}">年度一阵</div><div class="aw-list">${fir}</div>
-    ${rk ? `<div class="aw-sec" style="--i:${i}">最佳新秀</div><div class="aw-list">${rk}</div>` : ""}
-    <div class="aw-sec" style="--i:${i}">年度 MVP</div><div class="aw-list">${mv}</div>
-    <p class="cer-p" style="--i:${i + 1}">${mine}</p>
+    ${blocks}
+    <p class="cer-p" style="--i:${i++}">${mine}</p>
     <div class="row cer-btns"><button class="btn primary" data-cer="close">散场 →</button></div>`;
   }
   var _timers = [];
@@ -12860,8 +12903,329 @@ header.top.compact>.theme-top{display:none}
     受伤风险<b>${lv}</b>　体能 ${100 - Math.round(S.fatigue)}/100${p >= 0.07 ? "　——该休息了，练废了更亏。" : ""}</div>`;
   }
 
+  // demo/src/stars.ts
+  var STARS = {
+    /* LPL */
+    Uzi: {
+      ep: "永远的狂小狗",
+      t: "ADC 的代名词——退役又复出，手还在",
+      h: "MSI 2018 冠军 · LPL 2016 春 / 2018 春夏冠军 · S3、S4 世界赛亚军 · 2018 亚运会金牌"
+    },
+    TheShy: {
+      ep: "上路单杀机器",
+      t: "对线期每一次换血都可能是终结",
+      h: "S8 世界冠军 · LPL 2019 春季冠军"
+    },
+    Rookie: {
+      ep: "宿命中单",
+      t: "S8 冠军中单，LPL 外援的天花板",
+      h: "S8 世界冠军 · LPL 2019 春季冠军 · 2018 LPL 常规赛 MVP"
+    },
+    Jiejie: {
+      ep: "EDG 的野区发动机",
+      t: "S11 冠军打野，节奏从他手上起",
+      h: "S11 世界冠军 · LPL 2021 春季冠军"
+    },
+    Scout: {
+      ep: "S11 决赛 MVP",
+      t: "稳到可怕的中单",
+      h: "S11 世界冠军 · S11 决赛 MVP · LPL 2021 春季冠军"
+    },
+    Viper: {
+      ep: "毒蛇",
+      t: "S11 冠军 AD，团战永远站在最正确的位置",
+      h: "S11 世界冠军 · LPL 2021 春季冠军"
+    },
+    Knight: {
+      ep: "天才中单",
+      t: "LPL 本土中单的招牌",
+      h: "LPL 2020 夏季冠军 · 2020 LPL 夏季 MVP · S10 世界赛四强"
+    },
+    Bin: {
+      ep: "上路杀神",
+      t: "S10 决赛五杀剑魔",
+      h: "S10 世界赛亚军（决赛五杀剑魔）· LPL 2020 夏季亚军"
+    },
+    GALA: {
+      ep: "MSI 双冠 AD",
+      t: "团战后手拉满",
+      h: "MSI 2021 冠军 · LPL 2021 春季冠军"
+    },
+    Xiaohu: {
+      ep: "虎将",
+      t: "中单改上单再改回来的老将",
+      h: "MSI 2018、2021 冠军 · LPL 四冠（2016 春、2018 春夏、2021 春）"
+    },
+    "369": {
+      ep: "上路铁人",
+      t: "一个人守一条边",
+      h: "LPL 2020 夏季冠军 · S10 世界赛四强"
+    },
+    Kanavi: {
+      ep: "野区野兽",
+      t: "MVP 级的打野",
+      h: "LPL 2020 春季冠军 · 2020 LPL 春季 MVP"
+    },
+    Doinb: {
+      ep: "S9 冠军中单",
+      t: "一手把节奏带出来的怪才",
+      h: "S9 世界冠军 · LPL 2019 夏季冠军 · 2019 LPL 夏季 MVP"
+    },
+    Ming: {
+      ep: "辅助之光",
+      t: "RNG 王朝的辅助",
+      h: "MSI 2018、2021 冠军 · LPL 四冠（2016 春、2018 春夏、2021 春）"
+    },
+    Wei: {
+      ep: "野区节拍器",
+      t: "MSI 冠军打野",
+      h: "MSI 2021 冠军 · LPL 2021 春季冠军"
+    },
+    Yagao: {
+      ep: "中路老将",
+      t: "JDG 的定海神针",
+      h: "LPL 2020 春季冠军"
+    },
+    Crisp: {
+      ep: "辅助大脑",
+      t: "S9 冠军辅助",
+      h: "S9 世界冠军 · LPL 2019 夏季冠军"
+    },
+    Tian: {
+      ep: "S9 决赛 MVP",
+      t: "关键局从不手软的打野",
+      h: "S9 世界冠军 · S9 决赛 MVP · LPL 2019 夏季冠军"
+    },
+    /* LCK */
+    Faker: {
+      ep: "大魔王",
+      t: "不解释",
+      h: "S3、S5、S6 世界冠军 · MSI 2016、2017 冠军 · LCK 九冠"
+    },
+    ShowMaker: {
+      ep: "DK 的魔法师",
+      t: "S10 冠军中单",
+      h: "S10 世界冠军 · LCK 2020 夏 / 2021 春夏冠军 · 2020 LCK 夏季 MVP"
+    },
+    Chovy: {
+      ep: "对线教科书",
+      t: "领先 20 刀是常态",
+      h: "2019-2021 连续三届世界赛 · LCK 三次决赛（2018 夏、2019 春夏）"
+    },
+    Deft: {
+      ep: "金东河",
+      t: "十年老将，还在等一座冠军",
+      h: "MSI 2015 冠军 · LPL 2015 春季冠军 · LCK 2014 春季冠军"
+    },
+    Ruler: {
+      ep: "S7 冠军 AD",
+      t: "后期决胜的 AD",
+      h: "S7 世界冠军 · S6 世界赛亚军 · 2018 亚运会金牌"
+    },
+    Canyon: {
+      ep: "S10 冠军打野",
+      t: "野区节奏的天花板",
+      h: "S10 世界冠军 · S10 决赛 MVP · LCK 2020 夏 / 2021 春夏冠军 · 2020 LCK 夏季 MVP"
+    },
+    Zeus: {
+      ep: "新生代上单",
+      t: "操作没有天花板",
+      h: "T1 青训直升首发 · 2021 LCK 首秀"
+    },
+    Keria: {
+      ep: "辅助鬼才",
+      t: "什么英雄都能开发成辅助",
+      h: "2020 LCK 最佳新人 · S11 世界赛四强"
+    },
+    Gumayusi: {
+      ep: "T1 的稳定器",
+      t: "团战里最难被杀的 AD",
+      h: "S11 世界赛四强"
+    },
+    Oner: {
+      ep: "T1 的节拍器",
+      t: "前期节奏的发起点",
+      h: "S11 世界赛四强 · 2021 LCK 首秀"
+    },
+    Peanut: {
+      ep: "花生",
+      t: "老牌打野，还是那么凶",
+      h: "MSI 2017 冠军 · LCK 2016 夏 / 2017 春夏冠军 · S6、S7 世界赛亚军"
+    },
+    Kiin: {
+      ep: "上路稳定器",
+      t: "没有明显短板",
+      h: "S8 世界赛八强 · LCK 2018 春季亚军"
+    },
+    Bdd: {
+      ep: "中路老将",
+      t: "对线细节拉满",
+      h: "S11 世界赛四强 · LCK 2021 春季亚军"
+    },
+    BeryL: {
+      ep: "S10 冠军辅助",
+      t: "游戏理解怪物",
+      h: "S10 世界冠军 · S11 世界赛亚军 · LCK 2020 夏 / 2021 春夏冠军"
+    },
+    /* LEC */
+    Caps: {
+      ep: "欧洲之王",
+      t: "LEC 十冠中单",
+      h: "MSI 2019 冠军 · LEC 六冠（2018 春夏、2019 春夏、2020 春夏）· S8、S9 世界赛亚军"
+    },
+    Jankos: {
+      ep: "第一滴血之王",
+      t: "欧洲最会入侵的打野",
+      h: "MSI 2019 冠军 · LEC 2019 春夏 / 2020 春夏冠军 · S9 世界赛亚军"
+    },
+    Rekkles: {
+      ep: "欧洲 AD 传奇",
+      t: "稀有的不死 AD",
+      h: "LEC 六冠 · S8 世界赛亚军"
+    },
+    Upset: {
+      ep: "欧洲第一 AD",
+      t: "操作与稳健兼备",
+      h: "LEC 2021 夏季亚军 · 2021 世界赛"
+    },
+    Humanoid: {
+      ep: "欧洲中路新王",
+      t: "MAD 的核心",
+      h: "LEC 2021 春夏冠军 · S11 世界赛八强"
+    },
+    /* LCS */
+    Bjergsen: {
+      ep: "北美中单之神",
+      t: "TSM 的图腾",
+      h: "LCS 六冠 · 2020 LCS MVP"
+    },
+    CoreJJ: {
+      ep: "S7 冠军辅助",
+      t: "北美最会开团的人",
+      h: "S7 世界冠军 · LCS 2019 春夏 / 2020 春季冠军 · MSI 2019 亚军"
+    },
+    Impact: {
+      ep: "S3 冠军上单",
+      t: "老兵不死",
+      h: "S3 世界冠军 · LCS 2019 春夏 / 2020 春季冠军"
+    },
+    Blaber: {
+      ep: "北美野王",
+      t: "C9 的发动机",
+      h: "LCS 2020、2021 春季冠军 · 2020 LCS 春季 MVP"
+    }
+  };
+  function starOf(id) {
+    return id && STARS[id] ? Object.assign({ id }, STARS[id]) : null;
+  }
+  function rosterOf(teamName) {
+    const t = findTeam(teamName);
+    return t && t.players || [];
+  }
+  function starsOf(teamName) {
+    return rosterOf(teamName).filter((p) => p && !p.me && STARS[p.id]).map((p) => Object.assign({ p, team: teamName }, starOf(p.id)));
+  }
+  function laneStar(teamName) {
+    return starsOf(teamName).find((s) => s.p.pos === S.pos) || null;
+  }
+  function myOvr() {
+    return avg(DIMS.map((d) => S.attrs[d]));
+  }
+  function starInGameHonors(teamName) {
+    const out = [];
+    try {
+      const H = S.honors || {};
+      Object.keys(H.worlds || {}).forEach((si) => {
+        if (H.worlds[si] === teamName) out.push(`${SEASONS[+si].tag} 世界冠军`);
+      });
+      Object.keys(H.msi || {}).forEach((si) => {
+        if (H.msi[si] === teamName) out.push(`${SEASONS[+si].tag} MSI 冠军`);
+      });
+      const mine = S.career && S.career.titles || [];
+      Object.keys(S.poCache || {}).forEach((k) => {
+        const [si, sp, lg] = k.split("|");
+        const res = S.poCache[k];
+        if (!res || res[0] !== teamName) return;
+        const tag = `${SEASONS[+si].tag} ${lg}${SPLITS[+sp] || ""}`;
+        if (mine.includes(tag)) return;
+        out.push(`${SEASONS[+si].tag} ${lg} ${SPLITS[+sp] || ""}冠军`);
+      });
+    } catch (e) {
+    }
+    return out;
+  }
+  function starPrepLine(s) {
+    const gap = ovrOf(s.p) - myOvr();
+    if (gap >= 10) return `他大概不会把你当对手——但也不会给你任何机会。<b>别送，把这场当成一堂课。</b>`;
+    if (gap >= 4) return `账面上他压你一头。<b>对线期少换血，等团战找机会。</b>`;
+    if (gap >= -3) return `数值上你们已经站在同一层。<b>这一场会被拿出来反复看。</b>`;
+    return `现在轮到<b>他</b>研究<b>你</b>了。别飘——名字比数值多活好几年。`;
+  }
+  function starSpotHtml(teamName) {
+    if (!S.career) return "";
+    const all = starsOf(teamName);
+    if (!all.length) return "";
+    const lane = all.find((s) => s.p.pos === S.pos);
+    const others = all.filter((s) => !lane || s.id !== lane.id);
+    let h = "";
+    if (lane) {
+      const ig = starInGameHonors(teamName);
+      h += `<div class="ver" style="border-left:3px solid var(--gold);padding-left:10px;margin-top:10px">
+      <div style="font-size:11px;letter-spacing:.08em;color:var(--ink-3)">对位聚光灯</div>
+      <div style="font-size:15px;margin:2px 0"><b>${lane.id}</b> · ${lane.ep}${lane.p.cn ? `<span style="color:var(--ink-3)">（${lane.p.cn}）</span>` : ""}
+        <span class="tag">实力 ${ovrOf(lane.p).toFixed(0)} · 你 ${myOvr().toFixed(0)}</span></div>
+      <div style="color:var(--gold);font-size:12.5px;margin:2px 0">履历：${lane.h || "—"}${ig.length ? `　<span style="color:var(--cyan)">本作：${ig.join(" · ")}</span>` : ""}</div>
+      <div style="color:var(--ink-2);font-size:12.5px">${lane.t}。${starPrepLine(lane)}</div></div>`;
+    }
+    if (others.length) {
+      h += `<div class="ver" style="margin-top:8px;color:var(--ink-2);font-size:12.5px">对面阵中：${others.map((s) => `<b>${s.id}</b>（${s.ep}）`).join("、")}——<span style="color:var(--ink-3)">${lane ? "不止一个人要防。" : "你的对位不是明星，但他们的节奏会从别处压过来。"}</span></div>`;
+    }
+    return h;
+  }
+  function starLaneBadge(teamName) {
+    if (!S.career) return "";
+    const lane = laneStar(teamName);
+    const all = starsOf(teamName);
+    if (!lane && !all.length) return "";
+    return `<div class="ver" style="text-align:center;margin-top:-4px;color:var(--ink-2);font-size:12px">${lane ? `对位 <b style="color:var(--gold)">${lane.id}</b> · ${lane.ep}` : `对面有 ${all.map((s) => `<b>${s.id}</b>`).join("、")}`}</div>`;
+  }
+  function starAfterMatch(m, won, ctx) {
+    try {
+      if (!S.career || !m || !m.oppName) return;
+      const all = starsOf(m.oppName);
+      if (!all.length) return;
+      S.starSeen = S.starSeen || {};
+      const key = (id) => `${S.si}|${S.split || 0}|${S.intl ? "i" : "l"}|${id}`;
+      const lane = all.find((s) => s.p.pos === S.pos);
+      const big = ctx && ctx.intl || m.need >= 3;
+      if (won) {
+        if (lane && !S.starSeen[key(lane.id)]) {
+          S.starSeen[key(lane.id)] = 1;
+          const outlaned = ctx && ctx.laneWon;
+          addFans(big ? 22 : 14);
+          pushEvent(`<b>击败 ${lane.id}（${lane.ep}）。</b>${outlaned ? `对位数据压过了他——这种截图会在圈里传很久。` : `对线没占到便宜，但比分是 ${m.sc[0]}:${m.sc[1]}——赢的是五个人。`}${big ? `<br><span style="color:var(--ink-3)">大场面赢下他，你的名字第一次被放在他旁边念。</span>` : ""}`, "big", "高光");
+        } else if (!lane) {
+          const s = all[0];
+          if (!S.starSeen[key("T:" + s.id)]) {
+            S.starSeen[key("T:" + s.id)] = 1;
+            addFans(big ? 10 : 6);
+            pushEvent(`掀翻了有 <b>${s.id}</b>（${s.ep}）的 ${m.oppName}。你的对位不是他，但击败他的队伍，赛后采访问的全是他。`, "good", "高光");
+          }
+        }
+      } else if (lane) {
+        const gap = ovrOf(lane.p) - myOvr();
+        if (gap >= 4 && !S.starSeen[key("L:" + lane.id)]) {
+          S.starSeen[key("L:" + lane.id)] = 1;
+          pushEvent(`<b>${lane.id}</b> 给你上了一课。对线细节、视野、换血时机——${lane.ep}不是白叫的。
+          <span style="color:var(--ink-3)">复盘把这场标红：下次见他之前，把差距缩到两位数以内。</span>`, "info", "对位");
+        }
+      }
+    } catch (e) {
+    }
+  }
+
   // demo/src/market.ts
-  var MKT = { promoGap: 2, promoP: 0.7, xferP: 0.35, maxPerLeague: 0.3, synHit: 6, synHeal: 3 };
+  var MKT = { promoGap: 6, promoP: 0.7, xferP: 0.35, maxPerLeague: 0.3, maxPromo: 3, synHit: 6, synHeal: 3 };
   function mktOvr(p) {
     const r = p.r || p;
     return avg(DIMS.map((d) => r[d] || 0));
@@ -12889,6 +13253,9 @@ header.top.compact>.theme-top{display:none}
     const out = [];
     const L = S.world && S.world.LDL, P = S.world && S.world.LPL;
     if (!L || !P) return out;
+    const tavg = (t) => avg((t.players || []).filter((q) => !q.me).map(mktOvr));
+    const ldlCeil = P.length >= 3 ? avg(P.map(tavg).sort((a, b) => a - b).slice(0, 3)) : 0;
+    const cands = [];
     L.forEach((acad) => {
       const par = P.find((t) => t.name === acad.parent);
       if (!par) return;
@@ -12896,16 +13263,28 @@ header.top.compact>.theme-top{display:none}
         const a = acad.players.find((q) => q.pos === x.k && !q.me), f = par.players.find((q) => q.pos === x.k);
         if (!a || !f || f.me) return;
         if ((mktIsMine(par) || mktIsMine(acad)) && (x.k === S.pos || champCoreOn())) return;
-        if (mktOvr(a) < mktOvr(f) + MKT.promoGap || rnd() >= MKT.promoP) return;
-        par.players = par.players.map((q) => q === f ? a : q);
-        acad.players = acad.players.map((q) => q === a ? f : q);
-        a.lg = par.players[0] && par.players[0].lg || "LPL";
-        f.lg = "LDL";
-        mktSynHit(par, 1);
-        mktSynHit(acad, 1);
-        out.push({ kind: "promo", team: par.name, acad: acad.name, up: a.id, down: f.id, pos: x.k });
+        if (par._promoSi === S.si) return;
+        if (mktOvr(a) < mktOvr(f) + MKT.promoGap) return;
+        if (STARS[f.id] || mktOvr(f) >= ldlCeil) return;
+        cands.push({ acad, par, a, f, pos: x.k, gap: mktOvr(a) - mktOvr(f) });
       });
     });
+    cands.sort((x, y) => y.gap - x.gap);
+    for (const c of cands) {
+      if (out.length >= MKT.maxPromo) break;
+      if (c.par._promoSi === S.si) continue;
+      if (rnd() >= MKT.promoP) continue;
+      const { acad, par, a, f } = c;
+      par.players = par.players.map((q) => q === f ? a : q);
+      acad.players = acad.players.map((q) => q === a ? f : q);
+      a.lg = par.players[0] && par.players[0].lg || "LPL";
+      f.lg = "LDL";
+      a.debutSi = S.si;
+      par._promoSi = S.si;
+      mktSynHit(par, 1);
+      mktSynHit(acad, 1);
+      out.push({ kind: "promo", team: par.name, acad: acad.name, up: a.id, down: f.id, pos: c.pos });
+    }
     return out;
   }
   function aiTransfers() {
@@ -13246,327 +13625,6 @@ header.top.compact>.theme-top{display:none}
     paintTheme(readTheme());
   }
 
-  // demo/src/stars.ts
-  var STARS = {
-    /* LPL */
-    Uzi: {
-      ep: "永远的狂小狗",
-      t: "ADC 的代名词——退役又复出，手还在",
-      h: "MSI 2018 冠军 · LPL 2016 春 / 2018 春夏冠军 · S3、S4 世界赛亚军 · 2018 亚运会金牌"
-    },
-    TheShy: {
-      ep: "上路单杀机器",
-      t: "对线期每一次换血都可能是终结",
-      h: "S8 世界冠军 · LPL 2019 春季冠军"
-    },
-    Rookie: {
-      ep: "宿命中单",
-      t: "S8 冠军中单，LPL 外援的天花板",
-      h: "S8 世界冠军 · LPL 2019 春季冠军 · 2018 LPL 常规赛 MVP"
-    },
-    Jiejie: {
-      ep: "EDG 的野区发动机",
-      t: "S11 冠军打野，节奏从他手上起",
-      h: "S11 世界冠军 · LPL 2021 春季冠军"
-    },
-    Scout: {
-      ep: "S11 决赛 MVP",
-      t: "稳到可怕的中单",
-      h: "S11 世界冠军 · S11 决赛 MVP · LPL 2021 春季冠军"
-    },
-    Viper: {
-      ep: "毒蛇",
-      t: "S11 冠军 AD，团战永远站在最正确的位置",
-      h: "S11 世界冠军 · LPL 2021 春季冠军"
-    },
-    Knight: {
-      ep: "天才中单",
-      t: "LPL 本土中单的招牌",
-      h: "LPL 2020 夏季冠军 · 2020 LPL 夏季 MVP · S10 世界赛四强"
-    },
-    Bin: {
-      ep: "上路杀神",
-      t: "S10 决赛五杀剑魔",
-      h: "S10 世界赛亚军（决赛五杀剑魔）· LPL 2020 夏季亚军"
-    },
-    GALA: {
-      ep: "MSI 双冠 AD",
-      t: "团战后手拉满",
-      h: "MSI 2021 冠军 · LPL 2021 春季冠军"
-    },
-    Xiaohu: {
-      ep: "虎将",
-      t: "中单改上单再改回来的老将",
-      h: "MSI 2018、2021 冠军 · LPL 四冠（2016 春、2018 春夏、2021 春）"
-    },
-    "369": {
-      ep: "上路铁人",
-      t: "一个人守一条边",
-      h: "LPL 2020 夏季冠军 · S10 世界赛四强"
-    },
-    Kanavi: {
-      ep: "野区野兽",
-      t: "MVP 级的打野",
-      h: "LPL 2020 春季冠军 · 2020 LPL 春季 MVP"
-    },
-    Doinb: {
-      ep: "S9 冠军中单",
-      t: "一手把节奏带出来的怪才",
-      h: "S9 世界冠军 · LPL 2019 夏季冠军 · 2019 LPL 夏季 MVP"
-    },
-    Ming: {
-      ep: "辅助之光",
-      t: "RNG 王朝的辅助",
-      h: "MSI 2018、2021 冠军 · LPL 四冠（2016 春、2018 春夏、2021 春）"
-    },
-    Wei: {
-      ep: "野区节拍器",
-      t: "MSI 冠军打野",
-      h: "MSI 2021 冠军 · LPL 2021 春季冠军"
-    },
-    Yagao: {
-      ep: "中路老将",
-      t: "JDG 的定海神针",
-      h: "LPL 2020 春季冠军"
-    },
-    Crisp: {
-      ep: "辅助大脑",
-      t: "S9 冠军辅助",
-      h: "S9 世界冠军 · LPL 2019 夏季冠军"
-    },
-    Tian: {
-      ep: "S9 决赛 MVP",
-      t: "关键局从不手软的打野",
-      h: "S9 世界冠军 · S9 决赛 MVP · LPL 2019 夏季冠军"
-    },
-    /* LCK */
-    Faker: {
-      ep: "大魔王",
-      t: "不解释",
-      h: "S3、S5、S6 世界冠军 · MSI 2016、2017 冠军 · LCK 九冠"
-    },
-    ShowMaker: {
-      ep: "DK 的魔法师",
-      t: "S10 冠军中单",
-      h: "S10 世界冠军 · LCK 2020 夏 / 2021 春夏冠军 · 2020 LCK 夏季 MVP"
-    },
-    Chovy: {
-      ep: "对线教科书",
-      t: "领先 20 刀是常态",
-      h: "2019-2021 连续三届世界赛 · LCK 三次决赛（2018 夏、2019 春夏）"
-    },
-    Deft: {
-      ep: "金东河",
-      t: "十年老将，还在等一座冠军",
-      h: "MSI 2015 冠军 · LPL 2015 春季冠军 · LCK 2014 春季冠军"
-    },
-    Ruler: {
-      ep: "S7 冠军 AD",
-      t: "后期决胜的 AD",
-      h: "S7 世界冠军 · S6 世界赛亚军 · 2018 亚运会金牌"
-    },
-    Canyon: {
-      ep: "S10 冠军打野",
-      t: "野区节奏的天花板",
-      h: "S10 世界冠军 · S10 决赛 MVP · LCK 2020 夏 / 2021 春夏冠军 · 2020 LCK 夏季 MVP"
-    },
-    Zeus: {
-      ep: "新生代上单",
-      t: "操作没有天花板",
-      h: "T1 青训直升首发 · 2021 LCK 首秀"
-    },
-    Keria: {
-      ep: "辅助鬼才",
-      t: "什么英雄都能开发成辅助",
-      h: "2020 LCK 最佳新人 · S11 世界赛四强"
-    },
-    Gumayusi: {
-      ep: "T1 的稳定器",
-      t: "团战里最难被杀的 AD",
-      h: "S11 世界赛四强"
-    },
-    Oner: {
-      ep: "T1 的节拍器",
-      t: "前期节奏的发起点",
-      h: "S11 世界赛四强 · 2021 LCK 首秀"
-    },
-    Peanut: {
-      ep: "花生",
-      t: "老牌打野，还是那么凶",
-      h: "MSI 2017 冠军 · LCK 2016 夏 / 2017 春夏冠军 · S6、S7 世界赛亚军"
-    },
-    Kiin: {
-      ep: "上路稳定器",
-      t: "没有明显短板",
-      h: "S8 世界赛八强 · LCK 2018 春季亚军"
-    },
-    Bdd: {
-      ep: "中路老将",
-      t: "对线细节拉满",
-      h: "S11 世界赛四强 · LCK 2021 春季亚军"
-    },
-    BeryL: {
-      ep: "S10 冠军辅助",
-      t: "游戏理解怪物",
-      h: "S10 世界冠军 · S11 世界赛亚军 · LCK 2020 夏 / 2021 春夏冠军"
-    },
-    /* LEC */
-    Caps: {
-      ep: "欧洲之王",
-      t: "LEC 十冠中单",
-      h: "MSI 2019 冠军 · LEC 六冠（2018 春夏、2019 春夏、2020 春夏）· S8、S9 世界赛亚军"
-    },
-    Jankos: {
-      ep: "第一滴血之王",
-      t: "欧洲最会入侵的打野",
-      h: "MSI 2019 冠军 · LEC 2019 春夏 / 2020 春夏冠军 · S9 世界赛亚军"
-    },
-    Rekkles: {
-      ep: "欧洲 AD 传奇",
-      t: "稀有的不死 AD",
-      h: "LEC 六冠 · S8 世界赛亚军"
-    },
-    Upset: {
-      ep: "欧洲第一 AD",
-      t: "操作与稳健兼备",
-      h: "LEC 2021 夏季亚军 · 2021 世界赛"
-    },
-    Humanoid: {
-      ep: "欧洲中路新王",
-      t: "MAD 的核心",
-      h: "LEC 2021 春夏冠军 · S11 世界赛八强"
-    },
-    /* LCS */
-    Bjergsen: {
-      ep: "北美中单之神",
-      t: "TSM 的图腾",
-      h: "LCS 六冠 · 2020 LCS MVP"
-    },
-    CoreJJ: {
-      ep: "S7 冠军辅助",
-      t: "北美最会开团的人",
-      h: "S7 世界冠军 · LCS 2019 春夏 / 2020 春季冠军 · MSI 2019 亚军"
-    },
-    Impact: {
-      ep: "S3 冠军上单",
-      t: "老兵不死",
-      h: "S3 世界冠军 · LCS 2019 春夏 / 2020 春季冠军"
-    },
-    Blaber: {
-      ep: "北美野王",
-      t: "C9 的发动机",
-      h: "LCS 2020、2021 春季冠军 · 2020 LCS 春季 MVP"
-    }
-  };
-  function starOf(id) {
-    return id && STARS[id] ? Object.assign({ id }, STARS[id]) : null;
-  }
-  function rosterOf(teamName) {
-    const t = findTeam(teamName);
-    return t && t.players || [];
-  }
-  function starsOf(teamName) {
-    return rosterOf(teamName).filter((p) => p && !p.me && STARS[p.id]).map((p) => Object.assign({ p, team: teamName }, starOf(p.id)));
-  }
-  function laneStar(teamName) {
-    return starsOf(teamName).find((s) => s.p.pos === S.pos) || null;
-  }
-  function myOvr() {
-    return avg(DIMS.map((d) => S.attrs[d]));
-  }
-  function starInGameHonors(teamName) {
-    const out = [];
-    try {
-      const H = S.honors || {};
-      Object.keys(H.worlds || {}).forEach((si) => {
-        if (H.worlds[si] === teamName) out.push(`${SEASONS[+si].tag} 世界冠军`);
-      });
-      Object.keys(H.msi || {}).forEach((si) => {
-        if (H.msi[si] === teamName) out.push(`${SEASONS[+si].tag} MSI 冠军`);
-      });
-      const mine = S.career && S.career.titles || [];
-      Object.keys(S.poCache || {}).forEach((k) => {
-        const [si, sp, lg] = k.split("|");
-        const res = S.poCache[k];
-        if (!res || res[0] !== teamName) return;
-        const tag = `${SEASONS[+si].tag} ${lg}${SPLITS[+sp] || ""}`;
-        if (mine.includes(tag)) return;
-        out.push(`${SEASONS[+si].tag} ${lg} ${SPLITS[+sp] || ""}冠军`);
-      });
-    } catch (e) {
-    }
-    return out;
-  }
-  function starPrepLine(s) {
-    const gap = ovrOf(s.p) - myOvr();
-    if (gap >= 10) return `他大概不会把你当对手——但也不会给你任何机会。<b>别送，把这场当成一堂课。</b>`;
-    if (gap >= 4) return `账面上他压你一头。<b>对线期少换血，等团战找机会。</b>`;
-    if (gap >= -3) return `数值上你们已经站在同一层。<b>这一场会被拿出来反复看。</b>`;
-    return `现在轮到<b>他</b>研究<b>你</b>了。别飘——名字比数值多活好几年。`;
-  }
-  function starSpotHtml(teamName) {
-    if (!S.career) return "";
-    const all = starsOf(teamName);
-    if (!all.length) return "";
-    const lane = all.find((s) => s.p.pos === S.pos);
-    const others = all.filter((s) => !lane || s.id !== lane.id);
-    let h = "";
-    if (lane) {
-      const ig = starInGameHonors(teamName);
-      h += `<div class="ver" style="border-left:3px solid var(--gold);padding-left:10px;margin-top:10px">
-      <div style="font-size:11px;letter-spacing:.08em;color:var(--ink-3)">对位聚光灯</div>
-      <div style="font-size:15px;margin:2px 0"><b>${lane.id}</b> · ${lane.ep}${lane.p.cn ? `<span style="color:var(--ink-3)">（${lane.p.cn}）</span>` : ""}
-        <span class="tag">实力 ${ovrOf(lane.p).toFixed(0)} · 你 ${myOvr().toFixed(0)}</span></div>
-      <div style="color:var(--gold);font-size:12.5px;margin:2px 0">履历：${lane.h || "—"}${ig.length ? `　<span style="color:var(--cyan)">本作：${ig.join(" · ")}</span>` : ""}</div>
-      <div style="color:var(--ink-2);font-size:12.5px">${lane.t}。${starPrepLine(lane)}</div></div>`;
-    }
-    if (others.length) {
-      h += `<div class="ver" style="margin-top:8px;color:var(--ink-2);font-size:12.5px">对面阵中：${others.map((s) => `<b>${s.id}</b>（${s.ep}）`).join("、")}——<span style="color:var(--ink-3)">${lane ? "不止一个人要防。" : "你的对位不是明星，但他们的节奏会从别处压过来。"}</span></div>`;
-    }
-    return h;
-  }
-  function starLaneBadge(teamName) {
-    if (!S.career) return "";
-    const lane = laneStar(teamName);
-    const all = starsOf(teamName);
-    if (!lane && !all.length) return "";
-    return `<div class="ver" style="text-align:center;margin-top:-4px;color:var(--ink-2);font-size:12px">${lane ? `对位 <b style="color:var(--gold)">${lane.id}</b> · ${lane.ep}` : `对面有 ${all.map((s) => `<b>${s.id}</b>`).join("、")}`}</div>`;
-  }
-  function starAfterMatch(m, won, ctx) {
-    try {
-      if (!S.career || !m || !m.oppName) return;
-      const all = starsOf(m.oppName);
-      if (!all.length) return;
-      S.starSeen = S.starSeen || {};
-      const key = (id) => `${S.si}|${S.split || 0}|${S.intl ? "i" : "l"}|${id}`;
-      const lane = all.find((s) => s.p.pos === S.pos);
-      const big = ctx && ctx.intl || m.need >= 3;
-      if (won) {
-        if (lane && !S.starSeen[key(lane.id)]) {
-          S.starSeen[key(lane.id)] = 1;
-          const outlaned = ctx && ctx.laneWon;
-          addFans(big ? 22 : 14);
-          pushEvent(`<b>击败 ${lane.id}（${lane.ep}）。</b>${outlaned ? `对位数据压过了他——这种截图会在圈里传很久。` : `对线没占到便宜，但比分是 ${m.sc[0]}:${m.sc[1]}——赢的是五个人。`}${big ? `<br><span style="color:var(--ink-3)">大场面赢下他，你的名字第一次被放在他旁边念。</span>` : ""}`, "big", "高光");
-        } else if (!lane) {
-          const s = all[0];
-          if (!S.starSeen[key("T:" + s.id)]) {
-            S.starSeen[key("T:" + s.id)] = 1;
-            addFans(big ? 10 : 6);
-            pushEvent(`掀翻了有 <b>${s.id}</b>（${s.ep}）的 ${m.oppName}。你的对位不是他，但击败他的队伍，赛后采访问的全是他。`, "good", "高光");
-          }
-        }
-      } else if (lane) {
-        const gap = ovrOf(lane.p) - myOvr();
-        if (gap >= 4 && !S.starSeen[key("L:" + lane.id)]) {
-          S.starSeen[key("L:" + lane.id)] = 1;
-          pushEvent(`<b>${lane.id}</b> 给你上了一课。对线细节、视野、换血时机——${lane.ep}不是白叫的。
-          <span style="color:var(--ink-3)">复盘把这场标红：下次见他之前，把差距缩到两位数以内。</span>`, "info", "对位");
-        }
-      }
-    } catch (e) {
-    }
-  }
-
   // demo/src/main.ts
   var DIMS = ["操作", "运营", "心态", "指挥", "体质"];
   var DIM_HINT = { 操作: "对线与输出", 运营: "视野与节奏", 心态: "抗压与翻盘", 指挥: "主指挥取队内最高", 体质: "耐久与状态" };
@@ -13635,6 +13693,12 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260908c", at: "2026-09-08", items: [
+      "颁奖夜排版修了（玩家点名「年度二阵为什么在一阵上面」）：现在是一阵 → 二阵 → 最佳新秀 → MVP，标题也不再比自己底下那几行还晚淡入",
+      "年度一阵不再被一支队包揽（玩家点名「为什么都是一个战队的，ming 只有 70 综评了咋上的一阵」）：夺冠加成从最多 19 分收到 7.5 分，一支队在一阵/二阵里最多占 3 席——冠军队仍然占多数，但一个位置上真正最强的人不会再被挤掉。MVP 从一阵里出；最佳新秀改判「这个赛季头一回进一队」，不再只看年龄",
+      "合同数字回到现实量级（玩家截图「一个赛段一亿两千万」）：续约不再是没有上限的连乘，每个档次有薪资天花板（豪门 1500 万/赛段 ＝ 年薪 3000 万）；违约金跟着薪资走，不会再出现买断价比薪资还低；转会报价以现有合同为地板，留队和转会终于是同一把尺。合同上的「年薪 X 万/赛段」改成「赛段薪资」并标出折合年薪，数字过万显示成「亿」",
+      "联赛里终于还是那些人（玩家点名「模拟的一阵二阵都是不认识的人」）：二队顶替一队的通道原来没有任何闸门，一局生涯能把 85 个首发位换掉 97 人次；现在门槛提高、每个窗口全联赛最多 3 笔、每队一年最多 1 人，明星不会被下放到次级联赛，青训的年龄和成长上限也铺开了。第五年名单里的熟面孔从两成回到八成，老将是打到退役离场的，不再是凭空消失"
+    ] },
     { v: "v20260908b", at: "2026-09-08", items: [
       "难度再调：S12–S14 这三年 LCK 更难打了（至暗五年名副其实），新秀赛季的你也还不是完全体（顶栏「效力」一行会标「新秀赛季」，明年起就是正常水平）。冠军会更多落在 S15–S16，三连冠留给再战的三年",
       "更新日志和更新说明的浮窗在手机上关不掉的问题修了（玩家截图）：顶部钉了一个 ×，滚到哪都在；高度按手机实际可见的屏幕算，底部按钮不再被浏览器工具栏盖住"
@@ -14820,13 +14884,25 @@ header.top.compact>.theme-top{display:none}
          统一标尺版：母队−8～−4、下限 55（LPL 均值 65 → LDL 57–61，
          大师到王者边缘）——强队青训≈王者边的门神，弱队青训跟弱队一样菜，
          宗师实力（60）有得打、没得躺。 */
-      players: POS.map((x) => {
-        const pl = Object.assign(makeRookie(x.k, Math.max(56, Math.min(p - 8, lplLow)), "LDL"), { lg: "LDL", form: 52, retired: false });
-        const R = LDL_ROSTER[teamCode(t.name)];
-        const real = R && R.find((q) => q.pos === x.k);
-        if (real) pl.id = real.id;
-        return pl;
-      })
+      /* 2026-09-07（玩家：「模拟的一阵二阵都是不认识的人」）：
+         原来这里 85 个青训一律 18 岁、实力被 lplLow 截平在 56–66 的窄带里。
+         18–21 岁每年 +6.28、22 岁以上只有 +2.96——一整批同龄人两三年后必然同时越过一队，
+         批测里 S14/S15 每年提拔 23–25 笔，一局生涯 LPL 换人 97 次（只有 85 个首发位）。
+         两处改动：① 年龄铺开 17–21，越线从雪崩变回零星；② 一支二队只出一个好苗子
+         （随机一人 +7，其余 −3），不再五个人一样强、一提就提五个。
+         下限从 56 降到 48：弱队的青训不该比自家一队还强。上限仍钉在 LPL 垫底三队均值。 */
+      players: (() => {
+        const gem = Math.floor(rnd() * POS.length);
+        return POS.map((x, idx) => {
+          const lvl = Math.max(48, Math.min(p - 8, lplLow)) + (idx === gem ? 7 : -3);
+          const pl = Object.assign(makeRookie(x.k, lvl, "LDL"), { lg: "LDL", form: 52, retired: false });
+          pl.age = 17 + Math.floor(rnd() * 5);
+          const R = LDL_ROSTER[teamCode(t.name)];
+          const real = R && R.find((q) => q.pos === x.k);
+          if (real) pl.id = real.id;
+          return pl;
+        });
+      })()
     }));
   }
   var ROOKIE_IDS = {
@@ -14863,7 +14939,18 @@ header.top.compact>.theme-top{display:none}
     const r = {};
     DIMS.forEach((d) => r[d] = clamp(Math.round(level + (rnd() * 16 - 8)), 45, 93));
     const nm = rookieName(lg || S && S.homeLeague || "LPL");
-    return { id: nm.id, cn: nm.cn, pos, age: 18, r, rookie: true, lg: lg || void 0 };
+    const ceil = clamp(Math.round(level + 6 + rnd() * 22), 50, 92);
+    return {
+      id: nm.id,
+      cn: nm.cn,
+      pos,
+      age: 18,
+      r,
+      rookie: true,
+      ceil,
+      lg: lg || void 0,
+      debutSi: S && S.si !== void 0 ? S.si : 0
+    };
   }
   function simWorldPre() {
     if (!S.world || !S.standings) return;
@@ -15092,7 +15179,8 @@ header.top.compact>.theme-top{display:none}
           if (p.me) return;
           p.age++;
           const base = ageCurve(p.age);
-          const dev = p.age <= 23 ? 2.3 : p.age <= 25 ? 1.3 : p.age <= 27 ? 0.4 : 0;
+          let dev = p.age <= 23 ? 2.3 : p.age <= 25 ? 1.3 : p.age <= 27 ? 0.4 : 0;
+          if (p.ceil !== void 0 && ovrOf(p) >= p.ceil) dev = 0;
           DIMS.forEach((d) => {
             const delta = base * (base > 0 ? 1.4 - DECAY_W[d] * 0.5 : DECAY_W[d]);
             p.r[d] = clamp(p.r[d] + delta + dev, 20, 99);
@@ -16848,8 +16936,9 @@ header.top.compact>.theme-top{display:none}
     return `<div class="card"><h2>我的合同<em>剩 ${c.left || 0}/${c.years || 0} 赛段${c.left ? " · " + contractLeftText() : ""}</em></h2>
     <h3>${S.team || ""}${T ? "　" + T.n : ""}${D ? "　" + D.n : ""}${c.grade ? `<span class="tag g">试训 ${c.grade}</span>` : ""}${(S.homeLeague || "LPL") === "LDL" ? `<span class="tag g">注册：LDL 二队名单</span>${parentClub() ? `<span class="tag">母队 ${parentClub()}</span>` : ""}` : `<span class="tag">注册：${S.homeLeague || "LPL"} 一队名单</span>`}</h3>
     <div class="grid g2" style="margin-top:10px">
-      <div class="ver"><div class="k">签约年薪</div>
-        <div class="v mono" style="font-size:20px;color:var(--gold-hi)">${c.salary}<small> 万/赛段</small></div></div>
+      <div class="ver"><div class="k">签约赛段薪资</div>
+        <div class="v mono" style="font-size:20px;color:var(--gold-hi)">${wanHtml(c.salary)}</div>
+        <div class="k" style="font-size:10px">${yearPayText(c.salary)}（一年两个赛段）</div></div>
       <div class="ver"><div class="k">本赛段实发</div>
         <div class="v mono" style="font-size:20px">${paid}<small> 万</small></div>
         <div class="k" style="font-size:10px">含人气与荣誉浮动 +${paid - c.salary}</div></div>
@@ -17960,6 +18049,7 @@ header.top.compact>.theme-top{display:none}
         return;
       }
       if (nx === "summer") {
+        capLDL();
         aiMarketWindow(false);
         if (S.pendingRenew) settleRenewDefault();
         if (S.gotCut) {
@@ -18020,9 +18110,9 @@ header.top.compact>.theme-top{display:none}
     S.miniPatch = null;
     S.patchClock = 0;
     const news = ageWorld();
-    aiMarketWindow(true);
     capWorldDrift();
     capLDL();
+    aiMarketWindow(true);
     try {
       S.lgAvg = leagueBaseline(S.world);
     } catch (e) {
