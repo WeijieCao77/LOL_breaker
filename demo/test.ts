@@ -42,10 +42,17 @@ if (!fs.existsSync(path.join(HERE, "src", "gen", "avatars.js"))) {
   fs.writeFileSync(path.join(HERE, "src", "gen", "avatars.js"), 'export const AVATARS_JSON = "{}";\n');
 }
 
-/* 把所有模块的导出合成一个 API 对象（原来 __api 那张手写名单） */
-const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve_more", "achieve", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer"];
+/* 把所有模块的导出合成一个 API 对象（原来 __api 那张手写名单）。
+   顺序载入，不再 Promise.all：achieve ↔ achieve_more 之间隔着 team 有一个循环引用
+   （achieve → achieve_more → team → achieve），并行载入时谁先被求值看文件系统的脸色——
+   赶上 achieve_more 先求值那一次，achieve 的模块体会在 ACH_MORE 还没初始化时执行
+   `ACHIEVEMENTS.push(...ACH_MORE)`，抛 "Cannot access 'ACH_MORE' before initialization"。
+   低概率、和这次的改动无关（改前改后各连跑 12 次都没复现，但两边都各撞见过一次），
+   顺序载入让求值顺序固定下来，CI 不再看运气。循环引用本身还在，另开一条待办。 */
+const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer"];
 const state = await import("./src/state.ts");
-const mods = await Promise.all(MODULES.map(m => import(`./src/${m}.ts`)));
+const mods = [];
+for (const m of MODULES) mods.push(await import(`./src/${m}.ts`));
 const A: any = Object.assign({}, ...mods, { S: () => state.S, setS: state.setS });
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
