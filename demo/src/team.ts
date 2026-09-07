@@ -207,6 +207,23 @@ export const SPEND=[
   {k:"pr",n:"舆论公关",cost:35,d:"压下负面，人气回升",
    run:()=>{addFans(14);}}
 ];
+/* ---------- 薪资天花板（2026-09-07 玩家实锤「一个赛段一亿两千万」）----------
+   病根在续约：contractCheck 里每年把上一份合同乘一次 raise（上界 1.9），没有任何绝对上限，
+   一年一次连乘七年。批测（强玩家 + 不转会）S19 最高年薪 12604 万、违约金 74521 万——
+   一个赛段抵 23 个世界冠军奖金（550 万），把全套外设课程资产（4240 万）买三遍还有富余。
+   现在按现实量级把每一档钉死。顶薪 1500 万/赛段 = 3000 万/年，约等于豪门起薪上限（400 万）
+   的 3.75 倍——「打了七年、拿了四个冠军，工资涨到出道时的三倍多」，是玩家能理解的曲线。
+   这个上限同时管三处：续约（contractCheck）、谈判加薪（askDeal）、转会报价（makeProDeal），
+   并且在 salaryOf 里兜一次底——老存档里那份一亿两千万的合同读进来当场就被拉回档次上限。 */
+export const PAY_CAP={top:1500, mid:700, low:300, acad:40};
+export function payCapOf(clubTier){ return PAY_CAP[clubTier]!==undefined?PAY_CAP[clubTier]:PAY_CAP.mid; }
+/* 违约金是年薪的倍数，不再自己走一条独立的乘法。
+   玩家截图里出现过「违约金 5619 万 < 年薪 12860 万」——买断价低于年薪，现实里不可能。
+   续约时沿用这份合同原本的倍数（所以「压低违约金 −40%」仍然算数），但夹在 3–9 倍之间。 */
+export function buyoutRatio(c){
+  const s=c&&c.salary, b=c&&c.buyout;
+  return (s&&b&&s>0)?clamp(b/s,3,9):6;
+}
 /* 薪资 = 谈出来的年薪 + 人气与荣誉带来的浮动。
    合同里那个数字必须真的算数，否则谈判就是假的。 */
 export function salaryOf(){
@@ -219,7 +236,7 @@ export function salaryOf(){
   // 名气与荣誉的钱主要走合同谈判和奖金，不再靠每赛段自动加薪。
   const bonus=Math.round(Math.min(S.fans,6000)*0.012)+(S.career.leagueTitles||0)*6
     +((S.career.msi||0)+(S.career.worlds||0))*14;
-  if(c.salary!==undefined) return Math.round(c.salary+bonus);
+  if(c.salary!==undefined) return Math.round(Math.min(c.salary,payCapOf(c.clubTier))+bonus);
   // 老存档或没走谈判流程的情况，退回旧算法
   const kindMul={sub:1.25,start:1.0,core:0.85,foreign:1.15}[S.offerKind]||1;
   return Math.round((26+bonus)*kindMul);
@@ -247,13 +264,19 @@ export function contractCheck(){
                 || ((S.career&&S.career.worldsYears)||[]).includes(S.si);
   const wantRenew = wonTitle || (ovr>=teamAvg-6 && trust>=35);
   if(wantRenew){
-    // 续约不是重签一份一样的合同：打得好、拿了冠军，年薪和违约金都往上走
-    const raise=clamp(1.15+(ovr-teamAvg)*0.02+(wonTitle?0.15:0),1.05,1.9);
+    /* 续约不是重签一份一样的合同：打得好、拿了冠军，年薪和违约金都往上走。
+       2026-09-07：涨幅上界从 1.9 收到 1.35，并且封在该档次的天花板里——
+       原来这条乘法一年乘一次、七年连乘且没有绝对上限，是「年薪一亿两千万」的唯一来源。
+       违约金不再自己乘，改成跟着新年薪按这份合同原本的倍数走（见 buyoutRatio）。 */
+    const raise=clamp(1.12+(ovr-teamAvg)*0.02+(wonTitle?0.12:0),1.02,1.35);
     const old=S.contract;
+    const cap=payCapOf(old.clubTier);
+    const sal=old.salary!==undefined?Math.min(Math.round(old.salary*raise),cap):undefined;
+    const k=buyoutRatio(old);
     S.pendingRenew={
       team:S.team, years:2,
-      salary: old.salary!==undefined?Math.round(old.salary*raise):undefined,
-      buyout: old.buyout!==undefined?Math.round(old.buyout*raise):undefined,
+      salary: sal,
+      buyout: (sal!==undefined)?Math.round(sal*k):(old.buyout!==undefined?old.buyout:undefined),
       tier:old.tier, grade:old.grade, clubTier:old.clubTier,
       wonTitle, oldSalary:old.salary, oldBuyout:old.buyout
     };

@@ -25,6 +25,19 @@ export const LEDGER_IN =[["salary","工资"],["match","比赛收入"],["stream",
                   ["prize","赛事奖金"],["sign","签字费"],["ach","成就奖励"],["other","其他收入"]];
 export const LEDGER_OUT=[["gear","装备"],["course","课程"],["relax","放松"],["team","团队投入"],
                   ["home","寄回家"],["fee","报名费"],["other","其他开销"]];
+/* ---------- 钱的显示（2026-09-07）----------
+   两件事：① 过万写成「亿」——即使修完数值不该再出现亿级，显示层也该兜住，别让玩家自己数零；
+   ② 合同上那个数是**一个赛段**的薪资，写「年薪 X 万/赛段」本身就是病句（玩家截图里就是这么写的）。
+   一年两个赛段，所以标签统一改成「赛段薪资」，并在旁边把折合年薪写出来。 */
+export function wanText(n){
+  const v=Math.round(Number(n)||0);
+  return Math.abs(v)>=10000 ? `${(v/10000).toFixed(2)} 亿` : `${v} 万`;
+}
+export function wanHtml(n){
+  const v=Math.round(Number(n)||0);
+  return Math.abs(v)>=10000 ? `${(v/10000).toFixed(2)}<small> 亿</small>` : `${v}<small> 万</small>`;
+}
+export function yearPayText(n){ return `年薪 ${wanText((Number(n)||0)*2)}`; }
 export function _emptyLedger(){ return {in:{},out:{}}; }
 export function initLedger(){
   S.ledger={cur:_emptyLedger(),prev:null,label:nowLabel(),prevLabel:""};
@@ -70,7 +83,7 @@ export function financeCard(){
   return `<div class="card"><h2>财务总览<em>${led.label||""}</em></h2>
     <div class="fin-cash mono">${Math.round(S.money)}<small> 万</small></div>
     ${S.career&&true
-      ?`<p class="note" style="margin:2px 0 10px">下赛段工资预计 <b>${salaryOf()} 万</b>（合同年薪 ${(S.contract&&S.contract.salary)||"—"} ＋ 人气与荣誉浮动）</p>`:""}
+      ?`<p class="note" style="margin:2px 0 10px">下赛段工资预计 <b>${wanText(salaryOf())}</b>（合同赛段薪资 ${(S.contract&&S.contract.salary!==undefined)?wanText(S.contract.salary):"—"} ＋ 人气与荣誉浮动）</p>`:""}
     ${rows?`<div class="fin-tab">${rows}
       <div class="fin-r fin-net"><span>本赛段净</span>
         <span class="mono ${net>=0?'up':'dn'}">${net>=0?"+":"−"}${Math.abs(net)}</span></div></div>`
@@ -685,7 +698,7 @@ export function shopCard(){
         <div class="t">${x.n} <span class="tag">${x.cost} 万</span></div>
         <div class="d">${has?"本赛段已生效":x.d}</div></button>`}).join("")}</div>`}
     <p class="note">${S.career
-      ? `薪资按名气与荣誉每赛段结算，当前预计 <b>${salaryOf()} 万</b>。`
+      ? `薪资按名气与荣誉每赛段结算，当前预计 <b>${wanText(salaryOf())}</b>。`
       : `还没签约，暂时没有薪资。`}
       ${S.streamDeal
         ? `直播签了<b>${S.streamDeal.n}</b>：每次直播保底 <b>${Math.round(streamIncome())} 万</b>，旱涝保收，但人气再涨也不加钱。`

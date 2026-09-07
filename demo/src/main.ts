@@ -23,7 +23,7 @@ import { noteGrudge, noteRevenge, rivalBoost, rivalCard } from "./rivals";
 import { addRingTitle, breakAgendaCard, fixNote, fixtureCard, fixtureStrip, mateInjuryHit, mateInjuryNote, mateInjuryRoll, mateInjuryTag, mateInjuryTick, ringTitles, rotationAfterMatch, scrimCard, scrimPanel, scrimPick, scrimTrialCheck, setBreakAgenda, startScrim, titleCount, titlesText } from "./rotation";
 import { actListText, archiveWeek, clearPlan, noteAct, quickBtn, quickPlan, quickPlanPre, repeatLast, routineBar, runActs, runPlan, savePlan } from "./routine";
 import { askConfirm, confirmCard, continueCard, dropSave, escapeHtml, exportSave, importSave, loadGame, meName, safeName, saveBar, saveGame } from "./save";
-import { PRIZE_PO, PRIZE_PO_LDL, addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul } from "./shop";
+import { PRIZE_PO, PRIZE_PO_LDL, addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, yearPayText } from "./shop";
 import { addSquad, clampWinProb, disruptSynergy, doSquad, gapVerdict, initSquad, myPower, squadActs, squadCard, squadDecay, squadOf, teamPowerOf, watchRoster } from "./squad";
 import { starAfterMatch, starLaneBadge, starSpotHtml } from "./stars";
 import { S, setS } from "./state";
@@ -3362,8 +3362,9 @@ export function contractTerms(){
         ?`<span class="tag g">注册：LDL 二队名单</span>${parentClub()?`<span class="tag">母队 ${parentClub()}</span>`:""}`
         :`<span class="tag">注册：${S.homeLeague||"LPL"} 一队名单</span>`}</h3>
     <div class="grid g2" style="margin-top:10px">
-      <div class="ver"><div class="k">签约年薪</div>
-        <div class="v mono" style="font-size:20px;color:var(--gold-hi)">${c.salary}<small> 万/赛段</small></div></div>
+      <div class="ver"><div class="k">签约赛段薪资</div>
+        <div class="v mono" style="font-size:20px;color:var(--gold-hi)">${wanHtml(c.salary)}</div>
+        <div class="k" style="font-size:10px">${yearPayText(c.salary)}（一年两个赛段）</div></div>
       <div class="ver"><div class="k">本赛段实发</div>
         <div class="v mono" style="font-size:20px">${paid}<small> 万</small></div>
         <div class="k" style="font-size:10px">含人气与荣誉浮动 +${paid-c.salary}</div></div>

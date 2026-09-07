@@ -9,11 +9,11 @@ import { rnd } from "./rng";
 import { queueFollowUp, scoutCard } from "./press";
 import { teamLogo } from "./rankicon";
 import { askConfirm, meName } from "./save";
-import { addMoney, hasCourse } from "./shop";
+import { addMoney, hasCourse, wanHtml, wanText, yearPayText } from "./shop";
 import { disruptSynergy } from "./squad";
 import { S } from "./state";
 import { statEvent } from "./stats";
-import { addTrustAll, initTrust, syncTrust } from "./team";
+import { addTrustAll, initTrust, payCapOf, syncTrust } from "./team";
 
 /* ================= 试训与签约 =================
 
@@ -28,7 +28,7 @@ import { addTrustAll, initTrust, syncTrust } from "./team";
                 体质决定你后面几天还剩多少状态。每个环节都要做选择。
      三、评级   你的表现对上这家俱乐部的期望，得出 A+ / A / B / C / D。
                 档次决定给不给合同、给什么合同——首发、替补还是青训。
-     四、谈判   年薪、签字费、合同年限、违约金。你可以还价，
+     四、谈判   赛段薪资、签字费、合同年限、违约金。你可以还价，
                 但底气来自试训评级和手上有几家在抢你，还价过头会谈崩。   */
 
 /* ---------- 俱乐部档次 ----------
@@ -556,9 +556,10 @@ export function dealLeverage(grade){
 }
 /* 四个可以谈的方向。每个都有代价——不是免费加钱。 */
 export const DEAL_ASKS = [
-  { k:"pay",    n:"要求加薪",   d:"年薪 +25%",
+  { k:"pay",    n:"要求加薪",   d:"薪资 +25%",
     hint:"最直接，也最容易谈崩", cost:16,
-    run:d=>{ d.salary = Math.round(d.salary*1.25); } },
+    // 加薪也封在档次天花板里——不然续约那条乘法堵上了，谈判这条又能无限往上叠
+    run:d=>{ d.salary = Math.min(Math.round(d.salary*1.25), payCapOf(d.clubTier)); } },
   { k:"sign",   n:"要求签字费", d:"签字费翻倍",
     hint:"一次性到手，俱乐部相对好接受", cost:10,
     run:d=>{ d.sign = Math.max(8, Math.round(d.sign*2)); } },
@@ -608,10 +609,10 @@ export function dealCard(){
     st?` · ${st.lg||"LPL"} 第 ${st.pos}/${st.of}`:""}</em></h2>
     <h3>${D.n}<span class="tag g">${d.renew?"续约":"试训 "+d.grade}</span></h3>
     <div class="grid g2" style="margin:12px 0">
-      <div class="ver"><div class="k">年薪</div><div class="v mono" style="font-size:22px;color:var(--gold-hi)">${d.salary}<small> 万/赛段</small></div></div>
-      <div class="ver"><div class="k">签字费</div><div class="v mono" style="font-size:22px">${d.sign}<small> 万</small></div></div>
+      <div class="ver"><div class="k">赛段薪资</div><div class="v mono" style="font-size:22px;color:var(--gold-hi)">${wanHtml(d.salary)}</div><div class="k" style="font-size:10px">${yearPayText(d.salary)}（一年两个赛段）</div></div>
+      <div class="ver"><div class="k">签字费</div><div class="v mono" style="font-size:22px">${wanHtml(d.sign)}</div></div>
       <div class="ver"><div class="k">合同年限</div><div class="v mono" style="font-size:22px">${d.years}<small> 赛段</small></div><div class="k" style="font-size:10px;line-height:1.4">${contractSpanText(d.years)}</div></div>
-      <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:22px">${d.buyout}<small> 万</small></div></div>
+      <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:22px">${wanHtml(d.buyout)}</div></div>
     </div>
     <p class="note">你的底气 <b>${lev.toFixed(0)}</b>——${d.renew?"来自表现分、人气、当年冠军和教练的信任":"来自试训评级、人气和段位"}。
       已经提了 <b>${d.asks}</b> 次要求，<b>提得越多越容易谈崩</b>${d.renew?"——谈崩了报价就收回，你成自由身":""}。</p>
@@ -626,7 +627,7 @@ export function dealCard(){
       <button class="btn" id="dealsign">就这么签 →</button>
       <button class="btn ghost" id="dealno">${d.renew?"不续约，进转会市场":"不签，再练一年"}</button>
     </div>
-    <p class="note">签字费当场到账，年薪每个赛段结算一次。违约金越高，以后别队越难把你买走。<br>
+    <p class="note">签字费当场到账，薪资每个赛段结算一次（一年两个赛段）。违约金越高，以后别队越难把你买走。<br>
       ${d.dealTier==="acad"
         ?`<b>青训合同去的是 LDL 二队</b>——在二队打首发攒数据，压过一队对位才升上去。`
         :d.dealTier==="sub"
@@ -643,7 +644,7 @@ export function dealCard(){
 export function declineDeal(){
   const d = S.deal; if(!d) return;
   const D = DEAL_TIERS[d.dealTier];
-  preLog(`拒绝了 <b>${d.team}</b> 的${D.n}（年薪 ${d.salary} 万）。
+  preLog(`拒绝了 <b>${d.team}</b> 的${D.n}（赛段薪资 ${wanText(d.salary)}）。
     你觉得自己值更多——那就得在剩下的时间里证明它。`, "info");
   dropDeal();
 }
@@ -714,7 +715,7 @@ export function signDeal(){
     clubTier:d.clubTier
   };
   preLog(`和 <b>${teamName}</b> 签下 <b>${D.n}</b> 合同：
-    年薪 ${d.salary} 万 · ${d.years} 个赛段 · 违约金 ${d.buyout} 万。`, "big");
+    赛段薪资 ${wanText(d.salary)}（${yearPayText(d.salary)}）· ${d.years} 个赛段 · 违约金 ${wanText(d.buyout)}。`, "big");
   S.deal = null;
   acceptOffer(0);
 }
@@ -1063,7 +1064,7 @@ export function dropProOffer(){
 }
 
 /* ---------- 合同到期：续约报价卡（玩家点名：续约/转会看不到、参与不了）----------
-   队伍愿意留你时递上来：新年薪 / 违约金 / 年限摆明，由你签或拒。
+   队伍愿意留你时递上来：新的赛段薪资 / 违约金 / 年限摆明，由你签或拒。
    拒 → 成为自由身，当场开一次转会问询，去哪从报价里自己选。 */
 export function renewCard(){
   const r = S.pendingRenew; if(!r) return "";
@@ -1077,13 +1078,14 @@ export function renewCard(){
     <p class="note" style="text-align:center;margin:0 0 12px">${
       r.wonTitle?"你捧回了冠军——他们不想让你走。":"你的表现值得一份新合同。"}</p>
     <div class="grid g2" style="margin:0 0 12px">
-      <div class="ver"><div class="k">新年薪</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${
-        r.salary!==undefined?r.salary:"—"}<small> 万/赛段</small>${up(r.oldSalary,r.salary)}</div>${
-        r.oldSalary!==undefined?`<div class="k" style="font-size:10px">原 ${r.oldSalary} 万</div>`:""}</div>
+      <div class="ver"><div class="k">新赛段薪资</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${
+        r.salary!==undefined?wanHtml(r.salary):"—"}${up(r.oldSalary,r.salary)}</div>${
+        r.salary!==undefined?`<div class="k" style="font-size:10px">${yearPayText(r.salary)}${
+        r.oldSalary!==undefined?` · 原 ${wanText(r.oldSalary)}/赛段`:""}</div>`:""}</div>
       <div class="ver"><div class="k">年限</div><div class="v mono" style="font-size:20px">${r.years}<small> 个赛段</small></div><div class="k" style="font-size:10px;line-height:1.4">${contractSpanText(r.years)}</div></div>
       <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:20px">${
-        r.buyout!==undefined?r.buyout:"—"}<small> 万</small>${up(r.oldBuyout,r.buyout)}</div>${
-        r.oldBuyout!==undefined?`<div class="k" style="font-size:10px">原 ${r.oldBuyout} 万</div>`:""}</div>
+        r.buyout!==undefined?wanHtml(r.buyout):"—"}${up(r.oldBuyout,r.buyout)}</div>${
+        r.oldBuyout!==undefined?`<div class="k" style="font-size:10px">原 ${wanText(r.oldBuyout)}</div>`:""}</div>
       <div class="ver"><div class="k">违约金的意思</div><div class="k" style="font-size:11px;line-height:1.5">谈得高，别的队买你要付更多，愿意来的就少；想留后路可谈低。</div></div>
     </div>
     <div class="row" style="justify-content:center">
@@ -1099,9 +1101,9 @@ export function acceptRenew(){
   S.contract = { years:r.years, left:r.years, salary:r.salary, sign:0,
                  buyout:r.buyout, team:r.team, tier:r.tier, grade:r.grade, clubTier:r.clubTier };
   S.pendingRenew = null; S.gotCut = false;
-  pushEvent(`<b>${r.team}</b> 与你续约 ${r.years} 个赛段，年薪 <b>${r.salary!==undefined?r.salary:"—"} 万</b>${
+  pushEvent(`<b>${r.team}</b> 与你续约 ${r.years} 个赛段，赛段薪资 <b>${r.salary!==undefined?wanText(r.salary):"—"}</b>${
     r.buyout!==undefined?`，违约金 <b>${r.buyout} 万</b>`:""}。`,"good","合同");
-  txNote(`与 ${r.team} 续约，年薪 ${r.salary!==undefined?r.salary:"—"} 万`);
+  txNote(`与 ${r.team} 续约，赛段薪资 ${r.salary!==undefined?wanText(r.salary):"—"}`);
   render();
 }
 /* ---------- 续约谈判（2026-09-06 玩家点名：不能只有签或不签，要像试训那样能谈）----------
@@ -1333,7 +1335,12 @@ export function makeProDeal(tier, team, grade, league){
     if(S.pre) consumeOffer(team);
     render(); return;
   }
-  let salary = Math.round(lerp(T.pay[0], T.pay[1], q));
+  /* 转会报价要和留队用同一把尺（2026-09-07 玩家实锤）：原来这里只读 CLUB_TIERS 的价目表，
+     完全不看你现在的合同——留队涨到 1.28 亿、转会回 400 万，差 32 倍，
+     等于同一个游戏里两套互相不认账的定价。现在现有合同是地板（打八五折，换东家要付点代价），
+     新东家的档次是天花板：往上走涨薪，往下走降薪，但不再一夜回到起薪。 */
+  const payFloor = Math.round(((S.contract && S.contract.salary) || 0) * 0.85);
+  let salary = Math.min(Math.max(Math.round(lerp(T.pay[0], T.pay[1], q)), payFloor), payCapOf(tier));
   let sign   = S._regDeal ? 0 : Math.round(lerp(T.sign[0], T.sign[1], q));   // 赛段里换队没有签字费
   let feeCutNote = S._regDeal ? `<div><span class="hi">赛段注册期</span> — <span class="l">买断按 1.2 倍算、没有签字费、进队默契从头磨</span></div>` : "";
   if(fee > budget){
@@ -1386,13 +1393,13 @@ export function signTransfer(){
   S._regDeal=false;
   pushEvent(`<b>${meName()}</b> 从 <b>${old}</b> 转会到 <b>${d.team}</b>${
     (d.league&&d.league!==oldLg)?`，去了 <b>${d.league}</b>`:""}。${
-    fee?`对方付了 <b>${fee} 万</b>违约金。`:""}年薪 ${d.salary} 万，${d.years} 个赛段。`,
+    fee?`对方付了 <b>${wanText(fee)}</b>违约金。`:""}赛段薪资 ${wanText(d.salary)}（${yearPayText(d.salary)}），${d.years} 个赛段。`,
     "big", "转会");
   checkAch("transfer", {to:d.team});
   // 转会也是签约——「远走他乡」这类 on:"sign" 的成就原来只在首签触发，
   // 真转会出国反而拿不到（修误发 LDL 的同时抓出来的反向漏洞）
   checkAch("sign");
-  txNote(`${old} → <b>${d.team}</b>${(d.league&&d.league!==oldLg)?`（${d.league}）`:""}，年薪 ${d.salary} 万${fee?`，转会费 ${fee} 万`:""}`);
+  txNote(`${old} → <b>${d.team}</b>${(d.league&&d.league!==oldLg)?`（${d.league}）`:""}，赛段薪资 ${wanText(d.salary)}${fee?`，转会费 ${wanText(fee)}`:""}`);
   S.deal = null; render();
 }
 
@@ -1449,7 +1456,7 @@ export function askPromoteRaise(){
   if(rnd() < p){
     const T = CLUB_TIERS[d.clubTier] || CLUB_TIERS.mid;
     d.salary = Math.max(Math.round(d.salary*1.35), Math.round(T.pay[0]*0.8));
-    pushEvent(`经纪人把你的 LDL 数据拍在了桌上——俱乐部认了：<b>年薪提到 ${d.salary} 万/赛段</b>。`,"good","升队");
+    pushEvent(`经纪人把你的 LDL 数据拍在了桌上——俱乐部认了：<b>赛段薪资提到 ${wanText(d.salary)}</b>。`,"good","升队");
   }else{
     addStaff("mgr",-4);
     pushEvent(`你要了更高的数，管理层没接：「一队还没打过一场，先证明再谈」。<b>原提案不变</b>，经理记了一笔。`,"info","升队");
@@ -1479,9 +1486,9 @@ export function acceptPromote(){
     S.contract.clubTier = d.clubTier;
   }
   S.rosterSig = myRoster().map(x => x.id).sort().join("|");
-  pushEvent(`<b>${d.team}</b> 把你从 <b>${old}</b> 调上了一队，新合同：年薪 <b>${d.salary} 万/赛段</b> · 违约金 ${d.buyout} 万。
+  pushEvent(`<b>${d.team}</b> 把你从 <b>${old}</b> 调上了一队，新合同：赛段薪资 <b>${wanText(d.salary)}</b>（${yearPayText(d.salary)}）· 违约金 ${wanText(d.buyout)}。
     ${d.incumbent} 让出了首发位——你在 LDL 打的那些比赛，有人一直在看。`, "big", "升队");
-  txNote(`${old} → <b>${d.team}</b>（升上一队 · 年薪 ${d.salary} 万/赛段）`);
+  txNote(`${old} → <b>${d.team}</b>（升上一队 · 赛段薪资 ${wanText(d.salary)}）`);
   checkAch("promote");
   render();
 }
@@ -1506,8 +1513,8 @@ export function promoteDealCard(){
     <p class="note" style="margin:0 0 10px">一队${POSN[S.pos]} <b>${d.incumbent}</b> 让位。你的底气：
       综合压过对位 <b>${d.gap>0?"+":""}${d.gap}</b>${d.wr!==null?` · LDL 胜率 <b>${d.wr}%</b>`:""} · 本赛季场均评分 <b>${avgR}</b></p>
     <div class="grid g2" style="margin:10px 0">
-      <div class="ver"><div class="k">新年薪</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${d.salary}<small> 万/赛段</small></div></div>
-      <div class="ver"><div class="k">新违约金</div><div class="v mono" style="font-size:20px">${d.buyout}<small> 万</small></div></div>
+      <div class="ver"><div class="k">新赛段薪资</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${wanHtml(d.salary)}</div><div class="k" style="font-size:10px">${yearPayText(d.salary)}</div></div>
+      <div class="ver"><div class="k">新违约金</div><div class="v mono" style="font-size:20px">${wanHtml(d.buyout)}</div></div>
     </div>
     <div class="row" style="justify-content:center">
       <button class="btn" id="promoteok">签字上一队 →</button>
@@ -1694,7 +1701,7 @@ export function transferPage(){
   /* 我的合同 */
   const contract = `<div class="card"><h2>我的合同<em>${S.team}</em></h2>
     <div class="grid g2" style="margin:10px 0">
-      <div class="ver"><div class="k">年薪</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${c.salary!==undefined?c.salary:"—"}<small> 万/赛段</small></div></div>
+      <div class="ver"><div class="k">赛段薪资</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${c.salary!==undefined?wanHtml(c.salary):"—"}</div>${c.salary!==undefined?`<div class="k" style="font-size:10px">${yearPayText(c.salary)}</div>`:""}</div>
       <div class="ver"><div class="k">剩余</div><div class="v mono" style="font-size:20px">${c.left!==undefined?c.left:"—"}<small> 赛段</small></div></div>
       <div class="ver"><div class="k">违约金</div><div class="v mono" style="font-size:20px">${fee}<small> 万</small></div></div>
       <div class="ver"><div class="k">本赛段表现分</div><div class="v mono" style="font-size:20px">${perf.toFixed(0)}</div></div>
