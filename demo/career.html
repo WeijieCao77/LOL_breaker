@@ -13617,6 +13617,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260908b", at: "2026-09-08", items: [
+      "难度再调：S12–S14 这三年 LCK 更难打了（至暗五年名副其实），新秀赛季的你也还不是完全体（顶栏「效力」一行会标「新秀赛季」，明年起就是正常水平）。冠军会更多落在 S15–S16，三连冠留给再战的三年"
+    ] },
     { v: "v20260908a", at: "2026-09-08", items: [
       "节点活动上线第一批：季后赛抽签仪式、世界赛出征仪式、年度颁奖夜。仪式里轮到你的那 20 秒是小游戏（抽签是弹幕里的专注挑战，出征是倒时差的呼吸节奏），打好了整个季后赛 / 世界赛期间有加成，打砸了有折扣，跳过按中档算——不亏不赚；托管、自动推进一律跳过，不改任何人的战绩。颁奖夜按这一年的数据评年度一阵 / 二阵 / 最佳新秀 / MVP，你的名字上榜就涨人气、进生涯页",
       "休赛期新增「特训营」：海外集训 / 体能营 / 心理课 / 陪家里三周，一年选一个。营里不练数值——涨的是热度、更衣室和身体的账，贵的营是后期资金的一个去处"
@@ -14523,7 +14526,8 @@ header.top.compact>.theme-top{display:none}
     const mini = miniPatchAdj();
     return clamp((rel * VER_ME_K + posBonus + (rel < 0 ? rel * -1 * cushion * 1.4 * (VER_ME_K / 2.2) : 0)) * 2, -VER_ME_CAP, VER_ME_CAP) + mini;
   }
-  var LCK_DYNASTY = [0.6, 1.2, 1.6, 0.9, 0];
+  var LCK_DYNASTY = [1.6, 2.2, 2.2, 0.9, 0];
+  var ROOKIE_MALUS = 3;
   var REGION_ANCHOR = { LCK: 71.5, LPL: 70, LEC: 68, LCS: 66.5, PCS: 63, VCS: 62.5, LJL: 60.5, LLA: 60, CBLOL: 60, LCO: 59, TCL: 59.5 };
   var REGION_STYLE = {
     LCK: { 运营: 2, 指挥: 1, 操作: -2, 体质: -1 },
@@ -14600,6 +14604,9 @@ header.top.compact>.theme-top{display:none}
     if (!p || p.me || p.lg !== "LCK") return 0;
     return LCK_DYNASTY[S.si] || 0;
   }
+  function rookieSeason() {
+    return !!(S.career && S.career.since !== void 0 && S.career.since === S.si);
+  }
   function power(teamOrPlayers, fatigue = 0, verFav = null) {
     const team = teamOrPlayers && teamOrPlayers.players ? teamOrPlayers : null;
     const players = team ? team.players : teamOrPlayers;
@@ -14624,6 +14631,7 @@ header.top.compact>.theme-top{display:none}
       if (p.me && true) {
         v += injuryHit("操作") * 0.34 + injuryHit("运营") * 0.28 + injuryHit("心态") * 0.14 + injuryHit("体质") * 0.1;
       }
+      if (p.me && rookieSeason()) v -= ROOKIE_MALUS;
       if (p.me && true) {
         v += gearBonus("操作") * 0.34 + gearBonus("运营") * 0.28 + gearBonus("体质") * 0.1 + langBonus();
       }
@@ -15933,7 +15941,7 @@ header.top.compact>.theme-top{display:none}
       ap: AP,
       record: { w: 0, l: 0 },
       gameRec: { w: 0, l: 0 },
-      career: S.careerBak || { w: 0, l: 0, titles: [], best: 99 },
+      career: S.careerBak || { w: 0, l: 0, titles: [], best: 99, since: S.si },
       seasonAttr0: Object.assign({}, S.attrs),
       buff: {},
       contract: S.pendingContract || { years: 2, left: 2 },
@@ -19460,7 +19468,7 @@ header.top.compact>.theme-top{display:none}
     const isPre = S.step === "pre" || S.step === "offer" || !S.career && S.pre;
     const np = nowPhase();
     const idLine = `<div class="h-id"><div class="who">${meName()}<small>${POSN[S.pos] || ""} · ${S.age} 岁</small></div>
-    <div class="team">${isPre ? S.careerBak ? `自由身 · 上一站 <b>${S.pre && S.pre.exPro && S.pre.exPro.team || "—"}</b> · 上分、开播、等电话` : `还没有战队 · 先打上分、攒人气、被人看见` : `效力 <b>${S.team}</b> · 本季 <span class="mono">${S.record ? S.record.w : 0}–${S.record ? S.record.l : 0}</span>${champCoreOn() ? ' · <span class="tag g" title="夺冠班底还在：转会窗口不动你的队、默契不回落、整队带着冠军底气">冠军班底</span>' : ""}`}</div></div>`;
+    <div class="team">${isPre ? S.careerBak ? `自由身 · 上一站 <b>${S.pre && S.pre.exPro && S.pre.exPro.team || "—"}</b> · 上分、开播、等电话` : `还没有战队 · 先打上分、攒人气、被人看见` : `效力 <b>${S.team}</b> · 本季 <span class="mono">${S.record ? S.record.w : 0}–${S.record ? S.record.l : 0}</span>${champCoreOn() ? ' · <span class="tag g" title="夺冠班底还在：转会窗口不动你的队、默契不回落、整队带着冠军底气">冠军班底</span>' : ""}${rookieSeason() ? ' · <span class="tag" title="签约后的第一个赛季：你还不是完全体，临场会打个折扣；明年起就是正常水平">新秀赛季</span>' : ""}`}</div></div>`;
     const nowLine = `<div class="h-now ${np.urgent ? "urgent" : ""}"><div class="ph">${np.tag}</div>
     <div class="big">${np.phase}${np.detail ? `<small>${np.detail}</small>` : ""}</div>
     <button class="h-cta" id="hudcta" hidden></button></div>`;

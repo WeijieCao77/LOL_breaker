@@ -111,6 +111,9 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260908b", at:"2026-09-08", items:[
+    "难度再调：S12–S14 这三年 LCK 更难打了（至暗五年名副其实），新秀赛季的你也还不是完全体（顶栏「效力」一行会标「新秀赛季」，明年起就是正常水平）。冠军会更多落在 S15–S16，三连冠留给再战的三年"
+  ]},
   {v:"v20260908a", at:"2026-09-08", items:[
     "节点活动上线第一批：季后赛抽签仪式、世界赛出征仪式、年度颁奖夜。仪式里轮到你的那 20 秒是小游戏（抽签是弹幕里的专注挑战，出征是倒时差的呼吸节奏），打好了整个季后赛 / 世界赛期间有加成，打砸了有折扣，跳过按中档算——不亏不赚；托管、自动推进一律跳过，不改任何人的战绩。颁奖夜按这一年的数据评年度一阵 / 二阵 / 最佳新秀 / MVP，你的名字上榜就涨人气、进生涯页",
     "休赛期新增「特训营」：海外集训 / 体能营 / 心理课 / 陪家里三周，一年选一个。营里不练数值——涨的是热度、更衣室和身体的账，贵的营是后期资金的一个去处"
@@ -986,7 +989,10 @@ export function versionFit(){
    这不是随便配的难度旋钮，它就是「至暗四年」这个设定本身。
    统一标尺后拆成两层：基础实力走赛区锚（LCK 66.5，比 LPL 高 1.5），
    年份状态走这条曲线——S16 归零，主角破局的窗口敞开。 */
-export const LCK_DYNASTY=[0.6,1.2,1.6,0.9,0];   // 2026-09-07 难度调整：峰值 2.2→1.6（配合 WR_WEIGHT 28→18）
+export const LCK_DYNASTY=[1.6,2.2,2.2,0.9,0];   // 2026-09-08 作者拍板：S12–S14 的 LCK 优势加回（昨晚三刀把早期也砍薄了，强玩家三成多在 S12–S14 就夺冠）；S15 起照旧
+/* 新秀赛季（签约后的第一个赛季）：你还不是完全体，临场按这个数折。和 LCK 早期优势一起把冠军推向 S15–S16；
+   五年内的王朝压到 10% 以内，三连冠留给再战的三年。老档没有 since 字段就不折。 */
+export const ROOKIE_MALUS=3;
 
 /* ---------- 赛区定锚与风格（2026-09-02 玩家拍板） ----------
    各赛区数据原本是联赛内标准化（每个联赛平均都是 50）——VCS 的平均值
@@ -1063,6 +1069,7 @@ export function dynastyBonus(players){
   if(!p||p.me||p.lg!=="LCK") return 0;
   return LCK_DYNASTY[S.si]||0;
 }
+export function rookieSeason(){ return !!(S.career&&S.career.since!==undefined&&S.career.since===S.si); }
 
 /* 战力：指挥是全队乘数 */
 /* 综合实力 = 基础战力 × 默契 × 战术 × 士气 × 指挥 × 体能
@@ -1095,6 +1102,7 @@ export function powerCore(players,fatigue=0,verFav=null,team=null){
     if(p.me&&true){
       v+=injuryHit("操作")*0.34+injuryHit("运营")*0.28+injuryHit("心态")*0.14+injuryHit("体质")*0.10;
     }
+    if(p.me&&rookieSeason()) v-=ROOKIE_MALUS;   // 新秀赛季：还不是完全体
     if(p.me&&true){
       v+=gearBonus("操作")*0.34+gearBonus("运营")*0.28+gearBonus("体质")*0.10+langBonus();
     }
@@ -2360,7 +2368,7 @@ export function acceptOffer(i){
     // si 保持不动。原来写死 si:0，于是在职业前多打一年（已经到 S13）
     // 的人一签约就被扔回 S12，整条时间线倒流。
     week:1,ap:AP,record:{w:0,l:0},gameRec:{w:0,l:0},
-    career:S.careerBak||{w:0,l:0,titles:[],best:99},seasonAttr0:Object.assign({},S.attrs),
+    career:S.careerBak||{w:0,l:0,titles:[],best:99,since:S.si},seasonAttr0:Object.assign({},S.attrs),
     buff:{},contract:(S.pendingContract||{years:2,left:2}),rivals:{},lockerSeen:[]
   }));
   /* 签约就离开业余赛季了——手上还没打完的杯赛必须有个交代。
@@ -2420,7 +2428,7 @@ export function joinTeam(){
   setS(Object.assign({},S,{
     step:"season",attrs,age:18,fans:o.fame,heat:0,money:0,fatigue:0,
     si:0,week:1,ap:AP,world,team:team.name,
-    record:{w:0,l:0},gameRec:{w:0,l:0},career:{w:0,l:0,titles:[],best:99},
+    record:{w:0,l:0},gameRec:{w:0,l:0},career:{w:0,l:0,titles:[],best:99,since:0},
     log:[],news:[],events:[],retiredPool:[],usedLegends:[],form:{},formSeen:{},
     schedule:[],standings:null,seasonAttr0:Object.assign({},attrs),
     scaleVer:2, born:GAME_VER
@@ -5768,7 +5776,7 @@ export function hud(){
   const isPre=(S.step==="pre"||S.step==="offer"||(!S.career&&S.pre));
   const np=nowPhase();
   const idLine=`<div class="h-id"><div class="who">${meName()}<small>${POSN[S.pos]||""} · ${S.age} 岁</small></div>
-    <div class="team">${isPre?(S.careerBak?`自由身 · 上一站 <b>${(S.pre&&S.pre.exPro&&S.pre.exPro.team)||"—"}</b> · 上分、开播、等电话`:`还没有战队 · 先打上分、攒人气、被人看见`):`效力 <b>${S.team}</b> · 本季 <span class="mono">${S.record?S.record.w:0}–${S.record?S.record.l:0}</span>${champCoreOn()?' · <span class="tag g" title="夺冠班底还在：转会窗口不动你的队、默契不回落、整队带着冠军底气">冠军班底</span>':''}`}</div></div>`;
+    <div class="team">${isPre?(S.careerBak?`自由身 · 上一站 <b>${(S.pre&&S.pre.exPro&&S.pre.exPro.team)||"—"}</b> · 上分、开播、等电话`:`还没有战队 · 先打上分、攒人气、被人看见`):`效力 <b>${S.team}</b> · 本季 <span class="mono">${S.record?S.record.w:0}–${S.record?S.record.l:0}</span>${champCoreOn()?' · <span class="tag g" title="夺冠班底还在：转会窗口不动你的队、默契不回落、整队带着冠军底气">冠军班底</span>':''}${rookieSeason()?' · <span class="tag" title="签约后的第一个赛季：你还不是完全体，临场会打个折扣；明年起就是正常水平">新秀赛季</span>':''}`}</div></div>`;
   const nowLine=`<div class="h-now ${np.urgent?'urgent':''}"><div class="ph">${np.tag}</div>
     <div class="big">${np.phase}${np.detail?`<small>${np.detail}</small>`:""}</div>
     <button class="h-cta" id="hudcta" hidden></button></div>`;
