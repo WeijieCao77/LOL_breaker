@@ -68,6 +68,7 @@ function playOne(opts?) {
   let w1: any = null, y1Inv = 0, y1Try = 0, y1Pass = 0;   // 第一年开窗那周的快照、第一年收到几次邀请 / 试训几次 / 过几次
   const worldsSeen = new Set<number>(), msiSeen = new Set<number>();   // 进过世界赛 / MSI 的赛季（含随队）
   let firstSi = -1;   // 第一份合同在哪个赛季签的
+  const intlLog: any[] = [];   // 诊断「打 T1 第五局必输」：国际赛每场开打时的疲劳与首局赢面、打到第五局时的赢面与结果
   const tierYears: Record<string, number> = {};   // 每个赛季结算时所在俱乐部的档次
   let signups = 0, cupMatches = 0, preps = 0, cupPick = 0;
   let invites = 0, tryPick = 0, dealPick = 0, transfers = 0, renewTalks = 0;
@@ -203,8 +204,20 @@ function playOne(opts?) {
         if (S.ap === _b) S.ap = 0;
       } else A.prepGo();
     } else if (S.step === "match") {
+      if (S.intl && S.match && !S.match.done && !(S.match.gameLog || []).length && !S.match._logged) {
+        S.match._logged = true;
+        try { intlLog.push({ si: S.si, opp: S.match.oppName, lck: !!(S.world.LCK || []).some((t: any) => t.name === S.match.oppName), fat: Math.round(S.fatigue), p1: Math.round(A.gameWinP(S.match.swing) * 100), need: S.match.need }); } catch (e) {}
+      }
+      if (S.intl && S.match && S.match.need === 3 && S.match.sc[0] === 2 && S.match.sc[1] === 2 && !S.match._g5) {
+        S.match._g5 = true;
+        const row = intlLog[intlLog.length - 1]; if (row && row.opp === S.match.oppName) { row.g5 = true; row.p5 = Math.round(A.gameWinP(S.match.swing) * 100); }
+      }
       if (S.match.node) A.resolveNode(1);
-      else if (S.match.done) A.nextWeek();
+      else if (S.match.done) {
+        const row = intlLog[intlLog.length - 1];
+        if (row && row.opp === S.match.oppName && row.win === undefined) { row.win = S.match.sc[0] > S.match.sc[1]; if (row.g5) row.g5win = row.win; }
+        A.nextWeek();
+      }
       else A.playGame();
     } else if (S.step === "offseason") {
       // 休赛期现在是可玩的几周：先把结算页点掉，再把每周的行动点用完
@@ -242,6 +255,7 @@ function playOne(opts?) {
     worlds: (S.career && S.career.worlds) || 0, msi: (S.career && S.career.msi) || 0, lg: (S.career && S.career.leagueTitles) || 0,
     worldsApps: worldsSeen.size, msiApps: msiSeen.size, bestIntl: (S.career && S.career.bestIntl) || 0, bestRank: (S.career && S.career.best) || 99,
     worldsYears: (S.career && S.career.worldsYears) || [], msiYears: (S.career && S.career.msiYears) || [], firstSi: firstSi,
+    intlLog,
     tiers: Object.keys(tierYears).map(k => k.split(":")[1]),
     attrsAvg: +(A.DIMS.reduce((a: number, d: string) => a + S.attrs[d], 0) / A.DIMS.length).toFixed(1),
     dims: Object.fromEntries(A.DIMS.map((d: string) => [d, [Math.round(S.attrs[d] * 10) / 10, Math.round(A.capOf(d) * 10) / 10]])),   // 每维 [现值, 上限]
@@ -393,6 +407,14 @@ function batch(n: number, encore = false, strong = false, loyal = false) {
     w1: (() => { const ws = rs.map(r => r.w1).filter(Boolean); const m = (k: string) => +(ws.reduce((a, w) => a + w[k], 0) / Math.max(1, ws.length)).toFixed(1); return { n: ws.length, rank: m("rank"), fans: m("fans"), score: m("score"), attrs: m("attrs"), fat: m("fat") }; })(),
     y1: { invites: +(rs.reduce((a, r) => a + r.y1Inv, 0) / n).toFixed(2), tryouts: +(rs.reduce((a, r) => a + r.y1Try, 0) / n).toFixed(2), passed: +(rs.reduce((a, r) => a + r.y1Pass, 0) / n).toFixed(2) },
     // 冠军来得早还是晚：按赛季下标数世界赛 / MSI 冠军，以及「签约后第几年拿到第一座世界冠军」
+    // 国际赛遇到 LCK / T1 时的处境：开打时平均疲劳、首局赢面、BO5 胜率；打到 2–2 时第五局的赢面与实际胜率
+    intlVs: (() => { const all = rs.flatMap(r => r.intlLog || []);
+      const sum = (rows: any[]) => { const n = rows.length; if (!n) return null;
+        const g5 = rows.filter(x => x.g5);
+        return { n, fatAvg: +(rows.reduce((a, x) => a + x.fat, 0) / n).toFixed(1), p1Avg: +(rows.reduce((a, x) => a + x.p1, 0) / n).toFixed(1),
+          winRate: +(rows.filter(x => x.win).length / n).toFixed(3), fatOver40: +(rows.filter(x => x.fat >= 40).length / n).toFixed(2),
+          g5: g5.length ? { n: g5.length, p5Avg: +(g5.reduce((a, x) => a + x.p5, 0) / g5.length).toFixed(1), winRate: +(g5.filter(x => x.g5win).length / g5.length).toFixed(3) } : null }; };
+      return { vsLCK: sum(all.filter(x => x.lck)), vsT1: sum(all.filter(x => x.opp === "T1")), vsOthers: sum(all.filter(x => !x.lck)), bo5all: sum(all.filter(x => x.need === 3)) }; })(),
     byYear: (() => { const w: Record<string, number> = {}, m: Record<string, number> = {}, first: Record<string, number> = {};
       rs.forEach(r => { (r.worldsYears || []).forEach((y: number) => { const k = A.SEASONS[y] ? A.SEASONS[y].tag : String(y); w[k] = (w[k] || 0) + 1; });
         (r.msiYears || []).forEach((y: number) => { const k = A.SEASONS[y] ? A.SEASONS[y].tag : String(y); m[k] = (m[k] || 0) + 1; });
