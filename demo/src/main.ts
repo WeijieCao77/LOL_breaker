@@ -1289,13 +1289,25 @@ export function buildLDL(w){
        统一标尺版：母队−8～−4、下限 55（LPL 均值 65 → LDL 57–61，
        大师到王者边缘）——强队青训≈王者边的门神，弱队青训跟弱队一样菜，
        宗师实力（60）有得打、没得躺。 */
-    players:POS.map(x=>{
-      const pl=Object.assign(makeRookie(x.k,Math.max(56,Math.min(p-8,lplLow)),"LDL"),{lg:"LDL",form:52,retired:false});   // 母队 −8，不高于 LPL 垫底三队均值，下限 56
-      const R=LDL_ROSTER[teamCode(t.name)];
-      const real=R&&R.find(q=>q.pos===x.k);
-      if(real) pl.id=real.id;               // 真名上身；数值不动
-      return pl;
-    })
+    /* 2026-09-07（玩家：「模拟的一阵二阵都是不认识的人」）：
+       原来这里 85 个青训一律 18 岁、实力被 lplLow 截平在 56–66 的窄带里。
+       18–21 岁每年 +6.28、22 岁以上只有 +2.96——一整批同龄人两三年后必然同时越过一队，
+       批测里 S14/S15 每年提拔 23–25 笔，一局生涯 LPL 换人 97 次（只有 85 个首发位）。
+       两处改动：① 年龄铺开 17–21，越线从雪崩变回零星；② 一支二队只出一个好苗子
+       （随机一人 +7，其余 −3），不再五个人一样强、一提就提五个。
+       下限从 56 降到 48：弱队的青训不该比自家一队还强。上限仍钉在 LPL 垫底三队均值。 */
+    players:(()=>{
+      const gem=Math.floor(rnd()*POS.length);
+      return POS.map((x,idx)=>{
+        const lvl=Math.max(48,Math.min(p-8,lplLow))+(idx===gem?7:-3);
+        const pl=Object.assign(makeRookie(x.k,lvl,"LDL"),{lg:"LDL",form:52,retired:false});
+        pl.age=17+Math.floor(rnd()*5);      // 17–21：别让整批人同一年踩上成长台阶
+        const R=LDL_ROSTER[teamCode(t.name)];
+        const real=R&&R.find(q=>q.pos===x.k);
+        if(real) pl.id=real.id;             // 真名上身；数值不动
+        return pl;
+      });
+    })()
   }));
 }
 
@@ -1333,7 +1345,13 @@ export function makeRookie(pos,level,lg){
   // 统一标尺后封顶提到 88：LCK 明星退役后补上来的新星也该有 70+ 的空间
   DIMS.forEach(d=>r[d]=clamp(Math.round(level+(rnd()*16-8)),45,93));   // 全体系 +5
   const nm=rookieName(lg||(S&&S.homeLeague)||"LPL");
-  return {id:nm.id,cn:nm.cn,pos,age:18,r,rookie:true,lg:lg||undefined};
+  /* 每个人有自己的成长天花板（2026-09-07）：原来 ageWorld 的 dev 只看年龄不看上限，
+     于是每一个青训都能一路涨到 89——批测里 S19 青训出身的人 89.9 分，当年的联赛招牌 73.3。
+     现实里绝大多数青训打不上一队就退了，只有少数几个能摸到天花板。
+     debutSi = 头一回进一队名单的赛季，颁奖夜的「最佳新秀」认它（提拔时会重写）。 */
+  const ceil=clamp(Math.round(level+6+rnd()*22),50,92);
+  return {id:nm.id,cn:nm.cn,pos,age:18,r,rookie:true,ceil,lg:lg||undefined,
+          debutSi:(S&&S.si!==undefined)?S.si:0};
 }
 
 /* 职业前的世界推进：你没在打，但联赛在打。 */
@@ -1550,7 +1568,12 @@ export function ageWorld(){
            于是联赛冠军率 100%、MSI 80%：那不是玩家变强了，是世界停在原地等他。
            幅度刻意远小于玩家（玩家有行动点、瓶颈突破、装备、私教），
            只是让联赛的水位跟着往上抬，赢不再是理所当然。 */
-        const dev = p.age<=23 ? 2.3 : p.age<=25 ? 1.3 : p.age<=27 ? 0.4 : 0;
+        /* 2026-09-07：成长要有个人天花板。原来 dev 只看年龄不看上限，于是每一个青训都能
+           一路涨到 89——批测里 S19 青训出身的人 89.9 分、当年的联赛招牌只剩 73.3。
+           现实里绝大多数青训摸不到天花板就打不上一队了。ceil 由 makeRookie 定；
+           2022 真实名单里的人没有这个字段，曲线一如既往（联赛水位仍由 capWorldDrift 管）。 */
+        let dev = p.age<=23 ? 2.3 : p.age<=25 ? 1.3 : p.age<=27 ? 0.4 : 0;
+        if(p.ceil!==undefined&&ovrOf(p)>=p.ceil) dev=0;
         DIMS.forEach(d=>{
           const delta=base*(base>0?(1.4-DECAY_W[d]*0.5):DECAY_W[d]);
           p.r[d]=clamp(p.r[d]+delta+dev,20,99);
@@ -4445,6 +4468,7 @@ export function offNextWeek(){
     if(nx==="summer"){
       // 季中间歇也是注册窗口：LDL 打得好，夏季赛能直接调上一队——
       // 现实里升降就是跟着转会/注册窗走的，不用等到年底
+      capLDL();                // 先把二队钉回天花板，再开窗口——不然提拔看到的是虚高的数据
       aiMarketWindow(false);   // 全联盟的提拔/下放先走一遍（AI 队）
       // 季中到期的合同也要有个了断（玩家实锤：拒了续约、没人签，夏季赛照样穿着旧队衣上场）
       if(S.pendingRenew) settleRenewDefault();
@@ -4497,9 +4521,13 @@ export function finishOffseason(){
   S.yearBase=0;              // 新的一年，全年计数从头开始
   S.miniPatch=null; S.patchClock=0;   // 新版本年，热修编号从 .1 重数
   const news=ageWorld();
-  aiMarketWindow(true);   // 休赛期转会窗口：提拔/下放 + 跨队转会
+  /* 顺序要紧（2026-09-07 修）：原来是 ageWorld → aiMarketWindow → capWorldDrift → capLDL，
+     于是「提拔」看到的是**还没被压回去的**二队——ageWorld 刚给 18–21 岁的青训加了 +6.28，
+     capLDL 却在转会窗之后才把他们钉回 LPL 垫底三队的水平。等于每年都拿一份虚高的数据去换人。
+     现在先钉水位、再开窗口：提拔看到的是二队真实的、被压过的实力。 */
   capWorldDrift();   // 世界水位年漂移上限：段位表五年不走样
   capLDL();   // 二队每年重钉天花板：不能越长越比爹强
+  aiMarketWindow(true);   // 休赛期转会窗口：提拔/下放 + 跨队转会
   try{ S.lgAvg=leagueBaseline(S.world); }catch(e){}   // 年度均值（版本红利算法用；S.baseline 是签约水位，不动）
   // 玩家自己的年龄曲线
   const base=ageCurve(S.age);

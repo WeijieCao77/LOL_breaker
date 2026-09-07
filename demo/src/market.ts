@@ -2,6 +2,7 @@ import { syncRelations } from "./clout";
 import { pw } from "./intl";
 import { DIMS, POS, POSN, SEASONS, avg, cap, power, pushEvent, q1, champCoreOn } from "./main";
 import { rnd } from "./rng";
+import { STARS } from "./stars";
 import { S } from "./state";
 import { syncTrust } from "./team";
 
@@ -11,14 +12,21 @@ import { syncTrust } from "./team";
    转会会造成队伍实力变化、默契降低、选手间关系变化，现在的世界太过于死板。」
 
    两个窗口，和玩家自己的升队窗口对齐：
-   · 季中间歇（春→夏）：提拔 / 下放——二队某位置比一队强 2 分以上，七成概率换上去，被顶掉的人下放
+   · 季中间歇（春→夏）：提拔 / 下放——二队某位置比一队强 MKT.promoGap 分以上，七成概率换上去，被顶掉的人下放
+     （2026-09-07 起还有笔数闸门与「明星不下放」，见下面 MKT 那段注释）
    · 休赛期：提拔 / 下放 + 跨队转会——弱队（下半区）里高于队均 4 分、27 岁以下的好手，
      被上半区某支该位置更弱的队买走，被顶掉的人反向流动（每个联赛最多约 30% 的队数）
    代价：换过人的 AI 队默契 −6 / 战术 −2.7 一次，之后每个窗口回补 +3 / +1.35 直到回到原水位；
    主角所在队走 watchRoster → disruptSynergy 那套（默契砸、离队队友事件、新人重建信任与关系）。
    主角自己的位置 AI 不碰——那由替补/换下机制管。 */
 
-export const MKT={promoGap:2, promoP:0.7, xferP:0.35, maxPerLeague:0.3, synHit:6, synHeal:3};
+/* 2026-09-07 提拔加闸门（玩家：「模拟的一阵二阵都是不认识的人」）。
+   原来 promoGap 只有 2 分（同联赛实力差中位 15 分的 1/7）、概率 0.7、一年两个窗口，
+   而且 maxPerLeague 只管跨队转会——aiPromotions 没有任何笔数上限，符合条件的一次全换。
+   批测：一局生涯 LPL 一队换人 97 人次（只有 85 个首发位），其中 94% 走的是这条通道；
+   S16 的 2022 真名占比从 0.99 掉到 0.25，从 S17 起明星在二级联赛的比在 LPL 的还多。
+   现在：门槛 6 分、每个窗口全联赛最多 3 笔、每支队一年最多提 1 个人。 */
+export const MKT={promoGap:6, promoP:0.7, xferP:0.35, maxPerLeague:0.3, maxPromo:3, synHit:6, synHeal:3};
 
 export function mktOvr(p){ const r=p.r||p; return avg(DIMS.map(d=>r[d]||0)); }
 export function mktIsMine(t){ return !!(S.team&&t&&t.name===S.team); }
@@ -36,23 +44,44 @@ export function mktHeal(){
   }));
 }
 
-/* 提拔 / 下放：只在 LPL 与其二队之间 */
+/* 提拔 / 下放：只在 LPL 与其二队之间。
+   先把所有够格的位置收齐，按「差多少分」从大到小排，只放行最靠前的 MKT.maxPromo 笔，
+   每支队一年最多一笔——不再是「符合条件的一次全换」。 */
 export function aiPromotions(){
   const out=[]; const L=S.world&&S.world.LDL, P=S.world&&S.world.LPL; if(!L||!P) return out;
+  // 二队的天花板（= LPL 垫底三队均值，和 capLDL 同一把尺）：一队里还在这条线之上的人不下放
+  const tavg=t=>avg((t.players||[]).filter(q=>!q.me).map(mktOvr));
+  const ldlCeil=P.length>=3?avg(P.map(tavg).sort((a,b)=>a-b).slice(0,3)):0;
+  const cands=[];
   L.forEach(acad=>{
     const par=P.find(t=>t.name===acad.parent); if(!par) return;
     POS.forEach(x=>{
       const a=acad.players.find(q=>q.pos===x.k&&!q.me), f=par.players.find(q=>q.pos===x.k);
       if(!a||!f||f.me) return;
       if((mktIsMine(par)||mktIsMine(acad))&&(x.k===S.pos||champCoreOn())) return;   // 主角的位置不由 AI 动；冠军班底期间整队不动
-      if(mktOvr(a)<mktOvr(f)+MKT.promoGap||rnd()>=MKT.promoP) return;
-      par.players=par.players.map(q=>q===f?a:q);
-      acad.players=acad.players.map(q=>q===a?f:q);
-      a.lg=par.players[0]&&par.players[0].lg||"LPL"; f.lg="LDL";
-      mktSynHit(par,1); mktSynHit(acad,1);
-      out.push({kind:"promo",team:par.name,acad:acad.name,up:a.id,down:f.id,pos:x.k});
+      if(par._promoSi===S.si) return;                       // 这支队今年已经提过人了
+      if(mktOvr(a)<mktOvr(f)+MKT.promoGap) return;
+      /* 被顶掉的人不是垃圾：明星、以及还在二队天花板之上的首发，俱乐部不会把他下放到次级联赛
+         （玩家实锤：S17 起 TheShy / Rookie / Uzi / Kanavi / 369 全在打 LDL）。
+         他们要么被别的队买走（走 aiTransfers），要么一路打到退役——就是不进二队。 */
+      if(STARS[f.id]||mktOvr(f)>=ldlCeil) return;
+      cands.push({acad,par,a,f,pos:x.k,gap:mktOvr(a)-mktOvr(f)});
     });
   });
+  cands.sort((x,y)=>y.gap-x.gap);
+  for(const c of cands){
+    if(out.length>=MKT.maxPromo) break;
+    if(c.par._promoSi===S.si) continue;                     // 排序后同一支队可能出现两次
+    if(rnd()>=MKT.promoP) continue;
+    const {acad,par,a,f}=c;
+    par.players=par.players.map(q=>q===f?a:q);
+    acad.players=acad.players.map(q=>q===a?f:q);
+    a.lg=par.players[0]&&par.players[0].lg||"LPL"; f.lg="LDL";
+    a.debutSi=S.si;                                         // 头一回进一队：颁奖夜的「最佳新秀」认它
+    par._promoSi=S.si;
+    mktSynHit(par,1); mktSynHit(acad,1);
+    out.push({kind:"promo",team:par.name,acad:acad.name,up:a.id,down:f.id,pos:c.pos});
+  }
   return out;
 }
 
