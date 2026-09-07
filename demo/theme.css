@@ -1398,3 +1398,67 @@ header.top.compact>.theme-top{display:none}
 .theme-full .tf.on{border-color:var(--gold)}
 .theme-full .tf b{display:flex;align-items:center;gap:8px;color:var(--gold-hi)}
 .theme-full .tf span{display:block;font-size:12px;color:var(--ink-3);margin-top:3px}
+/* ---------- 节点活动与小游戏（2026-09-08）----------
+   仪式压在一切弹窗之上；卡比际遇宽一点，场景线稿在最上面。 */
+.cer{position:fixed;inset:0;z-index:52;display:grid;place-items:center;padding:12px;
+  background:rgba(var(--scrim-rgb),.88);backdrop-filter:blur(3px);animation:ruIn .25s ease}
+.cer-inner{width:min(600px,calc(100vw - 24px));max-height:92vh;overflow-y:auto;overscroll-behavior:contain;
+  background:linear-gradient(180deg,rgba(var(--panel2-rgb),.98),rgba(var(--deep-rgb),.98));
+  border:1px solid var(--gold);padding:18px 22px 20px;
+  clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);
+  box-shadow:0 0 60px -10px rgba(var(--gold-rgb),.45)}
+.cer-art{display:block;width:100%;height:auto;max-height:150px;color:var(--gold);opacity:.9;margin:0 auto 8px}
+.cer-eyebrow{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace;font-size:11px;letter-spacing:.3em;
+  color:var(--gold);text-transform:uppercase;margin-bottom:8px}
+.cer-p{font-size:15px;line-height:1.75;color:var(--ink);margin:0 0 8px}
+.cer-p b{color:var(--gold-hi)}
+.cer-hint{font-size:12.5px;line-height:1.65;color:var(--ink-2);margin:0 0 6px;
+  border-left:2px solid rgba(var(--gold-rgb),.5);padding-left:10px}
+.cer-btns{justify-content:flex-end;align-items:center;gap:10px;margin-top:12px}
+.cer-tier{font-size:30px;font-weight:700;letter-spacing:.08em;margin:2px 0 8px;color:var(--ink-2)}
+.cer-tier.gold{color:var(--gold-hi);text-shadow:0 0 24px rgba(var(--gold-rgb),.6)}
+.cer-tier.bronze{color:var(--dawn)}
+/* 小游戏公共 */
+.mg-head{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-2);margin:0 0 8px}
+.mg-head b{color:var(--gold-hi);font-size:16px}
+.mg-wrap{position:relative;overflow:hidden}
+.mg-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.mg-cell{min-height:46px;font-size:18px;font-weight:600;font-family:ui-monospace,"SF Mono",Menlo,monospace;
+  color:var(--ink);background:rgba(var(--panel-rgb),.9);border:1px solid var(--line);cursor:pointer;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;transition:background .12s}
+.mg-cell:hover{border-color:var(--line-hot)}
+.mg-cell.done{opacity:.28;background:rgba(var(--gold-rgb),.16);border-color:var(--gold-dim);cursor:default}
+.mg-cell.bad{background:rgba(var(--red-rgb),.35);border-color:var(--red)}
+.mg-cell:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+/* 弹幕：从右往左飘、遮住格子；不拦点击 */
+.mg-dm{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.mg-dm span{position:absolute;left:100%;white-space:nowrap;font-size:14px;font-weight:600;color:var(--ink);
+  background:rgba(var(--void-rgb),.92);border:1px solid var(--line-hot);padding:3px 10px;
+  animation:dmfly 6s linear infinite}
+@keyframes dmfly{from{transform:translateX(0)}to{transform:translateX(calc(-100% - 100vw))}}
+/* 呼吸圆 */
+.mg-ring{position:relative;display:grid;place-items:center;width:100%;height:240px;border:1px solid var(--line);
+  background:rgba(var(--void-rgb),.5);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;overflow:hidden}
+.mg-ring i{display:block;width:200px;height:200px;border-radius:50%;border:2px solid var(--gold);
+  background:radial-gradient(circle,rgba(var(--gold-rgb),.35),rgba(var(--gold-rgb),.06) 70%);
+  transform:scale(.42);will-change:transform}
+.mg-ring span{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:13px;color:var(--ink-2)}
+.mg-ring:focus-visible{outline:2px solid var(--gold)}
+/* 颁奖夜：逐项亮起 */
+.aw-sec{font-size:11px;letter-spacing:.2em;color:var(--gold);margin:10px 0 4px;animation:awIn .5s both;animation-delay:calc(var(--i,0) * .22s)}
+.aw-list{display:flex;flex-direction:column;gap:3px}
+.aw-row{display:grid;grid-template-columns:44px 1fr auto;gap:8px;align-items:center;font-size:14px;padding:5px 8px;
+  border:1px solid transparent;animation:awIn .5s both;animation-delay:calc(var(--i,0) * .22s)}
+.aw-row .aw-pos{font-size:11px;color:var(--ink-3)}
+.aw-row b{color:var(--ink)}
+.aw-row .aw-team{font-size:12px;color:var(--ink-3)}
+.aw-row.big{font-size:17px;padding:8px}
+.aw-row.me{border-color:var(--gold);background:rgba(var(--gold-rgb),.12)}
+.aw-row.me b{color:var(--gold-hi)}
+.cer-inner .cer-p[style*="--i"]{animation:awIn .5s both;animation-delay:calc(var(--i,0) * .22s)}
+@keyframes awIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media(max-width:560px){
+  .cer{padding:8px}.cer-inner{padding:14px 14px 16px;width:calc(100vw - 16px)}
+  .cer-art{max-height:110px}.cer-p{font-size:14px}.mg-cell{min-height:44px;font-size:17px}.mg-ring{height:220px}
+}
+@media(prefers-reduced-motion:reduce){.cer,.aw-sec,.aw-row,.cer-inner .cer-p[style*="--i"]{animation:none}.mg-dm{display:none}}

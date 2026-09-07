@@ -14,4 +14,5 @@ xferPull();     // 老域名上的存档接力（只在 www 上生效）
 import { S, setS } from "./state";
 import { render, startPre, GAME_VER } from "./main";
 import { saveGame, loadGame, readSave } from "./save";
-(window as any).poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave };
+import { cerStart } from "./cer";
+(window as any).poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave, cerStart };

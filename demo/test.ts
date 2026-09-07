@@ -43,7 +43,7 @@ if (!fs.existsSync(path.join(HERE, "src", "gen", "avatars.js"))) {
 }
 
 /* 把所有模块的导出合成一个 API 对象（原来 __api 那张手写名单） */
-const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve_more", "achieve", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market"];
+const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve_more", "achieve", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer"];
 const state = await import("./src/state.ts");
 const mods = await Promise.all(MODULES.map(m => import(`./src/${m}.ts`)));
 const A: any = Object.assign({}, ...mods, { S: () => state.S, setS: state.setS });
@@ -67,6 +67,7 @@ function playOne(opts?) {
   let lastPreWeek = 1, signAt = 0, signRank = 0, signFans = 0;   // 第一次签约：职业前累计第几周、当时段位读数与粉丝
   let w1: any = null, y1Inv = 0, y1Try = 0, y1Pass = 0;   // 第一年开窗那周的快照、第一年收到几次邀请 / 试训几次 / 过几次
   const worldsSeen = new Set<number>(), msiSeen = new Set<number>();   // 进过世界赛 / MSI 的赛季（含随队）
+  let firstSi = -1;   // 第一份合同在哪个赛季签的
   const tierYears: Record<string, number> = {};   // 每个赛季结算时所在俱乐部的档次
   let signups = 0, cupMatches = 0, preps = 0, cupPick = 0;
   let invites = 0, tryPick = 0, dealPick = 0, transfers = 0, renewTalks = 0;
@@ -82,7 +83,7 @@ function playOne(opts?) {
       const av = A.DIMS.reduce((a: number, d: string) => a + S.attrs[d], 0) / A.DIMS.length;
       w1 = { rank: Math.round(S.pre.rank * 10) / 10, fans: Math.round(S.fans), score: Math.round(A.preScore()), attrs: Math.round(av * 10) / 10, fat: Math.round(S.fatigue) };
     }
-    if (!signAt && S.career) { signAt = preYears * A.PRE_YEAR + lastPreWeek; signRank = Math.round(((S.pre && S.pre.rank) || 0) * 10) / 10; signFans = Math.round(S.fans || 0); }
+    if (!signAt && S.career) { signAt = preYears * A.PRE_YEAR + lastPreWeek; signRank = Math.round(((S.pre && S.pre.rank) || 0) * 10) / 10; signFans = Math.round(S.fans || 0); firstSi = S.si; }
     if (opts.hook) opts.hook(S, A, guard);   // 场景测试用：每步先给外部一次改状态的机会
     if (S.scrim && S.scrim.trial) { if (!_trialOn) trials++; _trialOn = true; }
     else { if (_trialOn && S.promoted && !S.understudy) trialWins++; _trialOn = false; }
@@ -240,6 +241,7 @@ function playOne(opts?) {
     si: S.si, extended: !!S.extended,
     worlds: (S.career && S.career.worlds) || 0, msi: (S.career && S.career.msi) || 0, lg: (S.career && S.career.leagueTitles) || 0,
     worldsApps: worldsSeen.size, msiApps: msiSeen.size, bestIntl: (S.career && S.career.bestIntl) || 0, bestRank: (S.career && S.career.best) || 99,
+    worldsYears: (S.career && S.career.worldsYears) || [], msiYears: (S.career && S.career.msiYears) || [], firstSi: firstSi,
     tiers: Object.keys(tierYears).map(k => k.split(":")[1]),
     attrsAvg: +(A.DIMS.reduce((a: number, d: string) => a + S.attrs[d], 0) / A.DIMS.length).toFixed(1),
     dims: Object.fromEntries(A.DIMS.map((d: string) => [d, [Math.round(S.attrs[d] * 10) / 10, Math.round(A.capOf(d) * 10) / 10]])),   // 每维 [现值, 上限]
@@ -323,6 +325,46 @@ function unitChecks() {
   if (r4.signAt && r4.extended && r4.si !== A.SEASONS.length - 1) bad.push("再战后没打到 S19 就结束了：si=" + r4.si);
   if (r4.signAt && r4.steps > 4000) bad.push("再战一局的步数异常：" + r4.steps);
   if (r1.si !== A.BASE_LAST && r1.signAt) bad.push("没选再战的档没停在 S16：si=" + r1.si);
+  // 仪式与小游戏（2026-09-08）：跳过 = 银档、托管跳过、效果只覆盖一段、颁奖夜算得出来、特训营一年一次；五维和天花板全程不动
+  try {
+    A.screenCreate(777); const S0 = A.S(); S0.name = "T"; S0.pos = "mid"; S0.origin = "academy"; S0.ageIdx = 1; S0.bgPick = S0.bgOffer[0].k;
+    S0.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 }; A.startPre();
+    const S = A.S();
+    S.career = { w: 0, l: 0, titles: [], best: 99 }; S.team = S.world.LPL[0].name; S.homeLeague = "LPL"; S.promoted = true;
+    const attrs0 = JSON.stringify(S.attrs), caps0 = JSON.stringify(A.DIMS.map((d: string) => A.capOf(d)));
+    if (A.focusTier(24) !== "gold" || A.focusTier(30) !== "silver" || A.focusTier(36) !== "bronze") bad.push("专注档位线不对");
+    if (A.rhythmTier(70) !== "gold" || A.rhythmTier(120) !== "silver" || A.rhythmTier(200) !== "bronze") bad.push("节奏档位线不对");
+    A.cerStart("draw"); if (!S.cer || S.cer.k !== "draw") bad.push("抽签仪式没开场");
+    if (!/抽签仪式/.test(A.cerCard())) bad.push("抽签仪式的卡没渲染");
+    A.cerFinish("gold", { sec: 20 }); if (!S.cer || S.cer.tier !== "gold" || A.cerStepName() !== "result") bad.push("小游戏结算没翻到结算页");
+    A.cerClose(); if (S.cer || S.poForm !== 3) bad.push("抽签金档没给季后赛状态 +3：poForm=" + S.poForm);
+    const f0 = A.myForm(); S.poForm = 0; const f1 = A.myForm(); if (Math.round(f0 - f1) !== 3) bad.push("myForm 没算上 poForm：" + f0 + " vs " + f1);
+    A.cerStart("draw"); A.cerSkip(); if (S.cer || S.poForm !== 0) bad.push("跳过没按银档走：poForm=" + S.poForm);
+    S.auto = { career: true }; A.cerStart("draw"); if (S.cer) bad.push("托管里仪式还弹了"); if (S.poForm !== 0) bad.push("托管跳过改了状态"); S.auto = null;
+    A.cerStart("depart"); if (!S.cer || S.cer.k !== "depart") bad.push("出征仪式没开场");
+    A.cerNext(); A.cerNext(); A.cerNext(); if (A.cerStepName() !== "game") bad.push("出征仪式三张卡后不是小游戏：" + A.cerStepName());
+    A.cerFinish("bronze", { ms: 300 }); A.cerClose();
+    if (!S.cerRec || S.cerRec.mul !== 0.8) bad.push("出征铜档没记恢复倍率");
+    S.off = { week: 1, weeks: 2, next: "intl" }; S.fatigue = 50; A.addFat(-10); const drop = 50 - S.fatigue;
+    S.cerRec = null; S.fatigue = 50; A.addFat(-10); const base = 50 - S.fatigue;
+    if (!(Math.abs(drop - base * 0.8) < 0.01)) bad.push(`出征倍率没进 addFat：${drop} vs ${base}`);
+    S.off = null;
+    const aw = A.computeAwards(); if (!aw || aw.first.length !== 5 || !aw.mvp) bad.push("颁奖夜算不出一阵 / MVP");
+    if (aw && new Set(aw.first.map((x: any) => x.pos)).size !== 5) bad.push("一阵五个位置不齐");
+    A.cerStart("awards"); if (!S.cer || S.cer.k !== "awards") bad.push("颁奖夜没开场");
+    S.achPop = []; S.rankUp = null;   // 成就弹窗先散场，仪式才开（真实界面里也是这个顺序）
+    if (!/年度颁奖夜/.test(A.cerCard())) bad.push("颁奖夜的卡没渲染");
+    A.cerClose(); if (S.cer) bad.push("颁奖夜散不了场");
+    S.auto = { career: true }; A.cerStart("awards"); if (S.cer) bad.push("托管里颁奖夜还弹了"); S.auto = null;
+    // 特训营：一年一次，钱不够不能选，卡渲染得出来
+    S.off = { week: 1, weeks: 3, next: "year" }; S.money = 1000;
+    if (!/特训营/.test(A.campCard())) bad.push("特训营卡没渲染");
+    A.pickCamp("abroad"); if (S.money !== 740 || !(S.camp && S.camp[S.si] === "abroad")) bad.push("海外集训没扣对钱：" + S.money);
+    A.pickCamp("fitness"); if (S.money !== 740) bad.push("特训营一年选了两次");
+    S.off = null;
+    if (JSON.stringify(S.attrs) !== attrs0) bad.push("仪式 / 特训营动了五维");
+    if (JSON.stringify(A.DIMS.map((d: string) => A.capOf(d))) !== caps0) bad.push("仪式 / 特训营动了天花板");
+  } catch (e) { bad.push("仪式自检没跑起来：" + (e && (e as any).stack || e)); }
   return bad;
 }
 
@@ -350,6 +392,12 @@ function batch(n: number, encore = false, strong = false, loyal = false) {
     preYears: count(r => String(r.preYears)),
     w1: (() => { const ws = rs.map(r => r.w1).filter(Boolean); const m = (k: string) => +(ws.reduce((a, w) => a + w[k], 0) / Math.max(1, ws.length)).toFixed(1); return { n: ws.length, rank: m("rank"), fans: m("fans"), score: m("score"), attrs: m("attrs"), fat: m("fat") }; })(),
     y1: { invites: +(rs.reduce((a, r) => a + r.y1Inv, 0) / n).toFixed(2), tryouts: +(rs.reduce((a, r) => a + r.y1Try, 0) / n).toFixed(2), passed: +(rs.reduce((a, r) => a + r.y1Pass, 0) / n).toFixed(2) },
+    // 冠军来得早还是晚：按赛季下标数世界赛 / MSI 冠军，以及「签约后第几年拿到第一座世界冠军」
+    byYear: (() => { const w: Record<string, number> = {}, m: Record<string, number> = {}, first: Record<string, number> = {};
+      rs.forEach(r => { (r.worldsYears || []).forEach((y: number) => { const k = A.SEASONS[y] ? A.SEASONS[y].tag : String(y); w[k] = (w[k] || 0) + 1; });
+        (r.msiYears || []).forEach((y: number) => { const k = A.SEASONS[y] ? A.SEASONS[y].tag : String(y); m[k] = (m[k] || 0) + 1; });
+        if ((r.worldsYears || []).length) { const k = "签约后第" + (Math.min(...r.worldsYears) - r.firstSi + 1) + "年"; first[k] = (first[k] || 0) + 1; } });
+      return { worldsByYear: w, msiByYear: m, firstWorldsAfterSigning: first }; })(),
     // 冠军率的病因：队伍档次、世界排名、你的属性、进过几次国际赛、走到多深
     end: (() => { const m = (f: (r: any) => number) => +(rs.reduce((a, r) => a + (f(r) || 0), 0) / n).toFixed(2);
       const dims: Record<string, any> = {}; A.DIMS.forEach((d: string) => { dims[d] = { v: m(r => r.dims && r.dims[d][0]), cap: m(r => r.dims && r.dims[d][1]), atCap: +(rs.filter(r => r.dims && r.dims[d][1] - r.dims[d][0] < 1).length / n).toFixed(2) }; });

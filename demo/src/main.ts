@@ -7,6 +7,7 @@ import { addStaff, cloutCard, cloutTick, doList, doSign, initRelations, initStaf
 import { CUPS, activeCups, cupCard, cupDismissMatch, cupMatchCard, cupOf, cupOppName, cupPrep, cupReachName, cupResultCard, cupRoundName, cupTick, disbandCrew, dueCups, enterCup, forfeitCup, preSquadCard, resolveCupNode, startCupMatch } from "./cup";
 import { DATA } from "./data";
 import { formCard, formMul, formNews, formTier, myForm, myFormMul, rollForm, rollWorldForm } from "./form";
+import { awardsText, campCard, cerApply, cerBind, cerCard, cerRecMul, cerStart } from "./cer";
 import { injuryCard, injuryHit, injuryTick, injuryTrainMul, riskHint, rollInjury } from "./injury";
 import { brOthersText, brStep, findTeam, intlAdvance, intlChampCard, intlStageName, leagueOf, majorStandings, spectateIntl, startIntl, wlAdd, wlInfluence, wlRelax, worldsSlot } from "./intl";
 import { aiMarketWindow } from "./market";
@@ -110,6 +111,10 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260908a", at:"2026-09-08", items:[
+    "节点活动上线第一批：季后赛抽签仪式、世界赛出征仪式、年度颁奖夜。仪式里轮到你的那 20 秒是小游戏（抽签是弹幕里的专注挑战，出征是倒时差的呼吸节奏），打好了整个季后赛 / 世界赛期间有加成，打砸了有折扣，跳过按中档算——不亏不赚；托管、自动推进一律跳过，不改任何人的战绩。颁奖夜按这一年的数据评年度一阵 / 二阵 / 最佳新秀 / MVP，你的名字上榜就涨人气、进生涯页",
+    "休赛期新增「特训营」：海外集训 / 体能营 / 心理课 / 陪家里三周，一年选一个。营里不练数值——涨的是热度、更衣室和身体的账，贵的营是后期资金的一个去处"
+  ]},
   {v:"v20260907i", at:"2026-09-07", items:[
     "冠军班底：拿到国际冠军之后的一年，转会窗口不动你的队、队友不会离队、休赛期默契不回落，同一套人接着打整队多一截底气，连冠之后更多；你自己的转会照旧由你选——走了，班底自然散。顶栏「效力」一行会标「冠军班底」。王朝从这里开始"
   ]},
@@ -2653,7 +2658,8 @@ export function btkChaseNote(){
 /* 特质会改「休息回多少体能」——劳模练得多，也累得久 */
 export const addFat=n=>{
   const rm=(n<0&&true)?traitMul("rest"):1;
-  S.fatigue=clamp(S.fatigue+n*rm,0,100);
+  const cm=(n<0)?cerRecMul():1;      // 出征仪式：世界赛期间的恢复倍率
+  S.fatigue=clamp(S.fatigue+n*rm*cm,0,100);
 };
 /* ---------- 名气拆成两层：粉丝与热度 ----------
 
@@ -3029,6 +3035,7 @@ export function autoClear(){
       if(S.rankUp){ S.rankUp=null; did=true; }
       else if(S.patchNote){ S.patchNote=false; did=true; }
       else if(S.intlChamp){ S.intlChamp=null; did=true; }
+      else if(S.cer){ cerApply(S.cer.k,"silver",true); did=true; }   // 仪式按跳过（银档）走
       else if(S.rndResult){ S.rndResult=null; did=true; }
       else if(S.contentPick){ S.contentPick=null; did=true; }
       else if(S.promoteDeal){
@@ -4021,6 +4028,7 @@ export function startPlayoff(){
   S.playoff.round=S.playoff.br.stage;
   S.step="match";
   startMatch(true, poMyOpp()||playoffOpp(S.playoff.round));
+  cerStart("draw");   // 抽签仪式：季后赛开打前的那一段戏（托管 / 机器人按跳过走，数字不动）
 }
 /* ---------- 季后赛对阵树（2026-09-06 玩家点名：要像瑞士轮/杯赛那样看得到线路——对手是击败了谁来的、赢了下一个打谁）----------
    六队三轮：首轮 3v6 / 4v5，一二号种子轮空；半决赛 1 号打 4v5 的胜者、2 号打 3v6 的胜者；决赛。
@@ -4252,6 +4260,7 @@ export function endSeason(result,seed){
   checkAch("splitend");
   checkAch("money");
   S.playoff=null;
+  S.poForm=0;            // 抽签仪式的状态加成只管这一个季后赛
   // 二级联赛的冠军不去国际赛——LDL 打得再好也只是升上一队的资格
   const majorLg = (S.homeLeague||"LPL")!=="LDL";
   // 玩家原话：「打完季后赛直接进世界赛……中间毫无休息」。
@@ -4274,6 +4283,7 @@ export function endSeason(result,seed){
     S.pendingIntl={type:"worlds",result};
     enterBreak("intl",2,"世界赛前 · 集结与适应",
       `<b>世界赛的名额到手了。</b>接下来两周：集结、飞抵主办地、适应场馆——抽签结果出来之前，把自己调整好。`);
+    cerStart("depart");   // 出征仪式：机场、落地、训练室，然后把时差倒过来
     return;
   }
   spectateIntl("worlds");
@@ -4417,6 +4427,8 @@ export function offNextWeek(){
     }
     if(nx==="wrap"){                                      // 世界赛落幕 -> 赛季结算页
       S.step="offseason";
+      S.cerRec=null;
+      cerStart("awards");   // 年度颁奖夜：一年的收口
       saveGame('赛季结算');
       render(); return;
     }
@@ -4561,7 +4573,7 @@ export function offPanel(){
   if(S.deal)   return dealCard();
   const nx=SEASONS[S.si+1];
   return `${renewCard()}${proOfferCard()}
-  ${faCard()}
+  ${faCard()}${campCard()}
   <div class="card">
     <h2>${S.off.label||"休赛期"}<em>第 ${S.off.week}/${S.off.weeks} 周 · 剩余行动点 ${S.ap}</em></h2>
     <p class="note">没有比赛要打。${S.off.next==="playoff"
@@ -4755,7 +4767,7 @@ export function viewEnd(){
     <h2>生涯成长<em>${meName()} · ${POSN[S.pos]} · ${S.si+1} 年</em></h2>
     <p class="note">生涯小分 ${S.career.w}−${S.career.l}${
       (S.career.w+S.career.l)<18?'<span class="tag l">出场极少</span>':''} ·
-      最佳常规赛排名 第 ${S.career.best===99?"—":S.career.best} 名${(titleCount())?` · 冠军 ${titlesText()}`:""}</p>
+      最佳常规赛排名 第 ${S.career.best===99?"—":S.career.best} 名${(titleCount())?` · 冠军 ${titlesText()}`:""}${awardsText()?` · 年度荣誉 ${awardsText()}`:""}</p>
     <div class="attrs" style="margin-top:16px">${DIMS.map(d=>{
       const c=capOf(d),v=S.attrs[d],b=ORIGIN[S.origin].base[d];
       return `<div class="at"><div class="lb">${d}</div>
@@ -5527,6 +5539,7 @@ export function helpCard(){
       ${li("赛季",`常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。春季冠军去 MSI，夏季赛决定世界赛名额。赛后拆解写清赢在哪、输在哪。`)}
       ${li("合同与转会","合同按赛段签、到期日是 MSI 结束 / 世界赛结束。三层窗口：转会期（MSI 后、世界赛后）什么都能做；赛段注册期（常规赛前 5 周）自由身能签短约顶班、被挖要付 1.2 倍违约金且没签字费；常规赛最后两周、季后赛、国际赛名单锁定。窗口关了还没人签，就回到路人的日子——履历不清零。")}
       ${li("托管","一键安排、重复上回合、执行计划；自动推进只跳过「没得选的周」，有事立刻交回给你。")}
+      ${li("仪式与小游戏","季后赛抽签、世界赛出征、年度颁奖夜这些节点上有一段戏，中间轮到你的 20 秒是小游戏。打好了整段有加成，打砸了有折扣，跳过按中档算——不亏不赚；托管和自动推进一律跳过。")}
     </div>
     <p class="note">导览会在第一次进职业前、第一次进赛季各弹一次；这里随时能重放。</p></div>`;
 }
@@ -5957,7 +5970,8 @@ export function render(){
     + (achPopCard())
     + (traitUpCard())
     + (streamOfferCard())
-    + (confirmCard());
+    + (confirmCard())
+    + (cerCard());          // 仪式与小游戏：压在一切之上，别的弹窗散了才开场
   if(_st.setAttribute) _st.setAttribute("data-zone", curZone());
   hudCta();               // HUD 主按钮镜像本页的 .btn.primary
   stageSwitchFx(); // 换标签 160ms 淡入
@@ -6149,6 +6163,7 @@ export function bind(){
   const _pat=$("patchok"); if(_pat) _pat.onclick=()=>{
     S.patchNote=null; S.patchSeen=GAME_VER;
     saveGame("更新说明已读"); render(); };
+  cerBind(st);            // 仪式的按钮与小游戏挂载；特训营的四个营也在这里
   const _pp=$("prepgo"); if(_pp) _pp.onclick=prepGo;
   const _off=$("offnext"); if(_off) _off.onclick=()=>{
     // 自由身在窗口的最后一周点「下一周」：先提醒（玩家点名：不然不知不觉就回了路人）

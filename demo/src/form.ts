@@ -23,7 +23,8 @@ export function formOf(p){
 export function formMul(p){ return 1+(formOf(p)-FORM_NEUTRAL)/420; }
 
 /* 玩家自己的状态 */
-export function myForm(){ return clamp(S.form===undefined?FORM_NEUTRAL:S.form,25,95); }
+/* 抽签仪式的季后赛状态加成（S.poForm，赛段结算清零）也算在这里 */
+export function myForm(){ return clamp((S.form===undefined?FORM_NEUTRAL:S.form)+(S.poForm||0),25,95); }
 export function myFormMul(){ return 1+(myForm()-FORM_NEUTRAL)/420; }
 export function formTier(f){
   if(f>=78) return {n:"状态爆棚",k:"hot"};
@@ -109,7 +110,7 @@ export function formCard(){
       <div class="vn mono"><b>${f}</b> ×${myFormMul().toFixed(3)}</div>
     </div>
     <p class="note">能力是你练出来的水位，状态是<b>今年打成什么样</b>。
-      状态每个赛段重算——赢比赛、体能、更衣室都会推它，但也有运气成分。
+      状态每个赛段重算——赢比赛、体能、更衣室都会推它，但也有运气成分。${S.poForm?`<br>抽签仪式：季后赛期间状态 <b>${S.poForm>0?"+":""}${S.poForm}</b>。`:""}
       ${f>=78?"现在这个手感，能打的比赛都去打。":
         f<=34?"能力没掉，只是打不出来。休息、稳住更衣室，等它回来。":""}</p>
   </div>`;

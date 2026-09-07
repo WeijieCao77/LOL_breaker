@@ -190,5 +190,17 @@ export const ACH_MORE=[
   {id:"ach30", n:"收藏家", d:"解锁 30 项成就。", tag:"收尾",
    on:"ach", cond:()=>Object.keys(S.ach||{}).length>=30, r:{money:500,fame:100}},
   {id:"ach45", n:"打透了", d:"解锁 45 项成就。", tag:"收尾",
-   on:"ach", cond:()=>Object.keys(S.ach||{}).length>=45, r:{money:1200,fame:220}}
+   on:"ach", cond:()=>Object.keys(S.ach||{}).length>=45, r:{money:1200,fame:220}},
+
+  /* ---------- 仪式与颁奖夜（2026-09-08）---------- */
+  {id:"focusgold", n:"弹幕打不倒", d:"抽签仪式的专注挑战拿到金档。", tag:"仪式",
+   on:"cer", cond:(c)=>c&&c.k==="draw"&&c.tier==="gold", r:{fame:12}},
+  {id:"breathgold", n:"呼吸稳", d:"出征仪式的节奏挑战拿到金档。", tag:"仪式",
+   on:"cer", cond:(c)=>c&&c.k==="depart"&&c.tier==="gold", r:{fame:12}},
+  {id:"allpro", n:"年度一阵", d:"在年度颁奖夜入选一阵。", tag:"荣誉",
+   on:"award", cond:(c)=>c&&c.kind==="first", r:{money:120,fame:40}},
+  {id:"mvpyear", n:"年度 MVP", d:"在年度颁奖夜当选 MVP。", tag:"荣誉",
+   on:"award", cond:(c)=>c&&c.kind==="mvp", r:{money:300,fame:80}},
+  {id:"abroad", n:"走出去", d:"休赛期去海外集训。", tag:"休赛期",
+   on:"camp", cond:(c)=>c&&c.k==="abroad", r:{fame:10}}
 ];

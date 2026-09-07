@@ -1,4 +1,5 @@
 import { checkAch } from "./achieve";
+import { cerStart } from "./cer";
 import { gicon } from "./avatar";
 import { DATA } from "./data";
 import { FAN_TIERS, MID_WEEKS, SEASONS, SPREAD, breakthrough, clamp, enterBreak, enterPrep, isBenched, power, pushEvent, q1, queueBreakNews, render, champCoreStart } from "./main";
@@ -874,7 +875,10 @@ export function afterIntl(){
     queueBreakNews(3,ev.text,ev.tone,ev.tag);        // 两周走完、进结算前揭晓
     return;
   }
-  S.step="offseason"; render();
+  S.step="offseason";
+  S.cerRec=null;
+  cerStart("awards");   // 冠军不走「世界赛期间」的间歇，颁奖夜在这里开
+  render();
 }
 
 /* 界面用：当前赛事阶段名 */
