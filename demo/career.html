@@ -9704,6 +9704,8 @@ header.top.compact>.theme-top{display:none}
     if (!r || r.si !== S.si) return 1;
     return S.intl || S.off && S.off.next === "intl" ? r.mul : 1;
   }
+  var AWARD_BONUS = { worlds: 3, msi: 1.5, league: 2, top4: 1 };
+  var AWARD_TEAM_CAP = 3;
   function computeAwards() {
     const HL = S.homeLeague || "LPL";
     if (HL === "LDL") return null;
@@ -9725,7 +9727,7 @@ header.top.compact>.theme-top{display:none}
     const wc = H.worlds && H.worlds[S.si] || ((S.career && S.career.worldsYears || []).includes(S.si) ? S.team : null);
     const mc = H.msi && H.msi[S.si] || ((S.career && S.career.msiYears || []).includes(S.si) ? S.team : null);
     const lc = top[0] || rk[0] || null;
-    const bonus = (n) => (n === wc ? 8 : 0) + (n === mc ? 4 : 0) + (n === lc ? 5 : 0) + (rk.indexOf(n) >= 0 && rk.indexOf(n) < 4 ? 2 : 0);
+    const bonus = (n) => (n === wc ? AWARD_BONUS.worlds : 0) + (n === mc ? AWARD_BONUS.msi : 0) + (n === lc ? AWARD_BONUS.league : 0) + (rk.indexOf(n) >= 0 && rk.indexOf(n) < 4 ? AWARD_BONUS.top4 : 0);
     const bench = isBenched();
     const rows = [];
     teams.forEach((t) => t.players.forEach((p) => {
@@ -9737,19 +9739,41 @@ header.top.compact>.theme-top{display:none}
         const sr = splitRating();
         if (sr !== null) sc += (sr - 1) * 6;
       }
-      rows.push({ id: p.me ? meName() : p.id, cn: p.me ? "" : p.cn || "", pos: p.pos, team: t.name, age: p.age || 22, me: !!p.me, sc });
+      rows.push({
+        id: p.me ? meName() : p.id,
+        cn: p.me ? "" : p.cn || "",
+        pos: p.pos,
+        team: t.name,
+        age: p.age || 22,
+        me: !!p.me,
+        debut: p.debutSi !== void 0 && p.debutSi === S.si,
+        sc
+      });
     }));
     if (!rows.length) return null;
     rows.sort((a, b) => b.sc - a.sc);
     const POS2 = ["top", "jng", "mid", "bot", "sup"];
-    const first = [], second = [];
+    const byPos = {};
     POS2.forEach((ps) => {
-      const c = rows.filter((x) => x.pos === ps);
-      if (c[0]) first.push(c[0]);
-      if (c[1]) second.push(c[1]);
+      byPos[ps] = rows.filter((x) => x.pos === ps);
     });
-    const mvp = rows[0];
-    const rookie = rows.find((x) => x.age <= 20) || null;
+    const order = POS2.slice().sort((a, b) => (byPos[b][0] || { sc: -1e9 }).sc - (byPos[a][0] || { sc: -1e9 }).sc);
+    const used = /* @__PURE__ */ new Set();
+    const fill = () => {
+      const out = {}, cnt = {};
+      order.forEach((ps) => {
+        const c = byPos[ps].find((x) => !used.has(x) && (cnt[x.team] || 0) < AWARD_TEAM_CAP) || byPos[ps].find((x) => !used.has(x));
+        if (c) {
+          out[ps] = c;
+          used.add(c);
+          cnt[c.team] = (cnt[c.team] || 0) + 1;
+        }
+      });
+      return POS2.map((ps) => out[ps]).filter(Boolean);
+    };
+    const first = fill(), second = fill();
+    const mvp = first.slice().sort((a, b) => b.sc - a.sc)[0] || rows[0];
+    const rookie = rows.find((x) => x.debut) || rows.find((x) => x.age <= 20) || null;
     const mine = [];
     if (mvp && mvp.me) mine.push("mvp");
     if (first.some((x) => x.me)) mine.push("first");
@@ -9834,19 +9858,14 @@ header.top.compact>.theme-top{display:none}
   }
   function awardsBody(a) {
     if (!a) return `<div class="cer-eyebrow">年度颁奖夜</div><div class="row cer-btns"><button class="btn primary" data-cer="close">散场 →</button></div>`;
-    const row = (x, i2) => x ? `<div class="aw-row${x.me ? " me" : ""}" style="--i:${i2}"><span class="aw-pos">${POSN[x.pos] || x.pos}</span><b>${x.id}</b><span class="aw-team">${x.team}</span></div>` : "";
     let i = 0;
-    const sec = a.second.map((x) => row(x, i++)).join("");
-    const fir = a.first.map((x) => row(x, i++)).join("");
-    const rk = a.rookie ? `<div class="aw-row${a.rookie.me ? " me" : ""}" style="--i:${i++}"><span class="aw-pos">新秀</span><b>${a.rookie.id}</b><span class="aw-team">${a.rookie.team}</span></div>` : "";
-    const mv = a.mvp ? `<div class="aw-row big${a.mvp.me ? " me" : ""}" style="--i:${i++}"><span class="aw-pos">MVP</span><b>${a.mvp.id}</b><span class="aw-team">${a.mvp.team}</span></div>` : "";
+    const row = (x, label, big) => x ? `<div class="aw-row${big ? " big" : ""}${x.me ? " me" : ""}" style="--i:${i++}"><span class="aw-pos">${label || POSN[x.pos] || x.pos}</span><b>${x.id}</b><span class="aw-team">${x.team}</span></div>` : "";
+    const block = (title, list, label, big) => list && list.length ? `<div class="aw-sec" style="--i:${i++}">${title}</div><div class="aw-list">${list.map((x) => row(x, label, big)).join("")}</div>` : "";
+    const blocks = block("年度一阵", a.first) + block("年度二阵", a.second) + block("最佳新秀", a.rookie ? [a.rookie] : [], "新秀") + block("年度 MVP", a.mvp ? [a.mvp] : [], "MVP", true);
     const mine = a.mine.length ? `你拿到 <b>${a.mine.map((k) => AWARD_N[k]).join("、")}</b>，人气跟着涨。` : `名单上没有你的名字。<span style="color:var(--ink-3)">明年让他们念。</span>`;
     return `${scene("trophy")}<div class="cer-eyebrow">${a.tag} ${a.lg} · 年度颁奖夜</div>
-    <div class="aw-sec" style="--i:0">年度二阵</div><div class="aw-list">${sec}</div>
-    <div class="aw-sec" style="--i:${i}">年度一阵</div><div class="aw-list">${fir}</div>
-    ${rk ? `<div class="aw-sec" style="--i:${i}">最佳新秀</div><div class="aw-list">${rk}</div>` : ""}
-    <div class="aw-sec" style="--i:${i}">年度 MVP</div><div class="aw-list">${mv}</div>
-    <p class="cer-p" style="--i:${i + 1}">${mine}</p>
+    ${blocks}
+    <p class="cer-p" style="--i:${i++}">${mine}</p>
     <div class="row cer-btns"><button class="btn primary" data-cer="close">散场 →</button></div>`;
   }
   var _timers = [];

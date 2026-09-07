@@ -78,6 +78,14 @@ export function cerRecMul(){
 /* ---------- 年度颁奖夜：一阵 / 二阵 / 最佳新秀 / MVP ----------
    全部从已有数据算：五维、状态、常规赛排名、这一年的冠军。你的那一份还看本赛段场均评分。
    不是随机数——同一份存档、同一个赛季算出来永远一样（不碰种子）。 */
+/* 团队成绩的加分（2026-09-07 玩家点名「为什么都是一个战队的」「ming 只有 70 综评了咋上的一阵」）：
+   原来是世界赛 8 + MSI 4 + 联赛 5 + 常规赛前四 2 = 上限 19 分，而同联赛「最强 − 中位」的
+   五维差中位只有 15.1 分——冠军队五个人被整体抬过所有人。批测（64 个颁奖夜）里 36% 的一阵
+   席位被这项加分抢走；本队包揽三冠那一年一阵 5/5 全是本队，入选者平均比该位置最强低 16 分，
+   实测出现过「68 分进一阵、84 分落选」。
+   收到上限 7.5（约等于实力差中位的一半）：势均力敌时冠军队赢，差一个档次时赢不了。 */
+export const AWARD_BONUS={worlds:3, msi:1.5, league:2, top4:1};
+export const AWARD_TEAM_CAP=3;   // 一支队在一阵/二阵里最多几个人（照 2025 年真实一阵 AL 占 3 个）
 export function computeAwards(){
   const HL=S.homeLeague||"LPL";
   if(HL==="LDL") return null;          // 二级联赛不办颁奖夜
@@ -88,7 +96,8 @@ export function computeAwards(){
   const wc=(H.worlds&&H.worlds[S.si])||(((S.career&&S.career.worldsYears)||[]).includes(S.si)?S.team:null);
   const mc=(H.msi&&H.msi[S.si])||(((S.career&&S.career.msiYears)||[]).includes(S.si)?S.team:null);
   const lc=top[0]||rk[0]||null;
-  const bonus=n=>(n===wc?8:0)+(n===mc?4:0)+(n===lc?5:0)+(rk.indexOf(n)>=0&&rk.indexOf(n)<4?2:0);
+  const bonus=n=>(n===wc?AWARD_BONUS.worlds:0)+(n===mc?AWARD_BONUS.msi:0)+(n===lc?AWARD_BONUS.league:0)
+                +(rk.indexOf(n)>=0&&rk.indexOf(n)<4?AWARD_BONUS.top4:0);
   const bench=isBenched();
   const rows=[];
   teams.forEach(t=>t.players.forEach(p=>{
@@ -97,15 +106,33 @@ export function computeAwards(){
     const r=p.me?S.attrs:(p.r||{});
     let sc=avg(DIMS.map(d=>r[d]||0))+(((p.form===undefined||p.form===null)?52:p.form)-52)/8+bonus(t.name);
     if(p.me){ const sr=splitRating(); if(sr!==null) sc+=(sr-1.0)*6; }
-    rows.push({id:p.me?meName():p.id,cn:p.me?"":(p.cn||""),pos:p.pos,team:t.name,age:p.age||22,me:!!p.me,sc});
+    // 新秀 = 这个赛季头一回进一队名单（debutSi 在 makeRookie / 提拔时写下）。
+    // 老存档没有这个字段，回落到原来的「20 岁以下」。
+    rows.push({id:p.me?meName():p.id,cn:p.me?"":(p.cn||""),pos:p.pos,team:t.name,age:p.age||22,me:!!p.me,
+               debut:(p.debutSi!==undefined&&p.debutSi===S.si),sc});
   }));
   if(!rows.length) return null;
   rows.sort((a,b)=>b.sc-a.sc);
   const POS=["top","jng","mid","bot","sup"];
-  const first=[],second=[];
-  POS.forEach(ps=>{ const c=rows.filter(x=>x.pos===ps); if(c[0]) first.push(c[0]); if(c[1]) second.push(c[1]); });
-  const mvp=rows[0];
-  const rookie=rows.find(x=>x.age<=20)||null;
+  /* 一支队在一阵（二阵同理）里最多 AWARD_TEAM_CAP 人（2026-09-07 玩家点名「为什么都是一个战队的」）。
+     现实里冠军队本来就该多占位置，但不该 5/5 全占。分配办法：按「该位置头名的分」从高到低
+     排位置，强的位置先挑人；某队占满 3 席之后，它的人顺延，位置由次名递补。
+     兜底那一支 find 是防退化用的——名单不够时宁可破例，也不留空位。 */
+  const byPos={}; POS.forEach(ps=>{ byPos[ps]=rows.filter(x=>x.pos===ps); });
+  const order=POS.slice().sort((a,b)=>((byPos[b][0]||{sc:-1e9}).sc)-((byPos[a][0]||{sc:-1e9}).sc));
+  const used=new Set();
+  const fill=()=>{
+    const out={},cnt={};
+    order.forEach(ps=>{
+      const c=byPos[ps].find(x=>!used.has(x)&&(cnt[x.team]||0)<AWARD_TEAM_CAP)||byPos[ps].find(x=>!used.has(x));
+      if(c){ out[ps]=c; used.add(c); cnt[c.team]=(cnt[c.team]||0)+1; }
+    });
+    return POS.map(ps=>out[ps]).filter(Boolean);
+  };
+  const first=fill(),second=fill();
+  // MVP 从一阵里出——现实里 MVP 不可能不进一阵
+  const mvp=first.slice().sort((a,b)=>b.sc-a.sc)[0]||rows[0];
+  const rookie=rows.find(x=>x.debut)||rows.find(x=>x.age<=20)||null;
   const mine=[];
   if(mvp&&mvp.me) mine.push("mvp");
   if(first.some(x=>x.me)) mine.push("first"); else if(second.some(x=>x.me)) mine.push("second");
@@ -190,21 +217,27 @@ function resultBody(c,art){
     <p class="cer-p">${det}${det?"。":""}${eff}。</p>
     <div class="row cer-btns"><button class="btn primary" data-cer="close">${c.k==="draw"?"打季后赛 →":"出发 →"}</button></div>`;
 }
+/* 顺序与入场序号（2026-09-07 玩家点名「你这个年度二阵为什么在一阵上面」）：
+   原来照颁奖礼「先念二阵、压轴念一阵」的现场感写，但这张卡是一次性铺满的静态榜单，
+   不是逐条揭晓的现场——静态榜单只有从高到低。现在是一阵 → 二阵 → 最佳新秀 → MVP。
+   同一段还有一处动画序号错位：i 在拼模板时已经跑到 12，「年度一阵」「最佳新秀」「年度 MVP」
+   三个小标题全部拿到 --i:12（延迟 2.64 秒），比自己底下那几行还晚淡入。
+   现在标题和行共用同一个递增的 i，标题先亮、行随后。 */
 function awardsBody(a){
   if(!a) return `<div class="cer-eyebrow">年度颁奖夜</div><div class="row cer-btns"><button class="btn primary" data-cer="close">散场 →</button></div>`;
-  const row=(x,i)=>x?`<div class="aw-row${x.me?' me':''}" style="--i:${i}"><span class="aw-pos">${POSN[x.pos]||x.pos}</span><b>${x.id}</b><span class="aw-team">${x.team}</span></div>`:"";
   let i=0;
-  const sec=a.second.map(x=>row(x,i++)).join("");
-  const fir=a.first.map(x=>row(x,i++)).join("");
-  const rk=a.rookie?`<div class="aw-row${a.rookie.me?' me':''}" style="--i:${i++}"><span class="aw-pos">新秀</span><b>${a.rookie.id}</b><span class="aw-team">${a.rookie.team}</span></div>`:"";
-  const mv=a.mvp?`<div class="aw-row big${a.mvp.me?' me':''}" style="--i:${i++}"><span class="aw-pos">MVP</span><b>${a.mvp.id}</b><span class="aw-team">${a.mvp.team}</span></div>`:"";
+  const row=(x,label?,big?)=>x?`<div class="aw-row${big?" big":""}${x.me?' me':''}" style="--i:${i++}"><span class="aw-pos">${
+    label||POSN[x.pos]||x.pos}</span><b>${x.id}</b><span class="aw-team">${x.team}</span></div>`:"";
+  const block=(title,list,label?,big?)=>(list&&list.length)
+    ? `<div class="aw-sec" style="--i:${i++}">${title}</div><div class="aw-list">${list.map(x=>row(x,label,big)).join("")}</div>`
+    : "";
+  const blocks=block("年度一阵",a.first)+block("年度二阵",a.second)
+    +block("最佳新秀",a.rookie?[a.rookie]:[],"新秀")
+    +block("年度 MVP",a.mvp?[a.mvp]:[],"MVP",true);
   const mine=a.mine.length?`你拿到 <b>${a.mine.map(k=>AWARD_N[k]).join("、")}</b>，人气跟着涨。`:`名单上没有你的名字。<span style="color:var(--ink-3)">明年让他们念。</span>`;
   return `${scene("trophy")}<div class="cer-eyebrow">${a.tag} ${a.lg} · 年度颁奖夜</div>
-    <div class="aw-sec" style="--i:0">年度二阵</div><div class="aw-list">${sec}</div>
-    <div class="aw-sec" style="--i:${i}">年度一阵</div><div class="aw-list">${fir}</div>
-    ${rk?`<div class="aw-sec" style="--i:${i}">最佳新秀</div><div class="aw-list">${rk}</div>`:""}
-    <div class="aw-sec" style="--i:${i}">年度 MVP</div><div class="aw-list">${mv}</div>
-    <p class="cer-p" style="--i:${i+1}">${mine}</p>
+    ${blocks}
+    <p class="cer-p" style="--i:${i++}">${mine}</p>
     <div class="row cer-btns"><button class="btn primary" data-cer="close">散场 →</button></div>`;
 }
 
