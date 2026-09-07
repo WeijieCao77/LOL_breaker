@@ -393,13 +393,14 @@ export function patchNoteCard(){
   if(!S.patchNote) return "";
   const cur=(CHANGELOG[0])?CHANGELOG[0]:null;
   if(!cur) return "";
-  return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">
-    <div class="ru-eyebrow" style="text-align:center">本次更新 · ${cur.v}</div>
+  return `<div class="rankup"><div class="ru-inner chlog-inner" style="max-width:560px;text-align:left">
+    <div class="chlog-head"><div class="ru-eyebrow" style="margin:0">本次更新 · ${cur.v}</div>
+      <button type="button" class="chlog-x" id="patchok" aria-label="关闭更新说明">×</button></div>
     <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:10px">上线：${cur.at}</div>
     ${cur.items.map(x=>`<p class="note" style="margin:6px 0">· ${x}</p>`).join("")}
     <p class="note" style="color:var(--ink-3);margin-top:10px">往期更新在右下角 📜 里，随时能翻。</p>
     <div class="row" style="justify-content:center;margin-top:12px">
-      <button class="btn" id="patchok">知道了，开打 →</button></div>
+      <button class="btn" id="patchok2">知道了，开打 →</button></div>
   </div></div>`;
 }
 

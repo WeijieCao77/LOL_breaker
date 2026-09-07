@@ -1462,3 +1462,20 @@ header.top.compact>.theme-top{display:none}
   .cer-art{max-height:110px}.cer-p{font-size:14px}.mg-cell{min-height:44px;font-size:17px}.mg-ring{height:220px}
 }
 @media(prefers-reduced-motion:reduce){.cer,.aw-sec,.aw-row,.cer-inner .cer-p[style*="--i"]{animation:none}.mg-dm{display:none}}
+/* ---------- 更新日志 / 更新说明浮窗：顶部钉住的 ×，高度按手机小视口算 ----------
+   玩家截图（2026-09-08）：手机上关不掉——唯一的「关闭」在长日志最底下，86vh 按地址栏收起的大视口算，
+   底部被浏览器工具栏盖住，遮罩只剩屏幕边缘一条缝。 */
+.chlog-inner{position:relative;padding-top:0;max-height:86vh;max-height:calc(100svh - 28px);overflow-y:auto;overscroll-behavior:contain}
+.chlog-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:14px 0 10px;margin:0 0 6px;background:rgb(var(--panel2-rgb));border-bottom:1px solid var(--line)}
+.chlog-x{flex:0 0 auto;width:44px;height:44px;display:grid;place-items:center;font-size:24px;line-height:1;cursor:pointer;
+  color:var(--ink);background:rgba(var(--void-rgb),.55);border:1px solid var(--line-hot);-webkit-tap-highlight-color:transparent}
+.chlog-x:hover,.chlog-x:focus-visible{border-color:var(--gold);color:var(--gold-hi);outline:none}
+@media(max-width:560px){
+  .rankup{padding:10px}
+  .chlog-inner{width:calc(100vw - 20px);padding-left:16px;padding-right:16px;padding-bottom:16px;max-height:calc(100vh - 20px);max-height:calc(100svh - 20px)}
+  .chlog-head{padding-top:10px}
+}
+/* 其它内部滚动的卡也按小视口算高度，别让按钮藏在浏览器工具栏后面 */
+.ev-inner{max-height:calc(100svh - 28px)}
+.cer-inner{max-height:calc(100svh - 24px)}

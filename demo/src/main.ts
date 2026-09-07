@@ -112,7 +112,8 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
   {v:"v20260908b", at:"2026-09-08", items:[
-    "难度再调：S12–S14 这三年 LCK 更难打了（至暗五年名副其实），新秀赛季的你也还不是完全体（顶栏「效力」一行会标「新秀赛季」，明年起就是正常水平）。冠军会更多落在 S15–S16，三连冠留给再战的三年"
+    "难度再调：S12–S14 这三年 LCK 更难打了（至暗五年名副其实），新秀赛季的你也还不是完全体（顶栏「效力」一行会标「新秀赛季」，明年起就是正常水平）。冠军会更多落在 S15–S16，三连冠留给再战的三年",
+    "更新日志和更新说明的浮窗在手机上关不掉的问题修了（玩家截图）：顶部钉了一个 ×，滚到哪都在；高度按手机实际可见的屏幕算，底部按钮不再被浏览器工具栏盖住"
   ]},
   {v:"v20260908a", at:"2026-09-08", items:[
     "节点活动上线第一批：季后赛抽签仪式、世界赛出征仪式、年度颁奖夜。仪式里轮到你的那 20 秒是小游戏（抽签是弹幕里的专注挑战，出征是倒时差的呼吸节奏），打好了整个季后赛 / 世界赛期间有加成，打砸了有折扣，跳过按中档算——不亏不赚；托管、自动推进一律跳过，不改任何人的战绩。颁奖夜按这一年的数据评年度一阵 / 二阵 / 最佳新秀 / MVP，你的名字上榜就涨人气、进生涯页",
@@ -6168,9 +6169,9 @@ export function bind(){
   const _pok=$("promoteok"); if(_pok) _pok.onclick=()=>{ acceptPromote(); };
   const _pask=$("promoteask"); if(_pask) _pask.onclick=()=>{ askPromoteRaise(); };
   const _pno=$("promoteno"); if(_pno) _pno.onclick=()=>{ declinePromote(); };
-  const _pat=$("patchok"); if(_pat) _pat.onclick=()=>{
+  st.querySelectorAll("#patchok,#patchok2").forEach((b: any)=>b.onclick=()=>{   // 顶部的 × 和底部的「开打」都能关
     S.patchNote=null; S.patchSeen=GAME_VER;
-    saveGame("更新说明已读"); render(); };
+    saveGame("更新说明已读"); render(); });
   cerBind(st);            // 仪式的按钮与小游戏挂载；特训营的四个营也在这里
   const _pp=$("prepgo"); if(_pp) _pp.onclick=prepGo;
   const _off=$("offnext"); if(_off) _off.onclick=()=>{

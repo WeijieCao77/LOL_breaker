@@ -304,16 +304,24 @@ export function showChangelog() {
     const log = CHANGELOG;
     const wrap = document.createElement("div");
     wrap.id = "chlog"; wrap.className = "rankup";
-    wrap.innerHTML = `<div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">
-      <div class="ru-eyebrow" style="text-align:center">更新日志</div>
+    /* 手机上关不掉（玩家截图）：唯一的「关闭」在长长的日志最底下，86vh 又按地址栏收起来的大视口算，
+       底部那截被浏览器工具栏盖住；遮罩只剩屏幕边缘一条缝能点。现在顶部钉一个 ×（滚动时一直在），
+       高度按小视口算，Esc 也能关。 */
+    wrap.innerHTML = `<div class="ru-inner chlog-inner" style="max-width:560px;text-align:left">
+      <div class="chlog-head"><div class="ru-eyebrow" style="margin:0">更新日志</div>
+        <button type="button" class="chlog-x" id="chlogx" aria-label="关闭更新日志">×</button></div>
       ${log.map(e => `<h3 style="margin:14px 0 4px">${e.v}<span class="note" style="font-weight:400">　上线：${e.at}</span></h3>
         ${e.items.map(x => `<p class="note" style="margin:4px 0">· ${x}</p>`).join("")}`).join("")}
       <p class="note" style="color:var(--ink-3);margin-top:12px">从 v20260901b 起记录，此前的更新不补。</p>
       <div class="row" style="justify-content:center;margin-top:10px">
         <button class="btn" id="chlogok">关闭</button></div></div>`;
     document.body.appendChild(wrap);
-    wrap.querySelector<HTMLElement>("#chlogok").onclick = () => wrap.remove();
-    wrap.onclick = (e) => { if (e.target === wrap) wrap.remove(); };
+    const close = () => { wrap.remove(); document.removeEventListener("keydown", onKey); };
+    const onKey = (e) => { if (e.key === "Escape") close(); };
+    document.addEventListener("keydown", onKey);
+    wrap.querySelector<HTMLElement>("#chlogok").onclick = close;
+    wrap.querySelector<HTMLElement>("#chlogx").onclick = close;
+    wrap.onclick = (e) => { if (e.target === wrap) close(); };
   } catch (e) {}
 }
 

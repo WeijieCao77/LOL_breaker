@@ -1483,6 +1483,23 @@ header.top.compact>.theme-top{display:none}
   .cer-art{max-height:110px}.cer-p{font-size:14px}.mg-cell{min-height:44px;font-size:17px}.mg-ring{height:220px}
 }
 @media(prefers-reduced-motion:reduce){.cer,.aw-sec,.aw-row,.cer-inner .cer-p[style*="--i"]{animation:none}.mg-dm{display:none}}
+/* ---------- 更新日志 / 更新说明浮窗：顶部钉住的 ×，高度按手机小视口算 ----------
+   玩家截图（2026-09-08）：手机上关不掉——唯一的「关闭」在长日志最底下，86vh 按地址栏收起的大视口算，
+   底部被浏览器工具栏盖住，遮罩只剩屏幕边缘一条缝。 */
+.chlog-inner{position:relative;padding-top:0;max-height:86vh;max-height:calc(100svh - 28px);overflow-y:auto;overscroll-behavior:contain}
+.chlog-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:14px 0 10px;margin:0 0 6px;background:rgb(var(--panel2-rgb));border-bottom:1px solid var(--line)}
+.chlog-x{flex:0 0 auto;width:44px;height:44px;display:grid;place-items:center;font-size:24px;line-height:1;cursor:pointer;
+  color:var(--ink);background:rgba(var(--void-rgb),.55);border:1px solid var(--line-hot);-webkit-tap-highlight-color:transparent}
+.chlog-x:hover,.chlog-x:focus-visible{border-color:var(--gold);color:var(--gold-hi);outline:none}
+@media(max-width:560px){
+  .rankup{padding:10px}
+  .chlog-inner{width:calc(100vw - 20px);padding-left:16px;padding-right:16px;padding-bottom:16px;max-height:calc(100vh - 20px);max-height:calc(100svh - 20px)}
+  .chlog-head{padding-top:10px}
+}
+/* 其它内部滚动的卡也按小视口算高度，别让按钮藏在浏览器工具栏后面 */
+.ev-inner{max-height:calc(100svh - 28px)}
+.cer-inner{max-height:calc(100svh - 24px)}
 
 </style>
 
@@ -6139,13 +6156,14 @@ header.top.compact>.theme-top{display:none}
     if (!S.patchNote) return "";
     const cur = CHANGELOG[0] ? CHANGELOG[0] : null;
     if (!cur) return "";
-    return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">
-    <div class="ru-eyebrow" style="text-align:center">本次更新 · ${cur.v}</div>
+    return `<div class="rankup"><div class="ru-inner chlog-inner" style="max-width:560px;text-align:left">
+    <div class="chlog-head"><div class="ru-eyebrow" style="margin:0">本次更新 · ${cur.v}</div>
+      <button type="button" class="chlog-x" id="patchok" aria-label="关闭更新说明">×</button></div>
     <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:10px">上线：${cur.at}</div>
     ${cur.items.map((x) => `<p class="note" style="margin:6px 0">· ${x}</p>`).join("")}
     <p class="note" style="color:var(--ink-3);margin-top:10px">往期更新在右下角 📜 里，随时能翻。</p>
     <div class="row" style="justify-content:center;margin-top:12px">
-      <button class="btn" id="patchok">知道了，开打 →</button></div>
+      <button class="btn" id="patchok2">知道了，开打 →</button></div>
   </div></div>`;
   }
   function scoutCard() {
@@ -13618,7 +13636,8 @@ header.top.compact>.theme-top{display:none}
   var SPREAD = 16;
   var CHANGELOG = [
     { v: "v20260908b", at: "2026-09-08", items: [
-      "难度再调：S12–S14 这三年 LCK 更难打了（至暗五年名副其实），新秀赛季的你也还不是完全体（顶栏「效力」一行会标「新秀赛季」，明年起就是正常水平）。冠军会更多落在 S15–S16，三连冠留给再战的三年"
+      "难度再调：S12–S14 这三年 LCK 更难打了（至暗五年名副其实），新秀赛季的你也还不是完全体（顶栏「效力」一行会标「新秀赛季」，明年起就是正常水平）。冠军会更多落在 S15–S16，三连冠留给再战的三年",
+      "更新日志和更新说明的浮窗在手机上关不掉的问题修了（玩家截图）：顶部钉了一个 ×，滚到哪都在；高度按手机实际可见的屏幕算，底部按钮不再被浏览器工具栏盖住"
     ] },
     { v: "v20260908a", at: "2026-09-08", items: [
       "节点活动上线第一批：季后赛抽签仪式、世界赛出征仪式、年度颁奖夜。仪式里轮到你的那 20 秒是小游戏（抽签是弹幕里的专注挑战，出征是倒时差的呼吸节奏），打好了整个季后赛 / 世界赛期间有加成，打砸了有折扣，跳过按中档算——不亏不赚；托管、自动推进一律跳过，不改任何人的战绩。颁奖夜按这一年的数据评年度一阵 / 二阵 / 最佳新秀 / MVP，你的名字上榜就涨人气、进生涯页",
@@ -19972,13 +19991,12 @@ header.top.compact>.theme-top{display:none}
     if (_pno) _pno.onclick = () => {
       declinePromote();
     };
-    const _pat = $("patchok");
-    if (_pat) _pat.onclick = () => {
+    st.querySelectorAll("#patchok,#patchok2").forEach((b) => b.onclick = () => {
       S.patchNote = null;
       S.patchSeen = GAME_VER;
       saveGame("更新说明已读");
       render();
-    };
+    });
     cerBind(st);
     const _pp = $("prepgo");
     if (_pp) _pp.onclick = prepGo;
@@ -20628,17 +20646,27 @@ header.top.compact>.theme-top{display:none}
       const wrap = document.createElement("div");
       wrap.id = "chlog";
       wrap.className = "rankup";
-      wrap.innerHTML = `<div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">
-      <div class="ru-eyebrow" style="text-align:center">更新日志</div>
+      wrap.innerHTML = `<div class="ru-inner chlog-inner" style="max-width:560px;text-align:left">
+      <div class="chlog-head"><div class="ru-eyebrow" style="margin:0">更新日志</div>
+        <button type="button" class="chlog-x" id="chlogx" aria-label="关闭更新日志">×</button></div>
       ${log.map((e) => `<h3 style="margin:14px 0 4px">${e.v}<span class="note" style="font-weight:400">　上线：${e.at}</span></h3>
         ${e.items.map((x) => `<p class="note" style="margin:4px 0">· ${x}</p>`).join("")}`).join("")}
       <p class="note" style="color:var(--ink-3);margin-top:12px">从 v20260901b 起记录，此前的更新不补。</p>
       <div class="row" style="justify-content:center;margin-top:10px">
         <button class="btn" id="chlogok">关闭</button></div></div>`;
       document.body.appendChild(wrap);
-      wrap.querySelector("#chlogok").onclick = () => wrap.remove();
+      const close = () => {
+        wrap.remove();
+        document.removeEventListener("keydown", onKey);
+      };
+      const onKey = (e) => {
+        if (e.key === "Escape") close();
+      };
+      document.addEventListener("keydown", onKey);
+      wrap.querySelector("#chlogok").onclick = close;
+      wrap.querySelector("#chlogx").onclick = close;
       wrap.onclick = (e) => {
-        if (e.target === wrap) wrap.remove();
+        if (e.target === wrap) close();
       };
     } catch (e) {
     }
