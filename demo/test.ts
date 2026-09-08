@@ -545,6 +545,30 @@ function unitChecks() {
         const p0 = A.cupWinP(S.cupMatch, 0); S.cupMatch.cerFinal = null; const p1 = A.cupWinP(S.cupMatch, 0); if (!(p0 > p1)) bad.push("杯赛决赛的 +2 没进赢面");
         S.cupMatch = null; S.career = car; }
     }
+    // ---- 赛后拆解 简洁 / 详细（2026-09-08）：默认简洁；tab 在；简洁没有临场账本、详细有；档案回放与杯赛同一套 ----
+    {
+      const m0 = S.match, arc0 = S.archive, pv0 = S.pmView, pm0 = S.pmMode, cm0 = S.cupMatch;
+      const rows = [{ n: "个人能力", v: -1.8, fix: "a" }, { n: "默契", v: 1.1, fix: "b" }, { n: "状态", v: -0.6, fix: "c" }, { n: "战术", v: 0.3, fix: "d" }, { n: "体能", v: -0.2, fix: "e" }];
+      S.match = { opp: { players: [] }, oppName: "X", sc: [1, 2], game: 4, lines: [], node: null, swing: 0, done: true, pmSeen: true, need: 2,
+        attr: { rows, myTotal: 78, opTotal: 80 }, nodeLog: [{ g: 1, t: "抢龙", dim: "操作", p: 61, ok: true, d: 4 }], luck: ["第2局赢面 <b>72%</b> 还是丢了：骰子背。"], gameLog: [], box: null };
+      S.pmMode = undefined;
+      if (A.pmMode() !== "brief") bad.push("拆解默认不是简洁");
+      let h = A.postMatchCard();
+      if (!/data-pm="brief"/.test(h) || !/data-pm="full"/.test(h)) bad.push("拆解卡上没有简洁 / 详细 tab");
+      if (!/pmrows lite/.test(h) || /临场账本 · 概率/.test(h) || (h.match(/class="pmr /g) || []).length !== 3) bad.push("简洁版不对：应只有三根条、没有临场账本：" + (h.match(/class="pmr /g) || []).length);
+      if (!/这场输在<b>个人能力/.test(h)) bad.push("简洁版没有一句结论");
+      S.pmMode = "full"; h = A.postMatchCard();
+      if (!/临场账本 · 概率/.test(h) || (h.match(/class="pmr /g) || []).length !== 5 || /pmrows lite/.test(h)) bad.push("详细版不对：应五根条、有临场账本");
+      // 档案回放
+      S.archive = [{ si: S.si, tag: "第1周", opp: "Y", win: true, sc: [2, 0], pm: { my: 80, op: 76, rows, nodes: [], luck: [], adv: { personal: [], team: [] } } }]; S.pmView = 0;
+      S.pmMode = "brief"; h = A.pmReplayCard(); if (!/data-pm="full"/.test(h) || !/pmrows lite/.test(h) || !/这场赢在/.test(h)) bad.push("档案回放的简洁版不对");
+      S.pmMode = "full"; h = A.pmReplayCard(); if (/pmrows lite/.test(h) || (h.match(/class="pmr /g) || []).length !== 5) bad.push("档案回放的详细版不对");
+      // 杯赛
+      S.cupMatch = { kind: "city", opp: "市队", op: 55, sc: [2, 1], need: 2, game: 4, lines: [], node: null, swing: 0, done: true, pmSeen: true, nodeLog: [], gameLog: [], snap: { round: 4, prep: 0, my: 58, teamName: "T", hasMates: false, teamAvg: 58, syn: 50, tac: 50, mor: 50, legacyPrep: 0 } };
+      S.pmMode = "brief"; h = A.cupPostCard(S.cupMatch); if (!/data-pm="full"/.test(h) || !/pmrows lite/.test(h)) bad.push("杯赛拆解的简洁版不对");
+      S.pmMode = "full"; h = A.cupPostCard(S.cupMatch); if (/pmrows lite/.test(h) || !/临场账本|复盘/.test(h)) bad.push("杯赛拆解的详细版不对");
+      S.match = m0; S.archive = arc0; S.pmView = pv0; S.pmMode = pm0; S.cupMatch = cm0;
+    }
     // 特训营：一年一次，钱不够不能选，卡渲染得出来
     S.off = { week: 1, weeks: 3, next: "year" }; S.money = 1000;
     if (!/特训营/.test(A.campCard())) bad.push("特训营卡没渲染");
