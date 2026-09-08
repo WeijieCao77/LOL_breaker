@@ -83,6 +83,10 @@ function playOne(opts?) {
   const cupRuns = [], grades = [], deals = [];
   while (A.S().step !== "end" && guard++ < 40000) {
     S = A.S();
+    // 仪式与小游戏：机器人一律按跳过（银档）走，和托管同一条路；不走 render，不碰种子。
+    // 不 continue：仪式只是压在界面上的一层，结掉之后这一步该做什么照做——
+    // 否则统计口（w1 / signAt / intlVs）会晚一拍取样，批测数字就漂了（2026-09-08 抓到的）。
+    while (S.cer) A.cerApply(S.cer.k, "silver", true);
     if (S.step === "pre" && S.pre) lastPreWeek = S.pre.week;
     if (S.intl && S.intl.type === "worlds") worldsSeen.add(S.si);
     if (S.intl && S.intl.type === "msi") msiSeen.add(S.si);
@@ -380,6 +384,55 @@ function unitChecks() {
     if (!/年度颁奖夜/.test(A.cerCard())) bad.push("颁奖夜的卡没渲染");
     A.cerClose(); if (S.cer) bad.push("颁奖夜散不了场");
     S.auto = { career: true }; A.cerStart("awards"); if (S.cer) bad.push("托管里颁奖夜还弹了"); S.auto = null;
+    // ---- 第二批仪式（2026-09-08）：反应 / 决策的档位线、决赛之夜、试训上机、版本发布会、媒体日、排队 ----
+    if (A.reactTier(0.8, 300) !== "gold" || A.reactTier(0.8, 420) !== "silver" || A.reactTier(0.5, 300) !== "bronze" || A.reactTier(0.8, 430, true) !== "gold" || A.reactTier(0.8, 430, false) !== "silver") bad.push("反应档位线不对");
+    if (A.decideTier(5) !== "gold" || A.decideTier(4) !== "gold" || A.decideTier(3) !== "silver" || A.decideTier(2) !== "silver" || A.decideTier(1) !== "bronze") bad.push("决策档位线不对");
+    // 决赛之夜：只在决赛开场；金档 = 这一场战力 +2、节点 +5%；跳过 = 0
+    S.playoff = { round: 3, alive: true, seed: 1, beaten: [] }; S.intl = null;
+    S.match = { opp: { players: [] }, oppName: "X", sc: [0, 0], game: 1, lines: [], node: null, swing: 0, done: false, need: 3, bo5: true };
+    if (!A.isFinalMatch()) bad.push("季后赛第三轮没被判成决赛");
+    S.playoff.round = 2; if (A.isFinalMatch()) bad.push("半决赛被判成决赛"); S.playoff.round = 3;
+    A.cerStart("final"); if (!S.cer || S.cer.k !== "final") bad.push("决赛之夜没开场");
+    S.achPop = []; S.rankUp = null;   // 成就弹窗先散场，仪式才开
+    if (!/入场/.test(A.cerCard())) bad.push("决赛之夜的卡没渲染");
+    A.cerFinish("gold", { rate: 0.8, ms: 300, hit: 12, total: 15 }); A.cerClose();
+    if (S.cer || !S.match.cerFinal || S.match.cerFinal.pw !== 2 || A.cerFinalPw() !== 2 || Math.abs(A.cerFinalNode() - 0.05) > 1e-9) bad.push("决赛金档没给这一场 +2 / +5%：" + JSON.stringify(S.match.cerFinal));
+    A.cerStart("final"); A.cerSkip(); if (S.cer || A.cerFinalPw() !== 0) bad.push("决赛跳过没按银档走");
+    S.match = null; S.playoff = null;
+    // 版本发布会 + 媒体日：同一周撞上要排队；金档进 versionFit；媒体日「狂」加热度并把心态压力倍率抬到 1.5
+    A.cerStart("patch"); A.cerStart("media");
+    if (!S.cer || S.cer.k !== "patch" || !S.cerQ || S.cerQ.length !== 1 || S.cerQ[0].k !== "media") bad.push("两场仪式没排队：" + (S.cer && S.cer.k) + " / " + JSON.stringify(S.cerQ));
+    A.cerStart("media"); if (S.cerQ.length !== 1) bad.push("同一种仪式排了两次");
+    const pq = A.patchQuiz(); if (!pq || pq.qs.length !== 5 || pq.qs.some((q: any) => q.a.filter((x: any) => x.ok).length !== 1 || q.a.length !== 3)) bad.push("版本发布会题库不对（要五道题、每题三选一、恰好一个正确）");
+    const mq = A.mediaQuiz(); if (!mq || mq.qs.length !== 3 || mq.qs.some((q: any) => q.a.length !== 3 || !q.a.every((x: any) => ["bold", "steady", "blame"].includes(x.tone)))) bad.push("媒体日题库不对");
+    S.achPop = []; S.rankUp = null;   // 成就弹窗先散场，仪式才开
+    if (!/版本发布会/.test(A.cerCard())) bad.push("版本发布会的卡没渲染");
+    const vf0 = A.versionFit();
+    A.cerFinish("gold", { n: 5, total: 5 }); A.cerClose();
+    if (!S.verCer || S.verCer.adj !== 0.5 || Math.abs(A.versionFit() - vf0 - 0.5) > 1e-9) bad.push("发布会金档没进版本相性：" + JSON.stringify(S.verCer) + " " + vf0 + "→" + A.versionFit());
+    if (!S.cer || S.cer.k !== "media") bad.push("发布会散场后媒体日没接上：" + (S.cer && S.cer.k));
+    S.achPop = []; S.rankUp = null;   // 成就弹窗先散场，仪式才开
+    if (!/媒体日/.test(A.cerCard())) bad.push("媒体日的卡没渲染");
+    const h0 = S.heat || 0; S.tilt = 0;
+    A.cerFinish("silver", { tone: "bold", picks: ["bold", "bold", "steady"] }); A.cerClose();
+    if (S.cer || !S.media || S.media.tone !== "bold" || (S.heat || 0) - h0 !== 15 || A.mediaTiltMul() !== 1.5) bad.push("媒体日「狂」的效果不对：heat " + h0 + "→" + S.heat + " mul " + A.mediaTiltMul());
+    S.media = null; if (A.mediaTiltMul() !== 1) bad.push("没有媒体日时心态压力倍率不是 1");
+    A.cerStart("media"); A.cerSkip(); if (S.cer || S.media) bad.push("媒体日跳过还留了口径");
+    S.verCer = null;
+    // 试训上机：职业前（S.career 为空）也要能开；金档 = 评级 +1 档
+    { const car = S.career; S.career = null;
+      S.tryout = { tier: "mid", team: "T", expect: 60, day: 0, score: 0, lines: [], fat: 0, done: false, days: [0, 1, 2, 3] };
+      A.cerStart("bench"); if (!S.cer || S.cer.k !== "bench") bad.push("试训上机在职业前没开场");
+      S.achPop = []; S.rankUp = null;   // 成就弹窗先散场，仪式才开
+      if (!/上机/.test(A.cerCard())) bad.push("试训上机的卡没渲染");
+      A.cerFinish("gold", { rate: 0.9, ms: 350, hit: 14, total: 15 }); A.cerClose();
+      if (S.cer || S.tryout.cerAdj !== 1) bad.push("上机金档没给评级 +1 档");
+      S.tryout = null; S.career = car; }
+    // 托管里四场都不弹
+    S.auto = { career: true }; S.match = { opp: { players: [] }, oppName: "X", sc: [0, 0], lines: [], swing: 0, done: false, need: 3 }; S.playoff = { round: 3, alive: true };
+    A.cerStart("final"); A.cerStart("patch"); A.cerStart("media");
+    if (S.cer || (S.cerQ && S.cerQ.length)) bad.push("托管里第二批仪式还弹了"); if (A.cerFinalPw() !== 0 || A.verCerAdj() !== 0 || S.media) bad.push("托管跳过改了数值");
+    S.auto = null; S.match = null; S.playoff = null; S.verCer = null;
     // 特训营：一年一次，钱不够不能选，卡渲染得出来
     S.off = { week: 1, weeks: 3, next: "year" }; S.money = 1000;
     if (!/特训营/.test(A.campCard())) bad.push("特训营卡没渲染");

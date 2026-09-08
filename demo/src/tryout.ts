@@ -1,4 +1,5 @@
 import { checkAch } from "./achieve";
+import { cerStart } from "./cer";
 import { avatarOf, gicon } from "./avatar";
 import { splitRating } from "./boxscore";
 import { addStaff, cloutOf, coachTrust, initRelations } from "./clout";
@@ -424,6 +425,7 @@ export function inviteCard(){
 export function startTryout(tier, team, expect){
   S.tryout = { tier, team, expect, day:0, score:0, lines:[], fat:0, done:false,
                days:[0,1,2,3] };
+  cerStart("bench");   // 试训第一天·上机：到基地、见教练组、「先上机打几把给我们看看」（反应挑战，评级 ±1 档）
   render();
 }
 export function tryoutDays(t){ return (t&&t.days)||[0,1,2,3]; }
@@ -458,7 +460,8 @@ export function tryoutGrade(){
   // 战术素养的继承：教练组看得出你打过正经比赛（素养 40 ＝ +1.6，够翻边缘局；首版 0.06 批测转会均值 +0.56，砍半）
   const tb = Math.min(40, tacOf()) * 0.04;
   const total = tryoutSkill() + t.score + tb;
-  const d = total - t.expect;
+  // 上机那一下（仪式）：金档 +1 档、铜档 −1 档，一档 = 8 分。跳过 / 托管是 0。
+  const d = total - t.expect + ((t.cerAdj||0) * 8);
   // 贴着期望值就是 B——「能用，但不到能托付的程度」。
   // A+ 要明显高出一截，否则档次分不开。
   if(d >= 16) return { g:"A+", d, tier:"first" };

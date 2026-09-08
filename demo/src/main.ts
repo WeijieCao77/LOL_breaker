@@ -7,7 +7,7 @@ import { addStaff, cloutCard, cloutTick, doList, doSign, initRelations, initStaf
 import { CUPS, activeCups, cupCard, cupDismissMatch, cupMatchCard, cupOf, cupOppName, cupPrep, cupReachName, cupResultCard, cupRoundName, cupTick, disbandCrew, dueCups, enterCup, forfeitCup, preSquadCard, resolveCupNode, startCupMatch } from "./cup";
 import { DATA } from "./data";
 import { formCard, formMul, formNews, formTier, myForm, myFormMul, rollForm, rollWorldForm } from "./form";
-import { awardsText, campCard, cerApply, cerBind, cerCard, cerRecMul, cerStart } from "./cer";
+import { awardsText, campCard, cerApply, cerBind, cerCard, cerFinalNode, cerFinalPw, cerRecMul, cerStart, isFinalMatch, mediaTiltMul, verCerAdj } from "./cer";
 import { injuryCard, injuryHit, injuryTick, injuryTrainMul, riskHint, rollInjury } from "./injury";
 import { brOthersText, brStep, findTeam, intlAdvance, intlChampCard, intlStageName, leagueOf, majorStandings, spectateIntl, startIntl, wlAdd, wlInfluence, wlRelax, worldsSlot } from "./intl";
 import { aiMarketWindow } from "./market";
@@ -111,6 +111,13 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260908g", at:"2026-09-08", items:[
+    "仪式第二批：决赛之夜·入场（联赛决赛 / MSI 总决赛 / 世界赛决赛开打前，入场通道、灯光、握手，然后是最后一次热身——反应挑战：靶亮起就点，20 秒，决赛的靶更小亮得更短；金档这一场战力 +2、临场决策成功率 +5%，银档按平时打，铜档 −1、−3%）",
+    "试训第一天·上机：到基地、见教练组、分机位，「先上机打几把给我们看看」——同一套反应挑战，职业前的线松一档（≤450 毫秒）；金档这次试训评级 +1 档，铜档 −1 档",
+    "版本发布会：新赛季第一周，教练念完三条版本变化问「我们怎么打」——五道题、每题 8 秒三选一，答案就在他刚念的那三条里（红利位、关键属性、无畏征召、你的位置吃不吃版本）；金档（≥4 题）整个赛季版本相性 +0.5，铜档（≤1 题）−0.3",
+    "媒体日：每个赛段开幕，三个记者三个问题，每题 10 秒三选一——狂 / 稳 / 甩锅。不是小游戏，限时本身就是「面对镜头」。三题里占多数的口径就是这个赛段的基调：狂 热度 +15 但输球攒的心态压力 ×1.5；稳 热度 +5；甩锅 热度 +10、更衣室信任 −3",
+    "所有仪式照旧：可跳过、跳过按银档（不亏不赚）、托管 / 自动推进一律按跳过走；同一周撞上两场会排队。新增成就「手快」「读秒决策」"
+  ]},
   {v:"v20260908f", at:"2026-09-08", items:[
     "「换不了人」修了（玩家反馈「现在不能换人」）：挂牌队友原来要教练信任 68，而教练信任的自然平衡点只有 46~54——批测里强玩家一整个生涯只有 4.9% 的赛季周能用，普通玩家是 0.0%，这个功能事实上一直是关着的。现在门槛是教练信任 60，或者威望到 75 用功勋压过教练组；同口径批测里强玩家 4.9% → 33.3%",
     "拿冠军终于会涨教练和经理的信任（作者原话「我三连冠伟业的男人，让他换个人经理还要嘲讽我不懂行情」）：以前这两个式子里只有胜率、复盘和人气，压根没有荣誉项——三连冠的人在教练眼里和一个赢球多的普通首发没有区别。现在联赛冠军 +6 / 国际冠军 +12（经理 +5 / +10），信任每赛段往 50 回落的速度也从 32% 放缓到 18%：一次打好还是不算数，但不会三分之一直接作废。拿过三冠之后的教练信任中位数 58.6 → 73.3",
@@ -1000,7 +1007,7 @@ export function versionFit(){
   const posBonus=sea.fav.includes(S.pos)?1.6:0;
   const cushion=adaptOf()/100;                  // 适应力缓冲逆版本
   const mini=miniPatchAdj();   // 赛季中热修的小刀
-  return clamp((rel*VER_ME_K+posBonus+(rel<0?rel*-1*cushion*1.4*(VER_ME_K/2.2):0))*2.0,-VER_ME_CAP,VER_ME_CAP)+mini;
+  return clamp((rel*VER_ME_K+posBonus+(rel<0?rel*-1*cushion*1.4*(VER_ME_K/2.2):0))*2.0,-VER_ME_CAP,VER_ME_CAP)+mini+verCerAdj();   // verCerAdj：版本发布会那五道题，整季 +0.5 / 0 / −0.3
 }
 
 /* LCK 的统治力逐年变化——S12 起步、S14 顶峰、S16 才松动。
@@ -2553,6 +2560,12 @@ export function startSeason(first,split?){
     // 版本真的换了，才谈得上「你的英雄池被砍了一刀」
     fireEvent("patch",0.5);
   }
+  // 赛段开幕的两场仪式：新赛季先开版本发布会（教练组开会，五道题），每个赛段都有媒体日（三个记者三个问题）。
+  // 同一周撞上就排队；二级联赛没有这两样；托管 / 机器人按跳过走，数字不动。
+  if(S.career&&(S.homeLeague||"LPL")!=="LDL"){
+    if(S.split===0) cerStart("patch");
+    cerStart("media");
+  }
   render();
 }
 
@@ -3564,6 +3577,8 @@ export function startMatch(bo?,oppName?){
     S.match.swing-=2;
     S.match.lines.push(`<div><span class="hi">久疏赛场</span> 离上一场正赛已经有一阵了，开局手有点生（第一局赢面略降）。</div>`);
   }
+  // 决赛之夜·入场：联赛决赛 / MSI 总决赛 / 世界赛决赛开打前的那段戏（托管 / 机器人按跳过走，数字不动）
+  if(isFinalMatch()) cerStart("final");
   S.step="match"; nextGame();
 }
 export function nextGame(){
@@ -3590,7 +3605,7 @@ export function tiltDrag(){
 /* 这一局此刻的赢面（给玩家看的，和 playGame 用同一套算法） */
 export function gameWinP(swing){
   const m=S.match,sea=SEASONS[S.si];
-  const my=power(myRoster(),S.fatigue,sea.fav)+(swing||0)+versionFit()+rivalBoost(m.oppName)-tiltDrag();
+  const my=power(myRoster(),S.fatigue,sea.fav)+(swing||0)+versionFit()+rivalBoost(m.oppName)-tiltDrag()+cerFinalPw();
   const op=power(m.opp.players,0,sea.fav);
   return clampWinProb(1/(1+Math.exp(-(my-op)/SPREAD)), my-op);
 }
@@ -3610,7 +3625,7 @@ export function resolveNode(ai){
   const m=S.match,opt=m.node.a[ai],v=nodeSkill(opt.dim);
   // 风险真的影响成功率（外部测评抓的：原来「高风险」只放大摆动、不降成功率，标签骗人）：
   // risk 0.9 的选项比中性低约 6 个点，0.3 的高约 3 个点；摆动倍率照旧
-  const p=clamp(0.30+(v/100)*0.55-((opt.risk||0.5)-0.5)*0.15,0.12,0.92);
+  const p=clamp(0.30+(v/100)*0.55-((opt.risk||0.5)-0.5)*0.15+cerFinalNode(),0.12,0.92);   // 决赛之夜金档 +5%、铜档 −3%
   const ok=rnd()<p;
   const was=gameWinP(m.swing);            // 做决定之前的赢面
   m.swing+=(ok?1:-1)*opt.risk*NODE_SWING;
@@ -3628,7 +3643,7 @@ export function resolveNode(ai){
 }
 export function playGame(){
   const m=S.match,sea=SEASONS[S.si];
-  const my=power(myRoster(),S.fatigue,sea.fav)+m.swing+versionFit()+rivalBoost(m.oppName)-tiltDrag();
+  const my=power(myRoster(),S.fatigue,sea.fav)+m.swing+versionFit()+rivalBoost(m.oppName)-tiltDrag()+cerFinalPw();
   const op=power(m.opp.players,0,sea.fav);
   let p=1/(1+Math.exp(-(my-op)/SPREAD));
   // 封顶用的差距必须把 m.swing（临场决策的结果）算进去。
@@ -3797,7 +3812,7 @@ export function endMatch(){
   // 宿敌账本：赢下有明星选手的队要被记住
   noteRivalBeat(m.opp.players,won);
   // 心态气压：输比赛攒 Tilt，赢比赛泄压。0:2 被横扫压力翻倍。
-  S.tilt=clamp((S.tilt||0)+(won?-8:(swept||m.sc[0]===0?18:12)),0,100);
+  S.tilt=clamp((S.tilt||0)+(won?-8:(swept||m.sc[0]===0?18:12)*mediaTiltMul()),0,100);   // 媒体日说了狂话，输球更伤心态（×1.5）
   if(!won&&S.tilt>=60&&!S._tiltWarned){
     S._tiltWarned=true;
     pushEvent(`连着输比赛，<b>心态开始起飞</b>（心态压力 ${Math.round(S.tilt)}）。<br>
@@ -3921,7 +3936,7 @@ export function viewMatch(){
     return `${postMatchCard()}
     <div class="row"><button class="btn primary" id="next">继续 →</button></div>`;
   }
-  const my0=power(myRoster(),S.fatigue,sea.fav), vf=versionFit(), my=my0+vf, op=power(m.opp.players,0,sea.fav);   // 版本加成单独标，不揉进「战力」
+  const my0=power(myRoster(),S.fatigue,sea.fav), vf=versionFit(), fb=cerFinalPw(), my=my0+vf+fb, op=power(m.opp.players,0,sea.fav);   // 版本加成、决赛夜加成单独标，不揉进「战力」
   // 开打编排（界面重做第二期 ②）：比分刚变的那次渲染，两侧向中线撞一下、结果字砸出来；系列赛打完的字留住
   const scKey=m.sc.join(":"); let hit="";
   if(_lastSc!==undefined&&_lastSc!==scKey&&scKey!=="0:0"){ const a=+String(_lastSc).split(":")[0]; hit=m.sc[0]>a?"hit win":"hit loss"; }
@@ -3931,7 +3946,7 @@ export function viewMatch(){
     <h2>${sea.tag} ${S.intl?intlStageName():S.playoff?"季后赛":"第 "+S.week+" 周"}<em>${
       m.need===1?"单局定胜负":m.need===2?"三局两胜":"五局三胜"}</em></h2>
     <div class="vs ${hit}">
-      <div class="side"><div class="nm">${teamLogo(S.team,34)}<br>${S.team}</div><div class="pw mono">战力 ${pwShow(my0).toFixed(1)}<small style="color:var(--ink-3)"> 版本 ${vf>=0?"+":""}${pwShow(vf).toFixed(1)}</small></div></div>
+      <div class="side"><div class="nm">${teamLogo(S.team,34)}<br>${S.team}</div><div class="pw mono">战力 ${pwShow(my0).toFixed(1)}<small style="color:var(--ink-3)"> 版本 ${vf>=0?"+":""}${pwShow(vf).toFixed(1)}${fb?` <span style="color:${fb>0?'var(--gold)':'var(--red)'}">决赛夜 ${fb>0?"+":""}${fb}</span>`:""}</small></div></div>
       <div class="mid"><div class="score">${m.sc[0]} : ${m.sc[1]}</div>${stamp}</div>
       <div class="side"><div class="nm">${teamLogo(m.oppName,34)}<br>${m.oppName}</div><div class="pw mono">战力 ${pwShow(op).toFixed(1)}</div></div>
     </div>
