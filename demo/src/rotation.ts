@@ -255,7 +255,7 @@ export function scrimPanel(){
   }
   return `<div class="scrimbox">
     <div class="sb-h"><b>${acad?"争取进名单":"抢首发"}</b> · 对位 <b>${S.understudy.id}</b>（综合 ${him.toFixed(0)}，你 ${me.toFixed(0)}）</div>
-    <div class="at wide"><div class="lb">轮换资本</div>
+    <div class="at wide num"><div class="lb">轮换资本</div>
       <div class="track"><div class="fill" style="width:${pct}%;background:linear-gradient(90deg,var(--gold-dim),var(--gold))"></div></div>
       <div class="vn mono"><b>${sc.edge}</b>/${SCRIM_EDGE_NEED}</div></div>
     <div class="row" style="margin-top:8px;align-items:center;gap:10px;flex-wrap:wrap">
