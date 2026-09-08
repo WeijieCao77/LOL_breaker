@@ -1,11 +1,11 @@
 import { addStaff, coachTrust, mgrTrust } from "./clout";
-import { CHANGELOG, DIMS, SEASONS, addFans, avg, clamp, ending, lastSeason, leagueDimAvg, myRoster, nowLabel, power, preLog, pushEvent, q1, soloSkill } from "./main";
+import { CHANGELOG, COMP_RED, DIMS, SEASONS, addFans, avg, clamp, ending, lastSeason, leagueDimAvg, myRoster, myStrength, nowLabel, power, preLog, pushEvent, q1, soloSkill, starterComp } from "./main";
 import { rnd } from "./rng";
 import { ringTitles, titleCount, titlesText } from "./rotation";
 import { meName } from "./save";
 import { bizWeek } from "./shop";
 import { S } from "./state";
-import { addTrustAll, trustOf } from "./team";
+import { RENEW_TRUST_FLOOR, addTrustAll, renewScore, trustOf } from "./team";
 import { buyoutDrag, exposureScore, proPerf } from "./tryout";
 
 /* ================= 世界的回声 =================
@@ -133,7 +133,8 @@ export function weeklyEcho(){
    竞争度：有对位竞争者时看你俩的差距；坐稳首发看你在队里的相对水平。 */
 export function roleCard(){
   if(!S.career||!S.team) return "";
-  const me=avg(DIMS.map(d=>S.attrs[d]));
+  // 2026-09-08：这里原来用裸五维，和「我的」页（含外设）差 2.9 分——玩家眼里「差不多」，条上二三十。现在同一把尺
+  const me=myStrength();
   const acad=(S.homeLeague||"LPL")==="LDL";
   let role, comp, compTxt;
   if(!S.promoted&&S.understudy){
@@ -142,11 +143,11 @@ export function roleCard(){
     comp=clamp(50+(me-(him-2))*8,2,98);
     compTxt=`对位 <b>${S.understudy.id}</b>（${him.toFixed(1)}），压过他才轮到你`;
   }else{
-    const mates=myRoster().filter(p=>!p.me);
-    const tavg=mates.length?avg(mates.map(p=>avg(DIMS.map(d=>p.r[d])))):me;
+    const sc=starterComp();
     role=acad?"二队首发 · 攒数据升队":(S.offerKind==="core"?"核心首发":"首发");
-    comp=clamp(55+(me-tavg)*6,5,98);
-    compTxt=comp>=70?"位置很稳，队伍围绕你打":comp>=45?"位置稳固，但别松懈":"你是队里最薄的一环——教练在看替补名单";
+    comp=sc.comp;
+    compTxt=(comp>=70?"位置很稳，队伍围绕你打":comp>=50?"位置稳固":comp>=COMP_RED?"替补在追你——训练赛里别掉链子":"你是队里最薄的一环——教练在看替补名单")
+      +` <span style="color:var(--ink-3)">（你 ${sc.me.toFixed(1)} · 队友均 ${sc.tavg.toFixed(1)} · 联赛同位置均 ${sc.lavg.toFixed(1)}）</span>`;
   }
   const ct=coachTrust();
   const mt=mgrTrust();
@@ -156,10 +157,24 @@ export function roleCard(){
     ${txt?`<p class="note" style="margin:2px 0 8px">${txt}</p>`:""}`;
   return `<div class="card"><h2>队内身份<em>${role}</em></h2>
     <div class="attrs">
-      ${bar("首发竞争",comp,comp<45?"var(--red)":null,compTxt)}
+      ${bar("首发竞争",comp,comp<COMP_RED?"var(--red)":null,compTxt)}
       ${bar("教练信任",ct,ct<35?"var(--red)":null,ct>=70?"教练在关键局也会把牌给你":ct<35?"排兵布阵时你的名字开始被犹豫":null)}
       ${bar("经理信任",mt,mt<35?"var(--red)":null,mt<35?"续约和转会的桌上，这个数字都在":null)}
-    </div></div>`;
+    </div>${renewLedger()}</div>`;
+}
+/* 续约桌上的账（2026-09-08）：玩家抱怨的是「观感」，观感的根源是他养信任、当队魂的努力看不到回报。
+   把这笔账摊开——哪一项加了多少、离留队线还差几分。 */
+export function renewLedger(){
+  if(!S.career||!S.team||!S.contract) return "";
+  let R; try{ R=renewScore(); }catch(e){ return ""; }
+  const item=r=>`<span class="tl-i${r.v>0.05?" up":r.v<-0.05?" dn":""}">${r.k}${r.d?` ${r.d}`:""} <b>${r.v>0?"+":""}${r.v.toFixed(1)}</b></span>`;
+  const margin=R.total-R.need;
+  const verdict=R.veto?`<b style="color:var(--red)">更衣室信任跌破 ${RENEW_TRUST_FLOOR}</b>——这条线之下，别的都不算。`
+    :R.ok?(margin<12?`合同到期时他们会留你，<b>但余量不多</b>。`:`合同到期时他们会留你。`)
+    :`<b style="color:var(--red)">照现在这样，合同到期他们不会续</b>——还差 ${Math.ceil(-margin)} 分。`;
+  return `<div class="tled">
+    <div class="tl-r"><span class="tl-k">续约桌上</span><span class="tl-v">${R.rows.map(item).join("")}<span class="tl-n">留队意愿 <b>${Math.round(R.total)}</b> / ${R.need}</span></span></div>
+    <p class="note" style="margin:6px 0 0">${verdict}合同还剩 <b>${S.contract.left}</b> 个赛段。实力差是主项；教练、经理、队友的信任和在队时长大约能抵四五分实力差，再多救不动；今年拿冠军铁续约。</p></div>`;
 }
 
 /* ---------- 生涯一览（2026-09-01 P2，玩家点名：用总结的口吻随时给评语） ----------

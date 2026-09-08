@@ -2,7 +2,7 @@ import { checkAch } from "./achieve";
 import { addStaff } from "./clout";
 import { myFormMul } from "./form";
 import { pw } from "./intl";
-import { DIMS, POSN, SEASONS, SPLITS, WEEKS, addFat, apCost, apTag, avg, capOf, clamp, gain, makeRookie, myRoster, myTeam, power, pushEvent, pwShow, q1, render } from "./main";
+import { COMP_RED, DIMS, POSN, SEASONS, SPLITS, WEEKS, addFat, apCost, apTag, avg, capOf, clamp, gain, makeRookie, myRoster, myTeam, power, pushEvent, pwShow, q1, render, starterComp } from "./main";
 import { rnd } from "./rng";
 import { teamLogo } from "./rankicon";
 import { gearBonus } from "./shop";
@@ -323,9 +323,8 @@ export function confirmStarter(why){
    得在训练赛里攒够对位优势（SCRIM_EDGE_NEED）拿到试用，赢下来才是首发。 */
 export function weakestLink(){
   const mates=myRoster().filter(p=>!p.me); if(!mates.length) return false;
-  const me=avg(DIMS.map(d=>S.attrs[d]));
-  const tavg=avg(mates.map(p=>avg(DIMS.map(d=>p.r[d]))));
-  return clamp(55+(me-tavg)*6,5,98)<45;     // 和 roleCard 的「首发竞争」同一把尺
+  // 和 roleCard 的「首发竞争」同一把尺——原来这里是复制粘贴的一行，两边各改各的迟早对不上（2026-09-08 抽成 starterComp）
+  return starterComp().comp<COMP_RED;
 }
 export function pickReplacement(){
   const t=myTeam(); const mates=t?t.players.filter(p=>!p.me):[];
