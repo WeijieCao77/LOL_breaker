@@ -111,6 +111,9 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260908j", at:"2026-09-08", items:[
+    "赛后拆解分成「简洁 / 详细」两版，卡顶上一排 tab 随时切（作者：现在的拆解太冗长）。简洁版只留比分与账面差、一句「账面 vs 结果」、影响最大的三项（不带怎么调）、两行复盘；详细版是原来那张完整的卡——归因全表、数据面板、临场账本、复盘。默认简洁，选了哪个记在存档里；现场、比赛档案回放、职业前杯赛三处同一套"
+  ]},
   {v:"v20260908i", at:"2026-09-08", items:[
     "仪式第三批（策划稿里剩下的全部）：突破试炼——某一维撞到天花板的赛段结算，教练把你单独留下，「今天不过这一关别回去」；按那一维选机制（操作→反应、心态→专注、指挥 / 运营→战术决策、体质→节奏），只有金档算过关：天花板 +1 当场兑现；没过不扣什么，下个赛段再来",
     "康复期：受伤那一刻进理疗室，跟着呼吸圆——金档少养一周",
@@ -6458,6 +6461,8 @@ export function bind(){
   const nx=$("next"); if(nx) nx.onclick=nextWeek;
   // 赛后拆解一屏（照 Val Manager）：比分页 → 拆解页 → 下一周
   const pg=$("pmgo"); if(pg) pg.onclick=()=>{S.match.pmSeen=true;render();scrollStageTop();};
+  // 拆解卡的「简洁 / 详细」tab：选择存进 S.pmMode，现场、档案回放、杯赛三张卡共用
+  st.querySelectorAll("[data-pm]").forEach((b: any)=>b.onclick=()=>{ S.pmMode=b.dataset.pm==="full"?"full":"brief"; render(); });
   // 比赛档案里的拆解回放
   st.querySelectorAll("[data-pmv]").forEach((b: any)=>b.onclick=()=>{S.pmView=+b.dataset.pmv;render()});
   st.querySelectorAll("[data-selfrec]").forEach((b: any)=>b.onclick=()=>selfRecommend(b.dataset.selfrec));

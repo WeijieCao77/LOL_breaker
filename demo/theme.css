@@ -961,6 +961,18 @@ ul.dealfx li::marker{color:var(--ink-3)}
 .pmr .pv{text-align:right} .pmr.up .pv{color:var(--cyan)} .pmr.dn .pv{color:var(--red)}
 .pmr .pf{color:var(--ink-3);line-height:1.45}
 @media(max-width:620px){.pmr{grid-template-columns:56px 1fr 48px}.pmr .pf{grid-column:1/-1;padding-top:2px}}
+/* 简洁 / 详细 两版（2026-09-08） */
+.pmtabs{display:flex;gap:0;margin:-4px 0 10px;border-bottom:1px solid var(--line)}
+.pmtab{appearance:none;background:transparent;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;
+  padding:7px 14px;font-size:12.5px;letter-spacing:.08em;color:var(--ink-3);cursor:pointer;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.pmtab:hover{color:var(--ink)}
+.pmtab.on{color:var(--gold-hi);border-bottom-color:var(--gold)}
+.pmtab:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.pmrows.lite .pmr{grid-template-columns:62px 1fr 52px}
+.pm-verdict{margin:10px 0 0;font-size:13.5px;line-height:1.65;color:var(--ink-2)}
+.pm-verdict b{color:var(--gold-hi)}
+.review.lite{margin-top:8px}
 
 /* ---- 伤病 ---- */
 .card.injury{border-color:var(--red);

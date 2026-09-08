@@ -982,6 +982,18 @@ ul.dealfx li::marker{color:var(--ink-3)}
 .pmr .pv{text-align:right} .pmr.up .pv{color:var(--cyan)} .pmr.dn .pv{color:var(--red)}
 .pmr .pf{color:var(--ink-3);line-height:1.45}
 @media(max-width:620px){.pmr{grid-template-columns:56px 1fr 48px}.pmr .pf{grid-column:1/-1;padding-top:2px}}
+/* 简洁 / 详细 两版（2026-09-08） */
+.pmtabs{display:flex;gap:0;margin:-4px 0 10px;border-bottom:1px solid var(--line)}
+.pmtab{appearance:none;background:transparent;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;
+  padding:7px 14px;font-size:12.5px;letter-spacing:.08em;color:var(--ink-3);cursor:pointer;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.pmtab:hover{color:var(--ink)}
+.pmtab.on{color:var(--gold-hi);border-bottom-color:var(--gold)}
+.pmtab:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.pmrows.lite .pmr{grid-template-columns:62px 1fr 52px}
+.pm-verdict{margin:10px 0 0;font-size:13.5px;line-height:1.65;color:var(--ink-2)}
+.pm-verdict b{color:var(--gold-hi)}
+.review.lite{margin-top:8px}
 
 /* ---- 伤病 ---- */
 .card.injury{border-color:var(--red);
@@ -9096,6 +9108,32 @@ header.top.compact>.theme-top{display:none}
     });
     return { personal, team };
   }
+  function pmMode() {
+    return S.pmMode === "full" ? "full" : "brief";
+  }
+  function pmTabs() {
+    const m = pmMode();
+    return `<div class="pmtabs" role="tablist"><button type="button" class="pmtab${m === "brief" ? " on" : ""}" data-pm="brief" role="tab" aria-selected="${m === "brief"}">简洁</button><button type="button" class="pmtab${m === "full" ? " on" : ""}" data-pm="full" role="tab" aria-selected="${m === "full"}">详细</button></div>`;
+  }
+  function pmBrief(rows, won, adv, luck) {
+    const top = (rows || []).slice(0, 3);
+    const neg = (rows || []).filter((r) => r.v <= -0.4).slice(0, 2).map((r) => r.n);
+    const pos = (rows || []).filter((r) => r.v >= 0.4).slice(0, 2).map((r) => r.n);
+    const verdict = won ? pos.length ? `这场赢在<b>${pos.join("、")}</b>。` : `账面没占优，这场是打出来的。` : neg.length ? `这场输在<b>${neg.join("、")}</b>。` : `各项都没明显吃亏——这场输在概率上。`;
+    const items = [];
+    if (adv) {
+      (adv.personal || []).filter((x) => !x.good).slice(0, 1).forEach((x) => items.push(x));
+      (adv.team || []).slice(0, 1).forEach((x) => items.push(x));
+    }
+    if (!items.length && adv) (adv.personal || []).filter((x) => x.good).slice(0, 1).forEach((x) => items.push(x));
+    const li = (x) => `<div class="rv-i${x.good ? " good" : ""}"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
+    return `<div class="pmrows lite">${top.map((r) => {
+      const w = clamp(Math.abs(r.v) / 6 * 100, 4, 100);
+      return `<div class="pmr ${r.v >= 0 ? "up" : "dn"}"><span class="pn">${r.n}</span><span class="pbar"><i style="width:${w}%"></i></span><span class="pv mono">${r.v >= 0 ? "+" : ""}${r.v.toFixed(1)}</span></div>`;
+    }).join("")}</div>
+    <p class="pm-verdict">${verdict}${luck && luck.length ? ` ${luck[0]}` : ""}</p>
+    ${items.length ? `<div class="review lite"><div class="rv-g">${items.map(li).join("")}</div></div>` : ""}`;
+  }
   function pmRowsHtml(rows) {
     return `<div class="pmrows">${rows.map((r) => {
       const w = clamp(Math.abs(r.v) / 6 * 100, 4, 100);
@@ -9169,17 +9207,20 @@ header.top.compact>.theme-top{display:none}
     const won = m.sc[0] > m.sc[1];
     const diff = myTotal - opTotal;
     const upset = won && diff < -1.5 || !won && diff > 1.5;
+    const brief = pmMode() === "brief";
+    const adv = reviewAdvice(m);
     return `<div class="card"><h2>赛后拆解 · vs ${m.oppName}<em>${won ? "胜" : "负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
+    ${pmTabs()}
     <div class="pm-head">
       <span>综合 <b>${pwShow(myTotal).toFixed(1)}</b> vs <b>${pwShow(opTotal).toFixed(1)}</b></span>
       <span class="pm-diff ${diff >= 0 ? "up" : "dn"}">${diff >= 0 ? "+" : ""}${pwShow(diff).toFixed(1)}</span>
     </div>
     ${upset ? `<div class="pm-upset">${won ? "账面上你是劣势——这场是打出来的，不是数值给的。节点决策和运气都站在了你这边。" : "账面上你占优，还是输了。数值只决定每回合的胜率，不保证结果——看看状态、体能，剩下的是运气。"}</div>` : ""}
-    ${pmRowsHtml(rows)}
+    ${brief ? pmBrief(rows, won, adv, m.luck) : `${pmRowsHtml(rows)}
     ${boxScoreHtml(m.box, won, m.oppName)}
     ${pmNodesHtml(m.nodeLog, m.luck)}
-    ${pmAdviceHtml(reviewAdvice(m), won, rows)}
-    <p class="note">这些就是模拟器判胜负时用的数，不是事后编的解释。按影响从大到小排。<br>
+    ${pmAdviceHtml(adv, won, rows)}`}
+    <p class="note">${brief ? `只列影响最大的三项。点「详细」看完整归因、数据面板、临场账本和复盘。` : `这些就是模拟器判胜负时用的数，不是事后编的解释。按影响从大到小排。`}<br>
       点过「继续」也不丢：<b>我的 → 比赛档案</b>里能回看最近 12 场的拆解。</p>
   </div>`;
   }
@@ -9191,14 +9232,15 @@ header.top.compact>.theme-top{display:none}
     return `<div class="rankup"><div class="ru-inner" style="max-width:560px;max-height:86vh;overflow-y:auto;text-align:left">
     <div class="ru-eyebrow">比赛档案 · 拆解回放</div>
     <h2 style="margin:0 0 6px">${seaTag} ${x.tag} · vs ${x.opp}<em style="float:right">${won ? "胜" : "负"} ${x.sc[0]}:${x.sc[1]}</em></h2>
+    ${pmTabs()}
     <div class="pm-head">
       <span>综合 <b>${pwShow(pm.my).toFixed(1)}</b> vs <b>${pwShow(pm.op).toFixed(1)}</b></span>
       <span class="pm-diff ${diff >= 0 ? "up" : "dn"}">${diff >= 0 ? "+" : ""}${pwShow(diff).toFixed(1)}</span>
     </div>
-    ${pmRowsHtml(pm.rows)}
+    ${pmMode() === "brief" ? pmBrief(pm.rows, won, pm.adv, pm.luck) : `${pmRowsHtml(pm.rows)}
     ${x.box ? boxScoreHtml(x.box, won, x.opp) : ""}
     ${pmNodesHtml(pm.nodes, pm.luck)}
-    ${pmAdviceHtml(pm.adv, won, pm.rows)}
+    ${pmAdviceHtml(pm.adv, won, pm.rows)}`}
     <div class="row" style="justify-content:center;margin-top:10px">
       <button class="btn" id="pmclose">关闭</button></div>
   </div></div>`;
@@ -9678,16 +9720,18 @@ header.top.compact>.theme-top{display:none}
     if (!won && legacy < 1) adv.push({ q: "这一轮没备战", how: "杯赛卡上的「针对性备战」每次 +1.15；练出来的配合 +0.55 且跨轮不清零" });
     const li = (x) => `<div class="rv-i${x.good ? " good" : ""}"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
     const advHtml = won ? `<div class="review win"><div class="rv-h">复盘</div><p class="note" style="margin:6px 0 0">这场赢在<b>${rows.filter((r) => r.v >= 0.4).slice(0, 2).map((r) => r.n).join("、") || "临场"}</b>。下一轮对手更强——别停。</p></div>` : adv.length ? `<div class="review"><div class="rv-h">复盘 · 这场输在哪，明天练什么</div><div class="rv-g">${adv.map(li).join("")}</div></div>` : `<div class="review"><div class="rv-h">复盘</div><p class="note" style="margin:6px 0 0">各项都没明显吃亏——这场输在概率上。数值只决定每局胜率，不保证结果。</p></div>`;
+    const brief = pmMode() === "brief";
     return `<div class="card"><h2>赛后拆解 · ${C.name} ${roundName} vs ${m.opp}<em>${won ? "胜" : "负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
+    ${pmTabs()}
     <div class="pm-head">
       <span>赛事战力 <b>${my.toFixed(1)}</b> vs <b>${op.toFixed(1)}</b></span>
       <span class="pm-diff ${diff >= 0 ? "up" : "dn"}">${diff >= 0 ? "+" : ""}${diff.toFixed(1)}</span>
     </div>
     ${upset ? `<div class="pm-upset">${won ? "账面上你是劣势——这场是打出来的，节点决策和运气都站在了你这边。" : "账面上你占优，还是输了。数值只决定每局胜率——看看临场账本，剩下的是运气。"}</div>` : ""}
-    ${pmRowsHtml(rows)}
+    ${brief ? pmBrief(rows, won, { personal: adv, team: [] }, luck) : `${pmRowsHtml(rows)}
     ${pmNodesHtml(m.nodeLog || [], luck)}
-    ${advHtml}
-    <p class="note">这些就是模拟器判胜负时用的数，不是事后编的解释。业余赛里对手只是一个水位，所以没有对位选手的账。</p>
+    ${advHtml}`}
+    <p class="note">${brief ? "只列影响最大的三项。点「详细」看完整归因、临场账本和复盘。" : "这些就是模拟器判胜负时用的数，不是事后编的解释。业余赛里对手只是一个水位，所以没有对位选手的账。"}</p>
   </div>`;
   }
   function preSquadCard() {
@@ -14539,6 +14583,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260908j", at: "2026-09-08", items: [
+      "赛后拆解分成「简洁 / 详细」两版，卡顶上一排 tab 随时切（作者：现在的拆解太冗长）。简洁版只留比分与账面差、一句「账面 vs 结果」、影响最大的三项（不带怎么调）、两行复盘；详细版是原来那张完整的卡——归因全表、数据面板、临场账本、复盘。默认简洁，选了哪个记在存档里；现场、比赛档案回放、职业前杯赛三处同一套"
+    ] },
     { v: "v20260908i", at: "2026-09-08", items: [
       "仪式第三批（策划稿里剩下的全部）：突破试炼——某一维撞到天花板的赛段结算，教练把你单独留下，「今天不过这一关别回去」；按那一维选机制（操作→反应、心态→专注、指挥 / 运营→战术决策、体质→节奏），只有金档算过关：天花板 +1 当场兑现；没过不扣什么，下个赛段再来",
       "康复期：受伤那一刻进理疗室，跟着呼吸圆——金档少养一周",
@@ -21304,6 +21351,10 @@ header.top.compact>.theme-top{display:none}
       render();
       scrollStageTop();
     };
+    st.querySelectorAll("[data-pm]").forEach((b) => b.onclick = () => {
+      S.pmMode = b.dataset.pm === "full" ? "full" : "brief";
+      render();
+    });
     st.querySelectorAll("[data-pmv]").forEach((b) => b.onclick = () => {
       S.pmView = +b.dataset.pmv;
       render();

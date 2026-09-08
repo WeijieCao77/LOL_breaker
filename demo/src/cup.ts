@@ -4,7 +4,7 @@ import { avatarOf, gicon } from "./avatar";
 import { DIMS, NODES, POS, POSN, addFans, addFat, apCost, avg, capOf, clamp, cupLadder, ovrOf, preLog, render, strength, tacAdd, tierOf } from "./main";
 import { rnd } from "./rng";
 import { NODES_MORE } from "./nodes";
-import { pmNodesHtml, pmRowsHtml } from "./postmatch";
+import { pmBrief, pmMode, pmNodesHtml, pmRowsHtml, pmTabs } from "./postmatch";
 import { noteAct } from "./routine";
 import { escapeHtml, meName } from "./save";
 import { addMoney, gearBonus } from "./shop";
@@ -539,16 +539,18 @@ export function cupPostCard(m){
     ?`<div class="review win"><div class="rv-h">复盘</div><p class="note" style="margin:6px 0 0">这场赢在<b>${rows.filter(r=>r.v>=0.4).slice(0,2).map(r=>r.n).join("、")||"临场"}</b>。下一轮对手更强——别停。</p></div>`
     :(adv.length?`<div class="review"><div class="rv-h">复盘 · 这场输在哪，明天练什么</div><div class="rv-g">${adv.map(li).join("")}</div></div>`
       :`<div class="review"><div class="rv-h">复盘</div><p class="note" style="margin:6px 0 0">各项都没明显吃亏——这场输在概率上。数值只决定每局胜率，不保证结果。</p></div>`);
+  const brief=pmMode()==="brief";
   return `<div class="card"><h2>赛后拆解 · ${C.name} ${roundName} vs ${m.opp}<em>${won?"胜":"负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
+    ${pmTabs()}
     <div class="pm-head">
       <span>赛事战力 <b>${my.toFixed(1)}</b> vs <b>${op.toFixed(1)}</b></span>
       <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${diff.toFixed(1)}</span>
     </div>
     ${upset?`<div class="pm-upset">${won?"账面上你是劣势——这场是打出来的，节点决策和运气都站在了你这边。":"账面上你占优，还是输了。数值只决定每局胜率——看看临场账本，剩下的是运气。"}</div>`:""}
-    ${pmRowsHtml(rows)}
+    ${brief?pmBrief(rows,won,{personal:adv,team:[]},luck):`${pmRowsHtml(rows)}
     ${pmNodesHtml(m.nodeLog||[],luck)}
-    ${advHtml}
-    <p class="note">这些就是模拟器判胜负时用的数，不是事后编的解释。业余赛里对手只是一个水位，所以没有对位选手的账。</p>
+    ${advHtml}`}
+    <p class="note">${brief?"只列影响最大的三项。点「详细」看完整归因、临场账本和复盘。":"这些就是模拟器判胜负时用的数，不是事后编的解释。业余赛里对手只是一个水位，所以没有对位选手的账。"}</p>
   </div>`;
 }
 /* ---------- 职业前的战队页：车队真实存在 ---------- */
