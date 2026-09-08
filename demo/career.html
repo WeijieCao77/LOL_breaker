@@ -2626,9 +2626,7 @@ header.top.compact>.theme-top{display:none}
   function weakestLink() {
     const mates = myRoster().filter((p) => !p.me);
     if (!mates.length) return false;
-    const me = avg(DIMS.map((d) => S.attrs[d]));
-    const tavg = avg(mates.map((p) => avg(DIMS.map((d) => p.r[d]))));
-    return clamp(55 + (me - tavg) * 6, 5, 98) < 45;
+    return starterComp().comp < COMP_RED;
   }
   function pickReplacement() {
     const t = myTeam();
@@ -6269,7 +6267,7 @@ header.top.compact>.theme-top{display:none}
   }
   function roleCard() {
     if (!S.career || !S.team) return "";
-    const me = avg(DIMS.map((d) => S.attrs[d]));
+    const me = myStrength();
     const acad = (S.homeLeague || "LPL") === "LDL";
     let role, comp, compTxt;
     if (!S.promoted && S.understudy) {
@@ -6278,11 +6276,10 @@ header.top.compact>.theme-top{display:none}
       comp = clamp(50 + (me - (him - 2)) * 8, 2, 98);
       compTxt = `对位 <b>${S.understudy.id}</b>（${him.toFixed(1)}），压过他才轮到你`;
     } else {
-      const mates = myRoster().filter((p) => !p.me);
-      const tavg = mates.length ? avg(mates.map((p) => avg(DIMS.map((d) => p.r[d])))) : me;
+      const sc = starterComp();
       role = acad ? "二队首发 · 攒数据升队" : S.offerKind === "core" ? "核心首发" : "首发";
-      comp = clamp(55 + (me - tavg) * 6, 5, 98);
-      compTxt = comp >= 70 ? "位置很稳，队伍围绕你打" : comp >= 45 ? "位置稳固，但别松懈" : "你是队里最薄的一环——教练在看替补名单";
+      comp = sc.comp;
+      compTxt = (comp >= 70 ? "位置很稳，队伍围绕你打" : comp >= 50 ? "位置稳固" : comp >= COMP_RED ? "替补在追你——训练赛里别掉链子" : "你是队里最薄的一环——教练在看替补名单") + ` <span style="color:var(--ink-3)">（你 ${sc.me.toFixed(1)} · 队友均 ${sc.tavg.toFixed(1)} · 联赛同位置均 ${sc.lavg.toFixed(1)}）</span>`;
     }
     const ct = coachTrust();
     const mt = mgrTrust();
@@ -6292,10 +6289,25 @@ header.top.compact>.theme-top{display:none}
     ${txt ? `<p class="note" style="margin:2px 0 8px">${txt}</p>` : ""}`;
     return `<div class="card"><h2>队内身份<em>${role}</em></h2>
     <div class="attrs">
-      ${bar("首发竞争", comp, comp < 45 ? "var(--red)" : null, compTxt)}
+      ${bar("首发竞争", comp, comp < COMP_RED ? "var(--red)" : null, compTxt)}
       ${bar("教练信任", ct, ct < 35 ? "var(--red)" : null, ct >= 70 ? "教练在关键局也会把牌给你" : ct < 35 ? "排兵布阵时你的名字开始被犹豫" : null)}
       ${bar("经理信任", mt, mt < 35 ? "var(--red)" : null, mt < 35 ? "续约和转会的桌上，这个数字都在" : null)}
-    </div></div>`;
+    </div>${renewLedger()}</div>`;
+  }
+  function renewLedger() {
+    if (!S.career || !S.team || !S.contract) return "";
+    let R;
+    try {
+      R = renewScore();
+    } catch (e) {
+      return "";
+    }
+    const item = (r) => `<span class="tl-i${r.v > 0.05 ? " up" : r.v < -0.05 ? " dn" : ""}">${r.k}${r.d ? ` ${r.d}` : ""} <b>${r.v > 0 ? "+" : ""}${r.v.toFixed(1)}</b></span>`;
+    const margin = R.total - R.need;
+    const verdict = R.veto ? `<b style="color:var(--red)">更衣室信任跌破 ${RENEW_TRUST_FLOOR}</b>——这条线之下，别的都不算。` : R.ok ? margin < 12 ? `合同到期时他们会留你，<b>但余量不多</b>。` : `合同到期时他们会留你。` : `<b style="color:var(--red)">照现在这样，合同到期他们不会续</b>——还差 ${Math.ceil(-margin)} 分。`;
+    return `<div class="tled">
+    <div class="tl-r"><span class="tl-k">续约桌上</span><span class="tl-v">${R.rows.map(item).join("")}<span class="tl-n">留队意愿 <b>${Math.round(R.total)}</b> / ${R.need}</span></span></div>
+    <p class="note" style="margin:6px 0 0">${verdict}合同还剩 <b>${S.contract.left}</b> 个赛段。实力差是主项；教练、经理、队友的信任和在队时长大约能抵四五分实力差，再多救不动；今年拿冠军铁续约。</p></div>`;
   }
   function careerCard() {
     if (!S.career) return "";
@@ -7012,17 +7024,57 @@ header.top.compact>.theme-top{display:none}
     addMoney("salary", pay3);
     pushEvent(`赛段结算：薪资到账 <b>${pay3} 万</b>（当前人气 ${Math.round(S.fans)}）。`, "info", "合同");
   }
+  var RENEW_NEED = 30;
+  var RENEW_TRUST_FLOOR = 35;
+  var RENEW_W = { gap: 8, coach: 0.3, mgr: 0.2, mates: 0.2, tenure: 2.5, tenureMax: 6, title: 60, mvp: 12, first: 8, second: 4 };
+  var AWARD_LABEL = { mvp: "年度 MVP", first: "年度一阵", second: "年度二阵" };
+  function latestAward() {
+    const a = S.career && S.career.awards || [];
+    if (!a.length) return null;
+    const si = Math.max(...a.map((x) => x.si));
+    if (si < S.si - 1) return null;
+    const ks = a.filter((x) => x.si === si).map((x) => x.kind);
+    return ks.includes("mvp") ? "mvp" : ks.includes("first") ? "first" : ks.includes("second") ? "second" : null;
+  }
+  function renewEval(i) {
+    const ten = Math.min(RENEW_W.tenureMax, i.ten || 0);
+    const rows = [
+      { k: "实力差", d: `${i.gap >= 0 ? "+" : ""}${(+i.gap).toFixed(1)}`, v: (i.gap + 6) * RENEW_W.gap },
+      { k: "教练信任", d: String(Math.round(i.ct)), v: (i.ct - 50) * RENEW_W.coach },
+      { k: "经理信任", d: String(Math.round(i.mt)), v: (i.mt - 50) * RENEW_W.mgr },
+      { k: "队友信任", d: String(Math.round(i.tr)), v: (i.tr - 50) * RENEW_W.mates },
+      { k: "队魂", d: `${ten} 赛段`, v: ten * RENEW_W.tenure }
+    ];
+    if (i.wonTitle) rows.push({ k: "今年冠军", d: "", v: RENEW_W.title });
+    if (i.aw && RENEW_W[i.aw]) rows.push({ k: AWARD_LABEL[i.aw], d: "", v: RENEW_W[i.aw] });
+    const total = RENEW_NEED + rows.reduce((a, r) => a + r.v, 0);
+    const veto = i.tr < RENEW_TRUST_FLOOR && !i.wonTitle;
+    return { rows, total, need: RENEW_NEED, ok: !!i.wonTitle || !veto && total >= RENEW_NEED, veto };
+  }
+  function renewScore() {
+    const sc = starterComp();
+    const gap = sc.me - sc.tavg;
+    const wonTitle = (S.career && S.career.lgYears || []).includes(S.si) || (S.career && S.career.msiYears || []).includes(S.si) || (S.career && S.career.worldsYears || []).includes(S.si);
+    const inp = {
+      gap,
+      ct: coachTrust(),
+      mt: mgrTrust(),
+      tr: avgTrust(),
+      ten: teamTenureSplits() + 1,
+      // 结算这一刻，正在打的这个赛段还没记进 career.log
+      wonTitle,
+      aw: latestAward()
+    };
+    return Object.assign(renewEval(inp), inp);
+  }
   function contractCheck() {
     S.contract = S.contract || { years: 2, left: 2 };
     S.contract.left--;
     if (S.contract.left > 0) return null;
-    const ovr = avg(DIMS.map((d) => S.attrs[d]));
-    const mates = myRoster().filter((p) => !p.me);
-    const teamAvg = mates.length ? avg(mates.map((p) => avg(DIMS.map((d) => p.r[d])))) : ovr;
-    const trust = avgTrust();
-    const wonTitle = (S.career && S.career.lgYears || []).includes(S.si) || (S.career && S.career.msiYears || []).includes(S.si) || (S.career && S.career.worldsYears || []).includes(S.si);
-    const wantRenew = wonTitle || ovr >= teamAvg - 6 && trust >= 35;
-    if (wantRenew) {
+    const R = renewScore();
+    const wonTitle = R.wonTitle;
+    const ovr = R.gap, teamAvg = 0;
+    if (R.ok) {
       const raise = clamp(1.12 + (ovr - teamAvg) * 0.02 + (wonTitle ? 0.12 : 0), 1.02, 1.35);
       const old = S.contract;
       const sal = old.salary !== void 0 ? capRaise(old.salary * raise, old.salary, old.clubTier) : void 0;
@@ -7037,12 +7089,14 @@ header.top.compact>.theme-top{display:none}
         clubTier: old.clubTier,
         wonTitle,
         oldSalary: old.salary,
-        oldBuyout: old.buyout
+        oldBuyout: old.buyout,
+        score: Math.round(R.total),
+        need: R.need
       };
       return "renew";
     }
     S.freeAgent = true;
-    S.cutReason = trust < 35 ? "更衣室对你的信任跌破了底线，管理层不再给合同。" : "你的水平已经明显跟不上这支队，他们决定不续约。";
+    S.cutReason = R.veto ? "更衣室对你的信任跌破了底线，管理层不再给合同。" : `你的水平已经明显跟不上这支队（留队意愿 ${Math.round(R.total)}，线是 ${R.need}）。${R.ct >= 60 || R.ten >= 4 ? "教练组替你说了话，但没能说服管理层。" : "他们决定不续约。"}`;
     return "cut";
   }
 
@@ -14202,9 +14256,14 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
-    { v: "v20260908g", at: "2026-09-08", items: [
+    { v: "v20260908h", at: "2026-09-08", items: [
       "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
       "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+    ] },
+    { v: "v20260908g", at: "2026-09-08", items: [
+      "首发竞争这条尺修了（玩家反馈「实力和队友差不多、就低一两点的时候老是只有二三十」）：它原来用的是不含外设的裸五维，而「我的」页给你看的实力含外设——满配差 2.9 分，条上差 17 点，你眼里「差不多」它眼里「差了四五分」。现在两处同一把尺（含外设），每差 1 分从动 6 点放缓到 4 点，再加一项联赛同位置的绝对坐标：强队里的世界级选手不再只有 61，垫底队里的矮子将军也不再是 91。红字的线从 45 收到 35，文案分四档",
+      "续约终于看教练信任、经理信任和队魂了（玩家反馈「什么队魂和教练信任这些对续约毫无影响……观感有点差」）：原来的判据是「实力差 ≥ −6 且队友信任 ≥ 35」的硬 AND，教练信任、经理信任、在队时长一个都不在式子里——批测里被放走的人反而教练信任更高、在队更久，80% 是在队满 4 赛段的老人。现在是留队意愿分：实力仍是主项，信任和队魂大约能抵 4～5 分实力差（「他确实不如从前，但俱乐部还想再赌一年」），再多救不动；今年冠军照旧铁续约。刚来、信任平平的人，留队线还是 −6，不会更惨",
+      "「队内身份」卡下面新增「续约桌上」明细：实力差、三种信任、队魂各算多少，离留队线还差几分，合同还剩几个赛段——你养信任、当队魂的账，现在看得见"
     ] },
     { v: "v20260908f", at: "2026-09-08", items: [
       "「换不了人」修了（玩家反馈「现在不能换人」）：挂牌队友原来要教练信任 68，而教练信任的自然平衡点只有 46~54——批测里强玩家一整个生涯只有 4.9% 的赛季周能用，普通玩家是 0.0%，这个功能事实上一直是关着的。现在门槛是教练信任 60，或者威望到 75 用功勋压过教练组；同口径批测里强玩家 4.9% → 33.3%",
@@ -15511,6 +15570,26 @@ header.top.compact>.theme-top{display:none}
   function myStrength() {
     return strength(S.attrs) + avg(DIMS.map((d) => gearBonus(d) || 0));
   }
+  var COMP_SLOPE = 4;
+  var COMP_LEAGUE = 2;
+  var COMP_RED = 35;
+  function leaguePosAvg(pos) {
+    const lg = S.homeLeague || "LPL";
+    const ts = S.world && S.world[lg] || [];
+    const v = [];
+    ts.forEach((t) => (t.players || []).forEach((p) => {
+      if (p && !p.me && !p.retired && p.pos === pos && p.r) v.push(strength(p));
+    }));
+    return v.length ? avg(v) : null;
+  }
+  function starterComp() {
+    const me = myStrength();
+    const mates = myRoster().filter((p) => !p.me);
+    const tavg = mates.length ? avg(mates.map((p) => strength(p))) : me;
+    const la = leaguePosAvg(S.pos);
+    const lavg = la === null ? tavg : la;
+    return { comp: clamp(55 + (me - tavg) * COMP_SLOPE + (me - lavg) * COMP_LEAGUE, 5, 98), me, tavg, lavg };
+  }
   function tierOf(s) {
     return rankName(skillToRank(s));
   }
@@ -16543,8 +16622,16 @@ header.top.compact>.theme-top{display:none}
     const g = S.career && S.career.w + S.career.l || 0;
     return Math.max(0, g - (S.teamSince || 0));
   }
+  function teamTenureSplits() {
+    const log = S.career && S.career.log || [];
+    if (S.teamSinceSplit !== void 0 && S.teamSinceSplit !== null) return Math.max(0, log.length - S.teamSinceSplit);
+    let n = 0;
+    for (let i = log.length - 1; i >= 0 && log[i] && log[i].team === S.team; i--) n++;
+    return n;
+  }
   function markTeamJoin() {
     S.teamSince = S.career && S.career.w + S.career.l || 0;
+    S.teamSinceSplit = (S.career && S.career.log || []).length;
   }
   function myRoster() {
     return myTeam().players;

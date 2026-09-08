@@ -391,6 +391,48 @@ function unitChecks() {
     if (!/年度颁奖夜/.test(A.cerCard())) bad.push("颁奖夜的卡没渲染");
     A.cerClose(); if (S.cer) bad.push("颁奖夜散不了场");
     S.auto = { career: true }; A.cerStart("awards"); if (S.cer) bad.push("托管里颁奖夜还弹了"); S.auto = null;
+    // ---- 首发竞争与续约判据（2026-09-08 玩家反馈）：一把尺、斜率、红线；留队意愿的标定；队魂按赛段数 ----
+    {
+      const sc = A.starterComp();
+      if (Math.abs(sc.me - A.myStrength()) > 1e-9) bad.push("首发竞争用的实力和「我的」页不是同一把尺：" + sc.me + " vs " + A.myStrength());
+      if (!(sc.comp >= 5 && sc.comp <= 98)) bad.push("首发竞争条越界：" + sc.comp);
+      // 斜率要在条没顶到 98 的地方量：先把五维放到队友均值上（条约 55 附近），再 +1
+      const a0 = JSON.parse(JSON.stringify(S.attrs));
+      A.DIMS.forEach((dd: string) => { S.attrs[dd] = sc.tavg; }); const c1 = A.starterComp().comp;
+      A.DIMS.forEach((dd: string) => { S.attrs[dd] = sc.tavg + 1; }); const d = A.starterComp().comp - c1; S.attrs = a0;
+      if (!(Math.abs(d - (A.COMP_SLOPE + A.COMP_LEAGUE)) < 0.6)) bad.push(`首发竞争的斜率不对：五维 +1 条动了 ${d.toFixed(2)}，应约 ${A.COMP_SLOPE + A.COMP_LEAGUE}`);
+      if (A.COMP_RED !== 35) bad.push("首发竞争红线不是 35");
+      // 留队意愿：策划稿第三节的四个例子 + 一票否决 + 标定（信任全 50、刚来 → 线在实力差 −6）
+      const ev = (gap: number, ct: number, mt: number, tr: number, ten: number, extra: any = {}) => A.renewEval(Object.assign({ gap, ct, mt, tr, ten, wonTitle: false, aw: null }, extra));
+      if (!ev(-6, 50, 50, 50, 0).ok || ev(-6.5, 50, 50, 50, 0).ok) bad.push("留队意愿的标定漂了：信任全 50、刚来的人，线应在实力差 −6");
+      if (!ev(-3, 75, 65, 84, 4).ok) bad.push("例 1（−3 / 教练 75 / 4 赛段）应该续约");
+      if (!ev(-8, 75, 70, 84, 5).ok) bad.push("例 2（−8 / 教练 75 / 经理 70 / 5 赛段）——玩家说的队魂——应该留下");
+      if (ev(-8, 35, 50, 60, 1).ok) bad.push("例 3（−8 / 教练 35 / 1 赛段）应该放走");
+      if (ev(-14, 90, 90, 90, 6).ok) bad.push("例 4（−14 / 教练 90 / 6 赛段）信任救不回崩掉的实力，应该放走");
+      const maxOff = ev(-11, 90, 90, 90, 6).ok && !ev(-13, 90, 90, 90, 6).ok;
+      if (!maxOff) bad.push("信任 + 队魂能抵的实力差应在 5～6 分之间（满信任 6 赛段：−11 留、−13 走）");
+      if (ev(+4, 80, 80, 30, 4).ok || !ev(+4, 80, 80, 30, 4).veto) bad.push("队友信任跌破 35 应一票否决");
+      if (!ev(-20, 30, 30, 30, 0, { wonTitle: true }).ok) bad.push("今年冠军应铁续约");
+      if (ev(-7, 50, 50, 50, 1).ok || !ev(-7, 50, 50, 50, 1, { aw: "mvp" }).ok) bad.push("年度 MVP 的 +12 没进式子");
+      // 队魂按赛段数：老档从尾巴往前数同一支队；新档按加入时的 log 长度
+      const log0 = S.career.log, team0 = S.team, tss0 = S.teamSinceSplit;
+      S.career.log = [{ team: "A" }, { team: "A" }, { team: "B" }, { team: "B" }]; S.team = "B"; S.teamSinceSplit = undefined;
+      if (A.teamTenureSplits() !== 2) bad.push("老档的在队赛段数没从尾巴往前数：" + A.teamTenureSplits());
+      S.teamSinceSplit = 1; if (A.teamTenureSplits() !== 3) bad.push("新档的在队赛段数不对：" + A.teamTenureSplits());
+      S.career.log = log0; S.team = team0; S.teamSinceSplit = tss0;
+      // 端到端：合同到期 → contractCheck 按评分走；实力崩了放走、正常续约；卡上有账
+      const c0 = S.contract, fa0 = S.freeAgent, pr0 = S.pendingRenew, cr0 = S.cutReason, at0 = JSON.parse(JSON.stringify(S.attrs));
+      S.contract = { years: 1, left: 1, salary: 300, clubTier: "mid" }; S.pendingRenew = null; S.freeAgent = false;
+      A.DIMS.forEach((d: string) => { S.attrs[d] = 30; });
+      const r1 = A.contractCheck(); if (r1 !== "cut" || !/留队意愿/.test(S.cutReason || "")) bad.push("实力崩到 30 还没被放走 / 原因里没写账：" + r1 + " " + S.cutReason);
+      // 「正常实力」= 和队友持平再高一点（测试人物本来是个坐在强队里的新人，差 20 分，那本来就该走）
+      { const tv = A.starterComp().tavg; A.DIMS.forEach((dd: string) => { S.attrs[dd] = tv + 1; }); }
+      S.contract = { years: 1, left: 1, salary: 300, clubTier: "mid" }; S.pendingRenew = null; S.freeAgent = false;
+      const r2 = A.contractCheck(); if (r2 !== "renew" || !S.pendingRenew || S.pendingRenew.score === undefined) bad.push("正常实力没续约 / 报价里没带评分：" + r2 + " " + (S.cutReason || ""));
+      S.attrs = JSON.parse(JSON.stringify(at0));
+      if (!/续约桌上/.test(A.roleCard()) || !/留队意愿/.test(A.roleCard())) bad.push("队内身份卡没有「续约桌上」的账");
+      S.contract = c0; S.freeAgent = fa0; S.pendingRenew = pr0; S.cutReason = cr0;
+    }
     // 特训营：一年一次，钱不够不能选，卡渲染得出来
     S.off = { week: 1, weeks: 3, next: "year" }; S.money = 1000;
     if (!/特训营/.test(A.campCard())) bad.push("特训营卡没渲染");
