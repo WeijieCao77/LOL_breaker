@@ -7,7 +7,7 @@ import { addStaff, cloutCard, cloutTick, doList, doSign, initRelations, initStaf
 import { CUPS, activeCups, cupCard, cupDismissMatch, cupMatchCard, cupOf, cupOppName, cupPrep, cupReachName, cupResultCard, cupRoundName, cupTick, disbandCrew, dueCups, enterCup, forfeitCup, preSquadCard, resolveCupNode, startCupMatch } from "./cup";
 import { DATA } from "./data";
 import { formCard, formMul, formNews, formTier, myForm, myFormMul, rollForm, rollWorldForm } from "./form";
-import { awardsText, btkTrialCheck, campCard, cerApply, cerBind, cerCard, cerFinalNode, cerFinalPw, cerRecMul, cerStart, isFinalMatch, mediaTiltMul, meetCard, verCerAdj } from "./cer";
+import { awardsText, btkTrialCheck, campCard, cerApply, cerBind, cerCard, cerFinalNode, cerFinalPw, cerRecMul, cerStart, isFinalMatch, mediaTiltMul, meetCard, mgLive, verCerAdj } from "./cer";
 import { injuryCard, injuryHit, injuryTick, injuryTrainMul, riskHint, rollInjury } from "./injury";
 import { brOthersText, brStep, findTeam, intlAdvance, intlChampCard, intlStageName, leagueOf, majorStandings, spectateIntl, startIntl, wlAdd, wlInfluence, wlRelax, worldsSlot } from "./intl";
 import { aiMarketWindow } from "./market";
@@ -111,6 +111,13 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260908m", at:"2026-09-08", items:[
+    "季后赛抽签仪式挪回开打之前（玩家实锤：季后赛已经打到 1:0，抽签才弹出来）：原来先摆好比赛再开仪式，而开仪式本身不重画，于是它要等你在比赛里点了下一步才冒出来——现在先抽签、再摆比赛，模态卡从第一帧就在，演完才轮到你打",
+    "小游戏进行中不再被重画冲掉（玩家实锤：靶场点了「开始」又回到「点一下开始」）：仪式小游戏挂在每次 render 末尾，而 render 会把整块界面重写，正在跑的那一局连 DOM 带计时器一起被换掉——现在小游戏一上台就锁住重画（屏幕上只有这张模态卡），结算或跳过之后解锁"
+  ]},
+  {v:"v20260908l", at:"2026-09-08", items:[
+    "「支持作者」自动提示只在生涯结束之后弹（作者：游戏都不愿意玩完的人估计也不会发电）：去掉「这一次玩够 10 分钟就弹」的计时器；结局页等退役仪式收起、再等 5 秒看完名片才弹，每个浏览器会话最多一次；点过「别再提示」永远不弹，右下角 ♥ 随时能主动打开"
+  ]},
   {v:"v20260908k", at:"2026-09-08", items:[
     "实力条画错（作者截图：自己 83、队友 83，自己的条长一截）：带头像名字的行右列原来按内容自适应，「你」一个字比队友的名字窄，中间那根条就长出来一截——同一个数画得不一样长。右列改成固定宽（手机也固定），队伍页的五人实力、队友信任、试训里「你 vs 一队」这些行现在同样的数就是同样的长度；只有数值的行（首发竞争、信任、俱乐部关注、轮换资本）右列单独收窄，条不白让位置"
   ]},
@@ -555,7 +562,7 @@ export const CHANGELOG=[
 ];
 /* 版本戳：印在存档栏和作者栏。玩家对不上这个号，就是开了旧页面。 */
 export const GAME_VER=CHANGELOG[0].v+" · 回声";
-/* 支持作者（爱发电）：填上主页链接后，会出现右下角 ♥、页脚入口，并在每次浏览器会话首次进入时提示一次；
+/* 支持作者（爱发电）：填上主页链接后，会出现右下角 ♥、页脚入口；自动提示只在生涯结束的结局页弹一次（每个浏览器会话最多一次）；
    玩家点「不用了，别再提示」后停止自动弹出，但仍可点 ♥ 主动打开。
    SUPPORT_QR 可选：爱发电主页二维码图的 data URI（站点 CSP 只放行 self/data:，外链图不显示）。 */
 export const SUPPORT_URL="https://ifdian.net/a/poxiao_lol";   // 玩家 2026-09-05 给的爱发电主页
@@ -4166,9 +4173,13 @@ export function startPlayoff(){
   S.playoff={round:1,seed,alive:true,beaten:[S.team]};
   poBrInit();                              // 六队真对阵树；1/2 号种子轮空，从半决赛打起
   S.playoff.round=S.playoff.br.stage;
+  /* 抽签仪式得在开打之前（玩家实锤 2026-09-08：季后赛打到 1:0 才弹出抽签）。
+     原来写在 startMatch 后面：那时 S.cer 可能已经被这场比赛自己的仪式占住（决赛之夜），
+     抽签只能进队列，等前面那个演完才轮到它——那已经是系列赛打到一半了。
+     先开抽签，再摆比赛：模态卡从第一帧就压在 0:0 的对阵上，演完才轮到你打。 */
+  cerStart("draw");   // 抽签仪式：季后赛开打前的那一段戏（托管 / 机器人按跳过走，数字不动）
   S.step="match";
   startMatch(true, poMyOpp()||playoffOpp(S.playoff.round));
-  cerStart("draw");   // 抽签仪式：季后赛开打前的那一段戏（托管 / 机器人按跳过走，数字不动）
 }
 /* ---------- 季后赛对阵树（2026-09-06 玩家点名：要像瑞士轮/杯赛那样看得到线路——对手是击败了谁来的、赢了下一个打谁）----------
    六队三轮：首轮 3v6 / 4v5，一二号种子轮空；半决赛 1 号打 4v5 的胜者、2 号打 3v6 的胜者；决赛。
@@ -6111,6 +6122,7 @@ export let _renderLock=0;
 export let _autosaveAt=0;
 export function render(){
   if(_renderLock>0) return;                 // 托管正在连续处理，等它做完再画
+  if(mgLive()) return;                      // 仪式小游戏正在跑：重画会把这一局连 DOM 带计时器换掉（见 cer.ts mgLive）
   if(S&&S.auto){
     _renderLock++;
     try{ autoSweep(); } finally{ _renderLock--; }
@@ -6147,7 +6159,7 @@ export function render(){
   flushToasts();     // 事件提示条
   bgmSeasonTick();   // 赛季主题曲：赛季变了就切
   tourMaybe();           // 第一次进职业前 / 赛季：教程导览
-  if(S.step==="end"&&true) supportNudge("end");   // 通关才提「支持作者」（玩家定的：开局不弹）
+  if(S.step==="end"&&!S.cer) supportNudge("end");   // 只有生涯结束、退役仪式收起之后才提「支持作者」（作者定的：中途不弹）
   /* 大标题只在创建页和结局页铺开。
      进了游戏之后它每一屏都在重复占 237px，而首屏总共才 900px——
      收成一条窄横幅，把地方让给内容。 */

@@ -94,11 +94,12 @@ export function cerNext(){ if(!S.cer) return; S.cer.step++; render(); }
 export function cerSkip(){ if(!S.cer) return; cerApply(S.cer.k,"silver",true); render(); }
 /* 小游戏打完：记档位，翻到结算页 */
 export function cerFinish(tier,detail){ if(!S.cer) return; S.cer.tier=tier; S.cer.detail=detail||{}; S.cer.step=cerSteps(S.cer.k,S.cer).indexOf("result"); render(); }
-export function cerClose(){ if(!S.cer) return; const c=S.cer; if(c.k==="awards"){ S.cer=null; cerDequeue(); render(); return; }
+export function cerClose(){ if(!S.cer) return; _mgLive=false; const c=S.cer; if(c.k==="awards"){ S.cer=null; cerDequeue(); render(); return; }
   const storyOnly=(c.k==="farewell0"||c.k==="farewell"||(c.k==="allstar"&&c.sel===false));
   cerApply(c.k,c.tier||"silver",storyOnly); render(); }
 /* 结算：一次的结果覆盖一整段 */
 export function cerApply(k,tier,skipped,ctx?){
+  _mgLive=false;
   const t=tier||"silver";
   const C=ctx||S.cer||{};
   if(k==="draw"){
@@ -559,7 +560,13 @@ function awardsBody(a){
 
 /* ---------- 绑定与小游戏 ---------- */
 let _timers: any[]=[];
-function clearTimers(){ _timers.forEach(t=>{ try{ clearInterval(t); clearTimeout(t); cancelAnimationFrame(t); }catch(e){} }); _timers=[]; }
+function clearTimers(){ _timers.forEach(t=>{ try{ clearInterval(t); clearTimeout(t); cancelAnimationFrame(t); }catch(e){} }); _timers=[]; _mgLive=false; }
+/* 小游戏正在台上（玩家实锤 2026-09-08：靶场点了「开始」之后会重新开始）。
+   cerBind 挂在每次 render 末尾，render 会把 #stage 整个重写——正在跑的那一局连 DOM 带计时器
+   一起被换掉，界面回到「点一下开始」。所以小游戏一挂上就锁住重画：这时候屏幕上只有这张模态卡，
+   后面的东西没有什么要更新的。结算（cerFinish）、跳过（cerSkip）都先走 clearTimers 解锁再画。 */
+let _mgLive=false;
+export function mgLive(){ return _mgLive && !!S.cer; }
 export function cerBind(st){
   clearTimers();
   if(!st||!st.querySelectorAll) return;
@@ -584,6 +591,7 @@ const DANMU=["别再演了","这队没戏","就这？","下赛季见","打野在
 
 /* 专注：舒尔特 25 格 + 弹幕遮挡。点错罚 0.5 秒；40 秒没点完按铜档。 */
 export function focusMount(el,opt?){
+  _mgLive=true;
   const nums=[]; for(let i=1;i<=25;i++) nums.push(i);
   for(let i=nums.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [nums[i],nums[j]]=[nums[j],nums[i]]; }
   const noDm=reduced()||!!(opt&&opt.quiet);   // 突破试炼的专注没有弹幕：深夜训练室只有你
@@ -610,6 +618,7 @@ export function focusMount(el,opt?){
 }
 /* 节奏：呼吸圆周期 2.4 秒，最大时点一下，20 秒 8 个峰。误差按最近的峰算，没踩的峰记 400 毫秒。 */
 export function rhythmMount(el){
+  _mgLive=true;
   const PERIOD=2400, TOTAL=20000, PEAKS=8;
   if(reduced()){
     el.innerHTML=`<p class="cer-p">你的设备关掉了动效，呼吸圆动不起来。这一段按<b>银档</b>结算：世界赛期间恢复正常。</p>
@@ -651,6 +660,7 @@ export function rhythmMount(el){
 /* 反应：靶在随机位置亮起，亮 0.7–0.9 秒（决赛 0.55–0.7 秒、靶更小），20 秒；看命中率和平均反应。
    点空白处不罚分但会记下来；标签页切后台时定时器照跑，回来就是结果。 */
 export function reactMount(el,opt){
+  _mgLive=true;
   const hard=!!(opt&&opt.hard), pre=!!(opt&&opt.pre);
   const TOTAL=20000, SIZE=hard?36:44, LIT=hard?[550,700]:[700,900], GAP=hard?[220,420]:[280,520];
   el.innerHTML=`<div class="mg-head"><span>命中 <b id="mg-hit">0</b>/<span id="mg-n">0</span></span><span class="mono" id="mg-t">20.0 秒</span></div>
@@ -691,6 +701,7 @@ export function reactMount(el,opt){
 }
 /* 决策 / 限时三选一：一题一屏，倒计时条走完没答就按「没答」记（发布会 = 答错；媒体日 = 稳）。 */
 export function decideMount(el,quiz,isMedia){
+  _mgLive=true;
   const qs=(quiz&&quiz.qs)||[], SEC=(quiz&&quiz.sec)||8;
   let i=0, done=false; const picks: any[]=[]; let n=0;
   const finish=()=>{ if(done) return; done=true; clearTimers();
