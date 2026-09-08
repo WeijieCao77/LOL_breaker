@@ -995,6 +995,18 @@ ul.dealfx li::marker{color:var(--ink-3)}
 .riskbar.mid{border-left-color:var(--gold);color:var(--gold)}
 .riskbar.hi{border-left-color:var(--red);color:var(--red);background:rgba(var(--red-rgb),.1)}
 
+/* ---- 信任收支明细 ---- */
+.tled{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.tl-r{display:grid;grid-template-columns:74px 1fr;gap:10px;align-items:baseline;
+  font-size:12px;padding:3px 0}
+.tl-k{color:var(--ink-3)}
+.tl-v{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.tl-i{color:var(--ink-3);white-space:nowrap}
+.tl-i b{color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tl-i.up b{color:var(--cyan)} .tl-i.dn b{color:var(--red)}
+.tl-n{color:var(--ink-2);white-space:nowrap;margin-left:auto}
+.tl-n b{font-variant-numeric:tabular-nums}
+
 /* ---- 更衣室关系网 ---- */
 .relgrid{display:flex;flex-direction:column;gap:3px}
 .relrow{display:grid;grid-template-columns:1fr 90px 34px;gap:10px;align-items:center;
@@ -11084,6 +11096,11 @@ header.top.compact>.theme-top{display:none}
   // demo/src/clout.ts
   function initStaff() {
     S.staff = { coach: 46 + Math.floor(rnd() * 10), mgr: 46 + Math.floor(rnd() * 10) };
+    S.staffSeen = {
+      lg: S.career && S.career.leagueTitles || 0,
+      intl: (S.career && S.career.msi || 0) + (S.career && S.career.worlds || 0)
+    };
+    S.staffLog = null;
   }
   function coachTrust() {
     return clamp(S.staff && S.staff.coach || 50, 0, 100);
@@ -11160,10 +11177,13 @@ header.top.compact>.theme-top{display:none}
       S.rel[k] = q1(clamp(S.rel[k] + (won ? 1.6 : -2.2) + (rnd() * 5 - 2.5), 0, 100));
     });
   }
+  var LIST_GATE = { clout: 55, coach: 60, vetClout: 75, vetCoach: 50 };
   function canList() {
     const c = cloutOf(), ct = coachTrust();
-    if (c < 55) return { ok: false, why: `威望不够（${c}/55）。先打出成绩再谈阵容。` };
-    if (ct < 68) return { ok: false, why: `教练不认你（信任 ${Math.round(ct)}/68）。他不会为你动人。` };
+    if (c < LIST_GATE.clout) return { ok: false, why: `威望不够（${c}/${LIST_GATE.clout}）。先打出成绩再谈阵容。` };
+    const byCoach = ct >= LIST_GATE.coach;
+    const byClout = c >= LIST_GATE.vetClout && ct >= LIST_GATE.vetCoach;
+    if (!byCoach && !byClout) return { ok: false, why: c >= LIST_GATE.vetClout ? `教练那边还差一口气（信任 ${Math.round(ct)}/${LIST_GATE.vetCoach}）。功勋压得住他，但不能压到这个份上。` : `还没人肯为你动阵容。<b>教练信任要 ${LIST_GATE.coach}</b>（现在 ${Math.round(ct)}），或者<b>威望到 ${LIST_GATE.vetClout}</b>（现在 ${c}）用功勋压过教练组。` };
     if (S.listCooldown > 0) return { ok: false, why: `刚提过一次，${S.listCooldown} 个赛段内别再提。` };
     return { ok: true };
   }
@@ -11172,7 +11192,7 @@ header.top.compact>.theme-top{display:none}
     const teamAvg = avg(myRoster().map((p2) => p2.r.操作 * 0.34 + p2.r.运营 * 0.28 + p2.r.心态 * 0.14 + p2.r.体质 * 0.1));
     let p = 0.3;
     p += (cloutOf() - 55) / 120;
-    p += (coachTrust() - 68) / 180;
+    p += (coachTrust() - LIST_GATE.coach) / 180;
     p += clamp((teamAvg - perf) / 16, -0.2, 0.32);
     p -= clamp((trustOf2(t.id) - 50) / 200, -0.15, 0.22);
     if (t.age >= 27) p += 0.08;
@@ -11219,6 +11239,7 @@ header.top.compact>.theme-top{display:none}
     if (S.signCooldown > 0) return { ok: false, why: `本赛季已经提过，${S.signCooldown} 个赛段后再说。` };
     return { ok: true };
   }
+  var SIGN_SLOTS = 5;
   function signTargets() {
     const lg = S.homeLeague || "LPL";
     const mine = myRoster().map((p) => p.id);
@@ -11237,8 +11258,14 @@ header.top.compact>.theme-top{display:none}
     }));
     const teamAvg = avg(myRoster().filter((p) => !p.me).map((p) => p.r.操作 * 0.34 + p.r.运营 * 0.28 + p.r.心态 * 0.14 + p.r.体质 * 0.1));
     const reach = teamAvg + (cloutOf() - 60) / 6 + (mgrTrust() - 60) / 9;
-    return pool.filter((x) => x.ovr <= reach + 4 && x.ovr >= teamAvg - 1).sort((a, b) => b.ovr - a.ovr).slice(0, 5);
+    const band = pool.filter((x) => x.ovr <= reach + 4 && x.ovr >= teamAvg - 1).sort((a, b) => b.ovr - a.ovr);
+    if (band.length <= SIGN_SLOTS) return band;
+    const out = [];
+    const step = (band.length - 1) / (SIGN_SLOTS - 1);
+    for (let i = 0; i < SIGN_SLOTS; i++) out.push(band[Math.round(i * step)]);
+    return out;
   }
+  var SIGN_FAIL_VET = 75;
   function signOdds(x) {
     const teamAvg = avg(myRoster().filter((p2) => !p2.me).map((p2) => p2.r.操作 * 0.34 + p2.r.运营 * 0.28 + p2.r.心态 * 0.14 + p2.r.体质 * 0.1));
     let p = 0.5;
@@ -11273,25 +11300,68 @@ header.top.compact>.theme-top{display:none}
       checkAch("clout", { kind: "sign", ok: true });
       disruptSynergy(1, `${x.p.id} 加盟`);
     } else {
-      addStaff("mgr", -12);
-      pushEvent(`你向经理提出签下 <b>${x.p.id}</b>。<br>
-      对方要价太高，谈崩了。<span style="color:var(--red)">经理觉得你不太懂行情。</span>`, "bad", "话语权");
+      const c = cloutOf();
+      if (c >= SIGN_FAIL_VET) {
+        addStaff("mgr", -5);
+        pushEvent(`你向经理提出签下 <b>${x.p.id}</b>。<br>
+        他跑了一趟，对方开的价俱乐部吃不下。<span style="color:var(--ink-3)">「这不怪你，是那边狮子大开口。」</span>`, "bad", "话语权");
+      } else {
+        addStaff("mgr", -12);
+        pushEvent(`你向经理提出签下 <b>${x.p.id}</b>。<br>
+        对方要价太高，谈崩了。<span style="color:var(--red)">经理觉得你不太懂行情。</span>`, "bad", "话语权");
+      }
     }
     render();
   }
+  var HONOR_COACH = { lg: 6, intl: 12 };
+  var HONOR_MGR = { lg: 5, intl: 10 };
+  function newHonors() {
+    const lg = S.career && S.career.leagueTitles || 0;
+    const intl = (S.career && S.career.msi || 0) + (S.career && S.career.worlds || 0);
+    if (!S.staffSeen) {
+      S.staffSeen = { lg, intl };
+      return { lg: 0, intl: 0 };
+    }
+    const d = { lg: Math.max(0, lg - S.staffSeen.lg), intl: Math.max(0, intl - S.staffSeen.intl) };
+    S.staffSeen = { lg, intl };
+    return d;
+  }
+  var TRUST_REGRESS = 0.18;
   function cloutTick(won) {
     if (S.listCooldown > 0) S.listCooldown--;
     if (S.signCooldown > 0) S.signCooldown--;
+    const log = { coach: [], mgr: [] };
+    const put = (k, n, why) => {
+      if (Math.abs(n) < 0.05) {
+        if (why) log[k].push({ why, v: 0 });
+        return;
+      }
+      log[k].push({ why, v: q1(n) });
+      addStaff(k, n);
+    };
     if (S.staff) {
-      S.staff.coach = q1(clamp(S.staff.coach + (50 - S.staff.coach) * 0.32, 0, 100));
-      S.staff.mgr = q1(clamp(S.staff.mgr + (50 - S.staff.mgr) * 0.32, 0, 100));
+      const c0 = S.staff.coach, m0 = S.staff.mgr;
+      S.staff.coach = q1(clamp(c0 + (50 - c0) * TRUST_REGRESS, 0, 100));
+      S.staff.mgr = q1(clamp(m0 + (50 - m0) * TRUST_REGRESS, 0, 100));
+      if (Math.abs(S.staff.coach - c0) >= 0.05) log.coach.push({ why: "时间冲淡", v: q1(S.staff.coach - c0) });
+      if (Math.abs(S.staff.mgr - m0) >= 0.05) log.mgr.push({ why: "时间冲淡", v: q1(S.staff.mgr - m0) });
+    }
+    const H = newHonors();
+    if (H.lg) {
+      put("coach", H.lg * HONOR_COACH.lg, `联赛冠军 ×${H.lg}`);
+      put("mgr", H.lg * HONOR_MGR.lg, `联赛冠军 ×${H.lg}`);
+    }
+    if (H.intl) {
+      put("coach", H.intl * HONOR_COACH.intl, `国际冠军 ×${H.intl}`);
+      put("mgr", H.intl * HONOR_MGR.intl, `国际冠军 ×${H.intl}`);
     }
     const g = S.record ? S.record.w + S.record.l : 0;
-    if (g > 0) addStaff("coach", (S.record.w / g - 0.5) * 22);
-    addStaff("coach", clamp((S.btk && S.btk.vod || 0) - 1, -1, 3));
-    if (S.fatigue > 78) addStaff("coach", -2);
-    addStaff("mgr", clamp((S.fans - 90) / 26, -4, 6));
-    if (g > 0) addStaff("mgr", (S.record.w / g - 0.5) * 12);
+    if (g > 0) put("coach", (S.record.w / g - 0.5) * 22, `胜率 ${Math.round(S.record.w / g * 100)}%`);
+    put("coach", clamp((S.btk && S.btk.vod || 0) - 1, -1, 3), `复盘 ${S.btk && S.btk.vod || 0} 次`);
+    if (S.fatigue > 78) put("coach", -2, "练过头了");
+    put("mgr", clamp((S.fans - 90) / 26, -4, 6), "人气");
+    if (g > 0) put("mgr", (S.record.w / g - 0.5) * 12, `胜率 ${Math.round(S.record.w / g * 100)}%`);
+    S.staffLog = log;
     relDrift(g > 0 && S.record.w >= S.record.l);
     syncRelations();
   }
@@ -11313,6 +11383,7 @@ header.top.compact>.theme-top{display:none}
         <div class="vn mono"><b>${Math.round(mgrTrust())}</b></div></div>
     </div>
     <p class="note">${T.d}　威望来自冠军、人气、你在队里的分量和生涯战绩。</p>
+    ${trustLedger()}
 
     <h3 style="font-size:13px;color:var(--ink-3);margin:18px 0 8px">挂牌队友
       ${L.ok ? '<span class="tag g">可以提</span>' : '<span class="tag">条件不足</span>'}</h3>
@@ -11338,6 +11409,24 @@ header.top.compact>.theme-top{display:none}
       }).join("")}</div>` : `<p class="note">现在没有你够得着又值得要的人。</p>`;
     })() : `<p class="note lockhow">🔒 ${G.why}</p>`}
   </div>`;
+  }
+  function trustLedger() {
+    const L = S.staffLog;
+    if (!L || !L.coach.length && !L.mgr.length) return "";
+    const line = (rows, now) => {
+      if (!rows.length) return "—";
+      const net = rows.reduce((a, b) => a + b.v, 0);
+      return rows.map((r) => `<span class="tl-i${r.v > 0 ? " up" : r.v < 0 ? " dn" : ""}">${r.why}
+      <b>${r.v > 0 ? "+" : ""}${r.v.toFixed(1)}</b></span>`).join("") + `<span class="tl-n">净 <b>${net > 0 ? "+" : ""}${net.toFixed(1)}</b> → 现在 ${Math.round(now)}</span>`;
+    };
+    const need = Math.max(0, LIST_GATE.coach - coachTrust());
+    return `<div class="tled">
+    <div class="tl-r"><span class="tl-k">教练上赛段</span><span class="tl-v">${line(L.coach, coachTrust())}</span></div>
+    <div class="tl-r"><span class="tl-k">经理上赛段</span><span class="tl-v">${line(L.mgr, mgrTrust())}</span></div>
+    <p class="note" style="margin:6px 0 0">挂牌要<b>教练信任 ${LIST_GATE.coach}</b>${need > 0 ? `（还差 <b style="color:var(--gold)">${need.toFixed(0)}</b>）` : "（已达标）"}，
+      或者<b>威望 ${LIST_GATE.vetClout}</b> 用功勋压过教练组。
+      教练看的是<b>胜率</b>、<b>每赛段的复盘次数</b>和<b>冠军</b>；经理看的是<b>人气</b>、<b>胜率</b>和<b>冠军</b>。
+      两边每赛段都会往 50 回落一点——一次打好不算数，得一直好。</p></div>`;
   }
   function relCard() {
     const m = myRoster().filter((p) => !p.me);
@@ -13697,6 +13786,13 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260908f", at: "2026-09-08", items: [
+      "「换不了人」修了（玩家反馈「现在不能换人」）：挂牌队友原来要教练信任 68，而教练信任的自然平衡点只有 46~54——批测里强玩家一整个生涯只有 4.9% 的赛季周能用，普通玩家是 0.0%，这个功能事实上一直是关着的。现在门槛是教练信任 60，或者威望到 75 用功勋压过教练组；同口径批测里强玩家 4.9% → 33.3%",
+      "拿冠军终于会涨教练和经理的信任（作者原话「我三连冠伟业的男人，让他换个人经理还要嘲讽我不懂行情」）：以前这两个式子里只有胜率、复盘和人气，压根没有荣誉项——三连冠的人在教练眼里和一个赢球多的普通首发没有区别。现在联赛冠军 +6 / 国际冠军 +12（经理 +5 / +10），信任每赛段往 50 回落的速度也从 32% 放缓到 18%：一次打好还是不算数，但不会三分之一直接作废。拿过三冠之后的教练信任中位数 58.6 → 73.3",
+      "点名引援不再是一堆同样难的人（作者反馈「让他换个人经理还要嘲讽我不懂行情」）：候选名单原来是「够得着的人里最难的五个」，而够得着的档次又跟着威望一起涨，所以你越有分量，成算越是钉在四成上。现在名单在够得着的那一段里铺开，最好的那个还在最上面，但你可以退一步要一个稳的；谈崩的代价和文案也按威望分档，队魂级别的人不会再被说「不太懂行情」",
+      "「话语权」卡上新增教练/经理信任的收支明细：上赛段每一项加了多少减了多少、离挂牌门槛还差几分，都摊开写。教练看的是胜率、每赛段的复盘次数和冠军——复盘这门功课以前从来没人告诉过你（批测里复盘次数的中位数是 0）",
+      "属性条现在会告诉你离天花板还剩多少（玩家反馈「属性比较难提升」）：其实生涯末五维已经练到上限的 98~100% 了，慢是因为最后 5 分收益只剩四分之一。现在贴顶前会标「·剩 X.X」，训练日记也会直接说「练一次只顶原来的四分之一，想再往上得先顶开瓶颈」——数值没动，只是不再让你对着一个不动的数字瞎练"
+    ] },
     { v: "v20260908d", at: "2026-09-08", items: [
       "合同到期不再背着你签字（玩家反馈「到期会自动续约」）：续约报价原来在赛段结算那一刻就挂起，可那时候你还在打世界赛、卡根本没出现，托管会抢在你看到之前把字签了。现在托管只在转会窗真的开着时才代签；季中那个窗口太短（最短只有一周），没答复不再默认签，而是把合同顺延到赛季末，年底那个三周的窗口再谈；窗口最后一周会明确提醒你还有一份报价没答复",
       "薪资被砍到很低的问题修了（玩家反馈「薪资很低玩不了」）：上一版的薪资天花板会直接截断实发工资，而合同里记俱乐部档次的那个字段在老存档里可能是错的——最坏的情况下一份 800 万的合同被按青训档的 40 万发。现在天花板只管新报价能涨到哪，绝不回头改你已经签好的合同；字段缺失或对不上时一律按最宽的一档算"
@@ -16315,7 +16411,14 @@ header.top.compact>.theme-top{display:none}
     const n = (S.thisWeek || []).length, pick = (arr) => arr[(i + n) % arr.length];
     if (a.k === "train") {
       const p = DIARY_POOL.train[a.v];
-      return p ? pick(p) : `练了${a.v}。`;
+      const base = p ? pick(p) : `练了${a.v}。`;
+      try {
+        const gap = capOf(a.v) - S.attrs[a.v];
+        if (gap > 0.05 && gap < 5) return base + `<span style="color:var(--ink-3)">离天花板只剩 ${gap.toFixed(1)} 分，练一次只顶原来的四分之一——想再往上得先顶开瓶颈。</span>`;
+        if (gap <= 0.05) return base + `<span style="color:var(--gold)">${a.v}已经到天花板了，再练也不涨——去顶瓶颈。</span>`;
+      } catch (e) {
+      }
+      return base;
     }
     if (a.k === "pre") {
       const p = DIARY_POOL.pre[a.v];
@@ -16992,7 +17095,9 @@ header.top.compact>.theme-top{display:none}
     <div class="attrs">${DIMS.map((d) => {
       const c = capOf(d), v = S.attrs[d], d0 = (S.seasonAttr0 || {})[d] ?? v, g = v - d0;
       const cb = S.capBonus && S.capBonus[d] || 0;
-      const vn = num ? `<b>${v.toFixed(1)}</b><span style="color:var(--ink-3)">/${c.toFixed(0)}</span>${cb >= 0.1 ? `<span style="color:var(--gold)" title="经历顶开的天花板">↑${cb.toFixed(0)}</span>` : ""}${Math.abs(g) >= 0.05 ? ` <span class="${g > 0 ? "up" : "dn"}">${g > 0 ? "+" : ""}${g.toFixed(1)}</span>` : ""}` : `<b>${dimWord(v)}</b>${v >= c - 0.05 ? `<span style="color:var(--gold)" title="到瓶颈了">·顶</span>` : ""}${g >= 0.05 ? ` <span class="up" title="本赛季在涨">↑</span>` : g <= -0.05 ? ` <span class="dn" title="本赛季在掉">↓</span>` : ""}`;
+      const gap = c - v, slow = gap > 0.05 && gap < 5;
+      const nearTip = `离天花板只剩 ${gap.toFixed(1)} 分，越贴顶练得越慢（这一档只剩约 ${Math.round((0.25 + 0.15 * Math.max(0, gap)) * 100)}% 收益）——想再往上得先顶开瓶颈`;
+      const vn = num ? `<b>${v.toFixed(1)}</b><span style="color:var(--ink-3)">/${c.toFixed(0)}</span>${cb >= 0.1 ? `<span style="color:var(--gold)" title="经历顶开的天花板">↑${cb.toFixed(0)}</span>` : ""}${slow ? `<span style="color:var(--gold)" title="${nearTip}">·剩${gap.toFixed(1)}</span>` : ""}${Math.abs(g) >= 0.05 ? ` <span class="${g > 0 ? "up" : "dn"}">${g > 0 ? "+" : ""}${g.toFixed(1)}</span>` : ""}` : `<b>${dimWord(v)}</b>${v >= c - 0.05 ? `<span style="color:var(--gold)" title="到瓶颈了">·顶</span>` : slow ? `<span style="color:var(--gold)" title="${nearTip}">·将顶</span>` : ""}${g >= 0.05 ? ` <span class="up" title="本赛季在涨">↑</span>` : g <= -0.05 ? ` <span class="dn" title="本赛季在掉">↓</span>` : ""}`;
       return `<div class="at"><div class="lb">${d}</div>
         <div class="track"><div class="fill" style="width:${clamp(v, 0, 100)}%"></div>
         <div class="capline" style="left:${clamp(c, 0, 100)}%"></div></div>
@@ -17015,8 +17120,9 @@ header.top.compact>.theme-top{display:none}
     })()}
     ${buffChips()}
     ${traitBar()}
-    <p class="note">${num ? `竖线是当前瓶颈，<b style="color:var(--gold)">↑</b> 是被经历顶开的部分（夺冠、进强队、跟老将同队都会让它松动）。绿数字是本赛季成长。适应力 ${Math.round(adaptOf())}（由天赋均衡度决定）·
-      粉丝 ${fansText()}（${fanTier()}）· 热度 ${heatTier()} · 疲劳 ${Math.round(S.fatigue)}/100` : `条是水平、竖线是瓶颈，<b>↑</b> 是本赛季在涨。文字档位从低到高：生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级（职业级 ≈ LPL 首发）。想看具体数字，点顶栏的「数值」。
+    <p class="note">${num ? `竖线是当前瓶颈，<b style="color:var(--gold)">↑</b> 是被经历顶开的部分（夺冠、进强队、跟老将同队都会让它松动）。绿数字是本赛季成长。
+      <b style="color:var(--gold)">·剩X</b> 表示离天花板不到 5 分——<b>这一段每练一次只顶原来的四分之一</b>，不是练不动，是贴顶了；要继续长得先顶开瓶颈。适应力 ${Math.round(adaptOf())}（由天赋均衡度决定）·
+      粉丝 ${fansText()}（${fanTier()}）· 热度 ${heatTier()} · 疲劳 ${Math.round(S.fatigue)}/100` : `条是水平、竖线是瓶颈，<b>↑</b> 是本赛季在涨，<b style="color:var(--gold)">·将顶</b> 是快撞到瓶颈了（越贴顶练得越慢，得靠顶瓶颈才能再往上）。文字档位从低到高：生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级（职业级 ≈ LPL 首发）。想看具体数字，点顶栏的「数值」。
       适应力${adaptW} · 粉丝 ${fanTier()} · 热度 ${heatTier()}`}</p></div>`;
   }
   var NODES = [

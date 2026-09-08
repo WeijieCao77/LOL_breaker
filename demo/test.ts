@@ -392,6 +392,42 @@ function unitChecks() {
   return bad;
 }
 
+/* ---------------- 话语权自检 ----------------
+   2026-09-08：「挂牌队友」曾经整整一个生涯只有 4.9% 的赛季周能用
+  （普通玩家是 0.0%），因为门槛要教练信任 >= 68，而它的自然平衡点只有 46~54——
+   功能事实上是关着的，而单跑一局根本看不出来。这里把三件事钉死：
+     (1) 一个夺过冠的生涯里，挂牌至少要有真实可用的时间；
+     (2) 冠军必须进教练/经理信任（以前两个式子里都没有荣誉项，
+         三连冠的人在教练眼里和一个赢球多的普通首发没区别）；
+     (3) 点名引援的候选池要有梯度，不能永远是「够得着的人里最难的五个」。 */
+function cloutChecks() {
+  const bad: string[] = [];
+  let weeks = 0, listOk = 0, maxCt = 0, honorRows = 0, spread = 0, pools = 0;
+  const r = playOne({ seed: 7701, strong: true, hook: (S: any, A: any) => {
+    if (!S.career || !S.team || S.step !== "season" || S.homeLeague === "LDL") return;
+    weeks++;
+    if (A.canList().ok) listOk++;
+    maxCt = Math.max(maxCt, A.coachTrust());
+    const L = S.staffLog;
+    if (L && L.coach.some((x: any) => /冠军/.test(x.why) && x.v > 0)) honorRows++;
+    if (A.canSign().ok) {
+      const os = A.signTargets().map((x: any) => A.signOdds(x));
+      if (os.length >= 2) { pools++; if (Math.max(...os) - Math.min(...os) > 0.02) spread++; }
+    }
+  }});
+  if (!weeks) { bad.push("话语权自检：这一局没有打到赛季阶段"); return bad; }
+  if (!(listOk / weeks >= 0.05))
+    bad.push(`挂牌队友几乎用不了：${listOk}/${weeks} = ${(listOk / weeks * 100).toFixed(1)}% 的赛季周（要 >= 5%）`);
+  if (!(maxCt >= A.LIST_GATE.coach))
+    bad.push(`教练信任整局最高只有 ${maxCt.toFixed(1)}，够不到挂牌门槛 ${A.LIST_GATE.coach}——门槛又变成摆设了`);
+  const titles = (r.lg || 0) + (r.msi || 0) + (r.worlds || 0);
+  if (titles > 0 && !honorRows)
+    bad.push(`拿了 ${titles} 座冠军，但教练信任的收支里一次都没出现荣誉项——荣誉又从公式里掉了`);
+  if (pools >= 20 && !(spread / pools >= 0.5))
+    bad.push(`点名引援的候选池没有梯度：${spread}/${pools} 次给出的成算有差别（要 >= 50%）`);
+  return bad;
+}
+
 export { playOne, unitChecks, A, SEED };
 
 /* 批测：npx tsx demo/test.ts --batch 30
@@ -457,6 +493,9 @@ if (isMain && process.argv.includes("--batch")) {
   batch(parseInt(process.argv[i + 1] || "20", 10) || 20, process.argv.includes("--encore"), process.argv.includes("--strong"), process.argv.includes("--loyal"));   // --encore：再战；--strong：强玩家；--loyal：夺冠后不走
 } else if (isMain) {
   console.log("随机种子：", SEED, "（SEED=" + SEED + " npm test 可原样重放）");
+  { const cb = cloutChecks();
+    if (cb.length) { console.error("话语权自检不通过：\n  " + cb.join("\n  ")); process.exit(1); }
+    console.log("话语权自检通过：挂牌门槛够得着 · 冠军进教练/经理信任 · 引援候选有梯度"); }
   const unit = unitChecks();
   if (unit.length) { console.error("单元检查失败：\n - " + unit.join("\n - ")); process.exit(1); }
   console.log("单元检查通过：导览几何 · 存档消毒");

@@ -974,6 +974,18 @@ ul.dealfx li::marker{color:var(--ink-3)}
 .riskbar.mid{border-left-color:var(--gold);color:var(--gold)}
 .riskbar.hi{border-left-color:var(--red);color:var(--red);background:rgba(var(--red-rgb),.1)}
 
+/* ---- 信任收支明细 ---- */
+.tled{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.tl-r{display:grid;grid-template-columns:74px 1fr;gap:10px;align-items:baseline;
+  font-size:12px;padding:3px 0}
+.tl-k{color:var(--ink-3)}
+.tl-v{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.tl-i{color:var(--ink-3);white-space:nowrap}
+.tl-i b{color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tl-i.up b{color:var(--cyan)} .tl-i.dn b{color:var(--red)}
+.tl-n{color:var(--ink-2);white-space:nowrap;margin-left:auto}
+.tl-n b{font-variant-numeric:tabular-nums}
+
 /* ---- 更衣室关系网 ---- */
 .relgrid{display:flex;flex-direction:column;gap:3px}
 .relrow{display:grid;grid-template-columns:1fr 90px 34px;gap:10px;align-items:center;

@@ -111,6 +111,13 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260908f", at:"2026-09-08", items:[
+    "「换不了人」修了（玩家反馈「现在不能换人」）：挂牌队友原来要教练信任 68，而教练信任的自然平衡点只有 46~54——批测里强玩家一整个生涯只有 4.9% 的赛季周能用，普通玩家是 0.0%，这个功能事实上一直是关着的。现在门槛是教练信任 60，或者威望到 75 用功勋压过教练组；同口径批测里强玩家 4.9% → 33.3%",
+    "拿冠军终于会涨教练和经理的信任（作者原话「我三连冠伟业的男人，让他换个人经理还要嘲讽我不懂行情」）：以前这两个式子里只有胜率、复盘和人气，压根没有荣誉项——三连冠的人在教练眼里和一个赢球多的普通首发没有区别。现在联赛冠军 +6 / 国际冠军 +12（经理 +5 / +10），信任每赛段往 50 回落的速度也从 32% 放缓到 18%：一次打好还是不算数，但不会三分之一直接作废。拿过三冠之后的教练信任中位数 58.6 → 73.3",
+    "点名引援不再是一堆同样难的人（作者反馈「让他换个人经理还要嘲讽我不懂行情」）：候选名单原来是「够得着的人里最难的五个」，而够得着的档次又跟着威望一起涨，所以你越有分量，成算越是钉在四成上。现在名单在够得着的那一段里铺开，最好的那个还在最上面，但你可以退一步要一个稳的；谈崩的代价和文案也按威望分档，队魂级别的人不会再被说「不太懂行情」",
+    "「话语权」卡上新增教练/经理信任的收支明细：上赛段每一项加了多少减了多少、离挂牌门槛还差几分，都摊开写。教练看的是胜率、每赛段的复盘次数和冠军——复盘这门功课以前从来没人告诉过你（批测里复盘次数的中位数是 0）",
+    "属性条现在会告诉你离天花板还剩多少（玩家反馈「属性比较难提升」）：其实生涯末五维已经练到上限的 98~100% 了，慢是因为最后 5 分收益只剩四分之一。现在贴顶前会标「·剩 X.X」，训练日记也会直接说「练一次只顶原来的四分之一，想再往上得先顶开瓶颈」——数值没动，只是不再让你对着一个不动的数字瞎练"
+  ]},
   {v:"v20260908d", at:"2026-09-08", items:[
     "合同到期不再背着你签字（玩家反馈「到期会自动续约」）：续约报价原来在赛段结算那一刻就挂起，可那时候你还在打世界赛、卡根本没出现，托管会抢在你看到之前把字签了。现在托管只在转会窗真的开着时才代签；季中那个窗口太短（最短只有一周），没答复不再默认签，而是把合同顺延到赛季末，年底那个三周的窗口再谈；窗口最后一周会明确提醒你还有一份报价没答复",
     "薪资被砍到很低的问题修了（玩家反馈「薪资很低玩不了」）：上一版的薪资天花板会直接截断实发工资，而合同里记俱乐部档次的那个字段在老存档里可能是错的——最坏的情况下一份 800 万的合同被按青训档的 40 万发。现在天花板只管新报价能涨到哪，绝不回头改你已经签好的合同；字段缺失或对不上时一律按最宽的一档算"
@@ -2664,7 +2671,17 @@ export const DIARY_POOL={
 };
 export function diaryLine(a,i){
   const n=(S.thisWeek||[]).length, pick=arr=>arr[(i+n)%arr.length];
-  if(a.k==="train"){ const p=DIARY_POOL.train[a.v]; return p?pick(p):`练了${a.v}。`; }
+  if(a.k==="train"){
+    const p=DIARY_POOL.train[a.v]; const base=p?pick(p):`练了${a.v}。`;
+    // 贴顶的那几分练起来只有四分之一的收益（gain 里的 near）。
+    // 不说出来，玩家只会觉得「练了一个赛季属性没动」。
+    try{
+      const gap=capOf(a.v)-S.attrs[a.v];
+      if(gap>0.05&&gap<5) return base+`<span style="color:var(--ink-3)">离天花板只剩 ${gap.toFixed(1)} 分，练一次只顶原来的四分之一——想再往上得先顶开瓶颈。</span>`;
+      if(gap<=0.05) return base+`<span style="color:var(--gold)">${a.v}已经到天花板了，再练也不涨——去顶瓶颈。</span>`;
+    }catch(e){}
+    return base;
+  }
   if(a.k==="pre"){ const p=DIARY_POOL.pre[a.v]; return typeof p==="function"?p(S.pre):(p||""); }
   if(a.k==="do") return DIARY_POOL.do[a.v]||"";
   if(a.k==="squad") return DIARY_POOL.squad[a.v]||"和队里一起练了练。";
@@ -3443,11 +3460,17 @@ export function attrCard(){
     <div class="attrs">${DIMS.map(d=>{
       const c=capOf(d),v=S.attrs[d],d0=(S.seasonAttr0||{})[d]??v,g=v-d0;
       const cb=(S.capBonus&&S.capBonus[d])||0;
+      // 离瓶颈最后 5 分收益只剩 25%（见 gain 的 near）。以前这段完全不显示，
+      // 玩家看到的只是「我每周都在练，一年只动 2 点」——于是得出「属性练不动」。
+      const gap=c-v, slow=gap>0.05&&gap<5;
+      const nearTip=`离天花板只剩 ${gap.toFixed(1)} 分，越贴顶练得越慢（这一档只剩约 ${Math.round((0.25+0.15*Math.max(0,gap))*100)}% 收益）——想再往上得先顶开瓶颈`;
       const vn=num
         ? `<b>${v.toFixed(1)}</b><span style="color:var(--ink-3)">/${c.toFixed(0)}</span>${
             cb>=0.1?`<span style="color:var(--gold)" title="经历顶开的天花板">↑${cb.toFixed(0)}</span>`:""}${
+            slow?`<span style="color:var(--gold)" title="${nearTip}">·剩${gap.toFixed(1)}</span>`:""}${
             Math.abs(g)>=0.05?` <span class="${g>0?'up':'dn'}">${g>0?'+':''}${g.toFixed(1)}</span>`:""}`
-        : `<b>${dimWord(v)}</b>${v>=c-0.05?`<span style="color:var(--gold)" title="到瓶颈了">·顶</span>`:""}${
+        : `<b>${dimWord(v)}</b>${v>=c-0.05?`<span style="color:var(--gold)" title="到瓶颈了">·顶</span>`
+            :slow?`<span style="color:var(--gold)" title="${nearTip}">·将顶</span>`:""}${
             g>=0.05?` <span class="up" title="本赛季在涨">↑</span>`:g<=-0.05?` <span class="dn" title="本赛季在掉">↓</span>`:""}`;
       return `<div class="at"><div class="lb">${d}</div>
         <div class="track"><div class="fill" style="width:${clamp(v,0,100)}%"></div>
@@ -3471,9 +3494,10 @@ export function attrCard(){
     ${buffChips()}
     ${traitBar()}
     <p class="note">${num
-      ?`竖线是当前瓶颈，<b style="color:var(--gold)">↑</b> 是被经历顶开的部分（夺冠、进强队、跟老将同队都会让它松动）。绿数字是本赛季成长。适应力 ${Math.round(adaptOf())}（由天赋均衡度决定）·
+      ?`竖线是当前瓶颈，<b style="color:var(--gold)">↑</b> 是被经历顶开的部分（夺冠、进强队、跟老将同队都会让它松动）。绿数字是本赛季成长。
+      <b style="color:var(--gold)">·剩X</b> 表示离天花板不到 5 分——<b>这一段每练一次只顶原来的四分之一</b>，不是练不动，是贴顶了；要继续长得先顶开瓶颈。适应力 ${Math.round(adaptOf())}（由天赋均衡度决定）·
       粉丝 ${fansText()}（${fanTier()}）· 热度 ${heatTier()} · 疲劳 ${Math.round(S.fatigue)}/100`
-      :`条是水平、竖线是瓶颈，<b>↑</b> 是本赛季在涨。文字档位从低到高：生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级（职业级 ≈ LPL 首发）。想看具体数字，点顶栏的「数值」。
+      :`条是水平、竖线是瓶颈，<b>↑</b> 是本赛季在涨，<b style="color:var(--gold)">·将顶</b> 是快撞到瓶颈了（越贴顶练得越慢，得靠顶瓶颈才能再往上）。文字档位从低到高：生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级（职业级 ≈ LPL 首发）。想看具体数字，点顶栏的「数值」。
       适应力${adaptW} · 粉丝 ${fanTier()} · 热度 ${heatTier()}`}</p></div>`;
 }
 
