@@ -54,6 +54,16 @@ const state = await import("./src/state.ts");
 const mods = [];
 for (const m of MODULES) mods.push(await import(`./src/${m}.ts`));
 const A: any = Object.assign({}, ...mods, { S: () => state.S, setS: state.setS });
+/* 纪元会换掉 SEASONS / DATA / STARS 这几个活绑定，而 Object.assign 拷的是**当时的值**。
+   给它们装上 getter 直接读模块命名空间，批测里拿到的才是当前纪元那一份。 */
+{
+  const ns = (m: string) => mods[MODULES.indexOf(m)] as any;
+  const live: Array<[string, string]> = [
+    ["SEASONS", "main"], ["REGION_ANCHOR", "main"], ["LCK_DYNASTY", "main"], ["BASE_LAST", "main"],
+    ["DATA", "data"], ["STARS", "stars"],
+  ];
+  live.forEach(([k, m]) => Object.defineProperty(A, k, { get: () => ns(m)[k], configurable: true }));
+}
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 /* ---------------- 跑一局完整生涯 ---------------- */
@@ -61,6 +71,7 @@ function playOne(opts?) {
   opts = opts || {};
   A.screenCreate(typeof opts.seed === "number" ? opts.seed : undefined);   // 指定这一局的随机种子（rng.ts），出身卡也按它抽
   let S = A.S();
+  if (opts.era) { S.era = opts.era; A.applyEra(opts.era); S.bgOffer = A.drawBackgrounds(); }   // 纪元：换世界，出身卡跟着重抽
   S.name = "T"; S.pos = opts.pos || "mid"; S.origin = opts.origin || "academy";
   S.ageIdx = opts.ageIdx === undefined ? 1 : opts.ageIdx;
   S.bgPick = S.bgOffer[0].k;

@@ -126,8 +126,10 @@ export function buildWorldsField(playerResult,cfg){
     seeds[HL]=others.slice(0,4);          // 没资格，本赛区名额全给别人
   }
 
-  // 正赛 16 席 = 直进席 + 入围晋级席
-  const takeN=cfg.playin.take, directN=16-takeN;
+  /* 正赛 16 席 = 直进席 + 入围晋级席。
+     没有 playin 配置＝这一年没有入围赛，16 席全是直进（2016 就是这样，纪元模式要用）。 */
+  const PI=cfg.playin||null;
+  const takeN=PI?PI.take:0, directN=16-takeN;
   const perMajor=Math.floor(directN/MAJOR.length);      // 每个大赛区直进几支
   const direct=[], playin=[];
   MAJOR.forEach(lg=>{
@@ -138,8 +140,14 @@ export function buildWorldsField(playerResult,cfg){
     .map(lg=>minorChampion(lg)).sort((a,b)=>pw(b)-pw(a));
   // 直进席还差的，由最强的小赛区冠军补上
   while(direct.length<directN&&minors.length) direct.push(minors.shift());
-  playin.push(...minors.slice(0,Math.max(0,cfg.playin.teams-playin.length)));
-  return {direct:direct.slice(0,directN),playin:playin.slice(0,cfg.playin.teams),seeds};
+  if(!PI){
+    // 无入围赛：本来要去打入围的那几支，直接按实力补进正赛，凑满 16 席
+    const rest=playin.concat(minors).sort((a,b)=>pw(b)-pw(a));
+    while(direct.length<directN&&rest.length) direct.push(rest.shift());
+    return {direct:direct.slice(0,directN),playin:[],seeds};
+  }
+  playin.push(...minors.slice(0,Math.max(0,PI.teams-playin.length)));
+  return {direct:direct.slice(0,directN),playin:playin.slice(0,PI.teams),seeds};
 }
 
 /* ---------- 入围赛：8 队双败，取前 4 ---------- */
@@ -238,7 +246,7 @@ export function startIntl(type,playerResult){
     enterPrep("intl", S.intl.queue[0], cfg.playin.bo, "世界赛入围赛首战 · 赛前备战");
     return true;
   }
-  qual=canonQual(playin,simPlayIn(playin).slice(0,cfg.playin.take));
+  qual=cfg.playin?canonQual(playin,simPlayIn(playin).slice(0,cfg.playin.take)):[];
   const field=direct.concat(qual);
   if(qual.length) pushEvent(`入围赛结束（${cfg.playin.teams} 队争 ${cfg.playin.take} 个名额），<b>${qual.join("、")}</b> 晋级正赛。`,"info","世界赛");
   return openIntl("worlds",field,cfg.main);
@@ -287,7 +295,7 @@ export function intlBoNeed(){
   if(!I) return true;
   if(I.stage==="knockout") return 3;
   if(I.stage==="groups") return 1;
-  if(I.stage==="playin") return (I.cfg&&I.cfg.playin.bo)||2;
+  if(I.stage==="playin") return (I.cfg&&I.cfg.playin&&I.cfg.playin.bo)||2;
   const [w,l]=I.record;
   return (w===2||l===2)?2:1;
 }
@@ -553,7 +561,7 @@ export function benchedIntl(type,playerResult){
   }else{
     const cfg=F.worlds;
     const {direct,playin}=buildWorldsField(playerResult,cfg);
-    field=direct.concat(canonQual(playin,simPlayIn(playin.filter(n=>n!==S.team)).slice(0,cfg.playin.take)));
+    field=direct.concat(cfg.playin?canonQual(playin,simPlayIn(playin.filter(n=>n!==S.team)).slice(0,cfg.playin.take)):[]);
     if(field.indexOf(S.team)<0) field.push(S.team);
     stage=cfg.main;
   }
@@ -620,7 +628,7 @@ export function spectateIntl(type){
   }else{
     const cfg=F.worlds;
     const {direct,playin}=buildWorldsField(null,cfg);
-    field=direct.concat(canonQual(playin,simPlayIn(playin).slice(0,cfg.playin.take)));
+    field=direct.concat(cfg.playin?canonQual(playin,simPlayIn(playin).slice(0,cfg.playin.take)):[]);
     stage=cfg.main;
   }
   const name=type==="msi"?"MSI":"世界赛";
@@ -653,7 +661,7 @@ export function intlAdvance(){
     I.record[won?0:1]++;
     if(I.record[1]>=2){ finishIntl(`入围赛出局`,"playin"); return; }
     if(I.record[0]>=2){
-      const take=(I.cfg&&I.cfg.playin.take)||4;
+      const take=(I.cfg&&I.cfg.playin&&I.cfg.playin.take)||4;
       const qual=[S.team].concat(canonQual(I.field.filter(n=>n!==S.team),
         simPlayIn(I.field.filter(n=>n!==S.team)).slice(0,take-1)));
       S.cameFromPlayin=true;

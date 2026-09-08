@@ -7,7 +7,8 @@
    · 本地结算，只进存档，不换钱不换卡
    先做三场：季后赛抽签仪式（专注）、出征仪式（节奏）、年度颁奖夜（无小游戏）；外加休赛期的特训营。
    小游戏只用 Math.random 摆盘，绝不碰 rng.ts 的种子——不然同一份存档的比赛结果会因为你玩没玩而变。 */
-import { S } from "./state";
+import { S, onEra } from "./state";
+import { eraDef } from "./eras";
 import { DIMS, POSN, SEASONS, addFans, avg, clamp, isBenched, lplRank, poMyOpp, pushEvent, render } from "./main";
 import { meName } from "./save";
 import { splitRating } from "./boxscore";
@@ -30,7 +31,9 @@ export function rhythmTier(ms){ return ms<=80?"gold":ms<=150?"silver":"bronze"; 
 /* 托管 / 自动推进里不弹仪式：按跳过（银档）走，只在大事记留一行 */
 export function cerAuto(){ return !!(S.auto&&(S.auto.career||S.auto.daily)); }
 
-const HOSTS={2022:{c:"旧金山",h:12},2023:{c:"首尔",h:2},2024:{c:"伦敦",h:11},2025:{c:"成都",h:3}};
+/* 世界赛主办地（出征仪式的时差用）——跟着纪元走 */
+let HOSTS: any=eraDef("s12").hosts;
+onEra(k=>{ HOSTS=eraDef(k).hosts; });
 export function worldsHost(){ const y=SEASONS[S.si]&&SEASONS[S.si].y; return HOSTS[y]||{c:"主办城市",h:8}; }
 
 /* ---------- 开场 ---------- */
