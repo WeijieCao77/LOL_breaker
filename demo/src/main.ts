@@ -111,6 +111,11 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260908g", at:"2026-09-08", items:[
+    "首发竞争这条尺修了（玩家反馈「实力和队友差不多、就低一两点的时候老是只有二三十」）：它原来用的是不含外设的裸五维，而「我的」页给你看的实力含外设——满配差 2.9 分，条上差 17 点，你眼里「差不多」它眼里「差了四五分」。现在两处同一把尺（含外设），每差 1 分从动 6 点放缓到 4 点，再加一项联赛同位置的绝对坐标：强队里的世界级选手不再只有 61，垫底队里的矮子将军也不再是 91。红字的线从 45 收到 35，文案分四档",
+    "续约终于看教练信任、经理信任和队魂了（玩家反馈「什么队魂和教练信任这些对续约毫无影响……观感有点差」）：原来的判据是「实力差 ≥ −6 且队友信任 ≥ 35」的硬 AND，教练信任、经理信任、在队时长一个都不在式子里——批测里被放走的人反而教练信任更高、在队更久，80% 是在队满 4 赛段的老人。现在是留队意愿分：实力仍是主项，信任和队魂大约能抵 4～5 分实力差（「他确实不如从前，但俱乐部还想再赌一年」），再多救不动；今年冠军照旧铁续约。刚来、信任平平的人，留队线还是 −6，不会更惨",
+    "「队内身份」卡下面新增「续约桌上」明细：实力差、三种信任、队魂各算多少，离留队线还差几分，合同还剩几个赛段——你养信任、当队魂的账，现在看得见"
+  ]},
   {v:"v20260908f", at:"2026-09-08", items:[
     "「换不了人」修了（玩家反馈「现在不能换人」）：挂牌队友原来要教练信任 68，而教练信任的自然平衡点只有 46~54——批测里强玩家一整个生涯只有 4.9% 的赛季周能用，普通玩家是 0.0%，这个功能事实上一直是关着的。现在门槛是教练信任 60，或者威望到 75 用功勋压过教练组；同口径批测里强玩家 4.9% → 33.3%",
     "拿冠军终于会涨教练和经理的信任（作者原话「我三连冠伟业的男人，让他换个人经理还要嘲讽我不懂行情」）：以前这两个式子里只有胜率、复盘和人气，压根没有荣誉项——三连冠的人在教练眼里和一个赢球多的普通首发没有区别。现在联赛冠军 +6 / 国际冠军 +12（经理 +5 / +10），信任每赛段往 50 回落的速度也从 32% 放缓到 18%：一次打好还是不算数，但不会三分之一直接作废。拿过三冠之后的教练信任中位数 58.6 → 73.3",
@@ -1517,6 +1522,26 @@ export function strength(r){
 export function myStrength(){
   return strength(S.attrs)+(avg(DIMS.map(d=>gearBonus(d)||0)));
 }
+/* ---------- 首发竞争（2026-09-08 玩家反馈「低一两点却只有二三十」「院长级别也就五六十」）----------
+   原来 press.ts 和 rotation.ts 各有一份 55+(裸五维差)*6，三处都不对：
+   · 裸五维不含外设，而「我的」页的实力含外设（满配 +2.9）——玩家眼里「差不多」，它眼里差了四五分，条上就是二三十
+   · 每差 1 分动 6 点，太陡；批测里 35% 的赛季周在红区，红字成了噪音
+   · 纯相对量：强队里的世界级选手也就比队友高 1 分 → 61；垫底队的矮子将军 → 91。量的是「队里排第几」，玩家读成了「首发稳不稳」
+   现在一把尺、一处代码：你用 myStrength()（含外设，和「我的」页同口径），斜率 4，再加联赛同位置的绝对坐标 ×2。 */
+export const COMP_SLOPE=4, COMP_LEAGUE=2, COMP_RED=35;
+export function leaguePosAvg(pos){
+  const lg=S.homeLeague||"LPL";
+  const ts=(S.world&&S.world[lg])||[];
+  const v=[]; ts.forEach(t=>(t.players||[]).forEach(p=>{ if(p&&!p.me&&!p.retired&&p.pos===pos&&p.r) v.push(strength(p)); }));
+  return v.length?avg(v):null;
+}
+export function starterComp(){
+  const me=myStrength();
+  const mates=myRoster().filter(p=>!p.me);
+  const tavg=mates.length?avg(mates.map(p=>strength(p))):me;
+  const la=leaguePosAvg(S.pos); const lavg=(la===null)?tavg:la;
+  return {comp:clamp(55+(me-tavg)*COMP_SLOPE+(me-lavg)*COMP_LEAGUE,5,98), me, tavg, lavg};
+}
 export function tierOf(s){ return rankName(skillToRank(s)); }
 export const PW_SHOW=1/0.86;
 export function pwShow(p){ return p*PW_SHOW; }
@@ -2486,7 +2511,19 @@ export function teamTenure(){
   const g=((S.career&&(S.career.w+S.career.l))||0);
   return Math.max(0, g-(S.teamSince||0));
 }
-export function markTeamJoin(){ S.teamSince=((S.career&&(S.career.w+S.career.l))||0); }
+/* 在队几个赛段（2026-09-08，续约评分里的「队魂」用）。teamTenure() 返回的是**场次**，更衣室事件的门槛
+   仍按场次走（改成赛段会推迟那几件事，批测里联赛冠军率掉了 7 个点——不在这次的范围里，另起一条再议）。
+   赛段数从 career.log 数（每个赛段结算记一条）；老档没有 teamSinceSplit 就从尾巴往前数同一支队。 */
+export function teamTenureSplits(){
+  const log=(S.career&&S.career.log)||[];
+  if(S.teamSinceSplit!==undefined&&S.teamSinceSplit!==null) return Math.max(0,log.length-S.teamSinceSplit);
+  let n=0; for(let i=log.length-1;i>=0&&log[i]&&log[i].team===S.team;i--) n++;
+  return n;
+}
+export function markTeamJoin(){
+  S.teamSince=((S.career&&(S.career.w+S.career.l))||0);
+  S.teamSinceSplit=((S.career&&S.career.log)||[]).length;
+}
 export function myRoster(){ return myTeam().players; }
 
 /* 圆桌法循环赛：奇数队补一个轮空位，每轮每队一场 */

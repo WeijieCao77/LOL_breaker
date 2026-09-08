@@ -1,6 +1,6 @@
 import { checkAch } from "./achieve";
-import { addStaff, syncRelations } from "./clout";
-import { DIMS, addFans, addFat, avg, capOf, clamp, makeRookie, myRoster, myTeam, pushEvent, q1, render, tacOf, teamTenure, champCoreOn } from "./main";
+import { addStaff, coachTrust, mgrTrust, syncRelations } from "./clout";
+import { DIMS, addFans, addFat, avg, capOf, clamp, makeRookie, myRoster, myTeam, pushEvent, q1, render, starterComp, tacOf, teamTenure, teamTenureSplits, champCoreOn } from "./main";
 import { rnd } from "./rng";
 import { queueFollowUp } from "./press";
 import { diffOf, pay, snapshot } from "./random";
@@ -269,20 +269,61 @@ export function payday(){
    · 队伍愿意留你 → 递一份「续约报价」，你签 / 拒（拒 → 转自由市场）
    · 队伍放你走   → 明确告知 + 原因，转自由市场（不再瞬移到随机弱队）
    返回 "renew"（已挂起 S.pendingRenew）或 "cut"（队伍放走）；未到期返回 null。 */
+/* ---------- 续约判据（2026-09-08 玩家反馈「什么队魂和教练信任这些对续约毫无影响，观感有点差」）----------
+   原来是硬 AND：实力差 >= −6 且队友信任 >= 35。教练信任、经理信任、在队时长一个都不在式子里——
+   界面上「经理信任……续约和转会的桌上，这个数字都在」那句话是假的。批测 90 次到期里被放走的 5 次，
+   教练信任、经理信任、在队时长全都**高于**续约的人，80% 是在队满 4 赛段的老人。
+   现在是留队意愿分：实力仍是主项，三种信任和队魂能抵掉大约 4～5 分实力差（作者定的量级——
+   「他确实不如从前，但俱乐部还想再赌一年」），再多救不动；今年冠军照旧铁续约；
+   队友信任跌破 35 仍是一票否决（那是你自己把更衣室弄崩了，另一条叙事线）。
+   标定：信任全是 50、刚来的人，留队线正好落在实力差 −6——和原来一样，新来的人不会更惨。
+   实力差用 starterComp 的口径（含外设）——和「我的」页、首发竞争条同一把尺。 */
+export const RENEW_NEED=30, RENEW_TRUST_FLOOR=35;
+export const RENEW_W={gap:8, coach:0.30, mgr:0.20, mates:0.20, tenure:2.5, tenureMax:6, title:60, mvp:12, first:8, second:4};
+const AWARD_LABEL={mvp:"年度 MVP",first:"年度一阵",second:"年度二阵"};
+/* 今年或去年的年度奖项里最高的一项 */
+export function latestAward(){
+  const a=(S.career&&S.career.awards)||[]; if(!a.length) return null;
+  const si=Math.max(...a.map(x=>x.si)); if(si<S.si-1) return null;
+  const ks=a.filter(x=>x.si===si).map(x=>x.kind);
+  return ks.includes("mvp")?"mvp":ks.includes("first")?"first":ks.includes("second")?"second":null;
+}
+/* 纯函数：给一组输入算留队意愿。renewScore() 从当前状态取输入；测试直接喂表 */
+export function renewEval(i){
+  const ten=Math.min(RENEW_W.tenureMax, i.ten||0);
+  const rows=[
+    {k:"实力差", d:`${i.gap>=0?"+":""}${(+i.gap).toFixed(1)}`, v:(i.gap+6)*RENEW_W.gap},
+    {k:"教练信任", d:String(Math.round(i.ct)), v:(i.ct-50)*RENEW_W.coach},
+    {k:"经理信任", d:String(Math.round(i.mt)), v:(i.mt-50)*RENEW_W.mgr},
+    {k:"队友信任", d:String(Math.round(i.tr)), v:(i.tr-50)*RENEW_W.mates},
+    {k:"队魂", d:`${ten} 赛段`, v:ten*RENEW_W.tenure}
+  ];
+  if(i.wonTitle) rows.push({k:"今年冠军", d:"", v:RENEW_W.title});
+  if(i.aw&&RENEW_W[i.aw]) rows.push({k:AWARD_LABEL[i.aw], d:"", v:RENEW_W[i.aw]});
+  const total=RENEW_NEED+rows.reduce((a,r)=>a+r.v,0);
+  const veto=(i.tr<RENEW_TRUST_FLOOR)&&!i.wonTitle;
+  // 今年冠军是铁续约（修「夺冠却被裁」的那条规矩不变）：+60 只是把账写在卡上，真正兜底的是这一句
+  return {rows, total, need:RENEW_NEED, ok:!!i.wonTitle||(!veto&&total>=RENEW_NEED), veto};
+}
+export function renewScore(){
+  const sc=starterComp(); const gap=sc.me-sc.tavg;
+  const wonTitle=((S.career&&S.career.lgYears)||[]).includes(S.si)
+              || ((S.career&&S.career.msiYears)||[]).includes(S.si)
+              || ((S.career&&S.career.worldsYears)||[]).includes(S.si);
+  const inp={gap, ct:coachTrust(), mt:mgrTrust(), tr:avgTrust(),
+             ten:teamTenureSplits()+1,   // 结算这一刻，正在打的这个赛段还没记进 career.log
+             wonTitle, aw:latestAward()};
+  return Object.assign(renewEval(inp), inp);
+}
 export function contractCheck(){
   S.contract=S.contract||{years:2,left:2};
   S.contract.left--;
   if(S.contract.left>0) return null;
-  const ovr=avg(DIMS.map(d=>S.attrs[d]));
-  const mates=myRoster().filter(p=>!p.me);
-  const teamAvg=mates.length?avg(mates.map(p=>avg(DIMS.map(d=>p.r[d])))):ovr;
-  const trust=avgTrust();
-  // 今年拿了任意冠军（联赛/MSI/世界赛）= 铁续约——修「夺冠却被裁」（玩家 TOP 夺冠被裁实锤）
-  const wonTitle = ((S.career&&S.career.lgYears)||[]).includes(S.si)
-                || ((S.career&&S.career.msiYears)||[]).includes(S.si)
-                || ((S.career&&S.career.worldsYears)||[]).includes(S.si);
-  const wantRenew = wonTitle || (ovr>=teamAvg-6 && trust>=35);
-  if(wantRenew){
+  const R=renewScore();
+  const wonTitle=R.wonTitle;
+  // 涨幅仍看实力差（现在含外设，和评分同一把尺）
+  const ovr=R.gap, teamAvg=0;
+  if(R.ok){
     /* 续约不是重签一份一样的合同：打得好、拿了冠军，年薪和违约金都往上走。
        2026-09-07：涨幅上界从 1.9 收到 1.35，并且封在该档次的天花板里——
        原来这条乘法一年乘一次、七年连乘且没有绝对上限，是「年薪一亿两千万」的唯一来源。
@@ -297,14 +338,16 @@ export function contractCheck(){
       salary: sal,
       buyout: (sal!==undefined)?Math.round(sal*k):(old.buyout!==undefined?old.buyout:undefined),
       tier:old.tier, grade:old.grade, clubTier:old.clubTier,
-      wonTitle, oldSalary:old.salary, oldBuyout:old.buyout
+      wonTitle, oldSalary:old.salary, oldBuyout:old.buyout,
+      score:Math.round(R.total), need:R.need
     };
     return "renew";
   }
   // 队伍不再续约：原因写清楚，成为自由身转自由市场
   S.freeAgent = true;
-  S.cutReason = trust<35
+  S.cutReason = R.veto
     ? "更衣室对你的信任跌破了底线，管理层不再给合同。"
-    : "你的水平已经明显跟不上这支队，他们决定不续约。";
+    : `你的水平已经明显跟不上这支队（留队意愿 ${Math.round(R.total)}，线是 ${R.need}）。${
+        (R.ct>=60||R.ten>=4)?"教练组替你说了话，但没能说服管理层。":"他们决定不续约。"}`;
   return "cut";
 }
