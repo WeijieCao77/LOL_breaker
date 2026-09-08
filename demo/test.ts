@@ -577,6 +577,20 @@ function unitChecks() {
     S.off = null;
     if (JSON.stringify(S.attrs) !== attrs0) bad.push("仪式 / 特训营动了五维");
     if (JSON.stringify(A.DIMS.map((d: string) => A.capOf(d))) !== caps0) bad.push("仪式 / 特训营动了天花板");
+    /* 抽签仪式必须在季后赛开打之前（玩家实锤 2026-09-08：打到 1:0 才弹出抽签）。
+       原来 cerStart("draw") 写在 startMatch 后面，S.cer 已经被这场比赛自己的仪式占住时
+       抽签只能排队，等演完已经是系列赛打到一半。这里钉死：startPlayoff 之后
+       当场站在台上的就是抽签，且队列里没有它。放在自检最后，动过的字段跑完还原。 */
+    const poKeys = ["cer","cerQ","achPop","auto","split","week","record","match","playoff","step","pendingEnd","brk","playoffSeed","benchedPO"];
+    const poSnap: any = {}; poKeys.forEach(k => { poSnap[k] = S[k] === undefined ? undefined : JSON.parse(JSON.stringify(S[k] === undefined ? null : S[k])); });
+    S.cer = null; S.cerQ = []; S.achPop = null; S.auto = {};
+    S.split = 1; S.week = 9; S.record = { w: 9, l: 0 };
+    A.startPlayoff();
+    if (!(S.cer && S.cer.k === "draw")) bad.push("季后赛开打时台上不是抽签仪式：" + JSON.stringify(S.cer && S.cer.k));
+    if ((S.cerQ || []).some((c: any) => c.k === "draw")) bad.push("抽签仪式被排进了队列（会在打到一半才弹）");
+    if (S.match && (S.match.w || S.match.l)) bad.push("抽签仪式还没演，比赛已经打出了比分");
+    poKeys.forEach(k => { S[k] = poSnap[k]; });
+
   } catch (e) { bad.push("仪式自检没跑起来：" + (e && (e as any).stack || e)); }
   return bad;
 }

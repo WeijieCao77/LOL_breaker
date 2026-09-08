@@ -9890,6 +9890,7 @@ header.top.compact>.theme-top{display:none}
   }
   function cerClose() {
     if (!S.cer) return;
+    _mgLive = false;
     const c = S.cer;
     if (c.k === "awards") {
       S.cer = null;
@@ -9902,6 +9903,7 @@ header.top.compact>.theme-top{display:none}
     render();
   }
   function cerApply(k, tier, skipped, ctx) {
+    _mgLive = false;
     const t = tier || "silver";
     const C = ctx || S.cer || {};
     if (k === "draw") {
@@ -10409,6 +10411,11 @@ header.top.compact>.theme-top{display:none}
       }
     });
     _timers = [];
+    _mgLive = false;
+  }
+  var _mgLive = false;
+  function mgLive() {
+    return _mgLive && !!S.cer;
   }
   function cerBind(st) {
     clearTimers();
@@ -10442,6 +10449,7 @@ header.top.compact>.theme-top{display:none}
   };
   var DANMU = ["别再演了", "这队没戏", "就这？", "下赛季见", "打野在干嘛", "抽到他们稳了", "菜就多练", "坐等翻车", "我信你一次", "别送了", "这把稳吗", "上次也这么说"];
   function focusMount(el, opt) {
+    _mgLive = true;
     const nums = [];
     for (let i = 1; i <= 25; i++) nums.push(i);
     for (let i = nums.length - 1; i > 0; i--) {
@@ -10504,6 +10512,7 @@ header.top.compact>.theme-top{display:none}
     });
   }
   function rhythmMount(el) {
+    _mgLive = true;
     const PERIOD = 2400, TOTAL = 2e4, PEAKS = 8;
     if (reduced()) {
       el.innerHTML = `<p class="cer-p">你的设备关掉了动效，呼吸圆动不起来。这一段按<b>银档</b>结算：世界赛期间恢复正常。</p>
@@ -10582,6 +10591,7 @@ header.top.compact>.theme-top{display:none}
     frame();
   }
   function reactMount(el, opt) {
+    _mgLive = true;
     const hard = !!(opt && opt.hard), pre = !!(opt && opt.pre);
     const TOTAL = 2e4, SIZE = hard ? 36 : 44, LIT = hard ? [550, 700] : [700, 900], GAP = hard ? [220, 420] : [280, 520];
     el.innerHTML = `<div class="mg-head"><span>命中 <b id="mg-hit">0</b>/<span id="mg-n">0</span></span><span class="mono" id="mg-t">20.0 秒</span></div>
@@ -10708,6 +10718,7 @@ header.top.compact>.theme-top{display:none}
     }
   }
   function decideMount(el, quiz, isMedia) {
+    _mgLive = true;
     const qs = quiz && quiz.qs || [], SEC = quiz && quiz.sec || 8;
     let i = 0, done = false;
     const picks = [];
@@ -14589,6 +14600,10 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260908m", at: "2026-09-08", items: [
+      "季后赛抽签仪式挪回开打之前（玩家实锤：季后赛已经打到 1:0，抽签才弹出来）：原来先摆好比赛再开仪式，而开仪式本身不重画，于是它要等你在比赛里点了下一步才冒出来——现在先抽签、再摆比赛，模态卡从第一帧就在，演完才轮到你打",
+      "小游戏进行中不再被重画冲掉（玩家实锤：靶场点了「开始」又回到「点一下开始」）：仪式小游戏挂在每次 render 末尾，而 render 会把整块界面重写，正在跑的那一局连 DOM 带计时器一起被换掉——现在小游戏一上台就锁住重画（屏幕上只有这张模态卡），结算或跳过之后解锁"
+    ] },
     { v: "v20260908l", at: "2026-09-08", items: [
       "「支持作者」自动提示只在生涯结束之后弹（作者：游戏都不愿意玩完的人估计也不会发电）：去掉「这一次玩够 10 分钟就弹」的计时器；结局页等退役仪式收起、再等 5 秒看完名片才弹，每个浏览器会话最多一次；点过「别再提示」永远不弹，右下角 ♥ 随时能主动打开"
     ] },
@@ -18623,9 +18638,9 @@ header.top.compact>.theme-top{display:none}
     S.playoff = { round: 1, seed, alive: true, beaten: [S.team] };
     poBrInit();
     S.playoff.round = S.playoff.br.stage;
+    cerStart("draw");
     S.step = "match";
     startMatch(true, poMyOpp() || playoffOpp(S.playoff.round));
-    cerStart("draw");
   }
   function poCanon() {
     const HL = S.homeLeague || "LPL";
@@ -20720,6 +20735,7 @@ header.top.compact>.theme-top{display:none}
   var _autosaveAt = 0;
   function render() {
     if (_renderLock > 0) return;
+    if (mgLive()) return;
     if (S && S.auto) {
       _renderLock++;
       try {
