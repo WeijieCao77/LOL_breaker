@@ -205,6 +205,32 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
   dom.window.close();
 }
 
+/* ---------------- 「支持作者」自动提示：只在生涯结束、退役仪式收起之后才排上 ---------------- */
+{
+  const { dom, w, d, errors } = boot();
+  await tick(50);
+  const P = w.poxiao;
+  if (d.getElementById("chlog")) (d.getElementById("chlogok") as HTMLElement).click();
+  if (P && createChar(w, d, "支持作者")) {
+    await tick(800);
+    const S = P.S();
+    const seen = () => { try { return w.sessionStorage.getItem("poxiao_support_seen_session_v1") === "1"; } catch (e) { return false; } };
+    if (seen() || d.getElementById("suplove")) bad.push("开局就把「支持作者」提示排上了（应该只在生涯结束之后）");
+    S.career = { w: 0, l: 0, titles: [], best: 99, since: 0, log: [] }; S.team = "TEST";
+    S.step = "end"; P.cerStart("farewell"); P.render();
+    if (!d.querySelector("#stage .cer")) bad.push("结局页上没画出退役仪式");
+    if (seen()) bad.push("退役仪式还没收起就排上了「支持作者」提示");
+    const closeBtn = d.querySelector<HTMLElement>('#stage [data-cer="close"]');
+    if (closeBtn) closeBtn.click(); else bad.push("退役仪式上没有「看生涯名片」按钮");
+    await tick(10);
+    if (d.querySelector("#stage .cer")) bad.push("退役仪式点「看生涯名片」没收起");
+    if (!seen()) bad.push("结局名片出来了却没排上「支持作者」提示");
+    if (d.getElementById("suplove")) bad.push("「支持作者」浮窗没等 5 秒就压在名片上");
+  }
+  if (errors.length) bad.push("支持作者：页面脚本报错 " + errors.length + " 条：" + errors.slice(0, 3).join(" | "));
+  dom.window.close();
+}
+
 /* ---------------- 手机（375px） ---------------- */
 {
   const { dom, w, d, errors } = boot({ width: 375 });
@@ -234,5 +260,5 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
 }
 
 if (bad.length) { console.error("界面测试失败：\n - " + bad.join("\n - ")); process.exit(1); }
-console.log("界面测试通过：建档按钮 · 导览模态与焦点圈 · 浮窗与歌单探测 · 更新日志 · 推周 · 仪式小游戏（靶场 / 限时三选一） · 存档 · 配色切换 · 手机折叠与抽屉");
+console.log("界面测试通过：建档按钮 · 导览模态与焦点圈 · 浮窗与歌单探测 · 更新日志 · 推周 · 仪式小游戏（靶场 / 限时三选一） · 存档 · 配色切换 · 支持作者只在结局弹 · 手机折叠与抽屉");
 process.exit(0);
