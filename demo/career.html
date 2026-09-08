@@ -481,11 +481,17 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 /* 带头像和名字的行（战队实力、升队通道）：右列固定 82px 放不下
    「头像+名字+数值」，数值被挤到名字下面换行。改成自适应列宽、
    一行排开：数值紧跟在 bar 后面，然后才是头像和名字。 */
-.at.wide{grid-template-columns:50px 1fr auto}
-.at.wide .vn{display:flex;align-items:center;gap:6px;white-space:nowrap;text-align:left}
-.at.wide .vn b{min-width:26px;text-align:right}
-.at.wide .vn .pname{max-width:96px;overflow:hidden;text-overflow:ellipsis}
-@media(max-width:480px){.at.wide .vn .pname{max-width:64px}}
+/* 右列必须是固定宽（2026-09-08 作者截图：自己 83、队友 83，自己的条长一截）——
+   原来是 auto，「你」一个字比「Jiejie」窄，中间那根 1fr 的条就长出来一截，同样的 83% 画得不一样长。
+   固定成 数值 26 + 头像 22 + 名字 96（手机 64）+ 两个 6px 间隙，条的长度五行一致。 */
+.at.wide{grid-template-columns:50px 1fr 158px}
+.at.wide .vn{display:flex;align-items:center;gap:6px;white-space:nowrap;text-align:left;overflow:hidden}
+.at.wide .vn b{min-width:26px;text-align:right;flex:0 0 auto}
+.at.wide .vn .pname{max-width:96px;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.at.wide .vn .tag{flex:0 0 auto}
+/* 只有数值没有头像名字的行（首发竞争、信任、俱乐部关注、轮换资本）：右列 44px 就够，条别白白让出一大截 */
+.at.wide.num{grid-template-columns:50px 1fr 44px}
+@media(max-width:480px){.at.wide{grid-template-columns:50px 1fr 126px}.at.wide.num{grid-template-columns:50px 1fr 44px}.at.wide .vn .pname{max-width:64px}}
 
 /* ---- 对阵 ---- */
 .vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;margin-bottom:14px}
@@ -7627,7 +7633,7 @@ header.top.compact>.theme-top{display:none}
     }
     return `<div class="scrimbox">
     <div class="sb-h"><b>${acad ? "争取进名单" : "抢首发"}</b> · 对位 <b>${S.understudy.id}</b>（综合 ${him.toFixed(0)}，你 ${me.toFixed(0)}）</div>
-    <div class="at wide"><div class="lb">轮换资本</div>
+    <div class="at wide num"><div class="lb">轮换资本</div>
       <div class="track"><div class="fill" style="width:${pct}%;background:linear-gradient(90deg,var(--gold-dim),var(--gold))"></div></div>
       <div class="vn mono"><b>${sc.edge}</b>/${SCRIM_EDGE_NEED}</div></div>
     <div class="row" style="margin-top:8px;align-items:center;gap:10px;flex-wrap:wrap">
@@ -8001,7 +8007,7 @@ header.top.compact>.theme-top{display:none}
     }
     const ct = coachTrust();
     const mt = mgrTrust();
-    const bar = (label, v, color, txt) => `<div class="at wide"><div class="lb">${label}</div>
+    const bar = (label, v, color, txt) => `<div class="at wide num"><div class="lb">${label}</div>
     <div class="track"><div class="fill" style="width:${v}%;${color ? `background:${color}` : ""}"></div></div>
     <div class="vn mono"><b>${Math.round(v)}</b></div></div>
     ${txt ? `<p class="note" style="margin:2px 0 8px">${txt}</p>` : ""}`;
@@ -8312,10 +8318,10 @@ header.top.compact>.theme-top{display:none}
     const conf = Math.min(92, n * 12);
     return `<div class="card"><h2>俱乐部关注<em>${tier[0]}</em></h2>
     <div class="attrs">
-      <div class="at wide"><div class="lb">赛段关注</div>
+      <div class="at wide num"><div class="lb">赛段关注</div>
         <div class="track"><div class="fill" style="width:${heat / 6 * 100}%"></div></div>
         <div class="vn mono"><b>${heat}</b>/6</div></div>
-      <div class="at wide"><div class="lb">表现分</div>
+      <div class="at wide num"><div class="lb">表现分</div>
         <div class="track"><div class="fill" style="width:${clamp(perf * 2.5 + 25, 0, 100)}%;background:${tier[1]}"></div></div>
         <div class="vn mono"><b>${perf.toFixed(0)}</b></div></div>
     </div>
@@ -14583,6 +14589,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260908k", at: "2026-09-08", items: [
+      "实力条画错（作者截图：自己 83、队友 83，自己的条长一截）：带头像名字的行右列原来按内容自适应，「你」一个字比队友的名字窄，中间那根条就长出来一截——同一个数画得不一样长。右列改成固定宽（手机也固定），队伍页的五人实力、队友信任、试训里「你 vs 一队」这些行现在同样的数就是同样的长度；只有数值的行（首发竞争、信任、俱乐部关注、轮换资本）右列单独收窄，条不白让位置"
+    ] },
     { v: "v20260908j", at: "2026-09-08", items: [
       "赛后拆解分成「简洁 / 详细」两版，卡顶上一排 tab 随时切（作者：现在的拆解太冗长）。简洁版只留比分与账面差、一句「账面 vs 结果」、影响最大的三项（不带怎么调）、两行复盘；详细版是原来那张完整的卡——归因全表、数据面板、临场账本、复盘。默认简洁，选了哪个记在存档里；现场、比赛档案回放、职业前杯赛三处同一套"
     ] },
