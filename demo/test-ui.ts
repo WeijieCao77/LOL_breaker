@@ -148,6 +148,25 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
       if (S.cer) bad.push("决策挑战跳过后仪式没散场"); S.verCer = null;
       P.render();
     }
+    // ---- 赛后拆解的「简洁 / 详细」tab 在真 DOM 里能点（2026-09-08） ----
+    {
+      const S = P.S(); const m0 = S.match, st0 = S.step, pm0 = S.pmMode;
+      S.step = "match"; S.pmMode = undefined;
+      S.match = { opp: { players: [] }, oppName: "X", sc: [1, 2], game: 4, lines: [], node: null, swing: 0, done: true, pmSeen: true, need: 2,
+        attr: { rows: [{ n: "个人能力", v: -1.8, fix: "a" }, { n: "默契", v: 1.1, fix: "b" }, { n: "状态", v: -0.6, fix: "c" }, { n: "战术", v: 0.3, fix: "d" }], myTotal: 78, opTotal: 80 },
+        nodeLog: [{ g: 1, t: "抢龙", dim: "操作", p: 61, ok: true, d: 4 }], luck: [], gameLog: [], box: null };
+      P.render();
+      const tabFull = d.querySelector<HTMLElement>('#stage [data-pm="full"]'), tabBrief = d.querySelector<HTMLElement>('#stage [data-pm="brief"]');
+      if (!tabFull || !tabBrief) bad.push("拆解卡上没有简洁 / 详细 tab");
+      else {
+        if (!tabBrief.classList.contains("on") || d.querySelector("#stage .review .rv-h")) bad.push("默认不是简洁版");
+        tabFull.click();
+        if (S.pmMode !== "full" || !d.querySelector('#stage [data-pm="full"].on') || !Array.from(d.querySelectorAll("#stage .rv-h")).some(e => /临场账本/.test(e.textContent || ""))) bad.push("点「详细」没切到详细版");
+        (d.querySelector<HTMLElement>('#stage [data-pm="brief"]') as HTMLElement).click();
+        if (S.pmMode !== "brief" || !d.querySelector("#stage .pmrows.lite")) bad.push("点「简洁」没切回简洁版");
+      }
+      S.match = m0; S.step = st0; S.pmMode = pm0; P.render();
+    }
     // 存档：手动存、读回
     (d.getElementById("savenow") as HTMLElement | null)?.click();
     const raw = w.localStorage.getItem("pojuzhe_save_v1");

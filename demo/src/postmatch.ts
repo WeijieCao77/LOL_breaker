@@ -138,6 +138,31 @@ export function reviewAdvice(m){
   return {personal,team};
 }
 
+/* ---------- 简洁 / 详细（2026-09-08 作者：拆解太冗长，做成可切换的两版）----------
+   简洁版只留：比分与账面差、一句「账面 vs 结果」、影响最大的三项（不带怎么调）、
+   两行复盘。详细版是原来那张完整的卡。选择存进 S.pmMode，随时点 tab 换。 */
+export function pmMode(){ return S.pmMode==="full"?"full":"brief"; }
+export function pmTabs(){
+  const m=pmMode();
+  return `<div class="pmtabs" role="tablist"><button type="button" class="pmtab${m==="brief"?" on":""}" data-pm="brief" role="tab" aria-selected="${m==="brief"}">简洁</button><button type="button" class="pmtab${m==="full"?" on":""}" data-pm="full" role="tab" aria-selected="${m==="full"}">详细</button></div>`;
+}
+/* 简洁版正文：三根条 + 一句结论 + 两行复盘（+ 一句「90% 也翻车」）。三张卡共用 */
+export function pmBrief(rows,won,adv,luck){
+  const top=(rows||[]).slice(0,3);
+  const neg=(rows||[]).filter(r=>r.v<=-0.4).slice(0,2).map(r=>r.n);
+  const pos=(rows||[]).filter(r=>r.v>=0.4).slice(0,2).map(r=>r.n);
+  const verdict=won?(pos.length?`这场赢在<b>${pos.join("、")}</b>。`:`账面没占优，这场是打出来的。`)
+    :(neg.length?`这场输在<b>${neg.join("、")}</b>。`:`各项都没明显吃亏——这场输在概率上。`);
+  const items=[];
+  if(adv){ (adv.personal||[]).filter(x=>!x.good).slice(0,1).forEach(x=>items.push(x)); (adv.team||[]).slice(0,1).forEach(x=>items.push(x)); }
+  if(!items.length&&adv) (adv.personal||[]).filter(x=>x.good).slice(0,1).forEach(x=>items.push(x));
+  const li=x=>`<div class="rv-i${x.good?" good":""}"><span class="rq">${x.q}</span><span class="rh">${x.how}</span></div>`;
+  return `<div class="pmrows lite">${top.map(r=>{ const w=clamp(Math.abs(r.v)/6*100,4,100);
+      return `<div class="pmr ${r.v>=0?'up':'dn'}"><span class="pn">${r.n}</span><span class="pbar"><i style="width:${w}%"></i></span><span class="pv mono">${r.v>=0?"+":""}${r.v.toFixed(1)}</span></div>`; }).join("")}</div>
+    <p class="pm-verdict">${verdict}${(luck&&luck.length)?` ${luck[0]}`:""}</p>
+    ${items.length?`<div class="review lite"><div class="rv-g">${items.map(li).join("")}</div></div>`:""}`;
+}
+
 /* ---------- 拆解卡的零件：现场版和档案回放共用同一套渲染 ---------- */
 export function pmRowsHtml(rows){
   return `<div class="pmrows">${rows.map(r=>{
@@ -221,7 +246,10 @@ export function postMatchCard(){
   const diff=myTotal-opTotal;
   // 账面 vs 结果：不一致就直说
   const upset=(won&&diff<-1.5)||(!won&&diff>1.5);
+  const brief=pmMode()==="brief";
+  const adv=reviewAdvice(m);
   return `<div class="card"><h2>赛后拆解 · vs ${m.oppName}<em>${won?"胜":"负"} ${m.sc[0]}:${m.sc[1]}</em></h2>
+    ${pmTabs()}
     <div class="pm-head">
       <span>综合 <b>${pwShow(myTotal).toFixed(1)}</b> vs <b>${pwShow(opTotal).toFixed(1)}</b></span>
       <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${pwShow(diff).toFixed(1)}</span>
@@ -229,11 +257,12 @@ export function postMatchCard(){
     ${upset?`<div class="pm-upset">${won
       ? "账面上你是劣势——这场是打出来的，不是数值给的。节点决策和运气都站在了你这边。"
       : "账面上你占优，还是输了。数值只决定每回合的胜率，不保证结果——看看状态、体能，剩下的是运气。"}</div>`:""}
-    ${pmRowsHtml(rows)}
+    ${brief?pmBrief(rows,won,adv,m.luck):`${pmRowsHtml(rows)}
     ${boxScoreHtml(m.box,won,m.oppName)}
     ${pmNodesHtml(m.nodeLog,m.luck)}
-    ${pmAdviceHtml(reviewAdvice(m),won,rows)}
-    <p class="note">这些就是模拟器判胜负时用的数，不是事后编的解释。按影响从大到小排。<br>
+    ${pmAdviceHtml(adv,won,rows)}`}
+    <p class="note">${brief?`只列影响最大的三项。点「详细」看完整归因、数据面板、临场账本和复盘。`
+      :`这些就是模拟器判胜负时用的数，不是事后编的解释。按影响从大到小排。`}<br>
       点过「继续」也不丢：<b>我的 → 比赛档案</b>里能回看最近 12 场的拆解。</p>
   </div>`;
 }
@@ -247,14 +276,15 @@ export function pmReplayCard(){
   return `<div class="rankup"><div class="ru-inner" style="max-width:560px;max-height:86vh;overflow-y:auto;text-align:left">
     <div class="ru-eyebrow">比赛档案 · 拆解回放</div>
     <h2 style="margin:0 0 6px">${seaTag} ${x.tag} · vs ${x.opp}<em style="float:right">${won?"胜":"负"} ${x.sc[0]}:${x.sc[1]}</em></h2>
+    ${pmTabs()}
     <div class="pm-head">
       <span>综合 <b>${pwShow(pm.my).toFixed(1)}</b> vs <b>${pwShow(pm.op).toFixed(1)}</b></span>
       <span class="pm-diff ${diff>=0?'up':'dn'}">${diff>=0?"+":""}${pwShow(diff).toFixed(1)}</span>
     </div>
-    ${pmRowsHtml(pm.rows)}
+    ${pmMode()==="brief"?pmBrief(pm.rows,won,pm.adv,pm.luck):`${pmRowsHtml(pm.rows)}
     ${(x.box)?boxScoreHtml(x.box,won,x.opp):""}
     ${pmNodesHtml(pm.nodes,pm.luck)}
-    ${pmAdviceHtml(pm.adv,won,pm.rows)}
+    ${pmAdviceHtml(pm.adv,won,pm.rows)}`}
     <div class="row" style="justify-content:center;margin-top:10px">
       <button class="btn" id="pmclose">关闭</button></div>
   </div></div>`;

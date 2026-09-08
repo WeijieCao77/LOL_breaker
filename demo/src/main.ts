@@ -112,9 +112,12 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
-  {v:"v20260908j", at:"2026-09-08", items:[
+  {v:"v20260908k", at:"2026-09-08", items:[
     "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
     "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+  ]},
+  {v:"v20260908j", at:"2026-09-08", items:[
+    "赛后拆解分成「简洁 / 详细」两版，卡顶上一排 tab 随时切（作者：现在的拆解太冗长）。简洁版只留比分与账面差、一句「账面 vs 结果」、影响最大的三项（不带怎么调）、两行复盘；详细版是原来那张完整的卡——归因全表、数据面板、临场账本、复盘。默认简洁，选了哪个记在存档里；现场、比赛档案回放、职业前杯赛三处同一套"
   ]},
   {v:"v20260908i", at:"2026-09-08", items:[
     "仪式第三批（策划稿里剩下的全部）：突破试炼——某一维撞到天花板的赛段结算，教练把你单独留下，「今天不过这一关别回去」；按那一维选机制（操作→反应、心态→专注、指挥 / 运营→战术决策、体质→节奏），只有金档算过关：天花板 +1 当场兑现；没过不扣什么，下个赛段再来",
@@ -6433,6 +6436,8 @@ export function bind(){
   const nx=$("next"); if(nx) nx.onclick=nextWeek;
   // 赛后拆解一屏（照 Val Manager）：比分页 → 拆解页 → 下一周
   const pg=$("pmgo"); if(pg) pg.onclick=()=>{S.match.pmSeen=true;render();scrollStageTop();};
+  // 拆解卡的「简洁 / 详细」tab：选择存进 S.pmMode，现场、档案回放、杯赛三张卡共用
+  st.querySelectorAll("[data-pm]").forEach((b: any)=>b.onclick=()=>{ S.pmMode=b.dataset.pm==="full"?"full":"brief"; render(); });
   // 比赛档案里的拆解回放
   st.querySelectorAll("[data-pmv]").forEach((b: any)=>b.onclick=()=>{S.pmView=+b.dataset.pmv;render()});
   st.querySelectorAll("[data-selfrec]").forEach((b: any)=>b.onclick=()=>selfRecommend(b.dataset.selfrec));
