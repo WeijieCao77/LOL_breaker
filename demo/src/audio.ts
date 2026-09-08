@@ -326,7 +326,7 @@ export function showChangelog() {
 }
 
 /* ---------- 支持作者（爱发电）----------
-   右下角 ♥ 随时可手动打开；首次进入一次自动提示。
+   右下角 ♥ 随时可手动打开；自动提示只在生涯结束（结局页）弹一次。
    「不用了，别再提示」只关闭自动提示，不会藏掉 ♥，玩家以后仍可主动打开。
    链接在模板的 SUPPORT_URL；为空时整套入口都不渲染。 */
 export const SUPPORT_HIDE_KEY = "poxiao_support_hide_v1";
@@ -389,11 +389,10 @@ export function showSupport(source?) {
     statEvent("support");
   } catch (e) {}
 }
-/* 自动提示的时机（玩家 2026-09-06 定的：打开网页不弹，只有通关、或者这一次玩够 10 分钟才弹）：
-   · 通关：S.step 变成 "end" 时（render 末尾调 supportNudge("end")），等 5 秒让人先看结局；
-   · 玩够 10 分钟：只数标签页可见、且不在建档页的时间，每 30 秒记一次。
+/* 自动提示的时机（作者 2026-09-08 定的：只在生涯结束之后弹——「游戏都不愿意玩完的人估计也不会给我发电」）：
+   S.step 变成 "end" 且退役仪式已经收起时，render 末尾调 supportNudge("end")，等 5 秒让人先看结局名片。
+   原来还有「这一次玩够 10 分钟」就弹的计时器，已去掉。
    每个浏览器会话最多弹一次；点过「别再提示」永远不弹。右下角 ♥ 随时能主动打开。 */
-export const SUPPORT_PLAY_MS = 10 * 60 * 1000;
 export function supportSeen() {
   try { return sessionStorage.getItem(SUPPORT_SESSION_KEY) === "1"; } catch (e) { return false; }
 }
@@ -401,24 +400,7 @@ export function supportNudge(reason) {
   try {
     if (!supportUrl() || supportAutoHidden() || supportSeen()) return;
     try { sessionStorage.setItem(SUPPORT_SESSION_KEY, "1"); } catch (e) {}
-    setTimeout(() => showSupport("auto"), reason === "end" ? 5000 : 0);   // 通关：先让人看完结局
-  } catch (e) {}
-}
-export function scheduleSupport() {
-  try {
-    if (!supportUrl() || supportAutoHidden() || supportSeen()) return;
-    let played = 0;                                   // 这一次会话真正在玩的毫秒数
-    const tick = () => {
-      try {
-        if (supportAutoHidden() || supportSeen()) return;
-        const inGame = (S && S.step !== "create");
-        const visible = (typeof document === "undefined") || document.visibilityState !== "hidden";
-        if (inGame && visible) played += 30000;
-        if (played >= SUPPORT_PLAY_MS) { supportNudge("time"); return; }
-      } catch (e) {}
-      setTimeout(tick, 30000);
-    };
-    setTimeout(tick, 30000);
+    setTimeout(() => showSupport("auto"), reason === "end" ? 5000 : 0);   // 结局：先让人看完名片
   } catch (e) {}
 }
 
@@ -608,7 +590,6 @@ export function audioInit() {
     audioPrefs();
     audioFab(hasSfx, hasBgm);
     if (hasBgm) bgmProbe();                       // 服务器上一首都没有就把 ♪ 收掉
-    scheduleSupport();
     bgmSeasonTick();
     updInit();                                    // 新版本上线时提示刷新
     if (hasSfx || hasBgm) document.addEventListener("click", audioClickHandler, true);

@@ -12,7 +12,7 @@ const html = fs.readFileSync(path.join(HERE, "career.html"), "utf8");
 const bad: string[] = [];
 const tick = (ms = 0) => new Promise(r => setTimeout(r, ms));
 
-function boot(opts: { width?: number; tracks?: string[]; theme?: string } = {}) {
+function boot(opts: { width?: number; tracks?: string[]; theme?: string; seed?: number } = {}) {
   const errors: string[] = [];
   const vc = new VirtualConsole();
   vc.on("jsdomError", (e: any) => errors.push(String(e && (e.detail && e.detail.stack || e.message) || e)));
@@ -29,6 +29,17 @@ function boot(opts: { width?: number; tracks?: string[]; theme?: string } = {}) 
       window.scrollTo = () => {};
       window.HTMLElement.prototype.scrollIntoView = function () {};
       if (opts.theme) { try { window.localStorage.setItem("poxiao_theme", opts.theme); } catch (e) {} }   // 设备上记的配色
+      /* 固定随机数（2026-09-08）：建档走的是界面按钮，种子由 screenCreate() 里的 Math.random 抽，
+         所以每跑一次都是另一局——「用按钮推周」偶尔会撞上一局推不动，CI 上就是随机翻红。
+         把这一页的 Math.random 换成定种子的 mulberry32：同一次提交每次跑都是同一局，
+         真撞上推不动就是稳定复现的真问题，而不是抽签。 */
+      let _s = (opts.seed || 20260908) >>> 0;
+      window.Math.random = function () {
+        _s = (_s + 0x6D2B79F5) >>> 0;
+        let t = Math.imul(_s ^ (_s >>> 15), 1 | _s);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
     },
   });
   const w: any = dom.window;
@@ -205,6 +216,66 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
   dom.window.close();
 }
 
+/* ---------------- 「支持作者」自动提示：只在生涯结束、退役仪式收起之后才排上 ---------------- */
+{
+  const { dom, w, d, errors } = boot();
+  await tick(50);
+  const P = w.poxiao;
+  if (d.getElementById("chlog")) (d.getElementById("chlogok") as HTMLElement).click();
+  if (P && createChar(w, d, "支持作者")) {
+    await tick(800);
+    const S = P.S();
+    const seen = () => { try { return w.sessionStorage.getItem("poxiao_support_seen_session_v1") === "1"; } catch (e) { return false; } };
+    if (seen() || d.getElementById("suplove")) bad.push("开局就把「支持作者」提示排上了（应该只在生涯结束之后）");
+    S.career = { w: 0, l: 0, titles: [], best: 99, since: 0, log: [] }; S.team = "TEST";
+    S.step = "end"; P.cerStart("farewell"); P.render();
+    if (!d.querySelector("#stage .cer")) bad.push("结局页上没画出退役仪式");
+    if (seen()) bad.push("退役仪式还没收起就排上了「支持作者」提示");
+    const closeBtn = d.querySelector<HTMLElement>('#stage [data-cer="close"]');
+    if (closeBtn) closeBtn.click(); else bad.push("退役仪式上没有「看生涯名片」按钮");
+    await tick(10);
+    if (d.querySelector("#stage .cer")) bad.push("退役仪式点「看生涯名片」没收起");
+    if (!seen()) bad.push("结局名片出来了却没排上「支持作者」提示");
+    if (d.getElementById("suplove")) bad.push("「支持作者」浮窗没等 5 秒就压在名片上");
+  }
+  if (errors.length) bad.push("支持作者：页面脚本报错 " + errors.length + " 条：" + errors.slice(0, 3).join(" | "));
+  dom.window.close();
+}
+
+/* ---------------- 仪式小游戏不能被重画冲掉（玩家实锤：靶场点了「开始」又回到开始） ---------------- */
+{
+  const { dom, w, d, errors } = boot();
+  await tick(50);
+  const P = w.poxiao;
+  if (d.getElementById("chlog")) (d.getElementById("chlogok") as HTMLElement).click();
+  if (P && createChar(w, d, "小游戏重画")) {
+    await tick(500);
+    const S = P.S();
+    S.career = { w: 0, l: 0, titles: [], best: 99, since: 0, log: [] };
+    S.cer = null; S.cerQ = []; S.achPop = null;
+    P.cerStart("draw"); P.render();
+    const nx = d.querySelector<HTMLElement>('#stage [data-cer="next"]');
+    if (!nx) bad.push("抽签仪式没画出「上台」");
+    else {
+      nx.click();
+      const g = d.getElementById("cer-game");
+      if (!g) bad.push("上台之后没挂上小游戏");
+      else {
+        (g as any).__probe = "live";                 // DOM 被换掉的话这个记号就没了
+        P.render();
+        const g2 = d.getElementById("cer-game");
+        if (!g2 || (g2 as any).__probe !== "live") bad.push("小游戏进行中被 render 重挂了一次（这一局会从头开始）");
+        const skip = d.querySelector<HTMLElement>('#stage [data-cer="skip"]');
+        if (skip) skip.click();                      // 跳过之后必须解锁，界面还能继续画
+        S.cer = null; S.cerQ = []; S.step = "pre"; P.render();
+        if (!d.getElementById("stage")!.innerHTML) bad.push("小游戏收场后 render 被永久锁住了");
+      }
+    }
+  }
+  if (errors.length) bad.push("小游戏重画：页面脚本报错 " + errors.length + " 条：" + errors.slice(0, 3).join(" | "));
+  dom.window.close();
+}
+
 /* ---------------- 手机（375px） ---------------- */
 {
   const { dom, w, d, errors } = boot({ width: 375 });
@@ -234,5 +305,5 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
 }
 
 if (bad.length) { console.error("界面测试失败：\n - " + bad.join("\n - ")); process.exit(1); }
-console.log("界面测试通过：建档按钮 · 导览模态与焦点圈 · 浮窗与歌单探测 · 更新日志 · 推周 · 仪式小游戏（靶场 / 限时三选一） · 存档 · 配色切换 · 手机折叠与抽屉");
+console.log("界面测试通过：建档按钮 · 导览模态与焦点圈 · 浮窗与歌单探测 · 更新日志 · 推周 · 仪式小游戏（靶场 / 限时三选一） · 存档 · 配色切换 · 支持作者只在结局弹 · 小游戏不被重画冲掉 · 手机折叠与抽屉");
 process.exit(0);

@@ -151,7 +151,7 @@ export function roleCard(){
   }
   const ct=coachTrust();
   const mt=mgrTrust();
-  const bar=(label,v,color,txt)=>`<div class="at wide"><div class="lb">${label}</div>
+  const bar=(label,v,color,txt)=>`<div class="at wide num"><div class="lb">${label}</div>
     <div class="track"><div class="fill" style="width:${v}%;${color?`background:${color}`:""}"></div></div>
     <div class="vn mono"><b>${Math.round(v)}</b></div></div>
     ${txt?`<p class="note" style="margin:2px 0 8px">${txt}</p>`:""}`;
@@ -434,10 +434,10 @@ export function scoutCard(){
   const conf=Math.min(92,n*12);
   return `<div class="card"><h2>俱乐部关注<em>${tier[0]}</em></h2>
     <div class="attrs">
-      <div class="at wide"><div class="lb">赛段关注</div>
+      <div class="at wide num"><div class="lb">赛段关注</div>
         <div class="track"><div class="fill" style="width:${heat/6*100}%"></div></div>
         <div class="vn mono"><b>${heat}</b>/6</div></div>
-      <div class="at wide"><div class="lb">表现分</div>
+      <div class="at wide num"><div class="lb">表现分</div>
         <div class="track"><div class="fill" style="width:${clamp(perf*2.5+25,0,100)}%;background:${tier[1]}"></div></div>
         <div class="vn mono"><b>${perf.toFixed(0)}</b></div></div>
     </div>
