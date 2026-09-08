@@ -23,7 +23,7 @@ import { noteGrudge, noteRevenge, rivalBoost, rivalCard } from "./rivals";
 import { addRingTitle, breakAgendaCard, fixNote, fixtureCard, fixtureStrip, mateInjuryHit, mateInjuryNote, mateInjuryRoll, mateInjuryTag, mateInjuryTick, ringTitles, rotationAfterMatch, scrimCard, scrimPanel, scrimPick, scrimTrialCheck, setBreakAgenda, startScrim, titleCount, titlesText } from "./rotation";
 import { actListText, archiveWeek, clearPlan, noteAct, quickBtn, quickPlan, quickPlanPre, repeatLast, routineBar, runActs, runPlan, savePlan } from "./routine";
 import { askConfirm, confirmCard, continueCard, dropSave, escapeHtml, exportSave, importSave, loadGame, meName, safeName, saveBar, saveGame } from "./save";
-import { PRIZE_PO, PRIZE_PO_LDL, addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, yearPayText } from "./shop";
+import { PRIZE_PO, PRIZE_PO_LDL, addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
 import { addSquad, clampWinProb, disruptSynergy, doSquad, gapVerdict, initSquad, myPower, squadActs, squadCard, squadDecay, squadOf, teamPowerOf, watchRoster } from "./squad";
 import { starAfterMatch, starLaneBadge, starSpotHtml } from "./stars";
 import { S, setS } from "./state";
@@ -111,6 +111,10 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260908d", at:"2026-09-08", items:[
+    "合同到期不再背着你签字（玩家反馈「到期会自动续约」）：续约报价原来在赛段结算那一刻就挂起，可那时候你还在打世界赛、卡根本没出现，托管会抢在你看到之前把字签了。现在托管只在转会窗真的开着时才代签；季中那个窗口太短（最短只有一周），没答复不再默认签，而是把合同顺延到赛季末，年底那个三周的窗口再谈；窗口最后一周会明确提醒你还有一份报价没答复",
+    "薪资被砍到很低的问题修了（玩家反馈「薪资很低玩不了」）：上一版的薪资天花板会直接截断实发工资，而合同里记俱乐部档次的那个字段在老存档里可能是错的——最坏的情况下一份 800 万的合同被按青训档的 40 万发。现在天花板只管新报价能涨到哪，绝不回头改你已经签好的合同；字段缺失或对不上时一律按最宽的一档算"
+  ]},
   {v:"v20260908c", at:"2026-09-08", items:[
     "颁奖夜排版修了（玩家点名「年度二阵为什么在一阵上面」）：现在是一阵 → 二阵 → 最佳新秀 → MVP，标题也不再比自己底下那几行还晚淡入",
     "年度一阵不再被一支队包揽（玩家点名「为什么都是一个战队的，ming 只有 70 综评了咋上的一阵」）：夺冠加成从最多 19 分收到 7.5 分，一支队在一阵/二阵里最多占 3 席——冠军队仍然占多数，但一个位置上真正最强的人不会再被挤掉。MVP 从一阵里出；最佳新秀改判「这个赛季头一回进一队」，不再只看年龄",
@@ -4476,8 +4480,11 @@ export function offNextWeek(){
       // 现实里升降就是跟着转会/注册窗走的，不用等到年底
       capLDL();                // 先把二队钉回天花板，再开窗口——不然提拔看到的是虚高的数据
       aiMarketWindow(false);   // 全联盟的提拔/下放先走一遍（AI 队）
-      // 季中到期的合同也要有个了断（玩家实锤：拒了续约、没人签，夏季赛照样穿着旧队衣上场）
-      if(S.pendingRenew) settleRenewDefault();
+      // 季中到期的合同也要有个了断（玩家实锤：拒了续约、没人签，夏季赛照样穿着旧队衣上场）。
+      // 2026-09-08 修（玩家实锤「到期会自动续约」）：季中这一段最短只有 3 周、注册窗还只在
+      // 最后一周才开（MSI 落幕那周），玩家最多只有一周能看到续约卡，错过就被默认签掉。
+      // 现在季中不再替你拍板：没答复就把旧约顺延一个赛段，年底那个 3 周的窗口再谈。
+      if(S.pendingRenew) deferRenewToYearEnd();
       if(S.gotCut){ dropToStreets(true); return; }
       checkPromote();
       if(S.promoteDeal){
@@ -4499,6 +4506,11 @@ export function offNextWeek(){
       if(S.career&&true) rollProOffers("mid");
       pushEvent(`MSI 落幕，<b>季中注册窗</b>开了：续约、挂牌、问询都在这一周。`,"info","转会");
     }
+  }
+  // 窗口最后一周还挂着没答复的续约：明说一次，别让它悄无声息地过期
+  if(S.pendingRenew&&txWindowOpen()&&S.off.week>=S.off.weeks){
+    pushEvent(`<b>这是这个窗口的最后一周</b>：${S.pendingRenew.team} 的续约报价还等着你。
+      ${S.off.next==="year"?"再不答复就按报价默认签了。":"再不答复，合同会顺延到赛季末，年底重谈。"}`,"bad","合同");
   }
   S.ap=(S.off.next==="intl")?2:apFor("off");
   if(S.off.next==="intl"&&S.btk) S.btk.apWeek=4;
@@ -4553,13 +4565,24 @@ export function finishOffseason(){
   startSeason(false,0);
 }
 
-/* 续约报价整个窗口都没回应（多半是托管/自动推进）：默认接受，留队比瞬移友好 */
+/* 季中窗口关了还没答复：不替你拍板，把旧约顺延一个赛段，年底的转会窗（3 周）再谈。
+   （2026-09-08 玩家实锤「到期会自动续约」——季中窗只有一周，太容易错过。） */
+export function deferRenewToYearEnd(){
+  const r=S.pendingRenew; if(!r) return;
+  S.pendingRenew=null;
+  if(S.contract) S.contract.left=Math.max(1,S.contract.left||0);   // 旧约延一个赛段，赛季末重新算
+  pushEvent(`季中注册窗关了，<b>${r.team}</b> 的续约你还没答复——俱乐部把现有合同<b>顺延到赛季末</b>，
+    年底转会窗再谈。<span style="color:var(--ink-3)">那时候有三周时间，别再错过。</span>`,"info","合同");
+}
+/* 年底那个窗口整整三周都没回应（多半是托管/自动推进）：默认接受，留队比瞬移友好 */
 export function settleRenewDefault(){
   const r=S.pendingRenew; if(!r) return;
   S.contract={years:r.years,left:r.years,salary:r.salary,sign:0,buyout:r.buyout,
               team:r.team,tier:r.tier,grade:r.grade,clubTier:r.clubTier};
   S.pendingRenew=null; S.gotCut=false;
-  pushEvent(`<b>${r.team}</b> 的续约没等到你的答复，默认接受——续约 ${r.years} 个赛段。`,"info","合同");
+  pushEvent(`年底转会窗关了，<b>${r.team}</b> 的续约始终没等到你的答复，<b>按报价默认签了</b>——
+    ${r.years} 个赛段，赛段薪资 ${r.salary!==undefined?wanText(r.salary):"—"}。
+    <span style="color:var(--ink-3)">想自己谈条件或者进转会市场的话，下次在窗口开着的时候点那张卡。</span>`,"bad","合同");
 }
 /* ---------- 自由身走到窗口关闭还没签成 → 变回路人主播 ----------
    玩家原话（2026-09-05）：「我选择不续约进入转会市场，市场上又没人要我，那我就应该变回路人主播；

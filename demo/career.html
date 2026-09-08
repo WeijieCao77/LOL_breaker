@@ -4437,7 +4437,7 @@ header.top.compact>.theme-top{display:none}
       cost: 16,
       // 加薪也封在档次天花板里——不然续约那条乘法堵上了，谈判这条又能无限往上叠
       run: (d) => {
-        d.salary = Math.min(Math.round(d.salary * 1.25), payCapOf(d.clubTier));
+        d.salary = capRaise(d.salary * 1.25, d.salary, d.clubTier);
       }
     },
     {
@@ -5226,7 +5226,8 @@ header.top.compact>.theme-top{display:none}
       return;
     }
     const payFloor = Math.round((S.contract && S.contract.salary || 0) * 0.85);
-    let salary = Math.min(Math.max(Math.round(lerp(T.pay[0], T.pay[1], q)), payFloor), payCapOf(tier));
+    const payBase = Math.round(lerp(T.pay[0], T.pay[1], q));
+    let salary = Math.max(Math.min(Math.max(payBase, payFloor), payCapOf(tier)), payBase);
     let sign = S._regDeal ? 0 : Math.round(lerp(T.sign[0], T.sign[1], q));
     let feeCutNote = S._regDeal ? `<div><span class="hi">赛段注册期</span> — <span class="l">买断按 1.2 倍算、没有签字费、进队默契从头磨</span></div>` : "";
     if (fee > budget) {
@@ -6587,7 +6588,11 @@ header.top.compact>.theme-top{display:none}
   ];
   var PAY_CAP = { top: 1500, mid: 700, low: 300, acad: 40 };
   function payCapOf(clubTier) {
-    return PAY_CAP[clubTier] !== void 0 ? PAY_CAP[clubTier] : PAY_CAP.mid;
+    if (clubTier === "acad") return (S && S.homeLeague) === "LDL" ? PAY_CAP.acad : PAY_CAP.low;
+    return PAY_CAP[clubTier] !== void 0 ? PAY_CAP[clubTier] : PAY_CAP.top;
+  }
+  function capRaise(next, cur, clubTier) {
+    return Math.max(Math.round(cur || 0), Math.min(Math.round(next), payCapOf(clubTier)));
   }
   function buyoutRatio(c) {
     const s = c && c.salary, b = c && c.buyout;
@@ -6596,7 +6601,7 @@ header.top.compact>.theme-top{display:none}
   function salaryOf() {
     const c = S.contract || {};
     const bonus = Math.round(Math.min(S.fans, 6e3) * 0.012) + (S.career.leagueTitles || 0) * 6 + ((S.career.msi || 0) + (S.career.worlds || 0)) * 14;
-    if (c.salary !== void 0) return Math.round(Math.min(c.salary, payCapOf(c.clubTier)) + bonus);
+    if (c.salary !== void 0) return Math.round(c.salary + bonus);
     const kindMul = { sub: 1.25, start: 1, core: 0.85, foreign: 1.15 }[S.offerKind] || 1;
     return Math.round((26 + bonus) * kindMul);
   }
@@ -6618,8 +6623,7 @@ header.top.compact>.theme-top{display:none}
     if (wantRenew) {
       const raise = clamp(1.12 + (ovr - teamAvg) * 0.02 + (wonTitle ? 0.12 : 0), 1.02, 1.35);
       const old = S.contract;
-      const cap5 = payCapOf(old.clubTier);
-      const sal = old.salary !== void 0 ? Math.min(Math.round(old.salary * raise), cap5) : void 0;
+      const sal = old.salary !== void 0 ? capRaise(old.salary * raise, old.salary, old.clubTier) : void 0;
       const k = buyoutRatio(old);
       S.pendingRenew = {
         team: S.team,
@@ -12623,7 +12627,7 @@ header.top.compact>.theme-top{display:none}
       }
       return true;
     }
-    if (S.pendingRenew) {
+    if (S.pendingRenew && txWindowOpen()) {
       const tm = S.pendingRenew.team;
       acceptRenew();
       autoNote(`与 ${tm} 续约`);
@@ -13693,6 +13697,10 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260908d", at: "2026-09-08", items: [
+      "合同到期不再背着你签字（玩家反馈「到期会自动续约」）：续约报价原来在赛段结算那一刻就挂起，可那时候你还在打世界赛、卡根本没出现，托管会抢在你看到之前把字签了。现在托管只在转会窗真的开着时才代签；季中那个窗口太短（最短只有一周），没答复不再默认签，而是把合同顺延到赛季末，年底那个三周的窗口再谈；窗口最后一周会明确提醒你还有一份报价没答复",
+      "薪资被砍到很低的问题修了（玩家反馈「薪资很低玩不了」）：上一版的薪资天花板会直接截断实发工资，而合同里记俱乐部档次的那个字段在老存档里可能是错的——最坏的情况下一份 800 万的合同被按青训档的 40 万发。现在天花板只管新报价能涨到哪，绝不回头改你已经签好的合同；字段缺失或对不上时一律按最宽的一档算"
+    ] },
     { v: "v20260908c", at: "2026-09-08", items: [
       "颁奖夜排版修了（玩家点名「年度二阵为什么在一阵上面」）：现在是一阵 → 二阵 → 最佳新秀 → MVP，标题也不再比自己底下那几行还晚淡入",
       "年度一阵不再被一支队包揽（玩家点名「为什么都是一个战队的，ming 只有 70 综评了咋上的一阵」）：夺冠加成从最多 19 分收到 7.5 分，一支队在一阵/二阵里最多占 3 席——冠军队仍然占多数，但一个位置上真正最强的人不会再被挤掉。MVP 从一阵里出；最佳新秀改判「这个赛季头一回进一队」，不再只看年龄",
@@ -18051,7 +18059,7 @@ header.top.compact>.theme-top{display:none}
       if (nx === "summer") {
         capLDL();
         aiMarketWindow(false);
-        if (S.pendingRenew) settleRenewDefault();
+        if (S.pendingRenew) deferRenewToYearEnd();
         if (S.gotCut) {
           dropToStreets(true);
           return;
@@ -18082,6 +18090,10 @@ header.top.compact>.theme-top{display:none}
         if (S.career && true) rollProOffers("mid");
         pushEvent(`MSI 落幕，<b>季中注册窗</b>开了：续约、挂牌、问询都在这一周。`, "info", "转会");
       }
+    }
+    if (S.pendingRenew && txWindowOpen() && S.off.week >= S.off.weeks) {
+      pushEvent(`<b>这是这个窗口的最后一周</b>：${S.pendingRenew.team} 的续约报价还等着你。
+      ${S.off.next === "year" ? "再不答复就按报价默认签了。" : "再不答复，合同会顺延到赛季末，年底重谈。"}`, "bad", "合同");
     }
     S.ap = S.off.next === "intl" ? 2 : apFor("off");
     if (S.off.next === "intl" && S.btk) S.btk.apWeek = 4;
@@ -18135,6 +18147,14 @@ header.top.compact>.theme-top{display:none}
     syncTrust();
     startSeason(false, 0);
   }
+  function deferRenewToYearEnd() {
+    const r = S.pendingRenew;
+    if (!r) return;
+    S.pendingRenew = null;
+    if (S.contract) S.contract.left = Math.max(1, S.contract.left || 0);
+    pushEvent(`季中注册窗关了，<b>${r.team}</b> 的续约你还没答复——俱乐部把现有合同<b>顺延到赛季末</b>，
+    年底转会窗再谈。<span style="color:var(--ink-3)">那时候有三周时间，别再错过。</span>`, "info", "合同");
+  }
   function settleRenewDefault() {
     const r = S.pendingRenew;
     if (!r) return;
@@ -18151,7 +18171,9 @@ header.top.compact>.theme-top{display:none}
     };
     S.pendingRenew = null;
     S.gotCut = false;
-    pushEvent(`<b>${r.team}</b> 的续约没等到你的答复，默认接受——续约 ${r.years} 个赛段。`, "info", "合同");
+    pushEvent(`年底转会窗关了，<b>${r.team}</b> 的续约始终没等到你的答复，<b>按报价默认签了</b>——
+    ${r.years} 个赛段，赛段薪资 ${r.salary !== void 0 ? wanText(r.salary) : "—"}。
+    <span style="color:var(--ink-3)">想自己谈条件或者进转会市场的话，下次在窗口开着的时候点那张卡。</span>`, "bad", "合同");
   }
   function leaveRoster(name, lg) {
     const t = (S.world[lg || "LPL"] || []).find((x) => x.name === name);

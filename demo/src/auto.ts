@@ -6,7 +6,7 @@ import { safeName } from "./save";
 import { COURSES, GEAR, RELAX, SLOTS, addMoney, buyCourse, buyGear, buyRelax, declineStreamDeal, hasCourse, signStreamDeal } from "./shop";
 import { S } from "./state";
 import { SPEND, avgTrust, resolveLocker } from "./team";
-import { TRYOUT_DAYS, acceptRenew, afterTryout, askDeal, clubStanding, dropDeal, dropProOffer, resolveTryoutDay, signDeal, signTransfer, startTryout, takeProOffer, tryoutSkill } from "./tryout";
+import { TRYOUT_DAYS, txWindowOpen, acceptRenew, afterTryout, askDeal, clubStanding, dropDeal, dropProOffer, resolveTryoutDay, signDeal, signTransfer, startTryout, takeProOffer, tryoutSkill } from "./tryout";
 
 /* ================= 托管 · 精简版模式 =================
 
@@ -250,8 +250,12 @@ export function autoCareerStep(){
     else { signDeal(); autoNote(`签了 ${d.team}`); }
     return true;
   }
-  // 合同到期续约报价：默认接受（留在一支想留你的队，是稳妥的托管选择）
-  if(S.pendingRenew){
+  /* 合同到期续约报价：默认接受（留在一支想留你的队，是稳妥的托管选择）。
+     2026-09-08 修（玩家实锤「到期会自动续约」）：原来这里不看窗口开没开，
+     报价一挂起就签——而它是在赛段结算那一刻挂起的，那时候人还在打世界赛，
+     续约卡在界面上根本还没出现。托管于是抢在玩家能看到之前把字签了。
+     现在只在转会窗真的开着时才代签，和界面上那张卡出现的时机对齐。 */
+  if(S.pendingRenew&&txWindowOpen()){
     const tm=S.pendingRenew.team;
     acceptRenew();
     autoNote(`与 ${tm} 续约`);

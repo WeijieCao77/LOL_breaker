@@ -13,7 +13,7 @@ import { addMoney, hasCourse, wanHtml, wanText, yearPayText } from "./shop";
 import { disruptSynergy } from "./squad";
 import { S } from "./state";
 import { statEvent } from "./stats";
-import { addTrustAll, initTrust, payCapOf, syncTrust } from "./team";
+import { addTrustAll, capRaise, initTrust, payCapOf, syncTrust } from "./team";
 
 /* ================= 试训与签约 =================
 
@@ -559,7 +559,7 @@ export const DEAL_ASKS = [
   { k:"pay",    n:"要求加薪",   d:"薪资 +25%",
     hint:"最直接，也最容易谈崩", cost:16,
     // 加薪也封在档次天花板里——不然续约那条乘法堵上了，谈判这条又能无限往上叠
-    run:d=>{ d.salary = Math.min(Math.round(d.salary*1.25), payCapOf(d.clubTier)); } },
+    run:d=>{ d.salary = capRaise(d.salary*1.25, d.salary, d.clubTier); } },
   { k:"sign",   n:"要求签字费", d:"签字费翻倍",
     hint:"一次性到手，俱乐部相对好接受", cost:10,
     run:d=>{ d.sign = Math.max(8, Math.round(d.sign*2)); } },
@@ -1340,7 +1340,10 @@ export function makeProDeal(tier, team, grade, league){
      等于同一个游戏里两套互相不认账的定价。现在现有合同是地板（打八五折，换东家要付点代价），
      新东家的档次是天花板：往上走涨薪，往下走降薪，但不再一夜回到起薪。 */
   const payFloor = Math.round(((S.contract && S.contract.salary) || 0) * 0.85);
-  let salary = Math.min(Math.max(Math.round(lerp(T.pay[0], T.pay[1], q)), payFloor), payCapOf(tier));
+  const payBase = Math.round(lerp(T.pay[0], T.pay[1], q));       // 这家队按你的表现本来会开的数
+  // 地板是现合同的 85%（换东家要付点代价），天花板是新东家的档次；
+  // 但无论如何不低于这家队自己的价目——往下走是降薪，不是归零
+  let salary = Math.max(Math.min(Math.max(payBase, payFloor), payCapOf(tier)), payBase);
   let sign   = S._regDeal ? 0 : Math.round(lerp(T.sign[0], T.sign[1], q));   // 赛段里换队没有签字费
   let feeCutNote = S._regDeal ? `<div><span class="hi">赛段注册期</span> — <span class="l">买断按 1.2 倍算、没有签字费、进队默契从头磨</span></div>` : "";
   if(fee > budget){

@@ -230,7 +230,10 @@ function playOne(opts?) {
       // 休赛期现在是可玩的几周：先把结算页点掉，再把每周的行动点用完
       if (!S.off) { if (opts.encore && S.si === A.BASE_LAST && !S.extended) A.encore(); else A.doOffseason(); continue; }
       // 合同到期续约：测试里默认接受（留在想留你的队）；opts.declineRenew 走「拒绝进市场」
-      if (S.pendingRenew && !S.deal) {
+      // 只在转会窗真的开着时才处理续约——界面上那张卡就是这么出现的。
+      // 原来不看窗口，机器人在世界赛那一段就把字签了，于是「季中窗只有一周」
+      // 和「托管抢在玩家看到之前代签」这类 bug 批测里永远抓不到（2026-09-08）。
+      if (S.pendingRenew && !S.deal && A.txWindowOpen()) {
         if (opts.declineRenew) A.declineRenew();
         else if (opts.negotiateRenew) { renewTalks++; A.renewNegotiate(); }   // 谈一轮再签（覆盖谈判/谈崩两条路）
         else A.acceptRenew();
