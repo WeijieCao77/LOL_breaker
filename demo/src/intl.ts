@@ -6,7 +6,8 @@ import { FAN_TIERS, MID_WEEKS, SEASONS, SPREAD, breakthrough, clamp, enterBreak,
 import { rnd } from "./rng";
 import { addRingTitle, setBreakAgenda } from "./rotation";
 import { PRIZE_MSI, PRIZE_W, addMoney } from "./shop";
-import { S } from "./state";
+import { S, onEra } from "./state";
+import { eraDef } from "./eras";
 
 /* ================= 国际赛：MSI 与 世界赛 =================
    赛制按真实历史:
@@ -458,13 +459,28 @@ export function simEventStaged(field,stage){
    你自己打进决赛（决赛永远真打）——影响力越大，偏得越多，这正是要的曲线。 */
 /* 史实数据层（Leaguepedia 逐条取证，gen-canon.js 生成——队名已映射到库内 2022 快照，
    库里不存在的席位不写、回落自由模拟）。si 0-3 = S12-S15；S16 无剧本。 */
-export const WORLDS_CANON={"0":{"LCK":["Gen.G","T1","Dplus Kia","Kiwoom DRX"],"LPL":["JD Gaming","Top Esports","EDward Gaming","Royal Never Give Up"],"LEC":["G2 Esports","Rogue","Fnatic","MAD Lions KOI"],"LCS":["100 Thieves","Cloud9","Evil Geniuses"],"VCS":["GAM Esports","Saigon Buffalo"],"PCS":["CTBC Flying Oyster"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Isurus"],"LCO":["Chiefs Esports Club"],"TCL":["İstanbul Wildcats"]},"1":{"LCK":["Gen.G","T1","KT Rolster","Dplus Kia"],"LPL":["JD Gaming","Bilibili Gaming","LNG Esports","Weibo Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI","Team BDS"],"LCS":["Cloud9","Team Liquid"],"VCS":["GAM Esports","Team Secret"],"PCS":["PSG Talon","CTBC Flying Oyster"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Movistar R7"]},"2":{"LCK":["Hanwha Life Esports","Gen.G","Dplus Kia","T1"],"LPL":["Bilibili Gaming","Top Esports","LNG Esports","Weibo Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI"],"LCS":["FlyQuest","Team Liquid","100 Thieves"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"LJL":["Fukuoka SoftBank HAWKS gaming"],"CBLOL":["paiN Gaming"],"LLA":["Movistar R7"]},"3":{"LCK":["Gen.G","Hanwha Life Esports","KT Rolster","T1"],"LPL":["Anyone's Legend","Bilibili Gaming","Top Esports","Invictus Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI"],"LCS":["FlyQuest","100 Thieves"],"PCS":["CTBC Flying Oyster","PSG Talon"],"VCS":["Team Secret"]}};
-export const MSI_CANON={"0":{"LCK":["T1"],"LPL":["Royal Never Give Up"],"LEC":["G2 Esports"],"LCS":["Evil Geniuses"],"PCS":["PSG Talon"],"VCS":["Saigon Buffalo"],"LJL":["DetonatioN FocusMe"],"CBLOL":["RED Canids"],"LLA":["Team Aze"],"LCO":["ORDER"],"TCL":["İstanbul Wildcats"]},"1":{"LCK":["Gen.G","T1"],"LPL":["JD Gaming","Bilibili Gaming"],"LEC":["G2 Esports","MAD Lions KOI"],"LCS":["Cloud9","Golden Guardians"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Movistar R7"]},"2":{"LCK":["Gen.G","T1"],"LPL":["Bilibili Gaming","Top Esports"],"LEC":["G2 Esports","Fnatic"],"LCS":["Team Liquid","FlyQuest"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"CBLOL":["LOUD"],"LLA":["Estral Esports"]},"3":{"LCK":["Gen.G","T1"],"LPL":["Bilibili Gaming","Anyone's Legend"],"LEC":["G2 Esports","MAD Lions KOI"],"LCS":["FlyQuest"],"CBLOL":["FURIA"],"PCS":["CTBC Flying Oyster"],"VCS":["GAM Esports"]}};
-export const LEAGUE_CANON={"LCK":{"0":["T1","Gen.G"],"1":["Gen.G","Gen.G"],"2":["Gen.G","Hanwha Life Esports"],"3":["Gen.G","Gen.G"]},"LEC":{"0":["G2 Esports","Rogue"],"1":["MAD Lions KOI","G2 Esports"],"2":["G2 Esports","G2 Esports"],"3":["MAD Lions KOI","G2 Esports"]},"LCS":{"0":["Evil Geniuses","Cloud9"],"1":["Cloud9",null],"2":["Team Liquid","FlyQuest"]},"LPL":{"0":["Royal Never Give Up","JD Gaming"],"1":["JD Gaming","JD Gaming"],"2":["Bilibili Gaming","Bilibili Gaming"],"3":["Top Esports","Bilibili Gaming"]}};
-export const INTL_CANON={
+const WORLDS_CANON_S12={"0":{"LCK":["Gen.G","T1","Dplus Kia","Kiwoom DRX"],"LPL":["JD Gaming","Top Esports","EDward Gaming","Royal Never Give Up"],"LEC":["G2 Esports","Rogue","Fnatic","MAD Lions KOI"],"LCS":["100 Thieves","Cloud9","Evil Geniuses"],"VCS":["GAM Esports","Saigon Buffalo"],"PCS":["CTBC Flying Oyster"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Isurus"],"LCO":["Chiefs Esports Club"],"TCL":["İstanbul Wildcats"]},"1":{"LCK":["Gen.G","T1","KT Rolster","Dplus Kia"],"LPL":["JD Gaming","Bilibili Gaming","LNG Esports","Weibo Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI","Team BDS"],"LCS":["Cloud9","Team Liquid"],"VCS":["GAM Esports","Team Secret"],"PCS":["PSG Talon","CTBC Flying Oyster"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Movistar R7"]},"2":{"LCK":["Hanwha Life Esports","Gen.G","Dplus Kia","T1"],"LPL":["Bilibili Gaming","Top Esports","LNG Esports","Weibo Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI"],"LCS":["FlyQuest","Team Liquid","100 Thieves"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"LJL":["Fukuoka SoftBank HAWKS gaming"],"CBLOL":["paiN Gaming"],"LLA":["Movistar R7"]},"3":{"LCK":["Gen.G","Hanwha Life Esports","KT Rolster","T1"],"LPL":["Anyone's Legend","Bilibili Gaming","Top Esports","Invictus Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI"],"LCS":["FlyQuest","100 Thieves"],"PCS":["CTBC Flying Oyster","PSG Talon"],"VCS":["Team Secret"]}};
+const MSI_CANON_S12={"0":{"LCK":["T1"],"LPL":["Royal Never Give Up"],"LEC":["G2 Esports"],"LCS":["Evil Geniuses"],"PCS":["PSG Talon"],"VCS":["Saigon Buffalo"],"LJL":["DetonatioN FocusMe"],"CBLOL":["RED Canids"],"LLA":["Team Aze"],"LCO":["ORDER"],"TCL":["İstanbul Wildcats"]},"1":{"LCK":["Gen.G","T1"],"LPL":["JD Gaming","Bilibili Gaming"],"LEC":["G2 Esports","MAD Lions KOI"],"LCS":["Cloud9","Golden Guardians"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Movistar R7"]},"2":{"LCK":["Gen.G","T1"],"LPL":["Bilibili Gaming","Top Esports"],"LEC":["G2 Esports","Fnatic"],"LCS":["Team Liquid","FlyQuest"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"CBLOL":["LOUD"],"LLA":["Estral Esports"]},"3":{"LCK":["Gen.G","T1"],"LPL":["Bilibili Gaming","Anyone's Legend"],"LEC":["G2 Esports","MAD Lions KOI"],"LCS":["FlyQuest"],"CBLOL":["FURIA"],"PCS":["CTBC Flying Oyster"],"VCS":["GAM Esports"]}};
+const LEAGUE_CANON_S12={"LCK":{"0":["T1","Gen.G"],"1":["Gen.G","Gen.G"],"2":["Gen.G","Hanwha Life Esports"],"3":["Gen.G","Gen.G"]},"LEC":{"0":["G2 Esports","Rogue"],"1":["MAD Lions KOI","G2 Esports"],"2":["G2 Esports","G2 Esports"],"3":["MAD Lions KOI","G2 Esports"]},"LCS":{"0":["Evil Geniuses","Cloud9"],"1":["Cloud9",null],"2":["Team Liquid","FlyQuest"]},"LPL":{"0":["Royal Never Give Up","JD Gaming"],"1":["JD Gaming","JD Gaming"],"2":["Bilibili Gaming","Bilibili Gaming"],"3":["Top Esports","Bilibili Gaming"]}};
+const INTL_CANON_S12={
   worlds:{0:"Kiwoom DRX",1:"T1",2:"T1",3:"T1"},
   msi:{0:"Royal Never Give Up",1:"JD Gaming",2:"Gen.G",3:"Gen.G"}
 };
+/* 四张史实表跟着纪元走（2026-09-08）：原来写死 2022 那一套，S6 纪元的 si=0
+   会去查它，把 Kiwoom DRX 拉进 2016 年的世界赛。所有消费点都带 `if(表[S.si])`
+   的守卫，所以**缺数据就是自由模拟**——新纪元可以先留空，以后再补。 */
+export let WORLDS_CANON: any=WORLDS_CANON_S12;
+export let MSI_CANON: any=MSI_CANON_S12;
+export let LEAGUE_CANON: any=LEAGUE_CANON_S12;
+export let INTL_CANON: any=INTL_CANON_S12;
+onEra(k=>{
+  const C=eraDef(k).canon;
+  WORLDS_CANON = C? (C.worldsSeeds||{}) : WORLDS_CANON_S12;
+  MSI_CANON    = C? (C.msiSeeds||{})    : MSI_CANON_S12;
+  LEAGUE_CANON = C? (C.leagueSeeds||{}) : LEAGUE_CANON_S12;
+  INTL_CANON   = C? (C.intl||{worlds:{},msi:{}}) : INTL_CANON_S12;
+});
+
 /* ---------- 世界线张力（2026-09-03 玩家拍板：均衡档）----------
    一个变量管全部：wl[联赛] ∈ [0,1]，0=完全按史实，1=完全活模拟。
    注入：你在联赛打一周正赛 +0.03×影响力；国际赛淘汰某赛区的队 +0.10×影响力；

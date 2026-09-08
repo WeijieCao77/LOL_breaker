@@ -557,7 +557,8 @@ export let SEASONS: any=eraDef("s12").seasons;
 /* 生涯长度：默认五年（S12–S16，下标 4）；S16 收官时选了「再打」就到 S19（下标 7）。
    凡是原来写 SEASONS.length-1 的地方都改成这个——没选之前媒体不该说「还有三年」。 */
 export let BASE_LAST=eraDef("s12").baseLast;   // 生涯基础年数：破晓五年、魔王纪元六年
-onEra(k=>{ const E=eraDef(k); SEASONS=E.seasons; REGION_ANCHOR=E.anchor; LCK_DYNASTY=E.dynasty; BASE_LAST=E.baseLast; });
+onEra(k=>{ const E=eraDef(k); SEASONS=E.seasons; REGION_ANCHOR=E.anchor; LCK_DYNASTY=E.dynasty;
+           BASE_LAST=E.baseLast; LPL_CODE=E.codes||{}; LDL_ROSTER=E.ldl||{}; });
 export function lastSeason(){ return (S&&S.extended)?SEASONS.length-1:BASE_LAST; }
 /* 这个纪元支不支持「再战三年」——只有破晓纪元有 S17–S19 */
 export function eraExtendable(){ return !!eraDef((S&&S.era)||"s12").extendable; }
@@ -1220,14 +1221,8 @@ export function cloneWorld(){
    「青训队联赛」这回事，LDL 是正式的次级联赛，队伍有自己的队名。
    说明：2022 赛季 LDL 的完整队名名单没能查到可核实的来源，
    所以这里只套用命名惯例，不假装它是真实名单。 */
-export const LPL_CODE={
-  "Royal Never Give Up":"RNG","JD Gaming":"JDG","Top Esports":"TES",
-  "Victory Five":"V5","EDward Gaming":"EDG","Weibo Gaming":"WBG",
-  "LNG Esports":"LNG","Bilibili Gaming":"BLG","Oh My God":"OMG",
-  "FunPlus Phoenix":"FPX","Rare Atom":"RA","Invictus Gaming":"IG",
-  "ThunderTalk Gaming":"TT","Anyone's Legend":"AL","LGD Gaming":"LGD",
-  "Ultra Prime":"UP","Team WE":"WE"
-};
+/* 战队简称跟着纪元走（表在 eras.ts）；没配的走下面 teamCode 的首字母兜底 */
+export let LPL_CODE: any=eraDef("s12").codes;
 export function teamCode(name){
   if(LPL_CODE[name]) return LPL_CODE[name];
   // 兜底：取每个词的首字母，最多三位
@@ -1237,25 +1232,9 @@ export function teamCode(name){
    主联赛就是「2022 真实数据快照＋逐年老化」，二队用同一口径：只借名字，
    数值仍走 buildLDL 的母队锚定带（零平衡影响）。缺数据的俱乐部回落占位名。
    外赛区没有次级联赛建模——试训邀请只出自 LPL/LDL（pickClub 联赛写死）。 */
-export const LDL_ROSTER={
-  EDG:[{id:"Solokill",pos:"top"},{id:"Monki",pos:"jng"},{id:"0909",pos:"mid"},{id:"Leave",pos:"bot"},{id:"Xiamu",pos:"sup"}],
-  TES:[{id:"Aspire",pos:"top"},{id:"eight",pos:"jng"},{id:"Novice",pos:"mid"},{id:"Ylaht",pos:"bot"},{id:"Cerasus",pos:"sup"}],
-  BLG:[{id:"Myths",pos:"top"},{id:"can",pos:"jng"},{id:"pinz",pos:"mid"},{id:"Rise",pos:"bot"},{id:"Jwei",pos:"sup"}],
-  JDG:[{id:"unravel",pos:"top"},{id:"Xiao17",pos:"jng"},{id:"Insulator",pos:"mid"},{id:"TuT",pos:"bot"},{id:"Feather",pos:"sup"}],
-  RNG:[{id:"Xiaoxu",pos:"top"},{id:"lovely",pos:"jng"},{id:"Tangyuan",pos:"mid"},{id:"Asura",pos:"bot"},{id:"Mysun",pos:"sup"}],
-  WBG:[{id:"Decade",pos:"top"},{id:"Maggie",pos:"jng"},{id:"forse",pos:"mid"},{id:"Shark",pos:"bot"},{id:"Wuy",pos:"sup"}],
-  AL:[{id:"Overture",pos:"top"},{id:"icecoKe",pos:"jng"},{id:"Harder",pos:"mid"},{id:"Michi",pos:"bot"},{id:"Kaixuan",pos:"sup"}],
-  TT:[{id:"xiao7",pos:"top"},{id:"Youxin",pos:"jng"},{id:"Sky",pos:"mid"},{id:"bat",pos:"bot"},{id:"Mmy",pos:"sup"}],
-  RA:[{id:"torch",pos:"top"},{id:"Yesjun",pos:"jng"},{id:"DOING",pos:"mid"},{id:"Such",pos:"bot"},{id:"Parac",pos:"sup"}],
-  UP:[{id:"Hery",pos:"top"},{id:"yekai",pos:"jng"},{id:"xiaocaobao",pos:"mid"},{id:"rat",pos:"bot"},{id:"Missia",pos:"sup"}],
-  LGD:[{id:"Rumiki",pos:"top"},{id:"Fatfish",pos:"jng"},{id:"haichao",pos:"mid"},{id:"RanL",pos:"bot"},{id:"minghai",pos:"sup"}],
-  LNG:[{id:"Clever9",pos:"top"},{id:"Darwin",pos:"jng"},{id:"Vergil",pos:"mid"},{id:"Uneasy",pos:"bot"},{id:"yawang",pos:"sup"}],
-  V5:[{id:"Invincible",pos:"top"},{id:"pzx",pos:"jng"},{id:"Dream",pos:"mid"},{id:"Kepler",pos:"bot"},{id:"Jerry",pos:"sup"}],
-  OMG:[{id:"Munian",pos:"top"},{id:"Mori",pos:"jng"},{id:"Steel",pos:"mid"},{id:"2y1",pos:"bot"},{id:"Guang",pos:"sup"}],
-  FPX:[{id:"Kartis",pos:"top"},{id:"haoye",pos:"jng"},{id:"Qing",pos:"mid"},{id:"Xingye",pos:"bot"},{id:"Lele",pos:"sup"}],
-  WE:[{id:"Demon",pos:"top"},{id:"Yanxiang",pos:"jng"},{id:"xqw",pos:"mid"},{id:"yhp",pos:"bot"},{id:"Fahai",pos:"sup"}],
-  IG:[{id:"YSKM",pos:"top"},{id:"Beige",pos:"jng"},{id:"xzy",pos:"mid"},{id:"xiaoyueji",pos:"bot"},{id:"Mitsuki",pos:"sup"}]
-};
+/* 二队真名表跟着纪元走：新纪元没有就留空（buildLDL 会回落到生成的新秀名），
+   等以后拿到那一年次级联赛的名单再填 */
+export let LDL_ROSTER: any=eraDef("s12").ldl;
 export function buildLDL(w){
   const src=(w.LPL||[]);
   const rk=src.map(t=>({t,p:avg(t.players.map(q=>avg(DIMS.map(d=>q.r[d]))))}))

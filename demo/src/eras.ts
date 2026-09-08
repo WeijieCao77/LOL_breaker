@@ -8,8 +8,38 @@
    现在直接不做了。anchorLeague 本来就会把每个联赛的均值钉到该赛区的锚点，
    所以手写数据只要**联赛内部的相对强弱**是对的，绝对值由纪元自己的锚点决定。
 
-   这个文件只放数据表，不 import 任何游戏模块（除了 data.ts 的静态 JSON），
-   避免循环引用。切换动作在 state.ts 的 applyEra，各模块自己登记回调。 */
+   这个文件只放数据表，不 import 任何游戏模块（除了静态 JSON），
+   避免循环引用。切换动作在 state.ts 的 applyEra，各模块自己登记回调。
+
+   ---------- 怎么加一个纪元 ----------
+   框架已经就位，加纪元是填槽，不是改逻辑。四步：
+
+   1) 数据：仿 data/build_era_2016.py 写一份生成脚本，产出 data/csv/game_data_<年>.json。
+      形状见那个脚本；只要**联赛内部的相对强弱**对，绝对值由下面的 anchor 决定。
+   2) 在这个文件里加四张表：SEASONS_xx（每季的赛制与版本主题）、ANCHOR_xx（赛区水位
+      ＝这个纪元的标尺）、DYNASTY_xx（赛区年份统治力）、HOSTS_xx（世界赛主办地）。
+      可选：STARS_xx（明星履历，写到开局前一年）、CODE_xx（战队简称）、
+      CANON_xx（史实层，留空就是自由模拟）、LDL_xx（次级联赛名单，留空回落生成名）。
+   3) 在 ERAS 里注册一条，把 ERA_KEYS 补上。
+   4) 跑 npm test —— 纪元自检（demo/test.ts 的 eraChecks）会把每个注册过的纪元
+      逐个校验数据形状并整局跑一遍。缺字段、位置不齐、赛区没锚点、赛季表越界
+      都会点名报错，跑不完也会红。
+
+   引擎侧不需要动。唯一动过引擎的一次是「2016 世界赛没有入围赛」——
+   buildWorldsField 原来假定 cfg.playin 一定存在；现在 playin 缺省就是没有入围赛。
+   以后遇到别的历史赛制（比如 S3–S5 没有 MSI），同样是在引擎里补一个形态，
+   而不是给某个纪元开特例。
+
+   ---------- 以后要做的（作者 2026-09-08 定的方向）----------
+   现在是「各纪元独立、各用各的标尺」。以后可能会：
+   · **把纪元连起来** —— 打完 S6–S11 接着进 S12–S16，同一个角色跨纪元。
+     现在挡路的是：SEASONS 是整表替换、S.era 建档时定死、生涯长度按纪元算。
+     真要做的话，得把「赛季表」从纪元的属性改成一条可拼接的时间轴，
+     年龄曲线和退役线也要按总年数重算——不是小改动，但现在这套结构没有堵死它。
+   · **统一标尺** —— 各纪元的 anchor 合并成一张跨年代可比的表。
+     那时候 anchorLeague 的调用方式不用变，改的是 anchor 的来源，
+     所以这一步反而比连起来容易。
+   两件事都不在现在的范围内，先把单个纪元做扎实。 */
 import gameData2022 from "../../data/csv/game_data_2022.json";
 import gameData2016 from "../../data/csv/game_data_2016.json";
 
@@ -106,12 +136,70 @@ const HOSTS_S12={2022:{c:"旧金山",h:12},2023:{c:"首尔",h:2},2024:{c:"伦敦
 const HOSTS_S6 ={2016:{c:"洛杉矶",h:15},2017:{c:"北京",h:0},2018:{c:"仁川",h:1},
                  2019:{c:"巴黎",h:6},2020:{c:"上海",h:0},2021:{c:"雷克雅未克",h:8}};
 
-/* 史实冠军：只用于叙事对照（「你改写了历史」），不参与任何模拟 */
+/* ---------- 史实层 ----------
+   引擎里已经有一套「史实闸门」（intl.ts 的 convergeChamp）：模拟出的冠军如果正主还在场、
+   又没被你亲手打掉，就按 1−世界线张力 的概率收束回史实。所以这层必须**跟着纪元走**，
+   否则 S6 纪元的 si=0 会去查 2022 那份，把 Kiwoom DRX 拉进 2016 年的世界赛。
+
+   四张表都按 si 索引，消费点全部带 `if(表[S.si])` 的守卫——**缺数据就是自由模拟**，
+   所以后期再补是安全的，不用一次填满。
+   · intl   国际赛冠军（世界赛 / MSI）
+   · worlds / msi / league  各赛区的参赛席位与联赛冠军（席位剧本）
+
+   S6 纪元现在只填了国际赛冠军里**队名在 2016 快照里存在**的那几年：
+   2019 的 FPX、2020 的 DAMWON 在 2016 还没成立，写了也匹配不上（会被守卫挡掉），
+   等以后做「战队成立 / 改名」再补。席位剧本三张表留空，等真实数据。 */
 const CANON_S6={
-  worlds:{2016:"SK Telecom T1",2017:"Samsung Galaxy",2018:"Invictus Gaming",
-          2019:"FunPlus Phoenix",2020:"DAMWON Gaming",2021:"Edward Gaming"},
-  msi:{2016:"SK Telecom T1",2017:"SK Telecom T1",2018:"Royal Never Give Up",
-       2019:"G2 Esports",2020:null,2021:"Royal Never Give Up"}
+  intl:{
+    worlds:{0:"SK Telecom T1",1:"Samsung Galaxy",2:"Invictus Gaming",5:"Edward Gaming"},
+    msi:{0:"SK Telecom T1",1:"SK Telecom T1",2:"Royal Never Give Up",3:"G2 Esports",5:"Royal Never Give Up"}
+  },
+  worldsSeeds:{}, msiSeeds:{}, leagueSeeds:{}
+};
+
+/* 2022 LDL 春季赛真实首发（Leaguepedia）。新纪元没有这张表就留空，buildLDL 回落到生成的新秀名。 */
+const LDL_S12={
+  EDG:[{id:"Solokill",pos:"top"},{id:"Monki",pos:"jng"},{id:"0909",pos:"mid"},{id:"Leave",pos:"bot"},{id:"Xiamu",pos:"sup"}],
+  TES:[{id:"Aspire",pos:"top"},{id:"eight",pos:"jng"},{id:"Novice",pos:"mid"},{id:"Ylaht",pos:"bot"},{id:"Cerasus",pos:"sup"}],
+  BLG:[{id:"Myths",pos:"top"},{id:"can",pos:"jng"},{id:"pinz",pos:"mid"},{id:"Rise",pos:"bot"},{id:"Jwei",pos:"sup"}],
+  JDG:[{id:"unravel",pos:"top"},{id:"Xiao17",pos:"jng"},{id:"Insulator",pos:"mid"},{id:"TuT",pos:"bot"},{id:"Feather",pos:"sup"}],
+  RNG:[{id:"Xiaoxu",pos:"top"},{id:"lovely",pos:"jng"},{id:"Tangyuan",pos:"mid"},{id:"Asura",pos:"bot"},{id:"Mysun",pos:"sup"}],
+  WBG:[{id:"Decade",pos:"top"},{id:"Maggie",pos:"jng"},{id:"forse",pos:"mid"},{id:"Shark",pos:"bot"},{id:"Wuy",pos:"sup"}],
+  AL:[{id:"Overture",pos:"top"},{id:"icecoKe",pos:"jng"},{id:"Harder",pos:"mid"},{id:"Michi",pos:"bot"},{id:"Kaixuan",pos:"sup"}],
+  TT:[{id:"xiao7",pos:"top"},{id:"Youxin",pos:"jng"},{id:"Sky",pos:"mid"},{id:"bat",pos:"bot"},{id:"Mmy",pos:"sup"}],
+  RA:[{id:"torch",pos:"top"},{id:"Yesjun",pos:"jng"},{id:"DOING",pos:"mid"},{id:"Such",pos:"bot"},{id:"Parac",pos:"sup"}],
+  UP:[{id:"Hery",pos:"top"},{id:"yekai",pos:"jng"},{id:"xiaocaobao",pos:"mid"},{id:"rat",pos:"bot"},{id:"Missia",pos:"sup"}],
+  LGD:[{id:"Rumiki",pos:"top"},{id:"Fatfish",pos:"jng"},{id:"haichao",pos:"mid"},{id:"RanL",pos:"bot"},{id:"minghai",pos:"sup"}],
+  LNG:[{id:"Clever9",pos:"top"},{id:"Darwin",pos:"jng"},{id:"Vergil",pos:"mid"},{id:"Uneasy",pos:"bot"},{id:"yawang",pos:"sup"}],
+  V5:[{id:"Invincible",pos:"top"},{id:"pzx",pos:"jng"},{id:"Dream",pos:"mid"},{id:"Kepler",pos:"bot"},{id:"Jerry",pos:"sup"}],
+  OMG:[{id:"Munian",pos:"top"},{id:"Mori",pos:"jng"},{id:"Steel",pos:"mid"},{id:"2y1",pos:"bot"},{id:"Guang",pos:"sup"}],
+  FPX:[{id:"Kartis",pos:"top"},{id:"haoye",pos:"jng"},{id:"Qing",pos:"mid"},{id:"Xingye",pos:"bot"},{id:"Lele",pos:"sup"}],
+  WE:[{id:"Demon",pos:"top"},{id:"Yanxiang",pos:"jng"},{id:"xqw",pos:"mid"},{id:"yhp",pos:"bot"},{id:"Fahai",pos:"sup"}],
+  IG:[{id:"YSKM",pos:"top"},{id:"Beige",pos:"jng"},{id:"xzy",pos:"mid"},{id:"xiaoyueji",pos:"bot"},{id:"Mitsuki",pos:"sup"}]
+};
+
+/* 战队简称：没配的走 teamCode 的首字母兜底（"SK Telecom T1" 会变成 "STT"，所以头部要配） */
+const CODE_S12={
+  "Royal Never Give Up":"RNG","JD Gaming":"JDG","Top Esports":"TES",
+  "Victory Five":"V5","EDward Gaming":"EDG","Weibo Gaming":"WBG",
+  "LNG Esports":"LNG","Bilibili Gaming":"BLG","Oh My God":"OMG",
+  "FunPlus Phoenix":"FPX","Rare Atom":"RA","Invictus Gaming":"IG",
+  "ThunderTalk Gaming":"TT","Anyone's Legend":"AL","LGD Gaming":"LGD",
+  "Ultra Prime":"UP","Team WE":"WE"
+};
+const CODE_S6={
+  "Edward Gaming":"EDG","Royal Never Give Up":"RNG","Qiao Gu Reapers":"QG",
+  "Snake Esports":"SS","Invictus Gaming":"IG","Team WE":"WE","LGD Gaming":"LGD",
+  "Vici Gaming":"VG","Newbee":"NB","Masters3":"M3","Energy Pacemaker":"EP","Saint Gaming":"ST",
+  "SK Telecom T1":"SKT","ROX Tigers":"ROX","Samsung Galaxy":"SSG","KT Rolster":"KT",
+  "Jin Air Green Wings":"JAG","Afreeca Freecs":"AFS","Longzhu Gaming":"LZ","MVP":"MVP",
+  "CJ Entus":"CJ","Kongdoo Monster":"KDM",
+  "Flash Wolves":"FW","ahq e-Sports":"AHQ","J Team":"JT","Machi Esports":"M17",
+  "Hong Kong Esports":"HKE","eXtreme Gamers":"XG",
+  "G2 Esports":"G2","H2K Gaming":"H2K","Fnatic":"FNC","Origen":"OG","Splyce":"SPY",
+  "Unicorns of Love":"UOL","Team Vitality":"VIT","Giants Gaming":"GIA",
+  "Team SoloMid":"TSM","Counter Logic Gaming":"CLG","Immortals":"IMT","Cloud9":"C9",
+  "Team Liquid":"TL","NRG Esports":"NRG","Echo Fox":"FOX","Phoenix1":"P1"
 };
 
 
@@ -183,14 +271,14 @@ export const ERAS: any={
     d:"从至暗时刻开局。五年之后还能再战三年到 S19。",
     long:"你在 2022 年出道，LPL 已经三年没碰过世界冠军。五年之内破局——打不完还能再打三年。",
     data:gameData2022, seasons:SEASONS_S12, anchor:ANCHOR_S12, dynasty:DYNASTY_S12,
-    hosts:HOSTS_S12, baseLast:4, canon:null, extendable:true, stars:null
+    hosts:HOSTS_S12, baseLast:4, canon:null, extendable:true, stars:null, codes:CODE_S12, ldl:LDL_S12
   },
   s6:{
     k:"s6", n:"魔王与首冠", sub:"S6–S11", years:"2016–2021",
     d:"六年，从魔王的最后一座打到 LPL 的第一座。",
     long:"你在 2016 年出道，魔王还在王座上，LPL 一座世界冠军都没有。六年里这个问题会被回答——由谁回答，你说了算。",
     data:gameData2016, seasons:SEASONS_S6, anchor:ANCHOR_S6, dynasty:DYNASTY_S6,
-    hosts:HOSTS_S6, baseLast:5, canon:CANON_S6, extendable:false, stars:STARS_S6,
+    hosts:HOSTS_S6, baseLast:5, canon:CANON_S6, extendable:false, stars:STARS_S6, codes:CODE_S6, ldl:{},
     demo:true   // 名单与数值是手写的脚手架，等真实数据校对（见 data/csv/game_data_2016.json 的表头注释）
   }
 };

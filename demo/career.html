@@ -1735,22 +1735,97 @@ header.top.compact>.theme-top{display:none}
     2021: { c: "雷克雅未克", h: 8 }
   };
   var CANON_S6 = {
-    worlds: {
-      2016: "SK Telecom T1",
-      2017: "Samsung Galaxy",
-      2018: "Invictus Gaming",
-      2019: "FunPlus Phoenix",
-      2020: "DAMWON Gaming",
-      2021: "Edward Gaming"
+    intl: {
+      worlds: { 0: "SK Telecom T1", 1: "Samsung Galaxy", 2: "Invictus Gaming", 5: "Edward Gaming" },
+      msi: { 0: "SK Telecom T1", 1: "SK Telecom T1", 2: "Royal Never Give Up", 3: "G2 Esports", 5: "Royal Never Give Up" }
     },
-    msi: {
-      2016: "SK Telecom T1",
-      2017: "SK Telecom T1",
-      2018: "Royal Never Give Up",
-      2019: "G2 Esports",
-      2020: null,
-      2021: "Royal Never Give Up"
-    }
+    worldsSeeds: {},
+    msiSeeds: {},
+    leagueSeeds: {}
+  };
+  var LDL_S12 = {
+    EDG: [{ id: "Solokill", pos: "top" }, { id: "Monki", pos: "jng" }, { id: "0909", pos: "mid" }, { id: "Leave", pos: "bot" }, { id: "Xiamu", pos: "sup" }],
+    TES: [{ id: "Aspire", pos: "top" }, { id: "eight", pos: "jng" }, { id: "Novice", pos: "mid" }, { id: "Ylaht", pos: "bot" }, { id: "Cerasus", pos: "sup" }],
+    BLG: [{ id: "Myths", pos: "top" }, { id: "can", pos: "jng" }, { id: "pinz", pos: "mid" }, { id: "Rise", pos: "bot" }, { id: "Jwei", pos: "sup" }],
+    JDG: [{ id: "unravel", pos: "top" }, { id: "Xiao17", pos: "jng" }, { id: "Insulator", pos: "mid" }, { id: "TuT", pos: "bot" }, { id: "Feather", pos: "sup" }],
+    RNG: [{ id: "Xiaoxu", pos: "top" }, { id: "lovely", pos: "jng" }, { id: "Tangyuan", pos: "mid" }, { id: "Asura", pos: "bot" }, { id: "Mysun", pos: "sup" }],
+    WBG: [{ id: "Decade", pos: "top" }, { id: "Maggie", pos: "jng" }, { id: "forse", pos: "mid" }, { id: "Shark", pos: "bot" }, { id: "Wuy", pos: "sup" }],
+    AL: [{ id: "Overture", pos: "top" }, { id: "icecoKe", pos: "jng" }, { id: "Harder", pos: "mid" }, { id: "Michi", pos: "bot" }, { id: "Kaixuan", pos: "sup" }],
+    TT: [{ id: "xiao7", pos: "top" }, { id: "Youxin", pos: "jng" }, { id: "Sky", pos: "mid" }, { id: "bat", pos: "bot" }, { id: "Mmy", pos: "sup" }],
+    RA: [{ id: "torch", pos: "top" }, { id: "Yesjun", pos: "jng" }, { id: "DOING", pos: "mid" }, { id: "Such", pos: "bot" }, { id: "Parac", pos: "sup" }],
+    UP: [{ id: "Hery", pos: "top" }, { id: "yekai", pos: "jng" }, { id: "xiaocaobao", pos: "mid" }, { id: "rat", pos: "bot" }, { id: "Missia", pos: "sup" }],
+    LGD: [{ id: "Rumiki", pos: "top" }, { id: "Fatfish", pos: "jng" }, { id: "haichao", pos: "mid" }, { id: "RanL", pos: "bot" }, { id: "minghai", pos: "sup" }],
+    LNG: [{ id: "Clever9", pos: "top" }, { id: "Darwin", pos: "jng" }, { id: "Vergil", pos: "mid" }, { id: "Uneasy", pos: "bot" }, { id: "yawang", pos: "sup" }],
+    V5: [{ id: "Invincible", pos: "top" }, { id: "pzx", pos: "jng" }, { id: "Dream", pos: "mid" }, { id: "Kepler", pos: "bot" }, { id: "Jerry", pos: "sup" }],
+    OMG: [{ id: "Munian", pos: "top" }, { id: "Mori", pos: "jng" }, { id: "Steel", pos: "mid" }, { id: "2y1", pos: "bot" }, { id: "Guang", pos: "sup" }],
+    FPX: [{ id: "Kartis", pos: "top" }, { id: "haoye", pos: "jng" }, { id: "Qing", pos: "mid" }, { id: "Xingye", pos: "bot" }, { id: "Lele", pos: "sup" }],
+    WE: [{ id: "Demon", pos: "top" }, { id: "Yanxiang", pos: "jng" }, { id: "xqw", pos: "mid" }, { id: "yhp", pos: "bot" }, { id: "Fahai", pos: "sup" }],
+    IG: [{ id: "YSKM", pos: "top" }, { id: "Beige", pos: "jng" }, { id: "xzy", pos: "mid" }, { id: "xiaoyueji", pos: "bot" }, { id: "Mitsuki", pos: "sup" }]
+  };
+  var CODE_S12 = {
+    "Royal Never Give Up": "RNG",
+    "JD Gaming": "JDG",
+    "Top Esports": "TES",
+    "Victory Five": "V5",
+    "EDward Gaming": "EDG",
+    "Weibo Gaming": "WBG",
+    "LNG Esports": "LNG",
+    "Bilibili Gaming": "BLG",
+    "Oh My God": "OMG",
+    "FunPlus Phoenix": "FPX",
+    "Rare Atom": "RA",
+    "Invictus Gaming": "IG",
+    "ThunderTalk Gaming": "TT",
+    "Anyone's Legend": "AL",
+    "LGD Gaming": "LGD",
+    "Ultra Prime": "UP",
+    "Team WE": "WE"
+  };
+  var CODE_S6 = {
+    "Edward Gaming": "EDG",
+    "Royal Never Give Up": "RNG",
+    "Qiao Gu Reapers": "QG",
+    "Snake Esports": "SS",
+    "Invictus Gaming": "IG",
+    "Team WE": "WE",
+    "LGD Gaming": "LGD",
+    "Vici Gaming": "VG",
+    "Newbee": "NB",
+    "Masters3": "M3",
+    "Energy Pacemaker": "EP",
+    "Saint Gaming": "ST",
+    "SK Telecom T1": "SKT",
+    "ROX Tigers": "ROX",
+    "Samsung Galaxy": "SSG",
+    "KT Rolster": "KT",
+    "Jin Air Green Wings": "JAG",
+    "Afreeca Freecs": "AFS",
+    "Longzhu Gaming": "LZ",
+    "MVP": "MVP",
+    "CJ Entus": "CJ",
+    "Kongdoo Monster": "KDM",
+    "Flash Wolves": "FW",
+    "ahq e-Sports": "AHQ",
+    "J Team": "JT",
+    "Machi Esports": "M17",
+    "Hong Kong Esports": "HKE",
+    "eXtreme Gamers": "XG",
+    "G2 Esports": "G2",
+    "H2K Gaming": "H2K",
+    "Fnatic": "FNC",
+    "Origen": "OG",
+    "Splyce": "SPY",
+    "Unicorns of Love": "UOL",
+    "Team Vitality": "VIT",
+    "Giants Gaming": "GIA",
+    "Team SoloMid": "TSM",
+    "Counter Logic Gaming": "CLG",
+    "Immortals": "IMT",
+    "Cloud9": "C9",
+    "Team Liquid": "TL",
+    "NRG Esports": "NRG",
+    "Echo Fox": "FOX",
+    "Phoenix1": "P1"
   };
   var STARS_S6 = {
     /* LCK */
@@ -1841,7 +1916,9 @@ header.top.compact>.theme-top{display:none}
       baseLast: 4,
       canon: null,
       extendable: true,
-      stars: null
+      stars: null,
+      codes: CODE_S12,
+      ldl: LDL_S12
     },
     s6: {
       k: "s6",
@@ -1859,6 +1936,8 @@ header.top.compact>.theme-top{display:none}
       canon: CANON_S6,
       extendable: false,
       stars: STARS_S6,
+      codes: CODE_S6,
+      ldl: {},
       demo: true
       // 名单与数值是手写的脚手架，等真实数据校对（见 data/csv/game_data_2016.json 的表头注释）
     }
@@ -10896,13 +10975,24 @@ header.top.compact>.theme-top{display:none}
     const two = step(four);
     return { eight, four, two, champ: step(two)[0] };
   }
-  var WORLDS_CANON = { "0": { "LCK": ["Gen.G", "T1", "Dplus Kia", "Kiwoom DRX"], "LPL": ["JD Gaming", "Top Esports", "EDward Gaming", "Royal Never Give Up"], "LEC": ["G2 Esports", "Rogue", "Fnatic", "MAD Lions KOI"], "LCS": ["100 Thieves", "Cloud9", "Evil Geniuses"], "VCS": ["GAM Esports", "Saigon Buffalo"], "PCS": ["CTBC Flying Oyster"], "LJL": ["DetonatioN FocusMe"], "CBLOL": ["LOUD"], "LLA": ["Isurus"], "LCO": ["Chiefs Esports Club"], "TCL": ["İstanbul Wildcats"] }, "1": { "LCK": ["Gen.G", "T1", "KT Rolster", "Dplus Kia"], "LPL": ["JD Gaming", "Bilibili Gaming", "LNG Esports", "Weibo Gaming"], "LEC": ["G2 Esports", "Fnatic", "MAD Lions KOI", "Team BDS"], "LCS": ["Cloud9", "Team Liquid"], "VCS": ["GAM Esports", "Team Secret"], "PCS": ["PSG Talon", "CTBC Flying Oyster"], "LJL": ["DetonatioN FocusMe"], "CBLOL": ["LOUD"], "LLA": ["Movistar R7"] }, "2": { "LCK": ["Hanwha Life Esports", "Gen.G", "Dplus Kia", "T1"], "LPL": ["Bilibili Gaming", "Top Esports", "LNG Esports", "Weibo Gaming"], "LEC": ["G2 Esports", "Fnatic", "MAD Lions KOI"], "LCS": ["FlyQuest", "Team Liquid", "100 Thieves"], "VCS": ["GAM Esports"], "PCS": ["PSG Talon"], "LJL": ["Fukuoka SoftBank HAWKS gaming"], "CBLOL": ["paiN Gaming"], "LLA": ["Movistar R7"] }, "3": { "LCK": ["Gen.G", "Hanwha Life Esports", "KT Rolster", "T1"], "LPL": ["Anyone's Legend", "Bilibili Gaming", "Top Esports", "Invictus Gaming"], "LEC": ["G2 Esports", "Fnatic", "MAD Lions KOI"], "LCS": ["FlyQuest", "100 Thieves"], "PCS": ["CTBC Flying Oyster", "PSG Talon"], "VCS": ["Team Secret"] } };
-  var MSI_CANON = { "0": { "LCK": ["T1"], "LPL": ["Royal Never Give Up"], "LEC": ["G2 Esports"], "LCS": ["Evil Geniuses"], "PCS": ["PSG Talon"], "VCS": ["Saigon Buffalo"], "LJL": ["DetonatioN FocusMe"], "CBLOL": ["RED Canids"], "LLA": ["Team Aze"], "LCO": ["ORDER"], "TCL": ["İstanbul Wildcats"] }, "1": { "LCK": ["Gen.G", "T1"], "LPL": ["JD Gaming", "Bilibili Gaming"], "LEC": ["G2 Esports", "MAD Lions KOI"], "LCS": ["Cloud9", "Golden Guardians"], "VCS": ["GAM Esports"], "PCS": ["PSG Talon"], "LJL": ["DetonatioN FocusMe"], "CBLOL": ["LOUD"], "LLA": ["Movistar R7"] }, "2": { "LCK": ["Gen.G", "T1"], "LPL": ["Bilibili Gaming", "Top Esports"], "LEC": ["G2 Esports", "Fnatic"], "LCS": ["Team Liquid", "FlyQuest"], "VCS": ["GAM Esports"], "PCS": ["PSG Talon"], "CBLOL": ["LOUD"], "LLA": ["Estral Esports"] }, "3": { "LCK": ["Gen.G", "T1"], "LPL": ["Bilibili Gaming", "Anyone's Legend"], "LEC": ["G2 Esports", "MAD Lions KOI"], "LCS": ["FlyQuest"], "CBLOL": ["FURIA"], "PCS": ["CTBC Flying Oyster"], "VCS": ["GAM Esports"] } };
-  var LEAGUE_CANON = { "LCK": { "0": ["T1", "Gen.G"], "1": ["Gen.G", "Gen.G"], "2": ["Gen.G", "Hanwha Life Esports"], "3": ["Gen.G", "Gen.G"] }, "LEC": { "0": ["G2 Esports", "Rogue"], "1": ["MAD Lions KOI", "G2 Esports"], "2": ["G2 Esports", "G2 Esports"], "3": ["MAD Lions KOI", "G2 Esports"] }, "LCS": { "0": ["Evil Geniuses", "Cloud9"], "1": ["Cloud9", null], "2": ["Team Liquid", "FlyQuest"] }, "LPL": { "0": ["Royal Never Give Up", "JD Gaming"], "1": ["JD Gaming", "JD Gaming"], "2": ["Bilibili Gaming", "Bilibili Gaming"], "3": ["Top Esports", "Bilibili Gaming"] } };
-  var INTL_CANON = {
+  var WORLDS_CANON_S12 = { "0": { "LCK": ["Gen.G", "T1", "Dplus Kia", "Kiwoom DRX"], "LPL": ["JD Gaming", "Top Esports", "EDward Gaming", "Royal Never Give Up"], "LEC": ["G2 Esports", "Rogue", "Fnatic", "MAD Lions KOI"], "LCS": ["100 Thieves", "Cloud9", "Evil Geniuses"], "VCS": ["GAM Esports", "Saigon Buffalo"], "PCS": ["CTBC Flying Oyster"], "LJL": ["DetonatioN FocusMe"], "CBLOL": ["LOUD"], "LLA": ["Isurus"], "LCO": ["Chiefs Esports Club"], "TCL": ["İstanbul Wildcats"] }, "1": { "LCK": ["Gen.G", "T1", "KT Rolster", "Dplus Kia"], "LPL": ["JD Gaming", "Bilibili Gaming", "LNG Esports", "Weibo Gaming"], "LEC": ["G2 Esports", "Fnatic", "MAD Lions KOI", "Team BDS"], "LCS": ["Cloud9", "Team Liquid"], "VCS": ["GAM Esports", "Team Secret"], "PCS": ["PSG Talon", "CTBC Flying Oyster"], "LJL": ["DetonatioN FocusMe"], "CBLOL": ["LOUD"], "LLA": ["Movistar R7"] }, "2": { "LCK": ["Hanwha Life Esports", "Gen.G", "Dplus Kia", "T1"], "LPL": ["Bilibili Gaming", "Top Esports", "LNG Esports", "Weibo Gaming"], "LEC": ["G2 Esports", "Fnatic", "MAD Lions KOI"], "LCS": ["FlyQuest", "Team Liquid", "100 Thieves"], "VCS": ["GAM Esports"], "PCS": ["PSG Talon"], "LJL": ["Fukuoka SoftBank HAWKS gaming"], "CBLOL": ["paiN Gaming"], "LLA": ["Movistar R7"] }, "3": { "LCK": ["Gen.G", "Hanwha Life Esports", "KT Rolster", "T1"], "LPL": ["Anyone's Legend", "Bilibili Gaming", "Top Esports", "Invictus Gaming"], "LEC": ["G2 Esports", "Fnatic", "MAD Lions KOI"], "LCS": ["FlyQuest", "100 Thieves"], "PCS": ["CTBC Flying Oyster", "PSG Talon"], "VCS": ["Team Secret"] } };
+  var MSI_CANON_S12 = { "0": { "LCK": ["T1"], "LPL": ["Royal Never Give Up"], "LEC": ["G2 Esports"], "LCS": ["Evil Geniuses"], "PCS": ["PSG Talon"], "VCS": ["Saigon Buffalo"], "LJL": ["DetonatioN FocusMe"], "CBLOL": ["RED Canids"], "LLA": ["Team Aze"], "LCO": ["ORDER"], "TCL": ["İstanbul Wildcats"] }, "1": { "LCK": ["Gen.G", "T1"], "LPL": ["JD Gaming", "Bilibili Gaming"], "LEC": ["G2 Esports", "MAD Lions KOI"], "LCS": ["Cloud9", "Golden Guardians"], "VCS": ["GAM Esports"], "PCS": ["PSG Talon"], "LJL": ["DetonatioN FocusMe"], "CBLOL": ["LOUD"], "LLA": ["Movistar R7"] }, "2": { "LCK": ["Gen.G", "T1"], "LPL": ["Bilibili Gaming", "Top Esports"], "LEC": ["G2 Esports", "Fnatic"], "LCS": ["Team Liquid", "FlyQuest"], "VCS": ["GAM Esports"], "PCS": ["PSG Talon"], "CBLOL": ["LOUD"], "LLA": ["Estral Esports"] }, "3": { "LCK": ["Gen.G", "T1"], "LPL": ["Bilibili Gaming", "Anyone's Legend"], "LEC": ["G2 Esports", "MAD Lions KOI"], "LCS": ["FlyQuest"], "CBLOL": ["FURIA"], "PCS": ["CTBC Flying Oyster"], "VCS": ["GAM Esports"] } };
+  var LEAGUE_CANON_S12 = { "LCK": { "0": ["T1", "Gen.G"], "1": ["Gen.G", "Gen.G"], "2": ["Gen.G", "Hanwha Life Esports"], "3": ["Gen.G", "Gen.G"] }, "LEC": { "0": ["G2 Esports", "Rogue"], "1": ["MAD Lions KOI", "G2 Esports"], "2": ["G2 Esports", "G2 Esports"], "3": ["MAD Lions KOI", "G2 Esports"] }, "LCS": { "0": ["Evil Geniuses", "Cloud9"], "1": ["Cloud9", null], "2": ["Team Liquid", "FlyQuest"] }, "LPL": { "0": ["Royal Never Give Up", "JD Gaming"], "1": ["JD Gaming", "JD Gaming"], "2": ["Bilibili Gaming", "Bilibili Gaming"], "3": ["Top Esports", "Bilibili Gaming"] } };
+  var INTL_CANON_S12 = {
     worlds: { 0: "Kiwoom DRX", 1: "T1", 2: "T1", 3: "T1" },
     msi: { 0: "Royal Never Give Up", 1: "JD Gaming", 2: "Gen.G", 3: "Gen.G" }
   };
+  var WORLDS_CANON = WORLDS_CANON_S12;
+  var MSI_CANON = MSI_CANON_S12;
+  var LEAGUE_CANON = LEAGUE_CANON_S12;
+  var INTL_CANON = INTL_CANON_S12;
+  onEra((k) => {
+    const C = eraDef(k).canon;
+    WORLDS_CANON = C ? C.worldsSeeds || {} : WORLDS_CANON_S12;
+    MSI_CANON = C ? C.msiSeeds || {} : MSI_CANON_S12;
+    LEAGUE_CANON = C ? C.leagueSeeds || {} : LEAGUE_CANON_S12;
+    INTL_CANON = C ? C.intl || { worlds: {}, msi: {} } : INTL_CANON_S12;
+  });
   function wlOf(lg) {
     return S.wl && S.wl[lg] || 0;
   }
@@ -14465,6 +14555,8 @@ header.top.compact>.theme-top{display:none}
     REGION_ANCHOR = E.anchor;
     LCK_DYNASTY = E.dynasty;
     BASE_LAST = E.baseLast;
+    LPL_CODE = E.codes || {};
+    LDL_ROSTER = E.ldl || {};
   });
   function lastSeason() {
     return S && S.extended ? SEASONS.length - 1 : BASE_LAST;
@@ -15078,48 +15170,12 @@ header.top.compact>.theme-top{display:none}
     w.LDL = buildLDL(w);
     return w;
   }
-  var LPL_CODE = {
-    "Royal Never Give Up": "RNG",
-    "JD Gaming": "JDG",
-    "Top Esports": "TES",
-    "Victory Five": "V5",
-    "EDward Gaming": "EDG",
-    "Weibo Gaming": "WBG",
-    "LNG Esports": "LNG",
-    "Bilibili Gaming": "BLG",
-    "Oh My God": "OMG",
-    "FunPlus Phoenix": "FPX",
-    "Rare Atom": "RA",
-    "Invictus Gaming": "IG",
-    "ThunderTalk Gaming": "TT",
-    "Anyone's Legend": "AL",
-    "LGD Gaming": "LGD",
-    "Ultra Prime": "UP",
-    "Team WE": "WE"
-  };
+  var LPL_CODE = eraDef("s12").codes;
   function teamCode(name) {
     if (LPL_CODE[name]) return LPL_CODE[name];
     return String(name || "").split(/\s+/).map((x) => x[0] || "").join("").toUpperCase().slice(0, 3) || "XX";
   }
-  var LDL_ROSTER = {
-    EDG: [{ id: "Solokill", pos: "top" }, { id: "Monki", pos: "jng" }, { id: "0909", pos: "mid" }, { id: "Leave", pos: "bot" }, { id: "Xiamu", pos: "sup" }],
-    TES: [{ id: "Aspire", pos: "top" }, { id: "eight", pos: "jng" }, { id: "Novice", pos: "mid" }, { id: "Ylaht", pos: "bot" }, { id: "Cerasus", pos: "sup" }],
-    BLG: [{ id: "Myths", pos: "top" }, { id: "can", pos: "jng" }, { id: "pinz", pos: "mid" }, { id: "Rise", pos: "bot" }, { id: "Jwei", pos: "sup" }],
-    JDG: [{ id: "unravel", pos: "top" }, { id: "Xiao17", pos: "jng" }, { id: "Insulator", pos: "mid" }, { id: "TuT", pos: "bot" }, { id: "Feather", pos: "sup" }],
-    RNG: [{ id: "Xiaoxu", pos: "top" }, { id: "lovely", pos: "jng" }, { id: "Tangyuan", pos: "mid" }, { id: "Asura", pos: "bot" }, { id: "Mysun", pos: "sup" }],
-    WBG: [{ id: "Decade", pos: "top" }, { id: "Maggie", pos: "jng" }, { id: "forse", pos: "mid" }, { id: "Shark", pos: "bot" }, { id: "Wuy", pos: "sup" }],
-    AL: [{ id: "Overture", pos: "top" }, { id: "icecoKe", pos: "jng" }, { id: "Harder", pos: "mid" }, { id: "Michi", pos: "bot" }, { id: "Kaixuan", pos: "sup" }],
-    TT: [{ id: "xiao7", pos: "top" }, { id: "Youxin", pos: "jng" }, { id: "Sky", pos: "mid" }, { id: "bat", pos: "bot" }, { id: "Mmy", pos: "sup" }],
-    RA: [{ id: "torch", pos: "top" }, { id: "Yesjun", pos: "jng" }, { id: "DOING", pos: "mid" }, { id: "Such", pos: "bot" }, { id: "Parac", pos: "sup" }],
-    UP: [{ id: "Hery", pos: "top" }, { id: "yekai", pos: "jng" }, { id: "xiaocaobao", pos: "mid" }, { id: "rat", pos: "bot" }, { id: "Missia", pos: "sup" }],
-    LGD: [{ id: "Rumiki", pos: "top" }, { id: "Fatfish", pos: "jng" }, { id: "haichao", pos: "mid" }, { id: "RanL", pos: "bot" }, { id: "minghai", pos: "sup" }],
-    LNG: [{ id: "Clever9", pos: "top" }, { id: "Darwin", pos: "jng" }, { id: "Vergil", pos: "mid" }, { id: "Uneasy", pos: "bot" }, { id: "yawang", pos: "sup" }],
-    V5: [{ id: "Invincible", pos: "top" }, { id: "pzx", pos: "jng" }, { id: "Dream", pos: "mid" }, { id: "Kepler", pos: "bot" }, { id: "Jerry", pos: "sup" }],
-    OMG: [{ id: "Munian", pos: "top" }, { id: "Mori", pos: "jng" }, { id: "Steel", pos: "mid" }, { id: "2y1", pos: "bot" }, { id: "Guang", pos: "sup" }],
-    FPX: [{ id: "Kartis", pos: "top" }, { id: "haoye", pos: "jng" }, { id: "Qing", pos: "mid" }, { id: "Xingye", pos: "bot" }, { id: "Lele", pos: "sup" }],
-    WE: [{ id: "Demon", pos: "top" }, { id: "Yanxiang", pos: "jng" }, { id: "xqw", pos: "mid" }, { id: "yhp", pos: "bot" }, { id: "Fahai", pos: "sup" }],
-    IG: [{ id: "YSKM", pos: "top" }, { id: "Beige", pos: "jng" }, { id: "xzy", pos: "mid" }, { id: "xiaoyueji", pos: "bot" }, { id: "Mitsuki", pos: "sup" }]
-  };
+  var LDL_ROSTER = eraDef("s12").ldl;
   function buildLDL(w) {
     const src = w.LPL || [];
     const rk = src.map((t) => ({ t, p: avg(t.players.map((q) => avg(DIMS.map((d) => q.r[d])))) })).sort((a, b) => b.p - a.p);

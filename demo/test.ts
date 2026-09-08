@@ -49,7 +49,7 @@ if (!fs.existsSync(path.join(HERE, "src", "gen", "avatars.js"))) {
    `ACHIEVEMENTS.push(...ACH_MORE)`，抛 "Cannot access 'ACH_MORE' before initialization"。
    低概率、和这次的改动无关（改前改后各连跑 12 次都没复现，但两边都各撞见过一次），
    顺序载入让求值顺序固定下来，CI 不再看运气。循环引用本身还在，另开一条待办。 */
-const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer"];
+const MODULES = ["state", "eras", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer"];
 const state = await import("./src/state.ts");
 const mods = [];
 for (const m of MODULES) mods.push(await import(`./src/${m}.ts`));
@@ -403,7 +403,59 @@ function unitChecks() {
   return bad;
 }
 
-export { playOne, unitChecks, A, SEED };
+/* ---------------- 纪元自检 ----------------
+   「先写框架、数据后期填进去」的配套：每注册一个纪元，这里就多跑一局。
+   数据填进来之后跑 npm test 就知道有没有踩坑，不用手动开局试。
+   校验分两层：① 数据表的形状（缺字段、位置不全、赛区对不上锚点）；② 整局跑完不崩。 */
+function eraChecks() {
+  const bad: string[] = [];
+  const POSSET = ["top", "jng", "mid", "bot", "sup"];
+  for (const k of A.ERA_KEYS) {
+    const E = A.ERAS[k], tag = `纪元 ${k}(${E.n})`;
+    try {
+      // ---- ① 数据形状 ----
+      if (!E.data || !E.data.leagues) { bad.push(`${tag}：没有 leagues`); continue; }
+      if (!Array.isArray(E.seasons) || !E.seasons.length) bad.push(`${tag}：赛季表是空的`);
+      if (E.baseLast >= E.seasons.length) bad.push(`${tag}：baseLast=${E.baseLast} 超出赛季表长度 ${E.seasons.length}`);
+      E.seasons.forEach((sea: any, i: number) => {
+        ["y", "tag", "ver", "dim", "story"].forEach(f => { if (sea[f] === undefined) bad.push(`${tag}：第 ${i} 季缺 ${f}`); });
+        if (!sea.msi || !sea.msi.mode) bad.push(`${tag}：第 ${i} 季（${sea.tag}）缺 msi.mode`);
+        if (!sea.worlds || !sea.worlds.main) bad.push(`${tag}：第 ${i} 季（${sea.tag}）缺 worlds.main`);
+      });
+      const majors = E.data.major || [];
+      majors.forEach((lg: string) => {
+        if (!E.data.leagues[lg]) { bad.push(`${tag}：major 里有 ${lg} 但 leagues 里没有`); return; }
+        if (E.anchor[lg] === undefined) bad.push(`${tag}：${lg} 没有赛区锚点（anchor）`);
+      });
+      Object.keys(E.data.leagues).forEach((lg: string) => {
+        if (E.anchor[lg] === undefined) bad.push(`${tag}：${lg} 在名单里但没有锚点——anchorLeague 会跳过它`);
+        E.data.leagues[lg].forEach((t: any) => {
+          if (!t.name) bad.push(`${tag}/${lg}：有队伍没名字`);
+          if (t.wr === undefined) bad.push(`${tag}/${lg}/${t.name}：缺真实胜率 wr`);
+          const ps = t.players || [];
+          if (ps.length !== 5) bad.push(`${tag}/${lg}/${t.name}：${ps.length} 个人，应该 5 个`);
+          const got = ps.map((p: any) => p.pos).sort().join(",");
+          if (ps.length === 5 && got !== POSSET.slice().sort().join(",")) bad.push(`${tag}/${lg}/${t.name}：位置不齐（${got}）`);
+          ps.forEach((p: any) => {
+            if (!p.id) bad.push(`${tag}/${lg}/${t.name}：有选手没有 ID`);
+            A.DIMS.forEach((d: string) => { if (!p.r || typeof p.r[d] !== "number") bad.push(`${tag}/${lg}/${t.name}/${p.id}：五维缺 ${d}`); });
+          });
+        });
+      });
+      // ---- ② 整局跑完不崩 ----
+      const r = playOne({ seed: 20260908, era: k });
+      if (!r.ok) bad.push(`${tag}：整局没跑完`);
+      const tags = E.seasons.map((x: any) => x.tag);
+      (r.titles || []).forEach((t: string) => {
+        const pre = String(t).split(" ")[0];
+        if (!tags.includes(pre)) bad.push(`${tag}：冠军「${t}」的赛季前缀不在这个纪元的赛季表里`);
+      });
+    } catch (e) { bad.push(`${tag}：抛异常 ${(e && (e as any).message) || e}`); }
+  }
+  return bad;
+}
+
+export { playOne, unitChecks, eraChecks, A, SEED };
 
 /* 批测：npx tsx demo/test.ts --batch 30
    固定种子 1..N 各跑一局，只打统计不做断言。用来校准职业前压缩（20→14 周）前后的上岸节奏：
@@ -468,6 +520,9 @@ if (isMain && process.argv.includes("--batch")) {
   batch(parseInt(process.argv[i + 1] || "20", 10) || 20, process.argv.includes("--encore"), process.argv.includes("--strong"), process.argv.includes("--loyal"));   // --encore：再战；--strong：强玩家；--loyal：夺冠后不走
 } else if (isMain) {
   console.log("随机种子：", SEED, "（SEED=" + SEED + " npm test 可原样重放）");
+  { const eb = eraChecks();
+    if (eb.length) { console.error("纪元自检不通过：\n  " + eb.join("\n  ")); process.exit(1); }
+    console.log("纪元自检通过：" + A.ERA_KEYS.map((k: string) => `${A.ERAS[k].n}(${A.ERAS[k].sub})`).join(" · ")); }
   const unit = unitChecks();
   if (unit.length) { console.error("单元检查失败：\n - " + unit.join("\n - ")); process.exit(1); }
   console.log("单元检查通过：导览几何 · 存档消毒");
