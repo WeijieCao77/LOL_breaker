@@ -7,7 +7,7 @@ import { addStaff, cloutCard, cloutTick, doList, doSign, initRelations, initStaf
 import { CUPS, activeCups, cupCard, cupDismissMatch, cupMatchCard, cupOf, cupOppName, cupPrep, cupReachName, cupResultCard, cupRoundName, cupTick, disbandCrew, dueCups, enterCup, forfeitCup, preSquadCard, resolveCupNode, startCupMatch } from "./cup";
 import { DATA } from "./data";
 import { formCard, formMul, formNews, formTier, myForm, myFormMul, rollForm, rollWorldForm } from "./form";
-import { awardsText, campCard, cerApply, cerBind, cerCard, cerFinalNode, cerFinalPw, cerRecMul, cerStart, isFinalMatch, mediaTiltMul, verCerAdj } from "./cer";
+import { awardsText, btkTrialCheck, campCard, cerApply, cerBind, cerCard, cerFinalNode, cerFinalPw, cerRecMul, cerStart, isFinalMatch, mediaTiltMul, meetCard, verCerAdj } from "./cer";
 import { injuryCard, injuryHit, injuryTick, injuryTrainMul, riskHint, rollInjury } from "./injury";
 import { brOthersText, brStep, findTeam, intlAdvance, intlChampCard, intlStageName, leagueOf, majorStandings, spectateIntl, startIntl, wlAdd, wlInfluence, wlRelax, worldsSlot } from "./intl";
 import { aiMarketWindow } from "./market";
@@ -111,6 +111,14 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260908i", at:"2026-09-08", items:[
+    "仪式第三批（策划稿里剩下的全部）：突破试炼——某一维撞到天花板的赛段结算，教练把你单独留下，「今天不过这一关别回去」；按那一维选机制（操作→反应、心态→专注、指挥 / 运营→战术决策、体质→节奏），只有金档算过关：天花板 +1 当场兑现；没过不扣什么，下个赛段再来",
+    "康复期：受伤那一刻进理疗室，跟着呼吸圆——金档少养一周",
+    "全明星周末：休赛期第一周投票——今年的年度奖项、冠军或人气到「平台头部」就入选；技巧赛是反应挑战，金档人气 +20、成就「技巧赛之王」；落选就在直播间看",
+    "粉丝见面会：休赛期人气够就能办，三档场地，门票按粉丝算、场地钱先付；疲劳 >70 上台一半概率办砸（热度掉、粉丝掉）。后期人气和钱的一个出口",
+    "退役赛季（再战到 S19 的最后一年）：开赛有一张「这是最后一年」，客场会有告别横幅，夏季赛最后一场常规赛战力 +2，赛季结束有退役仪式；生涯名片上那一年标「退役赛季」",
+    "职业前的杯赛决赛（城市争霸赛 / 主播杯）也接上了决赛之夜——网吧包场、朋友来看，同一套反应挑战，用职业前那条更松的线"
+  ]},
   {v:"v20260908h", at:"2026-09-08", items:[
     "仪式第二批：决赛之夜·入场（联赛决赛 / MSI 总决赛 / 世界赛决赛开打前，入场通道、灯光、握手，然后是最后一次热身——反应挑战：靶亮起就点，20 秒，决赛的靶更小亮得更短；金档这一场战力 +2、临场决策成功率 +5%，银档按平时打，铜档 −1、−3%）",
     "试训第一天·上机：到基地、见教练组、分机位，「先上机打几把给我们看看」——同一套反应挑战，职业前的线松一档（≤450 毫秒）；金档这次试训评级 +1 档，铜档 −1 档",
@@ -2600,6 +2608,7 @@ export function startSeason(first,split?){
   // 赛段开幕的两场仪式：新赛季先开版本发布会（教练组开会，五道题），每个赛段都有媒体日（三个记者三个问题）。
   // 同一周撞上就排队；二级联赛没有这两样；托管 / 机器人按跳过走，数字不动。
   if(S.career&&(S.homeLeague||"LPL")!=="LDL"){
+    if(S.extended&&S.si===lastSeason()&&S.split===0) cerStart("farewell0");   // 退役赛季：这是最后一年
     if(S.split===0) cerStart("patch");
     cerStart("media");
   }
@@ -3614,6 +3623,12 @@ export function startMatch(bo?,oppName?){
     S.match.swing-=2;
     S.match.lines.push(`<div><span class="hi">久疏赛场</span> 离上一场正赛已经有一阵了，开局手有点生（第一局赢面略降）。</div>`);
   }
+  // 退役赛季（再战到 S19 的最后一年）：常规赛客场的告别横幅（固定第 2、5 周，不碰随机数）；夏季赛最后一场常规赛 +2
+  if(S.career&&S.extended&&S.farewell&&S.farewell.si===S.si&&!S.playoff&&!S.intl){
+    const lastReg=(S.split===1&&S.schedule&&S.week===S.schedule.length);
+    if(lastReg){ S.match.farewellPw=2; S.match.lines.push(`<div><span class="hi">最后一场常规赛</span> 全场起立。对面的观众也在鼓掌。（这一场战力 +2）</div>`); }
+    else if(S.week===2||S.week===5) pushEvent(`客场。<b>${S.match.oppName}</b> 的观众席打出了横幅：「谢谢你，${meName()}。」`,"info","生涯");
+  }
   // 决赛之夜·入场：联赛决赛 / MSI 总决赛 / 世界赛决赛开打前的那段戏（托管 / 机器人按跳过走，数字不动）
   if(isFinalMatch()) cerStart("final");
   S.step="match"; nextGame();
@@ -4307,6 +4322,7 @@ export function endSeason(result,seed){
     addMoney('home',-paid);
     pushEvent(`往家里寄了 <b>${paid} 万</b>。`,"info","家用"); }
   trustDecay(); squadDecay(); checkBreakthrough();
+  btkTrialCheck();   // 突破试炼：撞到天花板的那一维，教练把你留下（托管 / 机器人按跳过走）
   // 关系崩到底的队友会走——这是更衣室里那些选择真正的出口
   checkMateExit();
   // 话题人物的代价：教练每赛段都少信你一点
@@ -4506,8 +4522,12 @@ export function flushBreakNews(week){
 }
 export function doOffseason(){
   if(S.off) return;          // 已经在休赛期里了，别把周数重置回第 1 周
-  if(S.si>=lastSeason()){ S.step="end"; render(); return; }
+  if(S.si>=lastSeason()){
+    if(S.extended&&S.farewell&&S.farewell.si===S.si) cerStart("farewell");   // 退役仪式：队友、教练、看台各一句话，然后看名片
+    S.step="end"; render(); return;
+  }
   S.off={week:1, weeks:OFF_WEEKS, next:"year", label:"休赛期"};
+  if((S.homeLeague||"LPL")!=="LDL") cerStart("allstar");   // 全明星周末：投票看今年的奖项 / 冠军 / 人气，入选了打技巧赛
   S.ap=apFor("off");
   S.askedTransfer=false;             // 每个休赛期能主动挂牌一次
   // 升队、转会、下放都跟着注册窗口走：休赛期是主窗口（季中间歇是另一个，见 offNextWeek）
@@ -4716,7 +4736,7 @@ export function offPanel(){
   if(S.deal)   return dealCard();
   const nx=SEASONS[S.si+1];
   return `${renewCard()}${proOfferCard()}
-  ${faCard()}${campCard()}
+  ${faCard()}${campCard()}${meetCard()}
   <div class="card">
     <h2>${S.off.label||"休赛期"}<em>第 ${S.off.week}/${S.off.weeks} 周 · 剩余行动点 ${S.ap}</em></h2>
     <p class="note">没有比赛要打。${S.off.next==="playoff"
@@ -4867,7 +4887,7 @@ export function careerPoster(){
     const won=(C.lgYears||[]).includes(si)||(C.msiYears||[]).includes(si)||(C.worldsYears||[]).includes(si);
     const pre=si<firstPro;   // 第一份职业合同之前
     return `<div class="yr${won?' won':''}" style="--i:${si}">
-      <div class="yr-t">${sea.tag}<small>${sea.y}</small></div>
+      <div class="yr-t">${sea.tag}<small>${sea.y}</small>${(S.farewell&&S.farewell.si===si)?`<small style="color:var(--gold)">退役赛季</small>`:""}</div>
       <div class="yr-team">${team?`${teamLogo(team,16)}<span>${team}</span>`
         :pre?`<span class="dim">未签约</span>`:`<span class="dim">职业中 · 队伍未记录</span>`}</div>
       <div class="yr-r">${res||(pre?"":"—")}</div>

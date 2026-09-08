@@ -10,7 +10,9 @@
    版本发布会（决策：五道限时三选一）、媒体日（限时三选一，不算小游戏——限时本身就是「面对镜头」）。
    小游戏只用 Math.random 摆盘，绝不碰 rng.ts 的种子——不然同一份存档的比赛结果会因为你玩没玩而变。 */
 import { S } from "./state";
-import { DIMS, POSN, SEASONS, addFans, avg, clamp, isBenched, lplRank, poMyOpp, pushEvent, render } from "./main";
+import { DIMS, POSN, SEASONS, addFans, avg, breakthrough, capOf, clamp, isBenched, lplRank, poMyOpp, pushEvent, render } from "./main";
+import { CUPS } from "./cup";
+import { rnd } from "./rng";
 import { meName } from "./save";
 import { splitRating } from "./boxscore";
 import { majorStandings } from "./intl";
@@ -30,8 +32,13 @@ export const CER_EFF={
   final: {pw:{gold:2, silver:0, bronze:-1}, node:{gold:0.05, silver:0, bronze:-0.03}},
   bench: {gold:1,   silver:0, bronze:-1},          // 评级 ±1 档（一档 = 8 分）
   patch: {gold:0.5, silver:0, bronze:-0.3},
-  media: {bold:{heat:15,tilt:1.5}, steady:{heat:5,tilt:1}, blame:{heat:10,trust:-3,tilt:1}}
+  media: {bold:{heat:15,tilt:1.5}, steady:{heat:5,tilt:1}, blame:{heat:10,trust:-3,tilt:1}},
+  trial: {gold:1.0},                                  // 过关 = 该维天花板 +1（里程碑池）；没过下个赛段再来，不扣
+  rehab: {gold:-1},                                   // 康复期金档：少养一周
+  allstar:{gold:20, silver:8, bronze:0}               // 技巧赛：人气；跳过 / 没去 = 0
 };
+/* 突破试炼：每一维对应一套机制（策划稿第三节第 10 场）。运营那套「记忆」要峡谷简笔画素材，先用决策代 */
+export const TRIAL_MECH={操作:"react",心态:"focus",指挥:"decide",运营:"decide",体质:"rhythm"};
 /* 档位线（赛季一套、职业前一套更松的——「职业训练更细、越往上越难」） */
 export function focusTier(sec){ return sec<=25?"gold":sec<=35?"silver":"bronze"; }
 export function rhythmTier(ms){ return ms<=80?"gold":ms<=150?"silver":"bronze"; }
@@ -54,9 +61,11 @@ function cerOpen(c){
   else S.cer=c;
 }
 function cerDequeue(){ if(!S.cer&&S.cerQ&&S.cerQ.length) S.cer=S.cerQ.shift(); }
-/* 试训第一天在职业前就会有——那时候 S.career 还是空的 */
-const PRE_OK={bench:true};
-export function cerStart(k){
+/* 试训第一天、职业前杯赛决赛在职业前就会有——那时候 S.career 还是空的 */
+const PRE_OK={bench:true, final:true};
+/* 这一场要结算到哪个比赛对象上：正赛 S.match，职业前杯赛 S.cupMatch */
+export function liveMatch(){ if(S.match&&!S.match.done) return S.match; if(S.cupMatch&&!S.cupMatch.done) return S.cupMatch; return null; }
+export function cerStart(k,extra?){
   if(!S.career&&!PRE_OK[k]) return;
   if(k==="awards"){
     const aw=computeAwards(); if(!aw) return;
@@ -64,25 +73,34 @@ export function cerStart(k){
     if(cerAuto()) return;
     cerOpen({k,step:0,data:aw}); return;
   }
-  if(k==="final"&&!(S.match&&!S.match.done)) return;
+  if(k==="final"&&!liveMatch()) return;
   if(k==="bench"&&!(S.tryout&&!S.tryout.done)) return;
-  if(cerAuto()){ cerApply(k,"silver",true); return; }
-  cerOpen({k,step:0});
+  if(k==="rehab"&&!S.injury) return;
+  if(k==="trial"&&!(extra&&extra.dim)) return;
+  if(k==="allstar"){ extra=Object.assign({sel:allstarSelected()},extra||{}); }
+  const c=Object.assign({k,step:0},extra||{});
+  if(cerAuto()){ cerApply(k,"silver",true,c); return; }
+  cerOpen(c);
 }
-export function cerSteps(k){
-  if(k==="draw"||k==="final"||k==="bench"||k==="patch"||k==="media") return ["story","game","result"];
+export function cerSteps(k,c?){
+  if(k==="allstar") return (c&&c.sel===false)?["miss"]:["story","game","result"];
+  if(k==="farewell0"||k==="farewell") return ["story"];
+  if(k==="draw"||k==="final"||k==="bench"||k==="patch"||k==="media"||k==="trial"||k==="rehab") return ["story","game","result"];
   if(k==="depart") return ["s1","s2","s3","game","result"];
   return ["reveal"];
 }
-export function cerStepName(){ const c=S.cer; if(!c) return ""; return cerSteps(c.k)[c.step]||""; }
+export function cerStepName(){ const c=S.cer; if(!c) return ""; return cerSteps(c.k,c)[c.step]||""; }
 export function cerNext(){ if(!S.cer) return; S.cer.step++; render(); }
 export function cerSkip(){ if(!S.cer) return; cerApply(S.cer.k,"silver",true); render(); }
 /* 小游戏打完：记档位，翻到结算页 */
-export function cerFinish(tier,detail){ if(!S.cer) return; S.cer.tier=tier; S.cer.detail=detail||{}; S.cer.step=cerSteps(S.cer.k).indexOf("result"); render(); }
-export function cerClose(){ if(!S.cer) return; const c=S.cer; if(c.k==="awards"){ S.cer=null; cerDequeue(); render(); return; } cerApply(c.k,c.tier||"silver",false); render(); }
+export function cerFinish(tier,detail){ if(!S.cer) return; S.cer.tier=tier; S.cer.detail=detail||{}; S.cer.step=cerSteps(S.cer.k,S.cer).indexOf("result"); render(); }
+export function cerClose(){ if(!S.cer) return; const c=S.cer; if(c.k==="awards"){ S.cer=null; cerDequeue(); render(); return; }
+  const storyOnly=(c.k==="farewell0"||c.k==="farewell"||(c.k==="allstar"&&c.sel===false));
+  cerApply(c.k,c.tier||"silver",storyOnly); render(); }
 /* 结算：一次的结果覆盖一整段 */
-export function cerApply(k,tier,skipped){
+export function cerApply(k,tier,skipped,ctx?){
   const t=tier||"silver";
+  const C=ctx||S.cer||{};
   if(k==="draw"){
     S.poForm=CER_EFF.draw[t];
     pushEvent(skipped?`抽签仪式：你站在台上握了手、合了影，没理会弹幕。<span style="color:var(--ink-3)">季后赛状态不变。</span>`
@@ -95,8 +113,8 @@ export function cerApply(k,tier,skipped){
       t==="gold"?"good":t==="bronze"?"bad":"info","仪式");
   }
   else if(k==="final"){
-    const m=S.match;
-    if(m&&!m.done){
+    const m=liveMatch();
+    if(m){
       m.cerFinal={pw:CER_EFF.final.pw[t], node:CER_EFF.final.node[t]};
       m.lines.push(`<div><span class="hi">入场</span> ${skipped?"通道里走得很快，没多想。":t==="gold"?"手是热的。<b>这一场战力 +2、临场决策更容易成</b>。":t==="silver"?"热身正常，按平时打。":"热身没找到手感，<b>这一场战力 −1</b>。"}</div>`);
     }
@@ -129,13 +147,60 @@ export function cerApply(k,tier,skipped){
       pushEvent(`媒体日：三个记者三个问题，你说的都是套话。<span style="color:var(--ink-3)">没人写你。</span>`,"info","媒体日");
     }
   }
-  if(!skipped) checkAch("cer",{k,tier:t,tone:(S.cer&&S.cer.detail&&S.cer.detail.tone)||null,picks:(S.cer&&S.cer.detail&&S.cer.detail.picks)||[]});
+  else if(k==="trial"){
+    const d=C.dim; S.btkTrial=S.btkTrial||{};
+    if(d){
+      if(!skipped&&t==="gold"){
+        S.btkTrial[d]="pass";
+        breakthrough(d,CER_EFF.trial.gold,`突破试炼：教练把你单独留下，「今天不过这一关别回去」——你过了。`,undefined,"mile");
+      }else{
+        S.btkTrial[d+"_si"]=S.si;   // 这个赛段试过了，下个赛段再来
+        pushEvent(skipped?`突破试炼：教练想留你加练一关，你说今天算了。<span style="color:var(--ink-3)">${d}的瓶颈还在，下个赛段再说。</span>`
+          :`突破试炼 <b>${TIER_N[t]}</b>：${d}那一关没过。<span style="color:var(--ink-3)">不扣什么，下个赛段再来。</span>`,"info","突破");
+      }
+    }
+  }else if(k==="rehab"){
+    if(S.injury){
+      if(!skipped&&t==="gold"&&S.injury.left>1){ S.injury.left+=CER_EFF.rehab.gold;
+        pushEvent(`康复期的节奏训练 <b>金档</b>：理疗师说恢复比预期快，<b>少养一周</b>（还剩 ${S.injury.left} 周）。`,"good","伤病"); }
+      else pushEvent(skipped?`康复期：理疗室、计划表，按部就班。`:`康复期的节奏训练 <b>${TIER_N[t]}</b>：按原计划养。`,"info","伤病");
+    }
+  }else if(k==="allstar"){
+    if(C.sel===false){
+      pushEvent(`全明星周末：投票名单上没有你。<span style="color:var(--ink-3)">明年让他们投。</span>`,"info","全明星");
+    }else if(skipped){
+      pushEvent(`全明星周末：你入选了，但没去技巧赛——只在表演赛上露了个脸。`,"info","全明星");
+    }else{
+      const g=CER_EFF.allstar[t]||0; if(g) addFans(g);
+      pushEvent(`全明星技巧赛 <b>${TIER_N[t]}</b>：${t==="gold"?`全场最快的手。<b>人气 +20</b>。`:t==="silver"?`中规中矩。人气 +8。`:`手凉了，观众替你尴尬。`}`,t==="gold"?"good":"info","全明星");
+    }
+  }else if(k==="farewell0"){
+    S.farewell={si:S.si};
+    pushEvent(`<b>退役赛季开始。</b>这是你职业生涯的最后一年——每一个客场都会有人举着横幅送你。`,"big","生涯");
+  }else if(k==="farewell"){
+    pushEvent(`<b>退役仪式。</b>队友、教练、看台上的人各说了一句话。灯光暗下来的时候，你没有回头。`,"big","生涯");
+  }
+  if(!skipped) checkAch("cer",{k,tier:t,dim:C.dim||null,tone:(S.cer&&S.cer.detail&&S.cer.detail.tone)||null,picks:(S.cer&&S.cer.detail&&S.cer.detail.picks)||[]});
   S.cer=null;
   cerDequeue();
 }
+/* 全明星入选：今年的年度奖项、今年的冠军、或人气到「平台头部」 */
+export function allstarSelected(){
+  if(!S.career) return false;
+  const aw=(S.career.awards||[]).some(x=>x.si===S.si&&(x.kind==="first"||x.kind==="second"||x.kind==="mvp"));
+  const title=((S.career.lgYears||[]).includes(S.si))||((S.career.msiYears||[]).includes(S.si))||((S.career.worldsYears||[]).includes(S.si));
+  return !!(aw||title||(S.fans||0)>=900);
+}
+/* 突破试炼的触发（赛段结算时调）：撞到天花板、这一维还没过关、这个赛段没试过——一次只开一维 */
+export function btkTrialCheck(){
+  if(!S.career||!S.attrs) return;
+  S.btkTrial=S.btkTrial||{};
+  const d=DIMS.find(x=>S.attrs[x]>=capOf(x)-0.05&&S.btkTrial[x]!=="pass"&&S.btkTrial[x+"_si"]!==S.si);
+  if(d) cerStart("trial",{dim:d});
+}
 export const MEDIA_TONE_N={bold:"狂",steady:"稳",blame:"甩锅"};
 /* 决赛之夜：这一场的战力与节点成功率加成（只在 S.match 上，打完就没了） */
-export function cerFinalPw(){ const m=S.match; return (m&&m.cerFinal&&m.cerFinal.pw)||0; }
+export function cerFinalPw(){ const m=S.match; return ((m&&m.cerFinal&&m.cerFinal.pw)||0)+((m&&m.farewellPw)||0); }
 export function cerFinalNode(){ const m=S.match; return (m&&m.cerFinal&&m.cerFinal.node)||0; }
 /* 版本发布会：这个赛季的版本相性加成 */
 export function verCerAdj(){ const v=S.verCer; return (v&&v.si===S.si)?(v.adj||0):0; }
@@ -148,6 +213,7 @@ export function isFinalMatch(){
   return !!(S.playoff&&S.playoff.alive!==false&&(S.playoff.round||1)>=3);
 }
 export function finalName(){
+  if(!(S.match&&!S.match.done)&&S.cupMatch&&!S.cupMatch.done){ const C=CUPS[S.cupMatch.kind]; return `${(C&&C.name)||"杯赛"}决赛`; }
   if(S.intl) return S.intl.type==="msi"?"MSI 总决赛":"世界赛决赛";
   return `${S.homeLeague||"LPL"}${["春季赛","夏季赛"][S.split||0]||""}决赛`;
 }
@@ -252,6 +318,8 @@ function scene(kind){
   if(kind==="tunnel") return o+`<path d="M16 104h288"/><path d="M60 104V40l100-24 100 24v64" /><path d="M60 40l100 24 100-24M160 64v40" stroke-opacity=".5"/><path d="M80 104V60M240 104V60M110 104V70M210 104V70" stroke-opacity=".35"/><path d="M40 12l24 20M280 12l-24 20M160 4v14" stroke-opacity=".6"/><circle cx="160" cy="88" r="8"/><path d="M160 96v8M152 104h16" /></svg>`;
   if(kind==="board") return o+`<path d="M16 104h288"/><rect x="60" y="22" width="200" height="60" rx="2"/><path d="M60 82l-8 22M260 82l8 22"/><path d="M76 38h60M76 50h96M76 62h44" stroke-opacity=".6"/><path d="M190 42l14 14-14 14M212 42l14 14-14 14" stroke-opacity=".6"/><circle cx="238" cy="36" r="4" stroke-opacity=".6"/><path d="M40 104v-14h18v14M262 104v-14h18v14" stroke-opacity=".5"/></svg>`;
   if(kind==="media") return o+`<path d="M16 104h288"/><rect x="40" y="18" width="240" height="60" rx="2" stroke-opacity=".5"/><path d="M56 34h40M112 34h40M168 34h40M224 34h40M56 62h40M112 62h40M168 62h40M224 62h40" stroke-opacity=".25"/><path d="M160 78v26M140 104h40"/><path d="M92 104v-16M228 104v-16M92 88a6 6 0 0 1 6-6h4M228 88a6 6 0 0 0-6-6h-4" stroke-opacity=".6"/><rect x="96" y="76" width="10" height="14" rx="3" stroke-opacity=".6"/><rect x="214" y="76" width="10" height="14" rx="3" stroke-opacity=".6"/><path d="M150 26h20M146 36h28" stroke-opacity=".5"/></svg>`;
+  if(kind==="night") return o+`<path d="M16 104h288"/><path d="M30 104V72h260v32"/><rect x="140" y="44" width="40" height="26" rx="2"/><path d="M160 70v8M146 84h28"/><path d="M60 44h40M60 56h40M220 44h40M220 56h40" stroke-opacity=".18"/><path d="M20 24h280" stroke-opacity=".15"/><circle cx="160" cy="18" r="5" stroke-opacity=".8"/><path d="M160 23v12" stroke-opacity=".5"/><path d="M120 40l40-14 40 14" stroke-opacity=".25"/></svg>`;
+  if(kind==="clinic") return o+`<path d="M16 104h288"/><path d="M60 92h200v12H60z"/><path d="M60 92V70h200v22M70 70V60h60v10" /><path d="M250 30v40M230 50h40" stroke-opacity=".7"/><rect x="220" y="20" width="60" height="60" rx="4" stroke-opacity=".35"/><path d="M40 40h40M40 52h30" stroke-opacity=".3"/><path d="M96 60c8-10 20-10 28 0" stroke-opacity=".5"/></svg>`;
   if(kind==="trophy") return o+`<path d="M120 20h80v30c0 22-18 40-40 40s-40-18-40-40z"/><path d="M120 28H98c0 18 8 30 24 34M200 28h22c0 18-8 30-24 34"/><path d="M160 90v12M140 104h40M134 110h52"/><path d="M160 6v6M126 10l3 5M194 10l-3 5M100 40l-6 2M220 40l6 2" stroke-opacity=".5"/><path d="M40 104h240" stroke-opacity=".4"/></svg>`;
   return o+`</svg>`;
 }
@@ -305,8 +373,25 @@ export function mediaQuiz(){
   return {sec:10,qs:[q1,q2,q3]};
 }
 
+/* 战术题库：突破试炼里指挥 / 运营那两维用（运营那套「记忆」要峡谷简笔画，先用决策代）。八道取五道 */
+const TACTIC_POOL=[
+  {q:"对面打野在下半区露头，你们上路有先锋。",a:[{t:"上半区开先锋，让对面二选一",ok:true},{t:"全队下路反蹲",ok:false},{t:"各自发育，等对面失误",ok:false}]},
+  {q:"落后四千经济，对面五人推中。",a:[{t:"守高地，等大龙刷新前的那波换血",ok:true},{t:"分带偷家",ok:false},{t:"中路正面接团",ok:false}]},
+  {q:"你们领先，对面把视野全插在你们野区。",a:[{t:"排掉眼，把节奏拖回己方半区",ok:true},{t:"直接开大龙逼团",ok:false},{t:"四一分推",ok:false}]},
+  {q:"小龙刷新前 40 秒，对面辅助不见了。",a:[{t:"下路先撤，等视野再说",ok:true},{t:"下路继续推线",ok:false},{t:"打野去小龙坑蹲",ok:false}]},
+  {q:"你们的下路被单杀两次，塔还在。",a:[{t:"换线，让上路去下路拿塔",ok:true},{t:"打野下路住",ok:false},{t:"让下路自己顶",ok:false}]},
+  {q:"对面中单没闪，你的打野在河道。",a:[{t:"让打野绕后，你先手",ok:true},{t:"等对面推线再说",ok:false},{t:"叫全队来中",ok:false}]},
+  {q:"三十分钟，双方都是六神装。",a:[{t:"把地图做满视野，逼对面先动",ok:true},{t:"直接开大龙",ok:false},{t:"四人抱团推塔",ok:false}]},
+  {q:"对面拿了三个团战英雄，你们是分推阵容。",a:[{t:"别接团，四一分推拉扯",ok:true},{t:"抱团正面打",ok:false},{t:"打野入侵野区",ok:false}]}
+];
+export function tacticQuiz(){
+  const qs=shuffle(TACTIC_POOL).slice(0,5).map(q=>({q:q.q,ctx:"白板前只有你和教练。",a:shuffle(q.a)}));
+  return {sec:8,qs};
+}
+
 /* ---------- 界面 ---------- */
-const OTHER_POPS=()=>!!(S.intlChamp||S.rndEv||S.rndResult||S.locker||S.confirm||S.autoSum||S.patchNote||S.rankUp||S.streamOffer||S.cupResult||S.cupMatch||(S.achPop&&S.achPop.length));
+// 杯赛的比赛卡自己就是一层弹窗；决赛之夜要压在它上面开场，所以「正在打的杯赛」不算挡路（第三批测试抓的）
+const OTHER_POPS=()=>!!(S.intlChamp||S.rndEv||S.rndResult||S.locker||S.confirm||S.autoSum||S.patchNote||S.rankUp||S.streamOffer||S.cupResult||(S.cupMatch&&!(S.cer&&S.cer.k==="final"))||(S.achPop&&S.achPop.length));
 export function cerCard(){
   const c=S.cer; if(!c) return "";
   if(OTHER_POPS()) return "";         // 别的弹窗先走，仪式等它们散了再开场
@@ -336,12 +421,13 @@ export function cerCard(){
     else if(st==="game") body=`<div class="cer-eyebrow">节奏 · 圆最大的时候点一下</div><div id="cer-game" data-game="rhythm"></div>${btns("")}`;
     else body=resultBody(c,"room");
   }else if(c.k==="final"){
-    const m=S.match, opp=(m&&m.oppName)||"对手", fn=finalName();
-    if(st==="story") body=`${scene("tunnel")}<div class="cer-eyebrow">${SEASONS[S.si].tag} · ${fn} · 入场</div>
-      <p class="cer-p"><b>入场通道。</b>灯光从尽头打过来，观众的声浪隔着墙都在震。对面 <b>${opp}</b> 从另一条通道走出来，赛前握手，谁都没看谁的眼睛。回到座位——最后一次热身。</p>
+    const m=liveMatch(), opp=(m&&(m.oppName||m.opp))||"对手", fn=finalName(), cup=!(S.match&&!S.match.done);
+    if(st==="story") body=`${scene("tunnel")}<div class="cer-eyebrow">${SEASONS[S.si]?SEASONS[S.si].tag:""} · ${fn} · 入场</div>
+      <p class="cer-p">${cup?`<b>网吧包场。</b>朋友都来了，后排站着几个不认识的人。对面 <b>${opp}</b> 已经坐下了，主持人在调麦。这是你第一次有观众——最后一次热身。`
+        :`<b>入场通道。</b>灯光从尽头打过来，观众的声浪隔着墙都在震。对面 <b>${opp}</b> 从另一条通道走出来，赛前握手，谁都没看谁的眼睛。回到座位——最后一次热身。`}</p>
       <p class="cer-hint">接下来轮到你：<b>反应</b>——靶亮起就点，20 秒。决赛的靶更小、亮得更短。金档：<b>这一场战力 +2、临场决策成功率 +5%</b>；银档：按平时打；铜档：−1、−3%。</p>
       ${btns(`<button class="btn primary" data-cer="next">热身 →</button>`)}`;
-    else if(st==="game") body=`<div class="cer-eyebrow">反应 · 靶亮起就点</div><div id="cer-game" data-game="react" data-hard="1"></div>${btns("")}`;
+    else if(st==="game") body=`<div class="cer-eyebrow">反应 · 靶亮起就点</div><div id="cer-game" data-game="react" data-hard="${S.career?1:0}" data-pre="${S.career?0:1}"></div>${btns("")}`;
     else body=resultBody(c,"tunnel");
   }else if(c.k==="bench"){
     const tr=S.tryout, team=(tr&&tr.team)||"俱乐部";
@@ -366,6 +452,43 @@ export function cerCard(){
       ${btns(`<button class="btn primary" data-cer="next">面对镜头 →</button>`)}`;
     else if(st==="game") body=`<div class="cer-eyebrow">媒体日 · 10 秒一题</div><div id="cer-game" data-game="decide" data-quiz="media"></div>${btns("")}`;
     else body=mediaResultBody(c);
+  }else if(c.k==="trial"){
+    const d=c.dim||"操作", mech=TRIAL_MECH[d]||"react";
+    const MN={react:"反应——靶亮起就点，20 秒",focus:"专注——25 格数字按顺序点完，没有弹幕，只有你",decide:"决策——五道战术题，每题 8 秒",rhythm:"节奏——跟着呼吸圆，20 秒"}[mech];
+    if(st==="story") body=`${scene("night")}<div class="cer-eyebrow">${SEASONS[S.si].tag} · 突破试炼 · ${d}</div>
+      <p class="cer-p"><b>训练室只剩你一个。</b>别人都走了，教练把门关上：「你的${d}已经到头了。今天不过这一关，别回去。」</p>
+      <p class="cer-hint">接下来轮到你：<b>${MN}</b>。只有<b>金档</b>算过关：<b>${d}天花板 +1，当场兑现</b>。没过不扣什么，下个赛段再来。</p>
+      ${btns(`<button class="btn primary" data-cer="next">开始 →</button>`)}`;
+    else if(st==="game") body=`<div class="cer-eyebrow">${d} · ${MN.split("——")[0]}</div><div id="cer-game" data-game="${mech}" data-quiz="tactic" data-quiet="1"></div>${btns("")}`;
+    else body=resultBody(c,"night");
+  }else if(c.k==="rehab"){
+    const inj=S.injury||{n:"伤",left:2};
+    if(st==="story") body=`${scene("clinic")}<div class="cer-eyebrow">康复期 · ${inj.n}</div>
+      <p class="cer-p"><b>理疗室。</b>墙上贴着康复计划表，${inj.left} 周。理疗师说：「急不来。呼吸跟着我。」</p>
+      <p class="cer-hint">接下来轮到你：<b>节奏</b>——跟着呼吸圆，在它最大的时候点，20 秒。金档：<b>少养一周</b>；银档 / 铜档：按原计划。</p>
+      ${btns(`<button class="btn primary" data-cer="next">开始 →</button>`)}`;
+    else if(st==="game") body=`<div class="cer-eyebrow">节奏 · 圆最大的时候点一下</div><div id="cer-game" data-game="rhythm"></div>${btns("")}`;
+    else body=resultBody(c,"clinic");
+  }else if(c.k==="allstar"){
+    if(st==="miss") body=`${scene("stage")}<div class="cer-eyebrow">${SEASONS[S.si].tag} · 全明星周末</div>
+      <p class="cer-p"><b>投票结果出来了。</b>名单上没有你的名字。你在直播间看完了技巧赛——明年让他们投。</p>
+      <div class="row cer-btns"><button class="btn primary" data-cer="close">关掉直播 →</button></div>`;
+    else if(st==="story") body=`${scene("stage")}<div class="cer-eyebrow">${SEASONS[S.si].tag} · 全明星周末</div>
+      <p class="cer-p"><b>你入选了。</b>灯光、音乐、观众席上举着你 ID 的牌子。技巧赛第一项：反应——全场最快的手是谁。</p>
+      <p class="cer-hint">接下来轮到你：<b>反应</b>——靶亮起就点，20 秒。金档：<b>人气 +20</b>、成就「技巧赛之王」；银档：+8；铜档：0。</p>
+      ${btns(`<button class="btn primary" data-cer="next">上台 →</button>`)}`;
+    else if(st==="game") body=`<div class="cer-eyebrow">技巧赛 · 反应</div><div id="cer-game" data-game="react"></div>${btns("")}`;
+    else body=resultBody(c,"stage");
+  }else if(c.k==="farewell0"){
+    body=`${scene("stage")}<div class="cer-eyebrow">${SEASONS[S.si].tag} · 退役赛季</div>
+      <p class="cer-p"><b>这是最后一年。</b>合同、年纪、手速——都在说同一件事。你没有告诉太多人，但消息还是传出去了：这个赛季每一个客场，都会有人举着横幅送你。</p>
+      <p class="cer-hint">退役赛季：客场会有告别横幅；夏季赛最后一场常规赛<b>战力 +2</b>；赛季结束有退役仪式。名片上会多一行。</p>
+      <div class="row cer-btns"><button class="btn primary" data-cer="close">打完这一年 →</button></div>`;
+  }else if(c.k==="farewell"){
+    body=`${scene("stage")}<div class="cer-eyebrow">退役仪式</div>
+      <p class="cer-p"><b>灯光打到台上。</b>队友：「${S.team||"队里"}的位置一直给你留着。」教练：「你是我带过最听不进话、也最能打出来的人。」看台上的横幅写着你的 ID，和第一年一样。</p>
+      <p class="cer-p">你把外设收进包里。灯暗下来的时候，你没有回头。</p>
+      <div class="row cer-btns"><button class="btn primary" data-cer="close">看生涯名片 →</button></div>`;
   }else if(c.k==="awards"){
     body=awardsBody(c.data);
   }
@@ -376,14 +499,18 @@ const RESULT_EFF={
   depart:{gold:"世界赛期间疲劳恢复 <b>更快（×1.3）</b>",silver:"世界赛期间疲劳恢复 <b>正常</b>",bronze:"世界赛期间疲劳恢复 <b>更慢（×0.8）</b>"},
   final: {gold:"这一场 <b>战力 +2、临场决策成功率 +5%</b>",silver:"这一场 <b>按平时打</b>",bronze:"这一场 <b>战力 −1、临场决策成功率 −3%</b>"},
   bench: {gold:"这次试训 <b>评级 +1 档</b>",silver:"这次试训 <b>评级不变</b>",bronze:"这次试训 <b>评级 −1 档</b>"},
-  patch: {gold:"整个赛季 <b>版本相性 +0.5</b>",silver:"整个赛季 <b>版本相性不变</b>",bronze:"整个赛季 <b>版本相性 −0.3</b>"}
+  patch: {gold:"整个赛季 <b>版本相性 +0.5</b>",silver:"整个赛季 <b>版本相性不变</b>",bronze:"整个赛季 <b>版本相性 −0.3</b>"},
+  trial: {gold:"<b>过关</b>——这一维天花板 <b>+1</b>，当场兑现",silver:"没过。不扣什么，<b>下个赛段再来</b>",bronze:"没过。不扣什么，<b>下个赛段再来</b>"},
+  rehab: {gold:"恢复比预期快，<b>少养一周</b>",silver:"按原计划养",bronze:"按原计划养"},
+  allstar:{gold:"全场最快的手。<b>人气 +20</b>",silver:"中规中矩，<b>人气 +8</b>",bronze:"手凉了，观众替你尴尬"}
 };
-const RESULT_BTN={draw:"打季后赛 →",depart:"出发 →",final:"上场 →",bench:"进第一天 →",patch:"开赛 →"};
+const RESULT_BTN={draw:"打季后赛 →",depart:"出发 →",final:"上场 →",bench:"进第一天 →",patch:"开赛 →",trial:"回去睡觉 →",rehab:"回去养 →",allstar:"表演赛 →"};
 function resultDetail(c){
   const d=c.detail||{};
   if(c.k==="draw") return d.sec!==undefined?`用时 ${d.sec.toFixed(1)} 秒${d.wrong?`，点错 ${d.wrong} 次`:""}`:"";
-  if(c.k==="depart") return d.ms!==undefined?`平均误差 ${Math.round(d.ms)} 毫秒，${d.hit||0}/${d.total||8} 次踩上`:"";
-  if(c.k==="final"||c.k==="bench") return d.rate!==undefined?`命中 ${Math.round(d.rate*100)}%（${d.hit||0}/${d.total||0}），平均反应 ${d.ms>=9000?"—":Math.round(d.ms)+" 毫秒"}`:"";
+  if(c.k==="depart"||c.k==="rehab") return d.ms!==undefined?`平均误差 ${Math.round(d.ms)} 毫秒，${d.hit||0}/${d.total||8} 次踩上`:"";
+  if(c.k==="trial"){ if(d.sec!==undefined) return `用时 ${d.sec.toFixed(1)} 秒${d.wrong?`，点错 ${d.wrong} 次`:""}`; if(d.ms!==undefined&&d.rate===undefined) return `平均误差 ${Math.round(d.ms)} 毫秒`; if(d.n!==undefined) return `答对 ${d.n}/${d.total||5} 题`; }
+  if(c.k==="final"||c.k==="bench"||c.k==="allstar"||c.k==="trial") return d.rate!==undefined?`命中 ${Math.round(d.rate*100)}%（${d.hit||0}/${d.total||0}），平均反应 ${d.ms>=9000?"—":Math.round(d.ms)+" 毫秒"}`:"";
   if(c.k==="patch") return d.n!==undefined?`答对 ${d.n}/${d.total||5} 题`:"";
   return "";
 }
@@ -443,21 +570,23 @@ export function cerBind(st){
   const g=st.querySelector("#cer-game");
   if(g){
     const kind=g.getAttribute("data-game");
-    if(kind==="focus") focusMount(g);
+    const quiz=g.getAttribute("data-quiz");
+    if(kind==="focus") focusMount(g,{quiet:g.getAttribute("data-quiet")==="1"});
     else if(kind==="react") reactMount(g,{hard:g.getAttribute("data-hard")==="1",pre:g.getAttribute("data-pre")==="1"});
-    else if(kind==="decide") decideMount(g,g.getAttribute("data-quiz")==="media"?mediaQuiz():patchQuiz(),g.getAttribute("data-quiz")==="media");
+    else if(kind==="decide") decideMount(g,quiz==="media"?mediaQuiz():quiz==="tactic"?tacticQuiz():patchQuiz(),quiz==="media");
     else rhythmMount(g);
   }
   st.querySelectorAll("[data-camp]").forEach((b: any)=>b.onclick=()=>pickCamp(b.dataset.camp));
+  st.querySelectorAll("[data-meet]").forEach((b: any)=>b.onclick=()=>pickMeet(b.dataset.meet));
 }
 const reduced=()=>{ try{ return !!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches); }catch(e){ return false; } };
 const DANMU=["别再演了","这队没戏","就这？","下赛季见","打野在干嘛","抽到他们稳了","菜就多练","坐等翻车","我信你一次","别送了","这把稳吗","上次也这么说"];
 
 /* 专注：舒尔特 25 格 + 弹幕遮挡。点错罚 0.5 秒；40 秒没点完按铜档。 */
-export function focusMount(el){
+export function focusMount(el,opt?){
   const nums=[]; for(let i=1;i<=25;i++) nums.push(i);
   for(let i=nums.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [nums[i],nums[j]]=[nums[j],nums[i]]; }
-  const noDm=reduced();
+  const noDm=reduced()||!!(opt&&opt.quiet);   // 突破试炼的专注没有弹幕：深夜训练室只有你
   el.innerHTML=`<div class="mg-head"><span>下一个：<b id="mg-next">1</b></span><span class="mono" id="mg-t">0.0 秒</span></div>
     <div class="mg-wrap"><div class="mg-grid">${nums.map(n=>`<button type="button" class="mg-cell" data-n="${n}" aria-label="${n}">${n}</button>`).join("")}</div>
     ${noDm?"":`<div class="mg-dm" aria-hidden="true">${[0,1,2,3,4,5,6].map(i=>{ const txt=DANMU[Math.floor(Math.random()*DANMU.length)]; const top=4+Math.random()*88, dur=4.5+Math.random()*4, delay=-Math.random()*dur; return `<span style="top:${top.toFixed(0)}%;animation-duration:${dur.toFixed(1)}s;animation-delay:${delay.toFixed(1)}s">${txt}</span>`; }).join("")}</div>`}</div>
@@ -589,6 +718,52 @@ export function decideMount(el,quiz,isMedia){
     _timers.push(tick);
   };
   show();
+}
+
+/* ---------- 粉丝见面会（休赛期，人气够才有，一年一次） ----------
+   办不办、办多大：三档场地，门票按粉丝算，成本先付。疲劳 >70 时一半概率办砸（热度掉、粉丝掉）。
+   这是后期人气和钱的一个出口；托管不办，机器人不办，批测数字不动。 */
+export const MEET_MIN_FANS=150;
+export const MEETS=[
+  {k:"small", n:"小场", cost:20,  cap:300,  per:0.30, fans:5,  heat:10, d:"一家咖啡馆的二楼，一百多个位子。"},
+  {k:"mid",   n:"中场", cost:60,  cap:800,  per:0.35, fans:12, heat:25, d:"剧场，八百个位子，要请安保。"},
+  {k:"big",   n:"大场", cost:150, cap:2000, per:0.40, fans:25, heat:50, d:"体育馆的副馆。灯光、舞台、周边全要自己出。"}
+];
+export function meetOpen(){ return !!(S.career&&S.off&&S.off.next==="year"&&(S.fans||0)>=MEET_MIN_FANS&&!(S.meet&&S.meet[S.si]!==undefined)); }
+export function meetIncome(m){ return Math.round(Math.min(S.fans||0,m.cap)*m.per); }
+export function meetCard(){
+  if(!S.career||!S.off||S.off.next!=="year") return "";
+  const done=S.meet&&S.meet[S.si];
+  if(done){ const m=MEETS.find(x=>x.k===done.k); return m?`<div class="card"><h2>粉丝见面会<em>今年：${m.n} · ${done.ok?"办成了":"办砸了"}</em></h2><p class="note">${done.txt||m.d}</p></div>`:""; }
+  if((S.fans||0)<MEET_MIN_FANS) return "";
+  const tired=(S.fatigue||0)>70;
+  return `<div class="card"><h2>粉丝见面会<em>休赛期 · 一年一次</em></h2>
+    <p class="note">粉丝 ${Math.round(S.fans||0)}。门票收入按能来的人算，场地钱先付。${tired?`<b style="color:var(--red)">你现在疲劳 ${Math.round(S.fatigue)}——这个状态上台，一半概率办砸。</b>`:"状态还行，办得成。"}</p>
+    <div class="grid g2">${MEETS.map(m=>{ const ok=(S.money||0)>=m.cost, inc=meetIncome(m);
+      return `<button class="act" data-meet="${m.k}" ${ok?"":'disabled style="opacity:.34"'} title="${ok?"":"资金不够"}">
+        <div class="t">${m.n} <i class="apc">−${m.cost} 万 / 约 +${inc} 万门票</i></div><div class="d">${m.d}<br><b>办成：热度 +${m.fans+m.heat}</b>（人气跟着热度慢慢涨）</div></button>`; }).join("")}
+      <button class="act" data-meet="none"><div class="t">今年不办</div><div class="d">休赛期是休息的。</div></button></div></div>`;
+}
+export function pickMeet(k){
+  if(!meetOpen()) return;
+  S.meet=S.meet||{};
+  if(k==="none"){ S.meet[S.si]={k:"none",ok:true,txt:"今年没办。"}; render(); return; }
+  const m=MEETS.find(x=>x.k===k); if(!m) return;
+  if((S.money||0)<m.cost) return;
+  addMoney("meet",-m.cost);
+  const inc=meetIncome(m);
+  const flop=(S.fatigue||0)>70&&rnd()<0.5;
+  if(flop){
+    addMoney("meet",Math.round(inc*0.5)); addFans(-5); S.heat=Math.max(0,(S.heat||0)-15);
+    S.meet[S.si]={k,ok:false,txt:`${m.n}办砸了：你在台上打了个哈欠被拍下来，热度掉了。门票只收回一半。`};
+    pushEvent(`粉丝见面会（${m.n}）<b>办砸了</b>：疲劳 ${Math.round(S.fatigue)} 的人不该上台。门票收回 ${Math.round(inc*0.5)} 万，热度 −20、掉了一点粉。`,"bad","见面会");
+  }else{
+    addMoney("meet",inc); addFans(m.fans); S.heat=(S.heat||0)+m.heat;
+    S.meet[S.si]={k,ok:true,txt:`${m.n}办成了：${m.d} 门票 ${inc} 万。`};
+    pushEvent(`粉丝见面会（${m.n}）办成了：门票 <b>${inc} 万</b>，热度 +${m.fans+m.heat}。`,"good","见面会");
+  }
+  checkAch("meet",{k,ok:!flop});
+  render();
 }
 
 /* ---------- 特训营（休赛期，一年一次） ----------
