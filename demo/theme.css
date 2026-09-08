@@ -460,11 +460,17 @@ h1{font-size:clamp(26px,4.6vw,40px);margin:0;font-weight:700;letter-spacing:.06e
 /* 带头像和名字的行（战队实力、升队通道）：右列固定 82px 放不下
    「头像+名字+数值」，数值被挤到名字下面换行。改成自适应列宽、
    一行排开：数值紧跟在 bar 后面，然后才是头像和名字。 */
-.at.wide{grid-template-columns:50px 1fr auto}
-.at.wide .vn{display:flex;align-items:center;gap:6px;white-space:nowrap;text-align:left}
-.at.wide .vn b{min-width:26px;text-align:right}
-.at.wide .vn .pname{max-width:96px;overflow:hidden;text-overflow:ellipsis}
-@media(max-width:480px){.at.wide .vn .pname{max-width:64px}}
+/* 右列必须是固定宽（2026-09-08 作者截图：自己 83、队友 83，自己的条长一截）——
+   原来是 auto，「你」一个字比「Jiejie」窄，中间那根 1fr 的条就长出来一截，同样的 83% 画得不一样长。
+   固定成 数值 26 + 头像 22 + 名字 96（手机 64）+ 两个 6px 间隙，条的长度五行一致。 */
+.at.wide{grid-template-columns:50px 1fr 158px}
+.at.wide .vn{display:flex;align-items:center;gap:6px;white-space:nowrap;text-align:left;overflow:hidden}
+.at.wide .vn b{min-width:26px;text-align:right;flex:0 0 auto}
+.at.wide .vn .pname{max-width:96px;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.at.wide .vn .tag{flex:0 0 auto}
+/* 只有数值没有头像名字的行（首发竞争、信任、俱乐部关注、轮换资本）：右列 44px 就够，条别白白让出一大截 */
+.at.wide.num{grid-template-columns:50px 1fr 44px}
+@media(max-width:480px){.at.wide{grid-template-columns:50px 1fr 126px}.at.wide.num{grid-template-columns:50px 1fr 44px}.at.wide .vn .pname{max-width:64px}}
 
 /* ---- 对阵 ---- */
 .vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;margin-bottom:14px}
