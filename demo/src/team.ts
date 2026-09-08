@@ -216,7 +216,24 @@ export const SPEND=[
    这个上限同时管三处：续约（contractCheck）、谈判加薪（askDeal）、转会报价（makeProDeal），
    并且在 salaryOf 里兜一次底——老存档里那份一亿两千万的合同读进来当场就被拉回档次上限。 */
 export const PAY_CAP={top:1500, mid:700, low:300, acad:40};
-export function payCapOf(clubTier){ return PAY_CAP[clubTier]!==undefined?PAY_CAP[clubTier]:PAY_CAP.mid; }
+/* 2026-09-08 修（玩家实锤「到期自动续约，然后薪资很低玩不了」）：
+   上一版这个上限有两处会误伤，都出在 clubTier 这个字段本身不可靠：
+   · 老档里存在 clubTier="acad" 却在一线联赛打球的合同——save.ts 的 fixLegacyAcadTier
+     明说「只改标签，钱不动」，于是 800 万的合同被 40 万的青训上限砍掉 95%；
+   · 更早的档根本没有 clubTier，回落到 mid(700) 又把豪门合同砍 42%。
+   现在两条一起改：① 字段缺失时按最宽的一档兜底，不认识的值绝不往严了猜；
+   ② clubTier="acad" 只有在你真的注册在 LDL 名单里时才当青训算——人在一队打球，
+   就按弱队档兜底。真正管住指数增长的是 capRaise（只封涨幅，不动既有合同）。 */
+export function payCapOf(clubTier){
+  if(clubTier==="acad") return ((S&&S.homeLeague)==="LDL")?PAY_CAP.acad:PAY_CAP.low;
+  return PAY_CAP[clubTier]!==undefined?PAY_CAP[clubTier]:PAY_CAP.top;
+}
+/* 涨薪封顶：新的报价不越过档次上限，但**永远不低于现在这份合同**。
+   上限的职责是掐断「每年 ×1.9 连乘七年」那条指数，不是回头没收玩家已经谈成的合同——
+   上一版在 salaryOf 里直接截断实发薪资，等于读档当场降薪，这是玩家报的那个 bug。 */
+export function capRaise(next,cur,clubTier){
+  return Math.max(Math.round(cur||0), Math.min(Math.round(next), payCapOf(clubTier)));
+}
 /* 违约金是年薪的倍数，不再自己走一条独立的乘法。
    玩家截图里出现过「违约金 5619 万 < 年薪 12860 万」——买断价低于年薪，现实里不可能。
    续约时沿用这份合同原本的倍数（所以「压低违约金 −40%」仍然算数），但夹在 3–9 倍之间。 */
@@ -236,7 +253,9 @@ export function salaryOf(){
   // 名气与荣誉的钱主要走合同谈判和奖金，不再靠每赛段自动加薪。
   const bonus=Math.round(Math.min(S.fans,6000)*0.012)+(S.career.leagueTitles||0)*6
     +((S.career.msi||0)+(S.career.worlds||0))*14;
-  if(c.salary!==undefined) return Math.round(Math.min(c.salary,payCapOf(c.clubTier))+bonus);
+  // 实发 = 合同上那个数 + 浮动。这里**不再**套上限——合同里那个数是谈出来的，
+  // 上限只在生成新报价时生效（见 capRaise）。上一版在这里截断，等于老档读进来当场降薪。
+  if(c.salary!==undefined) return Math.round(c.salary+bonus);
   // 老存档或没走谈判流程的情况，退回旧算法
   const kindMul={sub:1.25,start:1.0,core:0.85,foreign:1.15}[S.offerKind]||1;
   return Math.round((26+bonus)*kindMul);
@@ -270,8 +289,8 @@ export function contractCheck(){
        违约金不再自己乘，改成跟着新年薪按这份合同原本的倍数走（见 buyoutRatio）。 */
     const raise=clamp(1.12+(ovr-teamAvg)*0.02+(wonTitle?0.12:0),1.02,1.35);
     const old=S.contract;
-    const cap=payCapOf(old.clubTier);
-    const sal=old.salary!==undefined?Math.min(Math.round(old.salary*raise),cap):undefined;
+    // 封涨幅、不降薪：已经高于上限的老合同就停在原地，不会被倒扣回去
+    const sal=old.salary!==undefined?capRaise(old.salary*raise,old.salary,old.clubTier):undefined;
     const k=buyoutRatio(old);
     S.pendingRenew={
       team:S.team, years:2,
