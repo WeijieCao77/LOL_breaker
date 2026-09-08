@@ -110,6 +110,44 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
     }
     const r = playWeeks(w, d, P, 6);
     if (r.weeks < 3) bad.push("用按钮推周推不动：" + JSON.stringify(r));
+    // ---- 仪式的两套新机制在真 DOM 里能不能玩（2026-09-08 第二批）：反应（靶场）与决策（限时三选一） ----
+    // 无头引擎测试只能验结算，摆盘、计时器、点击都在这一层。试训上机在职业前就能开，正好在这里试。
+    {
+      const S = P.S(); const pd = (el: Element) => el.dispatchEvent(new w.Event("pointerdown", { bubbles: true, cancelable: true }));
+      // 别的弹窗（际遇、成就、确认框、杯赛……）先散场，仪式才开——真实界面里也是这个顺序，这里直接清掉
+      const POPS = ["intlChamp", "rndEv", "rndResult", "locker", "confirm", "autoSum", "patchNote", "rankUp", "streamOffer", "cupResult", "cupMatch", "signup", "traitUp"];
+      const clearPops = () => { POPS.forEach(k => { S[k] = null; }); S.achPop = []; };
+      clearPops();
+      S.tryout = { tier: "mid", team: "T", expect: 60, day: 0, score: 0, lines: [], fat: 0, done: false, days: [0, 1, 2, 3] };
+      S.cer = { k: "bench", step: 0 }; P.render();
+      if (!d.querySelector(".cer .cer-art")) bad.push("试训上机的开场卡没画场景图" + (d.querySelector(".cer") ? "" : "（仪式层根本没渲染：" + POPS.filter(k => S[k]).join(",") + " achPop=" + (S.achPop || []).length + "）"));
+      S.cer.step = 1; P.render();
+      const go = d.getElementById("mg-go"); const arena = d.querySelector("#cer-game .mg-arena");
+      if (!arena || !go) bad.push("反应挑战没挂出靶场 / 开始按钮");
+      else {
+        pd(go); await tick(900);   // 第一个靶 500ms 后出现
+        const tg = d.querySelector<HTMLElement>("#cer-game .mg-target");
+        if (!tg) bad.push("开始之后 900ms 内没有靶亮起");
+        else { pd(tg); await tick(20); if ((d.getElementById("mg-hit") || { textContent: "" }).textContent !== "1") bad.push("点中靶没有计入命中：" + (d.getElementById("mg-hit") || {}).textContent); }
+      }
+      const skip = d.querySelector<HTMLElement>('.cer [data-cer="skip"]'); if (!skip) bad.push("反应挑战没有跳过按钮"); else skip.click();
+      if (S.cer || S.tryout.cerAdj !== 0) bad.push("反应挑战跳过没按银档结算");
+      S.tryout = null;
+      // 决策：五道题一题一屏，点一个选项 700ms 后翻到下一题
+      S.cer = { k: "patch", step: 1 }; P.render();
+      const opts = d.querySelectorAll<HTMLElement>("#cer-game .mg-opt");
+      if (opts.length !== 3 || !d.getElementById("mg-bar")) bad.push("决策挑战没有三个选项 / 倒计时条：" + opts.length);
+      else {
+        const head0 = (d.querySelector("#cer-game .mg-head") || { textContent: "" }).textContent || "";
+        if (!/1\s*\/\s*5/.test(head0.replace(/\s+/g, ""))) bad.push("决策第一题的题号不对：" + head0);
+        pd(opts[0]); await tick(800);
+        const head1 = (d.querySelector("#cer-game .mg-head") || { textContent: "" }).textContent || "";
+        if (!/2\s*\/\s*5/.test(head1.replace(/\s+/g, ""))) bad.push("答完一题没翻到第二题：" + head1);
+      }
+      const skip2 = d.querySelector<HTMLElement>('.cer [data-cer="skip"]'); if (skip2) skip2.click();
+      if (S.cer) bad.push("决策挑战跳过后仪式没散场"); S.verCer = null;
+      P.render();
+    }
     // 存档：手动存、读回
     (d.getElementById("savenow") as HTMLElement | null)?.click();
     const raw = w.localStorage.getItem("pojuzhe_save_v1");
@@ -177,5 +215,5 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
 }
 
 if (bad.length) { console.error("界面测试失败：\n - " + bad.join("\n - ")); process.exit(1); }
-console.log("界面测试通过：建档按钮 · 导览模态与焦点圈 · 浮窗与歌单探测 · 更新日志 · 推周 · 存档 · 配色切换 · 手机折叠与抽屉");
+console.log("界面测试通过：建档按钮 · 导览模态与焦点圈 · 浮窗与歌单探测 · 更新日志 · 推周 · 仪式小游戏（靶场 / 限时三选一） · 存档 · 配色切换 · 手机折叠与抽屉");
 process.exit(0);

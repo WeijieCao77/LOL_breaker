@@ -1,4 +1,5 @@
 import { checkAch } from "./achieve";
+import { cerStart } from "./cer";
 import { avatarOf, gicon } from "./avatar";
 import { DIMS, NODES, POS, POSN, addFans, addFat, apCost, avg, capOf, clamp, cupLadder, ovrOf, preLog, render, strength, tacAdd, tierOf } from "./main";
 import { rnd } from "./rng";
@@ -259,8 +260,14 @@ export function forfeitCup(k){
 export function startCupMatch(k){
   const opp=cupOppName(k), op=cupOppPower(k);
   S.cupMatch={ kind:k, opp, op, sc:[0,0], need:2, game:1, lines:[], node:null, swing:0, done:false };
+  // 决赛之夜·入场（职业前版）：网吧包场、朋友来看——同一套反应挑战，用职业前那条更松的线。表演赛不算
+  const c=cupOf(k), C=CUPS[k];
+  if(c&&C&&k!=="show"&&c.round>=C.rounds) cerStart("final");
   cupNextGame();
 }
+/* 决赛之夜给这一场的战力 / 节点加成（只挂在 S.cupMatch 上） */
+export function cupFinalPw(m){ return (m&&m.cerFinal&&m.cerFinal.pw)||0; }
+export function cupFinalNode(m){ return (m&&m.cerFinal&&m.cerFinal.node)||0; }
 export function cupNextGame(){
   const m=S.cupMatch;
   if(m.sc[0]>=m.need||m.sc[1]>=m.need){ endCupMatch(); return; }
@@ -276,12 +283,12 @@ export function cupNextGame(){
   render();
 }
 export function cupWinP(m,swing){
-  const my=cupMyPower(m.kind)+(swing||0);
+  const my=cupMyPower(m.kind)+(swing||0)+cupFinalPw(m);
   return clamp(1/(1+Math.exp(-(my-m.op)/5.5)),0.05,0.95);
 }
 export function resolveCupNode(i){
   const m=S.cupMatch, opt=m.node.a[i], v=S.attrs[opt.dim];
-  const p=clamp(0.30+(v/100)*0.55,0.15,0.9);
+  const p=clamp(0.30+(v/100)*0.55+cupFinalNode(m),0.15,0.9);
   const ok=rnd()<p;
   const was=cupWinP(m,m.swing);
   m.swing+=(ok?1:-1)*opt.risk*5.0;
@@ -297,7 +304,7 @@ export function resolveCupNode(i){
 }
 export function cupPlayGame(){
   const m=S.cupMatch;
-  const my=cupMyPower(m.kind)+m.swing;
+  const my=cupMyPower(m.kind)+m.swing+cupFinalPw(m);
   const p=clamp(1/(1+Math.exp(-(my-m.op)/5.5)),0.05,0.95);
   const win=rnd()<p;
   (m.gameLog=m.gameLog||[]).push({g:m.game,p:Math.round(p*100),win});
