@@ -475,6 +475,76 @@ function unitChecks() {
       if (!/续约桌上/.test(A.roleCard()) || !/留队意愿/.test(A.roleCard())) bad.push("队内身份卡没有「续约桌上」的账");
       S.contract = c0; S.freeAgent = fa0; S.pendingRenew = pr0; S.cutReason = cr0;
     }
+    // ---- 第三批仪式（2026-09-08）：突破试炼、康复期、全明星、见面会、退役赛季、职业前杯赛决赛 ----
+    {
+      const pops = () => { S.achPop = []; S.rankUp = null; };
+      // 突破试炼：撞顶的那一维开场；金档 = 天花板 +1（里程碑池）；没过记「这个赛段试过」，同赛段不再弹
+      const d0 = A.DIMS.find((d: string) => S.attrs[d] >= A.capOf(d) - 0.05) || "操作";
+      const a0 = JSON.parse(JSON.stringify(S.attrs)), cb0 = JSON.stringify(S.capBonus), cm0 = JSON.stringify(S.capMile);
+      S.attrs[d0] = A.capOf(d0); S.btkTrial = {};
+      const cap0 = A.capOf(d0);
+      A.btkTrialCheck(); if (!S.cer || S.cer.k !== "trial" || S.cer.dim !== d0) bad.push("撞顶没开突破试炼：" + JSON.stringify(S.cer));
+      pops(); if (!/突破试炼/.test(A.cerCard())) bad.push("突破试炼的卡没渲染");
+      S.cer.step = 1; pops(); const gm = A.cerCard(); if (!new RegExp(`data-game="${A.TRIAL_MECH[d0]}"`).test(gm)) bad.push(`试炼的机制没按维度分发：${d0} → ${A.TRIAL_MECH[d0]}`);
+      A.cerFinish("gold", { rate: 0.9, ms: 300 }); A.cerClose();
+      if (S.cer || S.btkTrial[d0] !== "pass" || !(A.capOf(d0) > cap0 + 0.5)) bad.push(`试炼金档没顶开天花板：${cap0} → ${A.capOf(d0)}，${JSON.stringify(S.btkTrial)}`);
+      S.attrs[d0] = A.capOf(d0); A.btkTrialCheck(); if (S.cer) bad.push("过了关的那一维又弹了试炼");
+      S.btkTrial = {}; A.btkTrialCheck(); if (!S.cer) bad.push("重新贴顶没弹试炼"); A.cerFinish("bronze", {}); A.cerClose();
+      if (S.cer || S.btkTrial[d0 + "_si"] !== S.si) bad.push("试炼没过应该记「这个赛段试过」：" + JSON.stringify(S.btkTrial));
+      A.btkTrialCheck(); if (S.cer) bad.push("同一个赛段试炼弹了两次");
+      S.attrs = a0; S.btkTrial = {}; S.capBonus = cb0 ? JSON.parse(cb0) : undefined; S.capMile = cm0 ? JSON.parse(cm0) : undefined;
+      // 康复期：受伤开场；金档少养一周；伤只剩 1 周不再减
+      S.injury = { k: "wrist", n: "手腕劳损", d: "x", left: 3, hit: { 操作: -4 } };
+      A.cerStart("rehab"); if (!S.cer || S.cer.k !== "rehab") bad.push("康复期没开场");
+      pops(); if (!/康复期/.test(A.cerCard())) bad.push("康复期的卡没渲染");
+      A.cerFinish("gold", { ms: 60, hit: 8, total: 8 }); A.cerClose(); if (S.cer || S.injury.left !== 2) bad.push("康复金档没少养一周：" + S.injury.left);
+      S.injury.left = 1; A.cerStart("rehab"); A.cerFinish("gold", { ms: 60 }); A.cerClose(); if (S.injury.left !== 1) bad.push("只剩 1 周还被减了");
+      S.injury = null; A.cerStart("rehab"); if (S.cer) bad.push("没受伤也开了康复期");
+      // 全明星：没资格 → 落选卡、零效果；有资格 → 技巧赛；金档 +20 人气；跳过 0
+      S.career.awards = []; S.career.lgYears = []; S.career.msiYears = []; S.career.worldsYears = []; const f0 = S.fans; S.fans = 100;
+      if (A.allstarSelected()) bad.push("没奖项没冠军人气 100 也入选了全明星");
+      A.cerStart("allstar"); if (!S.cer || S.cer.sel !== false || A.cerStepName() !== "miss") bad.push("落选的全明星没走落选卡：" + JSON.stringify(S.cer));
+      pops(); if (!/没有你的名字/.test(A.cerCard())) bad.push("落选卡没渲染");
+      A.cerClose(); if (S.cer || S.fans !== 100) bad.push("落选还改了人气");
+      S.career.awards = [{ si: S.si, kind: "second" }];
+      A.cerStart("allstar"); if (!S.cer || S.cer.sel !== true) bad.push("二阵没入选全明星");
+      const hA = S.heat || 0;
+      A.cerFinish("gold", { rate: 0.9, ms: 300, hit: 15, total: 16 }); A.cerClose();
+      const dA = (S.heat || 0) - hA;   // +20，成就「技巧赛之王」第一次解锁再 +15
+      if (S.cer || !(dA === 20 || dA === 35)) bad.push("技巧赛金档没给人气 +20：" + hA + "→" + S.heat);
+      const hB = S.heat || 0; A.cerStart("allstar"); A.cerSkip(); if (S.cer || (S.heat || 0) !== hB) bad.push("全明星跳过改了人气");
+      S.fans = f0; S.career.awards = [];
+      // 见面会：人气够、休赛期、一年一次；办成了钱和人气动；疲劳低不会砸
+      S.off = { week: 1, weeks: 3, next: "year" }; S.fans = 500; S.money = 1000; S.fatigue = 20; S.meet = {};
+      if (!A.meetOpen() || !/粉丝见面会/.test(A.meetCard())) bad.push("见面会该开而没开 / 卡没渲染");
+      const m0 = S.money, h0 = S.heat || 0; A.pickMeet("mid");
+      const M = A.MEETS.find((x: any) => x.k === "mid");
+      if (S.money !== m0 - M.cost + Math.round(Math.min(500, M.cap) * M.per) || (S.heat || 0) !== h0 + M.heat + M.fans) bad.push(`见面会办成的账不对：钱 ${m0}→${S.money} 热 ${h0}→${S.heat}（应 +${M.heat + M.fans}）`);
+      if (A.meetOpen()) bad.push("见面会一年办了两次");
+      S.fans = 100; S.meet = {}; if (A.meetOpen() || A.meetCard() !== "") bad.push("人气不够也能办见面会");
+      S.off = null; S.meet = {}; S.fans = f0;
+      // 退役赛季：只在再战的最后一年；开场卡、名片行、最后一场常规赛 +2 走 cerFinalPw
+      S.extended = true; const si0 = S.si; S.si = A.lastSeason(); S.farewell = null;
+      A.cerStart("farewell0"); if (!S.cer || S.cer.k !== "farewell0") bad.push("退役赛季开场卡没开");
+      pops(); if (!/最后一年/.test(A.cerCard())) bad.push("退役赛季开场卡没渲染");
+      A.cerClose(); if (S.cer || !S.farewell || S.farewell.si !== S.si) bad.push("退役赛季没记下来：" + JSON.stringify(S.farewell));
+      S.match = { opp: { players: [] }, oppName: "X", sc: [0, 0], lines: [], swing: 0, done: false, need: 2, farewellPw: 2 };
+      if (A.cerFinalPw() !== 2) bad.push("最后一场常规赛的 +2 没进战力");
+      S.match = null;
+      if (!/退役赛季/.test(A.careerPoster())) bad.push("名片上没有「退役赛季」");
+      A.cerStart("farewell"); pops(); if (!S.cer || !/退役仪式/.test(A.cerCard())) bad.push("退役仪式卡没开 / 没渲染"); A.cerClose(); if (S.cer) bad.push("退役仪式散不了场");
+      S.farewell = null; S.extended = false; S.si = si0;
+      // 职业前杯赛决赛：S.cupMatch 上也能开决赛之夜，加成挂在 cupMatch 上
+      { const car = S.career; S.career = null;
+        S.cupMatch = { kind: "city", opp: "市队", op: 55, sc: [0, 0], need: 2, game: 1, lines: [], node: null, swing: 0, done: false };
+        A.cerStart("final"); if (!S.cer || S.cer.k !== "final") bad.push("杯赛决赛没开决赛之夜");
+        pops(); if (!/网吧包场/.test(A.cerCard())) bad.push("杯赛决赛的入场词不是网吧版");
+        S.cer.step = 1; pops(); if (!/data-pre="1"/.test(A.cerCard())) bad.push("杯赛决赛没用职业前那条线");
+        A.cerFinish("gold", { rate: 0.9, ms: 300 }); A.cerClose();
+        if (S.cer || !S.cupMatch.cerFinal || S.cupMatch.cerFinal.pw !== 2 || A.cupFinalPw(S.cupMatch) !== 2) bad.push("杯赛决赛金档没挂到 cupMatch 上：" + JSON.stringify(S.cupMatch.cerFinal));
+        const p0 = A.cupWinP(S.cupMatch, 0); S.cupMatch.cerFinal = null; const p1 = A.cupWinP(S.cupMatch, 0); if (!(p0 > p1)) bad.push("杯赛决赛的 +2 没进赢面");
+        S.cupMatch = null; S.career = car; }
+    }
     // 特训营：一年一次，钱不够不能选，卡渲染得出来
     S.off = { week: 1, weeks: 3, next: "year" }; S.money = 1000;
     if (!/特训营/.test(A.campCard())) bad.push("特训营卡没渲染");

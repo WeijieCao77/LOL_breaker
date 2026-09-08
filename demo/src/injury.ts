@@ -1,4 +1,5 @@
 import { clamp, pushEvent } from "./main";
+import { cerStart } from "./cer";
 import { rnd } from "./rng";
 import { S } from "./state";
 
@@ -45,6 +46,7 @@ export function rollInjury(where){
   S.injury={k:inj.k,n:inj.n,d:inj.d,left:wk,hit:inj.hit};
   pushEvent(`<b>${inj.n}</b>　${inj.d}<br>
     预计影响 <b>${wk} 周</b>${where?`（${where}）`:""}。`,"bad","伤病");
+  if(S.career) cerStart("rehab");   // 康复期：理疗室、计划表，然后是节奏训练——金档少养一周（托管 / 机器人按跳过走）
   return true;
 }
 /* 伤病对属性的即时折扣（不改真实数值，只影响这段时间的发挥） */
