@@ -78,6 +78,12 @@ body::before{
   background:repeating-linear-gradient(180deg,rgba(var(--hi-rgb),.018) 0 1px,transparent 1px 3px);
 }
 .wrap{max-width:1000px;margin:0 auto;padding:0 20px 80px;position:relative;z-index:1}
+/* 桌面放宽（作者拍板 2026-09-09，玩家「冷水鱼 616」：「pc 界面怪怪的……可以把所有
+   东西铺在一个平面内，这样不用上下翻页」）。1000px 在 1920 屏上两侧各空 460px，
+   扣掉 96px 竖导航之后内容列只剩约 848px——和一台竖着的平板一样宽，于是「本周」
+   那一页要滚两到三屏。这两行只放宽容器，手机和小桌面一个像素不动。 */
+@media(min-width:1280px){ .wrap{max-width:1400px} }
+@media(min-width:1680px){ .wrap{max-width:1560px} }
 .mono{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"Liberation Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
 button{font-family:inherit;font-size:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:1px solid var(--gold);outline-offset:2px}
@@ -563,6 +569,21 @@ tr.cut td{border-bottom:2px solid var(--gold-dim)}
 #stage.sw{animation:sw-in .16s ease-out}
 @keyframes sw-in{from{opacity:.35;transform:translateY(3px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){#stage.sw{animation:none}}
+
+/* ---- 出口常驻（作者拍板 2026-09-09）----
+   玩家说的「不用上下翻页」不是按钮难找，是它在第三屏。宽屏上把「本周」那一行出口
+   （剩余行动点 + 打这一周 + 快捷 + 自动推进）钉在视口底部，行动点没用完时它照样是灰的。
+   只在 min-width:1180px 生效：手机有自己的底栏，小桌面继续走原来的单列。 */
+@media(min-width:1180px){
+  .row.dock{position:sticky;bottom:0;z-index:30;margin:14px -18px -18px;padding:12px 18px;
+    background:linear-gradient(180deg,rgba(var(--panel-rgb),.72),rgba(var(--panel-rgb),.97) 42%);
+    border-top:1px solid var(--line-hot);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .row.dock .btn.primary{flex:1 1 auto}
+  .row.dock .dock-ap{font-family:ui-monospace,"SF Mono",Consolas,Menlo,monospace;
+    font-size:12px;letter-spacing:.06em;color:var(--ink-3);white-space:nowrap;align-self:center}
+  .row.dock .dock-ap b{color:var(--dawn);font-size:15px}
+}
 .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:14px}
 input[type=text]{background:rgba(var(--void-rgb),.7);border:1px solid var(--line);
   padding:11px 14px;color:var(--gold-hi);font-size:15px;width:230px;

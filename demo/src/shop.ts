@@ -7,6 +7,7 @@ import { rnd } from "./rng";
 import { diffOf, snapshot } from "./random";
 import { escapeHtml } from "./save";
 import { S } from "./state";
+import { relAll } from "./clout";
 import { SPEND, addTrustAll, salaryOf } from "./team";
 
 /* ================= 财务 =================
@@ -166,7 +167,7 @@ export const COURSES=[
 export const RELAX=[
   {k:"massage", n:"按摩 90 分钟", cost:12,  fat:-18, d:"当天就能缓过来"},
   {k:"physio2", n:"专业理疗",     cost:28,  fat:-34, d:"手腕和肩颈都做一遍"},
-  {k:"hotpot",  n:"约队友吃火锅", cost:22,  fat:-22, trust:7, d:"体力和关系一起补"},
+  {k:"hotpot",  n:"约队友吃火锅", cost:22,  fat:-22, trust:7, rel:1.2, d:"体力、信任和更衣室关系一起补"},
   {k:"trip",    n:"短途度假",     cost:65,  fat:-60, d:"彻底断网两天"}
 ];
 
@@ -677,6 +678,8 @@ export function buyRelax(k){
   if(!x||S.money<x.cost) return;
   addMoney("relax",-x.cost); addFat(x.fat);
   if(x.trust&&true) addTrustAll(x.trust);
+  // 更衣室关系（作者拍板 2026-09-09）：卡面本来就写着「关系一起补」，从这一版起是真的
+  if(x.rel&&true) relAll(x.rel);
   pushEvent(`${x.n}：体力回来了${x.trust?"，顺便和队友聊了聊":""}。`,"info","放松");
   render();
 }

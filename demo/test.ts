@@ -314,6 +314,74 @@ function playOne(opts?) {
 /* 不碰 DOM 的几何与消毒：导览说明卡永远不能盖在聚光框上；导入的存档只能带几个排版标签 */
 function unitChecks() {
   const bad = [];
+  /* 替补席（作者拍板 2026-09-09）：不再替首发交默契的学费，媒体日换替补版。 */
+  {
+    const S: any = A.S();
+    const bak = { career: S.career, team: S.team, promoted: S.promoted, understudy: S.understudy,
+                  benched: S.benchedThisSplit, squad: S.squad, media: S.media, si: S.si, split: S.split,
+                  ap: S.ap, bondCoach: S.bondCoach, rel: S.rel };
+    S.career = S.career || { w: 0, l: 0, titles: [], log: [] }; S.team = S.team || "TEST";
+    S.si = 1; S.split = 0; S.squad = { syn: 70, tac: 70 };
+    // 替补：面板换成替补版，训练赛和合练收起来
+    S.promoted = false; S.understudy = { id: "INC", pos: "top", age: 22, r: { 操作: 70, 运营: 70, 心态: 70, 指挥: 70, 体质: 70 } };
+    S.benchLock = true;
+    const benchHtml = A.squadActs();
+    if (/data-squad="scrim"/.test(benchHtml) || /data-squad="drill"/.test(benchHtml))
+      bad.push("替补席上还摆着训练赛 / 合练——那是喂首发默契池的");
+    if (!/data-bench="film"/.test(benchHtml)) bad.push("替补席上没有「看录像」");
+    // 默契在替补赛段冻结
+    S.benchedThisSplit = true; S.squad = { syn: 70, tac: 70 };
+    A.squadDecay();
+    if (S.squad.syn !== 70 || S.squad.tac !== 70)
+      bad.push(`替补赛段的默契还是掉了：${S.squad.syn}/${S.squad.tac}（该冻结在 70）`);
+    const cc = S.champCore; S.champCore = null;   // 冠军班底也会冻结默契，别和替补那条混在一起
+    S.benchedThisSplit = false; S.squad = { syn: 70, tac: 70 }; A.squadDecay();
+    if (S.squad.syn >= 70) bad.push("不是替补的赛段默契也不掉了——冻结冻错了人");
+    S.champCore = cc;
+    // 媒体日替补版：一题、只有稳和狂
+    const q = A.mediaQuizBench();
+    if (!q || q.qs.length !== 1) bad.push("替补版媒体日不是一题");
+    else {
+      const tones = q.qs[0].a.map((x: any) => x.tone).sort().join(",");
+      if (tones !== "bold,steady") bad.push("替补版媒体日的口径应该只有稳和狂，实得 " + tones);
+    }
+    // 替补版「狂」的代价是对位挑战，不是心态
+    S.media = { si: 1, split: 0, tone: "bold", bench: true };
+    if (A.mediaTiltMul() !== 1) bad.push("替补版说了狂话却还吃心态那一刀（他根本不上场）");
+    if (A.mediaScrimAdj() !== -0.05) bad.push("替补版狂话没留下对位挑战的代价，实得 " + A.mediaScrimAdj());
+    S.media = { si: 1, split: 0, tone: "bold" };
+    if (A.mediaTiltMul() === 1) bad.push("首发说了狂话，心态那一刀不见了");
+    if (A.mediaScrimAdj() !== 0) bad.push("首发的狂话不该扣对位挑战成功率");
+    // 找教练聊：每赛段一次，且不给任何数值
+    S.ap = 8; S.bondCoach = null;
+    if (!A.bondCoachCan().ok) bad.push("找教练聊：一次没用就说用不了（" + A.bondCoachCan().why + "）");
+    S.bondCoach = A.bondCoachKey();
+    if (A.bondCoachCan().ok) bad.push("找教练聊：一个赛段能聊两次");
+    S.promoted = bak.promoted; S.understudy = bak.understudy; S.benchLock = false;
+    S.career = bak.career; S.team = bak.team; S.benchedThisSplit = bak.benched; S.squad = bak.squad;
+    S.media = bak.media; S.si = bak.si; S.split = bak.split; S.ap = bak.ap; S.bondCoach = bak.bondCoach;
+  }
+  /* 更衣室关系：卡面上写着能缓和的那几件事，现在真的碰这个数了 */
+  {
+    const S: any = A.S();
+    const bakRel = S.rel;
+    /* relAll 走的是当前名单（myRoster），所以键要用真实队友的 id 拼 */
+    let ids: string[] = [];
+    try { ids = A.myRoster().filter((p: any) => !p.me).map((p: any) => p.id); } catch (e) { ids = []; }
+    if (ids.length >= 2) {
+      S.rel = {}; for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) S.rel[[ids[i], ids[j]].sort().join("|")] = 50;
+      const n = Object.keys(S.rel).length;
+      A.relAll(2);
+      const moved = Object.keys(S.rel).filter(k => S.rel[k] !== 50).length;
+      if (moved !== n) bad.push(`relAll 只动了 ${moved}/${n} 对关系（该是全队每一对）`);
+      A.relAll(-2);
+      if (Object.keys(S.rel).some(k => Math.abs(S.rel[k] - 50) > 0.01)) bad.push("relAll 的正负不对称，加回来对不上");
+    } else bad.push("关系自检：这一局没有可用的队友名单");
+    S.rel = bakRel;
+    const pot = (A.RELAX || []).find((x: any) => x && x.k === "hotpot");
+    if (!pot) bad.push("商店里找不到「约队友吃火锅」");
+    else if (!pot.rel) bad.push("约队友吃火锅的卡面写着「关系一起补」，但它没有 rel");
+  }
   /* 共事账本（羁绊第一批）。作者点名的那条弧线本来在数值里就跑着，缺的是记忆：
      原来 syncTrust 里一行 delete 就把离队队友的一切抹掉了。 */
   {
