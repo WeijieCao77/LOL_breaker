@@ -1728,6 +1728,12 @@ header.top.compact>.theme-top{display:none}
   .wkgrid>.wk-next .next .sd .pw{margin-top:0;white-space:nowrap}
   .wkgrid>.wk-next .next .mid{text-align:left;border-top:1px solid var(--line);padding-top:7px}
   /* 赛程条在窄栏里横向滚动，别铺成四行——它是「还剩谁没打」，不是这张卡的主角 */
+  /* 对阵图进了 360px 的右栏：两列 176 + 230 加间距要 420px，横着放一定被切掉一半
+     （备战页实测右边那列的「vs」后面整个看不见）。窄栏里改成一列一列往下堆，
+     每列占满宽度——树读起来变成从上到下，但没有一个字被裁掉。
+     「赛事」栏目里那张还是原来的横向树，那边有 872px。 */
+  .wkgrid>.wk-next .brk-tree,.wkgrid>.wk-next .brk-board{flex-wrap:wrap;overflow-x:visible}
+  .wkgrid>.wk-next .brk-tree .bcol,.wkgrid>.wk-next .brk-board .bcol{min-width:0;width:100%}
   .wkgrid>.wk-next .fixt{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
   .wkgrid>.wk-next .fixt::-webkit-scrollbar{display:none}
   .wkgrid>.wk-next .fixt .fc{flex:none}
@@ -15838,6 +15844,12 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909t", at: "2026-09-09", items: [
+      "<b>四个「本周」形态现在是同一套界面了</b>（玩家实锤：「在休赛期或者季后赛或者其他世界赛大赛的时候，界面又变回老模式，我要的是保证这个界面一致」）。前两版分别改了赛季页和职业前页，但<b>备战页</b>（季后赛 / MSI / 世界赛之间那一页）和<b>休赛期页</b>是各自独立的函数，一个都没动到——换个阶段就变回老样子。现在四个形态共用一个骨架：主列放要宽度的东西，右栏放给你看的东西",
+      "两页的右栏按各自阶段配：<b>备战页</b>是 对阵图 · 教练怎么看你 · 最近的比赛 · 电竞周报（对手已经写在主列的对阵块里了，所以右栏第一格回答的是「这轮打完往哪走」）；<b>休赛期</b>没有下一场，就是 教练怎么看你 · 最近的比赛 · 电竞周报",
+      "对阵图进 360px 右栏时<b>改成竖着堆</b>：两列 176 + 230 加间距要 420px，横着放右边那列的「vs」后面整个会被裁掉（备战页实测）。「赛事」栏目里那张还是原来的横向树，那边有 872px 的宽度",
+      "加了一条<b>布局一致性自检</b>：四个画「本周」的函数少一个进 .wkgrid，测试直接红并点名是哪一个。这类漏改今天已经是第三次了——第一次漏了职业前，第二次漏了备战和休赛期"
+    ] },
     { v: "v20260909s", at: "2026-09-09", items: [
       "<b>职业前那一页也改成主列 + 右栏了</b>（玩家实锤：「我没看到界面改动，我的电竞周报、教练对我的看法、最近的比赛去哪里了」）。上一版只改了<b>签约之后</b>那一页，没签约的人走的是另一套代码，整页纹丝不动。现在两页同一个骨架，右栏按职业前真正存在的东西配：<b>下一个节点</b>（下一场比赛 / 报名在第几周、够不够格、距离转会窗口还有几周）· <b>谁在看你</b>（试训门槛：卡在段位还是卡在曝光，最高能来哪一档）· <b>电竞周报</b>（它从第一周就出刊，原来只能去「新闻」栏目翻）",
       "「教练怎么看你」和「最近的比赛」职业前<b>不做假的</b>：还没进队就没有教练、没有首发竞争，排位和杯赛也不写进比赛档案。所以那两个位置换成了上面两张——角色对得上，数据是真的",
@@ -20241,7 +20253,13 @@ header.top.compact>.theme-top{display:none}
     const T = curTab(TABS_SEASON);
     const pops = `${S.autoSum && true ? autoSumCard() : ""}${S.patchNote && true ? patchNoteCard() : ""}${S.locker ? lockerCard() : ""}${S.rndResult ? randomResultCard() : ""}${S.rndEv ? randomCard() : ""}`;
     if (T !== "act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
-    return `${pops}${tabBar(TABS_SEASON)}${prepPanel()}${bracketCard()}`;
+    return `${pops}${tabBar(TABS_SEASON)}<div class="wkgrid">
+    <div class="wk-main">${prepPanel()}</div>
+    <div class="wk-next">${bracketCard()}</div>
+    <div class="wk-coach">${railCoach()}</div>
+    <div class="wk-recent">${railRecent()}</div>
+    <div class="wk-press">${pressCard()}</div>
+  </div>`;
   }
   function prepPanel() {
     const P = S.prep;
@@ -20411,7 +20429,12 @@ header.top.compact>.theme-top{display:none}
       const T = curTab(TABS_SEASON);
       const pops = `${champ}${scrimCard()}${S.locker ? lockerCard() : ""}${S.rndResult ? randomResultCard() : ""}${S.rndEv ? randomCard() : ""}`;
       if (T !== "act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
-      return `${pops}${tabBar(TABS_SEASON)}${breakAgendaCard()}${offPanel()}`;
+      return `${pops}${tabBar(TABS_SEASON)}<div class="wkgrid">
+      <div class="wk-main">${breakAgendaCard()}${offPanel()}</div>
+      <div class="wk-coach">${railCoach()}</div>
+      <div class="wk-recent">${railRecent()}</div>
+      <div class="wk-press">${pressCard()}</div>
+    </div>`;
     }
     const ls = S.lastSeason, sea = SEASONS[S.si];
     const lsLg = ls.lg || S.homeLeague || "LPL";

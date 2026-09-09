@@ -113,6 +113,12 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260909t", at:"2026-09-09", items:[
+    "<b>四个「本周」形态现在是同一套界面了</b>（玩家实锤：「在休赛期或者季后赛或者其他世界赛大赛的时候，界面又变回老模式，我要的是保证这个界面一致」）。前两版分别改了赛季页和职业前页，但<b>备战页</b>（季后赛 / MSI / 世界赛之间那一页）和<b>休赛期页</b>是各自独立的函数，一个都没动到——换个阶段就变回老样子。现在四个形态共用一个骨架：主列放要宽度的东西，右栏放给你看的东西",
+    "两页的右栏按各自阶段配：<b>备战页</b>是 对阵图 · 教练怎么看你 · 最近的比赛 · 电竞周报（对手已经写在主列的对阵块里了，所以右栏第一格回答的是「这轮打完往哪走」）；<b>休赛期</b>没有下一场，就是 教练怎么看你 · 最近的比赛 · 电竞周报",
+    "对阵图进 360px 右栏时<b>改成竖着堆</b>：两列 176 + 230 加间距要 420px，横着放右边那列的「vs」后面整个会被裁掉（备战页实测）。「赛事」栏目里那张还是原来的横向树，那边有 872px 的宽度",
+    "加了一条<b>布局一致性自检</b>：四个画「本周」的函数少一个进 .wkgrid，测试直接红并点名是哪一个。这类漏改今天已经是第三次了——第一次漏了职业前，第二次漏了备战和休赛期"
+  ]},
   {v:"v20260909s", at:"2026-09-09", items:[
     "<b>职业前那一页也改成主列 + 右栏了</b>（玩家实锤：「我没看到界面改动，我的电竞周报、教练对我的看法、最近的比赛去哪里了」）。上一版只改了<b>签约之后</b>那一页，没签约的人走的是另一套代码，整页纹丝不动。现在两页同一个骨架，右栏按职业前真正存在的东西配：<b>下一个节点</b>（下一场比赛 / 报名在第几周、够不够格、距离转会窗口还有几周）· <b>谁在看你</b>（试训门槛：卡在段位还是卡在曝光，最高能来哪一档）· <b>电竞周报</b>（它从第一周就出刊，原来只能去「新闻」栏目翻）",
     "「教练怎么看你」和「最近的比赛」职业前<b>不做假的</b>：还没进队就没有教练、没有首发竞争，排位和杯赛也不写进比赛档案。所以那两个位置换成了上面两张——角色对得上，数据是真的",
@@ -4569,7 +4575,17 @@ export function viewPrep(){
   const pops=`${(S.autoSum&&true)?autoSumCard():""}${(S.patchNote&&true)?patchNoteCard():""}${
     S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
   if(T!=="act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
-  return `${pops}${tabBar(TABS_SEASON)}${prepPanel()}${bracketCard()}`;
+  // 备战页（季后赛 / 国际赛之间）也走同一个骨架——玩家实锤 2026-09-09：
+  // 「休赛期或者季后赛或者其他世界赛大赛的时候，界面又变回老模式」。
+  // 对阵图占「下一场」那个位子：这一页的对手已经写在 prepPanel 里了，
+  // 右栏第一格该回答的是「这轮打完往哪走」。
+  return `${pops}${tabBar(TABS_SEASON)}<div class="wkgrid">
+    <div class="wk-main">${prepPanel()}</div>
+    <div class="wk-next">${bracketCard()}</div>
+    <div class="wk-coach">${railCoach()}</div>
+    <div class="wk-recent">${railRecent()}</div>
+    <div class="wk-press">${pressCard()}</div>
+  </div>`;
 }
 export function prepPanel(){
   const P=S.prep; if(!P) return "";
@@ -4737,7 +4753,13 @@ export function viewOffseason(){
     const T=curTab(TABS_SEASON);
     const pops=`${champ}${scrimCard()}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
     if(T!=="act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
-    return `${pops}${tabBar(TABS_SEASON)}${breakAgendaCard()}${offPanel()}`;
+    // 休赛期同上。这一页没有「下一场」，右栏就是三张情况卡。
+    return `${pops}${tabBar(TABS_SEASON)}<div class="wkgrid">
+      <div class="wk-main">${breakAgendaCard()}${offPanel()}</div>
+      <div class="wk-coach">${railCoach()}</div>
+      <div class="wk-recent">${railRecent()}</div>
+      <div class="wk-press">${pressCard()}</div>
+    </div>`;
   }
   const ls=S.lastSeason,sea=SEASONS[S.si];
   const lsLg=ls.lg||S.homeLeague||"LPL";   // 老档没记 lg，退回当前赛区

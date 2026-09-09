@@ -789,6 +789,19 @@ function unitChecks() {
       bad.push("职业前页：主列跨的行数和 grid-template-rows 对不上");
     if (!/\.wkgrid>\.wk-main\{grid-column:1;grid-row:1\/span 5\}/.test(css))
       bad.push("赛季页：主列跨的行数和 grid-template-rows 对不上");
+    /* 四个「本周」形态必须用同一套骨架（玩家实锤 2026-09-09：「在休赛期或者季后赛
+       或者其他世界赛大赛的时候，界面又变回老模式，我要的是保证这个界面一致」）。
+       每加一个新形态都得自己进 .wkgrid，否则又会漏一个。 */
+    [["viewSeason", "赛季"], ["viewPre", "职业前"], ["viewPrep", "备战 / 季后赛 / 国际赛"],
+     ["viewOffseason", "休赛期"]].forEach(([fn, name]) => {
+      const at = ms.indexOf("export function " + fn + "(){");
+      if (at < 0) { bad.push("布局一致性：找不到 " + fn); return; }
+      const end = ms.indexOf("\nexport function", at + 10);
+      const body = ms.slice(at, end < 0 ? ms.length : end);
+      // 只看画「本周」那一支：别的标签页走 tabContent，不在范围内
+      if (body.indexOf('class="wkgrid') < 0)
+        bad.push("布局一致性：" + name + "（" + fn + "）还是老的单列，没进 .wkgrid");
+    });
   } catch (e) { bad.push("本周页布局自检没跑起来：" + e); }
   /* 职业前右栏那两张卡：数据都得从 S.pre 上读，别摸 S.career / S.team */
   {
