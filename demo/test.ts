@@ -299,6 +299,37 @@ function playOne(opts?) {
 /* 不碰 DOM 的几何与消毒：导览说明卡永远不能盖在聚光框上；导入的存档只能带几个排版标签 */
 function unitChecks() {
   const bad = [];
+  /* 赛后狠话（作者实锤 2026-09-09：「新档没放过狠话，却提示狠话被记录下来成了热梗」）。
+     两条：① 没在媒体日定「狂」就不该有口径；② 回旋镖判的是说完之后那两周，
+     不是整个赛段的累计负场。 */
+  {
+    const S: any = A.S();
+    const media0 = S.media, si0 = S.si, sp0 = S.split, rec0 = S.record, ev0 = S.events;
+    S.si = 1; S.split = 0;
+    S.media = null;
+    if (A.mediaToneNow()) bad.push("狠话：没开过媒体日却报出了口径");
+    S.media = { si: 1, split: 0, tone: "steady" };
+    if (A.mediaToneNow() !== "steady") bad.push("狠话：这个赛段定的是「稳」，读出来却不是");
+    S.media = { si: 0, split: 0, tone: "bold" };
+    if (A.mediaToneNow()) bad.push("狠话：上个赛季的口径还在这个赛季生效");
+    // 回旋镖：同一个赛段，说完之后 2 胜 0 负 → 好结局；0 胜 2 负 → 弹幕热梗
+    const fire = (w: number, l: number) => {
+      S.events = []; S.record = { w, l };
+      A.FOLLOWUPS.bigTalk.run({ opp: "TEST", si: 1, sp: 0, w0: 1, l0: 1 });
+      return (S.events[0] || {}).text || "";
+    };
+    S.si = 1; S.split = 0;
+    if (!/宣传片/.test(fire(3, 1))) bad.push("狠话：说完之后 2 胜 0 负，回旋镖却没给好结局");
+    if (!/弹幕热梗/.test(fire(1, 3))) bad.push("狠话：说完之后 0 胜 2 负，回旋镖却没给坏结局");
+    if (!/宣传片/.test(fire(1, 1))) bad.push("狠话：说完之后没输过，却被判成战绩不好");
+    /* 作者说的正是这一种：赛段前面已经输了几场（「俱乐部战绩不好」），
+       但说完之后这两周是赢的——旧写法只看累计负场，照样判坏结局。 */
+    S.events = []; S.record = { w: 3, l: 3 };
+    A.FOLLOWUPS.bigTalk.run({ opp: "TEST", si: 1, sp: 0, w0: 1, l0: 3 });
+    if (!/宣传片/.test((S.events[0] || {}).text || ""))
+      bad.push("狠话：赛段前面输过三场，但说完之后 2 胜 0 负，回旋镖仍判成战绩不好");
+    S.media = media0; S.si = si0; S.split = sp0; S.record = rec0; S.events = ev0;
+  }
   /* 名片图的「存到相册」那条路（作者实测 2026-09-09：手机上点「下载图片」，
      图落进「文件」App 的下载项而不是相册）。navigator.share 只收 File，
      所以 dataURL 得先拆成 File；node / jsdom 里没有 share，必须安静地退回长按那条路。 */
@@ -834,7 +865,17 @@ if (isMain && process.argv.includes("--batch")) {
     + (b.money || 0) / 60 + (b.fame || 0) / 10 + (b.trust || 0) / 3).toFixed(1)).join(" · "));
   console.log("模块自检：赛季", A.SEASONS.length, "| 背景", A.BACKGROUNDS.length,
     "| 成就", A.ACHIEVEMENTS.length, "| 年龄", A.AGES.length, "| 段位", A.RANKS.length);
-  const r = playOne();
+  /* 端到端钉住赛后狠话：机器人一律跳过仪式（cerApply silver），
+     也就从来没在媒体日定过「狂」——那这一整局就不该有任何一句狠话被安到头上。
+     改回旧写法（只看「赢了 + 爆冷 + 30%」）跑，这里一定红。 */
+  let bigTalkSeen = 0, bigTalkAt = "", evSeen = 0;
+  const r = playOne({ hook: (S: any) => {
+    const ev = S.events || [];
+    while (evSeen < ev.length) {
+      const e = ev[evSeen++] || {};
+      if (/也就这样/.test(e.text || "")) { bigTalkSeen++; if (!bigTalkAt) bigTalkAt = `S${S.si} 第 ${e.w} 周`; }
+    }
+  }});
   console.log(JSON.stringify(r, null, 1));
   // 断言：跑不完、数值坏了都要以非零退出码失败——CI 靠这个
   const S = A.S();
@@ -843,6 +884,7 @@ if (isMain && process.argv.includes("--batch")) {
   A.DIMS.forEach(d => { const v = S.attrs && S.attrs[d]; if (typeof v !== "number" || !isFinite(v) || v < 0 || v > 100) bad.push("属性异常 " + d + "=" + v); });
   if (typeof S.fatigue !== "number" || S.fatigue < 0 || S.fatigue > 100) bad.push("疲劳越界 " + S.fatigue);
   if (!r.saved) bad.push("存档没有写入");
+  if (bigTalkSeen) bad.push(`这一局从没在媒体日定过「狂」，却被安了 ${bigTalkSeen} 次赛后狠话（第一次在 ${bigTalkAt}）`);
   // 外设每一档都得比上一档贵、也比上一档强（外部测评抓的：320 万的鼠标比 130 万的还弱）
   Object.keys(A.GEAR).forEach(k => A.GEAR[k].forEach((g, i) => {
     if (i === 0) return;

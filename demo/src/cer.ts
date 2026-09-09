@@ -205,8 +205,14 @@ export function cerFinalPw(){ const m=S.match; return ((m&&m.cerFinal&&m.cerFina
 export function cerFinalNode(){ const m=S.match; return (m&&m.cerFinal&&m.cerFinal.node)||0; }
 /* 版本发布会：这个赛季的版本相性加成 */
 export function verCerAdj(){ const v=S.verCer; return (v&&v.si===S.si)?(v.adj||0):0; }
+/* 这个赛段你在媒体日定的口径（狂 / 稳 / 甩锅）。没开过媒体日、跳过了、
+   或者已经是下一个赛段了，都返回 null——「你说过的话」只在你真说过的时候才算数。 */
+export function mediaToneNow(){
+  const m=S.media;
+  return (m&&m.si===S.si&&m.split===(S.split||0)&&m.tone)?m.tone:null;
+}
 /* 媒体日「狂」：这个赛段输掉的比赛攒的心态压力 ×1.5 */
-export function mediaTiltMul(){ const m=S.media; return (m&&m.si===S.si&&m.split===(S.split||0)&&m.tone==="bold")?CER_EFF.media.bold.tilt:1; }
+export function mediaTiltMul(){ return mediaToneNow()==="bold"?CER_EFF.media.bold.tilt:1; }
 /* 这一场是不是决赛：联赛季后赛第三轮、MSI 总决赛、世界赛决赛 */
 export function isFinalMatch(){
   if(!S.career) return false;

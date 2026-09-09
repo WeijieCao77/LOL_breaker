@@ -66,9 +66,16 @@ export const FOLLOWUPS={
     n:"赛后狠话的回旋镖",
     run(p){
       const opp=p&&p.opp?p.opp:"对手";
-      if((S.record&&S.record.l||0)>=2){
+      /* 判据是「说完之后这两周打成什么样」，不是整个赛段的累计负场。
+         原来写的是 S.record.l>=2——一个赛段十几场，输两场太容易，
+         等于说完必挨罚（30 局批测：47% 变成弹幕热梗）。
+         跨赛段的话 S.record 已经清零过，那就按新赛段现在的战绩判。 */
+      const w=(S.record&&S.record.w)||0, l=(S.record&&S.record.l)||0;
+      const same=!!(p&&p.si===S.si&&p.sp===(S.split||0));
+      const dw=same?w-((p&&p.w0)||0):w, dl=same?l-((p&&p.l0)||0):l;
+      if(dl>dw){
         S.heat=(S.heat||0)+10;
-        pushEvent(`两周前你赛后放的狠话被翻出来了——你们最近战绩不好，
+        pushEvent(`两周前你赛后放的狠话被翻出来了——这两周你们 <b>${dw} 胜 ${dl} 负</b>，
           <b>「${opp} 记得你说过的话」</b>成了弹幕热梗。压力给到你这边。`,"bad","舆论");
       }else{
         addFans(6);

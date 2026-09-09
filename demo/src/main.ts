@@ -7,7 +7,7 @@ import { addStaff, cloutCard, cloutTick, doList, doSign, initRelations, initStaf
 import { CUPS, activeCups, cupCard, cupDismissMatch, cupMatchCard, cupOf, cupOppName, cupPrep, cupReachName, cupResultCard, cupRoundName, cupTick, disbandCrew, dueCups, enterCup, forfeitCup, preSquadCard, resolveCupNode, startCupMatch } from "./cup";
 import { DATA } from "./data";
 import { formCard, formMul, formNews, formTier, myForm, myFormMul, rollForm, rollWorldForm } from "./form";
-import { awardsText, btkTrialCheck, campCard, cerApply, cerBind, cerCard, cerFinalNode, cerFinalPw, cerRecMul, cerStart, isFinalMatch, mediaTiltMul, meetCard, mgLive, verCerAdj } from "./cer";
+import { awardsText, btkTrialCheck, campCard, cerApply, cerBind, cerCard, cerFinalNode, cerFinalPw, cerRecMul, cerStart, isFinalMatch, mediaTiltMul, mediaToneNow, meetCard, mgLive, verCerAdj } from "./cer";
 import { injuryCard, injuryHit, injuryTick, injuryTrainMul, riskHint, rollInjury } from "./injury";
 import { brOthersText, brStep, findTeam, intlAdvance, intlChampCard, intlStageName, leagueOf, majorStandings, spectateIntl, startIntl, wlAdd, wlInfluence, wlRelax, worldsSlot } from "./intl";
 import { aiMarketWindow } from "./market";
@@ -112,6 +112,10 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260909g", at:"2026-09-09", items:[
+    "赛后那句狠话不再是游戏替你说的（作者实锤：「新档明明没放过狠话，却提示我的狠话被对手记下来、成了网络热梗」）：原来只要<b>爆冷赢一场</b>就有三成概率自动弹「XX 也就这样」，玩家没点过任何按钮——30 局批测里 <b>28/30 的生涯被安过，平均每局 3.9 次</b>，其中 47% 两周后变成弹幕热梗挨罚。而媒体日本来就有「狂 / 稳 / 甩锅」让你自己定调，这条完全绕过了它。现在<b>只有这个赛段你真在媒体日定了「狂」，才谈得上赛后补一句</b>；选了稳、甩锅或者跳过媒体日的人，永远不会被安上这句话",
+    "狠话的回旋镖也改了判据：原来看的是「这个赛段一共输过两场」——一个赛段十几场，输两场太容易，等于说完必挨罚。现在看的是<b>说完之后那两周打成什么样</b>，赢多于输就进赛区宣传片，输多于赢才成弹幕热梗，事件里也把这两周的战绩写出来"
+  ]},
   {v:"v20260909f", at:"2026-09-09", items:[
     "生涯名片图多了一个「<b>存到相册</b>」按钮（作者实测：手机上点「下载图片」，iOS 弹的是下载确认框，图落在<b>「文件」App 的下载项</b>里，不是相册——和大家习惯的「保存图片」不是一回事）：现在手机上走系统分享菜单，iOS 里点「存储图像」就直接进相册，安卓同理。设备不支持的话仍然可以长按图片保存，底部那行小字也会跟着说清楚图会落到哪"
   ]},
@@ -3998,10 +4002,19 @@ export function endMatch(){
   }
   if(S.tilt<40) S._tiltWarned=false;
   S.lastFightClock=S.evClock||0;                 // 竞技锐度：记住最后一场正赛在什么时候
-  // 大胜后的采访：说不说狠话，两周后见分晓（事件链）
-  if(won&&ctx.gap<-1&&rnd()<0.30&&true){
-    queueFollowUp("bigTalk",2,{opp:m.oppName});
-    pushEvent(`赛后采访你上头了一句「<b>${m.oppName} 也就这样</b>」。话说出去就收不回来了——两周后见分晓。`,"info","舆论");
+  /* 爆冷赢球之后的那句狠话（作者实锤 2026-09-09：「我新档明明没放过狠话，
+     却提示我的狠话被记录下来成了网络热梗」）。原来这里只看「赢了 + 爆冷 + 30%」，
+     游戏直接替玩家把话说了——30 局批测里 28/30 的生涯被安过，平均每局 3.9 次，
+     其中 47% 两周后变成弹幕热梗挨罚。而两个菜单之外的媒体日本来就有「狂 / 稳 / 甩锅」
+     让你自己定调，这条却完全绕过它。
+     现在只有你这个赛段真在媒体日定了「狂」，才谈得上「补一句」——选了稳或甩锅、
+     跳过了媒体日的人，永远不会被安上这句话。 */
+  if(won&&ctx.gap<-1&&mediaToneNow()==="bold"&&rnd()<0.30){
+    // 记下说话那一刻的战绩：回旋镖该看的是「说完之后打得怎么样」，不是整个赛段的累计
+    queueFollowUp("bigTalk",2,{opp:m.oppName, si:S.si, sp:S.split||0,
+                               w0:(S.record&&S.record.w)||0, l0:(S.record&&S.record.l)||0});
+    pushEvent(`媒体日你把调子定成了「狂」，这场爆冷赢完记者又把话筒递过来——你补了一句
+      「<b>${m.oppName} 也就这样</b>」。话说出去就收不回来了，两周后见分晓。`,"info","舆论");
   }
   // 赛后归因：用判定胜负的那套数，现场算一次存下来
   {
