@@ -11,6 +11,7 @@
    小游戏只用 Math.random 摆盘，绝不碰 rng.ts 的种子——不然同一份存档的比赛结果会因为你玩没玩而变。 */
 import { S } from "./state";
 import { bondFarewellLines } from "./bond";
+import { relAll } from "./clout";
 import { DIMS, POSN, SEASONS, addFans, avg, breakthrough, capOf, clamp, isBenched, lplRank, poMyOpp, pushEvent, render } from "./main";
 import { CUPS } from "./cup";
 import { rnd } from "./rng";
@@ -34,6 +35,11 @@ export const CER_EFF={
   bench: {gold:1,   silver:0, bronze:-1},          // 评级 ±1 档（一档 = 8 分）
   patch: {gold:0.5, silver:0, bronze:-0.3},
   media: {bold:{heat:15,tilt:1.5}, steady:{heat:5,tilt:1}, blame:{heat:10,trust:-3,tilt:1}},
+  /* 替补版媒体日（作者拍板 2026-09-09）：一个连正式比赛都没打过的人不该站在背景板前
+     跟三个记者放狠话。改成收工时被顺口问一句，热度减半；「狂」的代价也不能再是
+     「输了更伤心态」——替补根本不上场，那一条对他等于零成本（这正是旧版的白嫖口子）。
+     换成教练组盯得更紧：下一次对位挑战的每一局成功率 −5%。 */
+  mediaBench: {bold:{heat:8,scrim:-0.05}, steady:{heat:3}},
   trial: {gold:1.0},                                  // 过关 = 该维天花板 +1（里程碑池）；没过下个赛段再来，不扣
   rehab: {gold:-1},                                   // 康复期金档：少养一周
   allstar:{gold:20, silver:8, bronze:0}               // 技巧赛：人气；跳过 / 没去 = 0
@@ -138,15 +144,24 @@ export function cerApply(k,tier,skipped,ctx?){
   }else if(k==="media"){
     const d=(!skipped&&S.cer&&S.cer.detail)||{};
     const tone=d.tone;
-    if(tone&&CER_EFF.media[tone]){
-      const E=CER_EFF.media[tone];
-      S.media={si:S.si, split:S.split||0, tone};
+    const bench=isBenched();
+    const T=bench?CER_EFF.mediaBench:CER_EFF.media;
+    if(tone&&T[tone]){
+      const E=T[tone];
+      S.media={si:S.si, split:S.split||0, tone, bench:bench||undefined};
       S.heat=Math.max(0,(S.heat||0)+(E.heat||0));
       if(E.trust) addTrustAll(E.trust);
-      pushEvent(`媒体日：你的口径是<b>${MEDIA_TONE_N[tone]}</b>。${tone==="bold"?`热度 +15，<b>但这个赛段输了更伤心态</b>——话说出去了，就得打回来。`:tone==="steady"?`热度 +5，没留下把柄。`:`热度 +10，<b>更衣室信任 −3</b>——队友看得懂你在说谁。`}`,
+      if(tone==="blame") relAll(-1.5);   // 甩锅：队友互相之间也会传
+      pushEvent(bench
+        ? `收工的时候记者问了你一句，你的口径是<b>${MEDIA_TONE_N[tone]}</b>。${tone==="bold"
+            ? `热度 +8，<b>但教练组听见了</b>——下次对位挑战每一局成功率 −5%。`
+            : `热度 +3。你还没有说大话的本钱，这个回答挑不出毛病。`}`
+        : `媒体日：你的口径是<b>${MEDIA_TONE_N[tone]}</b>。${tone==="bold"?`热度 +15，<b>但这个赛段输了更伤心态</b>——话说出去了，就得打回来。`:tone==="steady"?`热度 +5，没留下把柄。`:`热度 +10，<b>更衣室信任 −3</b>——队友看得懂你在说谁。`}`,
         tone==="blame"?"bad":"info","媒体日");
     }else{
-      pushEvent(`媒体日：三个记者三个问题，你说的都是套话。<span style="color:var(--ink-3)">没人写你。</span>`,"info","媒体日");
+      pushEvent(bench
+        ? `记者从你旁边走过去，没停。<span style="color:var(--ink-3)">名单上没有你的名字。</span>`
+        : `媒体日：三个记者三个问题，你说的都是套话。<span style="color:var(--ink-3)">没人写你。</span>`,"info","媒体日");
     }
   }
   else if(k==="trial"){
@@ -212,8 +227,19 @@ export function mediaToneNow(){
   const m=S.media;
   return (m&&m.si===S.si&&m.split===(S.split||0)&&m.tone)?m.tone:null;
 }
-/* 媒体日「狂」：这个赛段输掉的比赛攒的心态压力 ×1.5 */
-export function mediaTiltMul(){ return mediaToneNow()==="bold"?CER_EFF.media.bold.tilt:1; }
+/* 媒体日「狂」：这个赛段输掉的比赛攒的心态压力 ×1.5。
+   替补版的代价是对位挑战成功率，不是心态——他压根不上场。 */
+export function mediaTiltMul(){
+  const m=S.media;
+  if(m&&m.bench) return 1;
+  return mediaToneNow()==="bold"?CER_EFF.media.bold.tilt:1;
+}
+/* 替补版「狂」留下的那一刀：对位挑战每一局成功率的修正（rotation.ts 用） */
+export function mediaScrimAdj(){
+  const m=S.media;
+  return (m&&m.bench&&m.tone==="bold"&&m.si===S.si&&m.split===(S.split||0))
+    ? (CER_EFF.mediaBench.bold.scrim||0) : 0;
+}
 /* 这一场是不是决赛：联赛季后赛第三轮、MSI 总决赛、世界赛决赛 */
 export function isFinalMatch(){
   if(!S.career) return false;
@@ -366,7 +392,19 @@ export function patchQuiz(){
     {t:"看对面 BP 再说，赛前想这些没用",ok:false}])};
   return {sec:8,qs:[q1,q2,q3,q4,q5]};
 }
+/* 替补版：一题、只有稳和狂两个口径。作者拍板做「替补版一题」而不是整个屏蔽——
+   这段戏留着，只是身份对得上：你不在背景板前，你在收工的走廊里。 */
+export function mediaQuizBench(){
+  const inc=S.understudy;
+  const q={q:inc?`记者收拾器材的时候顺口问你：「${inc.id} 状态挺好的，你什么时候能上？」`
+                :"记者收拾器材的时候顺口问你：「你什么时候能上？」",
+    ctx:"他没打开录音笔。这句话大概率不会见报——但走廊里还站着教练组的人。",
+    a:shuffle([{t:"给我机会就行，我打给他看。",tone:"bold"},
+               {t:"练到位了自然会上。",tone:"steady"}])};
+  return {sec:10,qs:[q]};
+}
 export function mediaQuiz(){
+  if(isBenched()) return mediaQuizBench();
   const ls=S.lastSeason;
   const mates=(S.world&&S.world[S.homeLeague||"LPL"]||[]).find(t=>t.name===S.team);
   const mate=mates&&mates.players.filter(p=>!p.me)[Math.floor(Math.random()*Math.max(1,mates.players.filter(p=>!p.me).length))];

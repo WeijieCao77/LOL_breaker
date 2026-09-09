@@ -92,6 +92,16 @@ export function addRel(a,b,n){
   if(S.rel[k]===undefined) return;
   S.rel[k]=clamp(S.rel[k]+n,0,100);
 }
+/* 全队每一对一起动（作者拍板 2026-09-09：把「合练和团建能缓和」变成真的）。
+   数值刻意小：羁绊的「找人聊聊」已经把这个池子从死数值救活了（实测均值 53.3 → 55.1），
+   这里再加四个来源，是为了让卡面上写的那几句成立，不是为了把它推高。
+   240 局批测把关，口径和「找人聊聊」那张表同源。 */
+export function relAll(n){
+  if(!S.rel||!n) return;
+  let ids=[];
+  try{ ids=myRoster().filter(p=>!p.me).map(p=>p.id); }catch(e){ return; }
+  for(let i=0;i<ids.length;i++) for(let j=i+1;j<ids.length;j++) addRel(ids[i],ids[j],n);
+}
 export function syncRelations(){
   if(!S.rel) { initRelations(); return; }
   const ids=myRoster().filter(p=>!p.me).map(p=>p.id);
@@ -411,8 +421,11 @@ export function relCard(){
         <span class="rn">${p.a.id.slice(0,8)} ↔ ${p.b.id.slice(0,8)}</span>
         <span class="rb"><i style="width:${clamp(p.v,0,100)}%"></i></span>
         <span class="rv mono">${Math.round(p.v)}</span></div>`).join("")}</div>
-    <p class="note">这是<b>队友互相之间</b>的关系，撑的是默契——和「他们对你的信任」是两回事。
+    <p class="note">这是<b>队友互相之间</b>的关系，撑的是默契——和「他们对你的信任」是两回事，
+      <b>两条 0–100 不是一把尺</b>：信任有二十几个来源、生涯末常常顶到 100；
+      队友互相的关系起点就是 42–61，只会慢慢动。
       ${worst.v<32?`<b style="color:var(--red)">${worst.a.id} 和 ${worst.b.id} 已经不怎么说话了</b>——这会直接吃掉默契。`
-        :"目前没有闹到台面上的矛盾。"}
-      合练和团建能缓和，连败会加剧。</p></div>`;
+        :"目前没有闹到台面上的矛盾。"}<br>
+      推得动它的是这几件事：<b>「队伍」栏的找人聊聊</b>、战队合练、约队友吃火锅、
+      把矛盾摊开讲的那些际遇；连败、挂牌和买断会把它拉开。</p></div>`;
 }

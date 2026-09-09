@@ -1,12 +1,12 @@
 import { avatarOf } from "./avatar";
-import { relMod, syncRelations } from "./clout";
+import { addRel, addStaff, relAll, relMod, syncRelations } from "./clout";
 import { cupTeamName } from "./cup";
 import { formMul, myFormMul } from "./form";
 import { findTeam } from "./intl";
-import { addFat, apCost, apTag, btkNote, cap, capOf, champCoreOn, clamp, costBits, dynastyBonus, myRoster, POSN, power, powerParts, pushEvent, PW_SHOW, pwShow, q1, render, SEASONS, strength, tacAdd, tacOf, versionFit } from "./main";
+import { addFat, apCost, apTag, btkNote, cap, capOf, champCoreOn, clamp, costBits, dynastyBonus, isBenched, myRoster, POSN, power, powerParts, pushEvent, PW_SHOW, pwShow, q1, render, SEASONS, strength, tacAdd, tacOf, versionFit } from "./main";
 import { rnd } from "./rng";
 import { fireEvent } from "./random";
-import { mateInjuryHit } from "./rotation";
+import { mateInjuryHit, SCRIM_EDGE_NEED, scrimState } from "./rotation";
 import { noteAct } from "./routine";
 import { langSyn } from "./shop";
 import { S } from "./state";
@@ -51,6 +51,11 @@ export function addSquad(k,n){
 export function squadDecay(){
   if(!S.squad) return;
   if(champCoreOn()) return;   // 冠军班底：同一套人接着打，默契不回落
+  /* 这个赛段你坐了替补席：默契冻结（作者拍板 2026-09-09）。
+     玩家原话「我都替补了，首发阵容磨不磨合那是他们的事」——既然替补席上
+     不再让你花行动点喂这个池子（见 squadActs），那也不该让它在你手里往下掉。
+     benchedThisSplit 由 benchWeek 置起、下个赛段开赛时清掉，endSeason 跑在那之前。 */
+  if(S.benchedThisSplit) return;
   ["syn","tac"].forEach(k=>{ S.squad[k]=q1(clamp(S.squad[k]+(50-S.squad[k])*SQUAD_DECAY,0,100)); });
 }
 
@@ -162,7 +167,9 @@ export const SQUAD_ACTS=[
        const bad=myRoster().filter(p=>!p.me);
        const t=bad[Math.floor(rnd()*bad.length)];
        if(t){ pushEvent(`训练赛里暴露了问题：<b>${t.id}</b> 的处理方式和队伍对不上，复盘会开到半夜。`,"info","训练赛");
-         addSquad("tac",2.4); addTrust(t.id,-2); }
+         addSquad("tac",2.4); addTrust(t.id,-2);
+         // 摩擦是摩擦在**他和其他人**之间，不是全队一起变差
+         try{ myRoster().filter(x=>!x.me&&x.id!==t.id).forEach(o=>addRel(t.id,o.id,-1.5)); }catch(e){} }
      }}},
   {k:"vod", n:"战术复盘", d:"逐帧过录像，把上一场的问题挖出来",
    sum:()=>[sumBit("tac",4.2),"运营 +0.35","攒运营突破"],
@@ -170,9 +177,9 @@ export const SQUAD_ACTS=[
      btkNote("vod",1);   // 突破「运营」瓶颈的机械条件
      S.attrs.运营=Math.min(capOf("运营"),S.attrs.运营+0.35); }},
   {k:"drill", n:"战队合练", d:"专项练配合，团战执行会顺很多",
-   sum:()=>[sumBit("syn",4.4),"信任 +1.8"],
+   sum:()=>[sumBit("syn",4.4),"信任 +1.8","更衣室关系 +1"],
    fat:13, run:()=>{ addSquad("syn",4.4);
-     addTrustAll(1.8); }},
+     addTrustAll(1.8); relAll(1); }},
   {k:"duo", n:"队友双排", d:"排位里带一带，练默契也拉近关系",
    sum:()=>[sumBit("syn",1.2),"信任 +1.9","操作 +0.14"],
    fat:4,  run:()=>{ addSquad("syn",1.2);
@@ -182,6 +189,7 @@ export const SQUAD_ACTS=[
 /* 职业前的车队也用这套行动：训练赛/复盘/合练/双排喂的是同一组
    默契与战术池（S.squad），只是行动点从 S.pre.ap 扣。 */
 export function doSquad(k){
+  if(S.career&&isBenched()) return;   // 替补席上这四个行动收起来了，托管/老界面也别绕过去
   const inPre=!S.career&&S.pre;
   const ap=inPre?S.pre.ap:S.ap;
   const a=SQUAD_ACTS.find(x=>x.k===k); if(!a) return;
@@ -277,7 +285,56 @@ export function squadCard(){
       强援加盟那个赛段，纸面变强了，打起来往往还不如从前。</p>
   </div>`;
 }
+/* 替补席上的两件事（作者拍板 2026-09-09）。
+   玩家原话：「我都替补了，首发阵容磨不磨合那是他们的事，为什么要花我的行动点」。
+   所以训练赛和合练（纯喂默契池）在替补期间收起来；只有个人收益的那两项拆出来留着，
+   替补一点不少拿——只是不再替首发交默契的学费。
+   「看录像」是新的：替补线原来除了对位挑战（每周最多两次）就没有别的事可做。 */
+export const BENCH_ACTS=[
+  {k:"film", n:"看录像", d:"坐在替补席上把首发这一场逐帧过一遍",
+   fat:9, sum:()=>["运营 +0.35","攒运营突破","战术素养 +0.2","轮换资本 +0.25"],
+   run:()=>{
+     S.attrs.运营=Math.min(capOf("运营"),S.attrs.运营+0.35);
+     btkNote("vod",1);
+     tacAdd(0.2);
+     addStaff("coach",0.3);
+     /* 轮换资本每赛段只给前三次。给太多的话「看录像」会取代对位挑战——
+        SCRIM_EDGE_NEED 只有 3，一周四次不限量的话三周就能不靠赢下对位转正，
+        那条「用训练赛赢出来」的主线就废了。 */
+     const k="f"+(S.si||0)+"-"+(S.split||0);
+     const w: any=(S.filmLog&&S.filmLog.k===k)?S.filmLog:(S.filmLog={k,n:0});
+     if(w.n<BENCH_FILM_EDGE){ w.n++; const sc=scrimState(); sc.edge=q1(Math.min(SCRIM_EDGE_NEED+2,sc.edge+0.25)); }
+   }},
+  {k:"duo", n:"队友双排", d:"排位里带一带，练默契也拉近关系",
+   fat:4, sum:()=>["信任 +1.9","操作 +0.14"],
+   run:()=>{ addTrustAll(1.9);
+     S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.14); }}
+];
+export const BENCH_FILM_EDGE=3;   // 每赛段前三次看录像才给轮换资本
+export function doBenchAct(k){
+  if(!S.career||!isBenched()) return;
+  const a=BENCH_ACTS.find(x=>x.k===k); if(!a) return;
+  const cost=apCost(k==="film"?"film":"duo");
+  if((S.ap||0)<cost) return;
+  S.ap-=cost; addFat(a.fat); a.run();
+  render();
+}
+export function benchActs(){
+  const ap=S.ap||0;
+  return `<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">替补席</h3>
+    <div class="grid g5">${BENCH_ACTS.map(a=>{
+      const cost=apCost(a.k==="film"?"film":"duo");
+      return `<button class="act" data-bench="${a.k}" ${ap<cost?'disabled style="opacity:.34"':''}>
+        <div class="t">${a.n} <i class="apc">${cost}点</i></div>
+        <div class="d">${a.d}${costBits([`体能<i class="dn">−${a.fat}</i>`]
+          .concat(a.sum().map(x=>x.replace(/\s*([+−-][0-9.]+)/,'<i class="up">$1</i>'))))}</div></button>`;
+    }).join("")}</div>
+    <p class="note">首发阵容的默契不再花你的行动点——<b>你不在名单上，那是他们的事</b>；
+      这个赛段的默契也不会在你手里往下掉。<span style="color:var(--ink-3)">看录像每赛段前 ${BENCH_FILM_EDGE} 次给轮换资本。</span></p>`;
+}
 export function squadActs(){
+  // 替补席：收起训练赛与合练，换成替补自己的两件事
+  if(S.career&&isBenched()) return benchActs();
   if(!S.squad) return "";
   const ap=(!S.career&&S.pre)?S.pre.ap:S.ap;   // 职业前的车队用职业前的行动点
   return `<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队${

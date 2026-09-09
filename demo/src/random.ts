@@ -7,6 +7,7 @@ import { noteGrudge } from "./rivals";
 import { addMoney, bizNote } from "./shop";
 import { addSquad } from "./squad";
 import { S } from "./state";
+import { relAll } from "./clout";
 import { addTrustAll, avgTrust, salaryOf } from "./team";
 import { addTraitPt } from "./trait";
 import { queueInvite } from "./tryout";
@@ -532,7 +533,7 @@ export const RANDOM_EVENTS=[
   {id:"slump", rec:0, auto:false, when:()=>!!S.team,
    q:()=>`连败之后，更衣室安静得不像话。有人开始翻你的数据。`,
    ctx:"这种时候说什么都像找借口，但什么都不说更糟。",
-   a:[{t:"开个会，把问题摊开讲", g:"warm",e:()=>{ addTrustAll(10);
+   a:[{t:"开个会，把问题摊开讲", g:"warm",e:()=>{ addTrustAll(10); relAll(4);
         addFat(8);addBuff("mood",1.15,2,"话说开了");
         return "吵了两个小时，但走出会议室的时候，气氛终于松了。"}},
       {t:"自己加练，用状态说话", g:"grind",e:()=>{addFat(14);addBuff("train",1.35,2,"闷头练");
@@ -581,7 +582,7 @@ export const RANDOM_EVENTS=[
   {id:"teamDinner", rec:1, w:2, when:()=>!!S.team&&(teamTenure())>=4,
    q:()=>`队里聚餐，经理说想让大家放松放松。`,
    ctx:"你本来打算今晚加练的。",
-   a:[{t:"去，喝两杯", g:"show",e:()=>{addTrustAll(7);addFat(-14);
+   a:[{t:"去，喝两杯", g:"show",e:()=>{addTrustAll(7);relAll(3);addFat(-14);
         addSquad("syn",2.2);
         return "聊开了不少事。回去的路上气氛很好。"}},
       {t:"留下加练", g:"grind",e:()=>{addBuff("train",1.3,1,"独自加练");
