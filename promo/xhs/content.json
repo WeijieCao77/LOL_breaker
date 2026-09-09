@@ -1,0 +1,126 @@
+{
+  "brand": {
+    "url": "www.poxiao.lol",
+    "disclaimer": "个人非商业同人作品 · 与 Riot Games 及各俱乐部无关",
+    "defaultCredit": "© Riot Games"
+  },
+  "cards": [
+    {
+      "id": "01",
+      "type": "photo",
+      "photo": "01-ig-s8-trophy.jpg",
+      "eyebrow": "",
+      "title": "爷青回",
+      "sub": "八年了，他俩还在",
+      "credit": "© Riot Games",
+      "cover": true,
+      "shot": {
+        "want": "S8 IG 举起召唤师奖杯的全队合影",
+        "where": "lolesports 官方 Flickr（2018 Worlds 相册）／ IG 官方微博",
+        "crop": "竖向 3:4，人和奖杯居中偏上，下方留 40% 给文字"
+      }
+    },
+    {
+      "id": "02",
+      "type": "photo",
+      "photo": "02-theshy-2018.jpg",
+      "eyebrow": "2018.11.03",
+      "title": "我们赢过一次",
+      "sub": "仁川，3:0",
+      "credit": "© Riot Games",
+      "shot": {
+        "want": "S8 决赛 TheShy 的比赛特写／赛后镜头",
+        "where": "lolesports Flickr 2018 Worlds Finals 相册",
+        "crop": "竖向 3:4，人物脸部在上三分之一"
+      }
+    },
+    {
+      "id": "03",
+      "type": "photo",
+      "photo": "03-celebrate.jpg",
+      "eyebrow": "",
+      "title": "那天全网都在刷\nIG 牛逼",
+      "sub": "那年很多人是从那天开始看 LOL 的",
+      "credit": "© Riot Games",
+      "shot": {
+        "want": "夺冠瞬间的庆祝、队员相拥、或看台观众欢呼",
+        "where": "lolesports Flickr ／ 战队官微当日九宫格",
+        "crop": "竖向 3:4，情绪优先，糊一点没关系"
+      }
+    },
+    {
+      "id": "04",
+      "type": "photo",
+      "photo": "04-lck-trophy.jpg",
+      "eyebrow": "",
+      "title": "然后是漫长的四年",
+      "sub": "",
+      "credit": "© Riot Games",
+      "shot": {
+        "want": "T1 举杯（S13／S14／S15 任选一张，冷色调更好）",
+        "where": "lolesports 官方 Flickr 对应年份相册",
+        "crop": "竖向 3:4，画面尽量空、尽量冷，和第 3 张的热闹形成落差"
+      }
+    },
+    {
+      "id": "05",
+      "type": "stat",
+      "eyebrow": "世界赛冠军",
+      "title": "奖杯一次都没回来",
+      "years": [
+        { "s": "S12", "c": "DRX" },
+        { "s": "S13", "c": "T1" },
+        { "s": "S14", "c": "T1" },
+        { "s": "S15", "c": "T1" }
+      ],
+      "sub": "四年里我每年都说少看一点，每年到十月还是准时打开直播"
+    },
+    {
+      "id": "06",
+      "type": "photo",
+      "photo": "06-theshy-now.jpg",
+      "eyebrow": "",
+      "title": "他没走",
+      "sub": "",
+      "credit": "© Riot Games",
+      "shot": {
+        "want": "TheShy 近期比赛照（越近越好，最好是本赛季）",
+        "where": "LPL 官方微博 ／ 战队官微 ／ lolesports Flickr",
+        "crop": "竖向 3:4，侧脸或低头都行，别用表情包"
+      }
+    },
+    {
+      "id": "07",
+      "type": "photo",
+      "photo": "07-rookie-now.jpg",
+      "eyebrow": "",
+      "title": "他也没走",
+      "sub": "是我们先长大了",
+      "credit": "© Riot Games",
+      "shot": {
+        "want": "Rookie 近期比赛照，构图尽量和第 6 张对称",
+        "where": "同上",
+        "crop": "竖向 3:4，和 06 用同一个景别，两张要像一对"
+      }
+    },
+    {
+      "id": "08",
+      "type": "game",
+      "photo": "game-hero.png",
+      "eyebrow": "",
+      "title": "顺便说一句",
+      "sub": "我自己写了个 LOL 选手生涯模拟器打发时间。\nS12~S15 的冠军按真实历史走，S16 是空的——\n前几天我在里面，把那一年打赢了一次。",
+      "inset": true
+    },
+    {
+      "id": "09",
+      "type": "game",
+      "photo": "game-id.png",
+      "eyebrow": "",
+      "title": "输 ID 的地方",
+      "sub": "默认提示是这么写的。",
+      "inset": true,
+      "footer": true
+    }
+  ]
+}
