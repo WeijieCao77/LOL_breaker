@@ -45,3 +45,10 @@ demo/bgm/*.mp3
 
 # 构建时生成的头像模块（data/avatars.json 不进仓库）
 demo/src/gen/avatars.js
+
+# 虎扑 Colorbox 技能包：credentials.json 里是真实的 shaperToken，
+# 这个仓库是公开的，一次 git add -A 就泄到公网了。
+hupu-ai-game-skills.zip
+hupu*/
+credentials.json
+activity.json
