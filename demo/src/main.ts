@@ -4,7 +4,7 @@ import { AUTO_KEYS, autoAllOn, autoBar, autoBiz, autoCareerStep, autoDaily, auto
 import { avatarOf, gicon } from "./avatar";
 import { synthBoxScore } from "./boxscore";
 import { bondMoments, bondNoteMatch, bondPanel, bondRetire, bondSplitEnd, doBondCoach, doBondTalk } from "./bond";
-import { addStaff, cloutCard, cloutTick, doList, doSign, initRelations, initStaff, relCard, relMod } from "./clout";
+import { addStaff, cloutCard, cloutOf, cloutTick, cloutTier, coachTrust, doList, doSign, initRelations, initStaff, mgrTrust, relCard, relMod } from "./clout";
 import { CUPS, activeCups, cupCard, cupDismissMatch, cupMatchCard, cupOf, cupOppName, cupPrep, cupReachName, cupResultCard, cupRoundName, cupTick, disbandCrew, dueCups, enterCup, forfeitCup, preSquadCard, resolveCupNode, startCupMatch } from "./cup";
 import { DATA } from "./data";
 import { formCard, formMul, formNews, formTier, myForm, myFormMul, rollForm, rollWorldForm } from "./form";
@@ -114,6 +114,9 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
   {v:"v20260909q", at:"2026-09-09", items:[
+    "<b>封面页的存档卡右半边不再空着</b>（作者实锤：「过去的存档的右边都是空的，放一些内容，比如存档的一些数据，队伍，冠军等等」）：左边还是「这是哪一局 + 继续 / 重开」，右边补上这一局的实际数据——<b>赛季 · 效力 · 冠军 · 生涯战绩 · 世界赛 · 实力 · 成就</b>，用的是顶部 HUD 那套格子样式，不新造一种。职业前的档没有这些，就报进度和身份。整段只读存档本身，读不出来就少一格，绝不让封面页白屏",
+    "<b>封面页头的标语不再压在主视觉上</b>（作者截图实锤）：图上本来就印着「电竞选手生涯模拟」，而我们的标语是浮在图上的——图高和文字起点原来各写一条 clamp，两条曲线随宽度分开走，1320px 宽的窗口上正好叠成一团。现在<b>图占一段固定高度、标语排在图下面</b>，两者共用同一个值，<b>宽度再怎么变都叠不上去</b>（自检按这个不变式量）。顺带整张图完整露出来了，原来下半截一直被文字压着",
+    "<b>右栏再加两张卡</b>（作者点名，照 VAL Player）：<b>教练怎么看你</b>——教练 / 经理 / 威望三条，外加一句「你是不是他认定的首发」；<b>最近的比赛</b>——近四场的对手、比分、你这场的评分，每场带一颗「<b>拆解</b>」直接开当场的赛后拆解，不用再去「世界 · 赛程」表里翻。顺手修了一个哑巴按钮：赛后拆解那层遮罩原来只挂在「本周」以外的每一页上，「本周」自己没有，按钮点下去什么也不发生",
     "<b>「本周」页改成主列 + 右栏</b>（作者拍板，参照 VAL Player 的本周页；他的要求是「不改变风格以及按钮形状还有侧边栏样式，只是把位置布局稍微改一下」——所以配色、按钮形状、左侧竖导航一个像素没动，只挪了位置）。原来「下一场」独占一整行、行动卡再独占一整行，两张都用不满宽度，这一页却要滚三屏。现在<b>要宽度的东西占主列</b>（九个行动格子），<b>只是给你看的收进 360px 右栏</b>（这周打谁、圈子在写谁）。1920 的屏上主列 872px、右栏 360px",
     "<b>电竞周报搬回「本周」页</b>（作者点名：「最好是能把电竞周报移动到本周栏目里放在下一场板块的隔壁做一个填充」）：本期贴在「下一场」下面，就在右栏里，每周打开就能顺手看一眼圈子在写谁；<b>往期挪到「新闻」栏目</b>，那里现在是完整存档，每期一段。两边不重复——本期在「本周」，往期在「新闻」",
     "右栏窄，「下一场」里的对阵块跟着改成<b>竖排</b>（两队各占一行，队名和战力左右分开）：并排是 VAL Player 用三个字母队标才成立的，我们的队名是「EDward Gaming」这种长度，并排会断成两行。赛程条在窄栏里改成横向滚动，不再铺成四行",
@@ -3609,7 +3612,10 @@ export function viewSeason(){
   const benched=isBenched();
   // 「本周」和其他标签同一套格式：标签栏在最上，内容在下。
   // 原来行动卡拼在标签栏上面，是六个标签里唯一的例外——没有理由。
-  return `${champ}${scrimPop}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
+  /* 赛后拆解的遮罩：原来只挂在 tabContent 上，也就是「本周」以外的每一页都有、
+     偏偏「本周」没有。右栏的「最近的比赛」把「拆解」按钮搬到了这一页，
+     不补这一句的话按钮点下去 S.pmView 设了、却没人画——按钮看着像坏的。 */
+  return `${champ}${S.pmView!=null?pmReplayCard():""}${scrimPop}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
   ${tabBar(TABS_SEASON)}
   <!-- 「本周」页改成「主列 + 右栏」（作者拍板 2026-09-09，参照 VAL Player 的本周页；
        他的原话：「不改变风格以及按钮形状还有侧边栏样式，只是把位置布局稍微改一下」）。
@@ -3667,6 +3673,8 @@ export function viewSeason(){
   ${injuryCard()}
   </div>
   <div class="wk-press">${pressCard()}</div>
+  <div class="wk-coach">${railCoach()}</div>
+  <div class="wk-recent">${railRecent()}</div>
   </div>`;
 }
 
@@ -5833,6 +5841,49 @@ export function newsCard(){
 }
 /* 比赛记录（原来塞在「世界 · 其他赛区」卡底下——玩家原话「个人数据的板为什么在其他赛区的版块里」）：
    你自己的比赛日志放「我的」页，紧挨着个人数据。 */
+/* ---------- 「本周」右栏的两张精简卡（作者点名 2026-09-09，照 VAL Player）----------
+   都是把已有的东西抽一个窄版出来，不新造数据：
+   · railRecent——最近四场，每场带一颗「拆解」直接开当场的赛后拆解
+     （data-pmv 的点击在 bindStage 里是全局绑的，按钮放哪儿都能用）。
+     原来要去「世界 · 赛程」表里翻，作者点名要在这儿点得到。
+   · railCoach——教练 / 经理怎么看你。完整的话语权、挂牌、引援仍然只在「队伍」页，
+     这里只回答「我现在是不是他认的人」。 */
+export function railRecent(){
+  const arc=S.archive||[];
+  if(!S.career||!arc.length) return "";
+  const rows=[];
+  for(let i=arc.length-1;i>=0&&rows.length<4;i--){
+    const x=arc[i]; if(!x) continue;
+    const sc=x.sc||[0,0];
+    rows.push(`<div class="rl">
+      <span class="rl-w mono">${x.tag||""}${x.w?" W"+x.w:""}</span>
+      <span class="rl-op">${x.opp||"—"}</span>
+      <span class="rl-sc ${x.win?"w":"l"} mono">${sc[0]}:${sc[1]}</span>
+      <span class="rl-r mono" title="你这场的场均评分">${typeof x.rating==="number"?x.rating.toFixed(2):"—"}</span>
+      ${x.pm?`<button class="btn ghost sm" data-pmv="${i}" title="当场的全员数据与赛后拆解">拆解</button>`:'<span class="rl-no">—</span>'}</div>`);
+  }
+  return `<div class="card"><h2>最近的比赛<em>近 ${rows.length} 场</em></h2>
+    <div class="rlog">${rows.join("")}</div>
+    <p class="note">数字是你这场的场均评分。更早的比赛在「世界 · 赛程」表里回看。</p></div>`;
+}
+export function railCoach(){
+  if(!S.career||!S.team) return "";
+  const ct=Math.round(coachTrust()), mt=Math.round(mgrTrust()), c=cloutOf(), T=cloutTier(c);
+  const bar=(v,col)=>`<div class="track"><div class="fill" style="width:${clamp(v,0,100)}%;background:${col}"></div></div>`;
+  const cyan="linear-gradient(90deg,var(--cyan-dim),var(--cyan))";
+  const gold="linear-gradient(90deg,#6B5A2A,var(--gold))";
+  const benched=isBenched();
+  const verdict=benched
+    ? `<b style="color:var(--gold)">你还在替补席上。</b>在训练赛里攒够对位优势才拿得到试用。`
+    : `<b style="color:var(--cyan)">你是他认定的首发。</b>`;
+  return `<div class="card"><h2>教练怎么看你<em>${T.n}</em></h2>
+    <div class="attrs">
+      <div class="at"><div class="lb">教练</div>${bar(ct,cyan)}<div class="vn mono"><b>${ct}</b></div></div>
+      <div class="at"><div class="lb">经理</div>${bar(mt,cyan)}<div class="vn mono"><b>${mt}</b></div></div>
+      <div class="at"><div class="lb">威望</div>${bar(c,gold)}<div class="vn mono"><b>${c}</b></div></div>
+    </div>
+    <p class="note">${verdict}　挂牌、点名引援这些要用话语权的事，在「队伍」页。</p></div>`;
+}
 export function matchLogCard(){
   if(!S.career||!S.log||!S.log.length) return "";
   return `<div class="card"><h2>比赛记录<em>最近 ${Math.min(12,S.log.length)} 条</em></h2>

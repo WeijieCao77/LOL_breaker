@@ -747,7 +747,44 @@ function unitChecks() {
     const wide = css.indexOf("@media(min-width:1180px){\n  /* 360px 的右栏");
     const base = css.indexOf(".wkgrid{display:grid");
     if (base < 0 || wide < 0 || wide < base) bad.push("本周页：分栏没写在 @media(min-width:1180px) 里，或写在了基准值前面");
+    /* 右栏「最近的比赛」的「拆解」按钮点了要真能开——data-pmv 只是把 S.pmView 设上，
+       画出来的是 pmReplayCard()，而它原来只挂在 tabContent 上，「本周」这一页没有。
+       第一版就是这么漏的：按钮在、绑定在、点下去什么也不发生。 */
+    if (g >= 0) {
+      const act = ms.indexOf("return `${champ}", g > 0 ? 0 : 0);
+      const seasonRet = ms.lastIndexOf("return `${champ}", g);
+      if (seasonRet < 0 || ms.indexOf("pmReplayCard()", seasonRet) < 0 || ms.indexOf("pmReplayCard()", seasonRet) > g)
+        bad.push("本周页：viewSeason 没画 pmReplayCard，右栏的「拆解」按钮点了不会有反应");
+      if (ms.indexOf('data-pmv', ms.indexOf("export function railRecent")) < 0)
+        bad.push("最近的比赛：没给每场挂「拆解」按钮（data-pmv）");
+    }
+    /* 封面页页头：标语必须排在主视觉**下面**。原来图高和 padding-top 各写一条 clamp，
+       两条曲线随宽度分开走，1320px 上标语正好压在图里那行「电竞选手生涯模拟」上。
+       现在两者共用 --art，文字起点 = 图高 + 一段固定间距，宽度再怎么变都叠不上去。 */
+    if (!/header\.top:not\(\.compact\)\{--art:/.test(css))
+      bad.push("封面页头：没有 --art（图高和文字起点必须由同一个值决定）");
+    if (!/padding-top:calc\(var\(--art\)/.test(css))
+      bad.push("封面页头：文字起点没有跟着 --art 走，标语会压回图上");
+    if (!/\.keyart\{bottom:auto;height:var\(--art\)\}/.test(css))
+      bad.push("封面页头：主视觉没有用 --art 定高，它会铺满整个页头、把标语盖在图里");
   } catch (e) { bad.push("本周页布局自检没跑起来：" + e); }
+  /* 存档卡右半边：只准读存档 blob，一个全局都不许碰（那是别人那一局的数据）。
+     传一个纯对象进去——如果实现里偷偷用了 S / titleCount() 之类，这里就炸。 */
+  {
+    const blob = { name: "阿甲", pos: "mid", si: 1, week: 3, split: 1, age: 21, team: "EDG",
+      homeLeague: "LPL", attrs: { 操作: 70, 运营: 70, 心态: 70, 指挥: 70, 体质: 70 },
+      ach: { a: 1, b: 1 }, career: { w: 10, l: 5, titles: ["S13 LPL春季赛"], worldsYears: [1] } };
+    const html = A.saveStats(blob);
+    ["EDG", "S13 LPL春季赛", "10−5", "阿甲".slice(0, 0) || "冠军", "成就"].forEach(k => {
+      if (k && html.indexOf(k) < 0) bad.push("存档卡数据：少了「" + k + "」");
+    });
+    if (A.saveStats({}).indexOf("undefined") >= 0) bad.push("存档卡数据：空存档吐出了 undefined");
+    // 职业前的档没有 career，也得有东西可看，不能是空白
+    const pre = A.saveStats({ name: "乙", pos: "top", si: 0, age: 18, pre: { week: 7 },
+      attrs: { 操作: 50, 运营: 50, 心态: 50, 指挥: 50, 体质: 50 } });
+    if (pre.indexOf("职业前") < 0) bad.push("存档卡数据：职业前的存档没写进度");
+    if (A.saveSummary(blob).indexOf("21 岁") < 0) bad.push("存档卡摘要：年龄从格子里挪出来了，摘要行却没接住");
+  }
   /* 周报两个落点，各干各的：本期在「本周」，往期在「新闻」，两边不重复 */
   {
     const S: any = A.S();
