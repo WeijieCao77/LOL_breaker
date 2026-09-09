@@ -1,6 +1,6 @@
 import { boxScoreHtml } from "./boxscore";
 import { relOf } from "./clout";
-import { formMul, myFormMul } from "./form";
+import { formMul, formOf, myForm, myFormMul } from "./form";
 import { BREAK_PATHS, DIMS, SEASONS, avg, capOf, clamp, myRoster, pwShow, versionFit } from "./main";
 import { squadBreakdown } from "./squad";
 import { S } from "./state";
@@ -30,10 +30,29 @@ export function attribute(myTeamPlayers,oppTeamObj,fatigue,verFav){
   rows.push({n:"个人能力",v:myAb-opAb,
     fix:myAb<opAb?"五个人的底子就比对面薄。练自己，或者等队伍补强。":"底子占优，把它打出来。"});
 
-  const myFm=avg(myTeamPlayers.map(p=>p.me?myFormMul():formMul(p)));
+  /* 状态拆成两行（玩家实锤 2026-09-09：「我状态 52 刚刚好 ×1，比赛里还是给我扣分」）。
+     原来只有一行「状态」，算的却是我方五个人的状态均值对上对面五个人——你自己中性，
+     队友低迷或者对面手感好，这一行照样是负的，标签却像在说你。
+     现在按人头拆开：你一份、队友四份，两行加起来还是原来那个数，一分不多一分不少。 */
   const opFm=avg(oppPlayers.map(p=>formMul(p)));
-  rows.push({n:"状态",v:(myFm-opFm)*myAb,
-    fix:myFm<opFm?"手感不在。休息、稳住更衣室，状态下个赛段会回来。":"状态在你这边。"});
+  const meP=myTeamPlayers.find(p=>p.me);
+  const mates=myTeamPlayers.filter(p=>!p.me);
+  const n=myTeamPlayers.length||1;
+  const showF=(x)=>Math.round(x);
+  if(meP&&mates.length){
+    const meFm=myFormMul(), mateFm=avg(mates.map(p=>formMul(p)));
+    const opShow=showF(avg(oppPlayers.map(p=>formOf(p))));
+    rows.push({n:"你的状态",v:(meFm-opFm)*myAb/n,
+      fix:meFm<opFm?`你今年的手感在对面之下（你 ${showF(myForm())} · 对面均 ${opShow}）。休息、稳住更衣室，状态下个赛段会回来。`
+                   :`你的状态压着对面（你 ${showF(myForm())} · 对面均 ${opShow}）。`});
+    rows.push({n:"队友状态",v:(mateFm-opFm)*myAb*(n-1)/n,
+      fix:mateFm<opFm?`四个队友今年状态不在（队友均 ${showF(avg(mates.map(p=>formOf(p))))} · 对面均 ${opShow}）——这一项不是你能直接练的，赢球、团建、转会窗才推得动。`
+                     :`队友状态在线（队友均 ${showF(avg(mates.map(p=>formOf(p))))} · 对面均 ${opShow}）。`});
+  }else{
+    const myFm=avg(myTeamPlayers.map(p=>p.me?myFormMul():formMul(p)));
+    rows.push({n:"状态",v:(myFm-opFm)*myAb,
+      fix:myFm<opFm?"手感不在。休息、稳住更衣室，状态下个赛段会回来。":"状态在你这边。"});
+  }
 
   // 各权重差，折算成等效战力
   const fixOf={

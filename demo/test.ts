@@ -630,6 +630,21 @@ function unitChecks() {
     // 赛后拆解读开赛那一刻的体能（原来先扣这场的体能再算账）
     if (S.match && S.match.fat0 === undefined) bad.push("比赛没有记下开赛时的体能快照 fat0");
 
+    // 天梯赛季重置：越高掉得越多，大师及以下不动
+    if (S.pre) {
+      const rk0 = S.pre.rank;
+      S.pre.rank = 100; A.rankSeasonReset();
+      const dTop = 100 - S.pre.rank;
+      S.pre.rank = 60; A.rankSeasonReset();
+      const dMid = 60 - S.pre.rank;
+      S.pre.rank = 40; A.rankSeasonReset();
+      const dLow = 40 - S.pre.rank;
+      if (!(dTop > dMid && dMid > dLow)) bad.push(`天梯重置不是越高掉得越多：国服第一 ${dTop.toFixed(1)} / 宗师 ${dMid.toFixed(1)} / 大师以下 ${dLow.toFixed(1)}`);
+      if (dLow !== 0) bad.push(`大师及以下不该掉，掉了 ${dLow.toFixed(1)}`);
+      if (dTop < 2 || dTop > 9) bad.push(`国服第一掉的分数不在预期区间：${dTop.toFixed(1)}`);
+      S.pre.rank = rk0;
+    }
+
 
   } catch (e) { bad.push("仪式自检没跑起来：" + (e && (e as any).stack || e)); }
   return bad;

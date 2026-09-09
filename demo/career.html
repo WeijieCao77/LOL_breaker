@@ -9001,13 +9001,32 @@ header.top.compact>.theme-top{display:none}
       v: myAb - opAb,
       fix: myAb < opAb ? "五个人的底子就比对面薄。练自己，或者等队伍补强。" : "底子占优，把它打出来。"
     });
-    const myFm = avg(myTeamPlayers.map((p) => p.me ? myFormMul() : formMul(p)));
     const opFm = avg(oppPlayers.map((p) => formMul(p)));
-    rows.push({
-      n: "状态",
-      v: (myFm - opFm) * myAb,
-      fix: myFm < opFm ? "手感不在。休息、稳住更衣室，状态下个赛段会回来。" : "状态在你这边。"
-    });
+    const meP = myTeamPlayers.find((p) => p.me);
+    const mates = myTeamPlayers.filter((p) => !p.me);
+    const n = myTeamPlayers.length || 1;
+    const showF = (x) => Math.round(x);
+    if (meP && mates.length) {
+      const meFm = myFormMul(), mateFm = avg(mates.map((p) => formMul(p)));
+      const opShow = showF(avg(oppPlayers.map((p) => formOf(p))));
+      rows.push({
+        n: "你的状态",
+        v: (meFm - opFm) * myAb / n,
+        fix: meFm < opFm ? `你今年的手感在对面之下（你 ${showF(myForm())} · 对面均 ${opShow}）。休息、稳住更衣室，状态下个赛段会回来。` : `你的状态压着对面（你 ${showF(myForm())} · 对面均 ${opShow}）。`
+      });
+      rows.push({
+        n: "队友状态",
+        v: (mateFm - opFm) * myAb * (n - 1) / n,
+        fix: mateFm < opFm ? `四个队友今年状态不在（队友均 ${showF(avg(mates.map((p) => formOf(p))))} · 对面均 ${opShow}）——这一项不是你能直接练的，赢球、团建、转会窗才推得动。` : `队友状态在线（队友均 ${showF(avg(mates.map((p) => formOf(p))))} · 对面均 ${opShow}）。`
+      });
+    } else {
+      const myFm = avg(myTeamPlayers.map((p) => p.me ? myFormMul() : formMul(p)));
+      rows.push({
+        n: "状态",
+        v: (myFm - opFm) * myAb,
+        fix: myFm < opFm ? "手感不在。休息、稳住更衣室，状态下个赛段会回来。" : "状态在你这边。"
+      });
+    }
     const fixOf = {
       默契: "换过人就要重新磨。多合练、多双排。",
       战术: "准备不够。战术复盘和训练赛。",
@@ -14613,6 +14632,8 @@ header.top.compact>.theme-top{display:none}
   var SPREAD = 16;
   var CHANGELOG = [
     { v: "v20260909a", at: "2026-09-09", items: [
+      "赛后拆解的「状态」拆成「你的状态」和「队友状态」两行（玩家实锤：我状态 52 刚好中性，比赛里还是给我扣分）——原来一行算的是我方五个人的状态均值对上对面五个人，你自己中性、队友低迷照样是负的，标签却像在说你；两行各自写清楚「你 X · 队友均 Y · 对面均 Z」，加起来还是原来那个数",
+      "天梯有赛季重置了（玩家点名：段位一证永证，打到国服第一就永远国服第一）：每年春季赛开赛，段位向「大师」回归一截——越高掉得越多，国服第一掉约 4 分（四次打排位能拿回来），宗师只掉 1 分，大师及以下不动。原来那条「不守就掉」只把你拉回实力守得住的位置，实力够就永远不掉",
       "赛后拆解和赛后面板改读开赛那一刻的体能（玩家实锤：赛前自己和队伍体能都是满的，一结算却拿体能扣我的综合分，试了两次都一样）——胜负本来就是用赛前体能判的，原来却先把这场的消耗记上再算账，等于拿打完之后的体能解释一场已经打完的比赛",
       "战队行动的卡面不再虚标（玩家实锤：写「默契 +5.1」，实际只涨一点）：默契越高涨得越少，卡上现在直接写这一次真能涨多少，贴顶时写「已很高」；预览和生效从此是同一个函数",
       "打排位的状态涨幅不再虚标（玩家实锤：写 +2.3，点一下只从 57 到 58）：一次排位是三把，状态按碎片时间打对折，卡面原来漏了这个对折",
@@ -16543,6 +16564,18 @@ header.top.compact>.theme-top{display:none}
   function rankStep() {
     return clamp(2.6 - S.pre.rank * 0.012, 1.1, 2.6);
   }
+  var RANK_RESET_FLOOR = 44;
+  var RANK_RESET_KEEP = 0.93;
+  function rankSeasonReset() {
+    if (!S.career || !S.pre || S.pre.rank === void 0) return;
+    const before = S.pre.rank;
+    if (before <= RANK_RESET_FLOOR) return;
+    const after = Math.max(RANK_RESET_FLOOR, RANK_RESET_FLOOR + (before - RANK_RESET_FLOOR) * RANK_RESET_KEEP);
+    if (before - after < 0.1) return;
+    S.pre.rank = q1(after);
+    const b = rankName(before), a = rankName(S.pre.rank);
+    pushEvent(`<b>天梯赛季重置。</b>${b === a ? `你的段位回落了一截（${b}）` : `你从 <b>${b}</b> 掉到 <b>${a}</b>`}——分不会自己回来，<b>打排位</b>能拿回去。`, "info", "天梯");
+  }
   function preAct(k, dim) {
     const P = S.pre;
     const _c = apCost(k === "rank" ? "solo" : k);
@@ -17167,7 +17200,9 @@ header.top.compact>.theme-top{display:none}
     });
   }
   function startSeason(first, split) {
+    const _newYear = split === void 0 || split === 0;
     S.split = split === void 0 ? 0 : split;
+    if (_newYear && !first) rankSeasonReset();
     S.carrySplit = 0;
     S.benchedPO = false;
     S.loseStreak = 0;
@@ -18328,7 +18363,7 @@ header.top.compact>.theme-top{display:none}
       if (!S.lckBeaten.includes(m.oppName)) S.lckBeaten.push(m.oppName);
     }
     const me = S.name || "你", star = m.opp.players.filter((q) => q.pos === S.pos)[0];
-    const myPw = power(myRoster(), fat0, SEASONS[S.si].fav), opPw = power(m.opp.players, 0, SEASONS[S.si].fav);
+    const myPw = power(myRoster(), S.fatigue, SEASONS[S.si].fav), opPw = power(m.opp.players, 0, SEASONS[S.si].fav);
     rotationAfterMatch(won, myPw - opPw);
     if (won && myPw - opPw < -2) {
       S.comebacks = (S.comebacks || 0) + 1;

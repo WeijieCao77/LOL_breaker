@@ -112,6 +112,8 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
   {v:"v20260909a", at:"2026-09-09", items:[
+    "赛后拆解的「状态」拆成「你的状态」和「队友状态」两行（玩家实锤：我状态 52 刚好中性，比赛里还是给我扣分）——原来一行算的是我方五个人的状态均值对上对面五个人，你自己中性、队友低迷照样是负的，标签却像在说你；两行各自写清楚「你 X · 队友均 Y · 对面均 Z」，加起来还是原来那个数",
+    "天梯有赛季重置了（玩家点名：段位一证永证，打到国服第一就永远国服第一）：每年春季赛开赛，段位向「大师」回归一截——越高掉得越多，国服第一掉约 4 分（四次打排位能拿回来），宗师只掉 1 分，大师及以下不动。原来那条「不守就掉」只把你拉回实力守得住的位置，实力够就永远不掉",
     "赛后拆解和赛后面板改读开赛那一刻的体能（玩家实锤：赛前自己和队伍体能都是满的，一结算却拿体能扣我的综合分，试了两次都一样）——胜负本来就是用赛前体能判的，原来却先把这场的消耗记上再算账，等于拿打完之后的体能解释一场已经打完的比赛",
     "战队行动的卡面不再虚标（玩家实锤：写「默契 +5.1」，实际只涨一点）：默契越高涨得越少，卡上现在直接写这一次真能涨多少，贴顶时写「已很高」；预览和生效从此是同一个函数",
     "打排位的状态涨幅不再虚标（玩家实锤：写 +2.3，点一下只从 57 到 58）：一次排位是三把，状态按碎片时间打对折，卡面原来漏了这个对折",
@@ -2060,6 +2062,23 @@ export function soloWinP(){
 }
 /* 一次「打排位」= 3 把，赢了涨输了掉 */
 export function rankStep(){ return clamp(2.6-S.pre.rank*0.012,1.1,2.6); }
+/* 天梯赛季重置（玩家点名 2026-09-09：段位一证永证，打到国服第一就永远国服第一，
+   希望每年掉一点、用多余的行动点打回去）。
+   不是固定掉几分，是向「大师」这条线回归一截：越高掉得越多，大师及以下不动——
+   国服第一掉 8 分左右（约八次打排位能回来），宗师只掉 2 分，低分段不被反复折腾。
+   只在职业生涯里做；职业前那一年本来就是往上爬的过程，再掉会把上岸挡死。 */
+export const RANK_RESET_FLOOR=44;    // 大师
+export const RANK_RESET_KEEP=0.93;   // 顶端掉约 4 分（约四次打排位拿回来）。0.85＝掉 8 分，批测里联赛夺冠率要再低 3 个点
+export function rankSeasonReset(){
+  if(!S.career||!S.pre||S.pre.rank===undefined) return;
+  const before=S.pre.rank;
+  if(before<=RANK_RESET_FLOOR) return;
+  const after=Math.max(RANK_RESET_FLOOR,RANK_RESET_FLOOR+(before-RANK_RESET_FLOOR)*RANK_RESET_KEEP);
+  if(before-after<0.1) return;
+  S.pre.rank=q1(after);
+  const b=rankName(before), a=rankName(S.pre.rank);
+  pushEvent(`<b>天梯赛季重置。</b>${b===a?`你的段位回落了一截（${b}）`:`你从 <b>${b}</b> 掉到 <b>${a}</b>`}——分不会自己回来，<b>打排位</b>能拿回去。`,"info","天梯");
+}
 export function preAct(k,dim?){
   const P=S.pre;
   const _c=apCost(k==="rank"?"solo":k);
@@ -2596,7 +2615,9 @@ export function buildFixtures(){
   });
 }
 export function startSeason(first,split?){
+  const _newYear=(split===undefined||split===0);
   S.split=(split===undefined)?0:split;
+  if(_newYear&&!first) rankSeasonReset();   // 天梯赛季重置：一年一次，春季赛开赛时
   S.carrySplit=0;      // 「院长」次数按赛段算（教练组看本赛段）
   S.benchedPO=false;   // 新赛段重置「替补看完季后赛」标记
   S.loseStreak=0; S.benchLock=false;   // 新赛段：连败清零；被换下的锁也解开（新赛段教练重新看数据）
@@ -3855,7 +3876,11 @@ export function endMatch(){
 
   // 你自己的大事
   const me=S.name||"你", star=m.opp.players.filter(q=>q.pos===S.pos)[0];
-  const myPw=power(myRoster(),fat0,SEASONS[S.si].fav), opPw=power(m.opp.players,0,SEASONS[S.si].fav);
+  /* 这一行的 myPw 不只是显示：它还喂轮换资本、更衣室「该赢没赢」和冷门播报。
+     换成开赛体能会动平衡（120 局批测：MSI 夺冠率 10.8% → 21.7%），所以先按原样留着，
+     只把赛后拆解那张卡改成读开赛体能——玩家实锤的就是那张卡。这一处口径要不要一起改，
+     是一次单独的平衡决定，留给作者。 */
+  const myPw=power(myRoster(),S.fatigue,SEASONS[S.si].fav), opPw=power(m.opp.players,0,SEASONS[S.si].fav);
   // 首发试用：赢了坐稳，输光了回替补席（rotation.js）
   rotationAfterMatch(won,myPw-opPw);
   if(won&&myPw-opPw<-2){ S.comebacks=(S.comebacks||0)+1;   // 逆风翻盘计数
