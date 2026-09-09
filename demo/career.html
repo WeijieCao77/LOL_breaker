@@ -7963,9 +7963,12 @@ header.top.compact>.theme-top{display:none}
       n: "赛后狠话的回旋镖",
       run(p) {
         const opp = p && p.opp ? p.opp : "对手";
-        if ((S.record && S.record.l || 0) >= 2) {
+        const w = S.record && S.record.w || 0, l = S.record && S.record.l || 0;
+        const same = !!(p && p.si === S.si && p.sp === (S.split || 0));
+        const dw = same ? w - (p && p.w0 || 0) : w, dl = same ? l - (p && p.l0 || 0) : l;
+        if (dl > dw) {
           S.heat = (S.heat || 0) + 10;
-          pushEvent(`两周前你赛后放的狠话被翻出来了——你们最近战绩不好，
+          pushEvent(`两周前你赛后放的狠话被翻出来了——这两周你们 <b>${dw} 胜 ${dl} 负</b>，
           <b>「${opp} 记得你说过的话」</b>成了弹幕热梗。压力给到你这边。`, "bad", "舆论");
         } else {
           addFans(6);
@@ -10089,9 +10092,12 @@ header.top.compact>.theme-top{display:none}
     const v = S.verCer;
     return v && v.si === S.si ? v.adj || 0 : 0;
   }
-  function mediaTiltMul() {
+  function mediaToneNow() {
     const m = S.media;
-    return m && m.si === S.si && m.split === (S.split || 0) && m.tone === "bold" ? CER_EFF.media.bold.tilt : 1;
+    return m && m.si === S.si && m.split === (S.split || 0) && m.tone ? m.tone : null;
+  }
+  function mediaTiltMul() {
+    return mediaToneNow() === "bold" ? CER_EFF.media.bold.tilt : 1;
   }
   function isFinalMatch() {
     if (!S.career) return false;
@@ -14999,6 +15005,10 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909g", at: "2026-09-09", items: [
+      "赛后那句狠话不再是游戏替你说的（作者实锤：「新档明明没放过狠话，却提示我的狠话被对手记下来、成了网络热梗」）：原来只要<b>爆冷赢一场</b>就有三成概率自动弹「XX 也就这样」，玩家没点过任何按钮——30 局批测里 <b>28/30 的生涯被安过，平均每局 3.9 次</b>，其中 47% 两周后变成弹幕热梗挨罚。而媒体日本来就有「狂 / 稳 / 甩锅」让你自己定调，这条完全绕过了它。现在<b>只有这个赛段你真在媒体日定了「狂」，才谈得上赛后补一句</b>；选了稳、甩锅或者跳过媒体日的人，永远不会被安上这句话",
+      "狠话的回旋镖也改了判据：原来看的是「这个赛段一共输过两场」——一个赛段十几场，输两场太容易，等于说完必挨罚。现在看的是<b>说完之后那两周打成什么样</b>，赢多于输就进赛区宣传片，输多于赢才成弹幕热梗，事件里也把这两周的战绩写出来"
+    ] },
     { v: "v20260909f", at: "2026-09-09", items: [
       "生涯名片图多了一个「<b>存到相册</b>」按钮（作者实测：手机上点「下载图片」，iOS 弹的是下载确认框，图落在<b>「文件」App 的下载项</b>里，不是相册——和大家习惯的「保存图片」不是一回事）：现在手机上走系统分享菜单，iOS 里点「存储图像」就直接进相册，安卓同理。设备不支持的话仍然可以长按图片保存，底部那行小字也会跟着说清楚图会落到哪"
     ] },
@@ -18844,9 +18854,16 @@ header.top.compact>.theme-top{display:none}
     }
     if (S.tilt < 40) S._tiltWarned = false;
     S.lastFightClock = S.evClock || 0;
-    if (won && ctx.gap < -1 && rnd() < 0.3 && true) {
-      queueFollowUp("bigTalk", 2, { opp: m.oppName });
-      pushEvent(`赛后采访你上头了一句「<b>${m.oppName} 也就这样</b>」。话说出去就收不回来了——两周后见分晓。`, "info", "舆论");
+    if (won && ctx.gap < -1 && mediaToneNow() === "bold" && rnd() < 0.3) {
+      queueFollowUp("bigTalk", 2, {
+        opp: m.oppName,
+        si: S.si,
+        sp: S.split || 0,
+        w0: S.record && S.record.w || 0,
+        l0: S.record && S.record.l || 0
+      });
+      pushEvent(`媒体日你把调子定成了「狂」，这场爆冷赢完记者又把话筒递过来——你补了一句
+      「<b>${m.oppName} 也就这样</b>」。话说出去就收不回来了，两周后见分晓。`, "info", "舆论");
     }
     {
       try {
