@@ -82,8 +82,11 @@ body::before{
    东西铺在一个平面内，这样不用上下翻页」）。1000px 在 1920 屏上两侧各空 460px，
    扣掉 96px 竖导航之后内容列只剩约 848px——和一台竖着的平板一样宽，于是「本周」
    那一页要滚两到三屏。这两行只放宽容器，手机和小桌面一个像素不动。 */
-@media(min-width:1280px){ .wrap{max-width:1400px} }
-@media(min-width:1680px){ .wrap{max-width:1560px} }
+/* 二改（玩家反馈 2026-09-09「画面占满屏幕文字小」）：1400 / 1560 是只放宽了容器、
+   没动字号的结果——1920 的屏上一行正文能拉到 1300px，字还是 12.5px，读起来又长又小。
+   收回到 1320 / 1400，同时把宽屏上真正显小的三档字号各抬一档，正文再按字符数封顶。 */
+@media(min-width:1280px){ .wrap{max-width:1320px} }
+@media(min-width:1680px){ .wrap{max-width:1400px} }
 .mono{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"Liberation Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
 button{font-family:inherit;font-size:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:1px solid var(--gold);outline-offset:2px}
@@ -574,12 +577,24 @@ tr.cut td{border-bottom:2px solid var(--gold-dim)}
    玩家说的「不用上下翻页」不是按钮难找，是它在第三屏。宽屏上把「本周」那一行出口
    （剩余行动点 + 打这一周 + 快捷 + 自动推进）钉在视口底部，行动点没用完时它照样是灰的。
    只在 min-width:1180px 生效：手机有自己的底栏，小桌面继续走原来的单列。 */
+/* 二改（玩家反馈 2026-09-09「互相遮挡」）：初版这一条同时踩了三个坑，
+   缺一个都不会长成玩家截的那张图——
+   ① 它排在「替补训练赛」和「本周对手」**前面**。sticky 只压得住排在它后面的兄弟，
+      卡片一长过一屏，出口条就浮起来把这两块糊住了。→ 挪到卡片最后（main.ts）。
+   ② 背景是 .72 → .97 的渐变 + backdrop-filter。上面那 42% 是半透的，
+      底下的「已连续 0/3 周」直接透上来，看着就是重影。→ 改成实心。
+   ③ 主按钮 flex:1 1 auto。容器放宽到 1400 之后它摊成一条 1000px 的金色板砖，
+      「行动点 8」被挤在它左边一线。→ 给它封顶。
+   margin 的 -20 也是修的：卡片 padding 是 20px，原来写 -18，左右各差 2px。 */
 @media(min-width:1180px){
-  .row.dock{position:sticky;bottom:0;z-index:30;margin:14px -18px -18px;padding:12px 18px;
-    background:linear-gradient(180deg,rgba(var(--panel-rgb),.72),rgba(var(--panel-rgb),.97) 42%);
-    border-top:1px solid var(--line-hot);
-    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-  .row.dock .btn.primary{flex:1 1 auto}
+  .row.dock{position:sticky;bottom:0;z-index:30;margin:14px -20px -20px;padding:12px 20px;
+    /* 右下角的音频浮窗是 fixed 的（38px 宽 + 14px 边距，z-index 60），窗口宽度一接近
+       容器宽度就压在最右边那颗按钮上（1440px 实测压了 9px）。永远留出那一角，
+       比按断点猜什么时候会压上稳。 */
+    padding-right:66px;
+    background:rgb(var(--panel-rgb));
+    border-top:1px solid var(--line-hot)}
+  .row.dock .btn.primary{flex:1 1 auto;max-width:560px}
   .row.dock .dock-ap{font-family:ui-monospace,"SF Mono",Consolas,Menlo,monospace;
     font-size:12px;letter-spacing:.06em;color:var(--ink-3);white-space:nowrap;align-self:center}
   .row.dock .dock-ap b{color:var(--dawn);font-size:15px}
@@ -1604,3 +1619,18 @@ header.top.compact>.theme-top{display:none}
 .act .apc.restall:hover{background:rgba(233,161,90,.20);border-color:var(--dawn)}
 .act .apc.restall:active{transform:translateY(1px)}
 .act .apc.restall:focus-visible{outline:2px solid var(--dawn);outline-offset:2px}
+
+/* ---- 桌面密度（玩家反馈 2026-09-09：「画面占满屏幕文字小」）----
+   放在文件末尾是必须的：媒体查询不加权重，.g5 / .note / .act .d 的基准值写在
+   本文件中段，写在它们前面的话这一整块一条都不会生效（第一版就是这么写的）。 */
+@media(min-width:1280px){
+  /* 140px 的下限在 1920 的屏上排出 8 列 145px 的格子：格子没变大，字没变大，
+     每条说明反而挤成五六行。抬到 200px 就是 5 列 230px——列数少了，每格反而看得清。 */
+  .g5{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .note{font-size:13.5px}
+  .act .t{font-size:15px}
+  .act .d{font-size:12.5px}
+  .opt .d{font-size:13.5px}
+  /* 正文一行超过 ~76 个字就开始难读，和容器多宽无关 */
+  .card>.note,.card>p,.gapbar .gt{max-width:76ch}
+}

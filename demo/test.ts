@@ -508,6 +508,33 @@ function unitChecks() {
     if (vs(66, 19) !== "被带飞") bad.push("角色：比你强又比你年轻，该是「被带飞」，实得 " + vs(66, 19));
     if (vs(54, 19) !== "带人") bad.push("角色：比你弱又比你年轻，该是「带人」，实得 " + vs(54, 19));
     if (vs(61, 19) !== "并肩") bad.push("角色：只差 1 分不该分强弱，该是「并肩」，实得 " + vs(61, 19));
+    /* 场均评分要算进去（玩家 2026-09-09：「我是个 rating 很高的院长还被人带感觉有点奇怪」）。
+       五维比他低 3 分本来判「被带」；这个赛段你场均评分比他高 0.6，折 +4（封顶），
+       净 +1 就不该再说是他在带你了。改回只看五维的话，这三条一起红。 */
+    S.bondAcc = { k: "1-0", n: 5, me: 5 * 1.60, mates: { R1: { n: 5, sum: 5 * 1.00 } } };
+    const carry = A.bondRoleVs({ id: "R1", age: 27, r: { 操作: 63, 运营: 63, 心态: 63, 指挥: 63, 体质: 63 } });
+    if (carry.role === "被带") bad.push("角色：你场均评分比他高 0.6，还判成「被带」");
+    if (!carry.rGap) bad.push("角色：场均评分差没读出来，rGap=" + carry.rGap);
+    if (Math.abs(carry.radj) > A.BOND_R_CAP + 1e-6) bad.push("角色：评分修正没封顶，radj=" + carry.radj);
+    // 同场不够 3 个系列赛就不拿评分说话——两场的手感不该改判
+    S.bondAcc = { k: "1-0", n: 2, me: 2 * 1.60, mates: { R1: { n: 2, sum: 2 * 1.00 } } };
+    if (A.bondRoleVs({ id: "R1", age: 27, r: { 操作: 63, 运营: 63, 心态: 63, 指挥: 63, 体质: 63 } }).role !== "被带")
+      bad.push("角色：只同场两个系列赛就拿评分改判了");
+    S.bondAcc = null;
+    // 判断依据要能说出口：玩家问「考虑了 rating 吗」，界面得答得上
+    S.bondAcc = { k: "1-0", n: 5, me: 5 * 1.60, mates: { R1: { n: 5, sum: 5 * 1.00 } } };
+    const why = A.bondRoleWhy({ id: "R1", age: 27, r: { 操作: 63, 运营: 63, 心态: 63, 指挥: 63, 体质: 63 } });
+    if (!/五维均值/.test(why) || !/场均评分/.test(why) || !/岁/.test(why))
+      bad.push("角色依据没把三条依据都说出来：" + why);
+    S.bondAcc = null;
+    /* 标签得是人话（玩家 2026-09-09：「扛旗、带人之类的玩家看不懂是什么意思」）。
+       存档里存的仍是原来那五个键，只有界面换说法——两边都要在。 */
+    A.BOND_ROLES.forEach((k: string) => {
+      const n = A.bondRoleName(k);
+      if (!n) bad.push("角色标签：" + k + " 没有对应的说法");
+      if (k !== "并肩" && n === k) bad.push("角色标签：" + k + " 还是原样吐出来，玩家看不懂的正是这四个词");
+      if (!A.BOND_ROLE_TXT[k]) bad.push("角色标签：" + k + " 没有解释");
+    });
     // 样本不够不下结论
     S.bondAcc = { k: "1-0", n: 2, me: 2.0, mates: { M1: { n: 2, sum: 3.0 } } };
     if (A.bondRolesNow()) bad.push("共事账本：只打了两场就给这个赛段定了角色");
@@ -665,6 +692,36 @@ function unitChecks() {
       for (const k of keys) for (const bg of ["panel", "void"]) { const r = cr(t[k], t[bg]); if (!(r >= 4.5)) bad.push(`${name} --${k} ${t[k]} 在 --${bg} ${t[bg]} 上只有 ${r.toFixed(2)}:1`); }
     }
   } catch (e) { bad.push("配色对比度自检没跑起来：" + e); }
+  /* 桌面出口条（.row.dock）两条硬约束——玩家 2026-09-09 截图里的「互相遮挡」两条都踩了。
+     jsdom 不算布局，量不到遮挡，所以这里改成量**成因**：
+     ① 它是 sticky 的，只压得住排在它后面的兄弟 → 它必须是「本周」那张卡的最后一个孩子；
+     ② 背景不能是半透的 → 底下的字会透上来，看着就是重影。 */
+  try {
+    const ms = fs.readFileSync(path.join(HERE, "src", "main.ts"), "utf8");
+    const dock = ms.indexOf('<div class="row dock">');
+    if (dock < 0) bad.push("出口条：main.ts 里找不到 .row.dock");
+    else {
+      ["scrimPanel()", "本周对手"].forEach(k => {
+        const i = ms.indexOf(k, dock);
+        // 同一张卡里排在出口条后面 = 会被它糊住。卡片以 `\n  </div>` 收口。
+        const cardEnd = ms.indexOf("\n  </div>", dock);
+        if (i > 0 && cardEnd > 0 && i < cardEnd) bad.push("出口条：「" + k + "」排在 .row.dock 后面，宽屏上会被它盖住");
+      });
+    }
+    const css = fs.readFileSync(path.join(HERE, "theme.css"), "utf8");
+    const dockCss = css.slice(css.indexOf(".row.dock{"), css.indexOf("}", css.indexOf(".row.dock{")));
+    if (/rgba\(var\(--panel-rgb\),\s*\.[0-8]/.test(dockCss) || /backdrop-filter/.test(dockCss))
+      bad.push("出口条：背景是半透的 / 带 backdrop-filter，底下的字会透上来：" + dockCss.slice(0, 160));
+    /* 桌面密度那一块必须写在基准值**后面**：媒体查询不加权重，写在前面一条都不生效。
+       第一版就是写在 .wrap 旁边（文件中段之前），改完字号和格子宽度页面纹丝不动。 */
+    const wideAt = css.indexOf("/* ---- 桌面密度");
+    if (wideAt < 0) bad.push("桌面密度自检：theme.css 里找不到那一块（注释头被改了？）");
+    else ["\n.g5{", "\n.note{", "\n.act .d{", "\n.opt .d,"].forEach(k => {
+      const base = css.indexOf(k);
+      if (base < 0) { bad.push("桌面密度自检：theme.css 里找不到基准值 " + k.trim()); return; }
+      if (wideAt < base) bad.push("桌面密度：整块写在基准值 " + k.trim() + " 前面，媒体查询不加权重，一条都不会生效");
+    });
+  } catch (e) { bad.push("出口条 / 桌面密度自检没跑起来：" + e); }
   const dirty = { S: { name: "x", log: ['<div class="hi">ok</div> <span style="color:var(--cyan)">c</span> <b>b</b><br>',
     '<img src=x onerror=alert(1)><a href="https://evil">link</a><div style="position:fixed;inset:0;background:#000">cover</div><span class="hi" onclick="x()">t</span><!-- c --><script>bad()</script>'] } };
   const out = A.sanitizeSave(dirty).S.log;
