@@ -64,6 +64,11 @@ const A: any = Object.assign({}, ...mods, { S: () => state.S, setS: state.setS }
   ];
   live.forEach(([k, m]) => Object.defineProperty(A, k, { get: () => ns(m)[k], configurable: true }));
 }
+/* 读源码做自检时统一行尾：Windows 上 git 检出的是 CRLF，而下面有好几处拿
+   "\n…" 字面去 indexOf。不归一的话 CI（Linux/LF）全绿、作者本机却一条报错、
+   几条静默失效——那几条自检等于没跑。 */
+const readText = (...p: string[]) => fs.readFileSync(path.join(...p), "utf8").replace(/\r\n/g, "\n");
+
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 /* ---------------- 跑一局完整生涯 ---------------- */
@@ -690,7 +695,7 @@ function unitChecks() {
   // 三套配色（theme.css）：浅色 / 米色里正文三档、金、青、红、橙和七个域色在面板和地面上都得 ≥ 4.5:1；
   // 深色只查三档墨色（红在深色面板上本来就只有 3.3，是历史问题，不在这次范围里）。改 token 时这里先炸。
   try {
-    const css = fs.readFileSync(path.join(HERE, "theme.css"), "utf8");
+    const css = readText(HERE, "theme.css");
     const block = (sel: string) => { const i = css.indexOf(sel + "{"); return i < 0 ? "" : css.slice(i, css.indexOf("}", i)); };
     const toks = (b: string) => { const m: Record<string, string> = {}; b.replace(/--([a-z0-9-]+):\s*(#[0-9a-fA-F]{6})/g, (_: string, k: string, v: string) => { m[k] = v; return ""; }); return m; };
     const lum = (h: string) => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
@@ -708,7 +713,7 @@ function unitChecks() {
      ① 它是 sticky 的，只压得住排在它后面的兄弟 → 它必须是「本周」那张卡的最后一个孩子；
      ② 背景不能是半透的 → 底下的字会透上来，看着就是重影。 */
   try {
-    const ms = fs.readFileSync(path.join(HERE, "src", "main.ts"), "utf8");
+    const ms = readText(HERE, "src", "main.ts");
     const dock = ms.indexOf('<div class="row dock">');
     if (dock < 0) bad.push("出口条：main.ts 里找不到 .row.dock");
     else {
@@ -719,7 +724,7 @@ function unitChecks() {
         if (i > 0 && cardEnd > 0 && i < cardEnd) bad.push("出口条：「" + k + "」排在 .row.dock 后面，宽屏上会被它盖住");
       });
     }
-    const css = fs.readFileSync(path.join(HERE, "theme.css"), "utf8");
+    const css = readText(HERE, "theme.css");
     const dockCss = css.slice(css.indexOf(".row.dock{"), css.indexOf("}", css.indexOf(".row.dock{")));
     if (/rgba\(var\(--panel-rgb\),\s*\.[0-8]/.test(dockCss) || /backdrop-filter/.test(dockCss))
       bad.push("出口条：背景是半透的 / 带 backdrop-filter，底下的字会透上来：" + dockCss.slice(0, 160));
@@ -736,7 +741,7 @@ function unitChecks() {
   /* 「本周」页的主列 + 右栏（作者拍板 2026-09-09，参照 VAL Player）。
      jsdom 不算布局，所以这里量的是结构和源码顺序，不是像素。 */
   try {
-    const ms = fs.readFileSync(path.join(HERE, "src", "main.ts"), "utf8");
+    const ms = readText(HERE, "src", "main.ts");
     const g = ms.indexOf('<div class="wkgrid">');
     if (g < 0) bad.push("本周页：找不到 .wkgrid（主列 + 右栏的容器）");
     else {
@@ -750,7 +755,7 @@ function unitChecks() {
       const dock = ms.indexOf('<div class="row dock">', g);
       if (!(dock > iMain && dock < iPress)) bad.push("本周页：行动卡的出口条不在 .wk-main 里");
     }
-    const css = fs.readFileSync(path.join(HERE, "theme.css"), "utf8");
+    const css = readText(HERE, "theme.css");
     // 三块的摆位都得写全，少一条就会有一块掉回文档流、压到别的格子上
     ["\.wkgrid>\.wk-main\{grid-column:1", "\.wkgrid>\.wk-next\{grid-column:2", "\.wkgrid>\.wk-press\{grid-column:2"]
       .forEach(re => { if (!new RegExp(re).test(css)) bad.push("本周页：theme.css 缺摆位规则 " + re.replace(/\\/g, "")); });
@@ -1073,6 +1078,52 @@ function unitChecks() {
       if (ev(+4, 80, 80, 30, 4).ok || !ev(+4, 80, 80, 30, 4).veto) bad.push("队友信任跌破 35 应一票否决");
       if (!ev(-20, 30, 30, 30, 0, { wonTitle: true }).ok) bad.push("今年冠军应铁续约");
       if (ev(-7, 50, 50, 50, 1).ok || !ev(-7, 50, 50, 50, 1, { aw: "mvp" }).ok) bad.push("年度 MVP 的 +12 没进式子");
+
+      /* 2026-09-10 玩家实锤：「我的替补合同是第一赛段的，我第二赛段是重签的，
+         但我第二赛段前已经从替补拉到首发了，但他还是给我替补合同，穷的我吃不起火锅了」。
+         根子有两处：confirmStarter 只翻 promoted、没改 S.offerKind；
+         contractCheck 的续约报价直接抄 old.tier、薪水只乘 1.02~1.35 的涨幅——
+         而首发档 0.80 / 替补档 0.55 差 1.45 倍，顶格涨都够不着。
+         这两条各钉一次。 */
+      {
+        const k0 = S.offerKind, u0 = S.understudy, pr0 = S.promoted;
+        // ① 从替补席转正，身份要跟着变
+        S.offerKind = "sub"; S.understudy = { id: "老首发" }; S.promoted = false;
+        A.confirmStarter("");
+        if (S.offerKind !== "start") bad.push("转正之后 offerKind 还是 sub——续约会继续按替补给钱");
+        if (S.understudy) bad.push("转正之后 understudy 没清");
+
+        // ② 转正后重签，档次和薪水都要按首发定
+        // 用这一局真实存在的队，别造一个 world 里没有的名字（myRoster 会炸）。
+        // left 给 1：contractCheck 进门先 left--，减到 0 才算到期。
+        // 今年拿了联赛冠军 → 铁续约，把「会不会被放走」这个变量从测试里排除掉。
+        const c0 = S.contract, pend0 = S.pendingRenew, lg0 = S.career.lgYears;
+        S.career.lgYears = ((S.career.lgYears) || []).concat([S.si]);
+        S.contract = { salary: 100, buyout: 600, tier: "sub", clubTier: "top", left: 1, team: S.team };
+        S.offerKind = "start"; S.understudy = null; S.promoted = true;
+        S.pendingRenew = null;
+        A.contractCheck();
+        const r = S.pendingRenew;
+        if (!r) bad.push("转正后到期没给续约报价");
+        else {
+          if (r.tier === "sub") bad.push("转正后重签，合同档次还是「替补」");
+          const ratio = A.DEAL_TIERS.start.mul / A.DEAL_TIERS.sub.mul;
+          if (!(r.salary >= Math.round(100 * ratio))) {
+            bad.push(`转正后重签还是替补价：新薪 ${r.salary}，至少该到首发档的 ${Math.round(100 * ratio)}`);
+          }
+        }
+        // ③ 一直是替补的人，续约不该白涨到首发档
+        S.contract = { salary: 100, buyout: 600, tier: "sub", clubTier: "top", left: 1, team: S.team };
+        S.offerKind = "sub"; S.understudy = { id: "老首发" }; S.promoted = false;
+        S.pendingRenew = null;
+        A.contractCheck();
+        const r2 = S.pendingRenew;
+        if (r2 && r2.tier !== "sub") bad.push("还在替补席的人，续约档次被错误升成首发");
+        if (r2 && r2.salary > 140) bad.push(`还在替补席却涨到 ${r2.salary}（涨幅上限 1.35，应 ≤135）`);
+
+        S.contract = c0; S.pendingRenew = pend0; S.career.lgYears = lg0;
+        S.offerKind = k0; S.understudy = u0; S.promoted = pr0;
+      }
       // 队魂按赛段数：老档从尾巴往前数同一支队；新档按加入时的 log 长度
       const log0 = S.career.log, team0 = S.team, tss0 = S.teamSinceSplit;
       S.career.log = [{ team: "A" }, { team: "A" }, { team: "B" }, { team: "B" }]; S.team = "B"; S.teamSinceSplit = undefined;
@@ -1524,7 +1575,7 @@ const BALL_WORDS = ["球队", "球员", "球迷", "球星", "球场", "赢球", 
     return fs.statSync(fp).isDirectory() ? walk(fp) : (f.endsWith(".ts") ? [fp] : []);
   });
   for (const fp of walk(dir)) {
-    const lines = fs.readFileSync(fp, "utf8").split("\n");
+    const lines = fs.readFileSync(fp, "utf8").replace(/\r\n/g, "\n").split("\n");
     let inLog = false;
     lines.forEach((ln: string, i: number) => {
       if (/export const CHANGELOG\s*=/.test(ln)) inLog = true;
@@ -1609,7 +1660,7 @@ const LEAGUE_OK: Record<string, string> = {
   for (const fp of walk(dir)) {
     const base = path.basename(fp);
     if (SKIP_FILES.includes(base) || fp.includes(path.sep + "gen" + path.sep)) continue;
-    const raw = fs.readFileSync(fp, "utf8");
+    const raw = fs.readFileSync(fp, "utf8").replace(/\r\n/g, "\n");
     const lines = raw.split("\n");
     // 更新日志那一段整块跳过：它是「当时上线了什么」的记录，不是活文案
     let logFrom = -1, logTo = -1;

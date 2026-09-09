@@ -131,15 +131,62 @@ export function drawShareCard(){
   g.font=FONT(600,30); g.fillStyle=CO.cyan;
   g.fillText(idLine,72,y);
 
-  // 冠军
+  /* 冠军：按分量分三档画，不再一把梭成逗号列表。
+     玩家实锤「世界赛的夺冠明明是更重要的事情，但重点被放在了下面的联赛成绩」——
+     原来 join("、") 让「S16 世界赛」和「S14 PCS夏季赛」同字号同颜色，
+     世界冠军就这么被地区赛季淹掉了。三档：世界赛最大、MSI 次之、联赛压成灰字小号。 */
   const own=((S.career as any)&&(S.career as any).titles)||[], ring=ringTitles();
+  const all=own.concat(ring.map(t=>t+"（随队）"));
+  const isW=(t:string)=>/世界赛/.test(t), isM=(t:string)=>/MSI/.test(t);
+  const yr=(t:string)=>(String(t).match(/^S\d+/)||[""])[0];        // "S16 世界赛" → "S16"
+  const wT=all.filter(isW), mT=all.filter(isM), lT=all.filter(t=>!isW(t)&&!isM(t));
   y+=64;
-  if(own.length||ring.length){
-    g.font=FONT(400,26); g.fillStyle=CO.ink3; g.fillText("冠军",72,y);
-    g.font=FONT(600,26); g.fillStyle=CO.gold;
-    y+=wrap(g,own.concat(ring.map(t=>t+"（随队）")).join("、"),72,y+40,W-144,40,3)*40+40;
-  }else{
+  if(!all.length){
     g.font=FONT(400,26); g.fillStyle=CO.ink3; g.fillText("还没有冠军",72,y); y+=40;
+  }else{
+    if(wT.length){
+      g.font=FONT(400,24); g.fillStyle=CO.ink3; g.fillText("世界赛冠军",72,y); y+=56;
+      g.font=FONT(700,46); g.fillStyle=CO.gold;
+      const head=wT.length>1?`${wT.length} 冠`:"冠军";
+      const hw=g.measureText(head).width;      // 必须在切字体之前量：measureText 看的是当前 g.font
+      g.fillText(head,72,y);
+      g.font=FONT(600,30); g.fillStyle=CO.ink;
+      g.fillText(wT.map(yr).join(" · "),72+hw+24,y);
+      y+=26;
+    }
+    if(mT.length){
+      y+=30;
+      g.font=FONT(600,30); g.fillStyle=CO.gold;
+      const mh=`MSI ${mT.length>1?mT.length+" 冠":"冠军"}`;
+      const mw=g.measureText(mh).width;        // 同上：切字体之前量
+      g.fillText(mh,72,y);
+      g.font=FONT(400,26); g.fillStyle=CO.ink2;
+      g.fillText(mT.map(yr).join(" · "),72+mw+20,y);
+    }
+    if(lT.length){
+      /* 有国际冠军时联赛压成灰字小号（别抢世界赛的戏）；
+         一座国际冠军都没有时它就是这段生涯的全部——升成主角，
+         否则「无冠但拿过三个联赛冠军」的名片会变成一片灰。 */
+      const solo=!wT.length&&!mT.length;
+      y+=solo?0:46;
+      g.font=FONT(400,solo?24:24); g.fillStyle=CO.ink3;
+      g.fillText(solo?"联赛冠军":`联赛及其他 ${lT.length} 座`,72,y);
+      if(solo){
+        y+=56;
+        g.font=FONT(700,46); g.fillStyle=CO.gold;
+        const lh=lT.length>1?`${lT.length} 冠`:"冠军";
+        const lw=g.measureText(lh).width;
+        g.fillText(lh,72,y);
+        g.font=FONT(600,26); g.fillStyle=CO.ink2;
+        y+=wrap(g,lT.join("、"),72+lw+24,y,W-144-lw-24,34,2)*34-34+6;
+      }else{
+        /* 列表另起一行走整宽：挂在标签右边时只剩三分之一的宽度，
+           wrap 是按字符断的，会把「S18」断成「S1 / 8」。 */
+        g.font=FONT(400,23); g.fillStyle=CO.ink3;
+        y+=wrap(g,lT.join("、"),72,y+34,W-144,32,2)*32+2;
+      }
+    }
+    y+=40;
   }
 
   // 逐年轨迹
@@ -153,7 +200,9 @@ export function drawShareCard(){
   /* 行高按剩余空间算，把中间铺满：底部分隔线在 H-270，往上留统计块 132 + 间距 30。
      原来行高写死 74，五年的名片中间会空出一大块。 */
   const avail=(H-270-40)-y-132-30-bondH;
-  const rh=Math.max(56,Math.min(112,Math.floor(avail/Math.max(1,rows.length))));
+  /* 上限 112 → 84：八年的名片里逐年表能吃掉 896px，比冠军区还大一倍，
+     而这张表大部分是常规赛名次——不是玩家要发出去的东西。 */
+  const rh=Math.max(56,Math.min(84,Math.floor(avail/Math.max(1,rows.length))));
   rows.forEach((r,i)=>{
     const yy=y+i*rh;
     g.fillStyle=r.won?"#1A2A1E":CO.panel; roundRect(g,72,yy,W-144,rh-10,10); g.fill();

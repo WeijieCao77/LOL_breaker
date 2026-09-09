@@ -3533,6 +3533,7 @@ header.top.compact>.theme-top{display:none}
     S.understudy = null;
     S.benchLock = false;
     S.loseStreak = 0;
+    if (S.offerKind === "sub") S.offerKind = "start";
     const t = myTeam();
     if (t && !t.players.some((q) => q.me) && inc) {
       let d = false;
@@ -6348,6 +6349,8 @@ header.top.compact>.theme-top{display:none}
     <div class="ru-eyebrow" style="text-align:center">合同到期 · 续约报价</div>
     <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:6px">${teamLogo(r.team, 22)} <b>${r.team}</b> 想和你续约</div>
     <p class="note" style="text-align:center;margin:0 0 12px">${r.wonTitle ? "你捧回了冠军——他们不想让你走。" : "你的表现值得一份新合同。"}</p>
+    ${r.upgraded ? `<p class="note" style="text-align:center;margin:-6px 0 12px;color:var(--gold-hi)">
+      上一份还是<b>替补合同</b>，这一份按<b>首发</b>重新定价。</p>` : ""}
     <div class="grid g2" style="margin:0 0 12px">
       <div class="ver"><div class="k">新赛段薪资</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${r.salary !== void 0 ? wanHtml(r.salary) : "—"}${up(r.oldSalary, r.salary)}</div>${r.salary !== void 0 ? `<div class="k" style="font-size:10px">${yearPayText(r.salary)}${r.oldSalary !== void 0 ? ` · 原 ${wanText(r.oldSalary)}/赛段` : ""}</div>` : ""}</div>
       <div class="ver"><div class="k">年限</div><div class="v mono" style="font-size:20px">${r.years}<small> 个赛段</small></div><div class="k" style="font-size:10px;line-height:1.4">${contractSpanText(r.years)}</div></div>
@@ -8112,16 +8115,20 @@ header.top.compact>.theme-top{display:none}
     if (R.ok) {
       const raise = clamp(1.12 + (ovr - teamAvg) * 0.02 + (wonTitle ? 0.12 : 0), 1.02, 1.35);
       const old = S.contract;
-      const sal = old.salary !== void 0 ? capRaise(old.salary * raise, old.salary, old.clubTier) : void 0;
+      const nowSub = S.offerKind === "sub" || !!S.understudy && !S.promoted;
+      const upgrade = old.tier === "sub" && !nowSub ? DEAL_TIERS.start.mul / DEAL_TIERS.sub.mul : 1;
+      const base = old.salary !== void 0 ? old.salary * upgrade : void 0;
+      const sal = base !== void 0 ? capRaise(base * raise, old.salary, old.clubTier) : void 0;
       const k = buyoutRatio(old);
       S.pendingRenew = {
         team: S.team,
         years: 2,
         salary: sal,
         buyout: sal !== void 0 ? Math.round(sal * k) : old.buyout !== void 0 ? old.buyout : void 0,
-        tier: old.tier,
+        tier: upgrade > 1 ? "start" : old.tier,
         grade: old.grade,
         clubTier: old.clubTier,
+        upgraded: upgrade > 1,
         wonTitle,
         oldSalary: old.salary,
         oldBuyout: old.buyout,
@@ -15980,18 +15987,65 @@ header.top.compact>.theme-top{display:none}
     g.fillStyle = CO.cyan;
     g.fillText(idLine, 72, y);
     const own = S.career && S.career.titles || [], ring = ringTitles();
+    const all = own.concat(ring.map((t) => t + "（随队）"));
+    const isW = (t) => /世界赛/.test(t), isM = (t) => /MSI/.test(t);
+    const yr = (t) => (String(t).match(/^S\d+/) || [""])[0];
+    const wT = all.filter(isW), mT = all.filter(isM), lT = all.filter((t) => !isW(t) && !isM(t));
     y += 64;
-    if (own.length || ring.length) {
-      g.font = FONT(400, 26);
-      g.fillStyle = CO.ink3;
-      g.fillText("冠军", 72, y);
-      g.font = FONT(600, 26);
-      g.fillStyle = CO.gold;
-      y += wrap(g, own.concat(ring.map((t) => t + "（随队）")).join("、"), 72, y + 40, W - 144, 40, 3) * 40 + 40;
-    } else {
+    if (!all.length) {
       g.font = FONT(400, 26);
       g.fillStyle = CO.ink3;
       g.fillText("还没有冠军", 72, y);
+      y += 40;
+    } else {
+      if (wT.length) {
+        g.font = FONT(400, 24);
+        g.fillStyle = CO.ink3;
+        g.fillText("世界赛冠军", 72, y);
+        y += 56;
+        g.font = FONT(700, 46);
+        g.fillStyle = CO.gold;
+        const head = wT.length > 1 ? `${wT.length} 冠` : "冠军";
+        const hw = g.measureText(head).width;
+        g.fillText(head, 72, y);
+        g.font = FONT(600, 30);
+        g.fillStyle = CO.ink;
+        g.fillText(wT.map(yr).join(" · "), 72 + hw + 24, y);
+        y += 26;
+      }
+      if (mT.length) {
+        y += 30;
+        g.font = FONT(600, 30);
+        g.fillStyle = CO.gold;
+        const mh = `MSI ${mT.length > 1 ? mT.length + " 冠" : "冠军"}`;
+        const mw = g.measureText(mh).width;
+        g.fillText(mh, 72, y);
+        g.font = FONT(400, 26);
+        g.fillStyle = CO.ink2;
+        g.fillText(mT.map(yr).join(" · "), 72 + mw + 20, y);
+      }
+      if (lT.length) {
+        const solo = !wT.length && !mT.length;
+        y += solo ? 0 : 46;
+        g.font = FONT(400, solo ? 24 : 24);
+        g.fillStyle = CO.ink3;
+        g.fillText(solo ? "联赛冠军" : `联赛及其他 ${lT.length} 座`, 72, y);
+        if (solo) {
+          y += 56;
+          g.font = FONT(700, 46);
+          g.fillStyle = CO.gold;
+          const lh = lT.length > 1 ? `${lT.length} 冠` : "冠军";
+          const lw = g.measureText(lh).width;
+          g.fillText(lh, 72, y);
+          g.font = FONT(600, 26);
+          g.fillStyle = CO.ink2;
+          y += wrap(g, lT.join("、"), 72 + lw + 24, y, W - 144 - lw - 24, 34, 2) * 34 - 34 + 6;
+        } else {
+          g.font = FONT(400, 23);
+          g.fillStyle = CO.ink3;
+          y += wrap(g, lT.join("、"), 72, y + 34, W - 144, 32, 2) * 32 + 2;
+        }
+      }
       y += 40;
     }
     y += 34;
@@ -15999,7 +16053,7 @@ header.top.compact>.theme-top{display:none}
     const bond = bondCardLines();
     const bondH = bond.length ? 26 + bond.length * 40 : 0;
     const avail = H - 270 - 40 - y - 132 - 30 - bondH;
-    const rh = Math.max(56, Math.min(112, Math.floor(avail / Math.max(1, rows.length))));
+    const rh = Math.max(56, Math.min(84, Math.floor(avail / Math.max(1, rows.length))));
     rows.forEach((r, i) => {
       const yy = y + i * rh;
       g.fillStyle = r.won ? "#1A2A1E" : CO.panel;
@@ -16260,9 +16314,15 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
-    { v: "v20260909x", at: "2026-09-09", items: [
+    { v: "v20260910b", at: "2026-09-10", items: [
       "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
       "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+    ] },
+    { v: "v20260910a", at: "2026-09-10", items: [
+      "<b>转正之后重签，不再给替补合同</b>（玩家实锤：「我的替补合同是第一赛段的，我第二赛段是重签的，但我第二赛段前已经从替补拉到首发了，但他还是给我替补合同，穷的我吃不起火锅了」）：根子有两处——一是从替补席打上首发时，游戏只翻了一个「已转正」标记，<b>身份字段还停在「替补」</b>，而续约报价、媒体日口径、阵容权重读的都是它；二是续约直接<b>照抄旧合同的档次</b>，薪水只在旧数上乘一个 1.02~1.35 的涨幅——而首发档与替补档差 <b>1.45 倍</b>，顶格涨都够不着。现在续约先按<b>你现在是什么身份</b>定档，升了档就把基准搬到新档再谈涨幅，续约卡上会写明「上一份还是替补合同，这一份按首发重新定价」。<b>只升不降</b>：被打回替补席不会因此在续约时砍薪。三条自检钉住：转正要改身份、重签要升档、还在替补席的不能白升"
+    ] },
+    { v: "v20260909w", at: "2026-09-09", items: [
+      "<b>生涯名片的冠军区重做</b>（玩家实锤：「世界赛的夺冠明明是更重要的事情，但是在名片里重点被放在了下面的联赛成绩」）：原来所有冠军拿逗号串成一行、同字号同颜色，「S16 世界赛」和「S14 PCS夏季赛」一个分量；而占版面最大的是下面那张逐年常规赛名次表（八年能吃掉 896px）——<b>最重的那座奖杯被最轻的信息压住了</b>。现在分三档：<b>世界赛 46px 金色带年份独占一行</b>、MSI 次之、联赛压成灰字小号只报座数；一座国际冠军都没有时联赛自动升为主角，不会变成一片灰。逐年表行高上限 112→84，省下的高度还给冠军区"
     ] },
     { v: "v20260909v", at: "2026-09-09", items: [
       "<b>年度颁奖夜的团队加分二次校准</b>（玩家实锤：「我的队伍 LNG 都拿了好多次冠军，黄金之路了，但是年度一阵二阵只有一个辅助入选，这不科学」）。上一版为了治「为什么一阵都是一个战队的」，把团队加分上限从 19 一刀砍到 7.5——但<b>同一次改动还加了「一支队最多占 3 席」那道闸</b>，「包揽五席」已经被闸挡住了，加分不必再兼职当闸。砍过头的代价这次量出来了：合成黄金之路（联赛 + MSI + 世界赛全拿）的 20 个赛季里，一阵平均只占 <b>2.25 席</b>，<b>6 次只拿到 1 席</b>——玩家看到的就是这一档",

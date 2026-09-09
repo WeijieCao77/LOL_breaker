@@ -9,6 +9,7 @@ import { addSquad, disruptSynergy } from "./squad";
 import { S } from "./state";
 import { bondSync } from "./bond";
 import { addTraitPt, traitMul } from "./trait";
+import { DEAL_TIERS } from "./tryout";
 
 /* ================= 队友信任度 · 更衣室 · 合同与经济 ================= */
 
@@ -335,13 +336,24 @@ export function contractCheck(){
     const raise=clamp(1.12+(ovr-teamAvg)*0.02+(wonTitle?0.12:0),1.02,1.35);
     const old=S.contract;
     // 封涨幅、不降薪：已经高于上限的老合同就停在原地，不会被倒扣回去
-    const sal=old.salary!==undefined?capRaise(old.salary*raise,old.salary,old.clubTier):undefined;
+    /* 2026-09-10 玩家实锤：「我的替补合同是第一赛段的，我第二赛段是重签的，
+       但我第二赛段前已经从替补拉到首发了，但他还是给我替补合同，穷的我吃不起火锅了」。
+       原来这里 tier 直接抄 old.tier、薪水只在旧数上乘一个 1.02~1.35 的涨幅——
+       而首发档 0.80 与替补档 0.55 之间差 1.45 倍，顶格涨都够不着。
+       结果：替补合同签进来的人，哪怕早就打上首发，重签还是替补价。
+       现在续约先按**现在的身份**定档：升了档就把基准从旧档搬到新档，再谈涨幅。
+       只升不降——这一版不因为被打回替补席就在续约时砍薪，那是另一条叙事线。 */
+    const nowSub = S.offerKind==="sub" || (!!S.understudy && !S.promoted);
+    const upgrade = (old.tier==="sub" && !nowSub) ? (DEAL_TIERS.start.mul/DEAL_TIERS.sub.mul) : 1;
+    const base = old.salary!==undefined ? old.salary*upgrade : undefined;
+    const sal=base!==undefined?capRaise(base*raise,old.salary,old.clubTier):undefined;
     const k=buyoutRatio(old);
     S.pendingRenew={
       team:S.team, years:2,
       salary: sal,
       buyout: (sal!==undefined)?Math.round(sal*k):(old.buyout!==undefined?old.buyout:undefined),
-      tier:old.tier, grade:old.grade, clubTier:old.clubTier,
+      tier:(upgrade>1?"start":old.tier), grade:old.grade, clubTier:old.clubTier,
+      upgraded: upgrade>1,
       wonTitle, oldSalary:old.salary, oldBuyout:old.buyout,
       score:Math.round(R.total), need:R.need
     };
