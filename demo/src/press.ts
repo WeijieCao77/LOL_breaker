@@ -395,20 +395,29 @@ export function pressIssue(){
   S.pressIssues.unshift(issue);
   if(S.pressIssues.length>6) S.pressIssues.pop();
   const note=`<b>《电竞周报》第 ${issue.n} 期出刊</b>：${issue.heads[0].t}`;
-  pushEvent(`${note}<br><span style="color:var(--ink-3)">完整版面在「本周」页。周报只写真实发生过的事。</span>`,"info","周报");
+  pushEvent(`${note}<br><span style="color:var(--ink-3)">本期在「本周」页右栏，往期在「新闻」栏目。周报只写真实发生过的事。</span>`,"info","周报");
   if(!S.career&&true) preLog(note,"info");
 }
-export function pressCard(){
+/* 周报有两个落点，各干各的（作者拍板 2026-09-09）：
+   · mode "now"（默认）——「本周」页，贴在「下一场」旁边，只登本期。周报本来就是
+     每周的事，和这周打谁摆在一起才有「翻开报纸看看圈子在写谁」的味道；顺带把
+     「下一场」在宽屏上空出来的半边填上（作者原话：「放在下一场板块的隔壁做一个填充」）。
+   · mode "all"——「新闻」页，本期加所有往期的完整版面，是存档不是提要。
+   两边不重复：本期在「本周」，往期在「新闻」。 */
+export function pressCard(mode?){
+  const all=mode==="all";
   const list=S.pressIssues||[];
   if(!list.length) return `<div class="card"><h2>电竞周报</h2>
     <p class="note">编辑部正在收集素材——只报道真实发生的事，第一期很快出刊。</p></div>`;
-  const cur=list[0];
+  const cur=list[0], past=list.slice(1);
+  const heads=(x)=>x.heads.map(h=>`<p style="margin:7px 0"><span class="tag">${h.c}</span>　${h.t}</p>`).join("");
   return `<div class="card"><h2>电竞周报<em>第 ${cur.n} 期 · ${cur.label}</em></h2>
-    ${cur.heads.map(h=>`<p style="margin:7px 0"><span class="tag">${h.c}</span>　${h.t}</p>`).join("")}
+    ${heads(cur)}
     ${cur.noMe!=null?`<p class="note" style="margin-top:8px;color:var(--ink-3)">本期没有你的名字——圈子还没注意到 ${meName()}
       （圈内关注度 <b>${cur.noMe}</b>，到 45 会开始有人写你）。打杯赛、涨粉、多打有人看的比赛，都算数。</p>`:""}
-    ${list.length>1?`<p class="note" style="margin-top:10px;color:var(--ink-3)">往期：${
-      list.slice(1).map(x=>`第${x.n}期`).join(" · ")}（${list.slice(1)[0].heads[0].t.slice(0,18)}…）</p>`:""}
+    ${all
+      ? past.map(x=>`<div class="pastissue"><h3>第 ${x.n} 期<em>${x.label}</em></h3>${heads(x)}</div>`).join("")
+      : (past.length?`<p class="note" style="margin-top:10px;color:var(--ink-3)">往期 ${past.length} 期在「新闻」栏目里，随时能翻。</p>`:"")}
     <p class="note" style="color:var(--ink-3)">周报只使用真实比赛与行动证据，报道效果在出刊时结算一次。</p></div>`;
 }
 

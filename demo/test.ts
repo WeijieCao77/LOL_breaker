@@ -722,6 +722,86 @@ function unitChecks() {
       if (wideAt < base) bad.push("桌面密度：整块写在基准值 " + k.trim() + " 前面，媒体查询不加权重，一条都不会生效");
     });
   } catch (e) { bad.push("出口条 / 桌面密度自检没跑起来：" + e); }
+  /* 「本周」页的主列 + 右栏（作者拍板 2026-09-09，参照 VAL Player）。
+     jsdom 不算布局，所以这里量的是结构和源码顺序，不是像素。 */
+  try {
+    const ms = fs.readFileSync(path.join(HERE, "src", "main.ts"), "utf8");
+    const g = ms.indexOf('<div class="wkgrid">');
+    if (g < 0) bad.push("本周页：找不到 .wkgrid（主列 + 右栏的容器）");
+    else {
+      // 源码顺序 = 窄屏顺序：下一场 → 行动卡 → 周报。手机上先看对手再动手，最后才是报纸。
+      const iNext = ms.indexOf('class="wk-next"', g);
+      const iMain = ms.indexOf('class="wk-main"', g);
+      const iPress = ms.indexOf('class="wk-press"', g);
+      if (!(iNext > 0 && iMain > iNext && iPress > iMain))
+        bad.push(`本周页：单列顺序该是「下一场 → 行动 → 周报」，实得 next=${iNext} main=${iMain} press=${iPress}`);
+      // 行动卡（含出口条）必须整个装在主列里，否则宽屏上它会跑到右栏底下
+      const dock = ms.indexOf('<div class="row dock">', g);
+      if (!(dock > iMain && dock < iPress)) bad.push("本周页：行动卡的出口条不在 .wk-main 里");
+    }
+    const css = fs.readFileSync(path.join(HERE, "theme.css"), "utf8");
+    // 三块的摆位都得写全，少一条就会有一块掉回文档流、压到别的格子上
+    ["\.wkgrid>\.wk-main\{grid-column:1", "\.wkgrid>\.wk-next\{grid-column:2", "\.wkgrid>\.wk-press\{grid-column:2"]
+      .forEach(re => { if (!new RegExp(re).test(css)) bad.push("本周页：theme.css 缺摆位规则 " + re.replace(/\\/g, "")); });
+    // 分栏必须在媒体查询里——单列是基准，宽屏才分。写反了手机上会变成 360px 的右栏
+    const wide = css.indexOf("@media(min-width:1180px){\n  /* 360px 的右栏");
+    const base = css.indexOf(".wkgrid{display:grid");
+    if (base < 0 || wide < 0 || wide < base) bad.push("本周页：分栏没写在 @media(min-width:1180px) 里，或写在了基准值前面");
+    /* 右栏「最近的比赛」的「拆解」按钮点了要真能开——data-pmv 只是把 S.pmView 设上，
+       画出来的是 pmReplayCard()，而它原来只挂在 tabContent 上，「本周」这一页没有。
+       第一版就是这么漏的：按钮在、绑定在、点下去什么也不发生。 */
+    if (g >= 0) {
+      const act = ms.indexOf("return `${champ}", g > 0 ? 0 : 0);
+      const seasonRet = ms.lastIndexOf("return `${champ}", g);
+      if (seasonRet < 0 || ms.indexOf("pmReplayCard()", seasonRet) < 0 || ms.indexOf("pmReplayCard()", seasonRet) > g)
+        bad.push("本周页：viewSeason 没画 pmReplayCard，右栏的「拆解」按钮点了不会有反应");
+      if (ms.indexOf('data-pmv', ms.indexOf("export function railRecent")) < 0)
+        bad.push("最近的比赛：没给每场挂「拆解」按钮（data-pmv）");
+    }
+    /* 封面页页头：标语必须排在主视觉**下面**。原来图高和 padding-top 各写一条 clamp，
+       两条曲线随宽度分开走，1320px 上标语正好压在图里那行「电竞选手生涯模拟」上。
+       现在两者共用 --art，文字起点 = 图高 + 一段固定间距，宽度再怎么变都叠不上去。 */
+    if (!/header\.top:not\(\.compact\)\{--art:/.test(css))
+      bad.push("封面页头：没有 --art（图高和文字起点必须由同一个值决定）");
+    if (!/padding-top:calc\(var\(--art\)/.test(css))
+      bad.push("封面页头：文字起点没有跟着 --art 走，标语会压回图上");
+    if (!/\.keyart\{bottom:auto;height:var\(--art\)\}/.test(css))
+      bad.push("封面页头：主视觉没有用 --art 定高，它会铺满整个页头、把标语盖在图里");
+  } catch (e) { bad.push("本周页布局自检没跑起来：" + e); }
+  /* 存档卡右半边：只准读存档 blob，一个全局都不许碰（那是别人那一局的数据）。
+     传一个纯对象进去——如果实现里偷偷用了 S / titleCount() 之类，这里就炸。 */
+  {
+    const blob = { name: "阿甲", pos: "mid", si: 1, week: 3, split: 1, age: 21, team: "EDG",
+      homeLeague: "LPL", attrs: { 操作: 70, 运营: 70, 心态: 70, 指挥: 70, 体质: 70 },
+      ach: { a: 1, b: 1 }, career: { w: 10, l: 5, titles: ["S13 LPL春季赛"], worldsYears: [1] } };
+    const html = A.saveStats(blob);
+    ["EDG", "S13 LPL春季赛", "10−5", "阿甲".slice(0, 0) || "冠军", "成就"].forEach(k => {
+      if (k && html.indexOf(k) < 0) bad.push("存档卡数据：少了「" + k + "」");
+    });
+    if (A.saveStats({}).indexOf("undefined") >= 0) bad.push("存档卡数据：空存档吐出了 undefined");
+    // 职业前的档没有 career，也得有东西可看，不能是空白
+    const pre = A.saveStats({ name: "乙", pos: "top", si: 0, age: 18, pre: { week: 7 },
+      attrs: { 操作: 50, 运营: 50, 心态: 50, 指挥: 50, 体质: 50 } });
+    if (pre.indexOf("职业前") < 0) bad.push("存档卡数据：职业前的存档没写进度");
+    if (A.saveSummary(blob).indexOf("21 岁") < 0) bad.push("存档卡摘要：年龄从格子里挪出来了，摘要行却没接住");
+  }
+  /* 周报两个落点，各干各的：本期在「本周」，往期在「新闻」，两边不重复 */
+  {
+    const S: any = A.S();
+    const bak = S.pressIssues;
+    S.pressIssues = [
+      { n: 9, label: "本期", heads: [{ c: "赛事战况", t: "本期头条" }] },
+      { n: 8, label: "上期", heads: [{ c: "选手个人", t: "往期头条甲" }] },
+      { n: 7, label: "上上期", heads: [{ c: "转会风声", t: "往期头条乙" }] }
+    ];
+    const now = A.pressCard(), all = A.pressCard("all");
+    if (!/本期头条/.test(now)) bad.push("周报：本周页那份没登本期头条");
+    if (/往期头条甲/.test(now)) bad.push("周报：本周页那份把往期版面也铺出来了（那是新闻页的事）");
+    if (!/在「新闻」栏目里/.test(now)) bad.push("周报：本周页那份没说往期去哪儿翻");
+    if (!/往期头条甲/.test(all) || !/往期头条乙/.test(all)) bad.push("周报：新闻页那份没把往期版面登全");
+    if (!/本期头条/.test(all)) bad.push("周报：新闻页那份连本期都没有");
+    S.pressIssues = bak;
+  }
   const dirty = { S: { name: "x", log: ['<div class="hi">ok</div> <span style="color:var(--cyan)">c</span> <b>b</b><br>',
     '<img src=x onerror=alert(1)><a href="https://evil">link</a><div style="position:fixed;inset:0;background:#000">cover</div><span class="hi" onclick="x()">t</span><!-- c --><script>bad()</script>'] } };
   const out = A.sanitizeSave(dirty).S.log;

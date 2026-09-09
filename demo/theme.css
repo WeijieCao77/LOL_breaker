@@ -1178,6 +1178,25 @@ ul.dealfx li::marker{color:var(--ink-3)}
   font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
 .savecont{border-color:rgba(var(--gold-rgb),.5)}
 .savecont h3{color:var(--gold-hi);font-size:15px;margin:2px 0 12px}
+/* 存档卡右半边原来是空的（作者实锤 2026-09-09）。左边还是「这是哪一局 + 两颗按钮」，
+   右边摆这一局的实际数据，用的是顶部 HUD 那套 .k/.v，不新造一种样式。
+   窄屏一列：数据排在按钮下面，不跟按钮抢位置。 */
+.savegrid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.savemain .note{margin-bottom:0}
+.savestats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;
+  background:var(--line);border:1px solid var(--line);align-self:start}
+.savestats>div{background:linear-gradient(180deg,var(--panel),rgba(var(--void-rgb),.85));padding:9px 12px;min-width:0}
+.savestats .k{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
+  font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
+.savestats .v{font-size:15px;font-weight:650;margin-top:2px;color:var(--gold-hi);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.savestats .v small{font-size:10.5px;color:var(--ink-3);font-weight:400}
+@media(min-width:820px){
+  /* 左边那半边只放得下一行标题加两颗按钮，给它 minmax(0,340px) 就够；
+     余下的宽度全给数据格，正好是作者说的「右边都是空的」那一块。 */
+  .savegrid{grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:18px;align-items:start}
+  .savestats{grid-template-columns:repeat(auto-fit,minmax(132px,1fr))}
+}
 .savebad{border-color:rgba(190,90,80,.5)}
 
 @media (max-width:640px){
@@ -1345,13 +1364,20 @@ header.top .keyart{position:absolute;inset:0;z-index:0;pointer-events:none;
   background:url("/img/keyart.jpg") center 12% / cover no-repeat;opacity:.9;
   -webkit-mask-image:linear-gradient(180deg,rgba(var(--shadow-rgb),1) 0%,rgba(var(--shadow-rgb),.9) 60%,rgba(var(--shadow-rgb),0) 100%);
           mask-image:linear-gradient(180deg,rgba(var(--shadow-rgb),1) 0%,rgba(var(--shadow-rgb),.9) 60%,rgba(var(--shadow-rgb),0) 100%)}
-/* 图上已经有「破晓 · 电竞选手生涯模拟」的标题，页头铺开时自己的字标就让位；标语和四个词压在图的下沿 */
-header.top:not(.compact){min-height:clamp(300px,27vw,440px);padding-top:clamp(190px,18vw,300px);padding-bottom:18px}
+/* 图上已经有「破晓 · 电竞选手生涯模拟」的标题，页头铺开时自己的字标就让位。
+   二改（作者实锤 2026-09-09 截图）：原来标语是**压在图上**的，min-height 和 padding-top
+   各自一条 clamp，而图是 cover 裁的——两条曲线随宽度分开走，1320px 上标语正好压在图里
+   那行「电 竞 选 手 生 涯 模 拟」上，两行字叠成一团。
+   现在改成**图占一段固定高度，标语排在图下面**：--art 同时决定图的高度和文字的起点，
+   文字起点 = 图高 + 10px，无论多宽都不可能再叠上去（自检按这个不变式量）。 */
+header.top:not(.compact){--art:clamp(200px,22vw,360px);
+  min-height:0;padding-top:calc(var(--art) + 10px);padding-bottom:16px}
+header.top:not(.compact) .keyart{bottom:auto;height:var(--art)}
 header.top:not(.compact) .brand{display:none}
 header.top>*:not(.keyart){position:relative;z-index:1}
 header.top:not(.compact) .tagline,header.top:not(.compact) .pillars{text-shadow:0 2px 14px rgba(var(--scrim-rgb),.95),0 0 3px rgba(var(--scrim-rgb),.95);padding-left:30px;padding-right:30px}   /* 别贴着图的左沿（玩家点名） */
 header.top.compact .keyart{display:none}
-@media(max-width:560px){header.top .keyart{background-image:url("/img/keyart-m.jpg");background-position:center 22%}header.top:not(.compact){min-height:260px;padding-top:170px}header.top:not(.compact) .tagline,header.top:not(.compact) .pillars{padding-left:16px;padding-right:16px}}
+@media(max-width:560px){header.top .keyart{background-image:url("/img/keyart-m.jpg");background-position:center 22%}header.top:not(.compact){--art:180px}header.top:not(.compact) .tagline,header.top:not(.compact) .pillars{padding-left:16px;padding-right:16px}}
 
 
 /* ---- 竖栏内层 .tabcol：默认 display:contents（横条 / 手机底栏里按钮仍是 .tabs 的直接 flex 项）；
@@ -1634,3 +1660,56 @@ header.top.compact>.theme-top{display:none}
   /* 正文一行超过 ~76 个字就开始难读，和容器多宽无关 */
   .card>.note,.card>p,.gapbar .gt{max-width:76ch}
 }
+
+/* ---- 「本周」页：主列 + 右栏 ----
+   参照 VAL Player 的本周页（作者 2026-09-09 给的图）：要宽度的东西占主列，
+   给你看的东西收进右栏。风格、按钮形状、左侧导航一律不动，只挪位置。
+   断点跟出口条走同一个 1180px：窄于这个宽度退回单列，
+   顺序按源码走——下一场 → 行动 → 周报，和改之前手机上一样。 */
+.wkgrid{display:grid;grid-template-columns:minmax(0,1fr)}
+@media(min-width:1180px){
+  /* 360px 的右栏：周报一行能排 18 个汉字，「下一场」的对阵块也还站得开。
+     align-items:start——右栏两张卡各按自己的高度收口，不跟着主列拉长。 */
+  .wkgrid{grid-template-columns:minmax(0,1fr) 360px;gap:0 16px;align-items:start}
+  .wkgrid>.wk-main{grid-column:1;grid-row:1/span 4}
+  .wkgrid>.wk-next{grid-column:2;grid-row:1}
+  .wkgrid>.wk-coach{grid-column:2;grid-row:2}
+  .wkgrid>.wk-recent{grid-column:2;grid-row:3}
+  .wkgrid>.wk-press{grid-column:2;grid-row:4}
+  /* 右栏窄，这两张卡里的字不跟着宽屏那一档放大，否则一行塞不下几个字 */
+  .wkgrid>.wk-next .note,.wkgrid>.wk-press .note,
+  .wkgrid>.wk-coach .note,.wkgrid>.wk-recent .note{font-size:12.5px}
+  /* 对阵块在 360px 里改成竖排。VAL Player 那张图能把两队并排放一行，是因为它用
+     三个字母的队标（WOL vs BLG）；我们的队名是「EDward Gaming」这种长度，
+     并排就会断成两行、队标和战绩错位。竖排每队各占一行，队名和战力左右分开。 */
+  .wkgrid>.wk-next .next{grid-template-columns:minmax(0,1fr);gap:7px;padding:13px 14px}
+  .wkgrid>.wk-next .next .sd{text-align:left;display:flex;justify-content:space-between;
+    align-items:baseline;gap:10px;min-width:0}
+  .wkgrid>.wk-next .next .sd .nm{font-size:14px;min-width:0}
+  .wkgrid>.wk-next .next .sd .pw{margin-top:0;white-space:nowrap}
+  .wkgrid>.wk-next .next .mid{text-align:left;border-top:1px solid var(--line);padding-top:7px}
+  /* 赛程条在窄栏里横向滚动，别铺成四行——它是「还剩谁没打」，不是这张卡的主角 */
+  .wkgrid>.wk-next .fixt{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .wkgrid>.wk-next .fixt::-webkit-scrollbar{display:none}
+  .wkgrid>.wk-next .fixt .fc{flex:none}
+}
+/* 新闻页的往期版面：本期之后每期一段，靠一条竖线和本期分开 */
+.pastissue{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+.pastissue h3{font-size:13px;color:var(--ink-2);font-weight:600;margin:0 0 4px;
+  display:flex;gap:8px;align-items:baseline}
+.pastissue h3 em{font-style:normal;font-size:11.5px;color:var(--ink-3)}
+
+/* ---- 右栏「最近的比赛」的一行 ----
+   一行五格：轮次 · 对手 · 比分 · 你的评分 · 拆解。对手名字最长，让它吃掉剩下的宽度，
+   其余四格按内容宽度收住，评分和比分用等宽数字，竖着扫下来是对齐的。 */
+.rlog{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)}
+.rl{display:flex;align-items:center;gap:8px;padding:7px 10px;
+  background:linear-gradient(180deg,var(--panel),rgba(var(--void-rgb),.85))}
+.rl .rl-w{flex:none;font-size:10px;color:var(--ink-3);letter-spacing:.04em}
+.rl .rl-op{flex:1 1 auto;min-width:0;font-size:12.5px;color:var(--ink-2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rl .rl-sc{flex:none;font-size:12.5px;font-weight:650}
+.rl .rl-sc.w{color:var(--cyan)} .rl .rl-sc.l{color:var(--red)}
+.rl .rl-r{flex:none;font-size:11.5px;color:var(--ink-3);min-width:32px;text-align:right}
+.rl .rl-no{flex:none;font-size:11px;color:var(--ink-3);padding:0 8px}
+.rl .btn.sm{flex:none;padding:3px 9px;font-size:11px}
