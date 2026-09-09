@@ -2276,54 +2276,11 @@ header.top.compact>.theme-top{display:none}
       syncRelations();
     }
   }
-  function squadBase(players) {
-    let s = 0, wt = 0;
-    players.forEach((p) => {
-      const r = p.r || p;
-      const w = p.me ? S.offerKind === "core" ? 1.45 : 1.18 : 1;
-      const fm = p.me ? myFormMul() : formMul(p);
-      const ih = !p.me && true ? mateInjuryHit(p) : 0;
-      s += (r.操作 * 0.34 + r.运营 * 0.28 + r.心态 * 0.14 + r.体质 * 0.1 + ih) * fm * w;
-      wt += w;
-    });
-    return s / wt;
-  }
-  function squadWeights(players, fatigue, team) {
-    const cmd = Math.max(...players.map((p) => (p.r || p).指挥 || 50));
-    const mine = players.some((x) => x.me) || S.team && team && team.name === S.team || S.team && !team && S.squad && players === myRoster();
-    return [
-      // 默契要把「队友之间的关系」算进去。relMod() 早就写好了，
-      // 注释都写着「有一对闹掰，整队都别想顺」，但一直没有任何地方调用它——
-      // 于是更衣室关系是纯装饰的，和「信任」两套数字互相矛盾也没人管。
-      // 语言：在外赛区打比赛，听不懂更衣室就磨不出默契。
-      // 会当地语言是加成，不会是惩罚——这比「不会就没人要你」更贴近现实。
-      {
-        k: "syn",
-        n: "默契",
-        v: mine ? squadOf("syn") : 50,
-        mult: (1 + ((mine ? squadOf("syn") : 50) - 50) / 950) * (mine && true ? relMod() : 1) * (mine && true ? langSyn() : 1)
-      },
-      { k: "tac", n: "战术", v: mine ? squadOf("tac") : 50, mult: 1 + ((mine ? squadOf("tac") : 50) - 50) / 1100 },
-      {
-        k: "mor",
-        n: "士气",
-        v: mine && true ? avgTrust() : 50,
-        mult: 1 + ((mine && true ? avgTrust() : 50) - 50) / 760
-      },
-      // 与 trustMod 同步（减半）
-      { k: "cmd", n: "指挥", v: cmd, mult: 1 + (cmd - 68) / 520 },
-      { k: "fit", n: "体能", v: 100 - clamp(fatigue, 0, 100), mult: 1 - clamp(fatigue, 0, 100) * 22e-4 }
-    ];
-  }
   function squadBreakdown(players, fatigue, verFav, team) {
     players = players || myRoster();
     fatigue = fatigue === void 0 ? S.fatigue : fatigue;
-    let base = squadBase(players);
-    if (verFav) base += players.filter((p) => verFav.includes(p.pos)).length * 0.3;
-    base += dynastyBonus(players);
-    const ws = squadWeights(players, fatigue, team || (players.some((x) => x.me) ? findTeam(S.team) : null));
-    const total = ws.reduce((a, w) => a * w.mult, base);
-    return { base, ws, total };
+    const P = powerParts(players, fatigue, verFav, team || null);
+    return { base: P.base, ws: P.ws, total: P.total, knee: P.knee };
   }
   function sumBit(k, n) {
     const nm = k === "syn" ? "默契" : "战术";
@@ -5200,6 +5157,9 @@ header.top.compact>.theme-top{display:none}
     if (!S.tbuff || !S.tbuff.length) return "";
     return `<div class="buffs">${S.tbuff.map((b) => `<span class="buff ${b.v >= 1 ? "good" : "bad"}">${b.n}<em>${buffEffect(b)}</em><i>${b.left}周</i></span>`).join("")}</div>`;
   }
+  function mfBig() {
+    return !!(S.career && (S.career.worlds || S.career.msi) || cloutOf() >= 62);
+  }
   var RANDOM_EVENTS = [
     /* ================= 伏笔事件（2026-09-04 玩家点名：前期要有会影响后面的事）=================
        职业前每个事件在 S.flags 上留一个标记，职业后由对应的「回响」事件兑现。
@@ -5969,25 +5929,31 @@ header.top.compact>.theme-top{display:none}
         } }
       ]
     },
+    /* 按身份换一套说法（玩家实锤 2026-09-09：「我都 S 赛五冠了、资产三个亿，我心虚他毛啊」）。
+       原来不管你是谁都是同一套词：论坛开帖质疑你打假赛，发律师函还要被写成「心虚」。
+       对一个拿过国际冠军的人，这出戏的前提本身就不成立。
+       试过直接加门槛把它对老将关掉，但自检立刻红了——这个事件是经理信任的一个来源，
+       关掉之后「挂牌队友」又变回摆设（整局教练信任摸不到 60）。
+       所以机制一个数都不动，只换文案：立住了的人走另一套词，律师函也真的管用。 */
     {
       id: "matchfix",
       rec: 0,
       w: 2,
       max: 1,
       when: () => !!S.team && S.fans >= 600 && (S.career && S.career.l || 0) >= 8,
-      q: () => `论坛有个帖子在扒你上一场的走位，说那波送得「太刻意」。`,
-      ctx: "帖子底下已经有人在艾特反假赛的举报邮箱了。",
+      q: () => mfBig() ? `有个营销号把你上一场的走位剪成「假赛实锤」，转发已经过万。` : `论坛有个帖子在扒你上一场的走位，说那波送得「太刻意」。`,
+      ctx: () => mfBig() ? "底下清一色是「就这还用打假赛？」，但转发量还在涨，俱乐部法务已经在问要不要发函。" : "帖子底下已经有人在艾特反假赛的举报邮箱了。",
       a: [
         { t: "逐帧录一期复盘，把那波讲透", g: "hard", e: () => {
           addFat(12);
           addFans(34);
           addStaff("mgr", 5);
-          return "你把决策链讲了二十分钟。原帖删了，俱乐部转发了你的视频。";
+          return mfBig() ? "你把决策链讲了二十分钟，顺手挂了三个同类局面的对比。营销号删号跑路，俱乐部把视频置顶了。" : "你把决策链讲了二十分钟。原帖删了，俱乐部转发了你的视频。";
         } },
         { t: "交给俱乐部公关处理", cost: 60, e: () => {
           if (!pay(60)) return "你手上没这个钱。";
           addFans(6);
-          return "律师函发出去了，帖子没了。但「心虚」两个字也留在了评论区。";
+          return mfBig() ? "律师函当天就到。账号连夜删帖道歉——到了你这个位置，这种帖子活不过一个晚上。" : "律师函发出去了，帖子没了。但「心虚」两个字也留在了评论区。";
         } },
         { t: "不回应，用下一场说话", g: "grind", e: () => {
           addBuff("train", 1.3, 2, "用成绩说话");
@@ -6877,12 +6843,6 @@ header.top.compact>.theme-top{display:none}
     if ((hl === "LEC" || hl === "LCS") && hasCourse("en")) return 2.2;
     return 0;
   }
-  function langSyn() {
-    const hl = S.homeLeague || "LPL";
-    if (hl === "LPL" || hl === "LDL") return 1;
-    const ok = hl === "LCK" ? hasCourse("kr") : hasCourse("en");
-    return ok ? 1.05 : 0.9;
-  }
   function courseTrainMul(dim) {
     if (dim === "心态" && hasCourse("psy")) return 1.25;
     if (dim === "运营" && hasCourse("vod")) return 1.25;
@@ -7065,15 +7025,59 @@ header.top.compact>.theme-top{display:none}
   function streamCut() {
     return STREAM_CUTS[S.streamCutIdx || 0].cut;
   }
+  var STREAM_WEEK_MUL = [1, 0.7, 0.45, 0.3];
+  function streamWeekKey() {
+    const pre = !S.career && S.pre;
+    return pre ? "p" + (S.pre.preYear || 1) + "-" + (S.pre.week || 0) : (S.si || 0) + "-" + (S.split || 0) + "-" + (S.week || 0) + "-" + (S.off ? "o" : "s");
+  }
+  function streamDoneThisWeek() {
+    const w = S.streamWk;
+    return w && w.k === streamWeekKey() ? w.n || 0 : 0;
+  }
+  function streamWeekMul() {
+    const n = streamDoneThisWeek();
+    return n < STREAM_WEEK_MUL.length ? STREAM_WEEK_MUL[n] : 0.2;
+  }
+  function noteStream() {
+    const k = streamWeekKey();
+    S.streamWk = S.streamWk && S.streamWk.k === k ? { k, n: (S.streamWk.n || 0) + 1 } : { k, n: 1 };
+  }
+  var STREAM_SPLIT_FLOOR = 500;
+  var STREAM_SPLIT_MUL = 0.8;
+  var STREAM_OVER_MUL = 0.12;
+  function streamSplitKey() {
+    return !S.career && S.pre ? "p" + (S.pre.preYear || 1) : (S.si || 0) + "-" + (S.split || 0);
+  }
+  function streamSplitCap() {
+    let sal = 0;
+    try {
+      sal = salaryOf() || 0;
+    } catch (e) {
+      sal = 0;
+    }
+    return Math.max(STREAM_SPLIT_FLOOR, sal * STREAM_SPLIT_MUL);
+  }
+  function streamSplitDone() {
+    const w = S.streamSp;
+    return w && w.k === streamSplitKey() ? w.v || 0 : 0;
+  }
+  function noteStreamMoney(v) {
+    const k = streamSplitKey();
+    S.streamSp = S.streamSp && S.streamSp.k === k ? { k, v: (S.streamSp.v || 0) + v } : { k, v };
+  }
+  var STREAM_GIFT = 2.2;
   function streamIncome() {
     const originMul = S.origin === "streamer" ? 1.7 : 1;
     if (S.streamDeal) return S.streamDeal.base * originMul * (1 - streamClubCut());
     const f = Math.min(Math.max(S.fans || 0, 0), 600);
     const heatMul = clamp(0.45 + (S.heat || 0) / 730, 0.45, 1.7);
-    const gift = Math.pow(f / 40, 1.22) * 2.2 * streamCut() * heatMul;
+    const gift = Math.pow(f / 40, 1.22) * STREAM_GIFT * streamCut() * heatMul;
     const base = 2 + f * 0.025;
     const biz = 1 + Math.min(S.bizRep || 0, 25) / 100;
-    return (base + gift) * originMul * biz;
+    const raw = (base + gift) * originMul * biz * streamWeekMul();
+    const cap5 = streamSplitCap(), done = streamSplitDone();
+    if (done >= cap5) return raw * STREAM_OVER_MUL;
+    return Math.min(raw, cap5 - done + (raw - (cap5 - done)) * STREAM_OVER_MUL);
   }
   function streamFansMul() {
     return 1;
@@ -14641,6 +14645,11 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909b", at: "2026-09-09", items: [
+      "直播收入封顶（玩家实锤：生涯末攒到 6.27 亿）：一次直播的钱本来就有上限，但没人管一周能播几次——生涯后期一场约等于一个 LPL 冠军的奖金，一周四场，一个赛段光直播就 2500 万以上。现在两道闸：同一周里第几场就按第几档结算（观众是同一批），一个赛段还有平台结算上限（跟着合同走，顶级合同约 1200 万，超出的部分只结一成二）。极限刷播的生涯收入从 6 亿量级压到 1.5 亿；批测中位和最高的钱一分没动（941→956、2733→2729），普通玩家感觉不到",
+      "队伍页的「全队战力」和比赛面板终于是同一个数（玩家实锤：队伍页 75.1、比赛面板 65.9）：队伍页原来自己另算一套——你在队里的权重 1.18（比赛里是 3.0）、不含装备伤病、也没有顶端压缩，和判定胜负的是两个模型。现在它直接读判定胜负那一套的分解，判什么就显示什么；对阵卡的版本相性也单独标出来，不再揉进标题数。比赛结果逐字节不变",
+      "假赛传闻按身份换说法（玩家实锤：「我都 S 赛五冠了、资产三个亿，我心虚他毛啊」）：拿过国际冠军或已经是队内核心的人，看到的是营销号剪视频而不是论坛开帖，律师函也真的管用——「心虚」那句只留给还没立住的人"
+    ] },
     { v: "v20260909a", at: "2026-09-09", items: [
       "转会轨迹不再多报站数（玩家实锤：只去过一个外赛区队就回 RNG 一人一城，名片却写「转会 7 站」）：那张表本来就记着续约、买断、升上一队、下放，可名片和评语两处直接把条数当成转会次数在数。现在每一笔标性质，只有真的换了俱乐部才算一站；老存档按文案回推，数出来一样",
       "赛后拆解的「状态」拆成「你的状态」和「队友状态」两行（玩家实锤：我状态 52 刚好中性，比赛里还是给我扣分）——原来一行算的是我方五个人的状态均值对上对面五个人，你自己中性、队友低迷照样是负的，标签却像在说你；两行各自写清楚「你 X · 队友均 Y · 对面均 Z」，加起来还是原来那个数",
@@ -15688,7 +15697,7 @@ header.top.compact>.theme-top{display:none}
       }
     });
   }
-  function dynastyBonus(players) {
+  function dynastyBonus2(players) {
     const p = players && players[0];
     if (!p || p.me || p.lg !== "LCK") return 0;
     return LCK_DYNASTY[S.si] || 0;
@@ -15701,6 +15710,9 @@ header.top.compact>.theme-top{display:none}
     const players = team ? team.players : teamOrPlayers;
     return powerCore(players, fatigue, verFav, team);
   }
+  function powerParts(players, fatigue = 0, verFav = null, team = null) {
+    return powerCore(players, fatigue, verFav, team, true);
+  }
   function formMorale(team) {
     try {
       const f = team && S.teamForm && S.teamForm[team.name];
@@ -15711,7 +15723,7 @@ header.top.compact>.theme-top{display:none}
       return 1;
     }
   }
-  function powerCore(players, fatigue = 0, verFav = null, team = null) {
+  function powerCore(players, fatigue = 0, verFav = null, team = null, parts) {
     let s = 0, wt = 0, cmd = 0;
     players.forEach((p) => {
       const r = p.me && S && S.attrs ? S.attrs : p.r || p;
@@ -15744,8 +15756,23 @@ header.top.compact>.theme-top{display:none}
     const sq = (1 + (syn - 50) / 950) * (1 + (tac - 50) / 1100) * rm;
     const wrAdj = team && team.wr !== void 0 ? (team.wr - 0.5) * WR_WEIGHT : 0;
     const core = mine ? dynCoreBonus() : 0;
-    const raw = (s / wt + dynastyBonus(players) + wrAdj + core) * (1 + (cmd - 68) / 520) * (1 - clamp(fatigue, 0, 100) * 22e-4) * tm * sq;
-    return raw > POWER_KNEE ? POWER_KNEE + (raw - POWER_KNEE) * POWER_SLOPE : raw;
+    const raw = (s / wt + dynastyBonus2(players) + wrAdj + core) * (1 + (cmd - 68) / 520) * (1 - clamp(fatigue, 0, 100) * 22e-4) * tm * sq;
+    const total = raw > POWER_KNEE ? POWER_KNEE + (raw - POWER_KNEE) * POWER_SLOPE : raw;
+    if (!parts) return total;
+    return {
+      total,
+      raw,
+      base: s / wt + dynastyBonus2(players) + wrAdj + core,
+      knee: raw > POWER_KNEE ? total - raw : 0,
+      // 顶端压缩掉了多少（负数）
+      ws: [
+        { k: "syn", n: "默契", v: syn, mult: (1 + (syn - 50) / 950) * rm },
+        { k: "tac", n: "战术", v: tac, mult: 1 + (tac - 50) / 1100 },
+        { k: "mor", n: "士气", v: mine ? avgTrust() : 50, mult: tm },
+        { k: "cmd", n: "指挥", v: cmd, mult: 1 + (cmd - 68) / 520 },
+        { k: "fit", n: "体能", v: 100 - clamp(fatigue, 0, 100), mult: 1 - clamp(fatigue, 0, 100) * 22e-4 }
+      ]
+    };
   }
   var POWER_KNEE = 78;
   var POWER_SLOPE = 0.45;
@@ -16649,6 +16676,8 @@ header.top.compact>.theme-top{display:none}
       const m = S.origin === "streamer" ? 1.7 : 1;
       const pop = 1.9 + S.pre.rank * 0.05;
       const gift = streamIncome() * PRE_PACE;
+      noteStreamMoney(gift);
+      noteStream();
       addFans(pop * m * streamFansMul() * PRE_FAN_PACE);
       addMoney("stream", gift);
       addFat(4);
@@ -17591,7 +17620,12 @@ header.top.compact>.theme-top{display:none}
     } else if (k === "stream") {
       const m = S.origin === "streamer" ? 1.6 : 1;
       addFans(4.5 * m * streamFansMul());
-      addMoney("stream", streamIncome());
+      {
+        const v = streamIncome();
+        addMoney("stream", v);
+        noteStreamMoney(v);
+      }
+      noteStream();
       addFat(5);
       if (S.streamDeal) S.streamDeal.done = (S.streamDeal.done || 0) + 1;
       checkStreamBiz();
@@ -20031,6 +20065,7 @@ header.top.compact>.theme-top{display:none}
     const opp = S.world[S.homeLeague || "LPL"].find((t) => t.name === on);
     if (!opp) return "";
     const myPw = myPower(), opPw = teamPowerOf(on);
+    const vfNow = versionFit(), myShow = myPw - vfNow;
     const star = opp.players.slice().sort((a, b) => ovrOf(b) - ovrOf(a))[0];
     const rival = opp.players.find((q) => q.pos === S.pos);
     const st = (S.standings[S.homeLeague || "LPL"] || {})[on] || { w: 0, l: 0 };
@@ -20039,7 +20074,7 @@ header.top.compact>.theme-top{display:none}
     return `<div class="card"><h2>下一场<em>${sea.tag} 第 ${S.week} 周 · BO3</em></h2>
     <div class="next">
       <div class="sd"><div class="nm">${teamLogo(S.team, 28)}${S.team}${formBar(S.team)}</div>
-        <div class="pw">全队战力 <b>${N(pwShow(myPw).toFixed(1), dimWord(pwShow(myPw)))}</b></div></div>
+        <div class="pw">全队战力 <b>${N(pwShow(myShow).toFixed(1), dimWord(pwShow(myShow)))}</b>${uiNum() && Math.abs(vfNow) > 0.05 ? `<small style="color:var(--ink-3)"> 版本 ${vfNow >= 0 ? "+" : ""}${pwShow(vfNow).toFixed(1)}</small>` : ""}</div></div>
       <div class="mid">VS</div>
       <div class="sd"><div class="nm">${teamLogo(on, 28)}${on}${formBar(on)}</div>
         <div class="pw">全队战力 <b>${N(pwShow(opPw).toFixed(1), dimWord(pwShow(opPw)))}</b></div></div>

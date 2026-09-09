@@ -23,7 +23,7 @@ import { noteGrudge, noteRevenge, rivalBoost, rivalCard } from "./rivals";
 import { addRingTitle, breakAgendaCard, fixNote, fixtureCard, fixtureStrip, mateInjuryHit, mateInjuryNote, mateInjuryRoll, mateInjuryTag, mateInjuryTick, ringTitles, rotationAfterMatch, scrimCard, scrimPanel, scrimPick, scrimTrialCheck, setBreakAgenda, startScrim, titleCount, titlesText } from "./rotation";
 import { actListText, archiveWeek, clearPlan, noteAct, quickBtn, quickPlan, quickPlanPre, repeatLast, routineBar, runActs, runPlan, savePlan } from "./routine";
 import { askConfirm, confirmCard, continueCard, dropSave, escapeHtml, exportSave, importSave, loadGame, meName, safeName, saveBar, saveGame } from "./save";
-import { PRIZE_PO, PRIZE_PO_LDL, addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
+import { addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, noteStream, noteStreamMoney, PRIZE_PO, PRIZE_PO_LDL, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
 import { addSquad, clampWinProb, disruptSynergy, doSquad, gapVerdict, initSquad, myPower, squadActs, squadCard, squadDecay, squadOf, teamPowerOf, watchRoster } from "./squad";
 import { starAfterMatch, starLaneBadge, starSpotHtml } from "./stars";
 import { S, setS } from "./state";
@@ -111,6 +111,11 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260909b", at:"2026-09-09", items:[
+    "直播收入封顶（玩家实锤：生涯末攒到 6.27 亿）：一次直播的钱本来就有上限，但没人管一周能播几次——生涯后期一场约等于一个 LPL 冠军的奖金，一周四场，一个赛段光直播就 2500 万以上。现在两道闸：同一周里第几场就按第几档结算（观众是同一批），一个赛段还有平台结算上限（跟着合同走，顶级合同约 1200 万，超出的部分只结一成二）。极限刷播的生涯收入从 6 亿量级压到 1.5 亿；批测中位和最高的钱一分没动（941→956、2733→2729），普通玩家感觉不到",
+    "队伍页的「全队战力」和比赛面板终于是同一个数（玩家实锤：队伍页 75.1、比赛面板 65.9）：队伍页原来自己另算一套——你在队里的权重 1.18（比赛里是 3.0）、不含装备伤病、也没有顶端压缩，和判定胜负的是两个模型。现在它直接读判定胜负那一套的分解，判什么就显示什么；对阵卡的版本相性也单独标出来，不再揉进标题数。比赛结果逐字节不变",
+    "假赛传闻按身份换说法（玩家实锤：「我都 S 赛五冠了、资产三个亿，我心虚他毛啊」）：拿过国际冠军或已经是队内核心的人，看到的是营销号剪视频而不是论坛开帖，律师函也真的管用——「心虚」那句只留给还没立住的人"
+  ]},
   {v:"v20260909a", at:"2026-09-09", items:[
     "转会轨迹不再多报站数（玩家实锤：只去过一个外赛区队就回 RNG 一人一城，名片却写「转会 7 站」）：那张表本来就记着续约、买断、升上一队、下放，可名片和评语两处直接把条数当成转会次数在数。现在每一笔标性质，只有真的换了俱乐部才算一站；老存档按文案回推，数出来一样",
     "赛后拆解的「状态」拆成「你的状态」和「队友状态」两行（玩家实锤：我状态 52 刚好中性，比赛里还是给我扣分）——原来一行算的是我方五个人的状态均值对上对面五个人，你自己中性、队友低迷照样是负的，标签却像在说你；两行各自写清楚「你 X · 队友均 Y · 对面均 Z」，加起来还是原来那个数",
@@ -1146,6 +1151,10 @@ export function power(teamOrPlayers,fatigue=0,verFav=null){
   const players=team?team.players:teamOrPlayers;
   return powerCore(players,fatigue,verFav,team);
 }
+/* 和 power() 同一套算式，额外返回分解（底盘、五个系数、顶端压缩）。队伍页与赛后归因用它。 */
+export function powerParts(players,fatigue=0,verFav=null,team=null): any{
+  return powerCore(players,fatigue,verFav,team,true);
+}
 /* AI 队的士气：近六场胜率 → 0.97～1.03。首版 ±0.05 叠上真对阵树把联赛/国际冠军率压过头（批测 2026-09-05），
    幅度收到 ±0.03——结构不动、只调数值 */
 export function formMorale(team){
@@ -1155,7 +1164,7 @@ export function formMorale(team){
     return 1+(wr-0.5)*0.06;
   }catch(e){ return 1; }
 }
-export function powerCore(players,fatigue=0,verFav=null,team=null){
+export function powerCore(players,fatigue=0,verFav=null,team=null,parts?){
   let s=0,wt=0,cmd=0;
   players.forEach(p=>{
     const r=(p.me&&S&&S.attrs)?S.attrs:(p.r||p);   // 「你」直读 S.attrs：读档后名单里的拷贝可能是旧的
@@ -1207,7 +1216,23 @@ export function powerCore(players,fatigue=0,verFav=null,team=null){
   /* 2026-09-07 难度调整：顶端压缩。五个 85–90 的明星凑在一起战力 87，世界第八才 73——第一名对谁都是天堑，
      五年世界冠军率 5%、双冠 0。78 分以上的部分按 0.45 折算（所有队一视同仁，你的队到了那里也一样）：
      87 → 82，第八名不动。强队仍然强，但赢它不再是 BO5 里 20% 的事。 */
-  return raw>POWER_KNEE?POWER_KNEE+(raw-POWER_KNEE)*POWER_SLOPE:raw;
+  const total=raw>POWER_KNEE?POWER_KNEE+(raw-POWER_KNEE)*POWER_SLOPE:raw;
+  if(!parts) return total;
+  /* 队伍页要的分解（玩家实锤 2026-09-09：队伍页 75.1、比赛面板 65.9，两个数对不上）。
+     原来队伍页自己另算一套（squadBase：你权重 1.18、不含装备伤病、没有顶端压缩），
+     和判定胜负的这一套是两个模型。现在它直接读这里，两处永远不会再分家。
+     raw 那一行一个字没动，所以比赛结果逐字节不变——这是纯显示口径的统一。
+     显示用的 mult 单独算，不参与上面的乘法，浮点尾数不会被搅动。 */
+  return {total, raw,
+    base:s/wt+dynastyBonus(players)+wrAdj+core,
+    knee:raw>POWER_KNEE?(total-raw):0,      // 顶端压缩掉了多少（负数）
+    ws:[
+      {k:"syn", n:"默契", v:syn,                    mult:(1+(syn-50)/950)*rm},
+      {k:"tac", n:"战术", v:tac,                    mult:1+(tac-50)/1100},
+      {k:"mor", n:"士气", v:mine?avgTrust():50,     mult:tm},
+      {k:"cmd", n:"指挥", v:cmd,                    mult:1+(cmd-68)/520},
+      {k:"fit", n:"体能", v:100-clamp(fatigue,0,100),mult:1-clamp(fatigue,0,100)*0.0022}
+    ]} as any;
 }
 export const POWER_KNEE=78, POWER_SLOPE=0.45;
 /* ---------- 冠军班底（2026-09-07 作者拍板：王朝要到 10–15%）----------
@@ -2136,6 +2161,7 @@ export function preAct(k,dim?){
     // 单纯开播涨得很慢；真正让人记住你的是段位和战绩
     const pop=1.9+S.pre.rank*0.05;
     const gift=streamIncome()*PRE_PACE;   // 职业前节奏系数：一年的点数少了，每一点的产出按比例抬
+    noteStreamMoney(gift); noteStream();
     addFans(pop*m*(streamFansMul())*PRE_FAN_PACE);
     addMoney('stream',gift);
     addFat(4); checkAch("stream");
@@ -3123,7 +3149,8 @@ export function doAction(k){
   }
   else if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
     addFans(4.5*m*(streamFansMul()));
-    addMoney('stream',streamIncome());
+    { const v=streamIncome(); addMoney('stream',v); noteStreamMoney(v); }
+    noteStream();                       // 记下这一周的第几场（下一场按下一档算）
     addFat(5);
     if(S.streamDeal) S.streamDeal.done=(S.streamDeal.done||0)+1;   // 开播条款按次数记
     checkStreamBiz();
@@ -5549,7 +5576,11 @@ export function nextMatchCard(){
   const sea=SEASONS[S.si], on=S.schedule[S.week-1];
   const opp=S.world[S.homeLeague||"LPL"].find(t=>t.name===on);
   if(!opp) return "";
+  /* 标题上的「全队战力」和队伍页是同一个数：版本相性单独标出来，不揉进去
+     （玩家实锤 2026-09-09：队伍页和比赛面板对不上）。备战页早就是这么写的。
+     判定胜负仍然用含版本的 myPower()——diff 不变。 */
   const myPw=myPower(), opPw=teamPowerOf(on);
+  const vfNow=versionFit(), myShow=myPw-vfNow;
   const star=opp.players.slice().sort((a,b)=>ovrOf(b)-ovrOf(a))[0];
   const rival=opp.players.find(q=>q.pos===S.pos);
   const st=(S.standings[S.homeLeague||"LPL"]||{})[on]||{w:0,l:0};
@@ -5558,7 +5589,8 @@ export function nextMatchCard(){
   return `<div class="card"><h2>下一场<em>${sea.tag} 第 ${S.week} 周 · BO3</em></h2>
     <div class="next">
       <div class="sd"><div class="nm">${teamLogo(S.team,28)}${S.team}${formBar(S.team)}</div>
-        <div class="pw">全队战力 <b>${N(pwShow(myPw).toFixed(1),dimWord(pwShow(myPw)))}</b></div></div>
+        <div class="pw">全队战力 <b>${N(pwShow(myShow).toFixed(1),dimWord(pwShow(myShow)))}</b>${
+          uiNum()&&Math.abs(vfNow)>0.05?`<small style="color:var(--ink-3)"> 版本 ${vfNow>=0?"+":""}${pwShow(vfNow).toFixed(1)}</small>`:""}</div></div>
       <div class="mid">VS</div>
       <div class="sd"><div class="nm">${teamLogo(on,28)}${on}${formBar(on)}</div>
         <div class="pw">全队战力 <b>${N(pwShow(opPw).toFixed(1),dimWord(pwShow(opPw)))}</b></div></div>
