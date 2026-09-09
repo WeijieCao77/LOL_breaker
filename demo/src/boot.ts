@@ -12,7 +12,8 @@ xferPull();     // 老域名上的存档接力（只在 www 上生效）
 /* 控制台调试口：原来所有函数都是全局的，打包成模块后什么都摸不到了。
    留一个小窗口给作者在 DevTools 里看状态、存档、重画（线上也在，不含任何危险操作）。 */
 import { S, setS } from "./state";
+import { SITE_QR } from "./share";
 import { render, startPre, GAME_VER } from "./main";
 import { saveGame, loadGame, readSave } from "./save";
 import { cerStart } from "./cer";
-(window as any).poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave, cerStart };
+(window as any).poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave, cerStart, SITE_QR };

@@ -276,6 +276,44 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
   dom.window.close();
 }
 
+/* ---------------- 生涯名片图：结局页能生成一张带二维码的 PNG ---------------- */
+{
+  const { dom, w, d, errors } = boot();
+  await tick(50);
+  const P = w.poxiao;
+  if (d.getElementById("chlog")) (d.getElementById("chlogok") as HTMLElement).click();
+  if (P && createChar(w, d, "生涯名片图")) {
+    await tick(500);
+    const S = P.S();
+    S.career = { w: 60, l: 40, titles: ["S13 LPL夏季赛"], best: 1, since: 0, log: [], leagueTitles: 1, lgYears: [1] };
+    S.team = "RNG"; S.homeLeague = "LPL"; S.si = 2; S.age = 22;
+    S.step = "end"; S.cer = null; S.cerQ = []; S.achPop = null; P.render();
+    const btn = d.getElementById("sharecardbtn");
+    if (!btn) bad.push("结局页没有「生成生涯名片图」按钮");
+    else {
+      // jsdom 没有 canvas，画不出图；这里只钉住「按钮能点开浮层、失败也有兜底文案」
+      (btn as HTMLElement).click();
+      await tick(30);
+      if (!d.getElementById("sharecard")) bad.push("点了生成生涯名片图没有弹出浮层");
+      else {
+        await tick(120);
+        const body = d.querySelector("#sharecard .share-body");
+        if (!body || !body.textContent!.trim()) bad.push("生涯名片图浮层里什么都没有");
+        (d.getElementById("share-x") as HTMLElement).click();
+        if (d.getElementById("sharecard")) bad.push("生涯名片图浮层关不掉");
+      }
+    }
+    // 二维码得是内嵌的 data URI：站点 CSP 只放行 self / data:，外链图不会显示
+    if (!/^data:image\/png;base64,/.test(P.SITE_QR || "")) bad.push("站点二维码不是内嵌的 data URI");
+  }
+  /* jsdom 不带 canvas（要另装 canvas 这个原生包），getContext 会报一条 not implemented。
+     这是 jsdom 的限制，不是产品的问题——真浏览器里画得出来，画不出来时代码也有兜底文案，
+     上面那几条断言钉的就是这条兜底路径。所以只在这里把这一条滤掉。 */
+  const real = errors.filter((x: string) => !/getContext\(\) method|canvas npm package/.test(x));
+  if (real.length) bad.push("生涯名片图：页面脚本报错 " + real.length + " 条：" + real.slice(0, 3).join(" | "));
+  dom.window.close();
+}
+
 /* ---------------- 手机（375px） ---------------- */
 {
   const { dom, w, d, errors } = boot({ width: 375 });
@@ -305,5 +343,5 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
 }
 
 if (bad.length) { console.error("界面测试失败：\n - " + bad.join("\n - ")); process.exit(1); }
-console.log("界面测试通过：建档按钮 · 导览模态与焦点圈 · 浮窗与歌单探测 · 更新日志 · 推周 · 仪式小游戏（靶场 / 限时三选一） · 存档 · 配色切换 · 支持作者只在结局弹 · 小游戏不被重画冲掉 · 手机折叠与抽屉");
+console.log("界面测试通过：建档按钮 · 导览模态与焦点圈 · 浮窗与歌单探测 · 更新日志 · 推周 · 仪式小游戏（靶场 / 限时三选一） · 存档 · 配色切换 · 支持作者只在结局弹 · 小游戏不被重画冲掉 · 生涯名片图 · 手机折叠与抽屉");
 process.exit(0);

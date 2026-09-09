@@ -27,6 +27,7 @@ import { addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, conte
 import { addSquad, clampWinProb, disruptSynergy, doSquad, gapVerdict, initSquad, myPower, squadActs, squadCard, squadDecay, squadOf, teamPowerOf, watchRoster } from "./squad";
 import { starAfterMatch, starLaneBadge, starSpotHtml } from "./stars";
 import { S, setS } from "./state";
+import { shareCardOpen } from "./share";
 import { statEvent } from "./stats";
 import { SPEND, addTrust, addTrustAll, avgTrust, checkMateExit, contractCheck, initTrust, payday, resolveLocker, salaryOf, syncTrust, trustDecay, trustMod, trustOf, tryLockerEvent } from "./team";
 import { traitBar, traitMul, traitUpCard } from "./trait";
@@ -113,6 +114,10 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
 export const CHANGELOG=[
   {v:"v20260909d", at:"2026-09-09", items:[
     "职业前训练的卡面不再少报（玩家实锤：卡面写「操作 +0.9」，点完实际涨了 1.3）：职业前每一次训练真正写进去的是 gain × 0.85 × 1.5（1.5 是职业前的节奏系数——一年的行动点少了，每一点的产出按比例抬回去），而卡面那一侧只乘了 0.85，把这个 1.5 漏了，于是每一次训练都少报三分之一。现在预览和生效共用同一个函数"
+  ]},
+  {v:"v20260909c", at:"2026-09-09", items:[
+    "生涯结束多了一张<b>可以存进相册的名片图</b>（玩家点名：「想玩的人可以直接扫，想留作纪念的也可以一键保存」）：结局页点「生成生涯名片图」，把判词、ID、冠军、逐年轨迹、五项统计画成一张 1080×1620 的竖图，右下角是站点二维码。手机长按保存到相册，桌面点「下载图片」。原来这里只写着「截图就能发」——截图带着地址栏和底栏，发出去既不好看也没有入口",
+    "名片图是浏览器里现画的（canvas），不联网、不上传，图只在你自己手机上；二维码是内嵌的，扫出来就是 www.poxiao.lol"
   ]},
   {v:"v20260909b", at:"2026-09-09", items:[
     "第三次清足球词，这次钉死（玩家实锤：「很多时候的措辞是赢球、球队，包括挂靴」）：生涯一览的「如果今天挂靴」和退役确认里的「就此挂靴」改成退役；赛后拆解的「赢球」、媒体日的「输球」改成赢比赛 / 输掉的比赛；粉丝见面会的场地档次「小场 / 中场 / 大场」改成小型 / 中型 / 大型场地——「中场」容易被读成足球的中场。前两次都是人工扫一遍改掉、然后新写的文案又把词带回来，所以这次加了一条自检：玩家看得见的字符串里出现球队 / 球员 / 球迷 / 球星 / 球场 / 赢球 / 输球 / 打球 / 挂靴 / 板凳席，测试直接红并指到行号",
@@ -5029,8 +5034,12 @@ export function careerPoster(){
 }
 export function viewEnd(){
   const e=ending();
+  /* 玩家点名 2026-09-09：想要一张能存进相册、右下角带二维码的结算图。
+     原来这里只写「截图就能发」——截图带着地址栏和底栏，发出去既不好看、也没有入口。 */
   const again=`<div class="row" style="justify-content:center;align-items:center;margin:14px 0 22px;gap:14px">
-    <button class="btn" id="again">再开一局</button><span class="note" style="margin:0">上面这张名片，截图就能发。</span></div>`;
+    <button class="btn primary" id="sharecardbtn">生成生涯名片图</button>
+    <button class="btn" id="again">再开一局</button>
+    <span class="note" style="margin:0">图里带二维码，存下来或者发出去都行。</span></div>`;
   if(!S.career){                       // 从未签约：没有战队也没有战绩可展示
     return `${careerPoster()}${again}${achCard()}`;
   }
@@ -6501,6 +6510,7 @@ export function bind(){
     autoToggleAll(); };
   const _aN=$("autoNow"); if(_aN) _aN.onclick=autoOnce;
   const _aB=$("autoBack"); if(_aB) _aB.onclick=()=>{ S.tab="act"; render(); };
+  const _shc=$("sharecardbtn"); if(_shc) _shc.onclick=()=>shareCardOpen();   // 生涯名片图（share.ts）
   const _aO=$("autoOff"); if(_aO) _aO.onclick=()=>{ AUTO_KEYS.forEach(x=>{S.auto&&(S.auto[x.k]=false)}); render(); };
   st.querySelectorAll("[data-auto]").forEach((b: any)=>b.onclick=()=>{
     const k=b.dataset.auto;

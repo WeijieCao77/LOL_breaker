@@ -1554,6 +1554,22 @@ header.top.compact>.theme-top{display:none}
 .ev-inner{max-height:calc(100svh - 28px)}
 .cer-inner{max-height:calc(100svh - 24px)}
 
+/* ---- 生涯名片图（share.ts）----
+   玩家点名：想要一张能存进相册、带二维码的结算图。浮层里放渲染好的 PNG，
+   手机长按保存，桌面走下载按钮。图本身是 1080×1620，这里只负责缩放显示。 */
+.share-overlay{display:flex;align-items:center;justify-content:center;padding:16px}
+.share-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  max-width:min(440px,94vw);max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+.share-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 14px;border-bottom:1px solid var(--line);flex:none}
+.share-head b{font-size:15px;color:var(--ink)}
+.share-body{overflow:auto;padding:12px;min-height:120px;display:flex;align-items:center;justify-content:center}
+.share-img{display:block;width:100%;height:auto;border-radius:8px}
+.share-loading{color:var(--ink-3);font-size:13px;padding:28px 8px;text-align:center}
+.share-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 14px;border-top:1px solid var(--line);flex:none;flex-wrap:wrap}
+.share-tip{font-size:12px;color:var(--ink-3)}
+
 </style>
 
 </head>
@@ -3449,14 +3465,14 @@ header.top.compact>.theme-top{display:none}
   }
   function pickForeignScout(champion) {
     if (rnd() >= (champion ? 0.2 : 0.1)) return null;
-    const W = { VCS: 5, PCS: 4, LJL: 3, LCO: 3, CBLOL: 2, LLA: 2, TCL: 2, LEC: 1.2, LCS: 1.2, LCK: 0.6 };
-    const pool = Object.keys(W).filter((k) => S.world && S.world[k] && S.world[k].length);
+    const W2 = { VCS: 5, PCS: 4, LJL: 3, LCO: 3, CBLOL: 2, LLA: 2, TCL: 2, LEC: 1.2, LCS: 1.2, LCK: 0.6 };
+    const pool = Object.keys(W2).filter((k) => S.world && S.world[k] && S.world[k].length);
     if (!pool.length) return null;
     let sum = 0;
-    pool.forEach((k) => sum += W[k]);
+    pool.forEach((k) => sum += W2[k]);
     let x = rnd() * sum;
     for (const k of pool) {
-      x -= W[k];
+      x -= W2[k];
       if (x <= 0) return k;
     }
     return pool[pool.length - 1];
@@ -9080,23 +9096,23 @@ header.top.compact>.theme-top{display:none}
       const r = rows.find((x) => x.n === n);
       return r && r.v <= -0.25 ? r : null;
     };
-    const W = { 操作: 0.34, 运营: 0.28, 心态: 0.14, 体质: 0.1 };
+    const W2 = { 操作: 0.34, 运营: 0.28, 心态: 0.14, 体质: 0.1 };
     const foes = m.opp.players || m.opp, foe = foes.find && foes.find((q) => q.pos === S.pos);
     const base = S.baseline && S.baseline[S.homeLeague || "LPL"] || 50;
-    const cmp = Object.keys(W).map((d) => {
+    const cmp = Object.keys(W2).map((d) => {
       const g = S.attrs[d] - (foe ? foe.r[d] : base);
-      return { d, g, eff: g * W[d] };
+      return { d, g, eff: g * W2[d] };
     });
     const strong = cmp.filter((x) => x.g >= 1).sort((a, b) => b.eff - a.eff).slice(0, 2);
     const weak = cmp.filter((x) => x.g < -1).sort((a, b) => a.eff - b.eff).slice(0, 2);
     const vals = DIMS.map((d) => S.attrs[d]), mu = avg(vals), sd = Math.sqrt(avg(vals.map((x) => (x - mu) ** 2)));
     const extreme = sd >= 9;
-    const topW = strong.length ? W[strong[0].d] : 0;
+    const topW = strong.length ? W2[strong[0].d] : 0;
     const net = cmp.reduce((a, x) => a + x.eff, 0);
     strong.forEach(({ d, g, eff }, i) => {
       personal.push({
         good: true,
-        q: `${d}比对位高 ${g.toFixed(0)} 分（权重 ${W[d]}）→ <b>+${pwShow(eff).toFixed(1)}</b> 战力`,
+        q: `${d}比对位高 ${g.toFixed(0)} 分（权重 ${W2[d]}）→ <b>+${pwShow(eff).toFixed(1)}</b> 战力`,
         how: i === 0 ? `这是你的本钱——临场节点里多选吃「${d}」的选项，成功率直接看这一维；训练赛对位也用它打` : `长板的每一分和短板的每一分是同一把秤：高就加、低就扣，权重一样`
       });
     });
@@ -9104,8 +9120,8 @@ header.top.compact>.theme-top{display:none}
       const capped = S.attrs[d] >= capOf(d) - 0.05;
       const P = BREAK_PATHS[d];
       personal.push({
-        q: `${d}比对位低 ${(-g).toFixed(0)} 分（权重 ${W[d]}）→ <b>${pwShow(eff).toFixed(1)}</b> 战力`,
-        how: capped && P ? `已到瓶颈——突破方法：${P.how}` : extreme && topW && W[d] < topW ? `这项权重 ${W[d]} 比你长项（${strong[0].d} ${topW}）低：补 5 点值 ${pwShow(5 * W[d]).toFixed(1)} 战力，长项练 5 点值 ${pwShow(5 * topW).toFixed(1)}——把长项练到顶更划算` : extreme && topW && W[d] >= topW ? `这项权重 ${W[d]} 不比你的长项低：补 5 点值 ${pwShow(5 * W[d]).toFixed(1)} 战力，和练长项一样划算甚至更划算——别被「极端加点」四个字骗了` : `日常多点「练${d}」，装备/课程里也有加${d}的`
+        q: `${d}比对位低 ${(-g).toFixed(0)} 分（权重 ${W2[d]}）→ <b>${pwShow(eff).toFixed(1)}</b> 战力`,
+        how: capped && P ? `已到瓶颈——突破方法：${P.how}` : extreme && topW && W2[d] < topW ? `这项权重 ${W2[d]} 比你长项（${strong[0].d} ${topW}）低：补 5 点值 ${pwShow(5 * W2[d]).toFixed(1)} 战力，长项练 5 点值 ${pwShow(5 * topW).toFixed(1)}——把长项练到顶更划算` : extreme && topW && W2[d] >= topW ? `这项权重 ${W2[d]} 不比你的长项低：补 5 点值 ${pwShow(5 * W2[d]).toFixed(1)} 战力，和练长项一样划算甚至更划算——别被「极端加点」四个字骗了` : `日常多点「练${d}」，装备/课程里也有加${d}的`
       });
     });
     if (strong.length || weak.length) personal.push({
@@ -10112,9 +10128,9 @@ header.top.compact>.theme-top{display:none}
     } catch (e) {
       top = [];
     }
-    const H = S.honors || {};
-    const wc = H.worlds && H.worlds[S.si] || ((S.career && S.career.worldsYears || []).includes(S.si) ? S.team : null);
-    const mc = H.msi && H.msi[S.si] || ((S.career && S.career.msiYears || []).includes(S.si) ? S.team : null);
+    const H2 = S.honors || {};
+    const wc = H2.worlds && H2.worlds[S.si] || ((S.career && S.career.worldsYears || []).includes(S.si) ? S.team : null);
+    const mc = H2.msi && H2.msi[S.si] || ((S.career && S.career.msiYears || []).includes(S.si) ? S.team : null);
     const lc = top[0] || rk[0] || null;
     const bonus = (n) => (n === wc ? AWARD_BONUS.worlds : 0) + (n === mc ? AWARD_BONUS.msi : 0) + (n === lc ? AWARD_BONUS.league : 0) + (rk.indexOf(n) >= 0 && rk.indexOf(n) < 4 ? AWARD_BONUS.top4 : 0);
     const bench = isBenched();
@@ -10304,12 +10320,12 @@ header.top.compact>.theme-top{display:none}
       else if (st === "game") body = `<div class="cer-eyebrow">专注 · 弹幕里按 1 → 25 点完</div><div id="cer-game" data-game="focus"></div>${btns("")}`;
       else body = resultBody(c, "stage");
     } else if (c.k === "depart") {
-      const H = worldsHost();
+      const H2 = worldsHost();
       if (st === "s1") body = `${scene("airport")}<div class="cer-eyebrow">${SEASONS[S.si].tag} 世界赛 · 出征仪式 1/3</div>
-      <p class="cer-p"><b>机场。</b>送行的粉丝举着队旗，有人在喊你的 ID。安检口你回头看了一眼——飞${H.c}的航班要 ${H.h} 个小时。</p>
+      <p class="cer-p"><b>机场。</b>送行的粉丝举着队旗，有人在喊你的 ID。安检口你回头看了一眼——飞${H2.c}的航班要 ${H2.h} 个小时。</p>
       ${btns(`<button class="btn primary" data-cer="next">登机 →</button>`)}`;
       else if (st === "s2") body = `${scene("city")}<div class="cer-eyebrow">出征仪式 2/3</div>
-      <p class="cer-p"><b>落地${H.c}。</b>时差、酒店、主办方的车。队里已经有人开始头疼，教练在群里发了一张作息表。</p>
+      <p class="cer-p"><b>落地${H2.c}。</b>时差、酒店、主办方的车。队里已经有人开始头疼，教练在群里发了一张作息表。</p>
       ${btns(`<button class="btn primary" data-cer="next">去训练室 →</button>`)}`;
       else if (st === "s3") body = `${scene("room")}<div class="cer-eyebrow">出征仪式 3/3</div>
       <p class="cer-p"><b>第一次进主办地训练室。</b>键盘是自己的，椅子不是。教练只说了一句：先把时差倒过来。</p>
@@ -10677,14 +10693,14 @@ header.top.compact>.theme-top{display:none}
         return;
       }
       kill();
-      const W = arena.clientWidth || 300, H = arena.clientHeight || 240;
+      const W2 = arena.clientWidth || 300, H2 = arena.clientHeight || 240;
       const b = document.createElement("button");
       b.type = "button";
       b.className = "mg-target";
       b.setAttribute("aria-label", "靶");
       b.style.width = b.style.height = SIZE + "px";
-      b.style.left = Math.round(rnd2(4, Math.max(4, W - SIZE - 4))) + "px";
-      b.style.top = Math.round(rnd2(4, Math.max(4, H - SIZE - 4))) + "px";
+      b.style.left = Math.round(rnd2(4, Math.max(4, W2 - SIZE - 4))) + "px";
+      b.style.top = Math.round(rnd2(4, Math.max(4, H2 - SIZE - 4))) + "px";
       spawned++;
       if (nEl) nEl.textContent = String(spawned);
       curAt = Date.now();
@@ -11848,17 +11864,17 @@ header.top.compact>.theme-top{display:none}
   function afterIntl() {
     const go = S.afterIntlGo;
     S.afterIntlGo = null;
-    const wrap = S._intlWrap;
+    const wrap2 = S._intlWrap;
     S._intlWrap = null;
     if (go === "summer") {
-      if (wrap) {
+      if (wrap2) {
         enterBreak(
           "summer",
           1,
           "季中间歇",
           `MSI 出局了。夏季赛开始前还有一点时间——<b>世界赛名额就看下个赛段</b>。`
         );
-        const ev = intlChampEvent(wrap.name, wrap.champ);
+        const ev = intlChampEvent(wrap2.name, wrap2.champ);
         queueBreakNews(2, ev.text, ev.tone, ev.tag);
         return;
       }
@@ -11870,14 +11886,14 @@ header.top.compact>.theme-top{display:none}
       );
       return;
     }
-    if (wrap) {
+    if (wrap2) {
       enterBreak(
         "wrap",
         2,
         "世界赛 · 你出局之后",
         `你的世界赛结束了，比赛还在打。<b>剩下的几周，先把自己捡起来。</b>`
       );
-      const ev = intlChampEvent(wrap.name, wrap.champ);
+      const ev = intlChampEvent(wrap2.name, wrap2.champ);
       queueBreakNews(3, ev.text, ev.tone, ev.tag);
       return;
     }
@@ -12159,14 +12175,14 @@ header.top.compact>.theme-top{display:none}
       if (Math.abs(S.staff.coach - c0) >= 0.05) log.coach.push({ why: "时间冲淡", v: q1(S.staff.coach - c0) });
       if (Math.abs(S.staff.mgr - m0) >= 0.05) log.mgr.push({ why: "时间冲淡", v: q1(S.staff.mgr - m0) });
     }
-    const H = newHonors();
-    if (H.lg) {
-      put("coach", H.lg * HONOR_COACH.lg, `联赛冠军 ×${H.lg}`);
-      put("mgr", H.lg * HONOR_MGR.lg, `联赛冠军 ×${H.lg}`);
+    const H2 = newHonors();
+    if (H2.lg) {
+      put("coach", H2.lg * HONOR_COACH.lg, `联赛冠军 ×${H2.lg}`);
+      put("mgr", H2.lg * HONOR_MGR.lg, `联赛冠军 ×${H2.lg}`);
     }
-    if (H.intl) {
-      put("coach", H.intl * HONOR_COACH.intl, `国际冠军 ×${H.intl}`);
-      put("mgr", H.intl * HONOR_MGR.intl, `国际冠军 ×${H.intl}`);
+    if (H2.intl) {
+      put("coach", H2.intl * HONOR_COACH.intl, `国际冠军 ×${H2.intl}`);
+      put("mgr", H2.intl * HONOR_MGR.intl, `国际冠军 ×${H2.intl}`);
     }
     const g = S.record ? S.record.w + S.record.l : 0;
     if (g > 0) put("coach", (S.record.w / g - 0.5) * 22, `胜率 ${Math.round(S.record.w / g * 100)}%`);
@@ -14086,12 +14102,12 @@ header.top.compact>.theme-top{display:none}
   function starInGameHonors(teamName) {
     const out = [];
     try {
-      const H = S.honors || {};
-      Object.keys(H.worlds || {}).forEach((si) => {
-        if (H.worlds[si] === teamName) out.push(`${SEASONS[+si].tag} 世界冠军`);
+      const H2 = S.honors || {};
+      Object.keys(H2.worlds || {}).forEach((si) => {
+        if (H2.worlds[si] === teamName) out.push(`${SEASONS[+si].tag} 世界冠军`);
       });
-      Object.keys(H.msi || {}).forEach((si) => {
-        if (H.msi[si] === teamName) out.push(`${SEASONS[+si].tag} MSI 冠军`);
+      Object.keys(H2.msi || {}).forEach((si) => {
+        if (H2.msi[si] === teamName) out.push(`${SEASONS[+si].tag} MSI 冠军`);
       });
       const mine = S.career && S.career.titles || [];
       Object.keys(S.poCache || {}).forEach((k) => {
@@ -14577,6 +14593,289 @@ header.top.compact>.theme-top{display:none}
     paintTheme(readTheme());
   }
 
+  // demo/src/share.ts
+  var SITE_QR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAK4AAACuAQMAAACVwqStAAAABlBMVEULFiL///8qhWqJAAABA0lEQVR42u1XsQ3DMAwTqgN8kl/3ST5AgEpKdqesBYfW0JB4CSGRFGP5dMJ++3objudC2Ui+2IyXPZ5vXgPJBCIHHsKYjpctQ1IA2BA8A5KLkSQqRuqR4OvGAWmRkCeHrlqelHbIEJZSO+csFHhyxC2aDruRdJKwydGMVPUEJIkaUG4xTzAXr1bk9TeZdjbxoC30k3IV1XTCWj5AAi1jUirtQDIlHGueLOneKQ8pVEqeHCdZ7fMuVHExFq0IMuQyR+ixDYZUMRljb2YrETGfhMl38epJCZF0PunA1ttHmx7LY2sB6XbxzWynM6nObL47IZjOT87SQWforqVlaWb7/41+rt/vdDbChj/nTgAAAABJRU5ErkJggg==";
+  var SITE_URL = "www.poxiao.lol";
+  var W = 1080;
+  var H = 1620;
+  var CO = {
+    bg: "#0B1622",
+    panel: "#122132",
+    line: "#1E3247",
+    ink: "#E8EEF5",
+    ink2: "#9FB2C6",
+    ink3: "#6B8199",
+    gold: "#E8B559",
+    cyan: "#4FC3D9",
+    red: "#D9605E"
+  };
+  var FONT = (w, s) => `${w} ${s}px "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif`;
+  function wrap(g, text, x, y, maxW, lh, maxLines) {
+    const cs = String(text || "").split("");
+    let line = "", n = 0;
+    for (let i = 0; i < cs.length; i++) {
+      const t = line + cs[i];
+      if (g.measureText(t).width > maxW && line) {
+        if (maxLines && n >= maxLines - 1) {
+          g.fillText(line.slice(0, -1) + "…", x, y + n * lh);
+          return n + 1;
+        }
+        g.fillText(line, x, y + n * lh);
+        n++;
+        line = cs[i];
+      } else line = t;
+    }
+    if (line) {
+      g.fillText(line, x, y + n * lh);
+      n++;
+    }
+    return n;
+  }
+  function fitText(g, text, x, y, maxW, size, weight) {
+    let t = String(text || ""), sz = size;
+    while (sz > 18) {
+      g.font = FONT(weight || 700, sz);
+      if (g.measureText(t).width <= maxW) break;
+      sz -= 2;
+    }
+    g.font = FONT(weight || 700, sz);
+    while (t.length > 1 && g.measureText(t).width > maxW) t = t.slice(0, -1);
+    if (g.measureText(String(text || "")).width > maxW && t.length > 1) t = t.slice(0, -1) + "…";
+    g.fillText(t, x, y);
+  }
+  function roundRect(g, x, y, w, h, r) {
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  }
+  function yearRows() {
+    const C = S.career || {}, log = C.log || [];
+    const played = SEASONS.slice(0, Math.min(SEASONS.length, (S.si || 0) + 1));
+    let prev = null;
+    return played.map((sea, si) => {
+      const rows = log.filter((x) => x.si === si);
+      let team = rows.length ? rows[rows.length - 1].team : null;
+      if (!team) {
+        const tx = (S.txLog || []).filter((x) => String(x.s || "").indexOf(sea.tag) === 0);
+        for (const t2 of tx.slice().reverse()) {
+          const m = String(t2.text || "").match(/<b>([^<]+)<\/b>/);
+          if (m) {
+            team = m[1];
+            break;
+          }
+        }
+      }
+      if (!team && prev) team = prev;
+      if (!team && S.career && si <= (S.si || 0)) team = S.team;
+      if (team) prev = team;
+      const res = rows.map((r) => `${SPLITS[r.split] ? SPLITS[r.split][0] : ""}${r.result === "champion" ? "冠" : r.result === 3 ? "亚" : r.result === 2 ? "四强" : r.seed > 6 ? "第" + r.seed : "季后赛"}`).join(" · ");
+      const won = (C.lgYears || []).includes(si) || (C.msiYears || []).includes(si) || (C.worldsYears || []).includes(si);
+      return { tag: sea.tag, y: sea.y, team: team || "—", res: res || "—", won };
+    });
+  }
+  function drawShareCard() {
+    const cv = document.createElement("canvas");
+    cv.width = W;
+    cv.height = H;
+    const g = cv.getContext("2d");
+    if (!g) return null;
+    const e = ending();
+    g.fillStyle = CO.bg;
+    g.fillRect(0, 0, W, H);
+    g.fillStyle = CO.gold;
+    g.fillRect(0, 0, W, 6);
+    let y = 110;
+    g.textBaseline = "alphabetic";
+    g.font = FONT(700, 40);
+    g.fillStyle = CO.gold;
+    g.fillText("破晓", 72, y);
+    g.font = FONT(400, 24);
+    g.fillStyle = CO.ink3;
+    const _played = SEASONS.slice(0, Math.min(SEASONS.length, (S.si || 0) + 1));
+    g.fillText(
+      "生涯名片 · " + _played[0].tag + "–" + _played[_played.length - 1].tag + " · " + _played[0].y + "–" + _played[_played.length - 1].y,
+      72 + g.measureText("破晓").width + 120,
+      y - 4
+    );
+    y += 96;
+    g.font = FONT(700, 72);
+    g.fillStyle = CO.ink;
+    g.fillText("「" + e.n + "」", 72, y);
+    y += 54;
+    g.font = FONT(400, 28);
+    g.fillStyle = CO.ink2;
+    y += wrap(g, e.d, 72, y, W - 144, 44, 3) * 44;
+    y += 28;
+    const rawName = S && S.name ? String(S.name) : "你";
+    const idLine = [
+      rawName,
+      POSN[S.pos] || "",
+      (ORIGIN[S.origin] || {}).n || "",
+      S.career ? S.team || "—" : "",
+      (S.age || "") + " 岁"
+    ].filter(Boolean).join(" · ");
+    g.font = FONT(600, 30);
+    g.fillStyle = CO.cyan;
+    g.fillText(idLine, 72, y);
+    const own = S.career && S.career.titles || [], ring = ringTitles();
+    y += 64;
+    if (own.length || ring.length) {
+      g.font = FONT(400, 26);
+      g.fillStyle = CO.ink3;
+      g.fillText("冠军", 72, y);
+      g.font = FONT(600, 26);
+      g.fillStyle = CO.gold;
+      y += wrap(g, own.concat(ring.map((t) => t + "（随队）")).join("、"), 72, y + 40, W - 144, 40, 3) * 40 + 40;
+    } else {
+      g.font = FONT(400, 26);
+      g.fillStyle = CO.ink3;
+      g.fillText("还没有冠军", 72, y);
+      y += 40;
+    }
+    y += 34;
+    const rows = yearRows();
+    const avail = H - 270 - 40 - y - 132 - 30;
+    const rh = Math.max(56, Math.min(112, Math.floor(avail / Math.max(1, rows.length))));
+    rows.forEach((r, i) => {
+      const yy = y + i * rh;
+      g.fillStyle = r.won ? "#1A2A1E" : CO.panel;
+      roundRect(g, 72, yy, W - 144, rh - 10, 10);
+      g.fill();
+      if (r.won) {
+        g.fillStyle = CO.gold;
+        g.fillRect(72, yy, 5, rh - 10);
+      }
+      g.font = FONT(700, 26);
+      g.fillStyle = r.won ? CO.gold : CO.ink2;
+      g.fillText(r.tag, 96, yy + (rh - 10) / 2 + 9);
+      g.font = FONT(400, 25);
+      g.fillStyle = CO.ink;
+      g.fillText(r.team, 200, yy + (rh - 10) / 2 + 9);
+      g.font = FONT(400, 25);
+      g.fillStyle = CO.ink2;
+      const rt = r.res, rw = g.measureText(rt).width;
+      g.fillText(rt, W - 96 - rw, yy + (rh - 10) / 2 + 9);
+    });
+    y += rows.length * rh + 30;
+    const C = S.career || {};
+    const stats = [
+      ["生涯小分", (C.w || 0) + "–" + (C.l || 0)],
+      ["冠军", String(titleCount())],
+      ["转会", txStops() + " 站"],
+      ["段位", rankFull(S.pre ? S.pre.rank : 0)],
+      ["粉丝", fanTier()]
+    ];
+    const cw = (W - 144) / stats.length;
+    g.fillStyle = CO.panel;
+    roundRect(g, 72, y, W - 144, 132, 12);
+    g.fill();
+    stats.forEach(([k, v], i) => {
+      const cx = 72 + cw * i + cw / 2;
+      g.textAlign = "center";
+      g.font = FONT(400, 22);
+      g.fillStyle = CO.ink3;
+      g.fillText(k, cx, y + 46);
+      g.fillStyle = CO.ink;
+      fitText(g, v, cx, y + 96, cw - 26, 32);
+      if (i) {
+        g.fillStyle = CO.line;
+        g.fillRect(72 + cw * i, y + 30, 1, 72);
+      }
+    });
+    g.textAlign = "left";
+    y += 132;
+    const qy = H - 230;
+    g.fillStyle = CO.line;
+    g.fillRect(72, qy - 40, W - 144, 1);
+    g.font = FONT(700, 34);
+    g.fillStyle = CO.ink;
+    g.fillText("破晓 · LOL 电竞生涯模拟", 72, qy + 40);
+    g.font = FONT(400, 26);
+    g.fillStyle = CO.ink2;
+    g.fillText("扫码开一局，写你自己的五年", 72, qy + 88);
+    g.font = FONT(400, 24);
+    g.fillStyle = CO.gold;
+    g.fillText(SITE_URL, 72, qy + 136);
+    return cv;
+  }
+  function makeShareCard() {
+    return new Promise((res) => {
+      const cv = drawShareCard();
+      if (!cv) {
+        res(null);
+        return;
+      }
+      const g = cv.getContext("2d");
+      const img = new Image();
+      const qs = 168, qx = W - 72 - qs, qy = H - 230 - 8;
+      const done = () => {
+        try {
+          res(cv.toDataURL("image/png"));
+        } catch (e) {
+          res(null);
+        }
+      };
+      img.onload = () => {
+        g.fillStyle = "#fff";
+        roundRect(g, qx - 10, qy - 10, qs + 20, qs + 20, 10);
+        g.fill();
+        g.drawImage(img, qx, qy, qs, qs);
+        done();
+      };
+      img.onerror = done;
+      img.src = SITE_QR;
+    });
+  }
+  function shareCardOpen() {
+    if (typeof document === "undefined" || document.getElementById("sharecard")) return;
+    const wrapEl = document.createElement("div");
+    wrapEl.id = "sharecard";
+    wrapEl.className = "rankup share-overlay";
+    wrapEl.setAttribute("role", "dialog");
+    wrapEl.setAttribute("aria-modal", "true");
+    wrapEl.innerHTML = `<section class="share-card">
+    <header class="share-head"><b>生涯名片</b>
+      <button type="button" class="support-close" id="share-x" aria-label="关闭">关闭 <span aria-hidden="true">×</span></button></header>
+    <div class="share-body"><div class="share-loading">正在生成…</div></div>
+    <footer class="share-foot">
+      <span class="share-tip">手机长按图片即可保存到相册</span>
+      <a class="btn sm" id="share-dl" download="破晓-生涯名片.png" hidden>下载图片</a>
+    </footer>
+  </section>`;
+    const close = () => {
+      document.removeEventListener("keydown", onKey);
+      wrapEl.remove();
+    };
+    const onKey = (ev) => {
+      if (ev.key === "Escape") close();
+    };
+    wrapEl.querySelector("#share-x").onclick = close;
+    wrapEl.onclick = (ev) => {
+      if (ev.target === wrapEl) close();
+    };
+    document.body.appendChild(wrapEl);
+    document.addEventListener("keydown", onKey);
+    statEvent("sharecard");
+    makeShareCard().then((url) => {
+      const body = wrapEl.querySelector(".share-body");
+      if (!body) return;
+      if (!url) {
+        body.innerHTML = `<div class="share-loading">这台设备生成不了图片，直接截图也一样能发。</div>`;
+        return;
+      }
+      body.innerHTML = `<img class="share-img" alt="生涯名片" src="${url}">`;
+      const dl = wrapEl.querySelector("#share-dl");
+      if (dl) {
+        dl.href = url;
+        dl.hidden = false;
+      }
+    });
+  }
+
   // demo/src/main.ts
   var DIMS = ["操作", "运营", "心态", "指挥", "体质"];
   var DIM_HINT = { 操作: "对线与输出", 运营: "视野与节奏", 心态: "抗压与翻盘", 指挥: "主指挥取队内最高", 体质: "耐久与状态" };
@@ -14647,6 +14946,10 @@ header.top.compact>.theme-top{display:none}
   var CHANGELOG = [
     { v: "v20260909d", at: "2026-09-09", items: [
       "职业前训练的卡面不再少报（玩家实锤：卡面写「操作 +0.9」，点完实际涨了 1.3）：职业前每一次训练真正写进去的是 gain × 0.85 × 1.5（1.5 是职业前的节奏系数——一年的行动点少了，每一点的产出按比例抬回去），而卡面那一侧只乘了 0.85，把这个 1.5 漏了，于是每一次训练都少报三分之一。现在预览和生效共用同一个函数"
+    ] },
+    { v: "v20260909c", at: "2026-09-09", items: [
+      "生涯结束多了一张<b>可以存进相册的名片图</b>（玩家点名：「想玩的人可以直接扫，想留作纪念的也可以一键保存」）：结局页点「生成生涯名片图」，把判词、ID、冠军、逐年轨迹、五项统计画成一张 1080×1620 的竖图，右下角是站点二维码。手机长按保存到相册，桌面点「下载图片」。原来这里只写着「截图就能发」——截图带着地址栏和底栏，发出去既不好看也没有入口",
+      "名片图是浏览器里现画的（canvas），不联网、不上传，图只在你自己手机上；二维码是内嵌的，扫出来就是 www.poxiao.lol"
     ] },
     { v: "v20260909b", at: "2026-09-09", items: [
       "第三次清足球词，这次钉死（玩家实锤：「很多时候的措辞是赢球、球队，包括挂靴」）：生涯一览的「如果今天挂靴」和退役确认里的「就此挂靴」改成退役；赛后拆解的「赢球」、媒体日的「输球」改成赢比赛 / 输掉的比赛；粉丝见面会的场地档次「小场 / 中场 / 大场」改成小型 / 中型 / 大型场地——「中场」容易被读成足球的中场。前两次都是人工扫一遍改掉、然后新写的文案又把词带回来，所以这次加了一条自检：玩家看得见的字符串里出现球队 / 球员 / 球迷 / 球星 / 球场 / 赢球 / 输球 / 打球 / 挂靴 / 板凳席，测试直接红并指到行号",
@@ -19495,10 +19798,10 @@ header.top.compact>.theme-top{display:none}
     const played = SEASONS.slice(0, Math.min(SEASONS.length, (S.si || 0) + 1));
     const years = played.map((sea, si) => {
       const rows = log.filter((x) => x.si === si);
-      const H = S.honors || {};
+      const H2 = S.honors || {};
       let team = rows.length ? rows[rows.length - 1].team : null;
-      if (!team && (C.msiYears || []).includes(si) && H.msi && H.msi[si]) team = H.msi[si];
-      if (!team && (C.worldsYears || []).includes(si) && H.worlds && H.worlds[si]) team = H.worlds[si];
+      if (!team && (C.msiYears || []).includes(si) && H2.msi && H2.msi[si]) team = H2.msi[si];
+      if (!team && (C.worldsYears || []).includes(si) && H2.worlds && H2.worlds[si]) team = H2.worlds[si];
       if (!team) team = teamFromTx(si);
       if (!team && S.career && si === S.si) team = S.team;
       if (!team && prevTeam && si >= firstPro && !tx.some((x) => tagSi(x.s) === si)) team = prevTeam;
@@ -19542,7 +19845,9 @@ header.top.compact>.theme-top{display:none}
   function viewEnd() {
     const e = ending();
     const again = `<div class="row" style="justify-content:center;align-items:center;margin:14px 0 22px;gap:14px">
-    <button class="btn" id="again">再开一局</button><span class="note" style="margin:0">上面这张名片，截图就能发。</span></div>`;
+    <button class="btn primary" id="sharecardbtn">生成生涯名片图</button>
+    <button class="btn" id="again">再开一局</button>
+    <span class="note" style="margin:0">图里带二维码，存下来或者发出去都行。</span></div>`;
     if (!S.career) {
       return `${careerPoster()}${again}${achCard()}`;
     }
@@ -21326,6 +21631,8 @@ header.top.compact>.theme-top{display:none}
       S.tab = "act";
       render();
     };
+    const _shc = $("sharecardbtn");
+    if (_shc) _shc.onclick = () => shareCardOpen();
     const _aO = $("autoOff");
     if (_aO) _aO.onclick = () => {
       AUTO_KEYS.forEach((x) => {
@@ -21882,10 +22189,10 @@ header.top.compact>.theme-top{display:none}
       logBadge();
       if (document.getElementById("chlog")) return;
       const log = CHANGELOG;
-      const wrap = document.createElement("div");
-      wrap.id = "chlog";
-      wrap.className = "rankup";
-      wrap.innerHTML = `<div class="ru-inner chlog-inner" style="max-width:560px;text-align:left">
+      const wrap2 = document.createElement("div");
+      wrap2.id = "chlog";
+      wrap2.className = "rankup";
+      wrap2.innerHTML = `<div class="ru-inner chlog-inner" style="max-width:560px;text-align:left">
       <div class="chlog-head"><div class="ru-eyebrow" style="margin:0">更新日志</div>
         <button type="button" class="chlog-x" id="chlogx" aria-label="关闭更新日志">×</button></div>
       ${log.map((e) => `<h3 style="margin:14px 0 4px">${e.v}<span class="note" style="font-weight:400">　上线：${e.at}</span></h3>
@@ -21893,19 +22200,19 @@ header.top.compact>.theme-top{display:none}
       <p class="note" style="color:var(--ink-3);margin-top:12px">从 v20260901b 起记录，此前的更新不补。</p>
       <div class="row" style="justify-content:center;margin-top:10px">
         <button class="btn" id="chlogok">关闭</button></div></div>`;
-      document.body.appendChild(wrap);
+      document.body.appendChild(wrap2);
       const close = () => {
-        wrap.remove();
+        wrap2.remove();
         document.removeEventListener("keydown", onKey);
       };
       const onKey = (e) => {
         if (e.key === "Escape") close();
       };
       document.addEventListener("keydown", onKey);
-      wrap.querySelector("#chlogok").onclick = close;
-      wrap.querySelector("#chlogx").onclick = close;
-      wrap.onclick = (e) => {
-        if (e.target === wrap) close();
+      wrap2.querySelector("#chlogok").onclick = close;
+      wrap2.querySelector("#chlogx").onclick = close;
+      wrap2.onclick = (e) => {
+        if (e.target === wrap2) close();
       };
     } catch (e) {
     }
@@ -21931,13 +22238,13 @@ header.top.compact>.theme-top{display:none}
       const url = supportUrl();
       if (!url || document.getElementById("suplove") || source === "auto" && supportAutoHidden()) return;
       const qr = typeof SUPPORT_QR === "string" && SUPPORT_QR.trim() ? SUPPORT_QR.trim() : "";
-      const wrap = document.createElement("div");
-      wrap.id = "suplove";
-      wrap.className = "rankup support-overlay";
-      wrap.setAttribute("role", "dialog");
-      wrap.setAttribute("aria-modal", "true");
-      wrap.setAttribute("aria-labelledby", "support-title");
-      wrap.innerHTML = `<section class="support-card">
+      const wrap2 = document.createElement("div");
+      wrap2.id = "suplove";
+      wrap2.className = "rankup support-overlay";
+      wrap2.setAttribute("role", "dialog");
+      wrap2.setAttribute("aria-modal", "true");
+      wrap2.setAttribute("aria-labelledby", "support-title");
+      wrap2.innerHTML = `<section class="support-card">
       <header class="support-head">
         <div>
           <div class="support-kicker">支持独立创作</div>
@@ -21960,9 +22267,9 @@ header.top.compact>.theme-top{display:none}
         <span>《破晓》为程序模拟作品，与现实选手、战队和赛事无关</span>
       </footer>
     </section>`;
-      const link = wrap.querySelector("#support-link");
+      const link = wrap2.querySelector("#support-link");
       if (link) link.href = url;
-      const qrImg = wrap.querySelector("#support-qr");
+      const qrImg = wrap2.querySelector("#support-qr");
       if (qrImg) qrImg.src = qr;
       const close = (never) => {
         if (never) {
@@ -21972,21 +22279,21 @@ header.top.compact>.theme-top{display:none}
           }
         }
         document.removeEventListener("keydown", onKey);
-        wrap.remove();
+        wrap2.remove();
       };
       const onKey = (e) => {
         if (e.key === "Escape") close(false);
       };
-      wrap.querySelector("#suplove-x").onclick = () => close(false);
-      wrap.querySelector("#suplove-never").onclick = () => close(true);
-      wrap.onclick = (e) => {
-        if (e.target === wrap) close(false);
+      wrap2.querySelector("#suplove-x").onclick = () => close(false);
+      wrap2.querySelector("#suplove-never").onclick = () => close(true);
+      wrap2.onclick = (e) => {
+        if (e.target === wrap2) close(false);
       };
-      document.body.appendChild(wrap);
+      document.body.appendChild(wrap2);
       document.addEventListener("keydown", onKey);
       setTimeout(() => {
         try {
-          wrap.querySelector("#suplove-x").focus();
+          wrap2.querySelector("#suplove-x").focus();
         } catch (e) {
         }
       }, 0);
@@ -22283,7 +22590,7 @@ header.top.compact>.theme-top{display:none}
   screenCreate();
   audioInit();
   xferPull();
-  window.poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave, cerStart };
+  window.poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave, cerStart, SITE_QR };
 })();
 </script>
 
