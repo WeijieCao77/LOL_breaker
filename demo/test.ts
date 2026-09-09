@@ -972,6 +972,17 @@ function unitChecks() {
     S.cerRec = null; S.fatigue = 50; A.addFat(-10); const base = 50 - S.fatigue;
     if (!(Math.abs(drop - base * 0.8) < 0.01)) bad.push(`出征倍率没进 addFat：${drop} vs ${base}`);
     S.off = null;
+    /* 团队加分的上限必须落在这条带里——两头各有一次玩家投诉钉着：
+       下限：太低，横扫的队也进不了一阵（2026-09-09：「LNG 黄金之路了，一阵二阵只有一个辅助入选」）
+       上限：太高，冠军队整体被抬过所有人（2026-09-07：「为什么都是一个战队的」「68 分进一阵、84 分落选」）
+       10–13 这条带是扫了五档实测出来的（见 cer.ts 里那张表）。要挪出这条带，先重新量。 */
+    {
+      const B = A.AWARD_BONUS, cap = B.worlds + B.msi + B.league + B.top4;
+      if (!(cap >= 10 && cap <= 13))
+        bad.push(`颁奖夜团队加分上限 ${cap} 掉出 10–13：低了横扫进不去一阵，高了冠军队整体抬过所有人。改之前先重新量。`);
+      if (B.worlds <= B.msi) bad.push("颁奖夜：世界赛冠军的分不该低于 MSI");
+      if (A.AWARD_TEAM_CAP !== 3) bad.push(`一阵单队席位上限成了 ${A.AWARD_TEAM_CAP}——它才是挡「都是一个战队的」那道闸，动它要先量`);
+    }
     const aw = A.computeAwards(); if (!aw || aw.first.length !== 5 || !aw.mvp) bad.push("颁奖夜算不出一阵 / MVP");
     if (aw && new Set(aw.first.map((x: any) => x.pos)).size !== 5) bad.push("一阵五个位置不齐");
     A.cerStart("awards"); if (!S.cer || S.cer.k !== "awards") bad.push("颁奖夜没开场");
