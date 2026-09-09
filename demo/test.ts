@@ -768,6 +768,37 @@ function unitChecks() {
     if (!/\.keyart\{bottom:auto;height:var\(--art\)\}/.test(css))
       bad.push("封面页头：主视觉没有用 --art 定高，它会铺满整个页头、把标语盖在图里");
   } catch (e) { bad.push("本周页布局自检没跑起来：" + e); }
+  /* 赛季结算卡上的「XX 冠军」必须念这一季实际所在的赛区（玩家实锤 2026-09-09：
+     在 T1 拿了联赛冠军，标签却写「LPL 冠军」）。源码扫描那条只管「有没有写死」，
+     这条管「换个赛区跑一遍，念出来的对不对」。 */
+  {
+    const S: any = A.S();
+    const bak = { ls: S.lastSeason, hl: S.homeLeague, si: S.si, off: S.off, tab: S.tab,
+                  team: S.team, career: S.career, attrs: S.attrs, sa0: S.seasonAttr0 };
+    S.homeLeague = "LCK"; S.team = "T1"; S.off = null; S.tab = "act"; S.si = 2;
+    S.seasonAttr0 = Object.assign({}, S.attrs);
+    S.career = Object.assign({}, S.career, { worldsYears: [], msiYears: [], log: [] });
+    S.lastSeason = { result: "champion", seed: 1, lg: "LCK", rec: { w: 7, l: 0 },
+                     grow: A.DIMS.map((d: string) => ({ d, g: 0 })) };
+    let html = "";
+    try { html = A.viewOffseason(); } catch (e) { bad.push("赛季结算卡画不出来：" + e); }
+    if (html) {
+      if (html.indexOf("LCK 冠军") < 0) bad.push("赛季结算：在 LCK 夺冠，标签没写「LCK 冠军」");
+      if (html.indexOf("LPL 冠军") >= 0) bad.push("赛季结算：在 LCK 夺冠，标签却写了「LPL 冠军」（玩家报的就是这个）");
+    }
+    // 老档没记 lg，得退回当前赛区，不能又变回 LPL
+    S.lastSeason.lg = undefined;
+    let old2 = "";
+    try { old2 = A.viewOffseason(); } catch (e) {}
+    if (old2 && old2.indexOf("LPL 冠军") >= 0) bad.push("赛季结算：老档缺 lg 时退回成了写死的 LPL");
+    // 生涯口径的赛区按打得最多的算，不是退役那一刻的
+    S.career.log = [{ lg: "LPL" }, { lg: "LPL" }, { lg: "LPL" }, { lg: "LCK" }];
+    if (A.careerLeague() !== "LPL") bad.push("生涯赛区：四个赛段里三个在 LPL，该算 LPL，实得 " + A.careerLeague());
+    S.career.log = [];
+    if (A.careerLeague() !== "LCK") bad.push("生涯赛区：没有日志时该退回当前赛区 LCK，实得 " + A.careerLeague());
+    Object.assign(S, { lastSeason: bak.ls, homeLeague: bak.hl, si: bak.si, off: bak.off,
+                       tab: bak.tab, team: bak.team, career: bak.career, seasonAttr0: bak.sa0 });
+  }
   /* 存档卡右半边：只准读存档 blob，一个全局都不许碰（那是别人那一局的数据）。
      传一个纯对象进去——如果实现里偷偷用了 S / titleCount() 之类，这里就炸。 */
   {
@@ -1353,6 +1384,12 @@ const BALL_WORDS = ["球队", "球员", "球迷", "球星", "球场", "赢球", 
    `S.homeLeague||"LPL"` 这种取名单的写法不算——那本来就是对的写法；
    `"在国际赛场上击败一支 LCK 队伍"` 这种才算。命中的必须登记在下表里并写清为什么安全
    （通常是「它的触发条件已经锁了赛区」），否则测试红。 */
+/* LDL 是**结构性豁免**，不逐条登记：全世界只有一个次级联赛，而它只挂在 LPL 底下
+   （main.ts 的 buildLDL：`w.LDL=buildLDL(w)`，注释写着「外赛区没有次级联赛建模——
+   试训邀请只出自 LPL/LDL」）。所以「下放 LDL」「LDL 二队名单」这些话在别的赛区
+   根本走不到，写死是安全的。
+   这个前提一旦变了（谁给别的赛区也做了二队），下面 LDL_ONLY_STILL_TRUE 那条会先红。 */
+const LDL_ONLY = /^(?:(?!\b(LPL|LCK|LEC|LCS|PCS|VCS|LJL)\b).)*$/s;
 const LEAGUE_OK: Record<string, string> = {
   '{id:"beatlck", n:"抗韩成功", d:"在国际赛场上击败一支 LCK 队伍——前提是你自己不在 LCK。", tag:"战绩",':
     "cond 已锁 myLeague!==LCK",
@@ -1368,6 +1405,14 @@ const LEAGUE_OK: Record<string, string> = {
     "语言课的说明，在哪个赛区都成立",
   '{k:"en",   n:"英语课",       cost:120, d:"LEC / LCS 的更衣室能听懂了"},':
     "同上",
+  'story:"LCK 卷土重来。你刚进联赛，没人认识你。",':
+    "赛季 story 讲的是世界局势（那两年 LCK 确实统治），不是你在哪个赛区",
+  'story:"LCK 已经连冠两年。舆论开始说这个赛区不行了。",':
+    "同上，说的是 LCK 自己连冠、别人不行，和你效力哪儿无关",
+  '{sel:"#pin", t:"实力条", d:"你的水平和本周剩下的行动点。默认用文字描述：生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级（职业级 ≈ LPL 首发）。想看具体数字，点右边的「数值」。"},':
+    "实力尺的锚点本来就是 LPL（REGION_ANCHOR 里 LPL=70 是基准），这是在解释尺子怎么读，不是在讲你在哪打",
+  'text: "<b>实力尺顶端拉开</b>：全世界与你的属性整体 +5——LPL 首发整体进国服前 100、明星 85-90、你的上限抬到 95+。所有差值不变，比赛胜率一分没动。" });':
+    "同上，老档迁移时解释新尺子怎么读；LPL 首发是这把尺的刻度说明",
   ':lck?"LCK 又一次站在了最高处。":"你在屏幕外看完了颁奖。"}`,':
     "上一行的 own 已经把「自家赛区夺冠」分出去了",
   'beatLCK?`决赛击败 LCK 的 ${S.match.oppName}——<b>至暗时刻的墙，被你砸开了一道口子。</b>`:""}`,':
@@ -1382,18 +1427,33 @@ const LEAGUE_OK: Record<string, string> = {
     const fp = path.join(d, f);
     return fs.statSync(fp).isDirectory() ? walk(fp) : (f.endsWith(".ts") ? [fp] : []);
   });
-  /* 只查「会写出玩家看得见的话」的内容文件。数据表（data / stars / eras）里的赛区名
-     是史实，main.ts 里的是尺子与更新日志，都不在范围内。 */
-  const FILES = ["random.ts", "press.ts", "achieve.ts", "achieve_more.ts", "team.ts",
-                 "cer.ts", "nodes.ts", "quest.ts", "clout.ts", "rotation.ts", "postmatch.ts",
-                 "squad.ts", "bond.ts", "shop.ts", "injury.ts", "intl.ts"];
+  /* 二改（玩家实锤 2026-09-09：在 T1 拿了联赛冠军，结算卡的标签却写「LPL 冠军」）。
+     第一版是**白名单**——只查十六个「内容文件」，理由写的是「main.ts 里的是尺子与
+     更新日志」。这条理由是错的：main.ts 里除了尺子和日志，还画着结算卡、HUD、
+     赛程、结局名片一大堆玩家看得见的字，那句写死的「LPL 冠军」就在里面，
+     整整躲过了上一轮排查。
+     现在反过来做**黑名单**：默认全查，只放过两类——
+     ① 史实数据表（data / stars / eras）：那里的「LPL 2019 春季冠军」是真人真事；
+     ② main.ts 里的 CHANGELOG 数组：更新日志记的是当时发生了什么，不是活文案。 */
+  const SKIP_FILES = ["data.ts", "stars.ts", "eras.ts"];
   const LEAGUES = /\b(LPL|LCK|LEC|LCS|PCS|VCS|LJL|LDL)\b/;
   const CJK = /[\u4e00-\u9fff]/;
   for (const fp of walk(dir)) {
-    if (!FILES.includes(path.basename(fp))) continue;
-    const lines = fs.readFileSync(fp, "utf8").split("\n");
+    const base = path.basename(fp);
+    if (SKIP_FILES.includes(base) || fp.includes(path.sep + "gen" + path.sep)) continue;
+    const raw = fs.readFileSync(fp, "utf8");
+    const lines = raw.split("\n");
+    // 更新日志那一段整块跳过：它是「当时上线了什么」的记录，不是活文案
+    let logFrom = -1, logTo = -1;
+    const logHead = raw.indexOf("export const CHANGELOG=[");
+    if (logHead >= 0) {
+      logFrom = raw.slice(0, logHead).split("\n").length - 1;
+      const logEnd = raw.indexOf("\n];", logHead);
+      logTo = logEnd < 0 ? lines.length : raw.slice(0, logEnd).split("\n").length;
+    }
     let inBlock = false;
     lines.forEach((ln: string, i: number) => {
+      if (logFrom >= 0 && i >= logFrom && i <= logTo) return;
       const t = ln.trim();
       if (inBlock) { if (ln.includes("*/")) inBlock = false; return; }
       if (t.startsWith("//")) return;
@@ -1404,6 +1464,8 @@ const LEAGUE_OK: Record<string, string> = {
       const segs = src.match(/"[^"]*"|'[^']*'|`[^`]*`/g) || [];
       if (!segs.some(g => LEAGUES.test(g) && CJK.test(g))) return;
       if (LEAGUE_OK[t] !== undefined) return;
+      // 整行只提到 LDL：见上面 LDL_ONLY 那段——它只存在于 LPL 底下，别的赛区走不到
+      if (/\bLDL\b/.test(src) && LDL_ONLY.test(src)) return;
       bad3.push(`${path.basename(fp)}:${i + 1} 中文文案里写死了赛区名 → ${t.slice(0, 76)}`);
     });
   }
@@ -1412,7 +1474,19 @@ const LEAGUE_OK: Record<string, string> = {
       + "\n   要么给它加赛区判断，要么连同理由登记进 test.ts 的 LEAGUE_OK。");
     process.exit(1);
   }
-  console.log("赛区自检通过：中文文案里没有没登记的赛区硬编码");
+  /* LDL 豁免的前提绊线：全世界仍然只有 LDL 一个次级联赛，而且它只挂在 LPL 底下。
+     谁哪天给别的赛区也做了二队，这里先红——那时上面那些「下放 LDL」的话就得改。 */
+  {
+    const lgs = Object.keys(A.S().world || {});
+    const known = ["LPL", "LCK", "LEC", "LCS", "PCS", "VCS", "LJL", "LLA", "CBLOL", "LCO", "TCL", "LDL"];
+    const extra = lgs.filter(l => !known.includes(l));
+    if (extra.length) {
+      console.error("赛区自检：世界里多出了没登记的联赛 " + extra.join(" / ")
+        + "\n   如果其中有次级联赛，test.ts 里 LDL 的结构性豁免就不再成立，那些「下放 LDL」的文案要改。");
+      process.exit(1);
+    }
+  }
+  console.log("赛区自检通过：中文文案里没有没登记的赛区硬编码（LDL 走结构性豁免，前提已核）");
 }
 
 if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }
