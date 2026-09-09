@@ -6,7 +6,7 @@ import { meName } from "./save";
 import { bizWeek } from "./shop";
 import { S } from "./state";
 import { RENEW_TRUST_FLOOR, addTrustAll, renewScore, trustOf } from "./team";
-import { buyoutDrag, exposureScore, proPerf } from "./tryout";
+import { buyoutDrag, exposureScore, proPerf, txStops } from "./tryout";
 
 /* ================= 世界的回声 =================
    2026-08-31 竞品拆解（无畏人生模拟器）拍板移植的机制层，内容全部 LOL 背景：
@@ -194,7 +194,7 @@ export function careerCard(){
       <tr><td>冠军</td><td>${(titleCount())
         ?`${titlesText()}${(ringTitles().length)?`<br><span style="color:var(--ink-3);font-size:11.5px">「随队」是战队夺冠时你在替补席——戒指是你的；成就、突破和转会筹码只认你亲手打的。</span>`:""}`
         :"还没有"}</td></tr>
-      <tr><td>转会轨迹</td><td>${(S.txLog&&S.txLog.length)?S.txLog.length+" 站":"一队待到底"}</td></tr>
+      <tr><td>转会轨迹</td><td>${txStops()?txStops()+" 站":"一队待到底"}</td></tr>
       <tr><td>剩下的时间</td><td class="n">${left>0?left+" 个赛季":"这是最后一年"} · ${S.age} 岁</td></tr>
     </tbody></table></div>
     <p class="note" style="color:var(--ink-3)">评语和五年后的结局用同一把尺子——现在不满意，就去改写它。</p></div>`;

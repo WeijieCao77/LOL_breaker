@@ -2230,11 +2230,16 @@ header.top.compact>.theme-top{display:none}
   function squadOf(k) {
     return S.squad && S.squad[k] !== void 0 ? S.squad[k] : 50;
   }
-  function addSquad(k, n) {
-    if (!S.squad) initSquad();
+  function squadGain(k, n) {
+    if (!S.squad) return n;
     const room = clamp(1 - (S.squad[k] - 40) / 52, 0.12, 1);
     const inh = S.career && (k === "syn" || k === "tac") && true ? 1 + Math.min(40, tacOf()) / 200 : 1;
-    S.squad[k] = q1(clamp(S.squad[k] + n * room * inh, 0, 100));
+    const to = q1(clamp(S.squad[k] + n * room * inh, 0, 100));
+    return q1(to - S.squad[k]);
+  }
+  function addSquad(k, n) {
+    if (!S.squad) initSquad();
+    S.squad[k] = q1(clamp(S.squad[k] + squadGain(k, n), 0, 100));
   }
   function squadDecay() {
     if (!S.squad) return;
@@ -2320,6 +2325,11 @@ header.top.compact>.theme-top{display:none}
     const total = ws.reduce((a, w) => a * w.mult, base);
     return { base, ws, total };
   }
+  function sumBit(k, n) {
+    const nm = k === "syn" ? "默契" : "战术";
+    const g = squadGain(k, n);
+    return g < 0.05 ? `${nm} 已很高` : `${nm} +${g.toFixed(1)}`;
+  }
   var SQUAD_ACTS = [
     /* 异化点数配平（2026-09-03）：训练赛 3 点＝整个下午，收益 ×1.5 对齐单点价值；
        双排 1 点＝碎片时间，收益 ×0.55——同一把尺：每点买到的东西一样多，
@@ -2328,7 +2338,7 @@ header.top.compact>.theme-top{display:none}
       k: "scrim",
       n: "训练赛",
       d: "和别的队打，最接近实战",
-      sum: ["默契 +5.1", "战术 +4.5", "信任 +1.8", "有几率摩擦"],
+      sum: () => [sumBit("syn", 5.1), sumBit("tac", 4.5), "信任 +1.8", "有几率摩擦"],
       fat: 20,
       run: () => {
         addSquad("syn", 5.1);
@@ -2349,7 +2359,7 @@ header.top.compact>.theme-top{display:none}
       k: "vod",
       n: "战术复盘",
       d: "逐帧过录像，把上一场的问题挖出来",
-      sum: ["战术 +4.2", "运营 +0.35", "攒运营突破"],
+      sum: () => [sumBit("tac", 4.2), "运营 +0.35", "攒运营突破"],
       fat: 9,
       run: () => {
         addSquad("tac", 4.2);
@@ -2361,7 +2371,7 @@ header.top.compact>.theme-top{display:none}
       k: "drill",
       n: "战队合练",
       d: "专项练配合，团战执行会顺很多",
-      sum: ["默契 +4.4", "信任 +1.8"],
+      sum: () => [sumBit("syn", 4.4), "信任 +1.8"],
       fat: 13,
       run: () => {
         addSquad("syn", 4.4);
@@ -2372,7 +2382,7 @@ header.top.compact>.theme-top{display:none}
       k: "duo",
       n: "队友双排",
       d: "排位里带一带，练默契也拉近关系",
-      sum: ["默契 +1.2", "信任 +1.9", "操作 +0.14"],
+      sum: () => [sumBit("syn", 1.2), "信任 +1.9", "操作 +0.14"],
       fat: 4,
       run: () => {
         addSquad("syn", 1.2);
@@ -2469,7 +2479,7 @@ header.top.compact>.theme-top{display:none}
     return `<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队${!S.career && S.pre && true ? `<span class="tag g">${cupTeamName()}</span>` : ""}</h3>
     <div class="grid g5">${SQUAD_ACTS.map((a) => `
       <button class="act" data-squad="${a.k}" ${ap < apCost(a.k) ? 'disabled style="opacity:.34"' : ""}>
-        <div class="t">${a.n} ${apTag(a.k)}</div><div class="d">${a.d}${costBits([`体能<i class="dn">−${a.fat}</i>`].concat((a.sum || []).map((x) => x.replace(/\s*([+−-][0-9.]+)/, '<i class="up">$1</i>'))))}</div></button>`).join("")}</div>`;
+        <div class="t">${a.n} ${apTag(a.k)}</div><div class="d">${a.d}${costBits([`体能<i class="dn">−${a.fat}</i>`].concat((typeof a.sum === "function" ? a.sum() : a.sum || []).map((x) => x.replace(/\s*([+−-][0-9.]+)/, '<i class="up">$1</i>'))))}</div></button>`).join("")}</div>`;
   }
 
   // demo/src/trait.ts
@@ -4361,7 +4371,7 @@ header.top.compact>.theme-top{display:none}
     S.pendingRenew = null;
     S.gotCut = false;
     pushEvent(`<b>${r.team}</b> 与你续约 ${r.years} 个赛段，赛段薪资 <b>${r.salary !== void 0 ? wanText(r.salary) : "—"}</b>${r.buyout !== void 0 ? `，违约金 <b>${r.buyout} 万</b>` : ""}。`, "good", "合同");
-    txNote(`与 ${r.team} 续约，赛段薪资 ${r.salary !== void 0 ? wanText(r.salary) : "—"}`);
+    txNote(`与 ${r.team} 续约，赛段薪资 ${r.salary !== void 0 ? wanText(r.salary) : "—"}`, "renew");
     render();
   }
   function renewNegotiate() {
@@ -4412,7 +4422,7 @@ header.top.compact>.theme-top{display:none}
     S.freeAgent = true;
     S.gotCut = true;
     pushEvent(`续约谈崩了：<b>${r.team}</b> 觉得你要的太多，收回了报价。你成了<b>自由身</b>——去哪由你自己在转会市场上找。`, "bad", "合同");
-    txNote(`与 ${r.team} 的续约谈崩，成为自由身`);
+    txNote(`与 ${r.team} 的续约谈崩，成为自由身`, "free");
     {
       S.offerYear = void 0;
       S.offerWnd = void 0;
@@ -4547,7 +4557,7 @@ header.top.compact>.theme-top{display:none}
     pushEvent(`你自己掏了 <b>${c.fee} 万</b>，把和 <b>${old}</b> 的合同买断了。<br>
     合同作废，你现在是<b>自由身</b>——不用再等别人来挖，也没人再替你付这笔钱。<br>
     <span style="color:var(--red)">经理和教练都记着这一笔，更衣室也知道了。</span>`, "big", "转会");
-    txNote(`自掏 ${c.fee} 万买断与 ${old} 的合同，成为自由身`);
+    txNote(`自掏 ${c.fee} 万买断与 ${old} 的合同，成为自由身`, "buyout");
     {
       S.offerYear = void 0;
       rollProOffers();
@@ -4801,7 +4811,7 @@ header.top.compact>.theme-top{display:none}
     S.rosterSig = myRoster().map((x) => x.id).sort().join("|");
     pushEvent(`<b>${d.team}</b> 把你从 <b>${old}</b> 调上了一队，新合同：赛段薪资 <b>${wanText(d.salary)}</b>（${yearPayText(d.salary)}）· 违约金 ${wanText(d.buyout)}。
     ${d.incumbent} 让出了首发位——你在 LDL 打的那些比赛，有人一直在看。`, "big", "升队");
-    txNote(`${old} → <b>${d.team}</b>（升上一队 · 赛段薪资 ${wanText(d.salary)}）`);
+    txNote(`${old} → <b>${d.team}</b>（升上一队 · 赛段薪资 ${wanText(d.salary)}）`, "up");
     checkAch("promote");
     render();
   }
@@ -4878,7 +4888,7 @@ header.top.compact>.theme-top{display:none}
     S.rosterSig = myRoster().map((x) => x.id).sort().join("|");
     pushEvent(`你被注册到 <b>${acad.name}</b>（LDL）。从替补席到首发位——
     <b>比赛打起来，数据摆出来，一队的门才会再开。</b>`, "big", "青训");
-    txNote(`${old} → <b>${acad.name}</b>（下放 LDL 打比赛）`);
+    txNote(`${old} → <b>${acad.name}</b>（下放 LDL 打比赛）`, "down");
     render();
   }
   function promoteCard() {
@@ -4907,9 +4917,19 @@ header.top.compact>.theme-top{display:none}
       ① 综合压过一队对位 1 分——${ok1 ? '<b style="color:var(--cyan)">已达成，等下个窗口</b>' : `还差 <b>${(him + 1 - me).toFixed(1)}</b> 分`}<br>
       ② 差距 3 分以内 且 本赛段胜率 ≥75%——${me >= him - 3 ? wr === null ? "数值达标，本赛段还没打满 3 场" : wr >= 0.75 ? '<b style="color:var(--cyan)">已达成，等下个窗口</b>' : `数值达标，但胜率 ${(wr * 100).toFixed(0)}% 还不够` : "数值还差得多，先练"}</p></div>`;
   }
-  function txNote(text) {
-    S.txLog = (S.txLog || []).concat([{ s: SEASONS[S.si] ? SEASONS[S.si].tag : "", text }]);
+  function txNote(text, k) {
+    S.txLog = (S.txLog || []).concat([{ s: SEASONS[S.si] ? SEASONS[S.si].tag : "", text, k: k || "move" }]);
     if (S.txLog.length > 12) S.txLog.shift();
+  }
+  function txIsMove(x) {
+    if (!x) return false;
+    if (x.k) return x.k === "move";
+    const t = String(x.text || "");
+    return /→/.test(t) && !/升上一队|下放/.test(t);
+  }
+  function txStops() {
+    const n = (S.txLog || []).filter(txIsMove).length;
+    return n ? n + 1 : 0;
   }
   function approachKey() {
     return S.si + "-" + (S.split || 0);
@@ -8049,7 +8069,7 @@ header.top.compact>.theme-top{display:none}
     <div class="tw"><table><tbody>
       <tr><td>生涯战绩</td><td class="n">${S.career.w}−${S.career.l}${st.n ? ` · 场均评分 ${(st.r / st.n).toFixed(2)}` : ""}</td></tr>
       <tr><td>冠军</td><td>${titleCount() ? `${titlesText()}${ringTitles().length ? `<br><span style="color:var(--ink-3);font-size:11.5px">「随队」是战队夺冠时你在替补席——戒指是你的；成就、突破和转会筹码只认你亲手打的。</span>` : ""}` : "还没有"}</td></tr>
-      <tr><td>转会轨迹</td><td>${S.txLog && S.txLog.length ? S.txLog.length + " 站" : "一队待到底"}</td></tr>
+      <tr><td>转会轨迹</td><td>${txStops() ? txStops() + " 站" : "一队待到底"}</td></tr>
       <tr><td>剩下的时间</td><td class="n">${left > 0 ? left + " 个赛季" : "这是最后一年"} · ${S.age} 岁</td></tr>
     </tbody></table></div>
     <p class="note" style="color:var(--ink-3)">评语和五年后的结局用同一把尺子——现在不满意，就去改写它。</p></div>`;
@@ -8991,13 +9011,32 @@ header.top.compact>.theme-top{display:none}
       v: myAb - opAb,
       fix: myAb < opAb ? "五个人的底子就比对面薄。练自己，或者等队伍补强。" : "底子占优，把它打出来。"
     });
-    const myFm = avg(myTeamPlayers.map((p) => p.me ? myFormMul() : formMul(p)));
     const opFm = avg(oppPlayers.map((p) => formMul(p)));
-    rows.push({
-      n: "状态",
-      v: (myFm - opFm) * myAb,
-      fix: myFm < opFm ? "手感不在。休息、稳住更衣室，状态下个赛段会回来。" : "状态在你这边。"
-    });
+    const meP = myTeamPlayers.find((p) => p.me);
+    const mates = myTeamPlayers.filter((p) => !p.me);
+    const n = myTeamPlayers.length || 1;
+    const showF = (x) => Math.round(x);
+    if (meP && mates.length) {
+      const meFm = myFormMul(), mateFm = avg(mates.map((p) => formMul(p)));
+      const opShow = showF(avg(oppPlayers.map((p) => formOf(p))));
+      rows.push({
+        n: "你的状态",
+        v: (meFm - opFm) * myAb / n,
+        fix: meFm < opFm ? `你今年的手感在对面之下（你 ${showF(myForm())} · 对面均 ${opShow}）。休息、稳住更衣室，状态下个赛段会回来。` : `你的状态压着对面（你 ${showF(myForm())} · 对面均 ${opShow}）。`
+      });
+      rows.push({
+        n: "队友状态",
+        v: (mateFm - opFm) * myAb * (n - 1) / n,
+        fix: mateFm < opFm ? `四个队友今年状态不在（队友均 ${showF(avg(mates.map((p) => formOf(p))))} · 对面均 ${opShow}）——这一项不是你能直接练的，赢球、团建、转会窗才推得动。` : `队友状态在线（队友均 ${showF(avg(mates.map((p) => formOf(p))))} · 对面均 ${opShow}）。`
+      });
+    } else {
+      const myFm = avg(myTeamPlayers.map((p) => p.me ? myFormMul() : formMul(p)));
+      rows.push({
+        n: "状态",
+        v: (myFm - opFm) * myAb,
+        fix: myFm < opFm ? "手感不在。休息、稳住更衣室，状态下个赛段会回来。" : "状态在你这边。"
+      });
+    }
     const fixOf = {
       默契: "换过人就要重新磨。多合练、多双排。",
       战术: "准备不够。战术复盘和训练赛。",
@@ -10627,8 +10666,10 @@ header.top.compact>.theme-top{display:none}
     };
     const spawn = () => {
       if (done || !document.body.contains(el)) return;
-      if (Date.now() - t0 >= TOTAL) {
-        finish();
+      const left = TOTAL - (Date.now() - t0);
+      if (left < LIT[1] + 260) {
+        const end = setTimeout(finish, Math.max(0, left));
+        _timers.push(end);
         return;
       }
       kill();
@@ -14600,6 +14641,19 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909a", at: "2026-09-09", items: [
+      "转会轨迹不再多报站数（玩家实锤：只去过一个外赛区队就回 RNG 一人一城，名片却写「转会 7 站」）：那张表本来就记着续约、买断、升上一队、下放，可名片和评语两处直接把条数当成转会次数在数。现在每一笔标性质，只有真的换了俱乐部才算一站；老存档按文案回推，数出来一样",
+      "赛后拆解的「状态」拆成「你的状态」和「队友状态」两行（玩家实锤：我状态 52 刚好中性，比赛里还是给我扣分）——原来一行算的是我方五个人的状态均值对上对面五个人，你自己中性、队友低迷照样是负的，标签却像在说你；两行各自写清楚「你 X · 队友均 Y · 对面均 Z」，加起来还是原来那个数",
+      "天梯有赛季重置了（玩家点名：段位一证永证，打到国服第一就永远国服第一）：每年春季赛开赛<b>掉一档</b>，而且落在那一档的中段——国服第一 → 国服前 100、王者 → 宗师、宗师 → 大师，掉到大师就不再往下。分不会自己回来，打排位能拿回去。原来那条「不守就掉」只把你拉回实力守得住的位置，实力够就永远不掉",
+      "赛后拆解和赛后面板改读开赛那一刻的体能（玩家实锤：赛前自己和队伍体能都是满的，一结算却拿体能扣我的综合分，试了两次都一样）——胜负本来就是用赛前体能判的，原来却先把这场的消耗记上再算账，等于拿打完之后的体能解释一场已经打完的比赛",
+      "战队行动的卡面不再虚标（玩家实锤：写「默契 +5.1」，实际只涨一点）：默契越高涨得越少，卡上现在直接写这一次真能涨多少，贴顶时写「已很高」；预览和生效从此是同一个函数",
+      "打排位的状态涨幅不再虚标（玩家实锤：写 +2.3，点一下只从 57 到 58）：一次排位是三把，状态按碎片时间打对折，卡面原来漏了这个对折",
+      "突破瓶颈报的上限和「我的」页对上了（玩家实锤：操作已经 84.7/85，弹窗却说上限到 79.5）——弹窗那句少加了经验顶上来的那一截",
+      "靶场最后一靶不再抢跑（玩家实锤：第 28 下金圈刚出来就直接弹结算，没给点的机会，还被算成一次没中，命中率写成 23/24）：剩余时间放不下一个完整的靶就不再放，把时间走完",
+      "顶栏的五维和「我的」页显示同一个数（玩家实锤「属性永远对不上」）：顶栏原来四舍五入到整数，84.7 被写成 85，看着像已经顶到天花板",
+      "对阵卡上的战力差和上面两个数用同一把尺（原来两个战力乘过展示系数、中间那个差值没乘，95.0 对 70.1 却写 +21.4）",
+      "换栏目回到顶部（玩家实锤：一页划到底，切过去还停在底下）"
+    ] },
     { v: "v20260908m", at: "2026-09-08", items: [
       "季后赛抽签仪式挪回开打之前（玩家实锤：季后赛已经打到 1:0，抽签才弹出来）：原来先摆好比赛再开仪式，而开仪式本身不重画，于是它要等你在比赛里点了下一步才冒出来——现在先抽签、再摆比赛，模态卡从第一帧就在，演完才轮到你打",
       "小游戏进行中不再被重画冲掉（玩家实锤：靶场点了「开始」又回到「点一下开始」）：仪式小游戏挂在每次 render 末尾，而 render 会把整块界面重写，正在跑的那一局连 DOM 带计时器一起被换掉——现在小游戏一上台就锁住重画（屏幕上只有这张模态卡），结算或跳过之后解锁"
@@ -15285,7 +15339,8 @@ header.top.compact>.theme-top{display:none}
         );
       return;
     }
-    const c0 = cap4(S.talent[d]) + before, c1 = cap4(S.talent[d]) + S.capBonus[d];
+    const exp = S && S.capExp || 0;
+    const c0 = Math.min(99, cap4(S.talent[d]) + before + exp), c1 = Math.min(99, cap4(S.talent[d]) + S.capBonus[d] + exp);
     pushEvent(
       `<b>瓶颈松动</b>　${reason}<br>
     <span style="color:var(--cyan)">${d}上限 ${c0.toFixed(1)} → <b>${c1.toFixed(1)}</b>（+${gotS}）</span>`,
@@ -16520,6 +16575,26 @@ header.top.compact>.theme-top{display:none}
   function rankStep() {
     return clamp(2.6 - S.pre.rank * 0.012, 1.1, 2.6);
   }
+  var RANK_RESET_FLOOR = 44;
+  function rankResetTo(v) {
+    if (v <= RANK_RESET_FLOOR) return v;
+    let i = 0;
+    RANKS.forEach((x, k) => {
+      if (v >= x.at) i = k;
+    });
+    if (i <= 0) return v;
+    const lo = RANKS[i - 1].at, hi = RANKS[i].at;
+    return Math.max(RANK_RESET_FLOOR, q1(lo + (hi - lo) * 0.5));
+  }
+  function rankSeasonReset() {
+    if (!S.career || !S.pre || S.pre.rank === void 0) return;
+    const before = S.pre.rank;
+    const after = rankResetTo(before);
+    if (before - after < 0.1) return;
+    S.pre.rank = q1(after);
+    const b = rankName(before), a = rankName(S.pre.rank);
+    pushEvent(`<b>天梯赛季重置。</b>${b === a ? `你的段位回落到 <b>${rankFull(S.pre.rank)}</b>` : `你从 <b>${b}</b> 掉到 <b>${a}</b>`}——分不会自己回来，<b>打排位</b>能拿回去。`, "info", "天梯");
+  }
   function preAct(k, dim) {
     const P = S.pre;
     const _c = apCost(k === "rank" ? "solo" : k);
@@ -17144,7 +17219,9 @@ header.top.compact>.theme-top{display:none}
     });
   }
   function startSeason(first, split) {
+    const _newYear = split === void 0 || split === 0;
     S.split = split === void 0 ? 0 : split;
+    if (_newYear && !first) rankSeasonReset();
     S.carrySplit = 0;
     S.benchedPO = false;
     S.loseStreak = 0;
@@ -17439,12 +17516,13 @@ header.top.compact>.theme-top{display:none}
       capped ? null : `${d}<i class="up">+${g.toFixed(1)}</i>`
     ]);
   }
+  var SOLO_LIGHT = 0.5;
   function costSolo() {
     if (_isPre()) return costBits([_eDn(8), `段位±`, `五维微涨`]);
     const m = _prepMul();
     let f = null;
     if (S.form !== void 0) {
-      const d = ((68 - S.form) * 0.11 + 1.2) * m;
+      const d = ((68 - S.form) * 0.11 + 1.2) * m * SOLO_LIGHT;
       if (Math.abs(d) >= 0.05) f = `状态<i class="${d > 0 ? "up" : "dn"}">${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(1)}</i>`;
     }
     return costBits([_eDn(4 * m), f, `五维微涨`]);
@@ -17491,7 +17569,7 @@ header.top.compact>.theme-top{display:none}
     noteAct("do", k);
     const prepMul = S.step === "prep" || S.off && S.off.next === "intl" ? S.assets && S.assets.van ? 0.7 : 0.6 : 1;
     if (k === "solo") {
-      const lightMul = 0.5;
+      const lightMul = SOLO_LIGHT;
       const w = 1 + Math.floor(rnd() * 3);
       rankGain(w, lightMul);
       if (S.pre && S.pre.rank !== void 0 && true) {
@@ -18085,6 +18163,8 @@ header.top.compact>.theme-top{display:none}
       node: null,
       swing: 0,
       done: false,
+      fat0: S.fatigue,
+      // 开赛那一刻的体能：赛后面板与归因都读它（见 endMatch）
       need,
       bo5: need >= 3
     };
@@ -18276,6 +18356,7 @@ header.top.compact>.theme-top{display:none}
   }
   function endMatch() {
     const m = S.match, won = m.sc[0] > m.sc[1];
+    const fat0 = m && m.fat0 !== void 0 ? m.fat0 : S.fatigue;
     if (!S.playoff && !S.intl) {
       if (won) S.record.w++;
       else S.record.l++;
@@ -18359,7 +18440,7 @@ header.top.compact>.theme-top{display:none}
     }
     {
       try {
-        m.attr = attribute(myRoster(), m.opp, S.fatigue, SEASONS[S.si].fav);
+        m.attr = attribute(myRoster(), m.opp, fat0, SEASONS[S.si].fav);
         m.luck = pmLuckLines(m);
         if (m.attr && S.archive && S.archive.length) {
           const row = S.archive[S.archive.length - 1];
@@ -19401,7 +19482,7 @@ header.top.compact>.theme-top{display:none}
     const stats = [
       ["生涯小分", `${C.w || 0}<small>–</small>${C.l || 0}`],
       ["冠军", `${titleCount()}`],
-      ["转会", `${(S.txLog || []).length}<small> 站</small>`],
+      ["转会", `${txStops()}<small> 站</small>`],
       ["段位", `<span style="font-size:14px">${rankFull(S.pre ? S.pre.rank : 0)}</span>`],
       ["粉丝", `<span style="font-size:14px">${fanTier()}</span>`]
     ];
@@ -19969,7 +20050,7 @@ header.top.compact>.theme-top{display:none}
       ${rival ? `<span class="chipx">你的对位 <b>${rival.id}</b><i class="ovr">${N("实力 " + ovrOf(rival).toFixed(0), dimWord(ovrOf(rival)))}</i>${rival.rookie ? " · 新秀" : ""}</span>` : ""}
     </div>
     <div class="gapbar ${V.k}">
-      <div class="gv">${V.t}${uiNum() ? `<span class="gd mono">${diff >= 0 ? "+" : ""}${diff.toFixed(1)}</span>` : ""}</div>
+      <div class="gv">${V.t}${uiNum() ? `<span class="gd mono">${diff >= 0 ? "+" : ""}${pwShow(diff).toFixed(1)}</span>` : ""}</div>
       <div class="gt">${V.d}</div>
     </div>${fixtureStrip()}</div>`;
   }
@@ -20693,7 +20774,7 @@ header.top.compact>.theme-top{display:none}
     const ap = S.step === "pre" && S.pre ? S.pre.ap : S.step === "season" || S.step === "prep" || S.step === "offseason" ? S.ap : null;
     const num = uiNum();
     const st = strength(S.attrs);
-    const html = (ap !== null && ap !== void 0 ? `<span class="pv ${ap > 0 ? "top" : "dim"}"><i>行动</i><b>${ap}</b></span>` : "") + (num ? DIMS.map((d) => `<span class="pv ${d === top ? "top" : ""}"><i>${d}</i><b>${S.attrs[d].toFixed(0)}</b></span>`).join("") : `<span class="pv top"><i>实力</i><b>${dimWord(st)}</b></span><span class="pv pv-top2"><i>最强</i><b>${top}</b></span>`) + `<span class="pv dim"><i>体能</i><b>${100 - Math.round(S.fatigue)}</b></span>` + (S.form !== void 0 && S.career ? `<span class="pv dim"><i>状态</i><b>${Math.round(myForm())}</b></span>` : "") + `<span class="pv tools">${themeSeg()}<button class="pvb ${num ? "on" : ""}" id="uinum" title="${num ? "切回文字描述" : "显示具体数值"}">${typeof window !== "undefined" && window.innerWidth <= 560 ? "数值" : num ? "数值 开" : "数值 关"}</button><button class="pvb" id="tourbtn" title="重看一遍导览">导览</button></span>`;
+    const html = (ap !== null && ap !== void 0 ? `<span class="pv ${ap > 0 ? "top" : "dim"}"><i>行动</i><b>${ap}</b></span>` : "") + (num ? DIMS.map((d) => `<span class="pv ${d === top ? "top" : ""}"><i>${d}</i><b>${S.attrs[d].toFixed(1)}</b></span>`).join("") : `<span class="pv top"><i>实力</i><b>${dimWord(st)}</b></span><span class="pv pv-top2"><i>最强</i><b>${top}</b></span>`) + `<span class="pv dim"><i>体能</i><b>${100 - Math.round(S.fatigue)}</b></span>` + (S.form !== void 0 && S.career ? `<span class="pv dim"><i>状态</i><b>${Math.round(myForm())}</b></span>` : "") + `<span class="pv tools">${themeSeg()}<button class="pvb ${num ? "on" : ""}" id="uinum" title="${num ? "切回文字描述" : "显示具体数值"}">${typeof window !== "undefined" && window.innerWidth <= 560 ? "数值" : num ? "数值 开" : "数值 关"}</button><button class="pvb" id="tourbtn" title="重看一遍导览">导览</button></span>`;
     if (!p) return;
     p.innerHTML = html;
     try {
@@ -20907,6 +20988,7 @@ header.top.compact>.theme-top{display:none}
       S.tab = b.dataset.tab;
       _moreOpen = false;
       render();
+      scrollStageTop();
     });
     st.querySelectorAll("[data-more]").forEach((b) => b.onclick = () => {
       _moreOpen = b.dataset.more === "1" ? !_moreOpen : false;
