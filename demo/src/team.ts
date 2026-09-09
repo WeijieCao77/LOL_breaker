@@ -7,6 +7,7 @@ import { diffOf, pay, snapshot } from "./random";
 import { addMoney } from "./shop";
 import { addSquad, disruptSynergy } from "./squad";
 import { S } from "./state";
+import { bondSync } from "./bond";
 import { addTraitPt, traitMul } from "./trait";
 
 /* ================= 队友信任度 · 更衣室 · 合同与经济 ================= */
@@ -50,6 +51,9 @@ export function syncTrust(){
   const ids=myRoster().filter(p=>!p.me).map(p=>p.id);
   // 新队友从中性起步（46–53），不再自带 −士气：AI 队有了战绩士气之后，转会即扣分让联赛冠军 1.73 掉到 1.35（2026-09-05 批测）
   ids.forEach(id=>{ if(S.trust[id]===undefined) S.trust[id]=46+Math.floor(rnd()*8); });
+  // 信任只留当前名单（数值口径不变），但「一起打过」这件事从此不再被删掉：
+  // 账本 S.mates 跨转会、跨退役都留着（bond.ts）
+  bondSync();
   Object.keys(S.trust).forEach(k=>{ if(!ids.includes(k)) delete S.trust[k]; });
 }
 

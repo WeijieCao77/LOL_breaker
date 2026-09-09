@@ -49,7 +49,7 @@ if (!fs.existsSync(path.join(HERE, "src", "gen", "avatars.js"))) {
    `ACHIEVEMENTS.push(...ACH_MORE)`，抛 "Cannot access 'ACH_MORE' before initialization"。
    低概率、和这次的改动无关（改前改后各连跑 12 次都没复现，但两边都各撞见过一次），
    顺序载入让求值顺序固定下来，CI 不再看运气。循环引用本身还在，另开一条待办。 */
-const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer", "share"];
+const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer", "share", "bond"];
 const state = await import("./src/state.ts");
 const mods = [];
 for (const m of MODULES) mods.push(await import(`./src/${m}.ts`));
@@ -299,6 +299,62 @@ function playOne(opts?) {
 /* 不碰 DOM 的几何与消毒：导览说明卡永远不能盖在聚光框上；导入的存档只能带几个排版标签 */
 function unitChecks() {
   const bad = [];
+  /* 共事账本（羁绊第一批）。作者点名的那条弧线本来在数值里就跑着，缺的是记忆：
+     原来 syncTrust 里一行 delete 就把离队队友的一切抹掉了。 */
+  {
+    const S: any = A.S();
+    const bak = { mates: S.mates, acc: S.bondAcc, si: S.si, split: S.split, age: S.age, trust: S.trust, attrs: S.attrs };
+    S.mates = null; S.si = 1; S.split = 0; S.age = 20; S.trust = { M1: 71 };
+    const mate = (id: string, age: number) => ({ id, cn: "", pos: "top", age, r: {} });
+    // 建档 + 峰值信任
+    const e1 = A.bondSee(mate("M1", 26));
+    if (!e1 || e1.id !== "M1") bad.push("共事账本：登记不上队友");
+    if (e1.peakTrust !== 71) bad.push("共事账本：没记下他对你的峰值信任，实得 " + e1.peakTrust);
+    S.trust.M1 = 40; A.bondSee(mate("M1", 26));
+    if (e1.peakTrust !== 71) bad.push("共事账本：信任掉下来之后峰值被覆盖了");
+    // 离队 / 退役都只标记，不删
+    A.bondRetire("M1");
+    if (!A.bondOf("M1")) bad.push("共事账本：队友退役之后记录被删掉了（这正是要修的那件事）");
+    if (A.bondOf("M1").gone !== "retired") bad.push("共事账本：退役没标成 retired");
+    // 角色是对每一个人判的，两根轴（强弱 / 老少）正好是作者说的那四段
+    S.attrs = { 操作: 60, 运营: 60, 心态: 60, 指挥: 60, 体质: 60 };
+    S.age = 22;
+    const vs = (ovr: number, age: number) => A.bondRoleVs({ id: "X", age, r: { 操作: ovr, 运营: ovr, 心态: ovr, 指挥: ovr, 体质: ovr } }).role;
+    if (vs(66, 27) !== "被带") bad.push("角色：比你强又比你老，该是「被带」，实得 " + vs(66, 27));
+    if (vs(54, 27) !== "扛旗") bad.push("角色：比你弱又比你老，该是「扛旗」，实得 " + vs(54, 27));
+    if (vs(66, 19) !== "被带飞") bad.push("角色：比你强又比你年轻，该是「被带飞」，实得 " + vs(66, 19));
+    if (vs(54, 19) !== "带人") bad.push("角色：比你弱又比你年轻，该是「带人」，实得 " + vs(54, 19));
+    if (vs(61, 19) !== "并肩") bad.push("角色：只差 1 分不该分强弱，该是「并肩」，实得 " + vs(61, 19));
+    // 样本不够不下结论
+    S.bondAcc = { k: "1-0", n: 2, me: 2.0, mates: { M1: { n: 2, sum: 3.0 } } };
+    if (A.bondRolesNow()) bad.push("共事账本：只打了两场就给这个赛段定了角色");
+    S.bondAcc = null;
+    if (A.bondRolesNow()) bad.push("共事账本：没有任何场次也定出了角色");
+    // 名片两行：共事 1 个赛段不上卡，2 个才上
+    S.mates = { M1: { id: "M1", splits: 1, titles: [], roles: {} } };
+    if (A.bondCardLines().length) bad.push("共事账本：只共事过一个赛段就上了名片");
+    S.mates = { M1: { id: "M1", splits: 4, titles: ["S13 LPL春季赛"], roles: {} },
+                M2: { id: "M2", splits: 2, titles: [], roles: { "2-0": "带人", "2-1": "带人" } } };
+    const lines = A.bondCardLines();
+    if (lines.length !== 2) bad.push("共事账本：名片该有两行，实得 " + lines.length);
+    else {
+      if (!/M1/.test(lines[0].v) || !/4 个赛段/.test(lines[0].v) || !/1 冠/.test(lines[0].v))
+        bad.push("共事账本：「并肩最久」那行写错了 " + lines[0].v);
+      if (!/M2/.test(lines[1].v) || !/2 个赛段/.test(lines[1].v))
+        bad.push("共事账本：「你带过最久」那行写错了 " + lines[1].v);
+    }
+    /* 作者原话那一整条弧线：你带过他，后来他综评超过了你。
+       有这个人的时候，第二行必须写他，而且必须写清楚是哪一年被超过的。 */
+    S.mates = { M1: { id: "M1", splits: 6, titles: [], roles: {} },
+                M2: { id: "M2", splits: 3, titles: [], roles: { "2-0": "带人", "2-1": "带人", "3-0": "带人" } },
+                M3: { id: "M3", splits: 3, titles: [], roles: { "1-0": "带人", "3-1": "被带飞", "4-0": "被带飞" } } };
+    const arc = A.bondCardLines();
+    if (arc.length !== 2 || !/M3/.test(arc[1].v))
+      bad.push("共事账本：带过、后来被他超过的人没被写上名片（写的是 " + (arc[1] ? arc[1].v : "没有第二行") + "）");
+    else if (!/综评超过你/.test(arc[1].v) || !/S15/.test(arc[1].v))
+      bad.push("共事账本：「你带出来的」那行没写清是哪一年被超过 " + arc[1].v);
+    S.mates = bak.mates; S.bondAcc = bak.acc; S.si = bak.si; S.split = bak.split; S.age = bak.age; S.trust = bak.trust; S.attrs = bak.attrs;
+  }
   /* 赛后狠话（作者实锤 2026-09-09：「新档没放过狠话，却提示狠话被记录下来成了热梗」）。
      两条：① 没在媒体日定「狂」就不该有口径；② 回旋镖判的是说完之后那两周，
      不是整个赛段的累计负场。 */

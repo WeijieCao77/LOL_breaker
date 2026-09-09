@@ -8378,6 +8378,219 @@ header.top.compact>.theme-top{display:none}
       看台上被记下的关注会在注册窗兑现成问询。</span></p></div>`;
   }
 
+  // demo/src/bond.ts
+  var BOND_OVR = 2;
+  var BOND_MIN_GAMES = 3;
+  var BOND_MAX = 80;
+  function bondBook() {
+    if (!S.mates) S.mates = {};
+    return S.mates;
+  }
+  function bondKey() {
+    return (S.si || 0) + "-" + (S.split || 0);
+  }
+  function bondOf(id) {
+    const b = S.mates;
+    return b && b[id] || null;
+  }
+  function bondRoleCount(e, role) {
+    if (!e || !e.roles) return 0;
+    return Object.keys(e.roles).filter((k) => e.roles[k] === role).length;
+  }
+  function bondSee(p) {
+    if (!p || p.me || !p.id) return null;
+    const b = bondBook();
+    let e = b[p.id];
+    if (!e) {
+      e = b[p.id] = {
+        id: p.id,
+        cn: p.cn || "",
+        pos: p.pos || "",
+        firstSi: S.si || 0,
+        firstKey: bondKey(),
+        lastSi: S.si || 0,
+        team: S.team || "",
+        splits: 0,
+        games: 0,
+        titles: [],
+        peakTrust: 0,
+        roles: {},
+        gone: null,
+        goneSi: null
+      };
+      bondTrim();
+    }
+    e.lastSi = S.si || 0;
+    e.gone = null;
+    e.goneSi = null;
+    if (p.cn && !e.cn) e.cn = p.cn;
+    const t = S.trust && S.trust[p.id];
+    if (typeof t === "number" && t > (e.peakTrust || 0)) e.peakTrust = q1(t);
+    return e;
+  }
+  function bondTrim() {
+    const b = S.mates || {}, ks = Object.keys(b);
+    if (ks.length <= BOND_MAX) return;
+    const drop = ks.filter((k) => b[k].gone && (b[k].splits || 0) < 2).sort((x, y) => (b[x].splits || 0) - (b[y].splits || 0));
+    let need = ks.length - BOND_MAX;
+    for (let i = 0; i < drop.length && need > 0; i++, need--) delete b[drop[i]];
+  }
+  function bondSync() {
+    if (!S.career || !S.team) return;
+    let ids = [];
+    try {
+      ids = myRoster().filter((p) => !p.me).map((p) => p.id);
+    } catch (e) {
+      return;
+    }
+    try {
+      myRoster().forEach((p) => {
+        if (!p.me) bondSee(p);
+      });
+    } catch (e) {
+    }
+    const b = bondBook();
+    Object.keys(b).forEach((k) => {
+      if (!ids.includes(k) && !b[k].gone) {
+        b[k].gone = "left";
+        b[k].goneSi = S.si || 0;
+      }
+    });
+  }
+  function bondRetire(id) {
+    const e = bondOf(id);
+    if (!e) return;
+    e.gone = "retired";
+    e.goneSi = S.si || 0;
+  }
+  function bondNoteMatch(box) {
+    if (!S.career || !box || !box.mine) return;
+    const k = bondKey();
+    let a = S.bondAcc;
+    if (!a || a.k !== k) a = S.bondAcc = { k, n: 0, me: 0, mates: {} };
+    const me = box.mine.find((x) => x.me);
+    if (!me) return;
+    a.n++;
+    a.me += me.rating;
+    box.mine.forEach((x) => {
+      if (x.me) return;
+      const r = a.mates[x.id] || (a.mates[x.id] = { n: 0, sum: 0 });
+      r.n++;
+      r.sum += x.rating;
+    });
+  }
+  function bondMyOvr() {
+    return avg(DIMS.map((d) => S.attrs && S.attrs[d] || 0));
+  }
+  function bondRoleVs(p) {
+    if (!p || p.me) return null;
+    const ovrGap = bondMyOvr() - ovrOf(p);
+    const ageGap = (S.age || 20) - (p.age || 22);
+    let role = "并肩";
+    if (ovrGap <= -BOND_OVR) role = ageGap < 0 ? "被带" : "被带飞";
+    else if (ovrGap >= BOND_OVR) role = ageGap <= 0 ? "扛旗" : "带人";
+    return { role, ovrGap: q1(ovrGap), ageGap: q1(ageGap) };
+  }
+  function bondRolesNow() {
+    const a = S.bondAcc;
+    if (!a || a.k !== bondKey() || a.n < BOND_MIN_GAMES) return null;
+    let ms = [];
+    try {
+      ms = myRoster().filter((p) => !p.me);
+    } catch (e) {
+      return null;
+    }
+    if (!ms.length) return null;
+    const per = {}, cnt = {};
+    ms.forEach((p) => {
+      const r = bondRoleVs(p);
+      if (!r) return;
+      per[p.id] = r;
+      cnt[r.role] = (cnt[r.role] || 0) + 1;
+    });
+    const ids = Object.keys(a.mates);
+    const rGap = ids.length ? q1(a.me / a.n - avg(ids.map((i) => a.mates[i].sum / Math.max(1, a.mates[i].n)))) : 0;
+    return { per, cnt, rGap, n: a.n };
+  }
+  function bondSplitEnd(result) {
+    if (!S.career || !S.team) return null;
+    const R = bondRolesNow(), key = bondKey(), a = S.bondAcc;
+    const games = a && a.k === key ? a.n : 0;
+    const title = result === "champion" && !S.benchedPO ? `${SEASONS[S.si] ? SEASONS[S.si].tag : "S"} ${S.homeLeague || "LPL"}${SPLITS[S.split || 0] || ""}` : null;
+    let ms = [];
+    try {
+      ms = myRoster().filter((p) => !p.me);
+    } catch (e) {
+      ms = [];
+    }
+    ms.forEach((p) => {
+      const e = bondSee(p);
+      if (!e) return;
+      if (e.roles[key] === void 0) e.splits = (e.splits || 0) + 1;
+      e.games = (e.games || 0) + games;
+      if (R && R.per[p.id]) e.roles[key] = R.per[p.id].role;
+      if (title && !e.titles.includes(title)) e.titles.push(title);
+    });
+    S.bondAcc = null;
+    if (R) {
+      S.bondRole = { si: S.si, sp: S.split || 0, cnt: R.cnt, rGap: R.rGap };
+      const bits = ["带人", "扛旗", "被带", "被带飞"].filter((k) => R.cnt[k]).map((k) => `<b>${k}</b> ${R.cnt[k]} 人`);
+      if (bits.length) pushEvent(
+        `${SEASONS[S.si] ? SEASONS[S.si].tag : ""}${SPLITS[S.split || 0] || ""}打完，队里这五个人的位置：${bits.join(" · ")}${R.cnt["并肩"] ? ` · 并肩 ${R.cnt["并肩"]} 人` : ""}。
+      <span style="color:var(--ink-3)">你的场均评分和他们差 ${R.rGap > 0 ? "+" : ""}${R.rGap.toFixed(2)}。</span>`,
+        "info",
+        "更衣室"
+      );
+    }
+    return R;
+  }
+  function bondLongest() {
+    const b = S.mates || {}, all = Object.keys(b).map((k) => b[k]);
+    if (!all.length) return null;
+    return all.slice().sort((x, y) => (y.splits || 0) - (x.splits || 0) || (y.titles || []).length - (x.titles || []).length)[0];
+  }
+  function bondFirstRole(e, role) {
+    if (!e || !e.roles) return null;
+    const ks = Object.keys(e.roles).filter((k) => e.roles[k] === role).sort();
+    return ks.length ? ks[0] : null;
+  }
+  function bondSiTag(key) {
+    const si = parseInt(String(key).split("-")[0], 10);
+    return SEASONS[si] && SEASONS[si].tag || "S" + si;
+  }
+  function bondProtege() {
+    const b = S.mates || {}, all = Object.keys(b).map((k) => b[k]);
+    const grew = all.filter((e) => bondRoleCount(e, "带人") >= 1 && bondRoleCount(e, "被带飞") >= 1);
+    if (grew.length) return { e: grew.sort((x, y) => bondRoleCount(y, "带人") - bondRoleCount(x, "带人"))[0], kind: "grew" };
+    const led = all.filter((e) => bondRoleCount(e, "带人") >= 2);
+    if (led.length) return { e: led.sort((x, y) => bondRoleCount(y, "带人") - bondRoleCount(x, "带人") || (y.splits || 0) - (x.splits || 0))[0], kind: "led" };
+    const past = all.filter((e) => bondRoleCount(e, "被带飞") >= 2 && (e.splits || 0) >= 2);
+    if (past.length) return { e: past.sort((x, y) => bondRoleCount(y, "被带飞") - bondRoleCount(x, "被带飞"))[0], kind: "passed" };
+    return null;
+  }
+  function bondCardLines() {
+    const out = [];
+    const L = bondLongest();
+    if (L && (L.splits || 0) >= 2) {
+      const t = (L.titles || []).length;
+      out.push({ k: "并肩最久", v: `${L.id} · ${L.splits} 个赛段${t ? ` · ${t} 冠` : ""}` });
+    }
+    const P = bondProtege();
+    if (P && P.e && (!L || P.e.id !== L.id)) {
+      const e = P.e;
+      if (P.kind === "grew") {
+        const at = bondFirstRole(e, "被带飞");
+        out.push({ k: "你带出来的", v: `${e.id} · 带了 ${bondRoleCount(e, "带人")} 个赛段${at ? `，${bondSiTag(at)} 综评超过你` : ""}` });
+      } else if (P.kind === "led") {
+        out.push({ k: "你带过最久", v: `${e.id} · ${bondRoleCount(e, "带人")} 个赛段` });
+      } else {
+        const at = bondFirstRole(e, "被带飞");
+        out.push({ k: "后来居上", v: `${e.id}${at ? ` · ${bondSiTag(at)} 综评超过你` : ""}` });
+      }
+    }
+    return out;
+  }
+
   // demo/src/team.ts
   function initTrust() {
     S.trust = {};
@@ -8417,6 +8630,7 @@ header.top.compact>.theme-top{display:none}
     ids.forEach((id) => {
       if (S.trust[id] === void 0) S.trust[id] = 46 + Math.floor(rnd() * 8);
     });
+    bondSync();
     Object.keys(S.trust).forEach((k) => {
       if (!ids.includes(k)) delete S.trust[k];
     });
@@ -14757,7 +14971,9 @@ header.top.compact>.theme-top{display:none}
     }
     y += 34;
     const rows = yearRows();
-    const avail = H - 270 - 40 - y - 132 - 30;
+    const bond = bondCardLines();
+    const bondH = bond.length ? 26 + bond.length * 40 : 0;
+    const avail = H - 270 - 40 - y - 132 - 30 - bondH;
     const rh = Math.max(56, Math.min(112, Math.floor(avail / Math.max(1, rows.length))));
     rows.forEach((r, i) => {
       const yy = y + i * rh;
@@ -14807,6 +15023,20 @@ header.top.compact>.theme-top{display:none}
     });
     g.textAlign = "left";
     y += 132;
+    if (bond.length) {
+      y += 26;
+      bond.forEach((ln, i) => {
+        const ly = y + i * 40;
+        g.font = FONT(400, 24);
+        g.fillStyle = CO.ink3;
+        g.fillText(ln.k, 72, ly);
+        const kw = g.measureText(ln.k + "　").width;
+        g.font = FONT(600, 24);
+        g.fillStyle = CO.gold;
+        g.fillText(ln.v, 72 + kw, ly);
+      });
+      y += bond.length * 40;
+    }
     const qy = H - 230;
     g.fillStyle = CO.line;
     g.fillRect(72, qy - 40, W - 144, 1);
@@ -15005,6 +15235,11 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909h", at: "2026-09-09", items: [
+      "<b>共事账本</b>（作者点名的「羁绊」第一批，只记不改数值）：一起打过的队友从此不会被忘掉。原来队友一离开名单，你和他的一切就被删干净——一起打了三年的大哥退役那天归零，你带过的新人被卖走、下赛季碰上游戏也不认得他。现在每个同队过的人都留一条：一起打了几个赛段、一起拿过什么冠军、他是退役还是被卖走的",
+      "每个赛段结算多一句话：<b>这一年你在队里是「被带 / 并肩 / 带人」的哪一个</b>。判据是已经算好的赛后全员评分——你和队友的场均差，加上你和他们的年龄差。作者原话：「刚去的时候四个大哥带我一个，大哥老了我带一绿带四红硬带他们夺冠」——这件事引擎本来每场都在算，只是从来没被累计、也没被说出来过",
+      "生涯名片图底部多两行：<b>并肩最久</b>（谁陪你打得最久、一起拿过几冠）和<b>你带过最久</b>（哪个新人被你带了最多个赛段）。没有内容时版式不变"
+    ] },
     { v: "v20260909g", at: "2026-09-09", items: [
       "赛后那句狠话不再是游戏替你说的（作者实锤：「新档明明没放过狠话，却提示我的狠话被对手记下来、成了网络热梗」）：原来只要<b>爆冷赢一场</b>就有三成概率自动弹「XX 也就这样」，玩家没点过任何按钮——30 局批测里 <b>28/30 的生涯被安过，平均每局 3.9 次</b>，其中 47% 两周后变成弹幕热梗挨罚。而媒体日本来就有「狂 / 稳 / 甩锅」让你自己定调，这条完全绕过了它。现在<b>只有这个赛段你真在媒体日定了「狂」，才谈得上赛后补一句</b>；选了稳、甩锅或者跳过媒体日的人，永远不会被安上这句话",
       "狠话的回旋镖也改了判据：原来看的是「这个赛段一共输过两场」——一个赛段十几场，输两场太容易，等于说完必挨罚。现在看的是<b>说完之后那两周打成什么样</b>，赢多于输就进赛区宣传片，输多于赢才成弹幕热梗，事件里也把这两周的战绩写出来"
@@ -16621,6 +16856,7 @@ header.top.compact>.theme-top{display:none}
             const base2 = S.baseline && S.baseline[lg] || avg(S.world[lg].map((t) => avg(t.players.map((q) => ovrOf(q)))));
             const nr = makeRookie(p.pos, base2 - 6 + (S.si || 0) * 2.2, lg);
             S.retiredPool.push({ p: Object.assign({}, p), peak: ovr, year: SEASONS[S.si].y, lg });
+            if (team.name === S.team) bondRetire(p.id);
             if (lg === "LPL" || ovr > 58) {
               const honor = ovr > 76 ? "一代人的记忆就此谢幕" : ovr > 64 ? "结束了自己的职业生涯" : "低调退役";
               pushEvent(
@@ -18738,6 +18974,7 @@ header.top.compact>.theme-top{display:none}
     S.stats.r += rating;
     m.myline = { k, d, a, cs, dmg, rating };
     m.box = box;
+    bondNoteMatch(box);
     if (box && box.carry) {
       S.carries = (S.carries || 0) + 1;
       S.carrySplit = (S.carrySplit || 0) + 1;
@@ -19349,6 +19586,7 @@ header.top.compact>.theme-top{display:none}
       }
     }
     cloutTick();
+    bondSplitEnd(result);
     rollForm();
     {
       rollWorldForm();

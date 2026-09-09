@@ -3,6 +3,7 @@ import { S } from "./state";
 import { ringTitles, titleCount } from "./rotation";
 import { txStops } from "./tryout";
 import { statEvent } from "./stats";
+import { bondCardLines } from "./bond";
 
 /* ================= 生涯结算图（玩家点名 2026-09-09）=================
 
@@ -144,9 +145,14 @@ export function drawShareCard(){
   // 逐年轨迹
   y+=34;
   const rows=yearRows();
+  /* 共事账本给的两行（bond.ts）：并肩最久的人、你带过最久的人。
+     作者原话：「最后我要退役了，小弟们的综评已经超越我了，开始带飞我了，就会有的感触」——
+     名片是玩家会截图发出去的东西，这两行就是那个感触。没有账本内容时高度是 0，版式不动。 */
+  const bond=bondCardLines();
+  const bondH=bond.length?(26+bond.length*40):0;
   /* 行高按剩余空间算，把中间铺满：底部分隔线在 H-270，往上留统计块 132 + 间距 30。
      原来行高写死 74，五年的名片中间会空出一大块。 */
-  const avail=(H-270-40)-y-132-30;
+  const avail=(H-270-40)-y-132-30-bondH;
   const rh=Math.max(56,Math.min(112,Math.floor(avail/Math.max(1,rows.length))));
   rows.forEach((r,i)=>{
     const yy=y+i*rh;
@@ -175,6 +181,20 @@ export function drawShareCard(){
   });
   g.textAlign="left";
   y+=132;
+
+  // 共事：并肩最久 / 你带过最久
+  if(bond.length){
+    y+=26;
+    bond.forEach((ln,i)=>{
+      const ly=y+i*40;
+      g.font=FONT(400,24); g.fillStyle=CO.ink3;
+      g.fillText(ln.k,72,ly);
+      const kw=g.measureText(ln.k+"　").width;
+      g.font=FONT(600,24); g.fillStyle=CO.gold;
+      g.fillText(ln.v,72+kw,ly);
+    });
+    y+=bond.length*40;
+  }
 
   // 底部：二维码 + 网址
   const qy=H-230;

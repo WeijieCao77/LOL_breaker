@@ -3,6 +3,7 @@ import { bgmSeasonTick, showChangelog, supportNudge, tone, updCheck } from "./au
 import { AUTO_KEYS, autoAllOn, autoBar, autoBiz, autoCareerStep, autoDaily, autoNote, autoOn, autoOnce, autoPage, autoSet, autoStep, autoSweep, autoToggleAll } from "./auto";
 import { avatarOf, gicon } from "./avatar";
 import { synthBoxScore } from "./boxscore";
+import { bondNoteMatch, bondRetire, bondSplitEnd } from "./bond";
 import { addStaff, cloutCard, cloutTick, doList, doSign, initRelations, initStaff, relCard, relMod } from "./clout";
 import { CUPS, activeCups, cupCard, cupDismissMatch, cupMatchCard, cupOf, cupOppName, cupPrep, cupReachName, cupResultCard, cupRoundName, cupTick, disbandCrew, dueCups, enterCup, forfeitCup, preSquadCard, resolveCupNode, startCupMatch } from "./cup";
 import { DATA } from "./data";
@@ -112,6 +113,11 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260909h", at:"2026-09-09", items:[
+    "<b>共事账本</b>（作者点名的「羁绊」第一批，只记不改数值）：一起打过的队友从此不会被忘掉。原来队友一离开名单，你和他的一切就被删干净——一起打了三年的大哥退役那天归零，你带过的新人被卖走、下赛季碰上游戏也不认得他。现在每个同队过的人都留一条：一起打了几个赛段、一起拿过什么冠军、他是退役还是被卖走的",
+    "每个赛段结算多一句话：<b>这一年你在队里是「被带 / 并肩 / 带人」的哪一个</b>。判据是已经算好的赛后全员评分——你和队友的场均差，加上你和他们的年龄差。作者原话：「刚去的时候四个大哥带我一个，大哥老了我带一绿带四红硬带他们夺冠」——这件事引擎本来每场都在算，只是从来没被累计、也没被说出来过",
+    "生涯名片图底部多两行：<b>并肩最久</b>（谁陪你打得最久、一起拿过几冠）和<b>你带过最久</b>（哪个新人被你带了最多个赛段）。没有内容时版式不变"
+  ]},
   {v:"v20260909g", at:"2026-09-09", items:[
     "赛后那句狠话不再是游戏替你说的（作者实锤：「新档明明没放过狠话，却提示我的狠话被对手记下来、成了网络热梗」）：原来只要<b>爆冷赢一场</b>就有三成概率自动弹「XX 也就这样」，玩家没点过任何按钮——30 局批测里 <b>28/30 的生涯被安过，平均每局 3.9 次</b>，其中 47% 两周后变成弹幕热梗挨罚。而媒体日本来就有「狂 / 稳 / 甩锅」让你自己定调，这条完全绕过了它。现在<b>只有这个赛段你真在媒体日定了「狂」，才谈得上赛后补一句</b>；选了稳、甩锅或者跳过媒体日的人，永远不会被安上这句话",
     "狠话的回旋镖也改了判据：原来看的是「这个赛段一共输过两场」——一个赛段十几场，输两场太容易，等于说完必挨罚。现在看的是<b>说完之后那两周打成什么样</b>，赢多于输就进赛区宣传片，输多于赢才成弹幕热梗，事件里也把这两周的战绩写出来"
@@ -1722,6 +1728,7 @@ export function ageWorld(){
              现实里新一代选手确实一年比一年强，所以锚点跟着赛季往上走。 */
           const nr=makeRookie(p.pos,base-6+(S.si||0)*2.2,lg);
           S.retiredPool.push({p:Object.assign({},p),peak:ovr,year:SEASONS[S.si].y,lg});
+          if(team.name===S.team) bondRetire(p.id);   // 一起打过的人退役了：账本记一笔，别当他没来过
           if(lg==="LPL"||ovr>58){
             const honor = ovr>76?"一代人的记忆就此谢幕":ovr>64?"结束了自己的职业生涯":"低调退役";
             pushEvent(`<b>${p.id}</b>${p.cn?`（${p.cn}）`:""} ${p.age} 岁宣布退役，${honor}。${team.name} 提拔新秀 <b>${nr.id}</b> 接班。`,
@@ -3869,6 +3876,7 @@ export function synthSeriesStats(m,won,myPw,opPw){
   S.stats=S.stats||{n:0,k:0,d:0,a:0,r:0};
   S.stats.n++; S.stats.k+=k; S.stats.d+=d; S.stats.a+=a; S.stats.r+=rating;
   m.myline={k,d,a,cs,dmg,rating}; m.box=box;
+  bondNoteMatch(box);   // 共事账本：这个赛段谁带谁，用的就是这张表（bond.ts）
   if(box&&box.carry){
     S.carries=(S.carries||0)+1; S.carrySplit=(S.carrySplit||0)+1;
     pushEvent(`<b>院长局</b>：输给 ${m.oppName}，但你评分 <b>${rating.toFixed(2)}</b> 全队最高，队友场均 ${box.mateAvg.toFixed(2)}${box.worst?`（${box.worst} ${box.worstR.toFixed(2)}）`:""}。<span style="color:var(--ink-3)">这场输比赛不算在你头上——教练组看数据，不只看比分。</span>`,"info","数据");
@@ -4490,6 +4498,7 @@ export function endSeason(result,seed){
     }
   }
   cloutTick();
+  bondSplitEnd(result);   // 共事账本：这个赛段你是被带 / 并肩 / 带人的那个（bond.ts）
   rollForm();
   { rollWorldForm(); formNews(); }
   btkSplitEnd();
