@@ -1061,6 +1061,7 @@ ul.dealfx li::marker{color:var(--ink-3)}
 }
 .audiofab button:hover{border-color:var(--gold)}
 .audiofab button.off{opacity:.45;border-color:var(--line)}
+#aud-community{font-size:14px;font-weight:800;font-family:var(--font-sans);letter-spacing:0}
 .audiofab>#aud-more{display:none}   /* 只在手机折叠态出现（见文末手机修补块） */
 
 /* 支持作者：结构参考常见的独立游戏赞助浮窗。
@@ -1096,6 +1097,21 @@ ul.dealfx li::marker{color:var(--ink-3)}
 .support-foot span{color:#7b7368;font-size:12.5px;line-height:1.5}
 .support-never{white-space:nowrap}
 .support-card :focus-visible{outline:2px solid #b33f3f;outline-offset:2px}
+/* 玩家交流群：沿用支持作者的纸面浮窗。两张分享卡都完整保留——卡面上印的群名、群号、扫法都是玩家要的。 */
+.community-card{width:min(760px,calc(100vw - 32px))}
+/* 两个群并排；每张码下面跟自己的说明，因为两边扫法完全不一样。 */
+.community-main{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;align-items:start}
+.community-one{margin:0;display:flex;flex-direction:column;gap:10px}
+.community-qrbox{padding:8px;background:#fff;border:1px solid #e4dfd5;border-radius:7px}
+.community-qrbox img{display:block;width:100%;height:auto;border-radius:3px}
+.community-one figcaption{display:flex;flex-direction:column;gap:6px}
+.community-one figcaption b{color:#29251f;font-size:16px}
+.community-hint{color:#5f584d;font-size:12.5px;line-height:1.65}
+.community-hint b{color:#29251f}
+.community-hint a{color:#8a5a2b;text-decoration:underline}
+.community-hint code{padding:1px 5px;background:#efe9dc;border-radius:3px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;color:#29251f;user-select:all}
+.community-dead{color:#b33f3f;font-weight:650}
+.community-foot{justify-content:space-between;gap:12px}
 /* 背景音乐浮窗 */
 .bgmpanel{position:fixed;right:14px;bottom:60px;z-index:61;width:264px;max-width:calc(100vw - 28px);
   background:rgba(var(--card-rgb),.97);border:1px solid var(--line-hot);border-radius:12px;
@@ -1134,6 +1150,9 @@ ul.dealfx li::marker{color:var(--ink-3)}
 .credits b{color:var(--gold);letter-spacing:.12em}
 .credits .pig{color:var(--gold-hi);font-weight:650}
 .credits em{font-style:normal;display:block;margin-top:4px;opacity:.65;font-family:ui-monospace,Consolas,monospace}
+.community-credit{display:block;margin-top:10px;color:var(--ink-2);font-size:12px;letter-spacing:.02em}
+.community-credit button{margin-left:7px;padding:3px 8px;border:1px solid var(--line-hot);border-radius:4px;background:transparent;color:var(--gold-hi);font-size:12px;cursor:pointer}
+.community-credit button:hover{border-color:var(--gold);color:var(--gold)}
 
 /* ---- 存档 ---- */
 .savebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
@@ -1166,6 +1185,12 @@ ul.dealfx li::marker{color:var(--ink-3)}
   .support-copy{text-align:center}
   .support-link{font-size:18px}
   .support-foot{align-items:flex-start;flex-direction:column}
+  .community-main{grid-template-columns:1fr;gap:22px}
+  .community-qrbox{width:min(260px,100%);margin:0 auto}
+  .community-one figcaption{text-align:center;align-items:center}
+  .community-foot{align-items:stretch;text-align:center}
+  .community-credit{padding:0 12px;line-height:1.7}
+  .community-credit button{display:block;margin:7px auto 0;padding:6px 10px}
   body{padding-bottom:48px}
 }
 

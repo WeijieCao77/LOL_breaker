@@ -1,5 +1,5 @@
 /* 浏览器入口：装数据、开局、挂声音与存档接力。引擎模块本身不在这里执行任何东西，无头测试直接 import 它们。 */
-import { audioInit } from "./audio";
+import { audioInit, communityTick, showCommunity } from "./audio";
 import { bindTheme } from "./theme";
 import { screenCreate } from "./main";
 import { xferPull } from "./save";
@@ -16,4 +16,4 @@ import { SITE_QR } from "./share";
 import { render, startPre, GAME_VER } from "./main";
 import { saveGame, loadGame, readSave } from "./save";
 import { cerStart } from "./cer";
-(window as any).poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave, cerStart, SITE_QR };
+(window as any).poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave, cerStart, SITE_QR, showCommunity, communityTick };

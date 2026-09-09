@@ -342,6 +342,58 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
   dom.window.close();
 }
 
+/* ---------------- 玩家交流群：两张码 + 玩满 10 分钟弹一次 ---------------- */
+{
+  const { dom, w, d, errors } = boot({});
+  await tick(50);
+  const P = w.poxiao;
+  if (!P || typeof P.showCommunity !== "function") bad.push("交流群：调试口上没有 showCommunity");
+  else {
+    // 手动打开：两张码都在、不带「别再提示」
+    P.showCommunity();
+    const pop = d.getElementById("community-pop");
+    if (!pop) bad.push("交流群：手动打不开");
+    else {
+      if (pop.getAttribute("role") !== "dialog" || pop.getAttribute("aria-modal") !== "true") bad.push("交流群：浮窗没有 dialog / aria-modal");
+      const dy = d.getElementById("community-qr-dy") as HTMLImageElement | null;
+      const xh = d.getElementById("community-qr-xhs") as HTMLImageElement | null;
+      if (!dy || !/douyin-group-qr/.test(dy.getAttribute("src") || "")) bad.push("交流群：缺抖音二维码");
+      if (!xh || !/xhs-group-qr/.test(xh.getAttribute("src") || "")) bad.push("交流群：缺小红书二维码");
+      // 抖音码通用扫码器读不出来，群号是唯一退路，不能丢
+      if (!/274886355718/.test(pop.textContent || "")) bad.push("交流群：没有写抖音群号（花式码扫不出时的唯一退路）");
+      if (!/xhslink\.com/.test(pop.innerHTML || "")) bad.push("交流群：小红书没给可点的链接");
+      if (d.getElementById("community-never")) bad.push("交流群：手动打开不该出现「别再提示」");
+      (d.getElementById("community-x") as HTMLElement).click();
+      if (d.getElementById("community-pop")) bad.push("交流群：关不掉");
+    }
+    // 没到 10 分钟不能弹
+    w.localStorage.removeItem("poxiao_community_shown_v1");
+    w.localStorage.removeItem("poxiao_community_hide_v1");
+    w.localStorage.setItem("poxiao_community_playms_v1", String(5 * 60 * 1000));
+    P.communityTick();
+    if (d.getElementById("community-pop")) bad.push("交流群：才 5 分钟就自动弹了");
+    // 过了 10 分钟要弹，而且带「别再提示」
+    w.localStorage.setItem("poxiao_community_playms_v1", String(11 * 60 * 1000));
+    P.communityTick();
+    const auto = d.getElementById("community-pop");
+    if (!auto) bad.push("交流群：满 10 分钟没自动弹");
+    else {
+      if (!d.getElementById("community-never")) bad.push("交流群：自动弹的没带「别再提示」");
+      if (w.localStorage.getItem("poxiao_community_shown_v1") !== "1") bad.push("交流群：自动弹过没记住");
+      (d.getElementById("community-never") as HTMLElement).click();
+      if (w.localStorage.getItem("poxiao_community_hide_v1") !== "1") bad.push("交流群：点了「别再提示」没记住");
+    }
+    // 退订之后：自动不弹了，但手动入口必须还能开
+    w.localStorage.setItem("poxiao_community_playms_v1", String(60 * 60 * 1000));
+    P.communityTick();
+    if (d.getElementById("community-pop")) bad.push("交流群：退订后还在自动弹");
+    P.showCommunity();
+    if (!d.getElementById("community-pop")) bad.push("交流群：退订后手动也打不开了");
+  }
+  if (errors.length) bad.push("交流群：页面脚本报错 " + errors.length + " 条：" + errors.slice(0, 3).join(" | "));
+  dom.window.close();
+}
+
 if (bad.length) { console.error("界面测试失败：\n - " + bad.join("\n - ")); process.exit(1); }
-console.log("界面测试通过：建档按钮 · 导览模态与焦点圈 · 浮窗与歌单探测 · 更新日志 · 推周 · 仪式小游戏（靶场 / 限时三选一） · 存档 · 配色切换 · 支持作者只在结局弹 · 小游戏不被重画冲掉 · 生涯名片图 · 手机折叠与抽屉");
+console.log("界面测试通过：建档按钮 · 导览模态与焦点圈 · 浮窗与歌单探测 · 更新日志 · 推周 · 仪式小游戏（靶场 / 限时三选一） · 存档 · 配色切换 · 支持作者只在结局弹 · 小游戏不被重画冲掉 · 生涯名片图 · 手机折叠与抽屉 · 交流群两张码与 10 分钟自动弹");
 process.exit(0);
