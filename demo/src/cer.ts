@@ -11,6 +11,7 @@
    小游戏只用 Math.random 摆盘，绝不碰 rng.ts 的种子——不然同一份存档的比赛结果会因为你玩没玩而变。 */
 import { S, onEra } from "./state";
 import { eraDef } from "./eras";
+import { bondFarewellLines } from "./bond";
 import { DIMS, POSN, SEASONS, addFans, avg, breakthrough, capOf, clamp, isBenched, lplRank, poMyOpp, pushEvent, render } from "./main";
 import { CUPS } from "./cup";
 import { rnd } from "./rng";
@@ -495,8 +496,12 @@ export function cerCard(){
       <p class="cer-hint">退役赛季：客场会有告别横幅；夏季赛最后一场常规赛<b>战力 +2</b>；赛季结束有退役仪式。名片上会多一行。</p>
       <div class="row cer-btns"><button class="btn primary" data-cer="close">打完这一年 →</button></div>`;
   }else if(c.k==="farewell"){
+    /* 点名（羁绊第二批）：陪你最久的那个、你带出来的那个，各说一句。
+       原来这里是一句通用台词——因为队友一离开名单，你和他的一切就被删了，
+       游戏说不出是谁。现在共事账本记着（bond.ts）。 */
+    const _bl=bondFarewellLines();
     body=`${scene("stage")}<div class="cer-eyebrow">退役仪式</div>
-      <p class="cer-p"><b>灯光打到台上。</b>队友：「${S.team||"队里"}的位置一直给你留着。」教练：「你是我带过最听不进话、也最能打出来的人。」看台上的横幅写着你的 ID，和第一年一样。</p>
+      <p class="cer-p"><b>灯光打到台上。</b>${_bl.length?_bl.join("<br>"):`队友：「${S.team||"队里"}的位置一直给你留着。」`}<br>教练：「你是我带过最听不进话、也最能打出来的人。」看台上的横幅写着你的 ID，和第一年一样。</p>
       <p class="cer-p">你把外设收进包里。灯暗下来的时候，你没有回头。</p>
       <div class="row cer-btns"><button class="btn primary" data-cer="close">看生涯名片 →</button></div>`;
   }else if(c.k==="awards"){

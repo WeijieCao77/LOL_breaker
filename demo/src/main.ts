@@ -3,7 +3,7 @@ import { bgmSeasonTick, showChangelog, supportNudge, tone, updCheck } from "./au
 import { AUTO_KEYS, autoAllOn, autoBar, autoBiz, autoCareerStep, autoDaily, autoNote, autoOn, autoOnce, autoPage, autoSet, autoStep, autoSweep, autoToggleAll } from "./auto";
 import { avatarOf, gicon } from "./avatar";
 import { synthBoxScore } from "./boxscore";
-import { bondNoteMatch, bondRetire, bondSplitEnd } from "./bond";
+import { bondMoments, bondNoteMatch, bondPanel, bondRetire, bondSplitEnd, doBondTalk } from "./bond";
 import { addStaff, cloutCard, cloutTick, doList, doSign, initRelations, initStaff, relCard, relMod } from "./clout";
 import { CUPS, activeCups, cupCard, cupDismissMatch, cupMatchCard, cupOf, cupOppName, cupPrep, cupReachName, cupResultCard, cupRoundName, cupTick, disbandCrew, dueCups, enterCup, forfeitCup, preSquadCard, resolveCupNode, startCupMatch } from "./cup";
 import { DATA } from "./data";
@@ -117,6 +117,11 @@ export const CHANGELOG=[
   {v:"v20260909j", at:"2026-09-09", items:[
     "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
     "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+  ]},
+  {v:"v20260909i", at:"2026-09-09", items:[
+    "<b>找人聊聊</b>（羁绊第二、三批）：「队伍」栏里每个队友都能单独找一次，<b>1 个行动点、每赛段两次、每人一次</b>。选项按你和他的角色自动变——比你强就是「找他请教」，老将是「陪他复盘」，同龄是「一起双排」，新人是「陪他加练」。陪新人加练能真的把他练起来，但<b>封在他自己的天花板里</b>：你让他更快到那儿，不是把他拔到别处去",
+    "两个时刻会自己找上门：<b>「交给你了」</b>——你对某个老将的角色第一次从「被带」翻成「扛旗 / 带人」，他把开麦指挥的位置让给你（他 −1.5、你 +1.5，加起来是零和的，队伍不会凭空变强）；<b>「他超过你了」</b>——你带过的人第一次反过来压过你，作者原话「小弟们的综评已经超越我了，开始带飞我了」",
+    "退役仪式上说话的人<b>有名字了</b>：陪你最久的那个、你带出来的那个，各说一句。原来只能是一句通用台词——因为队友一离开名单，你和他的一切就被删干净，游戏说不出是谁"
   ]},
   {v:"v20260909h", at:"2026-09-09", items:[
     "<b>共事账本</b>（作者点名的「羁绊」第一批，只记不改数值）：一起打过的队友从此不会被忘掉。原来队友一离开名单，你和他的一切就被删干净——一起打了三年的大哥退役那天归零，你带过的新人被卖走、下赛季碰上游戏也不认得他。现在每个同队过的人都留一条：一起打了几个赛段、一起拿过什么冠军、他是退役还是被卖走的",
@@ -621,7 +626,7 @@ export const AP_SEASON=8, AP_PRE=10, AP_OFF=8, AP_HURT=4;   // 职业前 12→10
    中 2 = 半天（专项训练 / 直播一开就是四小时 / 做内容 / 真歇半天 / 合练 / 复盘 / 杯赛备战）；
    重 3 = 训练赛——整个下午连打，最耗神。
    预算同步翻倍：起步强度净中性，体感是「能做的事变多、轻的真的轻」。 */
-export const AP_COST={train:2,solo:1,stream:2,content:2,rest:1,scrim:3,vod:2,drill:2,duo:1,cupprep:2,duel:2,boost:2,cafe:1,chill:1,watch:1};   // rest=1：玩家拍板「一个行动点休息比较合理」；boost/cafe/chill/watch 是职业前的其它活动
+export const AP_COST={train:2,solo:1,stream:2,content:2,rest:1,scrim:3,vod:2,drill:2,duo:1,cupprep:2,duel:2,talk:1,boost:2,cafe:1,chill:1,watch:1};   // rest=1：玩家拍板「一个行动点休息比较合理」；boost/cafe/chill/watch 是职业前的其它活动
 export function apCost(k){ return AP_COST[k]||1; }
 export function apTag(k){ return `<i class="apc">${apCost(k)}点</i>`; }
 export function apFor(phase){
@@ -3445,7 +3450,7 @@ export function autoSumCard(){
 export function tabContent(T){
   return `${S.pmView!=null&&true?pmReplayCard():""}
     ${T==="me"?attrCard()+(formCard())+(dataCard())+(matchLogCard())+(careerCard())+gearCard():""}
-    ${T==="team"?squadCard()+(roleCard())+(promoteCard())+teamCard()+(relCard())+(cloutCard()):""}
+    ${T==="team"?squadCard()+(roleCard())+(promoteCard())+teamCard()+(bondPanel())+(relCard())+(cloutCard()):""}
     ${T==="shop"?(economyCards()):""}
     ${T==="tx"?(transferPage()):""}
     ${T==="auto"?(autoPage()):""}
@@ -4468,7 +4473,8 @@ export function endSeason(result,seed){
     }
   }
   cloutTick();
-  bondSplitEnd(result);   // 共事账本：这个赛段你是被带 / 并肩 / 带人的那个（bond.ts）
+  { const _R=bondSplitEnd(result);   // 共事账本：这个赛段你对每个人是什么角色（bond.ts）
+    bondMoments(_R); }               // 四个时刻里的两个：接班、他超过你了
   rollForm();
   { rollWorldForm(); formNews(); }
   btkSplitEnd();
@@ -6580,6 +6586,7 @@ export function bind(){
   st.querySelectorAll("[data-list]").forEach((b: any)=>b.onclick=()=>doList(b.dataset.list));
   st.querySelectorAll("[data-sign]").forEach((b: any)=>b.onclick=()=>doSign(b.dataset.sign));
   st.querySelectorAll("[data-squad]").forEach((b: any)=>b.onclick=()=>doSquad(b.dataset.squad));
+  st.querySelectorAll("[data-bond]").forEach((b: any)=>b.onclick=()=>doBondTalk(b.dataset.bond));
   const _ss=$("scrimStart"); if(_ss) _ss.onclick=()=>{ startScrim(); };
   const _sx=$("scrimClose"); if(_sx) _sx.onclick=()=>{ if(S.scrim) S.scrim.live=null; render(); };
   st.querySelectorAll("[data-scrimopt]").forEach((b: any)=>b.onclick=()=>scrimPick(+b.dataset.scrimopt));
