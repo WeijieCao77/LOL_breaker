@@ -46,7 +46,7 @@ export function attribute(myTeamPlayers,oppTeamObj,fatigue,verFav){
       fix:meFm<opFm?`你今年的手感在对面之下（你 ${showF(myForm())} · 对面均 ${opShow}）。休息、稳住更衣室，状态下个赛段会回来。`
                    :`你的状态压着对面（你 ${showF(myForm())} · 对面均 ${opShow}）。`});
     rows.push({n:"队友状态",v:(mateFm-opFm)*myAb*(n-1)/n,
-      fix:mateFm<opFm?`四个队友今年状态不在（队友均 ${showF(avg(mates.map(p=>formOf(p))))} · 对面均 ${opShow}）——这一项不是你能直接练的，赢球、团建、转会窗才推得动。`
+      fix:mateFm<opFm?`四个队友今年状态不在（队友均 ${showF(avg(mates.map(p=>formOf(p))))} · 对面均 ${opShow}）——这一项不是你能直接练的，赢比赛、团建、转会窗才推得动。`
                      :`队友状态在线（队友均 ${showF(avg(mates.map(p=>formOf(p))))} · 对面均 ${opShow}）。`});
   }else{
     const myFm=avg(myTeamPlayers.map(p=>p.me?myFormMul():formMul(p)));

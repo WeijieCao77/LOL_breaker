@@ -142,7 +142,7 @@ export function cerApply(k,tier,skipped,ctx?){
       S.media={si:S.si, split:S.split||0, tone};
       S.heat=Math.max(0,(S.heat||0)+(E.heat||0));
       if(E.trust) addTrustAll(E.trust);
-      pushEvent(`媒体日：你的口径是<b>${MEDIA_TONE_N[tone]}</b>。${tone==="bold"?`热度 +15，<b>但这个赛段输球更伤心态</b>——话说出去了，就得打回来。`:tone==="steady"?`热度 +5，没留下把柄。`:`热度 +10，<b>更衣室信任 −3</b>——队友看得懂你在说谁。`}`,
+      pushEvent(`媒体日：你的口径是<b>${MEDIA_TONE_N[tone]}</b>。${tone==="bold"?`热度 +15，<b>但这个赛段输了更伤心态</b>——话说出去了，就得打回来。`:tone==="steady"?`热度 +5，没留下把柄。`:`热度 +10，<b>更衣室信任 −3</b>——队友看得懂你在说谁。`}`,
         tone==="blame"?"bad":"info","媒体日");
     }else{
       pushEvent(`媒体日：三个记者三个问题，你说的都是套话。<span style="color:var(--ink-3)">没人写你。</span>`,"info","媒体日");
@@ -205,7 +205,7 @@ export function cerFinalPw(){ const m=S.match; return ((m&&m.cerFinal&&m.cerFina
 export function cerFinalNode(){ const m=S.match; return (m&&m.cerFinal&&m.cerFinal.node)||0; }
 /* 版本发布会：这个赛季的版本相性加成 */
 export function verCerAdj(){ const v=S.verCer; return (v&&v.si===S.si)?(v.adj||0):0; }
-/* 媒体日「狂」：这个赛段输球攒的心态压力 ×1.5 */
+/* 媒体日「狂」：这个赛段输掉的比赛攒的心态压力 ×1.5 */
 export function mediaTiltMul(){ const m=S.media; return (m&&m.si===S.si&&m.split===(S.split||0)&&m.tone==="bold")?CER_EFF.media.bold.tilt:1; }
 /* 这一场是不是决赛：联赛季后赛第三轮、MSI 总决赛、世界赛决赛 */
 export function isFinalMatch(){
@@ -448,7 +448,7 @@ export function cerCard(){
     else body=resultBody(c,"board");
   }else if(c.k==="media"){
     if(st==="story") body=`${scene("media")}<div class="cer-eyebrow">${SEASONS[S.si].tag} ${["春季赛","夏季赛"][S.split||0]||""} · 媒体日</div>
-      <p class="cer-p"><b>背景板前。</b>三个记者，三个问题，每个都在等一个标题。你说的每句话这个赛段都会被翻出来——<b>狂</b>会涨热度，但输了球更伤心态；<b>稳</b>不留把柄；<b>甩锅</b>热度也涨，只是队友看得懂你在说谁。</p>
+      <p class="cer-p"><b>背景板前。</b>三个记者，三个问题，每个都在等一个标题。你说的每句话这个赛段都会被翻出来——<b>狂</b>会涨热度，但输了更伤心态；<b>稳</b>不留把柄；<b>甩锅</b>热度也涨，只是队友看得懂你在说谁。</p>
       <p class="cer-hint">不是小游戏，是<b>限时三选一</b>：每题 10 秒，不答按「稳」算。三题里占多数的那个口径，就是你这个赛段的基调。</p>
       ${btns(`<button class="btn primary" data-cer="next">面对镜头 →</button>`)}`;
     else if(st==="game") body=`<div class="cer-eyebrow">媒体日 · 10 秒一题</div><div id="cer-game" data-game="decide" data-quiz="media"></div>${btns("")}`;
@@ -527,7 +527,7 @@ function resultBody(c,art){
 function mediaResultBody(c){
   const d=c.detail||{}, tone=d.tone||"steady", E=CER_EFF.media[tone]||CER_EFF.media.steady;
   const picks=(d.picks||[]).map(x=>MEDIA_TONE_N[x]||x).join(" · ");
-  const eff=tone==="bold"?`热度 <b>+15</b>，<b>这个赛段输球攒的心态压力 ×1.5</b>——话说出去了，就得打回来`
+  const eff=tone==="bold"?`热度 <b>+15</b>，<b>这个赛段输掉的比赛攒的心态压力 ×1.5</b>——话说出去了，就得打回来`
     :tone==="steady"?`热度 <b>+5</b>，没留下把柄`:`热度 <b>+10</b>，<b>更衣室信任 −3</b>——队友看得懂你在说谁`;
   return `${scene("media")}<div class="cer-eyebrow">明天的标题</div>
     <div class="cer-tier ${tone==="bold"?"gold":tone==="blame"?"bronze":""}">${MEDIA_TONE_N[tone]}</div>
@@ -740,9 +740,9 @@ export function decideMount(el,quiz,isMedia){
    这是后期人气和钱的一个出口；托管不办，机器人不办，批测数字不动。 */
 export const MEET_MIN_FANS=150;
 export const MEETS=[
-  {k:"small", n:"小场", cost:20,  cap:300,  per:0.30, fans:5,  heat:10, d:"一家咖啡馆的二楼，一百多个位子。"},
-  {k:"mid",   n:"中场", cost:60,  cap:800,  per:0.35, fans:12, heat:25, d:"剧场，八百个位子，要请安保。"},
-  {k:"big",   n:"大场", cost:150, cap:2000, per:0.40, fans:25, heat:50, d:"体育馆的副馆。灯光、舞台、周边全要自己出。"}
+  {k:"small", n:"小型场地", cost:20,  cap:300,  per:0.30, fans:5,  heat:10, d:"一家咖啡馆的二楼，一百多个位子。"},
+  {k:"mid",   n:"中型场地", cost:60,  cap:800,  per:0.35, fans:12, heat:25, d:"剧场，八百个位子，要请安保。"},
+  {k:"big",   n:"大型场地", cost:150, cap:2000, per:0.40, fans:25, heat:50, d:"体育馆的副馆。灯光、舞台、周边全要自己出。"}
 ];
 export function meetOpen(){ return !!(S.career&&S.off&&S.off.next==="year"&&(S.fans||0)>=MEET_MIN_FANS&&!(S.meet&&S.meet[S.si]!==undefined)); }
 export function meetIncome(m){ return Math.round(Math.min(S.fans||0,m.cap)*m.per); }

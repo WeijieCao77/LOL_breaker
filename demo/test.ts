@@ -800,6 +800,40 @@ if (isMain && process.argv.includes("--batch")) {
     if (!(g.cost > pv.cost) || !((g.e[d] || 0) > (pv.e[d] || 0))) bad.push("外设反向升级 " + k + " → " + g.n);
   }));
   if (S.scaleVer !== 2 || !S.born) bad.push("新档缺少 scaleVer/born（审计 P0 回归）");
-  if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }
+  /* ---------------- 用语自检：这是 LOL 不是足球 ----------------
+   玩家点名过三次（2026-09-05「球探」、2026-09-06「球队」、2026-09-09「赢球 / 挂靴」）。
+   前两次都是人工扫一遍改掉，然后新写的文案又把词带回来。这次钉一条自检：
+   玩家看得见的字符串里不许出现下面这些球类词。
+   跳过两处：以 // 或 * 开头的注释行（改不改都影响不到玩家），
+   以及 CHANGELOG 里那两条「我们把球队改成了战队」——历史条目必须能引用原词。 */
+const BALL_WORDS = ["球队", "球员", "球迷", "球星", "球场", "赢球", "输球", "打球", "挂靴", "板凳席"];
+{
+  const bad2: string[] = [];
+  const dir = path.join(HERE, "src");
+  const walk = (d: string) => fs.readdirSync(d).flatMap((f: string) => {
+    const fp = path.join(d, f);
+    return fs.statSync(fp).isDirectory() ? walk(fp) : (f.endsWith(".ts") ? [fp] : []);
+  });
+  for (const fp of walk(dir)) {
+    const lines = fs.readFileSync(fp, "utf8").split("\n");
+    let inLog = false;
+    lines.forEach((ln: string, i: number) => {
+      if (/export const CHANGELOG\s*=/.test(ln)) inLog = true;
+      else if (inLog && /^\];/.test(ln)) inLog = false;
+      const t = ln.trim();
+      if (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) return;   // 注释
+      if (inLog && /足球词|用语电竞化/.test(ln)) return;                            // 历史条目要能引用原词
+      for (const w of BALL_WORDS) if (ln.includes(w))
+        bad2.push(`${path.basename(fp)}:${i + 1} 出现「${w}」 → ${t.slice(0, 60)}`);
+    });
+  }
+  if (bad2.length) {
+    console.error("用语自检不通过（这是 LOL 不是足球）：\n - " + bad2.join("\n - "));
+    process.exit(1);
+  }
+  console.log("用语自检通过：玩家可见文案里没有球类词");
+}
+
+if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }
   console.log("自检通过");
 }
