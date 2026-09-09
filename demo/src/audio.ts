@@ -1,4 +1,5 @@
-import { CHANGELOG, GAME_VER, SUPPORT_QR, SUPPORT_URL } from "./main";
+import { CHANGELOG, COMMUNITY_AFTER_MS, COMMUNITY_DOUYIN_ID, COMMUNITY_QR, COMMUNITY_QR_XHS,
+         COMMUNITY_XHS_UNTIL, COMMUNITY_XHS_URL, GAME_VER, SUPPORT_QR, SUPPORT_URL } from "./main";
 import { saveGame } from "./save";
 import { S } from "./state";
 import { statEvent } from "./stats";
@@ -325,6 +326,125 @@ export function showChangelog() {
   } catch (e) {}
 }
 
+/* ---------- 玩家交流群（抖音 + 小红书）----------
+   三个入口：右下角「⋯」里的「群」、页脚链接、以及玩满 10 分钟自动弹一次。
+   自动那次带「不用了，别再提示」，手动打开的不带——和支持作者一个规矩。 */
+export const COMMUNITY_HIDE_KEY = "poxiao_community_hide_v1";     // 永久关掉自动提示
+export const COMMUNITY_SHOWN_KEY = "poxiao_community_shown_v1";   // 自动弹过一次就不再弹
+export const COMMUNITY_MS_KEY = "poxiao_community_playms_v1";     // 累计前台游玩毫秒
+export const COMM: any = { timer: null, last: 0, ms: 0 };
+
+export function communityAutoHidden() {
+  try { return localStorage.getItem(COMMUNITY_HIDE_KEY) === "1" || localStorage.getItem(COMMUNITY_SHOWN_KEY) === "1"; } catch (e) { return false; }
+}
+export function xhsExpired() {
+  try { return !!COMMUNITY_XHS_UNTIL && new Date().toISOString().slice(0, 10) > COMMUNITY_XHS_UNTIL; } catch (e) { return false; }
+}
+/* 当下能不能弹：别盖在别的浮窗、仪式、导览、结局名片上面。
+   结局那一刻是「支持作者」的，不跟它抢。 */
+export function communityCanPop() {
+  try {
+    if (document.getElementById("community-pop") || document.getElementById("suplove")) return false;
+    if (document.querySelector(".rankup, .cer, .tour, .chlog, [role=dialog]")) return false;
+    if (document.body && document.body.classList.contains("moreopen")) return false;
+    return document.visibilityState === "visible";
+  } catch (e) { return false; }
+}
+export function communityMs() {
+  try { return parseInt(localStorage.getItem(COMMUNITY_MS_KEY) || "0", 10) || 0; } catch (e) { return 0; }
+}
+export function communityTick() {
+  try {
+    if (communityAutoHidden()) { if (COMM.timer) { clearInterval(COMM.timer); COMM.timer = null; } return; }
+    const now = Date.now();
+    /* 每次都以「存的」和「内存里的」取大：玩家开了两个标签页时，两边各自 tick，
+       只信内存会各算各的、谁后写谁把对方盖掉，10 分钟要等成 20 分钟。 */
+    COMM.ms = Math.max(COMM.ms || 0, communityMs());
+    if (document.visibilityState === "visible" && COMM.last) COMM.ms += Math.min(now - COMM.last, 30000);
+    COMM.last = now;
+    try { localStorage.setItem(COMMUNITY_MS_KEY, String(COMM.ms)); } catch (e) {}
+    if (COMM.ms >= COMMUNITY_AFTER_MS && communityCanPop()) {
+      try { localStorage.setItem(COMMUNITY_SHOWN_KEY, "1"); } catch (e) {}
+      if (COMM.timer) { clearInterval(COMM.timer); COMM.timer = null; }
+      showCommunity("auto");
+    }
+  } catch (e) {}
+}
+export function communityInit() {
+  try {
+    if (typeof window === "undefined" || communityAutoHidden()) return;
+    COMM.ms = communityMs();
+    COMM.last = Date.now();
+    COMM.timer = setInterval(communityTick, 10000);
+    document.addEventListener("visibilitychange", () => { COMM.last = Date.now(); });
+  } catch (e) {}
+}
+
+export function showCommunity(source?) {
+  try {
+    if (document.getElementById("community-pop")) return;
+    const auto = source === "auto";
+    try { if (auto && localStorage.getItem(COMMUNITY_HIDE_KEY) === "1") return; } catch (e) {}
+    const dy = (typeof COMMUNITY_QR === "string" && COMMUNITY_QR.trim()) ? COMMUNITY_QR.trim() : "";
+    const xhs = (typeof COMMUNITY_QR_XHS === "string" && COMMUNITY_QR_XHS.trim()) ? COMMUNITY_QR_XHS.trim() : "";
+    if (!dy && !xhs) return;
+    const dead = xhsExpired();
+    const wrap = document.createElement("div");
+    wrap.id = "community-pop";
+    wrap.className = "rankup support-overlay community-overlay";
+    wrap.setAttribute("role", "dialog");
+    wrap.setAttribute("aria-modal", "true");
+    wrap.setAttribute("aria-labelledby", "community-title");
+    wrap.innerHTML = `<section class="support-card community-card">
+      <header class="support-head">
+        <div>
+          <div class="support-kicker">玩家交流群</div>
+          <h2 id="community-title">两个讨论群，来和作者聊聊</h2>
+        </div>
+        <button type="button" class="support-close" id="community-x" aria-label="关闭玩家交流群浮窗">关闭 <span aria-hidden="true">×</span></button>
+      </header>
+      <p class="support-lead">《破晓》在<strong>抖音</strong>和<strong>小红书</strong>各有一个讨论群，<strong>两边都是作者本人在</strong>。进哪个都行：聊玩法和生涯故事、提<strong>游戏改进建议</strong>、反馈 <strong>Bug 和数值问题</strong>。游戏里不少改动就是群里玩家提出来的。</p>
+      <div class="community-main">
+        ${dy ? `<figure class="community-one">
+          <div class="community-qrbox"><img id="community-qr-dy" alt="《破晓》抖音玩家交流群二维码"></div>
+          <figcaption>
+            <b>抖音群</b>
+            <span class="community-hint">这是抖音官方的花式码，<b>手机相机和微信扫不出来</b>。长按保存图片，再在抖音搜索页的「扫一扫」里选相册。</span>
+            <span class="community-hint">扫不了就直接搜群号：<code>${COMMUNITY_DOUYIN_ID}</code></span>
+          </figcaption>
+        </figure>` : ""}
+        ${xhs ? `<figure class="community-one">
+          <div class="community-qrbox"><img id="community-qr-xhs" alt="《破晓》小红书玩家交流群二维码"></div>
+          <figcaption>
+            <b>小红书群</b>
+            <span class="community-hint">打开小红书扫这张码即可加入。电脑上不方便扫，可以直接点<a href="${COMMUNITY_XHS_URL}" target="_blank" rel="noopener noreferrer">这个链接</a>。</span>
+            <span class="community-hint${dead ? " community-dead" : ""}">${dead
+              ? `这张小红书码已于 <b>${COMMUNITY_XHS_UNTIL}</b> 过期，扫不进去了；麻烦走抖音群，或等作者换一张新的。`
+              : `小红书的群码有时限，这张有效期到 <b>${COMMUNITY_XHS_UNTIL}</b>。`}</span>
+          </figcaption>
+        </figure>` : ""}
+      </div>
+      <footer class="support-foot community-foot">
+        <span>以后想进群，随时从右下角「⋯」里的「群」或页面最底部再打开。请友善讨论，不要发广告。</span>
+        ${auto ? `<button type="button" class="support-never" id="community-never">不用了，别再提示</button>` : ""}
+      </footer>
+    </section>`;
+    const setSrc = (id: string, src: string) => { const el = wrap.querySelector<HTMLImageElement>(id); if (el && src) el.src = src; };
+    setSrc("#community-qr-dy", dy);
+    setSrc("#community-qr-xhs", xhs);
+    const close = () => { document.removeEventListener("keydown", onKey); wrap.remove(); };
+    const onKey = (e) => { if (e.key === "Escape") close(); };
+    wrap.querySelector<HTMLElement>("#community-x").onclick = close;
+    wrap.onclick = (e) => { if (e.target === wrap) close(); };
+    const never: any = wrap.querySelector<HTMLElement>("#community-never");
+    if (never) never.onclick = () => { try { localStorage.setItem(COMMUNITY_HIDE_KEY, "1"); } catch (e) {} close(); };
+    document.body.appendChild(wrap);
+    document.addEventListener("keydown", onKey);
+    setTimeout(() => { try { wrap.querySelector<HTMLElement>("#community-x").focus(); } catch (e) {} }, 0);
+    if (typeof statEvent === "function") statEvent(auto ? "community_auto" : "community");
+  } catch (e) {}
+}
+
 /* ---------- 支持作者（爱发电）----------
    右下角 ♥ 随时可手动打开；自动提示只在生涯结束（结局页）弹一次。
    「不用了，别再提示」只关闭自动提示，不会藏掉 ♥，玩家以后仍可主动打开。
@@ -521,10 +641,11 @@ export function audioFab(hasSfx, hasBgm) {
   fab.className = "audiofab";
   // 手机（≤560px）：四颗横排会压住卡片右下角的文字，收成一颗「⋯」，点开再展开（列表倒排：它在最下面，其余往上叠）
   fab.innerHTML = `
-    <button id="aud-more" aria-label="更多工具" aria-expanded="false" title="声音 / 更新日志 / 支持作者">⋯</button>` + (hasSfx ? `
+    <button id="aud-more" aria-label="更多工具" aria-expanded="false" title="声音 / 更新日志 / 玩家群 / 支持作者">⋯</button>` + (hasSfx ? `
     <button id="aud-sfx" aria-label="音效开关" title="按键音效"></button>` : "") + (hasBgm ? `
     <button id="aud-bgm" aria-label="背景音乐" title="背景音乐"></button>` : "") + `
-    <button id="aud-log" aria-label="更新日志" title="更新日志">📜</button>` + (supportUrl() ? `
+    <button id="aud-log" aria-label="更新日志" title="更新日志">📜</button>
+    <button id="aud-community" aria-label="玩家交流群" title="玩家交流群（抖音）">群</button>` + (supportUrl() ? `
     <button id="aud-love" aria-label="支持作者" title="支持作者（爱发电）">♥</button>` : "");
   document.body.appendChild(fab);
   const more: any = fab.querySelector<HTMLElement>("#aud-more");
@@ -548,6 +669,13 @@ export function audioFab(hasSfx, hasBgm) {
   fab.querySelector<HTMLElement>("#aud-log").onclick = (e) => { e.stopPropagation(); showChangelog(); };
   logBadge();
   const lv: any = fab.querySelector<HTMLElement>("#aud-love"); if (lv) lv.onclick = (e) => { e.stopPropagation(); showSupport(); };
+  const cm: any = fab.querySelector<HTMLElement>("#aud-community");
+  if (cm) cm.onclick = (e) => { e.stopPropagation(); showCommunity(); };
+  // 页脚那个入口（模板里写死的 #credit-community）
+  try {
+    const cc = document.getElementById("credit-community");
+    if (cc) (cc as HTMLElement).onclick = (e) => { e.preventDefault(); showCommunity(); };
+  } catch (e) {}
   // 页脚也给一个入口
   try {
     const cr = document.querySelector<HTMLElement>("footer.credits");
@@ -592,6 +720,7 @@ export function audioInit() {
     if (hasBgm) bgmProbe();                       // 服务器上一首都没有就把 ♪ 收掉
     bgmSeasonTick();
     updInit();                                    // 新版本上线时提示刷新
+    communityInit();                              // 玩满 10 分钟弹一次玩家群（只弹一次）
     if (hasSfx || hasBgm) document.addEventListener("click", audioClickHandler, true);
   } catch (e) {}
 }

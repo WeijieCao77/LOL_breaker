@@ -1097,6 +1097,7 @@ ul.dealfx li::marker{color:var(--ink-3)}
 }
 .audiofab button:hover{border-color:var(--gold)}
 .audiofab button.off{opacity:.45;border-color:var(--line)}
+#aud-community{font-size:14px;font-weight:800;font-family:var(--font-sans);letter-spacing:0}
 .audiofab>#aud-more{display:none}   /* 只在手机折叠态出现（见文末手机修补块） */
 
 /* 支持作者：结构参考常见的独立游戏赞助浮窗。
@@ -1132,6 +1133,21 @@ ul.dealfx li::marker{color:var(--ink-3)}
 .support-foot span{color:#7b7368;font-size:12.5px;line-height:1.5}
 .support-never{white-space:nowrap}
 .support-card :focus-visible{outline:2px solid #b33f3f;outline-offset:2px}
+/* 玩家交流群：沿用支持作者的纸面浮窗。两张分享卡都完整保留——卡面上印的群名、群号、扫法都是玩家要的。 */
+.community-card{width:min(760px,calc(100vw - 32px))}
+/* 两个群并排；每张码下面跟自己的说明，因为两边扫法完全不一样。 */
+.community-main{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;align-items:start}
+.community-one{margin:0;display:flex;flex-direction:column;gap:10px}
+.community-qrbox{padding:8px;background:#fff;border:1px solid #e4dfd5;border-radius:7px}
+.community-qrbox img{display:block;width:100%;height:auto;border-radius:3px}
+.community-one figcaption{display:flex;flex-direction:column;gap:6px}
+.community-one figcaption b{color:#29251f;font-size:16px}
+.community-hint{color:#5f584d;font-size:12.5px;line-height:1.65}
+.community-hint b{color:#29251f}
+.community-hint a{color:#8a5a2b;text-decoration:underline}
+.community-hint code{padding:1px 5px;background:#efe9dc;border-radius:3px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;color:#29251f;user-select:all}
+.community-dead{color:#b33f3f;font-weight:650}
+.community-foot{justify-content:space-between;gap:12px}
 /* 背景音乐浮窗 */
 .bgmpanel{position:fixed;right:14px;bottom:60px;z-index:61;width:264px;max-width:calc(100vw - 28px);
   background:rgba(var(--card-rgb),.97);border:1px solid var(--line-hot);border-radius:12px;
@@ -1170,6 +1186,9 @@ ul.dealfx li::marker{color:var(--ink-3)}
 .credits b{color:var(--gold);letter-spacing:.12em}
 .credits .pig{color:var(--gold-hi);font-weight:650}
 .credits em{font-style:normal;display:block;margin-top:4px;opacity:.65;font-family:ui-monospace,Consolas,monospace}
+.community-credit{display:block;margin-top:10px;color:var(--ink-2);font-size:12px;letter-spacing:.02em}
+.community-credit button{margin-left:7px;padding:3px 8px;border:1px solid var(--line-hot);border-radius:4px;background:transparent;color:var(--gold-hi);font-size:12px;cursor:pointer}
+.community-credit button:hover{border-color:var(--gold);color:var(--gold)}
 
 /* ---- 存档 ---- */
 .savebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
@@ -1202,6 +1221,12 @@ ul.dealfx li::marker{color:var(--ink-3)}
   .support-copy{text-align:center}
   .support-link{font-size:18px}
   .support-foot{align-items:flex-start;flex-direction:column}
+  .community-main{grid-template-columns:1fr;gap:22px}
+  .community-qrbox{width:min(260px,100%);margin:0 auto}
+  .community-one figcaption{text-align:center;align-items:center}
+  .community-foot{align-items:stretch;text-align:center}
+  .community-credit{padding:0 12px;line-height:1.7}
+  .community-credit button{display:block;margin:7px auto 0;padding:6px 10px}
   body{padding-bottom:48px}
 }
 
@@ -1686,6 +1711,7 @@ header.top.compact>.theme-top{display:none}
   <footer class="credits">
     <b>破晓</b> · LOL 电竞生涯模拟　——　<span class="pig">猪之家</span> 出品
     <em id="credit-ver"></em>
+    <span class="community-credit">欢迎加入玩家交流群，和作者交流、反馈 Bug、提出修改意见。<button type="button" id="credit-community">查看群二维码</button></span>
   </footer>
 </div>
 
@@ -15672,12 +15698,15 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
-    { v: "v20260909o", at: "2026-09-09", items: [
+    { v: "v20260909p", at: "2026-09-09", items: [
       "<b>桌面版界面二改</b>（玩家实锤：「修了 ui 画面后出了很多问题，首先是互相遮挡，然后是画面占满屏幕文字小」）。<b>遮挡</b>是上一版钉在底部的那条出口条同时踩了三个坑：它排在「替补训练赛」和「本周对手」<b>前面</b>，而 sticky 只压得住排在它后面的东西，卡片一长过一屏就把这两块糊住；背景是半透渐变加毛玻璃，底下的字直接透上来看着就是重影；主按钮 <code>flex:1</code>，容器放宽到 1400 之后摊成一条 1000px 的金色板砖，把「行动点」挤到一线。现在<b>出口条挪到卡片最后、背景改实心、主按钮封顶 560px</b>，右下角还给音频浮窗留出一角（1440px 上原来压了 9px）",
       "<b>文字小</b>是只放宽了容器、没动字号的结果：1920 的屏上正文一行能拉到 1300px，字还是 12.5px，行动格子被排成 8 列 145px 的窄条，每条说明挤成五六行。容器从 1400/1560 收回 <b>1320/1400</b>，宽屏上正文、行动标题与说明各抬一档，行动格子的下限从 140px 抬到 <b>200px</b>（8 列 → 5 列，格子大了反而说明只占一两行），正文再按 <b>76 个字</b>封顶换行。手机和小桌面一个像素没动",
       "羁绊的<b>「扛旗 / 带人」换成大白话</b>（玩家实锤：「新加入的扛旗、带人之类的功能玩家看不懂是什么意思，要有说明要不然就把标签做的好理解」）：标签改成 <b>他带你 · 他超了你 · 你扛着他 · 你带他 · 并肩</b>，每个人卡片上直接写出<b>判断依据</b>（五维均值谁高、场均评分谁高、年龄差多少），面板底下补了一张四格说明。存档里存的还是原来那五个键，老档读出来一切照旧",
       "羁绊角色<b>把场均评分算进去了</b>（玩家实锤：「如果我是个 rating 很高的院长还被人带感觉有点奇怪」）：原来只看五维均值，于是你数据爆炸地扛着一队老将，界面还在跟你说是他在带你。现在<b>五维均值仍是主轴，场均评分当修正项</b>——和他打够 3 个系列赛才参与，最多把判定拨动 ±4 分五维（1 分评分 ≈ 6.7 分五维），一个赛段的手感掀不翻硬实力，但你确实在扛的时候不会再被说成被带",
       "同一批加了<b>三条自检</b>钉住这次的坑：出口条必须是卡片最后一个孩子、背景不许半透；宽屏那一块 CSS 必须写在基准值后面（媒体查询不加权重，写前面一条都不生效——第一版就是这么写的）；角色标签必须有大白话说法和解释。三条都拿旧写法验过，全部红"
+    ] },
+    { v: "v20260909o", at: "2026-09-09", items: [
+      "新增<b>玩家交流群</b>：抖音和小红书各一个，两边都是作者本人在，欢迎来聊玩法、提<b>改进建议</b>、反馈 Bug 和数值问题。右下角「⋯」里的「群」和页面最底部随时能打开；<b>玩满 10 分钟会自动弹一次</b>，就一次，弹过不再弹，弹窗上也有「别再提示」。两张码扫法不同，各自写了说明（抖音那张<b>必须在抖音 App 里扫</b>，手机相机和微信都读不出来，所以另附了群号）"
     ] },
     { v: "v20260909n", at: "2026-09-09", items: [
       "灰掉的选项不再继续催你（玩家实锤：「选项灰的时候也会触发做不了的事件」）：「练操作」因为<b>机械路径已刷满</b>变灰之后，周末还在弹「冲击操作瓶颈<b>断了</b>：这周只练了 0/3 次」——逼你去点一个点不动的按钮。根子是同一件事被三处各判各的：按钮查「这条路还付不付得出钱」，冲击面板只查机械池，而周末审判只查「顶没顶到瓶颈」，最松的那个天天在骂人。现在<b>按钮灰不灰、面板显不显示、周末审不审判，问的是同一个函数</b>"
@@ -16197,6 +16226,12 @@ header.top.compact>.theme-top{display:none}
   var GAME_VER = CHANGELOG[0].v + " · 回声";
   var SUPPORT_URL = "https://ifdian.net/a/poxiao_lol";
   var SUPPORT_QR = "data:image/png;base64,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";
+  var COMMUNITY_QR = "img/douyin-group-qr.jpg?v=20260909";
+  var COMMUNITY_DOUYIN_ID = "274886355718";
+  var COMMUNITY_QR_XHS = "img/xhs-group-qr.jpg?v=20260909";
+  var COMMUNITY_XHS_URL = "http://xhslink.com/m/2m6J5grMsWV";
+  var COMMUNITY_XHS_UNTIL = "2026-10-07";
+  var COMMUNITY_AFTER_MS = 10 * 60 * 1e3;
   var AP_SEASON = 8;
   var AP_PRE = 10;
   var AP_OFF = 8;
@@ -23072,6 +23107,171 @@ header.top.compact>.theme-top{display:none}
     } catch (e) {
     }
   }
+  var COMMUNITY_HIDE_KEY = "poxiao_community_hide_v1";
+  var COMMUNITY_SHOWN_KEY = "poxiao_community_shown_v1";
+  var COMMUNITY_MS_KEY = "poxiao_community_playms_v1";
+  var COMM = { timer: null, last: 0, ms: 0 };
+  function communityAutoHidden() {
+    try {
+      return localStorage.getItem(COMMUNITY_HIDE_KEY) === "1" || localStorage.getItem(COMMUNITY_SHOWN_KEY) === "1";
+    } catch (e) {
+      return false;
+    }
+  }
+  function xhsExpired() {
+    try {
+      return !!COMMUNITY_XHS_UNTIL && (/* @__PURE__ */ new Date()).toISOString().slice(0, 10) > COMMUNITY_XHS_UNTIL;
+    } catch (e) {
+      return false;
+    }
+  }
+  function communityCanPop() {
+    try {
+      if (document.getElementById("community-pop") || document.getElementById("suplove")) return false;
+      if (document.querySelector(".rankup, .cer, .tour, .chlog, [role=dialog]")) return false;
+      if (document.body && document.body.classList.contains("moreopen")) return false;
+      return document.visibilityState === "visible";
+    } catch (e) {
+      return false;
+    }
+  }
+  function communityMs() {
+    try {
+      return parseInt(localStorage.getItem(COMMUNITY_MS_KEY) || "0", 10) || 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+  function communityTick() {
+    try {
+      if (communityAutoHidden()) {
+        if (COMM.timer) {
+          clearInterval(COMM.timer);
+          COMM.timer = null;
+        }
+        return;
+      }
+      const now = Date.now();
+      COMM.ms = Math.max(COMM.ms || 0, communityMs());
+      if (document.visibilityState === "visible" && COMM.last) COMM.ms += Math.min(now - COMM.last, 3e4);
+      COMM.last = now;
+      try {
+        localStorage.setItem(COMMUNITY_MS_KEY, String(COMM.ms));
+      } catch (e) {
+      }
+      if (COMM.ms >= COMMUNITY_AFTER_MS && communityCanPop()) {
+        try {
+          localStorage.setItem(COMMUNITY_SHOWN_KEY, "1");
+        } catch (e) {
+        }
+        if (COMM.timer) {
+          clearInterval(COMM.timer);
+          COMM.timer = null;
+        }
+        showCommunity("auto");
+      }
+    } catch (e) {
+    }
+  }
+  function communityInit() {
+    try {
+      if (typeof window === "undefined" || communityAutoHidden()) return;
+      COMM.ms = communityMs();
+      COMM.last = Date.now();
+      COMM.timer = setInterval(communityTick, 1e4);
+      document.addEventListener("visibilitychange", () => {
+        COMM.last = Date.now();
+      });
+    } catch (e) {
+    }
+  }
+  function showCommunity(source) {
+    try {
+      if (document.getElementById("community-pop")) return;
+      const auto = source === "auto";
+      try {
+        if (auto && localStorage.getItem(COMMUNITY_HIDE_KEY) === "1") return;
+      } catch (e) {
+      }
+      const dy = typeof COMMUNITY_QR === "string" && COMMUNITY_QR.trim() ? COMMUNITY_QR.trim() : "";
+      const xhs = typeof COMMUNITY_QR_XHS === "string" && COMMUNITY_QR_XHS.trim() ? COMMUNITY_QR_XHS.trim() : "";
+      if (!dy && !xhs) return;
+      const dead = xhsExpired();
+      const wrap2 = document.createElement("div");
+      wrap2.id = "community-pop";
+      wrap2.className = "rankup support-overlay community-overlay";
+      wrap2.setAttribute("role", "dialog");
+      wrap2.setAttribute("aria-modal", "true");
+      wrap2.setAttribute("aria-labelledby", "community-title");
+      wrap2.innerHTML = `<section class="support-card community-card">
+      <header class="support-head">
+        <div>
+          <div class="support-kicker">玩家交流群</div>
+          <h2 id="community-title">两个讨论群，来和作者聊聊</h2>
+        </div>
+        <button type="button" class="support-close" id="community-x" aria-label="关闭玩家交流群浮窗">关闭 <span aria-hidden="true">×</span></button>
+      </header>
+      <p class="support-lead">《破晓》在<strong>抖音</strong>和<strong>小红书</strong>各有一个讨论群，<strong>两边都是作者本人在</strong>。进哪个都行：聊玩法和生涯故事、提<strong>游戏改进建议</strong>、反馈 <strong>Bug 和数值问题</strong>。游戏里不少改动就是群里玩家提出来的。</p>
+      <div class="community-main">
+        ${dy ? `<figure class="community-one">
+          <div class="community-qrbox"><img id="community-qr-dy" alt="《破晓》抖音玩家交流群二维码"></div>
+          <figcaption>
+            <b>抖音群</b>
+            <span class="community-hint">这是抖音官方的花式码，<b>手机相机和微信扫不出来</b>。长按保存图片，再在抖音搜索页的「扫一扫」里选相册。</span>
+            <span class="community-hint">扫不了就直接搜群号：<code>${COMMUNITY_DOUYIN_ID}</code></span>
+          </figcaption>
+        </figure>` : ""}
+        ${xhs ? `<figure class="community-one">
+          <div class="community-qrbox"><img id="community-qr-xhs" alt="《破晓》小红书玩家交流群二维码"></div>
+          <figcaption>
+            <b>小红书群</b>
+            <span class="community-hint">打开小红书扫这张码即可加入。电脑上不方便扫，可以直接点<a href="${COMMUNITY_XHS_URL}" target="_blank" rel="noopener noreferrer">这个链接</a>。</span>
+            <span class="community-hint${dead ? " community-dead" : ""}">${dead ? `这张小红书码已于 <b>${COMMUNITY_XHS_UNTIL}</b> 过期，扫不进去了；麻烦走抖音群，或等作者换一张新的。` : `小红书的群码有时限，这张有效期到 <b>${COMMUNITY_XHS_UNTIL}</b>。`}</span>
+          </figcaption>
+        </figure>` : ""}
+      </div>
+      <footer class="support-foot community-foot">
+        <span>以后想进群，随时从右下角「⋯」里的「群」或页面最底部再打开。请友善讨论，不要发广告。</span>
+        ${auto ? `<button type="button" class="support-never" id="community-never">不用了，别再提示</button>` : ""}
+      </footer>
+    </section>`;
+      const setSrc = (id, src) => {
+        const el = wrap2.querySelector(id);
+        if (el && src) el.src = src;
+      };
+      setSrc("#community-qr-dy", dy);
+      setSrc("#community-qr-xhs", xhs);
+      const close = () => {
+        document.removeEventListener("keydown", onKey);
+        wrap2.remove();
+      };
+      const onKey = (e) => {
+        if (e.key === "Escape") close();
+      };
+      wrap2.querySelector("#community-x").onclick = close;
+      wrap2.onclick = (e) => {
+        if (e.target === wrap2) close();
+      };
+      const never = wrap2.querySelector("#community-never");
+      if (never) never.onclick = () => {
+        try {
+          localStorage.setItem(COMMUNITY_HIDE_KEY, "1");
+        } catch (e) {
+        }
+        close();
+      };
+      document.body.appendChild(wrap2);
+      document.addEventListener("keydown", onKey);
+      setTimeout(() => {
+        try {
+          wrap2.querySelector("#community-x").focus();
+        } catch (e) {
+        }
+      }, 0);
+      if (typeof statEvent === "function") statEvent(auto ? "community_auto" : "community");
+    } catch (e) {
+    }
+  }
   var SUPPORT_HIDE_KEY = "poxiao_support_hide_v1";
   var SUPPORT_SESSION_KEY = "poxiao_support_seen_session_v1";
   function supportUrl() {
@@ -23334,10 +23534,11 @@ header.top.compact>.theme-top{display:none}
     const fab = document.createElement("div");
     fab.className = "audiofab";
     fab.innerHTML = `
-    <button id="aud-more" aria-label="更多工具" aria-expanded="false" title="声音 / 更新日志 / 支持作者">⋯</button>` + (hasSfx ? `
+    <button id="aud-more" aria-label="更多工具" aria-expanded="false" title="声音 / 更新日志 / 玩家群 / 支持作者">⋯</button>` + (hasSfx ? `
     <button id="aud-sfx" aria-label="音效开关" title="按键音效"></button>` : "") + (hasBgm ? `
     <button id="aud-bgm" aria-label="背景音乐" title="背景音乐"></button>` : "") + `
-    <button id="aud-log" aria-label="更新日志" title="更新日志">📜</button>` + (supportUrl() ? `
+    <button id="aud-log" aria-label="更新日志" title="更新日志">📜</button>
+    <button id="aud-community" aria-label="玩家交流群" title="玩家交流群（抖音）">群</button>` + (supportUrl() ? `
     <button id="aud-love" aria-label="支持作者" title="支持作者（爱发电）">♥</button>` : "");
     document.body.appendChild(fab);
     const more = fab.querySelector("#aud-more");
@@ -23382,6 +23583,19 @@ header.top.compact>.theme-top{display:none}
       e.stopPropagation();
       showSupport();
     };
+    const cm = fab.querySelector("#aud-community");
+    if (cm) cm.onclick = (e) => {
+      e.stopPropagation();
+      showCommunity();
+    };
+    try {
+      const cc = document.getElementById("credit-community");
+      if (cc) cc.onclick = (e) => {
+        e.preventDefault();
+        showCommunity();
+      };
+    } catch (e) {
+    }
     try {
       const cr = document.querySelector("footer.credits");
       if (cr && supportUrl() && !document.getElementById("credit-love")) {
@@ -23435,6 +23649,7 @@ header.top.compact>.theme-top{display:none}
       if (hasBgm) bgmProbe();
       bgmSeasonTick();
       updInit();
+      communityInit();
       if (hasSfx || hasBgm) document.addEventListener("click", audioClickHandler, true);
     } catch (e) {
     }
@@ -23445,7 +23660,7 @@ header.top.compact>.theme-top{display:none}
   screenCreate();
   audioInit();
   xferPull();
-  window.poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave, cerStart, SITE_QR };
+  window.poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave, cerStart, SITE_QR, showCommunity, communityTick };
 })();
 </script>
 

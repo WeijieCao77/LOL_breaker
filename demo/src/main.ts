@@ -120,6 +120,9 @@ export const CHANGELOG=[
     "羁绊角色<b>把场均评分算进去了</b>（玩家实锤：「如果我是个 rating 很高的院长还被人带感觉有点奇怪」）：原来只看五维均值，于是你数据爆炸地扛着一队老将，界面还在跟你说是他在带你。现在<b>五维均值仍是主轴，场均评分当修正项</b>——和他打够 3 个系列赛才参与，最多把判定拨动 ±4 分五维（1 分评分 ≈ 6.7 分五维），一个赛段的手感掀不翻硬实力，但你确实在扛的时候不会再被说成被带",
     "同一批加了<b>三条自检</b>钉住这次的坑：出口条必须是卡片最后一个孩子、背景不许半透；宽屏那一块 CSS 必须写在基准值后面（媒体查询不加权重，写前面一条都不生效——第一版就是这么写的）；角色标签必须有大白话说法和解释。三条都拿旧写法验过，全部红"
   ]},
+  {v:"v20260909o", at:"2026-09-09", items:[
+    "新增<b>玩家交流群</b>：抖音和小红书各一个，两边都是作者本人在，欢迎来聊玩法、提<b>改进建议</b>、反馈 Bug 和数值问题。右下角「⋯」里的「群」和页面最底部随时能打开；<b>玩满 10 分钟会自动弹一次</b>，就一次，弹过不再弹，弹窗上也有「别再提示」。两张码扫法不同，各自写了说明（抖音那张<b>必须在抖音 App 里扫</b>，手机相机和微信都读不出来，所以另附了群号）"
+  ]},
   {v:"v20260909n", at:"2026-09-09", items:[
     "灰掉的选项不再继续催你（玩家实锤：「选项灰的时候也会触发做不了的事件」）：「练操作」因为<b>机械路径已刷满</b>变灰之后，周末还在弹「冲击操作瓶颈<b>断了</b>：这周只练了 0/3 次」——逼你去点一个点不动的按钮。根子是同一件事被三处各判各的：按钮查「这条路还付不付得出钱」，冲击面板只查机械池，而周末审判只查「顶没顶到瓶颈」，最松的那个天天在骂人。现在<b>按钮灰不灰、面板显不显示、周末审不审判，问的是同一个函数</b>"
   ]},
@@ -642,6 +645,28 @@ export const GAME_VER=CHANGELOG[0].v+" · 回声";
    SUPPORT_QR 可选：爱发电主页二维码图的 data URI（站点 CSP 只放行 self/data:，外链图不显示）。 */
 export const SUPPORT_URL="https://ifdian.net/a/poxiao_lol";   // 玩家 2026-09-05 给的爱发电主页
 export const SUPPORT_QR="data:image/png;base64,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";   // 玩家 2026-09-05 给的爱发电官方分享卡，裁出二维码、二值化内嵌
+/* 玩家交流群：两个群，二维码都走 /img/ 静态路由（server.js 已放行 bgm|fonts|img），
+   不内联成 data URI——单文件已经 1.6MB，两张图加起来 260KB 不值得再塞进 HTML，
+   而且只有玩家真打开浮窗时才会去拿。
+
+   两张码的性质不一样，文案得分开写：
+   - 抖音那张是官方花式码（点状描边 + 中间贴头像），**通用扫码器根本读不出**（实测：
+     72 种预处理组合全部失败，而同一个解码器读标准码一次就中）。手机相机、微信扫一扫
+     都无效，必须在抖音 App 内扫。所以同时给出群号做退路。
+   - 小红书那张是标准 QR，能直接解出链接，所以另外做成可点的链接（电脑玩家不用扫）。
+     但它**有效期只有 28 天**，码面上印着 2026-10-07；到期前要重新生成一张换掉，
+     否则玩家扫了进不去。COMMUNITY_XHS_UNTIL 就是给这件事用的：过期后界面上会自己标注。 */
+/* 两张码都带 ?v= 版本串：/img/ 的响应头是 cache-control: public, max-age=86400，
+   不带版本串的话，换了新码之后老玩家还会扫到缓存里的旧码最多 24 小时。
+   小红书码 28 天就过期、必须定期换，所以这个不能省——换图时记得把 v 一起改。 */
+export const COMMUNITY_QR="img/douyin-group-qr.jpg?v=20260909";
+export const COMMUNITY_DOUYIN_ID="274886355718";
+export const COMMUNITY_QR_XHS="img/xhs-group-qr.jpg?v=20260909";
+export const COMMUNITY_XHS_URL="http://xhslink.com/m/2m6J5grMsWV";
+export const COMMUNITY_XHS_UNTIL="2026-10-07";
+/* 玩满多久自动弹一次群（玩家拍板 2026-09-09：10 分钟）。
+   只算页面真在前台的时间，跨会话累加；弹过一次就永不再弹。 */
+export const COMMUNITY_AFTER_MS=10*60*1000;
 export const AP_SEASON=8, AP_PRE=10, AP_OFF=8, AP_HURT=4;   // 职业前 12→10（2026-09-06 压年：每周少点两下）
 /* 异化点数（2026-09-03 玩家拍板）：按现实时间精力定价。
    轻 1 = 碎片时间（排位几把 / 双排 / 发简历）；
