@@ -17,8 +17,13 @@ import { statEvent } from "./stats";
    外链脚本进不来；而且这是单文件发布，多一个库就多 60KB。手画反而可控——
    分辨率、留白、字号全是定死的，不会因为玩家的浏览器字体设置而跑版。
 
-   保存的两条路：iOS 上 <a download> 不可靠，所以主路径是把图放进浮层让玩家长按保存；
-   桌面和安卓再给一个「下载图片」按钮。两条都不需要任何后端。 */
+   保存的三条路（2026-09-09 作者实测补的第三条）：
+   · 「存到相册」——navigator.share 带 File，唤起系统分享菜单，iOS 里点「存储图像」
+     就直接进相册。这是手机上唯一能一步到相册的路径。
+   · 长按图片保存——share 不可用时的兜底（老 Safari、桌面 Firefox）。
+   · 「下载图片」——桌面走这条。注意 iOS Safari 上 <a download> 落到的是
+     「文件」App 的下载项，不是相册，所以手机上它不再是主按钮。
+   三条都不需要任何后端。 */
 
 /* 站点二维码：https://www.poxiao.lol
    segno 生成（版本 2 / 纠错 M / 25 模块），334 字节，用 OpenCV 实际解码验证过。
@@ -199,7 +204,29 @@ export function makeShareCard(){
   });
 }
 
-/* 浮层：图 + 长按保存提示 + 下载按钮 */
+export const SHARE_FILE="破晓-生涯名片.png";
+export const SHARE_TEXT="我的五年电竞生涯 · "+SITE_URL;
+/* dataURL → File。navigator.share 只收 File，不收 dataURL，所以要自己拆一次 base64。
+   老浏览器没有 File 构造函数（只有 Blob）——那就返回 null，走长按 / 下载那两条路。 */
+export function dataUrlToFile(url,name){
+  try{
+    if(typeof File!=="function"||typeof atob!=="function") return null;
+    const i=url.indexOf(","); if(i<0) return null;
+    const bin=atob(url.slice(i+1)), buf=new Uint8Array(bin.length);
+    for(let k=0;k<bin.length;k++) buf[k]=bin.charCodeAt(k);
+    return new File([buf],name,{type:"image/png"});
+  }catch(e){ return null; }
+}
+/* 这台设备能不能把「一个 PNG 文件」交给系统分享菜单。
+   iOS Safari 15+ / 安卓 Chrome 可以；桌面 Firefox、老 Safari 不行。 */
+export function canShareFile(file){
+  try{
+    const nav: any=(typeof navigator!=="undefined")?navigator:null;
+    return !!(nav&&typeof nav.share==="function"&&typeof nav.canShare==="function"&&nav.canShare({files:[file]}));
+  }catch(e){ return false; }
+}
+
+/* 浮层：图 + 存到相册 / 长按保存 / 下载 */
 export function shareCardOpen(){
   if(typeof document==="undefined"||document.getElementById("sharecard")) return;
   const wrapEl=document.createElement("div");
@@ -210,8 +237,11 @@ export function shareCardOpen(){
       <button type="button" class="support-close" id="share-x" aria-label="关闭">关闭 <span aria-hidden="true">×</span></button></header>
     <div class="share-body"><div class="share-loading">正在生成…</div></div>
     <footer class="share-foot">
-      <span class="share-tip">手机长按图片即可保存到相册</span>
-      <a class="btn sm" id="share-dl" download="破晓-生涯名片.png" hidden>下载图片</a>
+      <span class="share-tip" id="share-tip">正在生成…</span>
+      <span class="share-acts">
+        <button type="button" class="btn sm primary" id="share-save" hidden>存到相册</button>
+        <a class="btn sm" id="share-dl" download="破晓-生涯名片.png" hidden>下载图片</a>
+      </span>
     </footer>
   </section>`;
   const close=()=>{ document.removeEventListener("keydown",onKey); wrapEl.remove(); };
@@ -228,5 +258,19 @@ export function shareCardOpen(){
     body.innerHTML=`<img class="share-img" alt="生涯名片" src="${url}">`;
     const dl: any=wrapEl.querySelector<HTMLElement>("#share-dl");
     if(dl){ dl.href=url; dl.hidden=false; }
+    const save: any=wrapEl.querySelector<HTMLElement>("#share-save");
+    const tip: any=wrapEl.querySelector<HTMLElement>("#share-tip");
+    const file=dataUrlToFile(url,SHARE_FILE);
+    if(save&&file&&canShareFile(file)){
+      save.hidden=false;
+      save.onclick=()=>{
+        statEvent("sharesave");
+        // 用户取消分享会抛 AbortError——那不是错误，什么都不做
+        try{ (navigator as any).share({files:[file],title:"破晓 · 生涯名片",text:SHARE_TEXT}).catch(()=>{}); }catch(e){}
+      };
+      if(tip) tip.textContent="点「存到相册」走系统菜单，也可以长按图片保存";
+    }else if(tip){
+      tip.textContent="长按图片保存到相册；「下载图片」存到的是「文件」App 的下载项";
+    }
   });
 }
