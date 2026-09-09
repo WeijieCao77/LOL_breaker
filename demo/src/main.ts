@@ -111,6 +111,9 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260909d", at:"2026-09-09", items:[
+    "职业前训练的卡面不再少报（玩家实锤：卡面写「操作 +0.9」，点完实际涨了 1.3）：职业前每一次训练真正写进去的是 gain × 0.85 × 1.5（1.5 是职业前的节奏系数——一年的行动点少了，每一点的产出按比例抬回去），而卡面那一侧只乘了 0.85，把这个 1.5 漏了，于是每一次训练都少报三分之一。现在预览和生效共用同一个函数"
+  ]},
   {v:"v20260909b", at:"2026-09-09", items:[
     "第三次清足球词，这次钉死（玩家实锤：「很多时候的措辞是赢球、球队，包括挂靴」）：生涯一览的「如果今天挂靴」和退役确认里的「就此挂靴」改成退役；赛后拆解的「赢球」、媒体日的「输球」改成赢比赛 / 输掉的比赛；粉丝见面会的场地档次「小场 / 中场 / 大场」改成小型 / 中型 / 大型场地——「中场」容易被读成足球的中场。前两次都是人工扫一遍改掉、然后新写的文案又把词带回来，所以这次加了一条自检：玩家看得见的字符串里出现球队 / 球员 / 球迷 / 球星 / 球场 / 赢球 / 输球 / 打球 / 挂靴 / 板凳席，测试直接红并指到行号",
     "直播收入封顶（玩家实锤：生涯末攒到 6.27 亿）：一次直播的钱本来就有上限，但没人管一周能播几次——生涯后期一场约等于一个 LPL 冠军的奖金，一周四场，一个赛段光直播就 2500 万以上。现在两道闸：同一周里第几场就按第几档结算（观众是同一批），一个赛段还有平台结算上限（跟着合同走，顶级合同约 1200 万，超出的部分只结一成二）。极限刷播的生涯收入从 6 亿量级压到 1.5 亿；批测中位和最高的钱一分没动（941→956、2733→2729），普通玩家感觉不到",
@@ -2175,7 +2178,7 @@ export function preAct(k,dim?){
   } else if(k==="train"){
     const c=capOf(dim);
     if(dim==="操作"&&true) btkNote("op",1);   // 到瓶颈也要能攒突破进度
-    if(S.attrs[dim]<c) S.attrs[dim]=Math.min(c,S.attrs[dim]+gain(dim)*0.85*PRE_PACE);
+    if(S.attrs[dim]<c) S.attrs[dim]=Math.min(c,S.attrs[dim]+trainGain(dim));   // 卡面（costTrain）读的是同一个函数
     const sub=PRE_SPLASH[dim];   // 职业前练一项顺带练另一项（进队后没有）
     if(sub){ const sc=capOf(sub.d); if(S.attrs[sub.d]<sc) S.attrs[sub.d]=Math.min(sc,S.attrs[sub.d]+gain(sub.d)*0.85*PRE_PACE*sub.k); }
     addFat(9);
@@ -3013,9 +3016,19 @@ export const _prepMul=()=>(S.step==="prep"||(S.off&&S.off.next==="intl"))?((S.as
 /* 职业前和赛季中是两套数值（训练 ×0.85、休息 +32、直播基数不同），
    标注必须跟着当前阶段走，否则等于换个地方骗人。 */
 export const _isPre=()=>S.step==="pre";
+/* 这一次训练真能涨多少（玩家实锤 2026-09-09：卡面写「操作 +0.9」，点完实际涨了 1.3）。
+   职业前走 preAct("train")，实际写进去的是 gain × 0.85 × PRE_PACE（=1.5）；
+   而卡面这边只乘了 0.85，把职业前的节奏系数漏了——于是每一次训练都少报三分之一。
+   职业后走 doTrain，还要乘本季版本关键属性的加成。
+   预览和生效从此共用这一个函数，不会再各算各的。 */
+export function trainGain(d){
+  if(_isPre()) return gain(d)*0.85*PRE_PACE;
+  const vm=(S.career&&SEASONS[S.si]&&SEASONS[S.si].dim===d)?VER_TRAIN:1;
+  return gain(d)*vm;
+}
 export function costTrain(d){
   const capped=S.attrs[d]>=capOf(d);
-  const g=gain(d)*(_isPre()?0.85:1);
+  const g=trainGain(d);
   return costBits([_eDn(9),
     capped?null:`${d}<i class="up">+${g.toFixed(1)}</i>`]);
 }
@@ -3103,8 +3116,7 @@ export function doTrain(d){
   // 于是提示让你去做的事，你根本点不动，死锁在那儿。
   if(d==="操作"&&true) btkNote("op",1);
   // 版本答案：本季关键属性的训练收益 ×VER_TRAIN（职业后；教练组按版本抓训练）
-  const vm=(S.career&&SEASONS[S.si]&&SEASONS[S.si].dim===d)?VER_TRAIN:1;
-  if(!capped) S.attrs[d]=Math.min(capOf(d),S.attrs[d]+gain(d)*vm);
+  if(!capped) S.attrs[d]=Math.min(capOf(d),S.attrs[d]+trainGain(d));   // 卡面（costTrain）读的是同一个函数
   noteAct('train',d);
   checkAch("train");
   addFat(9); S.ap-=apCost("train"); render();
