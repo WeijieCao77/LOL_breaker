@@ -314,6 +314,36 @@ function playOne(opts?) {
 /* 不碰 DOM 的几何与消毒：导览说明卡永远不能盖在聚光框上；导入的存档只能带几个排版标签 */
 function unitChecks() {
   const bad = [];
+  /* 抗韩 / 内战：两条都得看**你自己在哪个赛区**，不只看对手
+     （玩家实锤 2026-09-09：「效力 LCK 战队也能触发抗韩成就」）。 */
+  {
+    const lck = A.ACHIEVEMENTS.find((x: any) => x.id === "beatlck");
+    const civil = A.ACHIEVEMENTS.find((x: any) => x.id === "lpl_civil");
+    if (!lck || !civil) bad.push("抗韩 / 内战成就不见了");
+    else {
+      // 抗韩：触发点已经保证了「国际赛 + 赢 + 对手是 LCK」，条件只负责排除「你就是 LCK」
+      if (!lck.cond({ myLeague: "LPL" })) bad.push("抗韩：LPL 选手赢下 LCK 却不算");
+      if (!lck.cond({ myLeague: "LEC" })) bad.push("抗韩：LEC 选手赢下 LCK 却不算");
+      if (!lck.cond({ myLeague: "LDL" })) bad.push("抗韩：二队选手赢下 LCK 却不算");
+      if (lck.cond({ myLeague: "LCK" })) bad.push("抗韩：效力 LCK 的人赢下 LCK 也算——这正是要修的那件事");
+      // 内战无强敌：这是 LPL 的梗，说明里写死了「另一支 LPL 队伍」
+      const civ = (my: string, opp: string) => civil.cond({ intl: true, won: true, myLeague: my, oppLeague: opp });
+      if (!civ("LPL", "LPL")) bad.push("内战：LPL 打 LPL 却不算");
+      if (civ("LCK", "LCK")) bad.push("内战：LCK 打 LCK 也弹「另一支 LPL 队伍」——文案穿帮");
+      if (civ("LPL", "LCK")) bad.push("内战：打的是 LCK，不该算内战");
+      if (civ("LCK", "LPL")) bad.push("内战：你在 LCK，赢 LPL 不是内战");
+      // 「韩流克星」是同一把锁的另一半（玩家实锤 2026-09-09 的第二封反馈）
+      const k3 = A.ACHIEVEMENTS.find((x: any) => x.id === "beat3lck");
+      if (!k3) bad.push("韩流克星成就不见了");
+      else {
+        const S: any = A.S(); const bk = S.lckBeaten;
+        S.lckBeaten = ["T1", "GEN", "DK"];
+        if (!k3.cond({ myLeague: "LPL" })) bad.push("韩流克星：LPL 选手打赢三支 LCK 却不算");
+        if (k3.cond({ myLeague: "LCK" })) bad.push("韩流克星：效力 LCK 的人也能拿——和抗韩同一个口子");
+        S.lckBeaten = bk;
+      }
+    }
+  }
   /* 替补席（作者拍板 2026-09-09）：不再替首发交默契的学费，媒体日换替补版。 */
   {
     const S: any = A.S();
@@ -1105,6 +1135,77 @@ const BALL_WORDS = ["球队", "球员", "球迷", "球星", "球场", "赢球", 
     process.exit(1);
   }
   console.log("用语自检通过：玩家可见文案里没有球类词");
+}
+
+/* ---------------- 赛区自检 ----------------
+   玩家实锤 2026-09-09：「效力 lck 战队也能触发抗韩成就」「在 lck 效力还是触发了 lpl 事件，
+   这一部分分类问题必须要检查并修改」。根子都一样：把赛区名写死在**玩家看得见的话**里，
+   而那句话在任何赛区都会触发。
+
+   所以这条自检只盯一件事：**带中文的字符串里出现了赛区名**。
+   `S.homeLeague||"LPL"` 这种取名单的写法不算——那本来就是对的写法；
+   `"在国际赛场上击败一支 LCK 队伍"` 这种才算。命中的必须登记在下表里并写清为什么安全
+   （通常是「它的触发条件已经锁了赛区」），否则测试红。 */
+const LEAGUE_OK: Record<string, string> = {
+  '{id:"beatlck", n:"抗韩成功", d:"在国际赛场上击败一支 LCK 队伍——前提是你自己不在 LCK。", tag:"战绩",':
+    "cond 已锁 myLeague!==LCK",
+  'd:"国际赛场上把另一支 LPL 队伍送回了家。",':
+    "lpl_civil 的 cond 已锁 myLeague===LPL && oppLeague===LPL",
+  '{id:"beat3lck", n:"韩流克星", d:"国际赛场上击败三支不同的 LCK 队伍。", tag:"战绩",':
+    "cond 已锁 myLeague!==LCK，计数那一头（main.ts 的 lckBeaten）也锁了",
+  '? `你上个月赛后采访那句话，被人剪进了「LPL 圣经」合集。`':
+    "「LPL 圣经」只发给 LPL，上一行就是那个判断",
+  '{q:"对面是 LCK 的队伍，他们的运营滴水不漏。",ctx:"跟他们比运营是自找的。",':
+    "赛前节点，when 里已判对手是 LCK",
+  '{k:"kr",   n:"韩语课",       cost:150, d:"看得懂韩援的沟通，去 LCK 打比赛不再是聋子"},':
+    "语言课的说明，在哪个赛区都成立",
+  '{k:"en",   n:"英语课",       cost:120, d:"LEC / LCS 的更衣室能听懂了"},':
+    "同上",
+  ':lck?"LCK 又一次站在了最高处。":"你在屏幕外看完了颁奖。"}`,':
+    "上一行的 own 已经把「自家赛区夺冠」分出去了",
+  'beatLCK?`决赛击败 LCK 的 ${S.match.oppName}——<b>至暗时刻的墙，被你砸开了一道口子。</b>`:""}`,':
+    "beatLCK 已锁 homeLeague!==LCK",
+  '?`决赛击败 LCK 的 <b>${c.opp}</b>——至暗时刻的墙，被你砸开了一道口子。`':
+    "同上，c.beatLCK 由上面那个变量算出来",
+};
+{
+  const bad3: string[] = [];
+  const dir = path.join(HERE, "src");
+  const walk = (d: string) => fs.readdirSync(d).flatMap((f: string) => {
+    const fp = path.join(d, f);
+    return fs.statSync(fp).isDirectory() ? walk(fp) : (f.endsWith(".ts") ? [fp] : []);
+  });
+  /* 只查「会写出玩家看得见的话」的内容文件。数据表（data / stars / eras）里的赛区名
+     是史实，main.ts 里的是尺子与更新日志，都不在范围内。 */
+  const FILES = ["random.ts", "press.ts", "achieve.ts", "achieve_more.ts", "team.ts",
+                 "cer.ts", "nodes.ts", "quest.ts", "clout.ts", "rotation.ts", "postmatch.ts",
+                 "squad.ts", "bond.ts", "shop.ts", "injury.ts", "intl.ts"];
+  const LEAGUES = /\b(LPL|LCK|LEC|LCS|PCS|VCS|LJL|LDL)\b/;
+  const CJK = /[\u4e00-\u9fff]/;
+  for (const fp of walk(dir)) {
+    if (!FILES.includes(path.basename(fp))) continue;
+    const lines = fs.readFileSync(fp, "utf8").split("\n");
+    let inBlock = false;
+    lines.forEach((ln: string, i: number) => {
+      const t = ln.trim();
+      if (inBlock) { if (ln.includes("*/")) inBlock = false; return; }
+      if (t.startsWith("//")) return;
+      if (t.startsWith("/*")) { if (!ln.includes("*/")) inBlock = true; return; }
+      // 模板里的 ${...} 是代码不是文案，先挖掉
+      const src = ln.replace(/\$\{[^}]*\}/g, "");
+      // 取出这一行里所有字符串字面量
+      const segs = src.match(/"[^"]*"|'[^']*'|`[^`]*`/g) || [];
+      if (!segs.some(g => LEAGUES.test(g) && CJK.test(g))) return;
+      if (LEAGUE_OK[t] !== undefined) return;
+      bad3.push(`${path.basename(fp)}:${i + 1} 中文文案里写死了赛区名 → ${t.slice(0, 76)}`);
+    });
+  }
+  if (bad3.length) {
+    console.error("赛区自检不通过（写死的赛区名会在别的赛区穿帮）：\n - " + bad3.join("\n - ")
+      + "\n   要么给它加赛区判断，要么连同理由登记进 test.ts 的 LEAGUE_OK。");
+    process.exit(1);
+  }
+  console.log("赛区自检通过：中文文案里没有没登记的赛区硬编码");
 }
 
 if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }

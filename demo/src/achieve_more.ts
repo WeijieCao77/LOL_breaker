@@ -61,7 +61,9 @@ export const ACH_MORE=[
   {id:"cb10", n:"逆风翻盘十次", d:"在账面劣势的情况下赢下十场。", tag:"战绩",
    on:"win", cond:()=>(S.comebacks||0)>=10, r:{money:350,fame:80,trust:10}},
   {id:"beat3lck", n:"韩流克星", d:"国际赛场上击败三支不同的 LCK 队伍。", tag:"战绩",
-   on:"match", cond:()=>((S.lckBeaten||[]).length>=3), r:{money:500,fame:130}},
+   /* 和「抗韩成功」同一把锁：计数那一头（main.ts 的 lckBeaten）已经把效力 LCK 的人
+      挡在外面了，这里再挡一次——老存档里可能已经攒了几支。 */
+   on:"match", cond:(c)=>c.myLeague!=="LCK"&&((S.lckBeaten||[]).length>=3), r:{money:500,fame:130}},
   {id:"noloss5", n:"零封五连", d:"连续五个系列赛一局不丢。", tag:"战绩",
    on:"match", cond:()=>(S.sweepStreak||0)>=5, r:{money:400,fame:90}},
 

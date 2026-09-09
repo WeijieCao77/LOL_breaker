@@ -6878,8 +6878,13 @@ header.top.compact>.theme-top{display:none}
         });
         return best ? { n: best.name, v: bv } : null;
       };
-      const a = topOf("LPL"), b = topOf("LCK");
-      if (a && b) out.push({ c: "赛区格局", t: b.v >= a.v ? `《纸面强度：LPL 这边 ${a.n} 领跑，但 LCK 的 ${b.n} 仍压在所有人头上——至暗时刻还没翻篇》` : `《纸面强度：${a.n} 的账面已经压过 LCK 的 ${b.n}——但账面从来不发奖杯》` });
+      const mine = (() => {
+        const h = S.career && S.homeLeague || "LPL";
+        return h === "LDL" ? "LPL" : h;
+      })();
+      const rival = mine === "LCK" ? "LPL" : "LCK";
+      const a = topOf(mine), b = topOf(rival);
+      if (a && b) out.push({ c: "赛区格局", t: b.v >= a.v ? `《纸面强度：${mine} 这边 ${a.n} 领跑，但 ${rival} 的 ${b.n} 仍压在所有人头上》` : `《纸面强度：${a.n} 的账面已经压过 ${rival} 的 ${b.n}——但账面从来不发奖杯》` });
     } catch (e) {
     }
     out.push({ c: "版本官方", t: `《版本「${sea.ver}」当前的理解已趋于收敛，各队打法开始同质化》` });
@@ -9078,9 +9083,13 @@ header.top.compact>.theme-top{display:none}
       rec: 0,
       w: 3,
       when: () => !!S.world,
+      /* 赛区分类（玩家实锤 2026-09-09：「在 LCK 效力还是触发了 LPL 事件」）：
+         这条新闻的两个选项都假设那是**你够得着的位置**（「给自己剪个集锦发过去」），
+         所以队伍要从你自己的赛区里挑。原来写死 lg="LPL"，效力 LCK 的人看到的是
+         一支和自己毫无关系的队在裁人。职业前没有赛区，那就还是 LPL（你是国内的路人）。 */
       q: () => {
-        const lg = "LPL";
-        const ts = S.world && S.world[lg] || [];
+        const lg = S.career && S.homeLeague || "LPL";
+        const ts = S.world && S.world[lg] || S.world && S.world.LPL || [];
         const t = ts[Math.floor(rnd() * ts.length)];
         S._ev = { t: t ? t.name : "某支队", team: t };
         return `<b>${S._ev.t}</b> 官宣裁掉了首发选手，位置空出来了。`;
@@ -9114,7 +9123,9 @@ header.top.compact>.theme-top{display:none}
       w: 2,
       max: 1,
       when: () => S.fans >= 800 && (S.career && S.career.l || 0) >= 6,
-      q: () => `你上个月赛后采访那句话，被人剪进了「LPL 圣经」合集。`,
+      /* 「LPL 圣经」是 LPL 的梗（玩家实锤 2026-09-09：效力 LCK 也弹这一条）。
+         人还是那批中国观众，剪的还是你那句话——只是合集不会叫这个名字。 */
+      q: () => (S.career && S.homeLeague || "LPL") === "LPL" ? `你上个月赛后采访那句话，被人剪进了「LPL 圣经」合集。` : `你上个月赛后采访那句话，被人剪进了本赛区的「名场面」合集。`,
       ctx: "播放量七位数，弹幕全是你的名字，但没一条是在夸你打得好。",
       a: [
         { t: "自己转发，配一句「下次赢回来」", g: "show", e: () => {
@@ -12029,10 +12040,11 @@ header.top.compact>.theme-top{display:none}
   }
   function intlChampEvent(name, champ) {
     noteHonor(name === "MSI" ? "msi" : "worlds", S.si, champ);
-    const lck = leagueOf(champ) === "LCK";
+    const mine = S.career && S.homeLeague || "LPL";
+    const lck = leagueOf(champ) === "LCK", own = leagueOf(champ) === mine;
     return {
-      text: `${name}落幕，<b>${champ}</b> 捧起奖杯。${lck ? "LCK 又一次站在了最高处。" : "你在屏幕外看完了颁奖。"}`,
-      tone: lck ? "bad" : "info",
+      text: `${name}落幕，<b>${champ}</b> 捧起奖杯。${own ? "你所在的赛区拿下了这座奖杯——只是捧杯的人不是你。" : lck ? "LCK 又一次站在了最高处。" : "你在屏幕外看完了颁奖。"}`,
+      tone: lck && !own ? "bad" : "info",
       tag: name
     };
   }
@@ -12337,7 +12349,7 @@ header.top.compact>.theme-top{display:none}
       心态: q1((S.capBonus && S.capBonus.心态 || 0) - cap0.心态),
       指挥: q1((S.capBonus && S.capBonus.指挥 || 0) - cap0.指挥)
     };
-    const beatLCK = leagueOf(S.match.oppName) === "LCK";
+    const beatLCK = leagueOf(S.match.oppName) === "LCK" && (S.homeLeague || "LPL") !== "LCK";
     pushEvent(
       `<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${name} 冠军！</b>${beatLCK ? `决赛击败 LCK 的 ${S.match.oppName}——<b>至暗时刻的墙，被你砸开了一道口子。</b>` : ""}`,
       "big",
@@ -13002,8 +13014,10 @@ header.top.compact>.theme-top{display:none}
       n: "韩流克星",
       d: "国际赛场上击败三支不同的 LCK 队伍。",
       tag: "战绩",
+      /* 和「抗韩成功」同一把锁：计数那一头（main.ts 的 lckBeaten）已经把效力 LCK 的人
+         挡在外面了，这里再挡一次——老存档里可能已经攒了几支。 */
       on: "match",
-      cond: () => (S.lckBeaten || []).length >= 3,
+      cond: (c) => c.myLeague !== "LCK" && (S.lckBeaten || []).length >= 3,
       r: { money: 500, fame: 130 }
     },
     {
@@ -13692,10 +13706,14 @@ header.top.compact>.theme-top{display:none}
     {
       id: "beatlck",
       n: "抗韩成功",
-      d: "在国际赛场上击败一支 LCK 队伍。",
+      d: "在国际赛场上击败一支 LCK 队伍——前提是你自己不在 LCK。",
       tag: "战绩",
+      /* 玩家实锤（2026-09-09）：「效力 LCK 战队也能触发抗韩成就」。
+         原来的条件只看对手是不是 LCK，不看你自己在哪——转会去 LCK 之后，
+         在国际赛上赢下另一支 LCK 队伍照样弹「抗韩成功」。
+         你就是韩援，赢的是自家赛区的队，这四个字没有任何意义。 */
       on: "beatlck",
-      cond: () => true,
+      cond: (c) => c.myLeague !== "LCK",
       r: { fat: -30, fame: 60, trust: 12 }
     },
     /* ---------- 成长 ---------- */
@@ -13776,8 +13794,11 @@ header.top.compact>.theme-top{display:none}
       n: "内战无强敌",
       tag: "梗",
       d: "国际赛场上把另一支 LPL 队伍送回了家。",
+      /* 同一条线上的另一半（2026-09-09）：原来写的是「对手赛区 == 我的赛区」，
+         于是效力 LCK 的人赢下 LCK 队也会弹这一条——而说明里写的是「另一支 LPL 队伍」，
+         文案当场穿帮。「内战无强敌」本来就是 LPL 的梗，那就只发给 LPL 的人。 */
       on: "match",
-      cond: (c) => c.intl && c.won && c.oppLeague === (S.homeLeague || "LPL"),
+      cond: (c) => c.intl && c.won && c.myLeague === "LPL" && c.oppLeague === "LPL",
       flavor: "弹幕齐刷刷：内战无强敌，外战无……算了不说了。",
       r: { fame: 18, trust: -2 }
     },
@@ -15572,6 +15593,13 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909l", at: "2026-09-09", items: [
+      "<b>赛区分类全面清了一遍</b>（玩家实锤：「在 LCK 效力还是触发了 LPL 事件，这一部分分类问题必须要检查并修改」）：际遇「你那句话被剪进「LPL 圣经」合集」在别的赛区改叫「本赛区的名场面合集」；「某队官宣裁掉首发」的那支队原来写死从 LPL 里挑，现在从<b>你自己的赛区</b>里挑（那两个选项本来就假设那是你够得着的位置）；世界头条的「赛区格局」也从写死的 LPL vs LCK 改成<b>你所在的赛区对它最大的对手</b>",
+      "同一批还清掉三处：成就「<b>韩流克星</b>」（击败三支不同 LCK 队伍）和它的计数一起加锁，效力 LCK 的人不再累积；国际赛夺冠文案里的「至暗时刻的墙，被你砸开了一道口子」<b>只对不在 LCK 的人</b>说——你自己就在 LCK 的时候那是内战不是砸墙；世界新闻里「LCK 又一次站在了最高处」对效力 LCK 的人不再是坏消息",
+      "<b>加了一条赛区自检</b>钉住这一类：内容文件的中文文案里再出现没登记的赛区名，测试直接红并指到行号——要么给它加赛区判断，要么连同理由登记。这一类问题今天已经是第二次了",
+      "成就「<b>抗韩成功</b>」不再乱发（玩家实锤：「效力 LCK 战队也能触发抗韩成就」）：原来的条件只看对手是不是 LCK，不看你自己在哪个赛区——转会去 LCK 之后，在国际赛上赢下另一支 LCK 队伍照样弹「抗韩成功」。你就是韩援，赢的是自家赛区的队，这四个字没有意义。现在<b>你自己在 LCK 就不再触发</b>",
+      "同一条线上的另一半：「<b>内战无强敌</b>」原来写的是「对手赛区 == 我的赛区」，于是效力 LCK 的人赢下 LCK 队也会弹它——而说明里写死了「另一支 <b>LPL</b> 队伍」，文案当场穿帮。这本来就是 LPL 的梗，现在只发给<b>效力 LPL、又赢下 LPL</b> 的人"
+    ] },
     { v: "v20260909j", at: "2026-09-09", items: [
       "<b>替补席不再替首发交学费</b>（玩家实锤：「我都替补了，首发阵容磨不磨合那是他们的事，为什么要花我的行动点」）：坐替补席的时候，训练赛和战队合练这两个纯喂默契池的行动<b>收起来</b>，只有个人收益的留着；<b>这个赛段的默契也不会在你手里往下掉</b>（原来不喂就掉，等于替补被这个池子持续抽血）。替补席多了一件事：<b>看录像</b>（1 点）——运营 +0.35、攒运营突破、战术素养 +0.2，每赛段前 3 次还给一点轮换资本",
       "<b>媒体日给替补换了一版</b>（玩家实锤：「我一个臭替补，试训 B 合同，凭什么去接受采访放狠话」）：不再是三个记者三个问题的背景板，而是收工时被顺口问一句，一题、只有稳和狂两个口径、热度减半。「狂」的代价也换了——替补根本不上场，「输了更伤心态」对他等于零成本，现在改成<b>教练组盯得更紧，下次对位挑战每一局成功率 −5%</b>",
@@ -19380,7 +19408,7 @@ header.top.compact>.theme-top{display:none}
     const swept = won && m.sc[1] === 0;
     S.sweepStreak = swept ? (S.sweepStreak || 0) + 1 : 0;
     const metLegend = (m.opp.players || []).some((q) => q.comeback);
-    if (won && S.intl && leagueOf(m.oppName) === "LCK") {
+    if (won && S.intl && leagueOf(m.oppName) === "LCK" && (S.homeLeague || "LPL") !== "LCK") {
       S.lckBeaten = S.lckBeaten || [];
       if (!S.lckBeaten.includes(m.oppName)) S.lckBeaten.push(m.oppName);
     }
@@ -19419,6 +19447,8 @@ header.top.compact>.theme-top{display:none}
       meGap: m.box && m.box.meGap !== void 0 ? m.box.meGap : 0,
       gap: +(myPw - opPw).toFixed(2),
       intl: !!S.intl,
+      myLeague: S.homeLeague || "LPL",
+      // 「抗韩」和「内战」都要看你自己在哪个赛区，不只看对手
       oppLeague: leagueOf(m.oppName),
       // 点名类成就（对位 Faker 等）要看真实名单，不能拿联赛当替身——
       // 玩家在国际赛碰到 BRION 这种 LCK 队也弹「被注视」，文案直接穿帮
