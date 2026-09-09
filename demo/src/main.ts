@@ -113,6 +113,12 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260909q", at:"2026-09-09", items:[
+    "<b>「本周」页改成主列 + 右栏</b>（作者拍板，参照 VAL Player 的本周页；他的要求是「不改变风格以及按钮形状还有侧边栏样式，只是把位置布局稍微改一下」——所以配色、按钮形状、左侧竖导航一个像素没动，只挪了位置）。原来「下一场」独占一整行、行动卡再独占一整行，两张都用不满宽度，这一页却要滚三屏。现在<b>要宽度的东西占主列</b>（九个行动格子），<b>只是给你看的收进 360px 右栏</b>（这周打谁、圈子在写谁）。1920 的屏上主列 872px、右栏 360px",
+    "<b>电竞周报搬回「本周」页</b>（作者点名：「最好是能把电竞周报移动到本周栏目里放在下一场板块的隔壁做一个填充」）：本期贴在「下一场」下面，就在右栏里，每周打开就能顺手看一眼圈子在写谁；<b>往期挪到「新闻」栏目</b>，那里现在是完整存档，每期一段。两边不重复——本期在「本周」，往期在「新闻」",
+    "右栏窄，「下一场」里的对阵块跟着改成<b>竖排</b>（两队各占一行，队名和战力左右分开）：并排是 VAL Player 用三个字母队标才成立的，我们的队名是「EDward Gaming」这种长度，并排会断成两行。赛程条在窄栏里改成横向滚动，不再铺成四行",
+    "窄于 1180px 一切照旧：退回单列，顺序还是<b>下一场 → 行动 → 周报</b>，手机上先看对手、再动手、最后才是报纸，和改之前一样。自检钉住这三件：单列顺序、三块的摆位规则一条都不能少、本期和往期不许两边重复"
+  ]},
   {v:"v20260909p", at:"2026-09-09", items:[
     "<b>桌面版界面二改</b>（玩家实锤：「修了 ui 画面后出了很多问题，首先是互相遮挡，然后是画面占满屏幕文字小」）。<b>遮挡</b>是上一版钉在底部的那条出口条同时踩了三个坑：它排在「替补训练赛」和「本周对手」<b>前面</b>，而 sticky 只压得住排在它后面的东西，卡片一长过一屏就把这两块糊住；背景是半透渐变加毛玻璃，底下的字直接透上来看着就是重影；主按钮 <code>flex:1</code>，容器放宽到 1400 之后摊成一条 1000px 的金色板砖，把「行动点」挤到一线。现在<b>出口条挪到卡片最后、背景改实心、主按钮封顶 560px</b>，右下角还给音频浮窗留出一角（1440px 上原来压了 9px）",
     "<b>文字小</b>是只放宽了容器、没动字号的结果：1920 的屏上正文一行能拉到 1300px，字还是 12.5px，行动格子被排成 8 列 145px 的窄条，每条说明挤成五六行。容器从 1400/1560 收回 <b>1320/1400</b>，宽屏上正文、行动标题与说明各抬一档，行动格子的下限从 140px 抬到 <b>200px</b>（8 列 → 5 列，格子大了反而说明只占一两行），正文再按 <b>76 个字</b>封顶换行。手机和小桌面一个像素没动",
@@ -3582,7 +3588,7 @@ export function tabContent(T){
     ${T==="world"?(bracketCard())+(fixtureCard())+standingsCard()+rivalCard()
       +(followUpCard())
       +newsCard():""}
-    ${T==="news"?(pressCard())+eventsCard():""}
+    ${T==="news"?(pressCard("all"))+eventsCard():""}
     ${T==="ach"?achCard():""}
     ${T==="help"?helpCard():""}`;
 }
@@ -3605,7 +3611,17 @@ export function viewSeason(){
   // 原来行动卡拼在标签栏上面，是六个标签里唯一的例外——没有理由。
   return `${champ}${scrimPop}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
   ${tabBar(TABS_SEASON)}
-  ${nextMatchCard()}
+  <!-- 「本周」页改成「主列 + 右栏」（作者拍板 2026-09-09，参照 VAL Player 的本周页；
+       他的原话：「不改变风格以及按钮形状还有侧边栏样式，只是把位置布局稍微改一下」）。
+       宽屏上行动卡独占一整行时，「下一场」和周报只能一张张往下摞，于是这一页要滚三屏，
+       横向那一大半却空着。现在：**要宽度的**（九个行动格子）占主列，
+       **只是给你看的**（这周打谁、圈子在写谁）收进右栏，两边都不再浪费。
+       源码顺序刻意是「下一场 → 行动 → 周报」：窄屏退回单列时就是这个顺序，
+       手机上先看对手、再动手、最后才是报纸，和改之前一致。
+       分栏靠下面的 grid-column / grid-row 摆位，不动源码顺序。 -->
+  <div class="wkgrid">
+  <div class="wk-next">${nextMatchCard()}</div>
+  <div class="wk-main">
   <div class="card">
     <h2>${sea.tag} ${SPLITS[S.split||0]} · 第 ${S.week}/${WEEKS} 周<em>剩余行动点 ${S.ap}${" · "+txPhaseName()}</em></h2>
     ${autoBar()}
@@ -3648,7 +3664,10 @@ export function viewSeason(){
       <button class="btn ghost sm" id="auto">自动推进到下一件事</button>
     </div>
   </div>
-  ${injuryCard()}`;
+  ${injuryCard()}
+  </div>
+  <div class="wk-press">${pressCard()}</div>
+  </div>`;
 }
 
 /* 和际遇一样改成遮罩——更衣室是要你表态的，藏在行动卡下面等于没有 */
@@ -5522,7 +5541,7 @@ export function viewPre(){
   ${T==="act"&&!S.cupMatch?(cupCard()):""}
   ${T==="act"&&!S.cupMatch?(injuryCard())+attrCard():""}
   ${T==="world"?scheduleCard()+proCard():""}
-  ${T==="news"?(pressCard())+eventsCard():""}
+  ${T==="news"?(pressCard("all"))+eventsCard():""}
   ${T==="tx"?(preTransferPage()):""}
   ${T==="squad"&&S.pre.mates&&S.pre.mates.length&&true?preSquadCard():""}
   ${T==="squad"&&!(S.pre.mates&&S.pre.mates.length)?lockedCard("战队实力","报名城市争霸赛或主播杯，抽到车队后解锁；签约职业战队后是完整版。",

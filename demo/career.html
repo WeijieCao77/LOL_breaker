@@ -1656,6 +1656,41 @@ header.top.compact>.theme-top{display:none}
   .card>.note,.card>p,.gapbar .gt{max-width:76ch}
 }
 
+/* ---- 「本周」页：主列 + 右栏 ----
+   参照 VAL Player 的本周页（作者 2026-09-09 给的图）：要宽度的东西占主列，
+   给你看的东西收进右栏。风格、按钮形状、左侧导航一律不动，只挪位置。
+   断点跟出口条走同一个 1180px：窄于这个宽度退回单列，
+   顺序按源码走——下一场 → 行动 → 周报，和改之前手机上一样。 */
+.wkgrid{display:grid;grid-template-columns:minmax(0,1fr)}
+@media(min-width:1180px){
+  /* 360px 的右栏：周报一行能排 18 个汉字，「下一场」的对阵块也还站得开。
+     align-items:start——右栏两张卡各按自己的高度收口，不跟着主列拉长。 */
+  .wkgrid{grid-template-columns:minmax(0,1fr) 360px;gap:0 16px;align-items:start}
+  .wkgrid>.wk-main{grid-column:1;grid-row:1/span 2}
+  .wkgrid>.wk-next{grid-column:2;grid-row:1}
+  .wkgrid>.wk-press{grid-column:2;grid-row:2}
+  /* 右栏窄，这两张卡里的字不跟着宽屏那一档放大，否则一行塞不下几个字 */
+  .wkgrid>.wk-next .note,.wkgrid>.wk-press .note{font-size:12.5px}
+  /* 对阵块在 360px 里改成竖排。VAL Player 那张图能把两队并排放一行，是因为它用
+     三个字母的队标（WOL vs BLG）；我们的队名是「EDward Gaming」这种长度，
+     并排就会断成两行、队标和战绩错位。竖排每队各占一行，队名和战力左右分开。 */
+  .wkgrid>.wk-next .next{grid-template-columns:minmax(0,1fr);gap:7px;padding:13px 14px}
+  .wkgrid>.wk-next .next .sd{text-align:left;display:flex;justify-content:space-between;
+    align-items:baseline;gap:10px;min-width:0}
+  .wkgrid>.wk-next .next .sd .nm{font-size:14px;min-width:0}
+  .wkgrid>.wk-next .next .sd .pw{margin-top:0;white-space:nowrap}
+  .wkgrid>.wk-next .next .mid{text-align:left;border-top:1px solid var(--line);padding-top:7px}
+  /* 赛程条在窄栏里横向滚动，别铺成四行——它是「还剩谁没打」，不是这张卡的主角 */
+  .wkgrid>.wk-next .fixt{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .wkgrid>.wk-next .fixt::-webkit-scrollbar{display:none}
+  .wkgrid>.wk-next .fixt .fc{flex:none}
+}
+/* 新闻页的往期版面：本期之后每期一段，靠一条竖线和本期分开 */
+.pastissue{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+.pastissue h3{font-size:13px;color:var(--ink-2);font-weight:600;margin:0 0 4px;
+  display:flex;gap:8px;align-items:baseline}
+.pastissue h3 em{font-style:normal;font-size:11.5px;color:var(--ink-3)}
+
 </style>
 
 </head>
@@ -7050,19 +7085,21 @@ header.top.compact>.theme-top{display:none}
     S.pressIssues.unshift(issue);
     if (S.pressIssues.length > 6) S.pressIssues.pop();
     const note = `<b>《电竞周报》第 ${issue.n} 期出刊</b>：${issue.heads[0].t}`;
-    pushEvent(`${note}<br><span style="color:var(--ink-3)">完整版面在「本周」页。周报只写真实发生过的事。</span>`, "info", "周报");
+    pushEvent(`${note}<br><span style="color:var(--ink-3)">本期在「本周」页右栏，往期在「新闻」栏目。周报只写真实发生过的事。</span>`, "info", "周报");
     if (!S.career && true) preLog(note, "info");
   }
-  function pressCard() {
+  function pressCard(mode) {
+    const all = mode === "all";
     const list = S.pressIssues || [];
     if (!list.length) return `<div class="card"><h2>电竞周报</h2>
     <p class="note">编辑部正在收集素材——只报道真实发生的事，第一期很快出刊。</p></div>`;
-    const cur = list[0];
+    const cur = list[0], past = list.slice(1);
+    const heads = (x) => x.heads.map((h) => `<p style="margin:7px 0"><span class="tag">${h.c}</span>　${h.t}</p>`).join("");
     return `<div class="card"><h2>电竞周报<em>第 ${cur.n} 期 · ${cur.label}</em></h2>
-    ${cur.heads.map((h) => `<p style="margin:7px 0"><span class="tag">${h.c}</span>　${h.t}</p>`).join("")}
+    ${heads(cur)}
     ${cur.noMe != null ? `<p class="note" style="margin-top:8px;color:var(--ink-3)">本期没有你的名字——圈子还没注意到 ${meName()}
       （圈内关注度 <b>${cur.noMe}</b>，到 45 会开始有人写你）。打杯赛、涨粉、多打有人看的比赛，都算数。</p>` : ""}
-    ${list.length > 1 ? `<p class="note" style="margin-top:10px;color:var(--ink-3)">往期：${list.slice(1).map((x) => `第${x.n}期`).join(" · ")}（${list.slice(1)[0].heads[0].t.slice(0, 18)}…）</p>` : ""}
+    ${all ? past.map((x) => `<div class="pastissue"><h3>第 ${x.n} 期<em>${x.label}</em></h3>${heads(x)}</div>`).join("") : past.length ? `<p class="note" style="margin-top:10px;color:var(--ink-3)">往期 ${past.length} 期在「新闻」栏目里，随时能翻。</p>` : ""}
     <p class="note" style="color:var(--ink-3)">周报只使用真实比赛与行动证据，报道效果在出刊时结算一次。</p></div>`;
   }
   function patchNoteCard() {
@@ -15698,6 +15735,12 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909q", at: "2026-09-09", items: [
+      "<b>「本周」页改成主列 + 右栏</b>（作者拍板，参照 VAL Player 的本周页；他的要求是「不改变风格以及按钮形状还有侧边栏样式，只是把位置布局稍微改一下」——所以配色、按钮形状、左侧竖导航一个像素没动，只挪了位置）。原来「下一场」独占一整行、行动卡再独占一整行，两张都用不满宽度，这一页却要滚三屏。现在<b>要宽度的东西占主列</b>（九个行动格子），<b>只是给你看的收进 360px 右栏</b>（这周打谁、圈子在写谁）。1920 的屏上主列 872px、右栏 360px",
+      "<b>电竞周报搬回「本周」页</b>（作者点名：「最好是能把电竞周报移动到本周栏目里放在下一场板块的隔壁做一个填充」）：本期贴在「下一场」下面，就在右栏里，每周打开就能顺手看一眼圈子在写谁；<b>往期挪到「新闻」栏目</b>，那里现在是完整存档，每期一段。两边不重复——本期在「本周」，往期在「新闻」",
+      "右栏窄，「下一场」里的对阵块跟着改成<b>竖排</b>（两队各占一行，队名和战力左右分开）：并排是 VAL Player 用三个字母队标才成立的，我们的队名是「EDward Gaming」这种长度，并排会断成两行。赛程条在窄栏里改成横向滚动，不再铺成四行",
+      "窄于 1180px 一切照旧：退回单列，顺序还是<b>下一场 → 行动 → 周报</b>，手机上先看对手、再动手、最后才是报纸，和改之前一样。自检钉住这三件：单列顺序、三块的摆位规则一条都不能少、本期和往期不许两边重复"
+    ] },
     { v: "v20260909p", at: "2026-09-09", items: [
       "<b>桌面版界面二改</b>（玩家实锤：「修了 ui 画面后出了很多问题，首先是互相遮挡，然后是画面占满屏幕文字小」）。<b>遮挡</b>是上一版钉在底部的那条出口条同时踩了三个坑：它排在「替补训练赛」和「本周对手」<b>前面</b>，而 sticky 只压得住排在它后面的东西，卡片一长过一屏就把这两块糊住；背景是半透渐变加毛玻璃，底下的字直接透上来看着就是重影；主按钮 <code>flex:1</code>，容器放宽到 1400 之后摊成一条 1000px 的金色板砖，把「行动点」挤到一线。现在<b>出口条挪到卡片最后、背景改实心、主按钮封顶 560px</b>，右下角还给音频浮窗留出一角（1440px 上原来压了 9px）",
       "<b>文字小</b>是只放宽了容器、没动字号的结果：1920 的屏上正文一行能拉到 1300px，字还是 12.5px，行动格子被排成 8 列 145px 的窄条，每条说明挤成五六行。容器从 1400/1560 收回 <b>1320/1400</b>，宽屏上正文、行动标题与说明各抬一档，行动格子的下限从 140px 抬到 <b>200px</b>（8 列 → 5 列，格子大了反而说明只占一两行），正文再按 <b>76 个字</b>封顶换行。手机和小桌面一个像素没动",
@@ -19107,7 +19150,7 @@ header.top.compact>.theme-top{display:none}
     ${T === "tx" ? transferPage() : ""}
     ${T === "auto" ? autoPage() : ""}
     ${T === "world" ? bracketCard() + fixtureCard() + standingsCard() + rivalCard() + followUpCard() + newsCard() : ""}
-    ${T === "news" ? pressCard() + eventsCard() : ""}
+    ${T === "news" ? pressCard("all") + eventsCard() : ""}
     ${T === "ach" ? achCard() : ""}
     ${T === "help" ? helpCard() : ""}`;
   }
@@ -19124,7 +19167,17 @@ header.top.compact>.theme-top{display:none}
     const benched = isBenched();
     return `${champ}${scrimPop}${S.locker ? lockerCard() : ""}${S.rndResult ? randomResultCard() : ""}${S.rndEv ? randomCard() : ""}
   ${tabBar(TABS_SEASON)}
-  ${nextMatchCard()}
+  <!-- 「本周」页改成「主列 + 右栏」（作者拍板 2026-09-09，参照 VAL Player 的本周页；
+       他的原话：「不改变风格以及按钮形状还有侧边栏样式，只是把位置布局稍微改一下」）。
+       宽屏上行动卡独占一整行时，「下一场」和周报只能一张张往下摞，于是这一页要滚三屏，
+       横向那一大半却空着。现在：**要宽度的**（九个行动格子）占主列，
+       **只是给你看的**（这周打谁、圈子在写谁）收进右栏，两边都不再浪费。
+       源码顺序刻意是「下一场 → 行动 → 周报」：窄屏退回单列时就是这个顺序，
+       手机上先看对手、再动手、最后才是报纸，和改之前一致。
+       分栏靠下面的 grid-column / grid-row 摆位，不动源码顺序。 -->
+  <div class="wkgrid">
+  <div class="wk-next">${nextMatchCard()}</div>
+  <div class="wk-main">
   <div class="card">
     <h2>${sea.tag} ${SPLITS[S.split || 0]} · 第 ${S.week}/${WEEKS} 周<em>剩余行动点 ${S.ap}${" · " + txPhaseName()}</em></h2>
     ${autoBar()}
@@ -19168,7 +19221,10 @@ header.top.compact>.theme-top{display:none}
       <button class="btn ghost sm" id="auto">自动推进到下一件事</button>
     </div>
   </div>
-  ${injuryCard()}`;
+  ${injuryCard()}
+  </div>
+  <div class="wk-press">${pressCard()}</div>
+  </div>`;
   }
   function lockerCard() {
     const { ev, target } = S.locker;
@@ -21040,7 +21096,7 @@ header.top.compact>.theme-top{display:none}
   ${T === "act" && !S.cupMatch ? cupCard() : ""}
   ${T === "act" && !S.cupMatch ? injuryCard() + attrCard() : ""}
   ${T === "world" ? scheduleCard() + proCard() : ""}
-  ${T === "news" ? pressCard() + eventsCard() : ""}
+  ${T === "news" ? pressCard("all") + eventsCard() : ""}
   ${T === "tx" ? preTransferPage() : ""}
   ${T === "squad" && S.pre.mates && S.pre.mates.length && true ? preSquadCard() : ""}
   ${T === "squad" && !(S.pre.mates && S.pre.mates.length) ? lockedCard(

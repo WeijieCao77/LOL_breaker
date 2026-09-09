@@ -722,6 +722,49 @@ function unitChecks() {
       if (wideAt < base) bad.push("桌面密度：整块写在基准值 " + k.trim() + " 前面，媒体查询不加权重，一条都不会生效");
     });
   } catch (e) { bad.push("出口条 / 桌面密度自检没跑起来：" + e); }
+  /* 「本周」页的主列 + 右栏（作者拍板 2026-09-09，参照 VAL Player）。
+     jsdom 不算布局，所以这里量的是结构和源码顺序，不是像素。 */
+  try {
+    const ms = fs.readFileSync(path.join(HERE, "src", "main.ts"), "utf8");
+    const g = ms.indexOf('<div class="wkgrid">');
+    if (g < 0) bad.push("本周页：找不到 .wkgrid（主列 + 右栏的容器）");
+    else {
+      // 源码顺序 = 窄屏顺序：下一场 → 行动卡 → 周报。手机上先看对手再动手，最后才是报纸。
+      const iNext = ms.indexOf('class="wk-next"', g);
+      const iMain = ms.indexOf('class="wk-main"', g);
+      const iPress = ms.indexOf('class="wk-press"', g);
+      if (!(iNext > 0 && iMain > iNext && iPress > iMain))
+        bad.push(`本周页：单列顺序该是「下一场 → 行动 → 周报」，实得 next=${iNext} main=${iMain} press=${iPress}`);
+      // 行动卡（含出口条）必须整个装在主列里，否则宽屏上它会跑到右栏底下
+      const dock = ms.indexOf('<div class="row dock">', g);
+      if (!(dock > iMain && dock < iPress)) bad.push("本周页：行动卡的出口条不在 .wk-main 里");
+    }
+    const css = fs.readFileSync(path.join(HERE, "theme.css"), "utf8");
+    // 三块的摆位都得写全，少一条就会有一块掉回文档流、压到别的格子上
+    ["\.wkgrid>\.wk-main\{grid-column:1", "\.wkgrid>\.wk-next\{grid-column:2", "\.wkgrid>\.wk-press\{grid-column:2"]
+      .forEach(re => { if (!new RegExp(re).test(css)) bad.push("本周页：theme.css 缺摆位规则 " + re.replace(/\\/g, "")); });
+    // 分栏必须在媒体查询里——单列是基准，宽屏才分。写反了手机上会变成 360px 的右栏
+    const wide = css.indexOf("@media(min-width:1180px){\n  /* 360px 的右栏");
+    const base = css.indexOf(".wkgrid{display:grid");
+    if (base < 0 || wide < 0 || wide < base) bad.push("本周页：分栏没写在 @media(min-width:1180px) 里，或写在了基准值前面");
+  } catch (e) { bad.push("本周页布局自检没跑起来：" + e); }
+  /* 周报两个落点，各干各的：本期在「本周」，往期在「新闻」，两边不重复 */
+  {
+    const S: any = A.S();
+    const bak = S.pressIssues;
+    S.pressIssues = [
+      { n: 9, label: "本期", heads: [{ c: "赛事战况", t: "本期头条" }] },
+      { n: 8, label: "上期", heads: [{ c: "选手个人", t: "往期头条甲" }] },
+      { n: 7, label: "上上期", heads: [{ c: "转会风声", t: "往期头条乙" }] }
+    ];
+    const now = A.pressCard(), all = A.pressCard("all");
+    if (!/本期头条/.test(now)) bad.push("周报：本周页那份没登本期头条");
+    if (/往期头条甲/.test(now)) bad.push("周报：本周页那份把往期版面也铺出来了（那是新闻页的事）");
+    if (!/在「新闻」栏目里/.test(now)) bad.push("周报：本周页那份没说往期去哪儿翻");
+    if (!/往期头条甲/.test(all) || !/往期头条乙/.test(all)) bad.push("周报：新闻页那份没把往期版面登全");
+    if (!/本期头条/.test(all)) bad.push("周报：新闻页那份连本期都没有");
+    S.pressIssues = bak;
+  }
   const dirty = { S: { name: "x", log: ['<div class="hi">ok</div> <span style="color:var(--cyan)">c</span> <b>b</b><br>',
     '<img src=x onerror=alert(1)><a href="https://evil">link</a><div style="position:fixed;inset:0;background:#000">cover</div><span class="hi" onclick="x()">t</span><!-- c --><script>bad()</script>'] } };
   const out = A.sanitizeSave(dirty).S.log;

@@ -1634,3 +1634,38 @@ header.top.compact>.theme-top{display:none}
   /* 正文一行超过 ~76 个字就开始难读，和容器多宽无关 */
   .card>.note,.card>p,.gapbar .gt{max-width:76ch}
 }
+
+/* ---- 「本周」页：主列 + 右栏 ----
+   参照 VAL Player 的本周页（作者 2026-09-09 给的图）：要宽度的东西占主列，
+   给你看的东西收进右栏。风格、按钮形状、左侧导航一律不动，只挪位置。
+   断点跟出口条走同一个 1180px：窄于这个宽度退回单列，
+   顺序按源码走——下一场 → 行动 → 周报，和改之前手机上一样。 */
+.wkgrid{display:grid;grid-template-columns:minmax(0,1fr)}
+@media(min-width:1180px){
+  /* 360px 的右栏：周报一行能排 18 个汉字，「下一场」的对阵块也还站得开。
+     align-items:start——右栏两张卡各按自己的高度收口，不跟着主列拉长。 */
+  .wkgrid{grid-template-columns:minmax(0,1fr) 360px;gap:0 16px;align-items:start}
+  .wkgrid>.wk-main{grid-column:1;grid-row:1/span 2}
+  .wkgrid>.wk-next{grid-column:2;grid-row:1}
+  .wkgrid>.wk-press{grid-column:2;grid-row:2}
+  /* 右栏窄，这两张卡里的字不跟着宽屏那一档放大，否则一行塞不下几个字 */
+  .wkgrid>.wk-next .note,.wkgrid>.wk-press .note{font-size:12.5px}
+  /* 对阵块在 360px 里改成竖排。VAL Player 那张图能把两队并排放一行，是因为它用
+     三个字母的队标（WOL vs BLG）；我们的队名是「EDward Gaming」这种长度，
+     并排就会断成两行、队标和战绩错位。竖排每队各占一行，队名和战力左右分开。 */
+  .wkgrid>.wk-next .next{grid-template-columns:minmax(0,1fr);gap:7px;padding:13px 14px}
+  .wkgrid>.wk-next .next .sd{text-align:left;display:flex;justify-content:space-between;
+    align-items:baseline;gap:10px;min-width:0}
+  .wkgrid>.wk-next .next .sd .nm{font-size:14px;min-width:0}
+  .wkgrid>.wk-next .next .sd .pw{margin-top:0;white-space:nowrap}
+  .wkgrid>.wk-next .next .mid{text-align:left;border-top:1px solid var(--line);padding-top:7px}
+  /* 赛程条在窄栏里横向滚动，别铺成四行——它是「还剩谁没打」，不是这张卡的主角 */
+  .wkgrid>.wk-next .fixt{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .wkgrid>.wk-next .fixt::-webkit-scrollbar{display:none}
+  .wkgrid>.wk-next .fixt .fc{flex:none}
+}
+/* 新闻页的往期版面：本期之后每期一段，靠一条竖线和本期分开 */
+.pastissue{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+.pastissue h3{font-size:13px;color:var(--ink-2);font-weight:600;margin:0 0 4px;
+  display:flex;gap:8px;align-items:baseline}
+.pastissue h3 em{font-style:normal;font-size:11.5px;color:var(--ink-3)}
