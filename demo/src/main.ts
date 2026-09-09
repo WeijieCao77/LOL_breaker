@@ -113,6 +113,12 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260909s", at:"2026-09-09", items:[
+    "<b>职业前那一页也改成主列 + 右栏了</b>（玩家实锤：「我没看到界面改动，我的电竞周报、教练对我的看法、最近的比赛去哪里了」）。上一版只改了<b>签约之后</b>那一页，没签约的人走的是另一套代码，整页纹丝不动。现在两页同一个骨架，右栏按职业前真正存在的东西配：<b>下一个节点</b>（下一场比赛 / 报名在第几周、够不够格、距离转会窗口还有几周）· <b>谁在看你</b>（试训门槛：卡在段位还是卡在曝光，最高能来哪一档）· <b>电竞周报</b>（它从第一周就出刊，原来只能去「新闻」栏目翻）",
+    "「教练怎么看你」和「最近的比赛」职业前<b>不做假的</b>：还没进队就没有教练、没有首发竞争，排位和杯赛也不写进比赛档案。所以那两个位置换成了上面两张——角色对得上，数据是真的",
+    "「谁在看你」的正文是从行动卡里<b>搬</b>过来的，不是复制：主列那边同时删掉了，两处不会各说一遍。行动卡因此短了一截",
+    "<b>封面页的存档卡重做</b>（玩家实锤：「这个封面的填充还是很丑，甚至没有上下居中」）。原来左边摘要写「gtu · 上单 · 19 岁 · S12 职业前 第 1 周」，右边第一格又写「进度 S12 职业前 第 1 周」、第二格「身份 上单 · 19 岁」——<b>拿同一句话填了两遍</b>，看着当然空。现在<b>摘要只报你是谁，处境全交给格子</b>；职业前的格子换成进度 · 段位 · 粉丝 · 资金 · 实力 · 成就。格子改用 flex 排，<b>末行自己长满</b>（原来 grid 换行会在末尾剩一片空格子，容器底色把那片空白画成一块实心蓝板），并且<b>上下居中</b>"
+  ]},
   {v:"v20260909r", at:"2026-09-09", items:[
     "<b>赛季结算卡的「冠军」标签念错赛区</b>（玩家实锤：在 <b>T1</b> 拿了联赛冠军，右上角却写「<b>LPL 冠军</b>」）。那个标签整条是写死的。现在<b>念这一季实际所在的赛区</b>，而且赛区在结算那一刻就<b>存进快照</b>——不是画卡片时才去读「你现在在哪」，否则休赛期一转会，这张卡再打开就又串了。老档没存这个字段，退回当前赛区",
     "同一批还揪出<b>三处同样的毛病</b>：结局卡的「半程加冕 / 四强遗恨 / 赛区功勋」三段结语都写死了 LPL（「你证明了 LPL 能赢」「LPL 的观众记得你的名字」「这五年 LPL 没有塌」），一个在 LCK 打了五年的人读到的是别人的故事；试训邀请卡上「LPL 第 X/Y」那行是兜底分支写死的，上面那条分支明明已经在念真实赛区了。结局那三段按<b>生涯里打得最多的赛区</b>算——一个在 LPL 打了四年、最后一年去 LCK 养老的人，说「这五年 LCK 没有塌」也是错的",
@@ -5444,18 +5450,39 @@ export function curZone(){
   return (t&&t.z)||"act";
 }
 
-export function actPanelPre(){
-  const P=S.pre;
-  const nextR=RANKS.find(r=>r.at>P.rank);
-  return `
-  <div class="card">
-    <h2>第 ${P.week} 周<em>剩余行动点 ${P.ap}</em></h2>
-    ${autoBar()}
-    ${questCard()}
-    ${weekDiary()}
-    ${S.careerBak?`<div class="ver" style="border-left:3px solid var(--red)">你现在是<b>自由身</b>：上一份合同在 <b>${(S.pre.exPro&&S.pre.exPro.team)||"—"}</b> 结束，没人接手。
-      俱乐部看的是你现在的段位、人气和杯赛履历——职业履历封存着，签回去就接上。</div>`:""}
-    <div class="ver">${(()=>{const sc=preScore();
+/* ---------- 职业前「本周」页的右栏（作者拍板 2026-09-09）----------
+   和签约之后那一页角色一一对应，只是换成职业前真正存在的东西：
+     下一场      → railNext()   下一个节点：下一场比赛 / 报名在第几周、够不够格
+     教练怎么看你 → railScout()  谁在看你：试训门槛，卡在段位还是卡在曝光
+     电竞周报    → 同一张（它从第一周就出刊）
+   「最近的比赛」职业前没有：排位和杯赛不写进比赛档案（S.archive 只在职业赛结算里写）。
+   railScout 的正文是从 actPanelPre 里**搬**过来的，不是复制——主列那边同时删掉了，
+   两处不会各说一遍。 */
+export function railNext(){
+  const P=S.pre; if(!P) return "";
+  const n=nextMilestone();
+  const due=dueCups();
+  const live=activeCups();
+  const rows=[];
+  if(live.length) rows.push(`<p class="note" style="margin-top:0"><b style="color:var(--cyan)">正在打：${live.map(c=>c.name).join(" · ")}</b></p>`);
+  if(due.length) rows.push(`<p class="note" style="margin-top:0"><b style="color:var(--gold)">有比赛没打：${due.map(c=>c.name).join(" · ")}</b></p>`);
+  if(n){
+    const d=Math.max(0,n.w-P.week), shut=!n.dateOnly&&!n.need();
+    // 名字单独一行：360px 的栏里「城市争霸赛」和「第 6 周」并排会把名字挤断
+    rows.push(`<h3 style="margin:0 0 4px">${n.name}</h3>
+      <p class="note" style="margin-top:0"><b class="mono">第 ${n.w} 周</b>　${
+        d===0?"<b>就是本周。</b>":`还有 <b>${d}</b> 周。`}${
+        shut?`<br><span style="color:var(--red)">${n.vague?(d===0?"请柬没来":"邀请制"):(d===0?"未达门槛":"门槛未达")}</span>`:""}</p>`);
+  }else if(!live.length&&!due.length){
+    rows.push(`<p class="note" style="margin-top:0">今年的比赛都打完了，接下来就是转会窗口。</p>`);
+  }
+  rows.push(`<p class="note">距离<b>转会窗口</b>还有 <b>${Math.max(0,PRE_YEAR-P.week)}</b> 周<span style="color:var(--ink-3)">——那是年末各队定人的日子；试训邀请不等它，什么时候够格什么时候来。</span></p>`);
+  return `<div class="card"><h2>下一个节点<em>赛季前 第 ${P.week}/${PRE_WEEKS} 周</em></h2>${rows.join("")}</div>`;
+}
+export function railScout(){
+  const P=S.pre; if(!P) return "";
+  return `<div class="card"><h2>谁在看你<em>${(()=>{try{return rankFull(P.rank);}catch(e){return "";}})()}</em></h2>
+    <div class="ver" style="margin:0">${(()=>{const sc=preScore();
       const near=sc/PRE_INVITE;
       // 说清楚「还早」是早在哪——两个赛事各自打没打，状态是分开的
       const cupTxt=(()=>{
@@ -5497,7 +5524,20 @@ export function actPanelPre(){
           : worse==="rank" ? `卡在<b>段位</b>上——曝光够到 ${nm(ec)} 了，再往上冲分`
           : `卡在<b>曝光</b>上——段位够到 ${nm(rc)} 了，去打比赛、涨人气`}`;
       })()}
-      <br>距离转会窗口还有 <b>${Math.max(0,PRE_YEAR-P.week)}</b> 周<span style="color:var(--ink-3)">（那是年末各队定人的日子；试训邀请不等它，什么时候够格什么时候来）</span>。</div>
+      <br>距离转会窗口还有 <b>${Math.max(0,PRE_YEAR-P.week)}</b> 周<span style="color:var(--ink-3)">（那是年末各队定人的日子；试训邀请不等它，什么时候够格什么时候来）</span>。</div></div>`;
+}
+export function actPanelPre(){
+  const P=S.pre;
+  const nextR=RANKS.find(r=>r.at>P.rank);
+  return `
+  <div class="card">
+    <h2>第 ${P.week} 周<em>剩余行动点 ${P.ap}</em></h2>
+    ${autoBar()}
+    ${questCard()}
+    ${weekDiary()}
+    ${S.careerBak?`<div class="ver" style="border-left:3px solid var(--red)">你现在是<b>自由身</b>：上一份合同在 <b>${(S.pre.exPro&&S.pre.exPro.team)||"—"}</b> 结束，没人接手。
+      俱乐部看的是你现在的段位、人气和杯赛履历——职业履历封存着，签回去就接上。</div>`:""}
+
     <div class="ver">
       ${rankBadge(P.rank,40)}${nextR?`　→　下一档 ${nextR.n}`:`　→　已经到顶`}<br>
       ${uiNum()?`实力 <b>${soloSkill().toFixed(0)}</b><span style="color:var(--ink-3)">（五维均值，全游戏同一个数）</span>　·　当前分段门槛 <b>${rankReq(P.rank).toFixed(0)}</b>${
@@ -5565,9 +5605,18 @@ export function viewPre(){
   ${S.cupResult?cupResultCard():''}${S.signup?signupCard():''}${S.rankUp?rankUpCard():''}${S.rndResult?randomResultCard():''}${S.rndEv?randomCard():''}
   ${tabBar(TABS_PRE)}
   ${S.cupMatch?cupMatchCard():""}
-  ${T==="act"&&!S.cupMatch?actPanelPre():""}
-  ${T==="act"&&!S.cupMatch?(cupCard()):""}
-  ${T==="act"&&!S.cupMatch?(injuryCard())+attrCard():""}
+  <!-- 职业前这一页也走「主列 + 右栏」（玩家实锤 2026-09-09：「我没看到界面改动，
+       我的电竞周报去哪里了」）。上一版只改了签约之后的 viewSeason，而没签约的人
+       走的是这里，整页纹丝不动。右栏放本期周报——它从游戏第一周就出刊，
+       原来只能去「新闻」栏目翻。
+       「教练怎么看你」和「最近的比赛」职业前没有：还没进队就没有教练和首发竞争，
+       排位和杯赛也不写进比赛档案（S.archive 只在职业赛的结算里写）。 -->
+  ${T==="act"&&!S.cupMatch?`<div class="wkgrid pre">
+    <div class="wk-next">${railNext()}</div>
+    <div class="wk-main">${actPanelPre()}${cupCard()}${injuryCard()}${attrCard()}</div>
+    <div class="wk-coach">${railScout()}</div>
+    <div class="wk-press">${pressCard()}</div>
+  </div>`:""}
   ${T==="world"?scheduleCard()+proCard():""}
   ${T==="news"?(pressCard("all"))+eventsCard():""}
   ${T==="tx"?(preTransferPage()):""}

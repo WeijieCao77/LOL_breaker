@@ -460,13 +460,13 @@ export function saveAgeText(at) {
   return Math.round(h / 24) + " 天前";
 }
 /* 存档里的进度摘要，让玩家确认是不是自己那一局 */
+/* 摘要行只报**你是谁**，处境全交给右边的格子（作者实锤 2026-09-09：
+   「这个封面的填充还是很丑」——原来摘要写「gtu · 上单 · 19 岁 · S12 职业前 第 1 周」，
+   右边第一格又写「进度 S12 职业前 第 1 周」、第二格「身份 上单 · 19 岁」，
+   等于拿同一句话填了两遍，看着当然空）。 */
 export function saveSummary(s) {
   try {
-    const sea = (SEASONS[s.si]) ? SEASONS[s.si].tag : "S12";
-    const who = (s.name || "无名") + " · " + (POSN[s.pos] || "") + " · " + (s.age || 18) + " 岁";
-    if (!s.career) return `${who} · ${sea} 职业前 第 ${s.pre ? s.pre.week : 1} 周`;
-    const t = (s.career.titles || []).length;
-    return `${who} · ${sea} · ${s.team || "无队"}${t ? " · 冠军 " + t : ""}`;
+    return (s.name || "无名") + " · " + (POSN[s.pos] || "") + " · " + (s.age || 18) + " 岁";
   } catch (e) { return "存档"; }
 }
 
@@ -483,7 +483,10 @@ export function saveStats(s) {
     const sea = (SEASONS[s.si] && SEASONS[s.si].tag) || "S12";
     if (!s.career) {
       tile("进度", sea + " 职业前", "第 " + ((s.pre && s.pre.week) || 1) + " 周");
-      tile("身份", (POSN[s.pos] || "选手") + " · " + (s.age || 18) + " 岁");
+      const rk = s.pre && typeof s.pre.rank === "number" ? rankFull(s.pre.rank) : "";
+      if (rk) tile("段位", rk);
+      if (s.fans) tile("粉丝", Math.round(s.fans) + " 万");
+      if (typeof s.money === "number") tile("资金", Math.round(s.money) + " 万");
     } else {
       tile("赛季", sea, (SPLITS[s.split || 0] || "") + " 第 " + (s.week || 1) + " 周");
       tile("效力", s.team || "无队", s.homeLeague || "");

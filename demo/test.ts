@@ -767,7 +767,43 @@ function unitChecks() {
       bad.push("封面页头：文字起点没有跟着 --art 走，标语会压回图上");
     if (!/\.keyart\{bottom:auto;height:var\(--art\)\}/.test(css))
       bad.push("封面页头：主视觉没有用 --art 定高，它会铺满整个页头、把标语盖在图里");
+    /* 职业前那一页也得是同一套（玩家实锤 2026-09-09：「我没看到界面改动，
+       我的电竞周报去哪里了」——上一版只改了签约之后的 viewSeason）。 */
+    const pg = ms.indexOf('<div class="wkgrid pre">');
+    if (pg < 0) bad.push("职业前页：没有 .wkgrid.pre（主列 + 右栏那一套没铺到 viewPre）");
+    else ["wk-next", "wk-main", "wk-coach", "wk-press"].forEach(k => {
+      if (ms.indexOf('class="' + k + '"', pg) < 0 || ms.indexOf('class="' + k + '"', pg) > pg + 900)
+        bad.push("职业前页：右栏缺 " + k);
+    });
+    // 「谁在看你」是从行动卡里**搬**过来的，主列不该再说一遍
+    const ap = ms.indexOf("export function actPanelPre(){");
+    const apEnd = ms.indexOf("\nexport function", ap + 10);
+    if (ap > 0 && ms.slice(ap, apEnd).indexOf("还没有俱乐部会看你") >= 0)
+      bad.push("职业前页：试训门槛在行动卡和右栏各写了一遍");
+    /* 主列比右栏高得多，跨行时多出来的高度会被平摊到各行，把右栏卡拉开
+       （实测 328 / 789 / 1296）。末尾必须留一行 1fr 把富余高度吸走。 */
+    [[".wkgrid.pre{grid-template-rows:", "span 3"], [".wkgrid{grid-template-rows:", "span 4"]].forEach(([k]) => {
+      if (css.indexOf(k) < 0) bad.push("本周页：" + k + " 缺末尾吸高度的那一行 1fr，右栏会被拉开");
+    });
+    if (!/\.wkgrid\.pre>\.wk-main\{grid-column:1;grid-row:1\/span 4\}/.test(css))
+      bad.push("职业前页：主列跨的行数和 grid-template-rows 对不上");
+    if (!/\.wkgrid>\.wk-main\{grid-column:1;grid-row:1\/span 5\}/.test(css))
+      bad.push("赛季页：主列跨的行数和 grid-template-rows 对不上");
   } catch (e) { bad.push("本周页布局自检没跑起来：" + e); }
+  /* 职业前右栏那两张卡：数据都得从 S.pre 上读，别摸 S.career / S.team */
+  {
+    const S: any = A.S();
+    const bak = { pre: S.pre, career: S.career, team: S.team };
+    S.career = null; S.team = null;
+    S.pre = Object.assign({}, bak.pre || {}, { week: 1, ap: 10, rank: 30, log: [], mates: [] });
+    let n = "", sc = "";
+    try { n = A.railNext(); sc = A.railScout(); } catch (e) { bad.push("职业前右栏画不出来：" + e); }
+    if (n.indexOf("转会窗口") < 0) bad.push("下一个节点：没说距离转会窗口还有几周");
+    if (!sc || sc.indexOf("谁在看你") < 0) bad.push("谁在看你：卡片没画出来");
+    S.pre = null;
+    if (A.railNext() !== "" || A.railScout() !== "") bad.push("职业前右栏：没有 S.pre 时该返回空串");
+    Object.assign(S, bak);
+  }
   /* 赛季结算卡上的「XX 冠军」必须念这一季实际所在的赛区（玩家实锤 2026-09-09：
      在 T1 拿了联赛冠军，标签却写「LPL 冠军」）。源码扫描那条只管「有没有写死」，
      这条管「换个赛区跑一遍，念出来的对不对」。 */
@@ -814,7 +850,15 @@ function unitChecks() {
     const pre = A.saveStats({ name: "乙", pos: "top", si: 0, age: 18, pre: { week: 7 },
       attrs: { 操作: 50, 运营: 50, 心态: 50, 指挥: 50, 体质: 50 } });
     if (pre.indexOf("职业前") < 0) bad.push("存档卡数据：职业前的存档没写进度");
-    if (A.saveSummary(blob).indexOf("21 岁") < 0) bad.push("存档卡摘要：年龄从格子里挪出来了，摘要行却没接住");
+    /* 摘要行只报「你是谁」，处境交给格子——两边不许说同一件事
+       （作者实锤：右边第一格「进度 S12 职业前 第 1 周」和左边摘要一字不差）。 */
+    const sum = A.saveSummary(blob);
+    if (sum.indexOf("21 岁") < 0) bad.push("存档卡摘要：不报年龄了");
+    ["EDG", "S13", "冠军"].forEach(k => {
+      if (sum.indexOf(k) >= 0) bad.push("存档卡摘要：又把「" + k + "」写进摘要了，右边格子已经在报它");
+    });
+    const preSum = A.saveSummary({ name: "乙", pos: "top", si: 0, age: 18, pre: { week: 7 } });
+    if (preSum.indexOf("职业前") >= 0) bad.push("存档卡摘要：职业前的进度又写回摘要了，右边「进度」格已经在报");
   }
   /* 周报两个落点，各干各的：本期在「本周」，往期在「新闻」，两边不重复 */
   {

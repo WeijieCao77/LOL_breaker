@@ -1183,9 +1183,13 @@ ul.dealfx li::marker{color:var(--ink-3)}
    窄屏一列：数据排在按钮下面，不跟按钮抢位置。 */
 .savegrid{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 .savemain .note{margin-bottom:0}
-.savestats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;
-  background:var(--line);border:1px solid var(--line);align-self:start}
-.savestats>div{background:linear-gradient(180deg,var(--panel),rgba(var(--void-rgb),.85));padding:9px 12px;min-width:0}
+/* 用 flex 不用 grid：格子数是活的（职业前四到六个、进队后六个），
+   grid 的 auto-fit 一换行就在末尾剩一片空格子，而容器底色会把那片空白
+   画成一块实心蓝板（作者实锤：「这个封面的填充还是很丑」）。
+   flex 让末行的格子自己长满，永远没有空位；底色也因此挪到每个格子自己身上。 */
+.savestats{display:flex;flex-wrap:wrap;gap:6px;align-self:center}
+.savestats>div{flex:1 1 132px;max-width:210px;min-width:0;padding:9px 12px;
+  border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),rgba(var(--void-rgb),.85))}
 .savestats .k{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
   font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,Menlo,monospace}
 .savestats .v{font-size:15px;font-weight:650;margin-top:2px;color:var(--gold-hi);
@@ -1194,8 +1198,12 @@ ul.dealfx li::marker{color:var(--ink-3)}
 @media(min-width:820px){
   /* 左边那半边只放得下一行标题加两颗按钮，给它 minmax(0,340px) 就够；
      余下的宽度全给数据格，正好是作者说的「右边都是空的」那一块。 */
-  .savegrid{grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:18px;align-items:start}
-  .savestats{grid-template-columns:repeat(auto-fit,minmax(132px,1fr))}
+  /* 上下居中（作者实锤：「甚至没有上下居中，看的人很难受」）：左边是标题 + 两颗按钮 + 一行小字，
+     右边是一排格子，两边高度本来就不一样，贴顶只会显得右边浮在半空。 */
+  .savegrid{grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:20px;align-items:center}
+  /* 格子不许摊成大板砖：三四格的时候 1fr 会把每格拉到 340px 宽，
+     标签一行、数字一行，剩下全是空白。给个上限，多出来的宽度让给留白。 */
+  .savestats>div{flex-basis:138px}
 }
 .savebad{border-color:rgba(190,90,80,.5)}
 
@@ -1671,7 +1679,17 @@ header.top.compact>.theme-top{display:none}
   /* 360px 的右栏：周报一行能排 18 个汉字，「下一场」的对阵块也还站得开。
      align-items:start——右栏两张卡各按自己的高度收口，不跟着主列拉长。 */
   .wkgrid{grid-template-columns:minmax(0,1fr) 360px;gap:0 16px;align-items:start}
-  .wkgrid>.wk-main{grid-column:1;grid-row:1/span 4}
+  /* 末尾那一行 1fr 是必须的：主列比右栏高得多（职业前 1348 对 670），
+     主列跨行的时候多出来的高度会被平摊到各行上，右栏三张卡就被拉开成
+     328 / 789 / 1296（实测）。多留一行 1fr 把富余高度全吸到最底下，
+     右栏就老老实实从上往下贴着排。 */
+  .wkgrid.pre{grid-template-rows:auto auto auto 1fr}
+  .wkgrid.pre>.wk-main{grid-column:1;grid-row:1/span 4}
+  .wkgrid.pre>.wk-next{grid-column:2;grid-row:1}
+  .wkgrid.pre>.wk-coach{grid-column:2;grid-row:2}
+  .wkgrid.pre>.wk-press{grid-column:2;grid-row:3}
+  .wkgrid{grid-template-rows:auto auto auto auto 1fr}
+  .wkgrid>.wk-main{grid-column:1;grid-row:1/span 5}
   .wkgrid>.wk-next{grid-column:2;grid-row:1}
   .wkgrid>.wk-coach{grid-column:2;grid-row:2}
   .wkgrid>.wk-recent{grid-column:2;grid-row:3}
