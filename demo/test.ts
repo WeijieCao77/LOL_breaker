@@ -314,6 +314,47 @@ function playOne(opts?) {
 /* 不碰 DOM 的几何与消毒：导览说明卡永远不能盖在聚光框上；导入的存档只能带几个排版标签 */
 function unitChecks() {
   const bad = [];
+  /* 「选项灰的时候也会触发做不了的事件」（玩家实锤 2026-09-09）：
+     练操作已经因为「机械路径已刷满」变灰，周末却还在弹「冲击操作瓶颈断了」。
+     按钮灰不灰、面板显不显示、周末审不审判，三处必须给出同一个答案。 */
+  {
+    const S: any = A.S();
+    const bak = { attrs: S.attrs && Object.assign({}, S.attrs), capB: S.capBonus && Object.assign({}, S.capBonus),
+                  capMile: S.capMile, capSeen: S.capSeen,
+                  btk: S.btk, ev: S.events, ap: S.ap, step: S.step, career: S.career, team: S.team };
+    S.step = "season"; S.events = []; S.ap = 8;
+    S.btk = { opStreak: 2, opThisWeek: 0, vod: 0, rest: 0, apWeek: 8 };
+    S.capSeen = {}; S.capMile = {};
+    // 顶到瓶颈、机械池还没满 → 三处都说「在冲击」
+    S.capBonus = Object.assign({}, S.capBonus, { 操作: 0 });
+    A.DIMS.forEach((d: string) => { S.attrs[d] = A.capOf(d); });
+    const chasing1 = A.btkChasing("操作");
+    const note1 = A.btkChaseNote();
+    const btn1 = A.trainBtn("操作", 8);
+    if (!chasing1) bad.push("突破：顶到瓶颈、机械池没满，却说不在冲击");
+    if (!note1) bad.push("突破：在冲击却不显示冲击面板");
+    if (btn1.dis) bad.push("突破：在冲击的时候练操作按钮却是灰的");
+    // 机械池刷满 → 按钮灰、面板不显示、周末也不该再骂人
+    S.capBonus = Object.assign({}, S.capBonus, { 操作: A.CAP_MECH_MAX });
+    A.DIMS.forEach((d: string) => { S.attrs[d] = A.capOf(d); });
+    const chasing2 = A.btkChasing("操作");
+    const note2 = A.btkChaseNote();
+    const btn2 = A.trainBtn("操作", 8);
+    if (chasing2) bad.push("突破：机械路径已刷满，还说在冲击");
+    if (note2) bad.push("突破：机械路径已刷满，冲击面板还挂着");
+    if (!btn2.dis) bad.push("突破：机械路径已刷满，练操作按钮却还能点");
+    S.events = [];
+    A.btkWeekEnd();
+    const nag = (S.events || []).some((e: any) => /冲击操作瓶颈/.test(e.text || ""));
+    if (nag) bad.push("突破：按钮已经灰了，周末还在弹「冲击操作瓶颈断了」——这正是要修的那件事");
+    // 一次性收益已经领过：同样三处一致
+    S.capBonus = Object.assign({}, S.capBonus, { 操作: 0 });
+    A.DIMS.forEach((d: string) => { S.attrs[d] = A.capOf(d); });
+    S.capSeen = { op3w: 1 };
+    if (A.btkChasing("操作") !== !A.btkPathDead("操作")) bad.push("突破：一次性收益领过之后三处判断又不一致了");
+    S.attrs = bak.attrs; S.capBonus = bak.capB; S.capMile = bak.capMile; S.capSeen = bak.capSeen; S.btk = bak.btk;
+    S.events = bak.ev; S.ap = bak.ap; S.step = bak.step; S.career = bak.career; S.team = bak.team;
+  }
   /* 「歇够 ×N」必须和连点 N 次休息**一模一样**（玩家实锤 2026-09-09：
      「回体力点击困难，每回合都要点半天」）。这是个纯点击数的改动，
      一个数值都不能动——所以拿两条路跑同一个初始状态，逐项对齐。 */

@@ -15602,6 +15602,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909n", at: "2026-09-09", items: [
+      "灰掉的选项不再继续催你（玩家实锤：「选项灰的时候也会触发做不了的事件」）：「练操作」因为<b>机械路径已刷满</b>变灰之后，周末还在弹「冲击操作瓶颈<b>断了</b>：这周只练了 0/3 次」——逼你去点一个点不动的按钮。根子是同一件事被三处各判各的：按钮查「这条路还付不付得出钱」，冲击面板只查机械池，而周末审判只查「顶没顶到瓶颈」，最松的那个天天在骂人。现在<b>按钮灰不灰、面板显不显示、周末审不审判，问的是同一个函数</b>"
+    ] },
     { v: "v20260909m", at: "2026-09-09", items: [
       "休息多了一个「<b>歇够 ×N</b>」（玩家实锤：「回体力点击困难，每回合都要点半天」）：一次休息是 1 个行动点、约 −17 体能，而一周的疲劳轻松 +26 起——正常节奏下每周要点两三次，一整个生涯是几百次重复点击。现在体能低的时候，休息卡上会多出一个小按钮，<b>一下点完</b>：一直歇到体能回到 75，或者行动点用光为止。<b>一个数值都没改</b>——同样的行动点、同样的公式，只是不用你自己点那么多下（自检里拿「歇够」和「连点 N 次」逐项对齐，对不上就红）"
     ] },
@@ -16436,6 +16439,14 @@ header.top.compact>.theme-top{display:none}
   function btkAtCap(d) {
     return S.attrs && S.attrs[d] >= capOf(d) - 0.05;
   }
+  function btkChasing(d) {
+    d = d || "操作";
+    if (!S || !S.attrs) return false;
+    if (!btkAtCap(d)) return false;
+    if (btkPathDead(d)) return false;
+    const P = BREAK_PATHS[d];
+    return !!(P && P.by === "train");
+  }
   function btkNote(d, n) {
     S.btk = S.btk || { opStreak: 0, opThisWeek: 0, vod: 0, rest: 0 };
     if (d === "op") S.btk.opThisWeek += n;
@@ -16480,7 +16491,7 @@ header.top.compact>.theme-top{display:none}
     btkRestSettle();
     const budget = S.btk.apWeek !== void 0 ? S.btk.apWeek : 6;
     const invested = S.btk.opThisWeek, was = S.btk.opStreak;
-    const chasing = S.attrs && S.attrs.操作 >= capOf("操作") - 0.05;
+    const chasing = btkChasing("操作");
     if (budget < 6) {
       S.btk.opThisWeek = 0;
       if (chasing && was > 0)
@@ -18431,9 +18442,7 @@ header.top.compact>.theme-top{display:none}
     return `<div class="diary"><span class="dk">这周</span>${lines.slice(-3).join(" ")}${list.length > 1 && true ? `<span class="dl">${actListText(list)}</span>` : ""}</div>`;
   }
   function btkChaseNote() {
-    if (!S.attrs || false) return "";
-    if (S.attrs.操作 < capOf("操作") - 0.05) return "";
-    if (capMechOf("操作") >= CAP_MECH_MAX - 0.01) return "";
+    if (!btkChasing("操作")) return "";
     const b = S.btk || {};
     const op = b.opThisWeek || 0, st = clamp(b.opStreak || 0, 0, 3);
     const ap = S.step === "pre" && S.pre ? S.pre.ap : S.ap || 0;

@@ -113,6 +113,9 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260909n", at:"2026-09-09", items:[
+    "灰掉的选项不再继续催你（玩家实锤：「选项灰的时候也会触发做不了的事件」）：「练操作」因为<b>机械路径已刷满</b>变灰之后，周末还在弹「冲击操作瓶颈<b>断了</b>：这周只练了 0/3 次」——逼你去点一个点不动的按钮。根子是同一件事被三处各判各的：按钮查「这条路还付不付得出钱」，冲击面板只查机械池，而周末审判只查「顶没顶到瓶颈」，最松的那个天天在骂人。现在<b>按钮灰不灰、面板显不显示、周末审不审判，问的是同一个函数</b>"
+  ]},
   {v:"v20260909m", at:"2026-09-09", items:[
     "休息多了一个「<b>歇够 ×N</b>」（玩家实锤：「回体力点击困难，每回合都要点半天」）：一次休息是 1 个行动点、约 −17 体能，而一周的疲劳轻松 +26 起——正常节奏下每周要点两三次，一整个生涯是几百次重复点击。现在体能低的时候，休息卡上会多出一个小按钮，<b>一下点完</b>：一直歇到体能回到 75，或者行动点用光为止。<b>一个数值都没改</b>——同样的行动点、同样的公式，只是不用你自己点那么多下（自检里拿「歇够」和「连点 N 次」逐项对齐，对不上就红）"
   ]},
@@ -894,6 +897,20 @@ export function btkPathDead(d){
 /* 机械磨练路径的公共闸：不顶着瓶颈就不存在「顶开」这回事。
    玩家实锤：操作 80/92 随便练三周也弹突破+成就——路径只查计数从不查你在不在瓶颈上。 */
 export function btkAtCap(d){ return S.attrs&&S.attrs[d]>=capOf(d)-0.05; }
+/* 「现在还在冲击这一维的瓶颈吗」——按钮灰不灰、面板显不显示、周末审不审判，
+   三处必须问同一个函数（玩家实锤 2026-09-09：「选项灰的时候也会触发做不了的事件」——
+   练操作已经因为「机械路径已刷满」变灰，周末却还在弹「冲击操作瓶颈断了：这周只练了
+   0/3 次」，逼你去点一个点不动的按钮）。
+   原来三处各写各的：trainBtn 查 btkPathDead、btkChaseNote 只查机械池、
+   btkWeekEnd 只查「顶没顶到瓶颈」——最松的那一个天天在骂人。 */
+export function btkChasing(d){
+  d=d||"操作";
+  if(!S||!S.attrs) return false;
+  if(!btkAtCap(d)) return false;        // 没顶到瓶颈，无所谓冲击
+  if(btkPathDead(d)) return false;      // 这条机械路已经付不出钱了：池满 / 一次性收益领过了
+  const P=BREAK_PATHS[d];
+  return !!(P&&P.by==="train");         // 只有「靠继续练」的维度才谈得上每周练满
+}
 export function btkNote(d,n){ S.btk=S.btk||{opStreak:0,opThisWeek:0,vod:0,rest:0};
   if(d==="op") S.btk.opThisWeek+=n;
   else S.btk[d]=(S.btk[d]||0)+n;
@@ -950,7 +967,7 @@ export function btkWeekEnd(){
   // 点全投操作也凑不满 3，下一次结算却按整周审判——连击被无声清零。
   const budget=(S.btk.apWeek!==undefined)?S.btk.apWeek:6;
   const invested=S.btk.opThisWeek, was=S.btk.opStreak;
-  const chasing=S.attrs&&S.attrs.操作>=capOf("操作")-0.05;
+  const chasing=btkChasing("操作");   // 和按钮、面板同一个判断
   // 异化点数后练一次操作 = 2 点，「练满 3 次」要 6 点预算——
   // 备战/出征/受伤（4 点）的周照旧按暂停处理，不计数也绝不清零
   if(budget<6){
@@ -2889,10 +2906,7 @@ export function weekDiary(){
 /* 冲瓶颈状态条：正在冲操作瓶颈时，把规则和本周进度顶在行动区最上面。
    玩家原话：「我根本不知道要每周投入三个点」——规则不能只藏在按钮小字里。 */
 export function btkChaseNote(){
-  if(!S.attrs||false) return "";
-  if(S.attrs.操作<capOf("操作")-0.05) return "";
-  // 操作没有里程碑来源，机械池满就是它的头
-  if((capMechOf("操作"))>=CAP_MECH_MAX-0.01) return "";
+  if(!btkChasing("操作")) return "";   // 和按钮、周末审判同一个判断
   const b=S.btk||{}; const op=b.opThisWeek||0, st=clamp(b.opStreak||0,0,3);
   const ap=(S.step==="pre"&&S.pre)?S.pre.ap:(S.ap||0);
   const low=(b.apWeek!==undefined&&b.apWeek<6);
