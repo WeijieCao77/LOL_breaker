@@ -1106,7 +1106,7 @@ export function acceptRenew(){
   S.pendingRenew = null; S.gotCut = false;
   pushEvent(`<b>${r.team}</b> 与你续约 ${r.years} 个赛段，赛段薪资 <b>${r.salary!==undefined?wanText(r.salary):"—"}</b>${
     r.buyout!==undefined?`，违约金 <b>${r.buyout} 万</b>`:""}。`,"good","合同");
-  txNote(`与 ${r.team} 续约，赛段薪资 ${r.salary!==undefined?wanText(r.salary):"—"}`);
+  txNote(`与 ${r.team} 续约，赛段薪资 ${r.salary!==undefined?wanText(r.salary):"—"}`,"renew");
   render();
 }
 /* ---------- 续约谈判（2026-09-06 玩家点名：不能只有签或不签，要像试训那样能谈）----------
@@ -1134,7 +1134,7 @@ export function renewCollapse(){
   const r=S.pendingRenew; if(!r) return;
   S.pendingRenew=null; S.freeAgent=true; S.gotCut=true;
   pushEvent(`续约谈崩了：<b>${r.team}</b> 觉得你要的太多，收回了报价。你成了<b>自由身</b>——去哪由你自己在转会市场上找。`,"bad","合同");
-  txNote(`与 ${r.team} 的续约谈崩，成为自由身`);
+  txNote(`与 ${r.team} 的续约谈崩，成为自由身`,"free");
   { S.offerYear=undefined; S.offerWnd=undefined; rollProOffers((S.off&&S.off.next==="summer")?"mid":"year"); }
   render();
 }
@@ -1267,7 +1267,7 @@ export function doBuyout(){
   pushEvent(`你自己掏了 <b>${c.fee} 万</b>，把和 <b>${old}</b> 的合同买断了。<br>
     合同作废，你现在是<b>自由身</b>——不用再等别人来挖，也没人再替你付这笔钱。<br>
     <span style="color:var(--red)">经理和教练都记着这一笔，更衣室也知道了。</span>`,"big","转会");
-  txNote(`自掏 ${c.fee} 万买断与 ${old} 的合同，成为自由身`);
+  txNote(`自掏 ${c.fee} 万买断与 ${old} 的合同，成为自由身`,"buyout");
   // 自由身不用别人付违约金，愿意谈的队会多一档
   { S.offerYear=undefined; rollProOffers(); }
   if(!S.proOffer) pushEvent(`消息放出去了，但这个休赛期暂时没有队来谈。
@@ -1494,7 +1494,7 @@ export function acceptPromote(){
   S.rosterSig = myRoster().map(x => x.id).sort().join("|");
   pushEvent(`<b>${d.team}</b> 把你从 <b>${old}</b> 调上了一队，新合同：赛段薪资 <b>${wanText(d.salary)}</b>（${yearPayText(d.salary)}）· 违约金 ${wanText(d.buyout)}。
     ${d.incumbent} 让出了首发位——你在 LDL 打的那些比赛，有人一直在看。`, "big", "升队");
-  txNote(`${old} → <b>${d.team}</b>（升上一队 · 赛段薪资 ${wanText(d.salary)}）`);
+  txNote(`${old} → <b>${d.team}</b>（升上一队 · 赛段薪资 ${wanText(d.salary)}）`,"up");
   checkAch("promote");
   render();
 }
@@ -1566,7 +1566,7 @@ export function doSendDown(acad){
   S.rosterSig=myRoster().map(x=>x.id).sort().join("|");
   pushEvent(`你被注册到 <b>${acad.name}</b>（LDL）。从替补席到首发位——
     <b>比赛打起来，数据摆出来，一队的门才会再开。</b>`,"big","青训");
-  txNote(`${old} → <b>${acad.name}</b>（下放 LDL 打比赛）`);
+  txNote(`${old} → <b>${acad.name}</b>（下放 LDL 打比赛）`,"down");
   render();
 }
 
@@ -1605,10 +1605,27 @@ export function promoteCard(){
    全部收进一个栏目。赛段中只收意向，注册窗（季中 + 年底）生效——
    「我不可能在一个次级队伍待满一年才能走」。 */
 
-/* 生涯轨迹：每次换队记一笔 */
-export function txNote(text){
-  S.txLog = (S.txLog||[]).concat([{ s: SEASONS[S.si]?SEASONS[S.si].tag:"", text }]);
+/* 生涯轨迹：每次换队记一笔。
+   k 是这一笔的性质（玩家实锤 2026-09-09：「只去过一个外赛区烂队就回 RNG 一人一城，
+   轨迹却写我转会七站」）——这张表本来就记着续约、买断、升一队、下放，
+   它是「生涯轨迹」不是「转会次数」，可名片和评语那两处直接拿 length 当转会数在数。
+   现在每一笔标性质，只有 move（真的换了俱乐部）才算一站。
+   老存档没有 k：按文案回推（有「→」且不是升队/下放的就是转会）。 */
+export function txNote(text,k?){
+  S.txLog = (S.txLog||[]).concat([{ s: SEASONS[S.si]?SEASONS[S.si].tag:"", text, k:k||"move" }]);
   if(S.txLog.length>12) S.txLog.shift();
+}
+/* 这一笔算不算「换了一家俱乐部」 */
+export function txIsMove(x){
+  if(!x) return false;
+  if(x.k) return x.k==="move";
+  const t=String(x.text||"");                       // 老存档回推
+  return /→/.test(t) && !/升上一队|下放/.test(t);
+}
+/* 转会轨迹的「站」＝起点那一家 + 每一次真的换俱乐部 */
+export function txStops(){
+  const n=(S.txLog||[]).filter(txIsMove).length;
+  return n?n+1:0;
 }
 
 /* ---------- 主动接触：点名一支队自荐 ---------- */

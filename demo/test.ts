@@ -602,6 +602,83 @@ function unitChecks() {
     if (S.match && (S.match.w || S.match.l)) bad.push("抽签仪式还没演，比赛已经打出了比分");
     poKeys.forEach(k => { S[k] = poSnap[k]; });
 
+    /* ---- 2026-09-09 玩家实锤的一批：预览和生效必须是同一个数 ---- */
+    // 战队行动：卡面写的默契涨幅＝真正涨进去的（原来卡面印配置表原始值，没过收益递减）
+    S.squad = { syn: 78, tac: 50 };
+    const synBefore = S.squad.syn;
+    const bit = A.sumBit("syn", 5.1);                       // 卡面那一小段
+    const shown = parseFloat((bit.match(/\+([0-9.]+)/) || [])[1] || "0");
+    A.addSquad("syn", 5.1);
+    const real = +(S.squad.syn - synBefore).toFixed(1);
+    if (Math.abs(shown - real) > 0.05) bad.push(`战队行动卡面虚标：写 +${shown}，实际 +${real}`);
+    if (shown > 5.0) bad.push("默契 78 还印着原始值 5.1，收益递减没算进卡面");
+
+    // 打排位：卡面写的状态涨幅＝真正涨进去的（原来漏了 ×0.5）
+    const soloSnap = { week: S.week, schedule: S.schedule, step: S.step, ap: S.ap, off: S.off, form: S.form, fatigue: S.fatigue };
+    S.form = 57; S.step = "season"; S.ap = 8; S.off = null; S.week = 1;
+    if (!Array.isArray(S.schedule) || !S.schedule.length)
+      S.schedule = S.world[S.homeLeague || "LPL"].filter((t: any) => t.name !== S.team).map((t: any) => t.name);
+    const numWas = A.uiNum(); A.uiSetNum(true);      // 「数值 关」时卡面只画箭头，看不到数
+    const solo = A.costSolo();
+    const soloShown = parseFloat((solo.match(/状态[^0-9+−-]*[+−-]([0-9.]+)/) || [])[1] || "0");
+    const soloF0 = S.form;
+    A.doAction("solo");
+    const soloReal = +(S.form - soloF0).toFixed(1);
+    if (Math.abs(soloShown - soloReal) > 0.15) bad.push(`打排位卡面虚标：写 +${soloShown}，实际 +${soloReal}`);
+    A.uiSetNum(numWas);
+    Object.assign(S, soloSnap);
+
+    // 突破弹窗报的上限＝「我的」页那一栏的上限（原来漏了经验加成）
+    S.capExp = 5.5; S.events = [];
+    const dim = "操作", capWant = A.capOf(dim);
+    A.breakthrough(dim, 1.0, "自检", "selfcheck_cap");
+    const line = (S.events || []).map((e: any) => e.text).join(" ");
+    const m2 = line.match(/上限 [0-9.]+ → <b>([0-9.]+)<\/b>/);
+    if (!m2) bad.push("突破没写出上限那一行");
+    else if (Math.abs(parseFloat(m2[1]) - A.capOf(dim)) > 0.05)
+      bad.push(`突破弹窗的上限和「我的」页对不上：弹窗 ${m2[1]}，实际 ${A.capOf(dim).toFixed(1)}（改前差一个经验加成 ${S.capExp}）`);
+
+    // 赛后拆解读开赛那一刻的体能（原来先扣这场的体能再算账）
+    if (S.match && S.match.fat0 === undefined) bad.push("比赛没有记下开赛时的体能快照 fat0");
+
+    /* 转会轨迹只数「真的换了俱乐部」那几笔（玩家实锤 2026-09-09：只去过一个外赛区队
+       就回 RNG 一人一城，名片却写转会七站）。这张表本来就记着续约、买断、升一队、下放。 */
+    {
+      const txBak = S.txLog;
+      S.txLog = [
+        { s: "S12", text: "RNG → <b>某外赛区队</b>（LCK），赛段薪资 300 万", k: "move" },
+        { s: "S12", text: "与 某外赛区队 续约，赛段薪资 320 万", k: "renew" },
+        { s: "S13", text: "某外赛区队 → <b>RNG</b>（LPL），赛段薪资 400 万", k: "move" },
+        { s: "S13", text: "与 RNG 续约，赛段薪资 500 万", k: "renew" },
+        { s: "S14", text: "与 RNG 续约，赛段薪资 700 万", k: "renew" },
+        { s: "S15", text: "RNG → <b>RNG.R</b>（下放 LDL 打比赛）", k: "down" },
+        { s: "S15", text: "RNG.R → <b>RNG</b>（升上一队 · 赛段薪资 700 万）", k: "up" },
+      ];
+      if (A.txStops() !== 3) bad.push(`转会轨迹数错了：七笔轨迹里只有两次真转会，应是 3 站，实得 ${A.txStops()} 站`);
+      // 老存档没有 k，按文案回推也要得出同一个数
+      S.txLog = S.txLog.map((x: any) => ({ s: x.s, text: x.text }));
+      if (A.txStops() !== 3) bad.push(`老存档回推转会站数不对：应是 3 站，实得 ${A.txStops()} 站`);
+      S.txLog = [{ s: "S12", text: "与 RNG 续约，赛段薪资 500 万", k: "renew" }];
+      if (A.txStops() !== 0) bad.push("从没转过会却算出了站数（应显示「一队待到底」）");
+      S.txLog = txBak;
+    }
+
+    // 天梯赛季重置：掉一档（作者拍板：上赛季王者，重置就变回宗师），掉到大师为止
+    {
+      const step = (v: number) => [A.rankName(v), A.rankName(A.rankResetTo(v))];
+      const want: [number, string, string][] = [
+        [100, "国服前 10", "国服前 100"],
+        [90, "国服前 100", "王者"],
+        [80, "王者", "宗师"],
+        [65, "宗师", "大师"],
+      ];
+      want.forEach(([v, from, to]) => {
+        const [b, a] = step(v);
+        if (b !== from || a !== to) bad.push(`天梯重置没有正好掉一档：${v} 分 ${b} → ${a}（应为 ${from} → ${to}）`);
+      });
+      if (A.rankResetTo(44) !== 44 || A.rankResetTo(30) !== 30) bad.push("大师及以下不该动");
+      if (A.rankResetTo(50) !== 44) bad.push(`大师区间内应落到大师下沿，实际 ${A.rankResetTo(50)}`);
+    }
   } catch (e) { bad.push("仪式自检没跑起来：" + (e && (e as any).stack || e)); }
   return bad;
 }
@@ -789,6 +866,40 @@ if (isMain && process.argv.includes("--batch")) {
     if (!(g.cost > pv.cost) || !((g.e[d] || 0) > (pv.e[d] || 0))) bad.push("外设反向升级 " + k + " → " + g.n);
   }));
   if (S.scaleVer !== 2 || !S.born) bad.push("新档缺少 scaleVer/born（审计 P0 回归）");
-  if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }
+  /* ---------------- 用语自检：这是 LOL 不是足球 ----------------
+   玩家点名过三次（2026-09-05「球探」、2026-09-06「球队」、2026-09-09「赢球 / 挂靴」）。
+   前两次都是人工扫一遍改掉，然后新写的文案又把词带回来。这次钉一条自检：
+   玩家看得见的字符串里不许出现下面这些球类词。
+   跳过两处：以 // 或 * 开头的注释行（改不改都影响不到玩家），
+   以及 CHANGELOG 里那两条「我们把球队改成了战队」——历史条目必须能引用原词。 */
+const BALL_WORDS = ["球队", "球员", "球迷", "球星", "球场", "赢球", "输球", "打球", "挂靴", "板凳席"];
+{
+  const bad2: string[] = [];
+  const dir = path.join(HERE, "src");
+  const walk = (d: string) => fs.readdirSync(d).flatMap((f: string) => {
+    const fp = path.join(d, f);
+    return fs.statSync(fp).isDirectory() ? walk(fp) : (f.endsWith(".ts") ? [fp] : []);
+  });
+  for (const fp of walk(dir)) {
+    const lines = fs.readFileSync(fp, "utf8").split("\n");
+    let inLog = false;
+    lines.forEach((ln: string, i: number) => {
+      if (/export const CHANGELOG\s*=/.test(ln)) inLog = true;
+      else if (inLog && /^\];/.test(ln)) inLog = false;
+      const t = ln.trim();
+      if (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) return;   // 注释
+      if (inLog && /足球词|用语电竞化/.test(ln)) return;                            // 历史条目要能引用原词
+      for (const w of BALL_WORDS) if (ln.includes(w))
+        bad2.push(`${path.basename(fp)}:${i + 1} 出现「${w}」 → ${t.slice(0, 60)}`);
+    });
+  }
+  if (bad2.length) {
+    console.error("用语自检不通过（这是 LOL 不是足球）：\n - " + bad2.join("\n - "));
+    process.exit(1);
+  }
+  console.log("用语自检通过：玩家可见文案里没有球类词");
+}
+
+if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }
   console.log("自检通过");
 }

@@ -1,5 +1,5 @@
 import { AUTO_KEYS } from "./auto";
-import { addStaff } from "./clout";
+import { addStaff, cloutOf } from "./clout";
 import { DIMS, addFans, addFat, capOf, clamp, myStrength, preLog, preScore, pushEvent, q1, render, tacAdd, teamTenure } from "./main";
 import { rnd } from "./rng";
 import { addQuest, evMakeRival, evPickTeam, evRosterChange } from "./quest";
@@ -76,6 +76,8 @@ export function buffChips(){
    玩家未必认识 EDG，而且 EDG 那天到底输没输，游戏里是有答案的，
    凭空捏一个等于告诉玩家「这些文字和你的世界无关」。
    凡是能由真实发生的事引出来的，就不该靠摇骰子。            */
+/* 「已经立住了」：拿过国际冠军，或者在队里已经是核心以上 */
+function mfBig(){ return !!((S.career&&(S.career.worlds||S.career.msi))||cloutOf()>=62); }
 export const RANDOM_EVENTS=[
   /* ================= 伏笔事件（2026-09-04 玩家点名：前期要有会影响后面的事）=================
      职业前每个事件在 S.flags 上留一个标记，职业后由对应的「回响」事件兑现。
@@ -389,15 +391,30 @@ export const RANDOM_EVENTS=[
       {t:"公开说不喜欢这个叫法", g:"hard",e:()=>{addFans(9);addBuff("mood",0.9,1,"有点烦");
         return "你越说不喜欢，叫的人越多。"}}]},
 
-  {id:"matchfix", rec:0, w:2, max:1, when:()=>!!S.team&&S.fans>=600&&((S.career&&S.career.l)||0)>=8,
-   q:()=>`论坛有个帖子在扒你上一场的走位，说那波送得「太刻意」。`,
-   ctx:"帖子底下已经有人在艾特反假赛的举报邮箱了。",
+  /* 按身份换一套说法（玩家实锤 2026-09-09：「我都 S 赛五冠了、资产三个亿，我心虚他毛啊」）。
+     原来不管你是谁都是同一套词：论坛开帖质疑你打假赛，发律师函还要被写成「心虚」。
+     对一个拿过国际冠军的人，这出戏的前提本身就不成立。
+     试过直接加门槛把它对老将关掉，但自检立刻红了——这个事件是经理信任的一个来源，
+     关掉之后「挂牌队友」又变回摆设（整局教练信任摸不到 60）。
+     所以机制一个数都不动，只换文案：立住了的人走另一套词，律师函也真的管用。 */
+  {id:"matchfix", rec:0, w:2, max:1,
+   when:()=>!!S.team&&S.fans>=600&&((S.career&&S.career.l)||0)>=8,
+   q:()=>mfBig()
+      ?`有个营销号把你上一场的走位剪成「假赛实锤」，转发已经过万。`
+      :`论坛有个帖子在扒你上一场的走位，说那波送得「太刻意」。`,
+   ctx:()=>mfBig()
+      ?"底下清一色是「就这还用打假赛？」，但转发量还在涨，俱乐部法务已经在问要不要发函。"
+      :"帖子底下已经有人在艾特反假赛的举报邮箱了。",
    a:[{t:"逐帧录一期复盘，把那波讲透", g:"hard",e:()=>{addFat(12);addFans(34);
         addStaff("mgr",5);
-        return "你把决策链讲了二十分钟。原帖删了，俱乐部转发了你的视频。"}},
+        return mfBig()
+          ?"你把决策链讲了二十分钟，顺手挂了三个同类局面的对比。营销号删号跑路，俱乐部把视频置顶了。"
+          :"你把决策链讲了二十分钟。原帖删了，俱乐部转发了你的视频。"}},
       {t:"交给俱乐部公关处理", cost:60, e:()=>{ if(!pay(60)) return "你手上没这个钱。";
         addFans(6);
-        return "律师函发出去了，帖子没了。但「心虚」两个字也留在了评论区。"}},
+        return mfBig()
+          ?"律师函当天就到。账号连夜删帖道歉——到了你这个位置，这种帖子活不过一个晚上。"
+          :"律师函发出去了，帖子没了。但「心虚」两个字也留在了评论区。"}},
       {t:"不回应，用下一场说话", g:"grind",e:()=>{addBuff("train",1.3,2,"用成绩说话");
         addQuest({id:"matchfix",n:"用下一场说话",
           d:"传闻还挂在论坛上，只有赢比赛能压下去",kind:"win",need:2,due:3,

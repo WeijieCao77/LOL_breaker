@@ -2620,11 +2620,16 @@ header.top.compact>.theme-top{display:none}
   function squadOf(k) {
     return S.squad && S.squad[k] !== void 0 ? S.squad[k] : 50;
   }
-  function addSquad(k, n) {
-    if (!S.squad) initSquad();
+  function squadGain(k, n) {
+    if (!S.squad) return n;
     const room = clamp(1 - (S.squad[k] - 40) / 52, 0.12, 1);
     const inh = S.career && (k === "syn" || k === "tac") && true ? 1 + Math.min(40, tacOf()) / 200 : 1;
-    S.squad[k] = q1(clamp(S.squad[k] + n * room * inh, 0, 100));
+    const to = q1(clamp(S.squad[k] + n * room * inh, 0, 100));
+    return q1(to - S.squad[k]);
+  }
+  function addSquad(k, n) {
+    if (!S.squad) initSquad();
+    S.squad[k] = q1(clamp(S.squad[k] + squadGain(k, n), 0, 100));
   }
   function squadDecay() {
     if (!S.squad) return;
@@ -2661,54 +2666,16 @@ header.top.compact>.theme-top{display:none}
       syncRelations();
     }
   }
-  function squadBase(players) {
-    let s = 0, wt = 0;
-    players.forEach((p) => {
-      const r = p.r || p;
-      const w = p.me ? S.offerKind === "core" ? 1.45 : 1.18 : 1;
-      const fm = p.me ? myFormMul() : formMul(p);
-      const ih = !p.me && true ? mateInjuryHit(p) : 0;
-      s += (r.操作 * 0.34 + r.运营 * 0.28 + r.心态 * 0.14 + r.体质 * 0.1 + ih) * fm * w;
-      wt += w;
-    });
-    return s / wt;
-  }
-  function squadWeights(players, fatigue, team) {
-    const cmd = Math.max(...players.map((p) => (p.r || p).指挥 || 50));
-    const mine = players.some((x) => x.me) || S.team && team && team.name === S.team || S.team && !team && S.squad && players === myRoster();
-    return [
-      // 默契要把「队友之间的关系」算进去。relMod() 早就写好了，
-      // 注释都写着「有一对闹掰，整队都别想顺」，但一直没有任何地方调用它——
-      // 于是更衣室关系是纯装饰的，和「信任」两套数字互相矛盾也没人管。
-      // 语言：在外赛区打比赛，听不懂更衣室就磨不出默契。
-      // 会当地语言是加成，不会是惩罚——这比「不会就没人要你」更贴近现实。
-      {
-        k: "syn",
-        n: "默契",
-        v: mine ? squadOf("syn") : 50,
-        mult: (1 + ((mine ? squadOf("syn") : 50) - 50) / 950) * (mine && true ? relMod() : 1) * (mine && true ? langSyn() : 1)
-      },
-      { k: "tac", n: "战术", v: mine ? squadOf("tac") : 50, mult: 1 + ((mine ? squadOf("tac") : 50) - 50) / 1100 },
-      {
-        k: "mor",
-        n: "士气",
-        v: mine && true ? avgTrust() : 50,
-        mult: 1 + ((mine && true ? avgTrust() : 50) - 50) / 760
-      },
-      // 与 trustMod 同步（减半）
-      { k: "cmd", n: "指挥", v: cmd, mult: 1 + (cmd - 68) / 520 },
-      { k: "fit", n: "体能", v: 100 - clamp(fatigue, 0, 100), mult: 1 - clamp(fatigue, 0, 100) * 22e-4 }
-    ];
-  }
   function squadBreakdown(players, fatigue, verFav, team) {
     players = players || myRoster();
     fatigue = fatigue === void 0 ? S.fatigue : fatigue;
-    let base = squadBase(players);
-    if (verFav) base += players.filter((p) => verFav.includes(p.pos)).length * 0.3;
-    base += dynastyBonus(players);
-    const ws = squadWeights(players, fatigue, team || (players.some((x) => x.me) ? findTeam(S.team) : null));
-    const total = ws.reduce((a, w) => a * w.mult, base);
-    return { base, ws, total };
+    const P = powerParts(players, fatigue, verFav, team || null);
+    return { base: P.base, ws: P.ws, total: P.total, knee: P.knee };
+  }
+  function sumBit(k, n) {
+    const nm = k === "syn" ? "默契" : "战术";
+    const g = squadGain(k, n);
+    return g < 0.05 ? `${nm} 已很高` : `${nm} +${g.toFixed(1)}`;
   }
   var SQUAD_ACTS = [
     /* 异化点数配平（2026-09-03）：训练赛 3 点＝整个下午，收益 ×1.5 对齐单点价值；
@@ -2718,7 +2685,7 @@ header.top.compact>.theme-top{display:none}
       k: "scrim",
       n: "训练赛",
       d: "和别的队打，最接近实战",
-      sum: ["默契 +5.1", "战术 +4.5", "信任 +1.8", "有几率摩擦"],
+      sum: () => [sumBit("syn", 5.1), sumBit("tac", 4.5), "信任 +1.8", "有几率摩擦"],
       fat: 20,
       run: () => {
         addSquad("syn", 5.1);
@@ -2739,7 +2706,7 @@ header.top.compact>.theme-top{display:none}
       k: "vod",
       n: "战术复盘",
       d: "逐帧过录像，把上一场的问题挖出来",
-      sum: ["战术 +4.2", "运营 +0.35", "攒运营突破"],
+      sum: () => [sumBit("tac", 4.2), "运营 +0.35", "攒运营突破"],
       fat: 9,
       run: () => {
         addSquad("tac", 4.2);
@@ -2751,7 +2718,7 @@ header.top.compact>.theme-top{display:none}
       k: "drill",
       n: "战队合练",
       d: "专项练配合，团战执行会顺很多",
-      sum: ["默契 +4.4", "信任 +1.8"],
+      sum: () => [sumBit("syn", 4.4), "信任 +1.8"],
       fat: 13,
       run: () => {
         addSquad("syn", 4.4);
@@ -2762,7 +2729,7 @@ header.top.compact>.theme-top{display:none}
       k: "duo",
       n: "队友双排",
       d: "排位里带一带，练默契也拉近关系",
-      sum: ["默契 +1.2", "信任 +1.9", "操作 +0.14"],
+      sum: () => [sumBit("syn", 1.2), "信任 +1.9", "操作 +0.14"],
       fat: 4,
       run: () => {
         addSquad("syn", 1.2);
@@ -2859,7 +2826,7 @@ header.top.compact>.theme-top{display:none}
     return `<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队${!S.career && S.pre && true ? `<span class="tag g">${cupTeamName()}</span>` : ""}</h3>
     <div class="grid g5">${SQUAD_ACTS.map((a) => `
       <button class="act" data-squad="${a.k}" ${ap < apCost(a.k) ? 'disabled style="opacity:.34"' : ""}>
-        <div class="t">${a.n} ${apTag(a.k)}</div><div class="d">${a.d}${costBits([`体能<i class="dn">−${a.fat}</i>`].concat((a.sum || []).map((x) => x.replace(/\s*([+−-][0-9.]+)/, '<i class="up">$1</i>'))))}</div></button>`).join("")}</div>`;
+        <div class="t">${a.n} ${apTag(a.k)}</div><div class="d">${a.d}${costBits([`体能<i class="dn">−${a.fat}</i>`].concat((typeof a.sum === "function" ? a.sum() : a.sum || []).map((x) => x.replace(/\s*([+−-][0-9.]+)/, '<i class="up">$1</i>'))))}</div></button>`).join("")}</div>`;
   }
 
   // demo/src/trait.ts
@@ -4753,7 +4720,7 @@ header.top.compact>.theme-top{display:none}
     S.pendingRenew = null;
     S.gotCut = false;
     pushEvent(`<b>${r.team}</b> 与你续约 ${r.years} 个赛段，赛段薪资 <b>${r.salary !== void 0 ? wanText(r.salary) : "—"}</b>${r.buyout !== void 0 ? `，违约金 <b>${r.buyout} 万</b>` : ""}。`, "good", "合同");
-    txNote(`与 ${r.team} 续约，赛段薪资 ${r.salary !== void 0 ? wanText(r.salary) : "—"}`);
+    txNote(`与 ${r.team} 续约，赛段薪资 ${r.salary !== void 0 ? wanText(r.salary) : "—"}`, "renew");
     render();
   }
   function renewNegotiate() {
@@ -4804,7 +4771,7 @@ header.top.compact>.theme-top{display:none}
     S.freeAgent = true;
     S.gotCut = true;
     pushEvent(`续约谈崩了：<b>${r.team}</b> 觉得你要的太多，收回了报价。你成了<b>自由身</b>——去哪由你自己在转会市场上找。`, "bad", "合同");
-    txNote(`与 ${r.team} 的续约谈崩，成为自由身`);
+    txNote(`与 ${r.team} 的续约谈崩，成为自由身`, "free");
     {
       S.offerYear = void 0;
       S.offerWnd = void 0;
@@ -4939,7 +4906,7 @@ header.top.compact>.theme-top{display:none}
     pushEvent(`你自己掏了 <b>${c.fee} 万</b>，把和 <b>${old}</b> 的合同买断了。<br>
     合同作废，你现在是<b>自由身</b>——不用再等别人来挖，也没人再替你付这笔钱。<br>
     <span style="color:var(--red)">经理和教练都记着这一笔，更衣室也知道了。</span>`, "big", "转会");
-    txNote(`自掏 ${c.fee} 万买断与 ${old} 的合同，成为自由身`);
+    txNote(`自掏 ${c.fee} 万买断与 ${old} 的合同，成为自由身`, "buyout");
     {
       S.offerYear = void 0;
       rollProOffers();
@@ -5193,7 +5160,7 @@ header.top.compact>.theme-top{display:none}
     S.rosterSig = myRoster().map((x) => x.id).sort().join("|");
     pushEvent(`<b>${d.team}</b> 把你从 <b>${old}</b> 调上了一队，新合同：赛段薪资 <b>${wanText(d.salary)}</b>（${yearPayText(d.salary)}）· 违约金 ${wanText(d.buyout)}。
     ${d.incumbent} 让出了首发位——你在 LDL 打的那些比赛，有人一直在看。`, "big", "升队");
-    txNote(`${old} → <b>${d.team}</b>（升上一队 · 赛段薪资 ${wanText(d.salary)}）`);
+    txNote(`${old} → <b>${d.team}</b>（升上一队 · 赛段薪资 ${wanText(d.salary)}）`, "up");
     checkAch("promote");
     render();
   }
@@ -5270,7 +5237,7 @@ header.top.compact>.theme-top{display:none}
     S.rosterSig = myRoster().map((x) => x.id).sort().join("|");
     pushEvent(`你被注册到 <b>${acad.name}</b>（LDL）。从替补席到首发位——
     <b>比赛打起来，数据摆出来，一队的门才会再开。</b>`, "big", "青训");
-    txNote(`${old} → <b>${acad.name}</b>（下放 LDL 打比赛）`);
+    txNote(`${old} → <b>${acad.name}</b>（下放 LDL 打比赛）`, "down");
     render();
   }
   function promoteCard() {
@@ -5299,9 +5266,19 @@ header.top.compact>.theme-top{display:none}
       ① 综合压过一队对位 1 分——${ok1 ? '<b style="color:var(--cyan)">已达成，等下个窗口</b>' : `还差 <b>${(him + 1 - me).toFixed(1)}</b> 分`}<br>
       ② 差距 3 分以内 且 本赛段胜率 ≥75%——${me >= him - 3 ? wr === null ? "数值达标，本赛段还没打满 3 场" : wr >= 0.75 ? '<b style="color:var(--cyan)">已达成，等下个窗口</b>' : `数值达标，但胜率 ${(wr * 100).toFixed(0)}% 还不够` : "数值还差得多，先练"}</p></div>`;
   }
-  function txNote(text) {
-    S.txLog = (S.txLog || []).concat([{ s: SEASONS[S.si] ? SEASONS[S.si].tag : "", text }]);
+  function txNote(text, k) {
+    S.txLog = (S.txLog || []).concat([{ s: SEASONS[S.si] ? SEASONS[S.si].tag : "", text, k: k || "move" }]);
     if (S.txLog.length > 12) S.txLog.shift();
+  }
+  function txIsMove(x) {
+    if (!x) return false;
+    if (x.k) return x.k === "move";
+    const t = String(x.text || "");
+    return /→/.test(t) && !/升上一队|下放/.test(t);
+  }
+  function txStops() {
+    const n = (S.txLog || []).filter(txIsMove).length;
+    return n ? n + 1 : 0;
   }
   function approachKey() {
     return S.si + "-" + (S.split || 0);
@@ -5571,6 +5548,9 @@ header.top.compact>.theme-top{display:none}
   function buffChips() {
     if (!S.tbuff || !S.tbuff.length) return "";
     return `<div class="buffs">${S.tbuff.map((b) => `<span class="buff ${b.v >= 1 ? "good" : "bad"}">${b.n}<em>${buffEffect(b)}</em><i>${b.left}周</i></span>`).join("")}</div>`;
+  }
+  function mfBig() {
+    return !!(S.career && (S.career.worlds || S.career.msi) || cloutOf() >= 62);
   }
   var RANDOM_EVENTS = [
     /* ================= 伏笔事件（2026-09-04 玩家点名：前期要有会影响后面的事）=================
@@ -6341,25 +6321,31 @@ header.top.compact>.theme-top{display:none}
         } }
       ]
     },
+    /* 按身份换一套说法（玩家实锤 2026-09-09：「我都 S 赛五冠了、资产三个亿，我心虚他毛啊」）。
+       原来不管你是谁都是同一套词：论坛开帖质疑你打假赛，发律师函还要被写成「心虚」。
+       对一个拿过国际冠军的人，这出戏的前提本身就不成立。
+       试过直接加门槛把它对老将关掉，但自检立刻红了——这个事件是经理信任的一个来源，
+       关掉之后「挂牌队友」又变回摆设（整局教练信任摸不到 60）。
+       所以机制一个数都不动，只换文案：立住了的人走另一套词，律师函也真的管用。 */
     {
       id: "matchfix",
       rec: 0,
       w: 2,
       max: 1,
       when: () => !!S.team && S.fans >= 600 && (S.career && S.career.l || 0) >= 8,
-      q: () => `论坛有个帖子在扒你上一场的走位，说那波送得「太刻意」。`,
-      ctx: "帖子底下已经有人在艾特反假赛的举报邮箱了。",
+      q: () => mfBig() ? `有个营销号把你上一场的走位剪成「假赛实锤」，转发已经过万。` : `论坛有个帖子在扒你上一场的走位，说那波送得「太刻意」。`,
+      ctx: () => mfBig() ? "底下清一色是「就这还用打假赛？」，但转发量还在涨，俱乐部法务已经在问要不要发函。" : "帖子底下已经有人在艾特反假赛的举报邮箱了。",
       a: [
         { t: "逐帧录一期复盘，把那波讲透", g: "hard", e: () => {
           addFat(12);
           addFans(34);
           addStaff("mgr", 5);
-          return "你把决策链讲了二十分钟。原帖删了，俱乐部转发了你的视频。";
+          return mfBig() ? "你把决策链讲了二十分钟，顺手挂了三个同类局面的对比。营销号删号跑路，俱乐部把视频置顶了。" : "你把决策链讲了二十分钟。原帖删了，俱乐部转发了你的视频。";
         } },
         { t: "交给俱乐部公关处理", cost: 60, e: () => {
           if (!pay(60)) return "你手上没这个钱。";
           addFans(6);
-          return "律师函发出去了，帖子没了。但「心虚」两个字也留在了评论区。";
+          return mfBig() ? "律师函当天就到。账号连夜删帖道歉——到了你这个位置，这种帖子活不过一个晚上。" : "律师函发出去了，帖子没了。但「心虚」两个字也留在了评论区。";
         } },
         { t: "不回应，用下一场说话", g: "grind", e: () => {
           addBuff("train", 1.3, 2, "用成绩说话");
@@ -7249,12 +7235,6 @@ header.top.compact>.theme-top{display:none}
     if ((hl === "LEC" || hl === "LCS") && hasCourse("en")) return 2.2;
     return 0;
   }
-  function langSyn() {
-    const hl = S.homeLeague || "LPL";
-    if (hl === "LPL" || hl === "LDL") return 1;
-    const ok = hl === "LCK" ? hasCourse("kr") : hasCourse("en");
-    return ok ? 1.05 : 0.9;
-  }
   function courseTrainMul(dim) {
     if (dim === "心态" && hasCourse("psy")) return 1.25;
     if (dim === "运营" && hasCourse("vod")) return 1.25;
@@ -7437,15 +7417,59 @@ header.top.compact>.theme-top{display:none}
   function streamCut() {
     return STREAM_CUTS[S.streamCutIdx || 0].cut;
   }
+  var STREAM_WEEK_MUL = [1, 0.7, 0.45, 0.3];
+  function streamWeekKey() {
+    const pre = !S.career && S.pre;
+    return pre ? "p" + (S.pre.preYear || 1) + "-" + (S.pre.week || 0) : (S.si || 0) + "-" + (S.split || 0) + "-" + (S.week || 0) + "-" + (S.off ? "o" : "s");
+  }
+  function streamDoneThisWeek() {
+    const w = S.streamWk;
+    return w && w.k === streamWeekKey() ? w.n || 0 : 0;
+  }
+  function streamWeekMul() {
+    const n = streamDoneThisWeek();
+    return n < STREAM_WEEK_MUL.length ? STREAM_WEEK_MUL[n] : 0.2;
+  }
+  function noteStream() {
+    const k = streamWeekKey();
+    S.streamWk = S.streamWk && S.streamWk.k === k ? { k, n: (S.streamWk.n || 0) + 1 } : { k, n: 1 };
+  }
+  var STREAM_SPLIT_FLOOR = 500;
+  var STREAM_SPLIT_MUL = 0.8;
+  var STREAM_OVER_MUL = 0.12;
+  function streamSplitKey() {
+    return !S.career && S.pre ? "p" + (S.pre.preYear || 1) : (S.si || 0) + "-" + (S.split || 0);
+  }
+  function streamSplitCap() {
+    let sal = 0;
+    try {
+      sal = salaryOf() || 0;
+    } catch (e) {
+      sal = 0;
+    }
+    return Math.max(STREAM_SPLIT_FLOOR, sal * STREAM_SPLIT_MUL);
+  }
+  function streamSplitDone() {
+    const w = S.streamSp;
+    return w && w.k === streamSplitKey() ? w.v || 0 : 0;
+  }
+  function noteStreamMoney(v) {
+    const k = streamSplitKey();
+    S.streamSp = S.streamSp && S.streamSp.k === k ? { k, v: (S.streamSp.v || 0) + v } : { k, v };
+  }
+  var STREAM_GIFT = 2.2;
   function streamIncome() {
     const originMul = S.origin === "streamer" ? 1.7 : 1;
     if (S.streamDeal) return S.streamDeal.base * originMul * (1 - streamClubCut());
     const f = Math.min(Math.max(S.fans || 0, 0), 600);
     const heatMul = clamp(0.45 + (S.heat || 0) / 730, 0.45, 1.7);
-    const gift = Math.pow(f / 40, 1.22) * 2.2 * streamCut() * heatMul;
+    const gift = Math.pow(f / 40, 1.22) * STREAM_GIFT * streamCut() * heatMul;
     const base = 2 + f * 0.025;
     const biz = 1 + Math.min(S.bizRep || 0, 25) / 100;
-    return (base + gift) * originMul * biz;
+    const raw = (base + gift) * originMul * biz * streamWeekMul();
+    const cap5 = streamSplitCap(), done = streamSplitDone();
+    if (done >= cap5) return raw * STREAM_OVER_MUL;
+    return Math.min(raw, cap5 - done + (raw - (cap5 - done)) * STREAM_OVER_MUL);
   }
   function streamFansMul() {
     return 1;
@@ -8435,13 +8459,13 @@ header.top.compact>.theme-top{display:none}
     const st = S.stats || { n: 0 };
     const titles = S.career.titles || [];
     const left = lastSeason() - S.si;
-    return `<div class="card"><h2>生涯一览<em>如果今天挂靴</em></h2>
+    return `<div class="card"><h2>生涯一览<em>如果今天退役</em></h2>
     ${e ? `<h3 style="margin:4px 0 2px">「${e.n}」</h3>
     <p class="note" style="margin:0 0 10px">${e.d}</p>` : ""}
     <div class="tw"><table><tbody>
       <tr><td>生涯战绩</td><td class="n">${S.career.w}−${S.career.l}${st.n ? ` · 场均评分 ${(st.r / st.n).toFixed(2)}` : ""}</td></tr>
       <tr><td>冠军</td><td>${titleCount() ? `${titlesText()}${ringTitles().length ? `<br><span style="color:var(--ink-3);font-size:11.5px">「随队」是战队夺冠时你在替补席——戒指是你的；成就、突破和转会筹码只认你亲手打的。</span>` : ""}` : "还没有"}</td></tr>
-      <tr><td>转会轨迹</td><td>${S.txLog && S.txLog.length ? S.txLog.length + " 站" : "一队待到底"}</td></tr>
+      <tr><td>转会轨迹</td><td>${txStops() ? txStops() + " 站" : "一队待到底"}</td></tr>
       <tr><td>剩下的时间</td><td class="n">${left > 0 ? left + " 个赛季" : "这是最后一年"} · ${S.age} 岁</td></tr>
     </tbody></table></div>
     <p class="note" style="color:var(--ink-3)">评语和五年后的结局用同一把尺子——现在不满意，就去改写它。</p></div>`;
@@ -9383,13 +9407,32 @@ header.top.compact>.theme-top{display:none}
       v: myAb - opAb,
       fix: myAb < opAb ? "五个人的底子就比对面薄。练自己，或者等队伍补强。" : "底子占优，把它打出来。"
     });
-    const myFm = avg(myTeamPlayers.map((p) => p.me ? myFormMul() : formMul(p)));
     const opFm = avg(oppPlayers.map((p) => formMul(p)));
-    rows.push({
-      n: "状态",
-      v: (myFm - opFm) * myAb,
-      fix: myFm < opFm ? "手感不在。休息、稳住更衣室，状态下个赛段会回来。" : "状态在你这边。"
-    });
+    const meP = myTeamPlayers.find((p) => p.me);
+    const mates = myTeamPlayers.filter((p) => !p.me);
+    const n = myTeamPlayers.length || 1;
+    const showF = (x) => Math.round(x);
+    if (meP && mates.length) {
+      const meFm = myFormMul(), mateFm = avg(mates.map((p) => formMul(p)));
+      const opShow = showF(avg(oppPlayers.map((p) => formOf(p))));
+      rows.push({
+        n: "你的状态",
+        v: (meFm - opFm) * myAb / n,
+        fix: meFm < opFm ? `你今年的手感在对面之下（你 ${showF(myForm())} · 对面均 ${opShow}）。休息、稳住更衣室，状态下个赛段会回来。` : `你的状态压着对面（你 ${showF(myForm())} · 对面均 ${opShow}）。`
+      });
+      rows.push({
+        n: "队友状态",
+        v: (mateFm - opFm) * myAb * (n - 1) / n,
+        fix: mateFm < opFm ? `四个队友今年状态不在（队友均 ${showF(avg(mates.map((p) => formOf(p))))} · 对面均 ${opShow}）——这一项不是你能直接练的，赢比赛、团建、转会窗才推得动。` : `队友状态在线（队友均 ${showF(avg(mates.map((p) => formOf(p))))} · 对面均 ${opShow}）。`
+      });
+    } else {
+      const myFm = avg(myTeamPlayers.map((p) => p.me ? myFormMul() : formMul(p)));
+      rows.push({
+        n: "状态",
+        v: (myFm - opFm) * myAb,
+        fix: myFm < opFm ? "手感不在。休息、稳住更衣室，状态下个赛段会回来。" : "状态在你这边。"
+      });
+    }
     const fixOf = {
       默契: "换过人就要重新磨。多合练、多双排。",
       战术: "准备不够。战术复盘和训练赛。",
@@ -10349,7 +10392,7 @@ header.top.compact>.theme-top{display:none}
         S.heat = Math.max(0, (S.heat || 0) + (E.heat || 0));
         if (E.trust) addTrustAll(E.trust);
         pushEvent(
-          `媒体日：你的口径是<b>${MEDIA_TONE_N[tone3]}</b>。${tone3 === "bold" ? `热度 +15，<b>但这个赛段输球更伤心态</b>——话说出去了，就得打回来。` : tone3 === "steady" ? `热度 +5，没留下把柄。` : `热度 +10，<b>更衣室信任 −3</b>——队友看得懂你在说谁。`}`,
+          `媒体日：你的口径是<b>${MEDIA_TONE_N[tone3]}</b>。${tone3 === "bold" ? `热度 +15，<b>但这个赛段输了更伤心态</b>——话说出去了，就得打回来。` : tone3 === "steady" ? `热度 +5，没留下把柄。` : `热度 +10，<b>更衣室信任 −3</b>——队友看得懂你在说谁。`}`,
           tone3 === "blame" ? "bad" : "info",
           "媒体日"
         );
@@ -10695,7 +10738,7 @@ header.top.compact>.theme-top{display:none}
       else body = resultBody(c, "board");
     } else if (c.k === "media") {
       if (st === "story") body = `${scene("media")}<div class="cer-eyebrow">${SEASONS[S.si].tag} ${["春季赛", "夏季赛"][S.split || 0] || ""} · 媒体日</div>
-      <p class="cer-p"><b>背景板前。</b>三个记者，三个问题，每个都在等一个标题。你说的每句话这个赛段都会被翻出来——<b>狂</b>会涨热度，但输了球更伤心态；<b>稳</b>不留把柄；<b>甩锅</b>热度也涨，只是队友看得懂你在说谁。</p>
+      <p class="cer-p"><b>背景板前。</b>三个记者，三个问题，每个都在等一个标题。你说的每句话这个赛段都会被翻出来——<b>狂</b>会涨热度，但输了更伤心态；<b>稳</b>不留把柄；<b>甩锅</b>热度也涨，只是队友看得懂你在说谁。</p>
       <p class="cer-hint">不是小游戏，是<b>限时三选一</b>：每题 10 秒，不答按「稳」算。三题里占多数的那个口径，就是你这个赛段的基调。</p>
       ${btns(`<button class="btn primary" data-cer="next">面对镜头 →</button>`)}`;
       else if (st === "game") body = `<div class="cer-eyebrow">媒体日 · 10 秒一题</div><div id="cer-game" data-game="decide" data-quiz="media"></div>${btns("")}`;
@@ -10777,7 +10820,7 @@ header.top.compact>.theme-top{display:none}
   function mediaResultBody(c) {
     const d = c.detail || {}, tone3 = d.tone || "steady", E = CER_EFF.media[tone3] || CER_EFF.media.steady;
     const picks = (d.picks || []).map((x) => MEDIA_TONE_N[x] || x).join(" · ");
-    const eff = tone3 === "bold" ? `热度 <b>+15</b>，<b>这个赛段输球攒的心态压力 ×1.5</b>——话说出去了，就得打回来` : tone3 === "steady" ? `热度 <b>+5</b>，没留下把柄` : `热度 <b>+10</b>，<b>更衣室信任 −3</b>——队友看得懂你在说谁`;
+    const eff = tone3 === "bold" ? `热度 <b>+15</b>，<b>这个赛段输掉的比赛攒的心态压力 ×1.5</b>——话说出去了，就得打回来` : tone3 === "steady" ? `热度 <b>+5</b>，没留下把柄` : `热度 <b>+10</b>，<b>更衣室信任 −3</b>——队友看得懂你在说谁`;
     return `${scene("media")}<div class="cer-eyebrow">明天的标题</div>
     <div class="cer-tier ${tone3 === "bold" ? "gold" : tone3 === "blame" ? "bronze" : ""}">${MEDIA_TONE_N[tone3]}</div>
     <p class="cer-p">${picks ? `三个回答：${picks}。` : ""}这个赛段的基调是<b>${MEDIA_TONE_N[tone3]}</b>：${eff}。</p>
@@ -11022,8 +11065,10 @@ header.top.compact>.theme-top{display:none}
     };
     const spawn = () => {
       if (done || !document.body.contains(el)) return;
-      if (Date.now() - t0 >= TOTAL) {
-        finish();
+      const left = TOTAL - (Date.now() - t0);
+      if (left < LIT[1] + 260) {
+        const end = setTimeout(finish, Math.max(0, left));
+        _timers.push(end);
         return;
       }
       kill();
@@ -11191,9 +11236,9 @@ header.top.compact>.theme-top{display:none}
   }
   var MEET_MIN_FANS = 150;
   var MEETS = [
-    { k: "small", n: "小场", cost: 20, cap: 300, per: 0.3, fans: 5, heat: 10, d: "一家咖啡馆的二楼，一百多个位子。" },
-    { k: "mid", n: "中场", cost: 60, cap: 800, per: 0.35, fans: 12, heat: 25, d: "剧场，八百个位子，要请安保。" },
-    { k: "big", n: "大场", cost: 150, cap: 2e3, per: 0.4, fans: 25, heat: 50, d: "体育馆的副馆。灯光、舞台、周边全要自己出。" }
+    { k: "small", n: "小型场地", cost: 20, cap: 300, per: 0.3, fans: 5, heat: 10, d: "一家咖啡馆的二楼，一百多个位子。" },
+    { k: "mid", n: "中型场地", cost: 60, cap: 800, per: 0.35, fans: 12, heat: 25, d: "剧场，八百个位子，要请安保。" },
+    { k: "big", n: "大型场地", cost: 150, cap: 2e3, per: 0.4, fans: 25, heat: 50, d: "体育馆的副馆。灯光、舞台、周边全要自己出。" }
   ];
   function meetOpen() {
     return !!(S.career && S.off && S.off.next === "year" && (S.fans || 0) >= MEET_MIN_FANS && !(S.meet && S.meet[S.si] !== void 0));
@@ -15016,9 +15061,28 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
-    { v: "v20260908n", at: "2026-09-08", items: [
+    { v: "v20260909c", at: "2026-09-09", items: [
       "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
       "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+    ] },
+    { v: "v20260909b", at: "2026-09-09", items: [
+      "第三次清足球词，这次钉死（玩家实锤：「很多时候的措辞是赢球、球队，包括挂靴」）：生涯一览的「如果今天挂靴」和退役确认里的「就此挂靴」改成退役；赛后拆解的「赢球」、媒体日的「输球」改成赢比赛 / 输掉的比赛；粉丝见面会的场地档次「小场 / 中场 / 大场」改成小型 / 中型 / 大型场地——「中场」容易被读成足球的中场。前两次都是人工扫一遍改掉、然后新写的文案又把词带回来，所以这次加了一条自检：玩家看得见的字符串里出现球队 / 球员 / 球迷 / 球星 / 球场 / 赢球 / 输球 / 打球 / 挂靴 / 板凳席，测试直接红并指到行号",
+      "直播收入封顶（玩家实锤：生涯末攒到 6.27 亿）：一次直播的钱本来就有上限，但没人管一周能播几次——生涯后期一场约等于一个 LPL 冠军的奖金，一周四场，一个赛段光直播就 2500 万以上。现在两道闸：同一周里第几场就按第几档结算（观众是同一批），一个赛段还有平台结算上限（跟着合同走，顶级合同约 1200 万，超出的部分只结一成二）。极限刷播的生涯收入从 6 亿量级压到 1.5 亿；批测中位和最高的钱一分没动（941→956、2733→2729），普通玩家感觉不到",
+      "队伍页的「全队战力」和比赛面板终于是同一个数（玩家实锤：队伍页 75.1、比赛面板 65.9）：队伍页原来自己另算一套——你在队里的权重 1.18（比赛里是 3.0）、不含装备伤病、也没有顶端压缩，和判定胜负的是两个模型。现在它直接读判定胜负那一套的分解，判什么就显示什么；对阵卡的版本相性也单独标出来，不再揉进标题数。比赛结果逐字节不变",
+      "假赛传闻按身份换说法（玩家实锤：「我都 S 赛五冠了、资产三个亿，我心虚他毛啊」）：拿过国际冠军或已经是队内核心的人，看到的是营销号剪视频而不是论坛开帖，律师函也真的管用——「心虚」那句只留给还没立住的人"
+    ] },
+    { v: "v20260909a", at: "2026-09-09", items: [
+      "转会轨迹不再多报站数（玩家实锤：只去过一个外赛区队就回 RNG 一人一城，名片却写「转会 7 站」）：那张表本来就记着续约、买断、升上一队、下放，可名片和评语两处直接把条数当成转会次数在数。现在每一笔标性质，只有真的换了俱乐部才算一站；老存档按文案回推，数出来一样",
+      "赛后拆解的「状态」拆成「你的状态」和「队友状态」两行（玩家实锤：我状态 52 刚好中性，比赛里还是给我扣分）——原来一行算的是我方五个人的状态均值对上对面五个人，你自己中性、队友低迷照样是负的，标签却像在说你；两行各自写清楚「你 X · 队友均 Y · 对面均 Z」，加起来还是原来那个数",
+      "天梯有赛季重置了（玩家点名：段位一证永证，打到国服第一就永远国服第一）：每年春季赛开赛<b>掉一档</b>，而且落在那一档的中段——国服第一 → 国服前 100、王者 → 宗师、宗师 → 大师，掉到大师就不再往下。分不会自己回来，打排位能拿回去。原来那条「不守就掉」只把你拉回实力守得住的位置，实力够就永远不掉",
+      "赛后拆解和赛后面板改读开赛那一刻的体能（玩家实锤：赛前自己和队伍体能都是满的，一结算却拿体能扣我的综合分，试了两次都一样）——胜负本来就是用赛前体能判的，原来却先把这场的消耗记上再算账，等于拿打完之后的体能解释一场已经打完的比赛",
+      "战队行动的卡面不再虚标（玩家实锤：写「默契 +5.1」，实际只涨一点）：默契越高涨得越少，卡上现在直接写这一次真能涨多少，贴顶时写「已很高」；预览和生效从此是同一个函数",
+      "打排位的状态涨幅不再虚标（玩家实锤：写 +2.3，点一下只从 57 到 58）：一次排位是三把，状态按碎片时间打对折，卡面原来漏了这个对折",
+      "突破瓶颈报的上限和「我的」页对上了（玩家实锤：操作已经 84.7/85，弹窗却说上限到 79.5）——弹窗那句少加了经验顶上来的那一截",
+      "靶场最后一靶不再抢跑（玩家实锤：第 28 下金圈刚出来就直接弹结算，没给点的机会，还被算成一次没中，命中率写成 23/24）：剩余时间放不下一个完整的靶就不再放，把时间走完",
+      "顶栏的五维和「我的」页显示同一个数（玩家实锤「属性永远对不上」）：顶栏原来四舍五入到整数，84.7 被写成 85，看着像已经顶到天花板",
+      "对阵卡上的战力差和上面两个数用同一把尺（原来两个战力乘过展示系数、中间那个差值没乘，95.0 对 70.1 却写 +21.4）",
+      "换栏目回到顶部（玩家实锤：一页划到底，切过去还停在底下）"
     ] },
     { v: "v20260908m", at: "2026-09-08", items: [
       "季后赛抽签仪式挪回开打之前（玩家实锤：季后赛已经打到 1:0，抽签才弹出来）：原来先摆好比赛再开仪式，而开仪式本身不重画，于是它要等你在比赛里点了下一步才冒出来——现在先抽签、再摆比赛，模态卡从第一帧就在，演完才轮到你打",
@@ -15045,7 +15109,7 @@ header.top.compact>.theme-top{display:none}
       "仪式第二批：决赛之夜·入场（联赛决赛 / MSI 总决赛 / 世界赛决赛开打前，入场通道、灯光、握手，然后是最后一次热身——反应挑战：靶亮起就点，20 秒，决赛的靶更小亮得更短；金档这一场战力 +2、临场决策成功率 +5%，银档按平时打，铜档 −1、−3%）",
       "试训第一天·上机：到基地、见教练组、分机位，「先上机打几把给我们看看」——同一套反应挑战，职业前的线松一档（≤450 毫秒）；金档这次试训评级 +1 档，铜档 −1 档",
       "版本发布会：新赛季第一周，教练念完三条版本变化问「我们怎么打」——五道题、每题 8 秒三选一，答案就在他刚念的那三条里（红利位、关键属性、无畏征召、你的位置吃不吃版本）；金档（≥4 题）整个赛季版本相性 +0.5，铜档（≤1 题）−0.3",
-      "媒体日：每个赛段开幕，三个记者三个问题，每题 10 秒三选一——狂 / 稳 / 甩锅。不是小游戏，限时本身就是「面对镜头」。三题里占多数的口径就是这个赛段的基调：狂 热度 +15 但输球攒的心态压力 ×1.5；稳 热度 +5；甩锅 热度 +10、更衣室信任 −3",
+      "媒体日：每个赛段开幕，三个记者三个问题，每题 10 秒三选一——狂 / 稳 / 甩锅。不是小游戏，限时本身就是「面对镜头」。三题里占多数的口径就是这个赛段的基调：狂 热度 +15 但输掉的比赛攒的心态压力 ×1.5；稳 热度 +5；甩锅 热度 +10、更衣室信任 −3",
       "所有仪式照旧：可跳过、跳过按银档（不亏不赚）、托管 / 自动推进一律按跳过走；同一周撞上两场会排队。新增成就「手快」「读秒决策」"
     ] },
     { v: "v20260908g", at: "2026-09-08", items: [
@@ -15055,7 +15119,7 @@ header.top.compact>.theme-top{display:none}
     ] },
     { v: "v20260908f", at: "2026-09-08", items: [
       "「换不了人」修了（玩家反馈「现在不能换人」）：挂牌队友原来要教练信任 68，而教练信任的自然平衡点只有 46~54——批测里强玩家一整个生涯只有 4.9% 的赛季周能用，普通玩家是 0.0%，这个功能事实上一直是关着的。现在门槛是教练信任 60，或者威望到 75 用功勋压过教练组；同口径批测里强玩家 4.9% → 33.3%",
-      "拿冠军终于会涨教练和经理的信任（作者原话「我三连冠伟业的男人，让他换个人经理还要嘲讽我不懂行情」）：以前这两个式子里只有胜率、复盘和人气，压根没有荣誉项——三连冠的人在教练眼里和一个赢球多的普通首发没有区别。现在联赛冠军 +6 / 国际冠军 +12（经理 +5 / +10），信任每赛段往 50 回落的速度也从 32% 放缓到 18%：一次打好还是不算数，但不会三分之一直接作废。拿过三冠之后的教练信任中位数 58.6 → 73.3",
+      "拿冠军终于会涨教练和经理的信任（作者原话「我三连冠伟业的男人，让他换个人经理还要嘲讽我不懂行情」）：以前这两个式子里只有胜率、复盘和人气，压根没有荣誉项——三连冠的人在教练眼里和一个赢得多的普通首发没有区别。现在联赛冠军 +6 / 国际冠军 +12（经理 +5 / +10），信任每赛段往 50 回落的速度也从 32% 放缓到 18%：一次打好还是不算数，但不会三分之一直接作废。拿过三冠之后的教练信任中位数 58.6 → 73.3",
       "点名引援不再是一堆同样难的人（作者反馈「让他换个人经理还要嘲讽我不懂行情」）：候选名单原来是「够得着的人里最难的五个」，而够得着的档次又跟着威望一起涨，所以你越有分量，成算越是钉在四成上。现在名单在够得着的那一段里铺开，最好的那个还在最上面，但你可以退一步要一个稳的；谈崩的代价和文案也按威望分档，队魂级别的人不会再被说「不太懂行情」",
       "「话语权」卡上新增教练/经理信任的收支明细：上赛段每一项加了多少减了多少、离挂牌门槛还差几分，都摊开写。教练看的是胜率、每赛段的复盘次数和冠军——复盘这门功课以前从来没人告诉过你（批测里复盘次数的中位数是 0）",
       "属性条现在会告诉你离天花板还剩多少（玩家反馈「属性比较难提升」）：其实生涯末五维已经练到上限的 98~100% 了，慢是因为最后 5 分收益只剩四分之一。现在贴顶前会标「·剩 X.X」，训练日记也会直接说「练一次只顶原来的四分之一，想再往上得先顶开瓶颈」——数值没动，只是不再让你对着一个不动的数字瞎练"
@@ -15623,7 +15687,8 @@ header.top.compact>.theme-top{display:none}
         );
       return;
     }
-    const c0 = cap4(S.talent[d]) + before, c1 = cap4(S.talent[d]) + S.capBonus[d];
+    const exp = S && S.capExp || 0;
+    const c0 = Math.min(99, cap4(S.talent[d]) + before + exp), c1 = Math.min(99, cap4(S.talent[d]) + S.capBonus[d] + exp);
     pushEvent(
       `<b>瓶颈松动</b>　${reason}<br>
     <span style="color:var(--cyan)">${d}上限 ${c0.toFixed(1)} → <b>${c1.toFixed(1)}</b>（+${gotS}）</span>`,
@@ -15971,7 +16036,7 @@ header.top.compact>.theme-top{display:none}
       }
     });
   }
-  function dynastyBonus(players) {
+  function dynastyBonus2(players) {
     const p = players && players[0];
     if (!p || p.me || p.lg !== "LCK") return 0;
     return LCK_DYNASTY[S.si] || 0;
@@ -15984,6 +16049,9 @@ header.top.compact>.theme-top{display:none}
     const players = team ? team.players : teamOrPlayers;
     return powerCore(players, fatigue, verFav, team);
   }
+  function powerParts(players, fatigue = 0, verFav = null, team = null) {
+    return powerCore(players, fatigue, verFav, team, true);
+  }
   function formMorale(team) {
     try {
       const f = team && S.teamForm && S.teamForm[team.name];
@@ -15994,7 +16062,7 @@ header.top.compact>.theme-top{display:none}
       return 1;
     }
   }
-  function powerCore(players, fatigue = 0, verFav = null, team = null) {
+  function powerCore(players, fatigue = 0, verFav = null, team = null, parts) {
     let s = 0, wt = 0, cmd = 0;
     players.forEach((p) => {
       const r = p.me && S && S.attrs ? S.attrs : p.r || p;
@@ -16027,8 +16095,23 @@ header.top.compact>.theme-top{display:none}
     const sq = (1 + (syn - 50) / 950) * (1 + (tac - 50) / 1100) * rm;
     const wrAdj = team && team.wr !== void 0 ? (team.wr - 0.5) * WR_WEIGHT : 0;
     const core = mine ? dynCoreBonus() : 0;
-    const raw = (s / wt + dynastyBonus(players) + wrAdj + core) * (1 + (cmd - 68) / 520) * (1 - clamp(fatigue, 0, 100) * 22e-4) * tm * sq;
-    return raw > POWER_KNEE ? POWER_KNEE + (raw - POWER_KNEE) * POWER_SLOPE : raw;
+    const raw = (s / wt + dynastyBonus2(players) + wrAdj + core) * (1 + (cmd - 68) / 520) * (1 - clamp(fatigue, 0, 100) * 22e-4) * tm * sq;
+    const total = raw > POWER_KNEE ? POWER_KNEE + (raw - POWER_KNEE) * POWER_SLOPE : raw;
+    if (!parts) return total;
+    return {
+      total,
+      raw,
+      base: s / wt + dynastyBonus2(players) + wrAdj + core,
+      knee: raw > POWER_KNEE ? total - raw : 0,
+      // 顶端压缩掉了多少（负数）
+      ws: [
+        { k: "syn", n: "默契", v: syn, mult: (1 + (syn - 50) / 950) * rm },
+        { k: "tac", n: "战术", v: tac, mult: 1 + (tac - 50) / 1100 },
+        { k: "mor", n: "士气", v: mine ? avgTrust() : 50, mult: tm },
+        { k: "cmd", n: "指挥", v: cmd, mult: 1 + (cmd - 68) / 520 },
+        { k: "fit", n: "体能", v: 100 - clamp(fatigue, 0, 100), mult: 1 - clamp(fatigue, 0, 100) * 22e-4 }
+      ]
+    };
   }
   var POWER_KNEE = 78;
   var POWER_SLOPE = 0.45;
@@ -16839,6 +16922,26 @@ header.top.compact>.theme-top{display:none}
   function rankStep() {
     return clamp(2.6 - S.pre.rank * 0.012, 1.1, 2.6);
   }
+  var RANK_RESET_FLOOR = 44;
+  function rankResetTo(v) {
+    if (v <= RANK_RESET_FLOOR) return v;
+    let i = 0;
+    RANKS.forEach((x, k) => {
+      if (v >= x.at) i = k;
+    });
+    if (i <= 0) return v;
+    const lo = RANKS[i - 1].at, hi = RANKS[i].at;
+    return Math.max(RANK_RESET_FLOOR, q1(lo + (hi - lo) * 0.5));
+  }
+  function rankSeasonReset() {
+    if (!S.career || !S.pre || S.pre.rank === void 0) return;
+    const before = S.pre.rank;
+    const after = rankResetTo(before);
+    if (before - after < 0.1) return;
+    S.pre.rank = q1(after);
+    const b = rankName(before), a = rankName(S.pre.rank);
+    pushEvent(`<b>天梯赛季重置。</b>${b === a ? `你的段位回落到 <b>${rankFull(S.pre.rank)}</b>` : `你从 <b>${b}</b> 掉到 <b>${a}</b>`}——分不会自己回来，<b>打排位</b>能拿回去。`, "info", "天梯");
+  }
   function preAct(k, dim) {
     const P = S.pre;
     const _c = apCost(k === "rank" ? "solo" : k);
@@ -16893,6 +16996,8 @@ header.top.compact>.theme-top{display:none}
       const m = S.origin === "streamer" ? 1.7 : 1;
       const pop = 1.9 + S.pre.rank * 0.05;
       const gift = streamIncome() * PRE_PACE;
+      noteStreamMoney(gift);
+      noteStream();
       addFans(pop * m * streamFansMul() * PRE_FAN_PACE);
       addMoney("stream", gift);
       addFat(4);
@@ -17463,7 +17568,9 @@ header.top.compact>.theme-top{display:none}
     });
   }
   function startSeason(first, split) {
+    const _newYear = split === void 0 || split === 0;
     S.split = split === void 0 ? 0 : split;
+    if (_newYear && !first) rankSeasonReset();
     S.carrySplit = 0;
     S.benchedPO = false;
     S.loseStreak = 0;
@@ -17758,12 +17865,13 @@ header.top.compact>.theme-top{display:none}
       capped ? null : `${d}<i class="up">+${g.toFixed(1)}</i>`
     ]);
   }
+  var SOLO_LIGHT = 0.5;
   function costSolo() {
     if (_isPre()) return costBits([_eDn(8), `段位±`, `五维微涨`]);
     const m = _prepMul();
     let f = null;
     if (S.form !== void 0) {
-      const d = ((68 - S.form) * 0.11 + 1.2) * m;
+      const d = ((68 - S.form) * 0.11 + 1.2) * m * SOLO_LIGHT;
       if (Math.abs(d) >= 0.05) f = `状态<i class="${d > 0 ? "up" : "dn"}">${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(1)}</i>`;
     }
     return costBits([_eDn(4 * m), f, `五维微涨`]);
@@ -17810,7 +17918,7 @@ header.top.compact>.theme-top{display:none}
     noteAct("do", k);
     const prepMul = S.step === "prep" || S.off && S.off.next === "intl" ? S.assets && S.assets.van ? 0.7 : 0.6 : 1;
     if (k === "solo") {
-      const lightMul = 0.5;
+      const lightMul = SOLO_LIGHT;
       const w = 1 + Math.floor(rnd() * 3);
       rankGain(w, lightMul);
       if (S.pre && S.pre.rank !== void 0 && true) {
@@ -17832,7 +17940,12 @@ header.top.compact>.theme-top{display:none}
     } else if (k === "stream") {
       const m = S.origin === "streamer" ? 1.6 : 1;
       addFans(4.5 * m * streamFansMul());
-      addMoney("stream", streamIncome());
+      {
+        const v = streamIncome();
+        addMoney("stream", v);
+        noteStreamMoney(v);
+      }
+      noteStream();
       addFat(5);
       if (S.streamDeal) S.streamDeal.done = (S.streamDeal.done || 0) + 1;
       checkStreamBiz();
@@ -18404,6 +18517,8 @@ header.top.compact>.theme-top{display:none}
       node: null,
       swing: 0,
       done: false,
+      fat0: S.fatigue,
+      // 开赛那一刻的体能：赛后面板与归因都读它（见 endMatch）
       need,
       bo5: need >= 3
     };
@@ -18595,6 +18710,7 @@ header.top.compact>.theme-top{display:none}
   }
   function endMatch() {
     const m = S.match, won = m.sc[0] > m.sc[1];
+    const fat0 = m && m.fat0 !== void 0 ? m.fat0 : S.fatigue;
     if (!S.playoff && !S.intl) {
       if (won) S.record.w++;
       else S.record.l++;
@@ -18678,7 +18794,7 @@ header.top.compact>.theme-top{display:none}
     }
     {
       try {
-        m.attr = attribute(myRoster(), m.opp, S.fatigue, SEASONS[S.si].fav);
+        m.attr = attribute(myRoster(), m.opp, fat0, SEASONS[S.si].fav);
         m.luck = pmLuckLines(m);
         if (m.attr && S.archive && S.archive.length) {
           const row = S.archive[S.archive.length - 1];
@@ -19720,7 +19836,7 @@ header.top.compact>.theme-top{display:none}
     const stats = [
       ["生涯小分", `${C.w || 0}<small>–</small>${C.l || 0}`],
       ["冠军", `${titleCount()}`],
-      ["转会", `${(S.txLog || []).length}<small> 站</small>`],
+      ["转会", `${txStops()}<small> 站</small>`],
       ["段位", `<span style="font-size:14px">${rankFull(S.pre ? S.pre.rank : 0)}</span>`],
       ["粉丝", `<span style="font-size:14px">${fanTier()}</span>`]
     ];
@@ -20269,6 +20385,7 @@ header.top.compact>.theme-top{display:none}
     const opp = S.world[S.homeLeague || "LPL"].find((t) => t.name === on);
     if (!opp) return "";
     const myPw = myPower(), opPw = teamPowerOf(on);
+    const vfNow = versionFit(), myShow = myPw - vfNow;
     const star = opp.players.slice().sort((a, b) => ovrOf(b) - ovrOf(a))[0];
     const rival = opp.players.find((q) => q.pos === S.pos);
     const st = (S.standings[S.homeLeague || "LPL"] || {})[on] || { w: 0, l: 0 };
@@ -20277,7 +20394,7 @@ header.top.compact>.theme-top{display:none}
     return `<div class="card"><h2>下一场<em>${sea.tag} 第 ${S.week} 周 · BO3</em></h2>
     <div class="next">
       <div class="sd"><div class="nm">${teamLogo(S.team, 28)}${S.team}${formBar(S.team)}</div>
-        <div class="pw">全队战力 <b>${N(pwShow(myPw).toFixed(1), dimWord(pwShow(myPw)))}</b></div></div>
+        <div class="pw">全队战力 <b>${N(pwShow(myShow).toFixed(1), dimWord(pwShow(myShow)))}</b>${uiNum() && Math.abs(vfNow) > 0.05 ? `<small style="color:var(--ink-3)"> 版本 ${vfNow >= 0 ? "+" : ""}${pwShow(vfNow).toFixed(1)}</small>` : ""}</div></div>
       <div class="mid">VS</div>
       <div class="sd"><div class="nm">${teamLogo(on, 28)}${on}${formBar(on)}</div>
         <div class="pw">全队战力 <b>${N(pwShow(opPw).toFixed(1), dimWord(pwShow(opPw)))}</b></div></div>
@@ -20288,7 +20405,7 @@ header.top.compact>.theme-top{display:none}
       ${rival ? `<span class="chipx">你的对位 <b>${rival.id}</b><i class="ovr">${N("实力 " + ovrOf(rival).toFixed(0), dimWord(ovrOf(rival)))}</i>${rival.rookie ? " · 新秀" : ""}</span>` : ""}
     </div>
     <div class="gapbar ${V.k}">
-      <div class="gv">${V.t}${uiNum() ? `<span class="gd mono">${diff >= 0 ? "+" : ""}${diff.toFixed(1)}</span>` : ""}</div>
+      <div class="gv">${V.t}${uiNum() ? `<span class="gd mono">${diff >= 0 ? "+" : ""}${pwShow(diff).toFixed(1)}</span>` : ""}</div>
       <div class="gt">${V.d}</div>
     </div>${fixtureStrip()}</div>`;
   }
@@ -21012,7 +21129,7 @@ header.top.compact>.theme-top{display:none}
     const ap = S.step === "pre" && S.pre ? S.pre.ap : S.step === "season" || S.step === "prep" || S.step === "offseason" ? S.ap : null;
     const num = uiNum();
     const st = strength(S.attrs);
-    const html = (ap !== null && ap !== void 0 ? `<span class="pv ${ap > 0 ? "top" : "dim"}"><i>行动</i><b>${ap}</b></span>` : "") + (num ? DIMS.map((d) => `<span class="pv ${d === top ? "top" : ""}"><i>${d}</i><b>${S.attrs[d].toFixed(0)}</b></span>`).join("") : `<span class="pv top"><i>实力</i><b>${dimWord(st)}</b></span><span class="pv pv-top2"><i>最强</i><b>${top}</b></span>`) + `<span class="pv dim"><i>体能</i><b>${100 - Math.round(S.fatigue)}</b></span>` + (S.form !== void 0 && S.career ? `<span class="pv dim"><i>状态</i><b>${Math.round(myForm())}</b></span>` : "") + `<span class="pv tools">${themeSeg()}<button class="pvb ${num ? "on" : ""}" id="uinum" title="${num ? "切回文字描述" : "显示具体数值"}">${typeof window !== "undefined" && window.innerWidth <= 560 ? "数值" : num ? "数值 开" : "数值 关"}</button><button class="pvb" id="tourbtn" title="重看一遍导览">导览</button></span>`;
+    const html = (ap !== null && ap !== void 0 ? `<span class="pv ${ap > 0 ? "top" : "dim"}"><i>行动</i><b>${ap}</b></span>` : "") + (num ? DIMS.map((d) => `<span class="pv ${d === top ? "top" : ""}"><i>${d}</i><b>${S.attrs[d].toFixed(1)}</b></span>`).join("") : `<span class="pv top"><i>实力</i><b>${dimWord(st)}</b></span><span class="pv pv-top2"><i>最强</i><b>${top}</b></span>`) + `<span class="pv dim"><i>体能</i><b>${100 - Math.round(S.fatigue)}</b></span>` + (S.form !== void 0 && S.career ? `<span class="pv dim"><i>状态</i><b>${Math.round(myForm())}</b></span>` : "") + `<span class="pv tools">${themeSeg()}<button class="pvb ${num ? "on" : ""}" id="uinum" title="${num ? "切回文字描述" : "显示具体数值"}">${typeof window !== "undefined" && window.innerWidth <= 560 ? "数值" : num ? "数值 开" : "数值 关"}</button><button class="pvb" id="tourbtn" title="重看一遍导览">导览</button></span>`;
     if (!p) return;
     p.innerHTML = html;
     try {
@@ -21233,6 +21350,7 @@ header.top.compact>.theme-top{display:none}
       S.tab = b.dataset.tab;
       _moreOpen = false;
       render();
+      scrollStageTop();
     });
     st.querySelectorAll("[data-more]").forEach((b) => b.onclick = () => {
       _moreOpen = b.dataset.more === "1" ? !_moreOpen : false;
@@ -21728,7 +21846,7 @@ header.top.compact>.theme-top{display:none}
     const _enc = $("encore");
     if (_enc) _enc.onclick = encore;
     const _ret = $("retire");
-    if (_ret) _ret.onclick = () => askConfirm("退役", `<b>${meName()}</b> 就此挂靴？之后是生涯名片，不能再回来。`, "退役", retireNow);
+    if (_ret) _ret.onclick = () => askConfirm("退役", `<b>${meName()}</b> 就此退役？之后是生涯名片，不能再回来。`, "退役", retireNow);
     st.querySelectorAll("[data-ef]").forEach((b) => b.onclick = () => {
       S.evFilter = b.dataset.ef;
       render();

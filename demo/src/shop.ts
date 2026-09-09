@@ -361,6 +361,54 @@ export function assetsCard(){
 export function streamClubCut(){ return (S.streamDeal&&S.streamDeal.cut)||0; }
 export function streamCut(){ return STREAM_CUTS[S.streamCutIdx||0].cut; }
 /* 直播打赏：名气越高，礼物越多 —— 这是主播出身的主要变现路径 */
+/* 同一周里反复开播，观众是同一批（玩家实锤 2026-09-09：生涯末攒到 6.27 亿）。
+   原来一次直播的钱有上限，但没人管一周能播几次——一周四场，场场全额，
+   生涯后期一场约等于一个 LPL 冠军的奖金（200 万），一个赛段光直播就 2500 万以上，
+   是顶级合同封顶的 1.7 倍。现在第几场就按第几档算，第五场起一律 0.2。 */
+export const STREAM_WEEK_MUL=[1, 0.7, 0.45, 0.3];
+export function streamWeekKey(){
+  const pre=(!S.career&&S.pre);
+  return pre ? ("p"+(S.pre.preYear||1)+"-"+(S.pre.week||0)) : ((S.si||0)+"-"+(S.split||0)+"-"+(S.week||0)+"-"+(S.off?"o":"s"));
+}
+/* 这一周已经播过几场 */
+export function streamDoneThisWeek(){
+  const w=S.streamWk;
+  return (w&&w.k===streamWeekKey())?(w.n||0):0;
+}
+export function streamWeekMul(){
+  const n=streamDoneThisWeek();
+  return n<STREAM_WEEK_MUL.length?STREAM_WEEK_MUL[n]:0.2;
+}
+export function noteStream(){
+  const k=streamWeekKey();
+  S.streamWk=(S.streamWk&&S.streamWk.k===k)?{k,n:(S.streamWk.n||0)+1}:{k,n:1};
+}
+/* 一个赛段的平台结算上限（玩家实锤 2026-09-09：生涯末 6.27 亿）。
+   直播本来就该是像样的外快，不该盖过俱乐部给的钱。上限跟着合同走：
+   没合同或合同小的按 500 万兜底，顶级合同（1500 万/赛段）对应 1200 万上下——
+   直播是像样的外快，不该盖过俱乐部给的钱。
+   超过上限的部分仍然给，但只剩一成二——不是硬关门，是「平台这个季度的结算额度快用完了」。
+   批测中位一个赛段的直播收入只有几十万，够不到这条线，所以普通玩家一分不动。 */
+export const STREAM_SPLIT_FLOOR=500, STREAM_SPLIT_MUL=0.8, STREAM_OVER_MUL=0.12;
+export function streamSplitKey(){
+  return (!S.career&&S.pre) ? ("p"+(S.pre.preYear||1)) : ((S.si||0)+"-"+(S.split||0));
+}
+export function streamSplitCap(){
+  let sal=0; try{ sal=salaryOf()||0; }catch(e){ sal=0; }
+  return Math.max(STREAM_SPLIT_FLOOR, sal*STREAM_SPLIT_MUL);
+}
+export function streamSplitDone(){
+  const w=S.streamSp;
+  return (w&&w.k===streamSplitKey())?(w.v||0):0;
+}
+export function noteStreamMoney(v){
+  const k=streamSplitKey();
+  S.streamSp=(S.streamSp&&S.streamSp.k===k)?{k,v:(S.streamSp.v||0)+v}:{k,v};
+}
+/* 礼物那一项的规模。2026-09-09 试过整体下调到 0.9，批测里联赛夺冠率掉了 14 个点、
+   自检的教练信任也因为没钱团建到不了门槛——普通玩家被误伤，问题却出在极限刷播的人身上。
+   所以规模不动，改成只掐尖：一周之内递减（上面）＋一个赛段的结算上限（下面）。 */
+export const STREAM_GIFT=2.2;
 export function streamIncome(){
   const originMul=S.origin==="streamer"?1.7:1.0;
   // 独家：合同价，旱涝保收——但俱乐部那一刀先扣掉
@@ -378,11 +426,14 @@ export function streamIncome(){
   const heatMul=clamp(0.45+(S.heat||0)/730,0.45,1.7);
   // 2026-08-31 经济重锚：整体 ÷2。生涯钱中位的目标从 ~1700 万压到 600–900 万，
   // 直播是仅次于成就的第二大外快，不跟着缩的话「二线队员靠直播暴富」照样成立。
-  const gift=Math.pow(f/40,1.22)*2.2*streamCut()*heatMul;
+  const gift=Math.pow(f/40,1.22)*STREAM_GIFT*streamCut()*heatMul;
   const base=2+f*0.025;
   // 商业底蕴：教学/复盘攒出来的长尾，每点 +1%（封顶 25%）
   const biz=1+Math.min(S.bizRep||0,25)/100;
-  return (base+gift)*originMul*biz;
+  const raw=(base+gift)*originMul*biz*streamWeekMul();   // 同一周第几场，按第几档算
+  const cap=streamSplitCap(), done=streamSplitDone();
+  if(done>=cap) return raw*STREAM_OVER_MUL;              // 这个赛段的额度用完了，剩下的只结两成
+  return Math.min(raw, (cap-done)+ (raw-(cap-done))*STREAM_OVER_MUL);
 }
 /* 独家平台控流量，涨名气比全网直播慢 */
 /* 独家的代价原来是「平台控流量，直播涨名气变慢」（×0.7）。

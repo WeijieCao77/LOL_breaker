@@ -23,7 +23,7 @@ import { noteGrudge, noteRevenge, rivalBoost, rivalCard } from "./rivals";
 import { addRingTitle, breakAgendaCard, fixNote, fixtureCard, fixtureStrip, mateInjuryHit, mateInjuryNote, mateInjuryRoll, mateInjuryTag, mateInjuryTick, ringTitles, rotationAfterMatch, scrimCard, scrimPanel, scrimPick, scrimTrialCheck, setBreakAgenda, startScrim, titleCount, titlesText } from "./rotation";
 import { actListText, archiveWeek, clearPlan, noteAct, quickBtn, quickPlan, quickPlanPre, repeatLast, routineBar, runActs, runPlan, savePlan } from "./routine";
 import { askConfirm, confirmCard, continueCard, dropSave, escapeHtml, exportSave, importSave, loadGame, meName, safeName, saveBar, saveGame } from "./save";
-import { PRIZE_PO, PRIZE_PO_LDL, addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
+import { addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, noteStream, noteStreamMoney, PRIZE_PO, PRIZE_PO_LDL, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
 import { addSquad, clampWinProb, disruptSynergy, doSquad, gapVerdict, initSquad, myPower, squadActs, squadCard, squadDecay, squadOf, teamPowerOf, watchRoster } from "./squad";
 import { starAfterMatch, starLaneBadge, starSpotHtml } from "./stars";
 import { S, setS, onEra, applyEra } from "./state";
@@ -31,7 +31,7 @@ import { ERAS, ERA_KEYS, eraDef } from "./eras";
 import { statEvent } from "./stats";
 import { SPEND, addTrust, addTrustAll, avgTrust, checkMateExit, contractCheck, initTrust, payday, resolveLocker, salaryOf, syncTrust, trustDecay, trustMod, trustOf, tryLockerEvent } from "./team";
 import { traitBar, traitMul, traitUpCard } from "./trait";
-import { CLUB_TIERS, DEAL_TIERS, REG_WEEKS, TIER_ORDER, acceptPromote, acceptRenew, afterTryout, approachTeam, askDeal, askPromoteRaise, askTransfer, checkPromote, checkRankInvite, checkTopUpInvite, contractLeftText, dealCard, declineDeal, declinePromote, declineRenew, doBuyout, dropDeal, dropProOffer, exposureCap, faCard, inviteCard, inviteFloorOk, noteScoutInterest, offerSendDown, parentClub, preTransferPage, proOfferCard, promoteCard, promoteDealCard, rankCap, regRollOffer, renewCard, renewNegotiate, resolveTryoutDay, rollProOffers, selfRecommend, signDeal, signRenewDeal, signTransfer, startTryout, takeFaOffer, takeProOffer, transferPage, tryoutCard, tryoutSkill, txPhaseName, txWindowName, txWindowOpen } from "./tryout";
+import { CLUB_TIERS, DEAL_TIERS, REG_WEEKS, TIER_ORDER, acceptPromote, acceptRenew, afterTryout, approachTeam, askDeal, askPromoteRaise, askTransfer, checkPromote, checkRankInvite, checkTopUpInvite, contractLeftText, dealCard, declineDeal, declinePromote, declineRenew, doBuyout, dropDeal, dropProOffer, exposureCap, faCard, inviteCard, inviteFloorOk, noteScoutInterest, offerSendDown, parentClub, preTransferPage, proOfferCard, promoteCard, promoteDealCard, rankCap, regRollOffer, renewCard, renewNegotiate, resolveTryoutDay, rollProOffers, selfRecommend, signDeal, signRenewDeal, signTransfer, startTryout, takeFaOffer, takeProOffer, transferPage, tryoutCard, tryoutSkill, txPhaseName, txStops, txWindowName, txWindowOpen } from "./tryout";
 import { rnd, rngInit } from "./rng";
 
 /* 像素头像（可选）：data/photos/ 里的照片经 make_avatars.py 烤成 24x24。
@@ -112,9 +112,28 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
-  {v:"v20260908n", at:"2026-09-08", items:[
+  {v:"v20260909c", at:"2026-09-09", items:[
     "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
     "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+  ]},
+  {v:"v20260909b", at:"2026-09-09", items:[
+    "第三次清足球词，这次钉死（玩家实锤：「很多时候的措辞是赢球、球队，包括挂靴」）：生涯一览的「如果今天挂靴」和退役确认里的「就此挂靴」改成退役；赛后拆解的「赢球」、媒体日的「输球」改成赢比赛 / 输掉的比赛；粉丝见面会的场地档次「小场 / 中场 / 大场」改成小型 / 中型 / 大型场地——「中场」容易被读成足球的中场。前两次都是人工扫一遍改掉、然后新写的文案又把词带回来，所以这次加了一条自检：玩家看得见的字符串里出现球队 / 球员 / 球迷 / 球星 / 球场 / 赢球 / 输球 / 打球 / 挂靴 / 板凳席，测试直接红并指到行号",
+    "直播收入封顶（玩家实锤：生涯末攒到 6.27 亿）：一次直播的钱本来就有上限，但没人管一周能播几次——生涯后期一场约等于一个 LPL 冠军的奖金，一周四场，一个赛段光直播就 2500 万以上。现在两道闸：同一周里第几场就按第几档结算（观众是同一批），一个赛段还有平台结算上限（跟着合同走，顶级合同约 1200 万，超出的部分只结一成二）。极限刷播的生涯收入从 6 亿量级压到 1.5 亿；批测中位和最高的钱一分没动（941→956、2733→2729），普通玩家感觉不到",
+    "队伍页的「全队战力」和比赛面板终于是同一个数（玩家实锤：队伍页 75.1、比赛面板 65.9）：队伍页原来自己另算一套——你在队里的权重 1.18（比赛里是 3.0）、不含装备伤病、也没有顶端压缩，和判定胜负的是两个模型。现在它直接读判定胜负那一套的分解，判什么就显示什么；对阵卡的版本相性也单独标出来，不再揉进标题数。比赛结果逐字节不变",
+    "假赛传闻按身份换说法（玩家实锤：「我都 S 赛五冠了、资产三个亿，我心虚他毛啊」）：拿过国际冠军或已经是队内核心的人，看到的是营销号剪视频而不是论坛开帖，律师函也真的管用——「心虚」那句只留给还没立住的人"
+  ]},
+  {v:"v20260909a", at:"2026-09-09", items:[
+    "转会轨迹不再多报站数（玩家实锤：只去过一个外赛区队就回 RNG 一人一城，名片却写「转会 7 站」）：那张表本来就记着续约、买断、升上一队、下放，可名片和评语两处直接把条数当成转会次数在数。现在每一笔标性质，只有真的换了俱乐部才算一站；老存档按文案回推，数出来一样",
+    "赛后拆解的「状态」拆成「你的状态」和「队友状态」两行（玩家实锤：我状态 52 刚好中性，比赛里还是给我扣分）——原来一行算的是我方五个人的状态均值对上对面五个人，你自己中性、队友低迷照样是负的，标签却像在说你；两行各自写清楚「你 X · 队友均 Y · 对面均 Z」，加起来还是原来那个数",
+    "天梯有赛季重置了（玩家点名：段位一证永证，打到国服第一就永远国服第一）：每年春季赛开赛<b>掉一档</b>，而且落在那一档的中段——国服第一 → 国服前 100、王者 → 宗师、宗师 → 大师，掉到大师就不再往下。分不会自己回来，打排位能拿回去。原来那条「不守就掉」只把你拉回实力守得住的位置，实力够就永远不掉",
+    "赛后拆解和赛后面板改读开赛那一刻的体能（玩家实锤：赛前自己和队伍体能都是满的，一结算却拿体能扣我的综合分，试了两次都一样）——胜负本来就是用赛前体能判的，原来却先把这场的消耗记上再算账，等于拿打完之后的体能解释一场已经打完的比赛",
+    "战队行动的卡面不再虚标（玩家实锤：写「默契 +5.1」，实际只涨一点）：默契越高涨得越少，卡上现在直接写这一次真能涨多少，贴顶时写「已很高」；预览和生效从此是同一个函数",
+    "打排位的状态涨幅不再虚标（玩家实锤：写 +2.3，点一下只从 57 到 58）：一次排位是三把，状态按碎片时间打对折，卡面原来漏了这个对折",
+    "突破瓶颈报的上限和「我的」页对上了（玩家实锤：操作已经 84.7/85，弹窗却说上限到 79.5）——弹窗那句少加了经验顶上来的那一截",
+    "靶场最后一靶不再抢跑（玩家实锤：第 28 下金圈刚出来就直接弹结算，没给点的机会，还被算成一次没中，命中率写成 23/24）：剩余时间放不下一个完整的靶就不再放，把时间走完",
+    "顶栏的五维和「我的」页显示同一个数（玩家实锤「属性永远对不上」）：顶栏原来四舍五入到整数，84.7 被写成 85，看着像已经顶到天花板",
+    "对阵卡上的战力差和上面两个数用同一把尺（原来两个战力乘过展示系数、中间那个差值没乘，95.0 对 70.1 却写 +21.4）",
+    "换栏目回到顶部（玩家实锤：一页划到底，切过去还停在底下）"
   ]},
   {v:"v20260908m", at:"2026-09-08", items:[
     "季后赛抽签仪式挪回开打之前（玩家实锤：季后赛已经打到 1:0，抽签才弹出来）：原来先摆好比赛再开仪式，而开仪式本身不重画，于是它要等你在比赛里点了下一步才冒出来——现在先抽签、再摆比赛，模态卡从第一帧就在，演完才轮到你打",
@@ -141,7 +160,7 @@ export const CHANGELOG=[
     "仪式第二批：决赛之夜·入场（联赛决赛 / MSI 总决赛 / 世界赛决赛开打前，入场通道、灯光、握手，然后是最后一次热身——反应挑战：靶亮起就点，20 秒，决赛的靶更小亮得更短；金档这一场战力 +2、临场决策成功率 +5%，银档按平时打，铜档 −1、−3%）",
     "试训第一天·上机：到基地、见教练组、分机位，「先上机打几把给我们看看」——同一套反应挑战，职业前的线松一档（≤450 毫秒）；金档这次试训评级 +1 档，铜档 −1 档",
     "版本发布会：新赛季第一周，教练念完三条版本变化问「我们怎么打」——五道题、每题 8 秒三选一，答案就在他刚念的那三条里（红利位、关键属性、无畏征召、你的位置吃不吃版本）；金档（≥4 题）整个赛季版本相性 +0.5，铜档（≤1 题）−0.3",
-    "媒体日：每个赛段开幕，三个记者三个问题，每题 10 秒三选一——狂 / 稳 / 甩锅。不是小游戏，限时本身就是「面对镜头」。三题里占多数的口径就是这个赛段的基调：狂 热度 +15 但输球攒的心态压力 ×1.5；稳 热度 +5；甩锅 热度 +10、更衣室信任 −3",
+    "媒体日：每个赛段开幕，三个记者三个问题，每题 10 秒三选一——狂 / 稳 / 甩锅。不是小游戏，限时本身就是「面对镜头」。三题里占多数的口径就是这个赛段的基调：狂 热度 +15 但输掉的比赛攒的心态压力 ×1.5；稳 热度 +5；甩锅 热度 +10、更衣室信任 −3",
     "所有仪式照旧：可跳过、跳过按银档（不亏不赚）、托管 / 自动推进一律按跳过走；同一周撞上两场会排队。新增成就「手快」「读秒决策」"
   ]},
   {v:"v20260908g", at:"2026-09-08", items:[
@@ -151,7 +170,7 @@ export const CHANGELOG=[
   ]},
   {v:"v20260908f", at:"2026-09-08", items:[
     "「换不了人」修了（玩家反馈「现在不能换人」）：挂牌队友原来要教练信任 68，而教练信任的自然平衡点只有 46~54——批测里强玩家一整个生涯只有 4.9% 的赛季周能用，普通玩家是 0.0%，这个功能事实上一直是关着的。现在门槛是教练信任 60，或者威望到 75 用功勋压过教练组；同口径批测里强玩家 4.9% → 33.3%",
-    "拿冠军终于会涨教练和经理的信任（作者原话「我三连冠伟业的男人，让他换个人经理还要嘲讽我不懂行情」）：以前这两个式子里只有胜率、复盘和人气，压根没有荣誉项——三连冠的人在教练眼里和一个赢球多的普通首发没有区别。现在联赛冠军 +6 / 国际冠军 +12（经理 +5 / +10），信任每赛段往 50 回落的速度也从 32% 放缓到 18%：一次打好还是不算数，但不会三分之一直接作废。拿过三冠之后的教练信任中位数 58.6 → 73.3",
+    "拿冠军终于会涨教练和经理的信任（作者原话「我三连冠伟业的男人，让他换个人经理还要嘲讽我不懂行情」）：以前这两个式子里只有胜率、复盘和人气，压根没有荣誉项——三连冠的人在教练眼里和一个赢得多的普通首发没有区别。现在联赛冠军 +6 / 国际冠军 +12（经理 +5 / +10），信任每赛段往 50 回落的速度也从 32% 放缓到 18%：一次打好还是不算数，但不会三分之一直接作废。拿过三冠之后的教练信任中位数 58.6 → 73.3",
     "点名引援不再是一堆同样难的人（作者反馈「让他换个人经理还要嘲讽我不懂行情」）：候选名单原来是「够得着的人里最难的五个」，而够得着的档次又跟着威望一起涨，所以你越有分量，成算越是钉在四成上。现在名单在够得着的那一段里铺开，最好的那个还在最上面，但你可以退一步要一个稳的；谈崩的代价和文案也按威望分档，队魂级别的人不会再被说「不太懂行情」",
     "「话语权」卡上新增教练/经理信任的收支明细：上赛段每一项加了多少减了多少、离挂牌门槛还差几分，都摊开写。教练看的是胜率、每赛段的复盘次数和冠军——复盘这门功课以前从来没人告诉过你（批测里复盘次数的中位数是 0）",
     "属性条现在会告诉你离天花板还剩多少（玩家反馈「属性比较难提升」）：其实生涯末五维已经练到上限的 98~100% 了，慢是因为最后 5 分收益只剩四分之一。现在贴顶前会标「·剩 X.X」，训练日记也会直接说「练一次只顶原来的四分之一，想再往上得先顶开瓶颈」——数值没动，只是不再让你对着一个不动的数字瞎练"
@@ -741,7 +760,10 @@ export function breakthrough(d,n,reason,key?,kind?){
         "info","突破");
     return;
   }
-  const c0=cap(S.talent[d])+before, c1=cap(S.talent[d])+S.capBonus[d];
+  /* 报的上限要和「我的」页那一栏是同一个数（玩家实锤 2026-09-09：操作已经 84.7/85，
+     突破弹窗却说上限到 79.5）——原来这里少加了经验顶上来的那一截，也没有 99 封顶。 */
+  const exp=(S&&S.capExp)||0;
+  const c0=Math.min(99,cap(S.talent[d])+before+exp), c1=Math.min(99,cap(S.talent[d])+S.capBonus[d]+exp);
   pushEvent(`<b>瓶颈松动</b>　${reason}<br>
     <span style="color:var(--cyan)">${d}上限 ${c0.toFixed(1)} → <b>${c1.toFixed(1)}</b>（+${gotS}）</span>`,
     "big","突破");
@@ -1108,6 +1130,10 @@ export function power(teamOrPlayers,fatigue=0,verFav=null){
   const players=team?team.players:teamOrPlayers;
   return powerCore(players,fatigue,verFav,team);
 }
+/* 和 power() 同一套算式，额外返回分解（底盘、五个系数、顶端压缩）。队伍页与赛后归因用它。 */
+export function powerParts(players,fatigue=0,verFav=null,team=null): any{
+  return powerCore(players,fatigue,verFav,team,true);
+}
 /* AI 队的士气：近六场胜率 → 0.97～1.03。首版 ±0.05 叠上真对阵树把联赛/国际冠军率压过头（批测 2026-09-05），
    幅度收到 ±0.03——结构不动、只调数值 */
 export function formMorale(team){
@@ -1117,7 +1143,7 @@ export function formMorale(team){
     return 1+(wr-0.5)*0.06;
   }catch(e){ return 1; }
 }
-export function powerCore(players,fatigue=0,verFav=null,team=null){
+export function powerCore(players,fatigue=0,verFav=null,team=null,parts?){
   let s=0,wt=0,cmd=0;
   players.forEach(p=>{
     const r=(p.me&&S&&S.attrs)?S.attrs:(p.r||p);   // 「你」直读 S.attrs：读档后名单里的拷贝可能是旧的
@@ -1169,7 +1195,23 @@ export function powerCore(players,fatigue=0,verFav=null,team=null){
   /* 2026-09-07 难度调整：顶端压缩。五个 85–90 的明星凑在一起战力 87，世界第八才 73——第一名对谁都是天堑，
      五年世界冠军率 5%、双冠 0。78 分以上的部分按 0.45 折算（所有队一视同仁，你的队到了那里也一样）：
      87 → 82，第八名不动。强队仍然强，但赢它不再是 BO5 里 20% 的事。 */
-  return raw>POWER_KNEE?POWER_KNEE+(raw-POWER_KNEE)*POWER_SLOPE:raw;
+  const total=raw>POWER_KNEE?POWER_KNEE+(raw-POWER_KNEE)*POWER_SLOPE:raw;
+  if(!parts) return total;
+  /* 队伍页要的分解（玩家实锤 2026-09-09：队伍页 75.1、比赛面板 65.9，两个数对不上）。
+     原来队伍页自己另算一套（squadBase：你权重 1.18、不含装备伤病、没有顶端压缩），
+     和判定胜负的这一套是两个模型。现在它直接读这里，两处永远不会再分家。
+     raw 那一行一个字没动，所以比赛结果逐字节不变——这是纯显示口径的统一。
+     显示用的 mult 单独算，不参与上面的乘法，浮点尾数不会被搅动。 */
+  return {total, raw,
+    base:s/wt+dynastyBonus(players)+wrAdj+core,
+    knee:raw>POWER_KNEE?(total-raw):0,      // 顶端压缩掉了多少（负数）
+    ws:[
+      {k:"syn", n:"默契", v:syn,                    mult:(1+(syn-50)/950)*rm},
+      {k:"tac", n:"战术", v:tac,                    mult:1+(tac-50)/1100},
+      {k:"mor", n:"士气", v:mine?avgTrust():50,     mult:tm},
+      {k:"cmd", n:"指挥", v:cmd,                    mult:1+(cmd-68)/520},
+      {k:"fit", n:"体能", v:100-clamp(fatigue,0,100),mult:1-clamp(fatigue,0,100)*0.0022}
+    ]} as any;
 }
 export const POWER_KNEE=78, POWER_SLOPE=0.45;
 /* ---------- 冠军班底（2026-09-07 作者拍板：王朝要到 10–15%）----------
@@ -2017,6 +2059,33 @@ export function soloWinP(){
 }
 /* 一次「打排位」= 3 把，赢了涨输了掉 */
 export function rankStep(){ return clamp(2.6-S.pre.rank*0.012,1.1,2.6); }
+/* 天梯赛季重置（玩家点名 2026-09-09：段位一证永证，打到国服第一就永远国服第一）。
+   作者拍板的形状：掉一档，不是掉回钻石——「上个赛季王者，重置就把我变回宗师」。
+   所以落点是当前段位区间的下沿再往下一分，也就是下一档的顶端：
+   国服第一 → 国服前 100、王者 → 宗师、宗师 → 大师；掉到大师就不再往下。
+   分不会自己回来，打排位能拿回去——这就是玩家要的「消耗多余的行动点」。
+   原来那条「不守就掉」（赛段结算处）只把你拉回实力守得住的位置，实力够就永远不掉。
+   只在职业生涯里做；职业前那一年本来就是往上爬的过程，再掉会把上岸挡死。 */
+export const RANK_RESET_FLOOR=44;    // 大师：掉到这里为止
+export function rankResetTo(v){
+  if(v<=RANK_RESET_FLOOR) return v;
+  let i=0; RANKS.forEach((x,k)=>{ if(v>=x.at) i=k; });
+  if(i<=0) return v;
+  /* 落到下一档的「中段」，不是它的顶端（作者 2026-09-09：掉得不够多，翻一倍）。
+     还是掉一档——王者照样变宗师——但落得更深，得多打几次排位才爬回去。
+     下一档的跨度取不到时（最低那一档）按 8 分兜底。 */
+  const lo=RANKS[i-1].at, hi=RANKS[i].at;
+  return Math.max(RANK_RESET_FLOOR,q1(lo+(hi-lo)*0.5));
+}
+export function rankSeasonReset(){
+  if(!S.career||!S.pre||S.pre.rank===undefined) return;
+  const before=S.pre.rank;
+  const after=rankResetTo(before);
+  if(before-after<0.1) return;
+  S.pre.rank=q1(after);
+  const b=rankName(before), a=rankName(S.pre.rank);
+  pushEvent(`<b>天梯赛季重置。</b>${b===a?`你的段位回落到 <b>${rankFull(S.pre.rank)}</b>`:`你从 <b>${b}</b> 掉到 <b>${a}</b>`}——分不会自己回来，<b>打排位</b>能拿回去。`,"info","天梯");
+}
 export function preAct(k,dim?){
   const P=S.pre;
   const _c=apCost(k==="rank"?"solo":k);
@@ -2063,6 +2132,7 @@ export function preAct(k,dim?){
     // 单纯开播涨得很慢；真正让人记住你的是段位和战绩
     const pop=1.9+S.pre.rank*0.05;
     const gift=streamIncome()*PRE_PACE;   // 职业前节奏系数：一年的点数少了，每一点的产出按比例抬
+    noteStreamMoney(gift); noteStream();
     addFans(pop*m*(streamFansMul())*PRE_FAN_PACE);
     addMoney('stream',gift);
     addFat(4); checkAch("stream");
@@ -2553,7 +2623,9 @@ export function buildFixtures(){
   });
 }
 export function startSeason(first,split?){
+  const _newYear=(split===undefined||split===0);
   S.split=(split===undefined)?0:split;
+  if(_newYear&&!first) rankSeasonReset();   // 天梯赛季重置：一年一次，春季赛开赛时
   S.carrySplit=0;      // 「院长」次数按赛段算（教练组看本赛段）
   S.benchedPO=false;   // 新赛段重置「替补看完季后赛」标记
   S.loseStreak=0; S.benchLock=false;   // 新赛段：连败清零；被换下的锁也解开（新赛段教练重新看数据）
@@ -2917,12 +2989,16 @@ export function costTrain(d){
   return costBits([_eDn(9),
     capped?null:`${d}<i class="up">+${g.toFixed(1)}</i>`]);
 }
+/* 一次「打排位」＝三把，状态涨幅按「碎片时间」打对折（doAction 里的 lightMul）。
+   预览原来漏了这个 0.5，卡上写 +2.3、实际只有 +1.2（玩家实锤 2026-09-09）。
+   两处从此读同一个常量。 */
+export const SOLO_LIGHT=0.50;
 export function costSolo(){
   if(_isPre()) return costBits([_eDn(8), `段位±`, `五维微涨`]);
   const m=_prepMul();
   let f=null;
   if(S.form!==undefined){
-    const d=((68-S.form)*0.11+1.2)*m;
+    const d=((68-S.form)*0.11+1.2)*m*SOLO_LIGHT;
     if(Math.abs(d)>=0.05) f=`状态<i class="${d>0?"up":"dn"}">${d>0?"+":"−"}${Math.abs(d).toFixed(1)}</i>`;
   }
   return costBits([_eDn(4*m), f, `五维微涨`]);   // 和 doAction 里 addFat(4*prepMul) 一致
@@ -3019,7 +3095,7 @@ export function doAction(k){
     // 但真正的价值是状态——手感这东西不练会掉。
     // 异化点数配平：1 点＝碎片时间来几把，单次收益 ×0.55——
     // 不然 1 点行动在 8 点预算下可刷，批测把 MSI 从 13 抬到 23（实测）。
-    const lightMul=0.50;
+    const lightMul=SOLO_LIGHT;   // 卡面预览（costSolo）读的是同一个常量
     const w=1+Math.floor(rnd()*3);
     rankGain(w,lightMul);
     // 段位也要跟着动。原来赛季里段位是个冻住的死数字，
@@ -3044,7 +3120,8 @@ export function doAction(k){
   }
   else if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
     addFans(4.5*m*(streamFansMul()));
-    addMoney('stream',streamIncome());
+    { const v=streamIncome(); addMoney('stream',v); noteStreamMoney(v); }
+    noteStream();                       // 记下这一周的第几场（下一场按下一档算）
     addFat(5);
     if(S.streamDeal) S.streamDeal.done=(S.streamDeal.done||0)+1;   // 开播条款按次数记
     checkStreamBiz();
@@ -3599,6 +3676,7 @@ export function startMatch(bo?,oppName?){
   }
   const need=(typeof bo==="number")?bo:(bo?3:2);   // 1=BO1 2=BO3 3=BO5
   S.match={opp,oppName:(opp&&opp.name)||on,sc:[0,0],game:1,lines:[],node:null,swing:0,done:false,
+           fat0:S.fatigue,          // 开赛那一刻的体能：赛后面板与归因都读它（见 endMatch）
            need,bo5:need>=3};
   // 竞技锐度：距离上一场正赛超过 4 周（长间歇/休赛期回来），手是生的——
   // 开局带一点负 swing，第一局打完就找回来。轻手感，不是惩罚。
@@ -3769,6 +3847,11 @@ export function tiltNote(){
 }
 export function endMatch(){
   const m=S.match,won=m.sc[0]>m.sc[1];
+  /* 开赛那一刻的体能（玩家实锤 2026-09-09：赛前自己和队伍体能都是满的，
+     一结算却按体能扣我的综合分，试了两次都一样）。这一场的胜负是用赛前体能
+     判的，可下面 addFat 先把这场的消耗记上，再算面板和拆解——于是拆解拿打完
+     之后的体能来解释一场已经打完的比赛。快照留在这里，面板和归因都读它。 */
+  const fat0=(m&&m.fat0!==undefined)?m.fat0:S.fatigue;
   if(!S.playoff&&!S.intl){
     if(won)S.record.w++;else S.record.l++;
     const HL=S.homeLeague||"LPL";
@@ -3802,6 +3885,10 @@ export function endMatch(){
 
   // 你自己的大事
   const me=S.name||"你", star=m.opp.players.filter(q=>q.pos===S.pos)[0];
+  /* 这一行的 myPw 不只是显示：它还喂轮换资本、更衣室「该赢没赢」和冷门播报。
+     换成开赛体能会动平衡（120 局批测：MSI 夺冠率 10.8% → 21.7%），所以先按原样留着，
+     只把赛后拆解那张卡改成读开赛体能——玩家实锤的就是那张卡。这一处口径要不要一起改，
+     是一次单独的平衡决定，留给作者。 */
   const myPw=power(myRoster(),S.fatigue,SEASONS[S.si].fav), opPw=power(m.opp.players,0,SEASONS[S.si].fav);
   // 首发试用：赢了坐稳，输光了回替补席（rotation.js）
   rotationAfterMatch(won,myPw-opPw);
@@ -3847,7 +3934,7 @@ export function endMatch(){
   // 宿敌账本：赢下有明星选手的队要被记住
   noteRivalBeat(m.opp.players,won);
   // 心态气压：输比赛攒 Tilt，赢比赛泄压。0:2 被横扫压力翻倍。
-  S.tilt=clamp((S.tilt||0)+(won?-8:(swept||m.sc[0]===0?18:12)*mediaTiltMul()),0,100);   // 媒体日说了狂话，输球更伤心态（×1.5）
+  S.tilt=clamp((S.tilt||0)+(won?-8:(swept||m.sc[0]===0?18:12)*mediaTiltMul()),0,100);   // 媒体日说了狂话，输了更伤心态（×1.5）
   if(!won&&S.tilt>=60&&!S._tiltWarned){
     S._tiltWarned=true;
     pushEvent(`连着输比赛，<b>心态开始起飞</b>（心态压力 ${Math.round(S.tilt)}）。<br>
@@ -3863,7 +3950,7 @@ export function endMatch(){
   // 赛后归因：用判定胜负的那套数，现场算一次存下来
   {
     try{
-      m.attr=attribute(myRoster(),m.opp,S.fatigue,SEASONS[S.si].fav);
+      m.attr=attribute(myRoster(),m.opp,fat0,SEASONS[S.si].fav);
       // 「90% 也翻车」的说法要现场算：回放时队友状态早变了
       m.luck=pmLuckLines(m);
       // 拆解写进比赛档案：点过「继续」也能在「我的 → 比赛档案」回看。
@@ -4883,7 +4970,7 @@ export function careerPoster(){
   const stats=[
     ["生涯小分",`${C.w||0}<small>–</small>${C.l||0}`],
     ["冠军",`${titleCount()}`],
-    ["转会",`${(S.txLog||[]).length}<small> 站</small>`],
+    ["转会",`${txStops()}<small> 站</small>`],
     ["段位",`<span style="font-size:14px">${rankFull(S.pre?S.pre.rank:0)}</span>`],
     ["粉丝",`<span style="font-size:14px">${fanTier()}</span>`]
   ];
@@ -5460,7 +5547,11 @@ export function nextMatchCard(){
   const sea=SEASONS[S.si], on=S.schedule[S.week-1];
   const opp=S.world[S.homeLeague||"LPL"].find(t=>t.name===on);
   if(!opp) return "";
+  /* 标题上的「全队战力」和队伍页是同一个数：版本相性单独标出来，不揉进去
+     （玩家实锤 2026-09-09：队伍页和比赛面板对不上）。备战页早就是这么写的。
+     判定胜负仍然用含版本的 myPower()——diff 不变。 */
   const myPw=myPower(), opPw=teamPowerOf(on);
+  const vfNow=versionFit(), myShow=myPw-vfNow;
   const star=opp.players.slice().sort((a,b)=>ovrOf(b)-ovrOf(a))[0];
   const rival=opp.players.find(q=>q.pos===S.pos);
   const st=(S.standings[S.homeLeague||"LPL"]||{})[on]||{w:0,l:0};
@@ -5469,7 +5560,8 @@ export function nextMatchCard(){
   return `<div class="card"><h2>下一场<em>${sea.tag} 第 ${S.week} 周 · BO3</em></h2>
     <div class="next">
       <div class="sd"><div class="nm">${teamLogo(S.team,28)}${S.team}${formBar(S.team)}</div>
-        <div class="pw">全队战力 <b>${N(pwShow(myPw).toFixed(1),dimWord(pwShow(myPw)))}</b></div></div>
+        <div class="pw">全队战力 <b>${N(pwShow(myShow).toFixed(1),dimWord(pwShow(myShow)))}</b>${
+          uiNum()&&Math.abs(vfNow)>0.05?`<small style="color:var(--ink-3)"> 版本 ${vfNow>=0?"+":""}${pwShow(vfNow).toFixed(1)}</small>`:""}</div></div>
       <div class="mid">VS</div>
       <div class="sd"><div class="nm">${teamLogo(on,28)}${on}${formBar(on)}</div>
         <div class="pw">全队战力 <b>${N(pwShow(opPw).toFixed(1),dimWord(pwShow(opPw)))}</b></div></div>
@@ -5480,7 +5572,7 @@ export function nextMatchCard(){
       ${rival?`<span class="chipx">你的对位 <b>${rival.id}</b><i class="ovr">${N("实力 "+ovrOf(rival).toFixed(0),dimWord(ovrOf(rival)))}</i>${rival.rookie?' · 新秀':''}</span>`:""}
     </div>
     <div class="gapbar ${V.k}">
-      <div class="gv">${V.t}${uiNum()?`<span class="gd mono">${diff>=0?"+":""}${diff.toFixed(1)}</span>`:""}</div>
+      <div class="gv">${V.t}${uiNum()?`<span class="gd mono">${diff>=0?"+":""}${pwShow(diff).toFixed(1)}</span>`:""}</div>
       <div class="gt">${V.d}</div>
     </div>${fixtureStrip()}</div>`;
 }
@@ -6053,7 +6145,9 @@ export function pinbar(){
   const st=strength(S.attrs);
   const html=(ap!==null&&ap!==undefined?`<span class="pv ${ap>0?'top':'dim'}"><i>行动</i><b>${ap}</b></span>`:"")
   +(num
-    ? DIMS.map(d=>`<span class="pv ${d===top?'top':''}"><i>${d}</i><b>${S.attrs[d].toFixed(0)}</b></span>`).join("")
+    /* 和「我的」页同一个数（玩家实锤 2026-09-09：顶栏 85、我的页 84.7，「属性永远对不上」）。
+       原来这里四舍五入到整数，84.7 被写成 85，看着像已经顶到天花板了。条是横向滚动的，多一位放得下。 */
+    ? DIMS.map(d=>`<span class="pv ${d===top?'top':''}"><i>${d}</i><b>${S.attrs[d].toFixed(1)}</b></span>`).join("")
     : `<span class="pv top"><i>实力</i><b>${dimWord(st)}</b></span><span class="pv pv-top2"><i>最强</i><b>${top}</b></span>`)
   +`<span class="pv dim"><i>体能</i><b>${100-Math.round(S.fatigue)}</b></span>`
   +(S.form!==undefined&&S.career?`<span class="pv dim"><i>状态</i><b>${Math.round(myForm())}</b></span>`:"")
@@ -6210,7 +6304,8 @@ export function bind(){
   st.querySelectorAll("[data-prolg]").forEach((b: any)=>b.onclick=()=>{S.proLg=b.dataset.prolg;render()});
   st.querySelectorAll("[data-talpre]").forEach((b: any)=>b.onclick=()=>{ const x=TAL_PRESETS.find(y=>y.k===b.dataset.talpre);
     if(x){ DIMS.forEach(d=>S.talent[d]=x.t[d]||0); render(); } });
-  st.querySelectorAll("[data-tab]").forEach((b: any)=>b.onclick=()=>{S.tab=b.dataset.tab;_moreOpen=false;render()});
+  // 换栏目回到顶部（玩家实锤 2026-09-09：一页划到底，切过去还停在底下）
+  st.querySelectorAll("[data-tab]").forEach((b: any)=>b.onclick=()=>{S.tab=b.dataset.tab;_moreOpen=false;render();scrollStageTop();});
   st.querySelectorAll("[data-more]").forEach((b: any)=>b.onclick=()=>{_moreOpen=(b.dataset.more==="1")?!_moreOpen:false;render()});
   const _tr=$("tourreplay"); if(_tr) _tr.onclick=()=>{ S.tab="act"; render(); setTimeout(()=>tourStart(S.career?"season":"pre","lite"),80); };
   const _trf=$("tourreplayfull"); if(_trf) _trf.onclick=()=>{ S.tab="act"; render(); setTimeout(()=>tourStart(S.career?"season":"pre","full"),80); };
@@ -6460,7 +6555,7 @@ export function bind(){
   const pc=$("pmclose"); if(pc) pc.onclick=()=>{S.pmView=null;render()};
   const of=$("off"); if(of) of.onclick=doOffseason;
   const _enc=$("encore"); if(_enc) _enc.onclick=encore;
-  const _ret=$("retire"); if(_ret) _ret.onclick=()=>askConfirm("退役",`<b>${meName()}</b> 就此挂靴？之后是生涯名片，不能再回来。`,"退役",retireNow);
+  const _ret=$("retire"); if(_ret) _ret.onclick=()=>askConfirm("退役",`<b>${meName()}</b> 就此退役？之后是生涯名片，不能再回来。`,"退役",retireNow);
   st.querySelectorAll("[data-ef]").forEach((b: any)=>b.onclick=()=>{S.evFilter=b.dataset.ef;render()});
   const ag=$("again"); if(ag) ag.onclick=()=>screenCreate();
   const ag2=$("again2"); if(ag2) ag2.onclick=()=>screenCreate();   // 结局页最底下那颗（原来和名片下那颗撞了 id，点不动）
