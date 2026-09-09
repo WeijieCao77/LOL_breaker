@@ -179,14 +179,14 @@ export function renewLedger(){
 
 /* ---------- 生涯一览（2026-09-01 P2，玩家点名：用总结的口吻随时给评语） ----------
    结局系统本来只在五年打完时说话。现在随时可以问它一句：
-   「如果今天挂靴，故事讲到哪了？」评语直接用 ending() 的判词——同一把尺子。 */
+   「如果今天退役，故事讲到哪了？」评语直接用 ending() 的判词——同一把尺子。 */
 export function careerCard(){
   if(!S.career) return "";
   let e=null; try{ e=ending(); }catch(err){}
   const st=S.stats||{n:0};
   const titles=(S.career.titles||[]);
   const left=lastSeason()-S.si;
-  return `<div class="card"><h2>生涯一览<em>如果今天挂靴</em></h2>
+  return `<div class="card"><h2>生涯一览<em>如果今天退役</em></h2>
     ${e?`<h3 style="margin:4px 0 2px">「${e.n}」</h3>
     <p class="note" style="margin:0 0 10px">${e.d}</p>`:""}
     <div class="tw"><table><tbody>

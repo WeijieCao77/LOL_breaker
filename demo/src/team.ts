@@ -218,11 +218,11 @@ export const SPEND=[
 export const PAY_CAP={top:1500, mid:700, low:300, acad:40};
 /* 2026-09-08 修（玩家实锤「到期自动续约，然后薪资很低玩不了」）：
    上一版这个上限有两处会误伤，都出在 clubTier 这个字段本身不可靠：
-   · 老档里存在 clubTier="acad" 却在一线联赛打球的合同——save.ts 的 fixLegacyAcadTier
+   · 老档里存在 clubTier="acad" 却在一线联赛打比赛的合同——save.ts 的 fixLegacyAcadTier
      明说「只改标签，钱不动」，于是 800 万的合同被 40 万的青训上限砍掉 95%；
    · 更早的档根本没有 clubTier，回落到 mid(700) 又把豪门合同砍 42%。
    现在两条一起改：① 字段缺失时按最宽的一档兜底，不认识的值绝不往严了猜；
-   ② clubTier="acad" 只有在你真的注册在 LDL 名单里时才当青训算——人在一队打球，
+   ② clubTier="acad" 只有在你真的注册在 LDL 名单里时才当青训算——人在一队打比赛，
    就按弱队档兜底。真正管住指数增长的是 capRaise（只封涨幅，不动既有合同）。 */
 export function payCapOf(clubTier){
   if(clubTier==="acad") return ((S&&S.homeLeague)==="LDL")?PAY_CAP.acad:PAY_CAP.low;

@@ -3,7 +3,7 @@ import { relMod, syncRelations } from "./clout";
 import { cupTeamName } from "./cup";
 import { formMul, myFormMul } from "./form";
 import { findTeam } from "./intl";
-import { POSN, PW_SHOW, SEASONS, addFat, apCost, apTag, btkNote, cap, capOf, clamp, costBits, dynastyBonus, myRoster, power, pushEvent, pwShow, q1, render, strength, tacAdd, tacOf, versionFit, champCoreOn } from "./main";
+import { addFat, apCost, apTag, btkNote, cap, capOf, champCoreOn, clamp, costBits, dynastyBonus, myRoster, POSN, power, powerParts, pushEvent, PW_SHOW, pwShow, q1, render, SEASONS, strength, tacAdd, tacOf, versionFit } from "./main";
 import { rnd } from "./rng";
 import { fireEvent } from "./random";
 import { mateInjuryHit } from "./rotation";
@@ -124,16 +124,21 @@ export function squadWeights(players,fatigue,team){
   ];
 }
 /* 拆解版，界面用 */
+/* 队伍页与赛后归因的分解。
+   2026-09-09 统一口径（玩家实锤：队伍页 75.1、比赛面板 65.9）：这里原来自己另算一套
+   （squadBase：你在队里权重 1.18、不含装备/伤病/新秀、也没有顶端压缩），
+   和判定胜负的 powerCore 是两个模型，同一支队天然对不上。
+   现在直接读 powerParts——判定胜负用哪个数，页面上就显示哪个数。
+   powerCore 里那行 raw 一个字没动，比赛结果逐字节不变。 */
 export function squadBreakdown(players,fatigue,verFav,team?){
   players=players||myRoster();
   fatigue=fatigue===undefined?S.fatigue:fatigue;
-  let base=squadBase(players);
-  if(verFav) base+=players.filter(p=>verFav.includes(p.pos)).length*0.3;
-  base+=dynastyBonus(players);
   // 传谁的名单就用谁的队——之前一律用我方，导致对手的默契/战术永远是中性
-  const ws=squadWeights(players,fatigue,team||(players.some(x=>x.me)?findTeam(S.team):null));
-  const total=ws.reduce((a,w)=>a*w.mult,base);
-  return {base,ws,total};
+  /* team 传什么，比赛里就传什么：我方名单在 main.ts 里是以数组形式进 power() 的（team=null，
+     所以不吃 wrAdj），对手才带战队对象。这里原来给自己补了一个 findTeam(S.team)，
+     于是页面上的数比比赛里用的高了一截——差的正是那份 wrAdj。 */
+  const P=powerParts(players,fatigue,verFav,team||null);
+  return {base:P.base, ws:P.ws, total:P.total, knee:P.knee};
 }
 
 /* ---------- 战队行动（签约后才有） ---------- */
