@@ -313,10 +313,16 @@ export function pressWorldHeads(){
     const topOf=lg=>{ let best=null,bv=-1;
       ((S.world&&S.world[lg])||[]).forEach(t=>{ const v=power(t.players,0,sea.fav); if(v>bv){bv=v;best=t;} });
       return best?{n:best.name,v:bv}:null; };
-    const a=topOf("LPL"), b=topOf("LCK");
+    /* 赛区分类（玩家实锤 2026-09-09）：这条头条原来写死 LPL vs LCK，
+       而且用的是「至暗时刻还没翻篇」这种只对 LPL 观众成立的说法。
+       现在拿**你所在的赛区**去比它最大的对手（你在 LCK 就是 LCK vs LPL），
+       二队算在母联赛里；说法也换成两边都成立的。 */
+    const mine=(()=>{ const h=(S.career&&S.homeLeague)||"LPL"; return h==="LDL"?"LPL":h; })();
+    const rival=mine==="LCK"?"LPL":"LCK";
+    const a=topOf(mine), b=topOf(rival);
     if(a&&b) out.push({c:"赛区格局",t:b.v>=a.v
-      ?`《纸面强度：LPL 这边 ${a.n} 领跑，但 LCK 的 ${b.n} 仍压在所有人头上——至暗时刻还没翻篇》`
-      :`《纸面强度：${a.n} 的账面已经压过 LCK 的 ${b.n}——但账面从来不发奖杯》`});
+      ?`《纸面强度：${mine} 这边 ${a.n} 领跑，但 ${rival} 的 ${b.n} 仍压在所有人头上》`
+      :`《纸面强度：${a.n} 的账面已经压过 ${rival} 的 ${b.n}——但账面从来不发奖杯》`});
   }catch(e){}
   out.push({c:"版本官方",t:`《版本「${sea.ver}」当前的理解已趋于收敛，各队打法开始同质化》`});
   return out;

@@ -336,8 +336,12 @@ export const RANDOM_EVENTS=[
         return "你把那顿饭的时间换成了两把排位。"}}]},
 
   {id:"proNews", rec:0, w:3, when:()=>!!S.world,
-   q:()=>{ const lg="LPL";
-     const ts=(S.world&&S.world[lg])||[];
+   /* 赛区分类（玩家实锤 2026-09-09：「在 LCK 效力还是触发了 LPL 事件」）：
+      这条新闻的两个选项都假设那是**你够得着的位置**（「给自己剪个集锦发过去」），
+      所以队伍要从你自己的赛区里挑。原来写死 lg="LPL"，效力 LCK 的人看到的是
+      一支和自己毫无关系的队在裁人。职业前没有赛区，那就还是 LPL（你是国内的路人）。 */
+   q:()=>{ const lg=(S.career&&S.homeLeague)||"LPL";
+     const ts=(S.world&&S.world[lg])||(S.world&&S.world.LPL)||[];
      const t=ts[Math.floor(rnd()*ts.length)];
      S._ev={t:t?t.name:"某支队", team:t};
      return `<b>${S._ev.t}</b> 官宣裁掉了首发选手，位置空出来了。`; },
@@ -359,7 +363,11 @@ export const RANDOM_EVENTS=[
      没人认识你，就没人拿你做梗。 */
 
   {id:"bible", rec:0, w:2, max:1, when:()=>S.fans>=800&&((S.career&&S.career.l)||0)>=6,
-   q:()=>`你上个月赛后采访那句话，被人剪进了「LPL 圣经」合集。`,
+   /* 「LPL 圣经」是 LPL 的梗（玩家实锤 2026-09-09：效力 LCK 也弹这一条）。
+      人还是那批中国观众，剪的还是你那句话——只是合集不会叫这个名字。 */
+   q:()=>((S.career&&S.homeLeague)||"LPL")==="LPL"
+     ? `你上个月赛后采访那句话，被人剪进了「LPL 圣经」合集。`
+     : `你上个月赛后采访那句话，被人剪进了本赛区的「名场面」合集。`,
    ctx:"播放量七位数，弹幕全是你的名字，但没一条是在夸你打得好。",
    a:[{t:"自己转发，配一句「下次赢回来」", g:"show",e:()=>{addFans(30);addBuff("mood",1.15,2,"心里踏实");
         return "评论区风向当场就变了。玩得起的人，大家反而服。"}},

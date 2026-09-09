@@ -519,10 +519,14 @@ export function noteHonor(kind,si,team){
 }
 export function intlChampEvent(name,champ){
   noteHonor(name==="MSI"?"msi":"worlds",S.si,champ);
-  const lck=leagueOf(champ)==="LCK";
+  /* 赛区分类（玩家实锤 2026-09-09）：「LCK 又一次站在了最高处」+ tone:"bad"
+     是站在 LPL 观众那一侧写的。效力 LCK 的人看自家赛区夺冠，不是坏消息。 */
+  const mine=(S.career&&S.homeLeague)||"LPL";
+  const lck=leagueOf(champ)==="LCK", own=leagueOf(champ)===mine;
   return {text:`${name}落幕，<b>${champ}</b> 捧起奖杯。${
-      lck?"LCK 又一次站在了最高处。":"你在屏幕外看完了颁奖。"}`,
-    tone:lck?"bad":"info", tag:name};
+      own?"你所在的赛区拿下了这座奖杯——只是捧杯的人不是你。"
+        :lck?"LCK 又一次站在了最高处。":"你在屏幕外看完了颁奖。"}`,
+    tone:(lck&&!own)?"bad":"info", tag:name};
 }
 /* ---------- 替补随队：战队去打，你在场边 ----------
    名单构造和亲历版一致（自己的队占真实名额），赛果整届模拟＋世界线收束，
@@ -786,7 +790,9 @@ export function crownChampion(){
   }
   const btkGain={心态:q1(((S.capBonus&&S.capBonus.心态)||0)-cap0.心态),
                  指挥:q1(((S.capBonus&&S.capBonus.指挥)||0)-cap0.指挥)};
-  const beatLCK=leagueOf(S.match.oppName)==="LCK";
+  /* 「至暗时刻的墙」是 LPL 观众的说法：你自己就在 LCK 的时候，
+     决赛赢下另一支 LCK 队伍不是砸墙，是内战（玩家实锤 2026-09-09）。 */
+  const beatLCK=leagueOf(S.match.oppName)==="LCK"&&(S.homeLeague||"LPL")!=="LCK";
   pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${name} 冠军！</b>${
     beatLCK?`决赛击败 LCK 的 ${S.match.oppName}——<b>至暗时刻的墙，被你砸开了一道口子。</b>`:""}`,
     "big",name);
