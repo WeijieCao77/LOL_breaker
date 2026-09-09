@@ -2587,6 +2587,8 @@ header.top.compact>.theme-top{display:none}
     const best = M.concat(O).reduce((a, b) => a.rating >= b.rating ? a : b);
     const carry = !won && me.rating >= 1.15 && mates.every((x) => me.rating >= x.rating + 0.25) && mateAvg < 0.95;
     const soloWin = won && me.rating >= 1.25 && mates.length > 0 && mateAvg < 0.9 && mates.every((x) => x.rating < 1);
+    const meWorst = mates.length > 0 && mates.every((x) => x.rating >= me.rating);
+    const meGap = Math.round((me.rating - mateAvg) * 100) / 100;
     return {
       games,
       mine: M,
@@ -2594,6 +2596,8 @@ header.top.compact>.theme-top{display:none}
       mateAvg: q1(mateAvg),
       worst: worst ? worst.id : null,
       worstR: worst ? worst.rating : null,
+      meWorst,
+      meGap,
       mvp: best.id,
       carry,
       soloWin,
@@ -13220,9 +13224,17 @@ header.top.compact>.theme-top{display:none}
       secret: true,
       n: "零杀十死也能赢",
       tag: "梗",
-      d: "个人数据难看到不忍直视，但这把还是赢了。",
+      d: "这一场你是全队评分最低的那个，队伍还是赢了。",
+      /* 玩家实锤（2026-09-09）：19/6/15、分均补刀 9.9、伤害 28%、评分 1.15，照样弹这个成就。
+         原来的条件是「赢了 + 临场决策砸了两次」——和个人数据一点关系都没有，
+         而临场决策一场三个节点，砸两个太常见：30 局批测里 12.9% 的胜场命中，
+         30 个生涯 30 个都拿到了（这可是个 secret 的梗成就）。
+         现在读真实那一行：你是全队评分最低的，而且比队友均值低 0.25 以上。
+         同一批测下降到 1.4% 的胜场、约 0.47 次／生涯——难看到不忍直视，但真的会发生。
+         顺带一提「零杀十死」这个数字本身在本作里不可能出现：胜场 KDA 的最小值是 2.63，
+         名字是梗，判据看的是「全队你最拉」。 */
       on: "match",
-      cond: (c) => c.won && c.nodeFails >= 2,
+      cond: (c) => c.won && c.meWorst && c.meGap <= -0.25,
       flavor: "赛后采访你说：赢了就行。",
       r: { trust: 6, fame: 10 }
     },
@@ -14645,6 +14657,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909e", at: "2026-09-09", items: [
+      "成就「零杀十死也能赢」不再乱弹（玩家实锤：19/6/15、分均补刀 9.9、伤害占比 28%、评分 1.15，照样弹出来）：它原来的条件是「赢了 + 临场决策砸了两次」，和个人数据一点关系都没有——而一场比赛就三个节点，砸两个太常见，30 局批测里 12.9% 的胜场命中、30 个生涯全都拿到了（这可是个隐藏的梗成就）。现在读你这一场真实的那一行：<b>你是全队评分最低的那个，而且比队友均值低 0.25 以上，队伍还赢了</b>——同一批测降到 1.4% 的胜场、约 0.47 次／生涯"
+    ] },
     { v: "v20260909b", at: "2026-09-09", items: [
       "第三次清足球词，这次钉死（玩家实锤：「很多时候的措辞是赢球、球队，包括挂靴」）：生涯一览的「如果今天挂靴」和退役确认里的「就此挂靴」改成退役；赛后拆解的「赢球」、媒体日的「输球」改成赢比赛 / 输掉的比赛；粉丝见面会的场地档次「小场 / 中场 / 大场」改成小型 / 中型 / 大型场地——「中场」容易被读成足球的中场。前两次都是人工扫一遍改掉、然后新写的文案又把词带回来，所以这次加了一条自检：玩家看得见的字符串里出现球队 / 球员 / 球迷 / 球星 / 球场 / 赢球 / 输球 / 打球 / 挂靴 / 板凳席，测试直接红并指到行号",
       "直播收入封顶（玩家实锤：生涯末攒到 6.27 亿）：一次直播的钱本来就有上限，但没人管一周能播几次——生涯后期一场约等于一个 LPL 冠军的奖金，一周四场，一个赛段光直播就 2500 万以上。现在两道闸：同一周里第几场就按第几档结算（观众是同一批），一个赛段还有平台结算上限（跟着合同走，顶级合同约 1200 万，超出的部分只结一成二）。极限刷播的生涯收入从 6 亿量级压到 1.5 亿；批测中位和最高的钱一分没动（941→956、2733→2729），普通玩家感觉不到",
@@ -18445,6 +18460,10 @@ header.top.compact>.theme-top{display:none}
       oppScore: m.sc[1],
       carry: !!(m.box && m.box.carry),
       soloWin: !!(m.box && m.box.soloWin),
+      // 这一场你自己那一行：成就要判「数据难看」就得读真实数据，不能拿临场决策当替身
+      myRating: m.myline && m.myline.rating !== void 0 ? m.myline.rating : null,
+      meWorst: !!(m.box && m.box.meWorst),
+      meGap: m.box && m.box.meGap !== void 0 ? m.box.meGap : 0,
       gap: +(myPw - opPw).toFixed(2),
       intl: !!S.intl,
       oppLeague: leagueOf(m.oppName),

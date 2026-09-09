@@ -69,7 +69,12 @@ export function synthBoxScore(m,won){
   const carry=!won&&me.rating>=1.15&&mates.every(x=>me.rating>=x.rating+0.25)&&mateAvg<0.95;
   // 一人成军：赢了，队友全员不及格
   const soloWin=won&&me.rating>=1.25&&mates.length>0&&mateAvg<0.9&&mates.every(x=>x.rating<1.0);
+  // 你是不是这一场全队最难看的那个（成就「零杀十死也能赢」用；meGap 留两位小数，
+  // 门槛是 −0.25，q1 会把它抹成 −0.2 或 −0.3）
+  const meWorst=mates.length>0&&mates.every(x=>x.rating>=me.rating);
+  const meGap=Math.round((me.rating-mateAvg)*100)/100;
   return {games,mine:M,opp:O,mateAvg:q1(mateAvg),worst:worst?worst.id:null,worstR:worst?worst.rating:null,
+          meWorst,meGap,
           mvp:best.id,carry,soloWin,okN,failN};
 }
 
