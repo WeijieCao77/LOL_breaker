@@ -803,6 +803,40 @@ function unitChecks() {
         bad.push("布局一致性：" + name + "（" + fn + "）还是老的单列，没进 .wkgrid");
     });
   } catch (e) { bad.push("本周页布局自检没跑起来：" + e); }
+  /* 「教练怎么看你」的卡头和正文不许各说各的（玩家实锤 2026-09-09：
+     一边写「轮换」一边写「你是他认定的首发」）。根子是卡头放了 cloutTier 的档次名——
+     那是**话语权**档次，不是**阵容位置**。两个状态各跑一遍：卡头必须和正文同一个口径，
+     而且卡头里不许出现任何一个话语权档次名。 */
+  {
+    const S: any = A.S();
+    const bak = { promoted: S.promoted, understudy: S.understudy, career: S.career,
+                  team: S.team, staff: S.staff, benchLock: S.benchLock, scrim: S.scrim };
+    S.career = S.career || { w: 0, l: 0, titles: [] };
+    S.team = S.team || "T1";
+    const TIERS = ["队魂", "核心", "主力", "轮换", "新人"];
+    // understudy 是「你顶谁的位」，isBenched 会拿他的五维和你比，桩必须带 r；
+    // 再把他调得比你强 + 上 benchLock，否则 isBenched 会当场把你提成首发
+    const strong: any = {}; A.DIMS.forEach((d: string) => strong[d] = 99);
+    const inc = { id: "老将", pos: S.pos || "mid", age: 24, r: strong };
+    const head = (h: string) => (h.match(/<h2>教练怎么看你<em>([^<]*)<\/em>/) || [])[1] || "";
+    // ① 首发
+    S.promoted = true; S.understudy = null;
+    let html = A.railCoach();
+    if (head(html) !== "首发") bad.push("教练卡：是首发，卡头却写「" + head(html) + "」");
+    if (html.indexOf("你是他认定的首发") < 0) bad.push("教练卡：首发状态下正文没说是首发");
+    // ② 替补
+    S.promoted = false; S.understudy = inc; S.benchLock = true; S.scrim = null;
+    html = A.railCoach();
+    if (head(html) !== "替补") bad.push("教练卡：在替补席，卡头却写「" + head(html) + "」");
+    if (html.indexOf("你还在替补席上") < 0) bad.push("教练卡：替补状态下正文没说在替补席");
+    // 两种状态下卡头都不许是话语权档次名
+    ["首发", "替补"].forEach((_, i) => {
+      S.promoted = i === 0; S.understudy = i === 0 ? null : inc;
+      const h = head(A.railCoach());
+      if (TIERS.includes(h)) bad.push("教练卡：卡头写成了话语权档次「" + h + "」，那不是阵容位置");
+    });
+    Object.assign(S, bak);
+  }
   /* 职业前右栏那两张卡：数据都得从 S.pre 上读，别摸 S.career / S.team */
   {
     const S: any = A.S();
