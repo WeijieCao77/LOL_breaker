@@ -113,6 +113,11 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260909r", at:"2026-09-09", items:[
+    "<b>赛季结算卡的「冠军」标签念错赛区</b>（玩家实锤：在 <b>T1</b> 拿了联赛冠军，右上角却写「<b>LPL 冠军</b>」）。那个标签整条是写死的。现在<b>念这一季实际所在的赛区</b>，而且赛区在结算那一刻就<b>存进快照</b>——不是画卡片时才去读「你现在在哪」，否则休赛期一转会，这张卡再打开就又串了。老档没存这个字段，退回当前赛区",
+    "同一批还揪出<b>三处同样的毛病</b>：结局卡的「半程加冕 / 四强遗恨 / 赛区功勋」三段结语都写死了 LPL（「你证明了 LPL 能赢」「LPL 的观众记得你的名字」「这五年 LPL 没有塌」），一个在 LCK 打了五年的人读到的是别人的故事；试训邀请卡上「LPL 第 X/Y」那行是兜底分支写死的，上面那条分支明明已经在念真实赛区了。结局那三段按<b>生涯里打得最多的赛区</b>算——一个在 LPL 打了四年、最后一年去 LCK 养老的人，说「这五年 LCK 没有塌」也是错的",
+    "<b>赛区自检从白名单改成黑名单</b>。上一轮加的那条自检只查十六个「内容文件」，理由写的是「main.ts 里的是尺子与更新日志」——这条理由本身就是错的：main.ts 里还画着结算卡、HUD、赛程、结局名片一大堆玩家看得见的字，玩家这次报的那句就在里面，<b>整整躲过了上一轮排查</b>。现在默认全查，只放过史实数据表和更新日志本身；LDL 走结构性豁免（全世界只有它一个次级联赛、且只挂在 LPL 底下），并加了一条绊线：哪天别的赛区也有了二队，自检先红"
+  ]},
   {v:"v20260909q", at:"2026-09-09", items:[
     "<b>封面页的存档卡右半边不再空着</b>（作者实锤：「过去的存档的右边都是空的，放一些内容，比如存档的一些数据，队伍，冠军等等」）：左边还是「这是哪一局 + 继续 / 重开」，右边补上这一局的实际数据——<b>赛季 · 效力 · 冠军 · 生涯战绩 · 世界赛 · 实力 · 成就</b>，用的是顶部 HUD 那套格子样式，不新造一种。职业前的档没有这些，就报进度和身份。整段只读存档本身，读不出来就少一格，绝不让封面页白屏",
     "<b>封面页头的标语不再压在主视觉上</b>（作者截图实锤）：图上本来就印着「电竞选手生涯模拟」，而我们的标语是浮在图上的——图高和文字起点原来各写一条 clamp，两条曲线随宽度分开走，1320px 宽的窗口上正好叠成一团。现在<b>图占一段固定高度、标语排在图下面</b>，两者共用同一个值，<b>宽度再怎么变都叠不上去</b>（自检按这个不变式量）。顺带整张图完整露出来了，原来下半截一直被文字压着",
@@ -4646,7 +4651,10 @@ export function endSeason(result,seed){
       <span style="color:var(--ink-3)">你成了自由身——休赛期的转会市场上，去哪由你自己找。</span>`,"bad","合同");
   }
   // dc==="renew" 时 S.pendingRenew 已挂起，续约报价卡会在休赛期弹出，由你拍板
-  S.lastSeason={result,seed,rec:Object.assign({},S.record),
+  // lg：这一季是在哪个赛区打的。结算卡上的「XX 冠军」得念这个，不能念写死的 LPL
+  // （玩家实锤 2026-09-09：在 T1 拿了联赛冠军，标签却写「LPL 冠军」）。
+  // 也不能在渲染时才读 S.homeLeague——休赛期转会一走，这张卡再画出来就串赛区了。
+  S.lastSeason={result,seed,lg:S.homeLeague||"LPL",rec:Object.assign({},S.record),
     grow:DIMS.map(d=>({d,g:S.attrs[d]-S.seasonAttr0[d]}))};
   // 生涯轨迹（结局名片的「五年一行」用）：每个赛段记一条——哪支队、第几名、季后赛走到哪
   S.career.log=(S.career.log||[]).concat([{si:S.si,split:S.split||0,team:S.team,lg:S.homeLeague||"LPL",
@@ -4726,7 +4734,8 @@ export function viewOffseason(){
     return `${pops}${tabBar(TABS_SEASON)}${breakAgendaCard()}${offPanel()}`;
   }
   const ls=S.lastSeason,sea=SEASONS[S.si];
-  let label=ls.result==="champion"?`<span class="tag g">LPL 冠军</span>`
+  const lsLg=ls.lg||S.homeLeague||"LPL";   // 老档没记 lg，退回当前赛区
+  let label=ls.result==="champion"?`<span class="tag g">${lsLg} 冠军</span>`
     :ls.result===null?`常规赛第 ${ls.seed} 名 · 无缘季后赛`
     :`${poRoundName(ls.result)}出局（常规赛第 ${ls.seed}）`;
   // 夺了世界冠军的年，结算标题不能只念国内那半句（玩家原话：
@@ -5080,6 +5089,17 @@ export function offPanel(){
 }
 
 /* ================= 结局 ================= */
+/* 结局卡上念的赛区。它说的是「这五年」，所以不能拿退役那一刻的 S.homeLeague 顶数——
+   一个在 LPL 打了四年、最后一年去 LCK 养老的人，「这五年 LCK 没有塌」是错的。
+   按生涯日志里出现最多的那个赛区算；没有日志就退回当前赛区。 */
+export function careerLeague(){
+  const log=(S.career&&S.career.log)||[];
+  const n={};
+  log.forEach(x=>{ const k=x&&x.lg; if(k) n[k]=(n[k]||0)+1; });
+  const ks=Object.keys(n);
+  if(!ks.length) return S.homeLeague||"LPL";
+  return ks.sort((a,b)=>n[b]-n[a]||a.localeCompare(b))[0];
+}
 export function ending(){
   statEvent("end");
   if(S.neverSigned) return {n:"没能上岸",
@@ -5102,16 +5122,16 @@ export function ending(){
   if(worlds===1) return {n:"世界冠军",
     d:"你捧起了那座奖杯。MSI 还差一座，但没人会因此少记你一分。"};
   if(msi>=1) return {n:"半程加冕",
-    d:"MSI 冠军。你证明了 LPL 能赢，只是最重的那一座还没到手。"};
+    d:`MSI 冠军。你证明了 ${careerLeague()} 能赢，只是最重的那一座还没到手。`};
   const depth=S.career.bestIntl||0;
   if(depth>=4) return {n:"无冕之王",
     d:"你站上过世界赛决赛的舞台，然后输掉了它。所有人都知道你有多强，只是没有奖杯。"};
   if(depth>=3) return {n:"四强遗恨",
-    d:"两次三次杀进四强，每次都差一口气。LPL 的观众记得你的名字，也记得那些没能翻过去的比赛。"};
+    d:`两次三次杀进四强，每次都差一口气。${careerLeague()} 的观众记得你的名字，也记得那些没能翻过去的比赛。`};
   if(depth>=2) return {n:"八强常客",
     d:"你带队年年打进世界赛淘汰赛，然后年年被挡在门外。稳定，但不够。"};
   if(depth>=1) return {n:"赛区功勋",
-    d:"你带队打进过世界赛正赛。没能走远，但这五年 LPL 没有塌，有你一份。"};
+    d:`你带队打进过世界赛正赛。没能走远，但这五年 ${careerLeague()} 没有塌，有你一份。`};
   if(lg>=1) return {n:"内战之王",d:"你拿过联赛冠军，却始终没能在国际赛场证明什么。五年里，最重的那一步始终没迈出去。"};
   if(best<=4) return {n:"常青树",d:"四强常客。你在联赛里站稳了，不是所有人都能做到这件事。"};
   return {n:"至暗未破",d:`${SEASONS[0].tag} 到 ${SEASONS[Math.min(S.si,SEASONS.length-1)].tag}，${S.si+1} 年。你打过、拼过、被记住过，但那座墙始终没有倒。<b>至暗时刻，最终写进了历史。</b>`};
