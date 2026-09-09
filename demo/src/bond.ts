@@ -44,6 +44,34 @@ export const BOND_MIN_GAMES=3;    // 一个赛段至少打三个系列赛才判�
 export const BOND_MAX=80;         // 账本上限：超了就丢掉最不重要的（已离队且共事最短的）
 export const BOND_ROLES=["被带","扛旗","被带飞","带人","并肩"];
 
+/* 场均评分算不算？算——但只当修正项，不当轴（作者 2026-09-09：
+   「我是个 rating 很高的院长还被人带感觉有点奇怪」）。
+   上面那段说「评分那条轴分不开人（66% 的赛段你都压过队友）」，那是拿它**单独**当轴；
+   当修正项就没这个毛病：它只在你和某个人的评分差真拉开时才够格改判，而且封顶 ±4 分。
+   五维均值仍然是主轴——一个赛段的手感掀不翻硬实力，但你确实在扛的时候，
+   界面不会再跟你说是他在带你。
+   系数：0.30 的场均评分差换 2.0 分五维，正好是 BOND_OVR 那道门槛（1 分评分 ≈ 6.7 分五维）。 */
+export const BOND_R_W=6.7;     // 场均评分差 → 五维分
+export const BOND_R_CAP=4.0;   // 评分最多拨动这么多五维分
+export const BOND_R_MIN=3;     // 和他至少同场三个系列赛，才拿评分说话
+
+/* 这个赛段到现在，你和他的场均评分差（正数＝你打得比他好）。样本不够就当 0。 */
+export function bondRatingGap(id){
+  const a=S.bondAcc;
+  if(!a||a.k!==bondKey()||!a.n) return 0;
+  const m=a.mates&&a.mates[id];
+  if(!m||!m.n||m.n<BOND_R_MIN) return 0;
+  return (a.me/a.n)-(m.sum/m.n);
+}
+
+/* 角色名（玩家反馈 2026-09-09：「新加入的扛旗、带人之类的功能玩家看不懂是什么意思」）。
+   存档里存的还是原来那五个键（e.roles[key] 一路存到退役名片），只换界面上的说法——
+   这套机制讲的从头到尾就是「谁带谁」，标签直接把它写出来，不用玩家再猜一层。 */
+export const BOND_ROLE_LABEL={
+  被带:"他带你", 扛旗:"你扛着他", 被带飞:"他超了你", 带人:"你带他", 并肩:"并肩"
+};
+export function bondRoleName(r){ return BOND_ROLE_LABEL[r]||r||""; }
+
 export function bondBook(){ if(!S.mates) S.mates={}; return S.mates; }
 export function bondKey(){ return (S.si||0)+"-"+(S.split||0); }
 export function bondOf(id){ const b=S.mates; return (b&&b[id])||null; }
@@ -123,11 +151,24 @@ export function bondMyOvr(){ return avg(DIMS.map(d=>(S.attrs&&S.attrs[d])||0)); 
 export function bondRoleVs(p){
   if(!p||p.me) return null;
   const ovrGap=bondMyOvr()-ovrOf(p);
+  const rGap=bondRatingGap(p.id);
+  const radj=clamp(rGap*BOND_R_W,-BOND_R_CAP,BOND_R_CAP);   // 评分把硬实力差往你这边拨一点
+  const gap=ovrGap+radj;
   const ageGap=(S.age||20)-(p.age||22);
   let role="并肩";
-  if(ovrGap<=-BOND_OVR) role=(ageGap<0)?"被带":"被带飞";
-  else if(ovrGap>=BOND_OVR) role=(ageGap<=0)?"扛旗":"带人";
-  return {role, ovrGap:q1(ovrGap), ageGap:q1(ageGap)};
+  if(gap<=-BOND_OVR) role=(ageGap<0)?"被带":"被带飞";
+  else if(gap>=BOND_OVR) role=(ageGap<=0)?"扛旗":"带人";
+  return {role, gap:q1(gap), ovrGap:q1(ovrGap), rGap:Math.round(rGap*100)/100, radj:q1(radj), ageGap:q1(ageGap)};
+}
+/* 这个角色是怎么判出来的——一句话把两条依据摆出来，鼠标停在标签上就能看见。
+   玩家问「考虑了场均 rating 这些数据吗」，答案不该藏在源码里。 */
+export function bondRoleWhy(p,r){
+  r=r||bondRoleVs(p); if(!r) return "";
+  const him=(x)=>x>0?`你高 ${x.toFixed(1)}`:x<0?`他高 ${(-x).toFixed(1)}`:"持平";
+  const age=r.ageGap>0?`他小你 ${r.ageGap.toFixed(0)} 岁`:r.ageGap<0?`他大你 ${(-r.ageGap).toFixed(0)} 岁`:"同龄";
+  return `五维均值${him(r.ovrGap)} · ${age}` + (r.rGap
+    ? ` · 本赛段场均评分${him(r.rGap)}（折 ${r.radj>0?"+":""}${r.radj.toFixed(1)} 分五维）`
+    : " · 本赛段还没打够 3 个系列赛，评分暂不参与");
 }
 /* 这个赛段整队的样子：每个角色各有几个人。样本不够就不下结论。 */
 export function bondRolesNow(){
@@ -170,9 +211,9 @@ export function bondSplitEnd(result){
   S.bondAcc=null;
   if(R){
     S.bondRole={si:S.si, sp:(S.split||0), cnt:R.cnt, rGap:R.rGap};
-    const bits=["带人","扛旗","被带","被带飞"].filter(k=>R.cnt[k]).map(k=>`<b>${k}</b> ${R.cnt[k]} 人`);
+    const bits=["带人","扛旗","被带","被带飞"].filter(k=>R.cnt[k]).map(k=>`<b>${bondRoleName(k)}</b> ${R.cnt[k]} 人`);
     if(bits.length) pushEvent(
-      `${SEASONS[S.si]?SEASONS[S.si].tag:""}${SPLITS[S.split||0]||""}打完，队里这五个人的位置：${bits.join(" · ")}${
+      `${SEASONS[S.si]?SEASONS[S.si].tag:""}${SPLITS[S.split||0]||""}打完，队里这五个人和你的关系：${bits.join(" · ")}${
         R.cnt["并肩"]?` · 并肩 ${R.cnt["并肩"]} 人`:""}。
       <span style="color:var(--ink-3)">你的场均评分和他们差 ${R.rGap>0?"+":""}${R.rGap.toFixed(2)}。</span>`,
       "info","更衣室");
@@ -399,10 +440,13 @@ export function bondPanel(){
     <div class="grid g5">${ms.map(p=>{
       const r=bondRoleVs(p)||{role:"并肩"}, A=BOND_TALK[r.role]||BOND_TALK["并肩"], c=bondTalkCan(p.id);
       const e=bondOf(p.id);
+      const why=bondRoleWhy(p,r);
       return `<button class="act" data-bond="${p.id}" ${c.ok?"":'disabled style="opacity:.34"'} title="${c.ok?A.d:c.why}">
         <div class="t">${A.t} ${apTag("talk")}</div>
         <div class="d"><b>${p.id.slice(0,9)}</b> · ${POSN[p.pos]||""} · ${p.age||"?"} 岁
-          <span class="tag${r.role==="带人"||r.role==="扛旗"?" g":""}">${r.role}</span><br>
+          <span class="tag${r.role==="带人"||r.role==="扛旗"?" g":""}"
+            title="${bondRoleName(r.role)}（${r.role}）——${BOND_ROLE_TXT[r.role]||""}\n判断依据：${why}">${bondRoleName(r.role)}</span><br>
+          <span style="color:var(--ink-3)">${why}</span><br>
           ${c.ok?A.d:"🔒 "+c.why}${e&&e.splits?`<br><span style="color:var(--ink-3)">一起打了 ${e.splits} 个赛段${
             (e.titles||[]).length?` · ${e.titles.length} 冠`:""}${e.talks?` · 聊过 ${e.talks} 次`:""}</span>`:""}</div></button>`;
     }).join("")}${(()=>{ const c=bondCoachCan();
@@ -411,7 +455,13 @@ export function bondPanel(){
         <div class="d"><b>教练组</b> · 每赛段一次<br>${c.ok
           ?"问清楚你现在差在哪：评分、信任、离首发／挂牌还有多远"
           :"🔒 "+c.why}</div></button>`; })()}</div>
-    <p class="note">同一个动作对老将、对同龄、对新人不是一回事——<b>角色是按五维均值和年龄差自动判的</b>。
+    <p class="note">名字后面那个标签是<b>你和他现在谁带谁</b>，每个赛段自动重判一次。<b>先比强弱</b>：
+      看<b>五维均值谁高</b>，再加上<b>这个赛段场均评分谁高</b>（和他打够 3 个系列赛才算，最多折 ±4 分五维）；
+      <b>再比年龄</b>：分出他是老将还是新人。两两一组就是四种说法——
+      <b>他带你</b>（他更强、他更老）· <b>他超了你</b>（他更强、他更年轻）·
+      <b>你扛着他</b>（你更强、他更老）· <b>你带他</b>（你更强、他更年轻）·
+      差不到 2 分就是<b>并肩</b>。鼠标停在标签上能看到这一条是怎么算出来的。</p>
+    <p class="note">所以同一个动作对老将、对同龄、对新人不是一回事。
       「找教练聊」<b>不给任何数值</b>，只把你差在哪说清楚。
       陪新人加练能真的把他练起来，但<b>封在他自己的天花板里</b>：你让他更快到那儿，不是把他拔到别处去。</p></div>`;
 }

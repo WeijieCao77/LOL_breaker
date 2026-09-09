@@ -103,8 +103,11 @@ body::before{
    东西铺在一个平面内，这样不用上下翻页」）。1000px 在 1920 屏上两侧各空 460px，
    扣掉 96px 竖导航之后内容列只剩约 848px——和一台竖着的平板一样宽，于是「本周」
    那一页要滚两到三屏。这两行只放宽容器，手机和小桌面一个像素不动。 */
-@media(min-width:1280px){ .wrap{max-width:1400px} }
-@media(min-width:1680px){ .wrap{max-width:1560px} }
+/* 二改（玩家反馈 2026-09-09「画面占满屏幕文字小」）：1400 / 1560 是只放宽了容器、
+   没动字号的结果——1920 的屏上一行正文能拉到 1300px，字还是 12.5px，读起来又长又小。
+   收回到 1320 / 1400，同时把宽屏上真正显小的三档字号各抬一档，正文再按字符数封顶。 */
+@media(min-width:1280px){ .wrap{max-width:1320px} }
+@media(min-width:1680px){ .wrap{max-width:1400px} }
 .mono{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"Liberation Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
 button{font-family:inherit;font-size:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:1px solid var(--gold);outline-offset:2px}
@@ -595,12 +598,24 @@ tr.cut td{border-bottom:2px solid var(--gold-dim)}
    玩家说的「不用上下翻页」不是按钮难找，是它在第三屏。宽屏上把「本周」那一行出口
    （剩余行动点 + 打这一周 + 快捷 + 自动推进）钉在视口底部，行动点没用完时它照样是灰的。
    只在 min-width:1180px 生效：手机有自己的底栏，小桌面继续走原来的单列。 */
+/* 二改（玩家反馈 2026-09-09「互相遮挡」）：初版这一条同时踩了三个坑，
+   缺一个都不会长成玩家截的那张图——
+   ① 它排在「替补训练赛」和「本周对手」**前面**。sticky 只压得住排在它后面的兄弟，
+      卡片一长过一屏，出口条就浮起来把这两块糊住了。→ 挪到卡片最后（main.ts）。
+   ② 背景是 .72 → .97 的渐变 + backdrop-filter。上面那 42% 是半透的，
+      底下的「已连续 0/3 周」直接透上来，看着就是重影。→ 改成实心。
+   ③ 主按钮 flex:1 1 auto。容器放宽到 1400 之后它摊成一条 1000px 的金色板砖，
+      「行动点 8」被挤在它左边一线。→ 给它封顶。
+   margin 的 -20 也是修的：卡片 padding 是 20px，原来写 -18，左右各差 2px。 */
 @media(min-width:1180px){
-  .row.dock{position:sticky;bottom:0;z-index:30;margin:14px -18px -18px;padding:12px 18px;
-    background:linear-gradient(180deg,rgba(var(--panel-rgb),.72),rgba(var(--panel-rgb),.97) 42%);
-    border-top:1px solid var(--line-hot);
-    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-  .row.dock .btn.primary{flex:1 1 auto}
+  .row.dock{position:sticky;bottom:0;z-index:30;margin:14px -20px -20px;padding:12px 20px;
+    /* 右下角的音频浮窗是 fixed 的（38px 宽 + 14px 边距，z-index 60），窗口宽度一接近
+       容器宽度就压在最右边那颗按钮上（1440px 实测压了 9px）。永远留出那一角，
+       比按断点猜什么时候会压上稳。 */
+    padding-right:66px;
+    background:rgb(var(--panel-rgb));
+    border-top:1px solid var(--line-hot)}
+  .row.dock .btn.primary{flex:1 1 auto;max-width:560px}
   .row.dock .dock-ap{font-family:ui-monospace,"SF Mono",Consolas,Menlo,monospace;
     font-size:12px;letter-spacing:.06em;color:var(--ink-3);white-space:nowrap;align-self:center}
   .row.dock .dock-ap b{color:var(--dawn);font-size:15px}
@@ -1600,6 +1615,21 @@ header.top.compact>.theme-top{display:none}
 .act .apc.restall:hover{background:rgba(233,161,90,.20);border-color:var(--dawn)}
 .act .apc.restall:active{transform:translateY(1px)}
 .act .apc.restall:focus-visible{outline:2px solid var(--dawn);outline-offset:2px}
+
+/* ---- 桌面密度（玩家反馈 2026-09-09：「画面占满屏幕文字小」）----
+   放在文件末尾是必须的：媒体查询不加权重，.g5 / .note / .act .d 的基准值写在
+   本文件中段，写在它们前面的话这一整块一条都不会生效（第一版就是这么写的）。 */
+@media(min-width:1280px){
+  /* 140px 的下限在 1920 的屏上排出 8 列 145px 的格子：格子没变大，字没变大，
+     每条说明反而挤成五六行。抬到 200px 就是 5 列 230px——列数少了，每格反而看得清。 */
+  .g5{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .note{font-size:13.5px}
+  .act .t{font-size:15px}
+  .act .d{font-size:12.5px}
+  .opt .d{font-size:13.5px}
+  /* 正文一行超过 ~76 个字就开始难读，和容器多宽无关 */
+  .card>.note,.card>p,.gapbar .gt{max-width:76ch}
+}
 
 </style>
 
@@ -9962,6 +9992,26 @@ header.top.compact>.theme-top{display:none}
   var BOND_OVR = 2;
   var BOND_MIN_GAMES = 3;
   var BOND_MAX = 80;
+  var BOND_R_W = 6.7;
+  var BOND_R_CAP = 4;
+  var BOND_R_MIN = 3;
+  function bondRatingGap(id) {
+    const a = S.bondAcc;
+    if (!a || a.k !== bondKey() || !a.n) return 0;
+    const m = a.mates && a.mates[id];
+    if (!m || !m.n || m.n < BOND_R_MIN) return 0;
+    return a.me / a.n - m.sum / m.n;
+  }
+  var BOND_ROLE_LABEL = {
+    被带: "他带你",
+    扛旗: "你扛着他",
+    被带飞: "他超了你",
+    带人: "你带他",
+    并肩: "并肩"
+  };
+  function bondRoleName(r) {
+    return BOND_ROLE_LABEL[r] || r || "";
+  }
   function bondBook() {
     if (!S.mates) S.mates = {};
     return S.mates;
@@ -10065,11 +10115,21 @@ header.top.compact>.theme-top{display:none}
   function bondRoleVs(p) {
     if (!p || p.me) return null;
     const ovrGap = bondMyOvr() - ovrOf(p);
+    const rGap = bondRatingGap(p.id);
+    const radj = clamp(rGap * BOND_R_W, -BOND_R_CAP, BOND_R_CAP);
+    const gap = ovrGap + radj;
     const ageGap = (S.age || 20) - (p.age || 22);
     let role = "并肩";
-    if (ovrGap <= -BOND_OVR) role = ageGap < 0 ? "被带" : "被带飞";
-    else if (ovrGap >= BOND_OVR) role = ageGap <= 0 ? "扛旗" : "带人";
-    return { role, ovrGap: q1(ovrGap), ageGap: q1(ageGap) };
+    if (gap <= -BOND_OVR) role = ageGap < 0 ? "被带" : "被带飞";
+    else if (gap >= BOND_OVR) role = ageGap <= 0 ? "扛旗" : "带人";
+    return { role, gap: q1(gap), ovrGap: q1(ovrGap), rGap: Math.round(rGap * 100) / 100, radj: q1(radj), ageGap: q1(ageGap) };
+  }
+  function bondRoleWhy(p, r) {
+    r = r || bondRoleVs(p);
+    if (!r) return "";
+    const him = (x) => x > 0 ? `你高 ${x.toFixed(1)}` : x < 0 ? `他高 ${(-x).toFixed(1)}` : "持平";
+    const age = r.ageGap > 0 ? `他小你 ${r.ageGap.toFixed(0)} 岁` : r.ageGap < 0 ? `他大你 ${(-r.ageGap).toFixed(0)} 岁` : "同龄";
+    return `五维均值${him(r.ovrGap)} · ${age}` + (r.rGap ? ` · 本赛段场均评分${him(r.rGap)}（折 ${r.radj > 0 ? "+" : ""}${r.radj.toFixed(1)} 分五维）` : " · 本赛段还没打够 3 个系列赛，评分暂不参与");
   }
   function bondRolesNow() {
     const a = S.bondAcc;
@@ -10121,9 +10181,9 @@ header.top.compact>.theme-top{display:none}
     S.bondAcc = null;
     if (R) {
       S.bondRole = { si: S.si, sp: S.split || 0, cnt: R.cnt, rGap: R.rGap };
-      const bits = ["带人", "扛旗", "被带", "被带飞"].filter((k) => R.cnt[k]).map((k) => `<b>${k}</b> ${R.cnt[k]} 人`);
+      const bits = ["带人", "扛旗", "被带", "被带飞"].filter((k) => R.cnt[k]).map((k) => `<b>${bondRoleName(k)}</b> ${R.cnt[k]} 人`);
       if (bits.length) pushEvent(
-        `${SEASONS[S.si] ? SEASONS[S.si].tag : ""}${SPLITS[S.split || 0] || ""}打完，队里这五个人的位置：${bits.join(" · ")}${R.cnt["并肩"] ? ` · 并肩 ${R.cnt["并肩"]} 人` : ""}。
+        `${SEASONS[S.si] ? SEASONS[S.si].tag : ""}${SPLITS[S.split || 0] || ""}打完，队里这五个人和你的关系：${bits.join(" · ")}${R.cnt["并肩"] ? ` · 并肩 ${R.cnt["并肩"]} 人` : ""}。
       <span style="color:var(--ink-3)">你的场均评分和他们差 ${R.rGap > 0 ? "+" : ""}${R.rGap.toFixed(2)}。</span>`,
         "info",
         "更衣室"
@@ -10317,10 +10377,14 @@ header.top.compact>.theme-top{display:none}
     <div class="grid g5">${ms.map((p) => {
       const r = bondRoleVs(p) || { role: "并肩" }, A = BOND_TALK[r.role] || BOND_TALK["并肩"], c = bondTalkCan(p.id);
       const e = bondOf(p.id);
+      const why = bondRoleWhy(p, r);
       return `<button class="act" data-bond="${p.id}" ${c.ok ? "" : 'disabled style="opacity:.34"'} title="${c.ok ? A.d : c.why}">
         <div class="t">${A.t} ${apTag("talk")}</div>
         <div class="d"><b>${p.id.slice(0, 9)}</b> · ${POSN[p.pos] || ""} · ${p.age || "?"} 岁
-          <span class="tag${r.role === "带人" || r.role === "扛旗" ? " g" : ""}">${r.role}</span><br>
+          <span class="tag${r.role === "带人" || r.role === "扛旗" ? " g" : ""}"
+            title="${bondRoleName(r.role)}（${r.role}）——${BOND_ROLE_TXT[r.role] || ""}
+判断依据：${why}">${bondRoleName(r.role)}</span><br>
+          <span style="color:var(--ink-3)">${why}</span><br>
           ${c.ok ? A.d : "🔒 " + c.why}${e && e.splits ? `<br><span style="color:var(--ink-3)">一起打了 ${e.splits} 个赛段${(e.titles || []).length ? ` · ${e.titles.length} 冠` : ""}${e.talks ? ` · 聊过 ${e.talks} 次` : ""}</span>` : ""}</div></button>`;
     }).join("")}${(() => {
       const c = bondCoachCan();
@@ -10328,7 +10392,13 @@ header.top.compact>.theme-top{display:none}
         <div class="t">找教练聊 ${apTag("talk")}</div>
         <div class="d"><b>教练组</b> · 每赛段一次<br>${c.ok ? "问清楚你现在差在哪：评分、信任、离首发／挂牌还有多远" : "🔒 " + c.why}</div></button>`;
     })()}</div>
-    <p class="note">同一个动作对老将、对同龄、对新人不是一回事——<b>角色是按五维均值和年龄差自动判的</b>。
+    <p class="note">名字后面那个标签是<b>你和他现在谁带谁</b>，每个赛段自动重判一次。<b>先比强弱</b>：
+      看<b>五维均值谁高</b>，再加上<b>这个赛段场均评分谁高</b>（和他打够 3 个系列赛才算，最多折 ±4 分五维）；
+      <b>再比年龄</b>：分出他是老将还是新人。两两一组就是四种说法——
+      <b>他带你</b>（他更强、他更老）· <b>他超了你</b>（他更强、他更年轻）·
+      <b>你扛着他</b>（你更强、他更老）· <b>你带他</b>（你更强、他更年轻）·
+      差不到 2 分就是<b>并肩</b>。鼠标停在标签上能看到这一条是怎么算出来的。</p>
+    <p class="note">所以同一个动作对老将、对同龄、对新人不是一回事。
       「找教练聊」<b>不给任何数值</b>，只把你差在哪说清楚。
       陪新人加练能真的把他练起来，但<b>封在他自己的天花板里</b>：你让他更快到那儿，不是把他拔到别处去。</p></div>`;
   }
@@ -15602,6 +15672,13 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909o", at: "2026-09-09", items: [
+      "<b>桌面版界面二改</b>（玩家实锤：「修了 ui 画面后出了很多问题，首先是互相遮挡，然后是画面占满屏幕文字小」）。<b>遮挡</b>是上一版钉在底部的那条出口条同时踩了三个坑：它排在「替补训练赛」和「本周对手」<b>前面</b>，而 sticky 只压得住排在它后面的东西，卡片一长过一屏就把这两块糊住；背景是半透渐变加毛玻璃，底下的字直接透上来看着就是重影；主按钮 <code>flex:1</code>，容器放宽到 1400 之后摊成一条 1000px 的金色板砖，把「行动点」挤到一线。现在<b>出口条挪到卡片最后、背景改实心、主按钮封顶 560px</b>，右下角还给音频浮窗留出一角（1440px 上原来压了 9px）",
+      "<b>文字小</b>是只放宽了容器、没动字号的结果：1920 的屏上正文一行能拉到 1300px，字还是 12.5px，行动格子被排成 8 列 145px 的窄条，每条说明挤成五六行。容器从 1400/1560 收回 <b>1320/1400</b>，宽屏上正文、行动标题与说明各抬一档，行动格子的下限从 140px 抬到 <b>200px</b>（8 列 → 5 列，格子大了反而说明只占一两行），正文再按 <b>76 个字</b>封顶换行。手机和小桌面一个像素没动",
+      "羁绊的<b>「扛旗 / 带人」换成大白话</b>（玩家实锤：「新加入的扛旗、带人之类的功能玩家看不懂是什么意思，要有说明要不然就把标签做的好理解」）：标签改成 <b>他带你 · 他超了你 · 你扛着他 · 你带他 · 并肩</b>，每个人卡片上直接写出<b>判断依据</b>（五维均值谁高、场均评分谁高、年龄差多少），面板底下补了一张四格说明。存档里存的还是原来那五个键，老档读出来一切照旧",
+      "羁绊角色<b>把场均评分算进去了</b>（玩家实锤：「如果我是个 rating 很高的院长还被人带感觉有点奇怪」）：原来只看五维均值，于是你数据爆炸地扛着一队老将，界面还在跟你说是他在带你。现在<b>五维均值仍是主轴，场均评分当修正项</b>——和他打够 3 个系列赛才参与，最多把判定拨动 ±4 分五维（1 分评分 ≈ 6.7 分五维），一个赛段的手感掀不翻硬实力，但你确实在扛的时候不会再被说成被带",
+      "同一批加了<b>三条自检</b>钉住这次的坑：出口条必须是卡片最后一个孩子、背景不许半透；宽屏那一块 CSS 必须写在基准值后面（媒体查询不加权重，写前面一条都不生效——第一版就是这么写的）；角色标签必须有大白话说法和解释。三条都拿旧写法验过，全部红"
+    ] },
     { v: "v20260909n", at: "2026-09-09", items: [
       "灰掉的选项不再继续催你（玩家实锤：「选项灰的时候也会触发做不了的事件」）：「练操作」因为<b>机械路径已刷满</b>变灰之后，周末还在弹「冲击操作瓶颈<b>断了</b>：这周只练了 0/3 次」——逼你去点一个点不动的按钮。根子是同一件事被三处各判各的：按钮查「这条路还付不付得出钱」，冲击面板只查机械池，而周末审判只查「顶没顶到瓶颈」，最松的那个天天在骂人。现在<b>按钮灰不灰、面板显不显示、周末审不审判，问的是同一个函数</b>"
     ] },
@@ -19042,6 +19119,12 @@ header.top.compact>.theme-top{display:none}
         <div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
+    ${benched && true ? scrimPanel() : ""}
+    ${opp && uiNum() ? `<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(power(opp, 0, sea.fav)).toFixed(1)}）
+      vs 你队 ${pwShow(power(myRoster(), S.fatigue, sea.fav)).toFixed(1)}</p>` : ""}
+    <!-- 出口条必须是这张卡的最后一个孩子：宽屏上它是 sticky 的（theme.css .row.dock），
+         而 sticky 只压得住排在它后面的兄弟。原来它排在「替补训练赛」和「本周对手」前面，
+         卡片一长过一屏就把这两块糊住了（玩家反馈 2026-09-09「互相遮挡」）。 -->
     <div class="row dock">
       <span class="dock-ap">行动点 <b>${S.ap}</b></span>
       <button class="btn primary" id="play" ${S.ap > 0 ? "disabled" : ""}>
@@ -19049,9 +19132,6 @@ header.top.compact>.theme-top{display:none}
       ${quickBtn()}
       <button class="btn ghost sm" id="auto">自动推进到下一件事</button>
     </div>
-    ${benched && true ? scrimPanel() : ""}
-    ${opp && uiNum() ? `<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(power(opp, 0, sea.fav)).toFixed(1)}）
-      vs 你队 ${pwShow(power(myRoster(), S.fatigue, sea.fav)).toFixed(1)}</p>` : ""}
   </div>
   ${injuryCard()}`;
   }
