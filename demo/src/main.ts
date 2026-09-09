@@ -113,6 +113,9 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260909m", at:"2026-09-09", items:[
+    "休息多了一个「<b>歇够 ×N</b>」（玩家实锤：「回体力点击困难，每回合都要点半天」）：一次休息是 1 个行动点、约 −17 体能，而一周的疲劳轻松 +26 起——正常节奏下每周要点两三次，一整个生涯是几百次重复点击。现在体能低的时候，休息卡上会多出一个小按钮，<b>一下点完</b>：一直歇到体能回到 75，或者行动点用光为止。<b>一个数值都没改</b>——同样的行动点、同样的公式，只是不用你自己点那么多下（自检里拿「歇够」和「连点 N 次」逐项对齐，对不上就红）"
+  ]},
   {v:"v20260909l", at:"2026-09-09", items:[
     "<b>赛区分类全面清了一遍</b>（玩家实锤：「在 LCK 效力还是触发了 LPL 事件，这一部分分类问题必须要检查并修改」）：际遇「你那句话被剪进「LPL 圣经」合集」在别的赛区改叫「本赛区的名场面合集」；「某队官宣裁掉首发」的那支队原来写死从 LPL 里挑，现在从<b>你自己的赛区</b>里挑（那两个选项本来就假设那是你够得着的位置）；世界头条的「赛区格局」也从写死的 LPL vs LCK 改成<b>你所在的赛区对它最大的对手</b>",
     "同一批还清掉三处：成就「<b>韩流克星</b>」（击败三支不同 LCK 队伍）和它的计数一起加锁，效力 LCK 的人不再累积；国际赛夺冠文案里的「至暗时刻的墙，被你砸开了一道口子」<b>只对不在 LCK 的人</b>说——你自己就在 LCK 的时候那是内战不是砸墙；世界新闻里「LCK 又一次站在了最高处」对效力 LCK 的人不再是坏消息",
@@ -3210,13 +3213,45 @@ export function doAction(k){
     checkStreamBiz();
     // 榜一大哥只会在你真的开播的时候出现，不该每周瞎摇
     fireEvent("streamGift",0.20);}
-  else{ btkNote("rest",1);
-    addFat(((S.buff&&S.buff.physio)?-23:-17)*((S.bg&&S.bg.rest)||1)*prepMul);   // 1 点碎片休息：效果 ×0.55
-    if(S.assets&&S.assets.rehab) addFat(-4.5*prepMul);      // 私人康复室（×0.55）
-    S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.35*prepMul);
-    // 休息也是泄压阀：心理课让它更管用
-    if(S.tilt) S.tilt=Math.max(0,q1(S.tilt-(6+(hasCourse("psy")?3:0))*prepMul));}
+  else{ restOnce(prepMul); }
   S.ap-=apCost(k);render();
+}
+/* 休息这一下（一个行动点的量）。抽出来给「歇够」连点用——两条路必须是同一份代码，
+   不然点一次和点五次会算出不一样的东西（test.ts 里逐项对齐钉着）。 */
+export function restOnce(prepMul){
+  btkNote("rest",1);
+  addFat(((S.buff&&S.buff.physio)?-23:-17)*((S.bg&&S.bg.rest)||1)*prepMul);   // 1 点碎片休息：效果 ×0.55
+  if(S.assets&&S.assets.rehab) addFat(-4.5*prepMul);      // 私人康复室（×0.55）
+  S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.35*prepMul);
+  // 休息也是泄压阀：心理课让它更管用
+  if(S.tilt) S.tilt=Math.max(0,q1(S.tilt-(6+(hasCourse("psy")?3:0))*prepMul));
+}
+/* ---------- 歇够（玩家实锤 2026-09-09：「回体力点击困难，每回合都要点半天」）----------
+   一次休息 1 点行动点、−17 体能，而一周的疲劳轻松 +26 起：正常节奏下每周要点两三次，
+   一整个生涯是几百次重复点击。这里**不改任何数值**——同样的行动点、同样的公式，
+   只是让一次点击把该点的次数一起点完：一直休息到体能回到 REST_TO 或者行动点用光。 */
+export const REST_TO=75;                 // 体能目标（= 疲劳 25）；再往上补一格收益太低
+export function restPerRest(){
+  const prepMul=(S.step==="prep"||(S.off&&S.off.next==="intl"))?((S.assets&&S.assets.van)?0.70:0.60):1;
+  return Math.abs(((S.buff&&S.buff.physio)?-23:-17)*((S.bg&&S.bg.rest)||1)*prepMul)
+        +((S.assets&&S.assets.rehab)?4.5*prepMul:0);
+}
+export function restRoom(){
+  if(!S||S.step==="create"||!S.attrs) return 0;
+  const cost=apCost("rest"), ap=(S.step==="pre"&&S.pre)?(S.pre.ap||0):(S.ap||0);
+  const per=restPerRest(); if(per<=0) return 0;
+  let n=0, fat=S.fatigue||0;
+  while((n+1)*cost<=ap && fat>100-REST_TO){ fat-=per; n++; }
+  return n;
+}
+export function doRestAll(){
+  const n=restRoom(); if(n<=0) return;
+  const cost=apCost("rest");
+  const prepMul=(S.step==="prep"||(S.off&&S.off.next==="intl"))?((S.assets&&S.assets.van)?0.70:0.60):1;
+  const f0=Math.round(100-(S.fatigue||0));
+  for(let i=0;i<n;i++){ noteAct("do","rest"); restOnce(prepMul); S.ap-=cost; }
+  pushEvent(`连着歇了 <b>${n}</b> 次（${n*cost} 个行动点）：体能 ${f0} → <b>${Math.round(100-(S.fatigue||0))}</b>。`,"info","休息");
+  render();
 }
 /* 自动推进 —— 推到「下一件需要你拿主意的事」就停。
 
@@ -3549,7 +3584,8 @@ export function viewSeason(){
       <button class="act" data-do="content" ${S.ap<apCost("content")?'disabled style="opacity:.34"':''}>
         <div class="t">做内容 ${apTag("content")}</div><div class="d">教学 / 高光 / 复盘 / 整活——同样一点，方向不同</div></button>
       <button class="act" data-do="rest" ${S.ap<apCost("rest")?'disabled style="opacity:.34"':''}>
-        <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
+        <div class="t">休息 ${apTag("rest")}${restRoom()>=2?` <i class="apc restall" role="button" tabindex="0" title="一直休息到体能 ${REST_TO}，或者行动点用光">歇够 ×${restRoom()}</i>`:""}</div>
+        <div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
     <div class="row dock">
@@ -4477,7 +4513,8 @@ export function prepPanel(){
         <div class="t">打排位 ${apTag("solo")}</div><div class="d">找回手感${
           `　<b>状态 ${Math.round(myForm())}</b>`}${costSolo()}</div></button>
       <button class="act" data-do="rest" ${S.ap<apCost("rest")?'disabled style="opacity:.34"':''}>
-        <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
+        <div class="t">休息 ${apTag("rest")}${restRoom()>=2?` <i class="apc restall" role="button" tabindex="0" title="一直休息到体能 ${REST_TO}，或者行动点用光">歇够 ×${restRoom()}</i>`:""}</div>
+        <div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
     <div class="row"><button class="btn primary" id="prepgo">上场 →</button>
@@ -4942,7 +4979,8 @@ export function offPanel(){
       <button class="act" data-do="content" ${S.ap<apCost("content")?'disabled style="opacity:.34"':''}>
         <div class="t">做内容 ${apTag("content")}</div><div class="d">教学 / 高光 / 复盘 / 整活——同样一点，方向不同</div></button>
       <button class="act" data-do="rest" ${S.ap<apCost("rest")?'disabled style="opacity:.34"':''}>
-        <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
+        <div class="t">休息 ${apTag("rest")}${restRoom()>=2?` <i class="apc restall" role="button" tabindex="0" title="一直休息到体能 ${REST_TO}，或者行动点用光">歇够 ×${restRoom()}</i>`:""}</div>
+        <div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
     ${(S.career&&!S.promoted&&S.understudy&&true)?scrimPanel():""}
@@ -6632,6 +6670,13 @@ export function bind(){
   st.querySelectorAll("[data-bond]").forEach((b: any)=>b.onclick=()=>doBondTalk(b.dataset.bond));
   st.querySelectorAll("[data-bench]").forEach((b: any)=>b.onclick=()=>doBenchAct(b.dataset.bench));
   st.querySelectorAll("[data-coach]").forEach((b: any)=>b.onclick=()=>doBondCoach());
+  // 「歇够」嵌在休息卡里面，得先拦住冒泡——不然会顺带触发外层的「休息一次」
+  st.querySelectorAll(".restall").forEach((b: any)=>{
+    const go=(ev)=>{ if(ev&&ev.stopPropagation) ev.stopPropagation();
+      if(ev&&ev.preventDefault) ev.preventDefault(); doRestAll(); };
+    b.onclick=go;
+    b.onkeydown=(ev)=>{ if(ev&&(ev.key==="Enter"||ev.key===" ")) go(ev); };
+  });
   const _ss=$("scrimStart"); if(_ss) _ss.onclick=()=>{ startScrim(); };
   const _sx=$("scrimClose"); if(_sx) _sx.onclick=()=>{ if(S.scrim) S.scrim.live=null; render(); };
   st.querySelectorAll("[data-scrimopt]").forEach((b: any)=>b.onclick=()=>scrimPick(+b.dataset.scrimopt));

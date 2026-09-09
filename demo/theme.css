@@ -1570,3 +1570,12 @@ header.top.compact>.theme-top{display:none}
   padding:10px 14px;border-top:1px solid var(--line);flex:none;flex-wrap:wrap}
 .share-tip{font-size:12px;color:var(--ink-3);flex:1 1 160px;min-width:0}
 .share-acts{display:flex;align-items:center;gap:8px;flex:none}
+
+/* 「歇够 ×N」：嵌在休息卡标题里的小胶囊（玩家实锤 2026-09-09：
+   「回体力点击困难，每回合都要点半天」）。它是卡里的第二个可点区域，
+   所以要自己拿到指针事件、也要有自己的按下反馈和键盘焦点圈。 */
+.act .apc.restall{cursor:pointer;pointer-events:auto;border-color:var(--dawn-dim);
+  color:var(--dawn);background:rgba(233,161,90,.10);padding:2px 7px;font-style:normal}
+.act .apc.restall:hover{background:rgba(233,161,90,.20);border-color:var(--dawn)}
+.act .apc.restall:active{transform:translateY(1px)}
+.act .apc.restall:focus-visible{outline:2px solid var(--dawn);outline-offset:2px}
