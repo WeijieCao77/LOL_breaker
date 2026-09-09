@@ -2603,6 +2603,8 @@ header.top.compact>.theme-top{display:none}
     const best = M.concat(O).reduce((a, b) => a.rating >= b.rating ? a : b);
     const carry = !won && me.rating >= 1.15 && mates.every((x) => me.rating >= x.rating + 0.25) && mateAvg < 0.95;
     const soloWin = won && me.rating >= 1.25 && mates.length > 0 && mateAvg < 0.9 && mates.every((x) => x.rating < 1);
+    const meWorst = mates.length > 0 && mates.every((x) => x.rating >= me.rating);
+    const meGap = Math.round((me.rating - mateAvg) * 100) / 100;
     return {
       games,
       mine: M,
@@ -2610,6 +2612,8 @@ header.top.compact>.theme-top{display:none}
       mateAvg: q1(mateAvg),
       worst: worst ? worst.id : null,
       worstR: worst ? worst.rating : null,
+      meWorst,
+      meGap,
       mvp: best.id,
       carry,
       soloWin,
@@ -13236,9 +13240,17 @@ header.top.compact>.theme-top{display:none}
       secret: true,
       n: "零杀十死也能赢",
       tag: "梗",
-      d: "个人数据难看到不忍直视，但这把还是赢了。",
+      d: "这一场你是全队评分最低的那个，队伍还是赢了。",
+      /* 玩家实锤（2026-09-09）：19/6/15、分均补刀 9.9、伤害 28%、评分 1.15，照样弹这个成就。
+         原来的条件是「赢了 + 临场决策砸了两次」——和个人数据一点关系都没有，
+         而临场决策一场三个节点，砸两个太常见：30 局批测里 12.9% 的胜场命中，
+         30 个生涯 30 个都拿到了（这可是个 secret 的梗成就）。
+         现在读真实那一行：你是全队评分最低的，而且比队友均值低 0.25 以上。
+         同一批测下降到 1.4% 的胜场、约 0.47 次／生涯——难看到不忍直视，但真的会发生。
+         顺带一提「零杀十死」这个数字本身在本作里不可能出现：胜场 KDA 的最小值是 2.63，
+         名字是梗，判据看的是「全队你最拉」。 */
       on: "match",
-      cond: (c) => c.won && c.nodeFails >= 2,
+      cond: (c) => c.won && c.meWorst && c.meGap <= -0.25,
       flavor: "赛后采访你说：赢了就行。",
       r: { trust: 6, fame: 10 }
     },
@@ -14944,6 +14956,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909e", at: "2026-09-09", items: [
+      "成就「零杀十死也能赢」不再乱弹（玩家实锤：19/6/15、分均补刀 9.9、伤害占比 28%、评分 1.15，照样弹出来）：它原来的条件是「赢了 + 临场决策砸了两次」，和个人数据一点关系都没有——而一场比赛就三个节点，砸两个太常见，30 局批测里 12.9% 的胜场命中、30 个生涯全都拿到了（这可是个隐藏的梗成就）。现在读你这一场真实的那一行：<b>你是全队评分最低的那个，而且比队友均值低 0.25 以上，队伍还赢了</b>——同一批测降到 1.4% 的胜场、约 0.47 次／生涯"
+    ] },
     { v: "v20260909d", at: "2026-09-09", items: [
       "职业前训练的卡面不再少报（玩家实锤：卡面写「操作 +0.9」，点完实际涨了 1.3）：职业前每一次训练真正写进去的是 gain × 0.85 × 1.5（1.5 是职业前的节奏系数——一年的行动点少了，每一点的产出按比例抬回去），而卡面那一侧只乘了 0.85，把这个 1.5 漏了，于是每一次训练都少报三分之一。现在预览和生效共用同一个函数"
     ] },
@@ -18755,6 +18770,10 @@ header.top.compact>.theme-top{display:none}
       oppScore: m.sc[1],
       carry: !!(m.box && m.box.carry),
       soloWin: !!(m.box && m.box.soloWin),
+      // 这一场你自己那一行：成就要判「数据难看」就得读真实数据，不能拿临场决策当替身
+      myRating: m.myline && m.myline.rating !== void 0 ? m.myline.rating : null,
+      meWorst: !!(m.box && m.box.meWorst),
+      meGap: m.box && m.box.meGap !== void 0 ? m.box.meGap : 0,
       gap: +(myPw - opPw).toFixed(2),
       intl: !!S.intl,
       oppLeague: leagueOf(m.oppName),

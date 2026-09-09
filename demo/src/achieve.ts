@@ -95,8 +95,16 @@ export const ACHIEVEMENTS: any[]=[
    r:{money:60,fame:14}},
 
   {id:"zero_ten", secret:true, n:"零杀十死也能赢", tag:"梗",
-   d:"个人数据难看到不忍直视，但这把还是赢了。",
-   on:"match", cond:(c)=>c.won&&c.nodeFails>=2,
+   d:"这一场你是全队评分最低的那个，队伍还是赢了。",
+   /* 玩家实锤（2026-09-09）：19/6/15、分均补刀 9.9、伤害 28%、评分 1.15，照样弹这个成就。
+      原来的条件是「赢了 + 临场决策砸了两次」——和个人数据一点关系都没有，
+      而临场决策一场三个节点，砸两个太常见：30 局批测里 12.9% 的胜场命中，
+      30 个生涯 30 个都拿到了（这可是个 secret 的梗成就）。
+      现在读真实那一行：你是全队评分最低的，而且比队友均值低 0.25 以上。
+      同一批测下降到 1.4% 的胜场、约 0.47 次／生涯——难看到不忍直视，但真的会发生。
+      顺带一提「零杀十死」这个数字本身在本作里不可能出现：胜场 KDA 的最小值是 2.63，
+      名字是梗，判据看的是「全队你最拉」。 */
+   on:"match", cond:(c)=>c.won&&c.meWorst&&c.meGap<=-0.25,
    flavor:"赛后采访你说：赢了就行。",
    r:{trust:6,fame:10}},
 
@@ -133,7 +141,8 @@ export function applyAchReward(r){
   return out;
 }
 
-/* ctx 给条件用：{won, bo5, myScore, oppScore, gap, intl, oppLeague, oppIds, laneWon, nodeFails, lostFirstTwo} */
+/* ctx 给条件用：{won, bo5, myScore, oppScore, gap, intl, oppLeague, oppIds, laneWon, nodeFails, lostFirstTwo,
+   myRating, meWorst, meGap}——后三个是你这一场的真实数据行（评分、是不是全队最低、比队友均值差多少） */
 /* 扩充条目在 achieve_more.js，构建时拼进来 */
 ACHIEVEMENTS.push(...ACH_MORE);
 

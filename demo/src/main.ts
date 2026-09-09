@@ -112,6 +112,9 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260909e", at:"2026-09-09", items:[
+    "成就「零杀十死也能赢」不再乱弹（玩家实锤：19/6/15、分均补刀 9.9、伤害占比 28%、评分 1.15，照样弹出来）：它原来的条件是「赢了 + 临场决策砸了两次」，和个人数据一点关系都没有——而一场比赛就三个节点，砸两个太常见，30 局批测里 12.9% 的胜场命中、30 个生涯全都拿到了（这可是个隐藏的梗成就）。现在读你这一场真实的那一行：<b>你是全队评分最低的那个，而且比队友均值低 0.25 以上，队伍还赢了</b>——同一批测降到 1.4% 的胜场、约 0.47 次／生涯"
+  ]},
   {v:"v20260909d", at:"2026-09-09", items:[
     "职业前训练的卡面不再少报（玩家实锤：卡面写「操作 +0.9」，点完实际涨了 1.3）：职业前每一次训练真正写进去的是 gain × 0.85 × 1.5（1.5 是职业前的节奏系数——一年的行动点少了，每一点的产出按比例抬回去），而卡面那一侧只乘了 0.85，把这个 1.5 漏了，于是每一次训练都少报三分之一。现在预览和生效共用同一个函数"
   ]},
@@ -3963,6 +3966,9 @@ export function endMatch(){
   // 成就上下文
   const ctx={won, bo5:m.need>=3, myScore:m.sc[0], oppScore:m.sc[1],
     carry:!!(m.box&&m.box.carry), soloWin:!!(m.box&&m.box.soloWin),
+    // 这一场你自己那一行：成就要判「数据难看」就得读真实数据，不能拿临场决策当替身
+    myRating:(m.myline&&m.myline.rating!==undefined)?m.myline.rating:null,
+    meWorst:!!(m.box&&m.box.meWorst), meGap:(m.box&&m.box.meGap!==undefined)?m.box.meGap:0,
     gap:+(myPw-opPw).toFixed(2), intl:!!S.intl,
     oppLeague:leagueOf(m.oppName),
     // 点名类成就（对位 Faker 等）要看真实名单，不能拿联赛当替身——

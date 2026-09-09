@@ -299,6 +299,22 @@ function playOne(opts?) {
 /* 不碰 DOM 的几何与消毒：导览说明卡永远不能盖在聚光框上；导入的存档只能带几个排版标签 */
 function unitChecks() {
   const bad = [];
+  /* 成就「零杀十死也能赢」判的是真实数据行，不是临场决策（玩家实锤 2026-09-09：
+     19/6/15、评分 1.15 照样弹）。好数据的胜场绝不能命中，全队垫底的胜场才命中。 */
+  {
+    const z = A.ACHIEVEMENTS.find((x: any) => x.id === "zero_ten");
+    if (!z) bad.push("成就 zero_ten 不见了");
+    else {
+      const good = { won: true, nodeFails: 3, myRating: 1.15, meWorst: false, meGap: 0.22 };
+      const ugly = { won: true, nodeFails: 0, myRating: 0.86, meWorst: true, meGap: -0.31 };
+      const lost = { won: false, nodeFails: 3, myRating: 0.80, meWorst: true, meGap: -0.40 };
+      const near = { won: true, nodeFails: 3, myRating: 1.02, meWorst: true, meGap: -0.20 };
+      if (z.cond(good)) bad.push("零杀十死：好数据的胜场也命中了（评分 1.15、全队不垫底）");
+      if (!z.cond(ugly)) bad.push("零杀十死：全队垫底且比队友低 0.31 的胜场没命中");
+      if (z.cond(lost)) bad.push("零杀十死：输了也命中");
+      if (z.cond(near)) bad.push("零杀十死：只差 0.20 就命中了，门槛是 0.25");
+    }
+  }
   const overlap = (h, c, ch, cw, vw) => {
     const cl = c.left === null ? 10 : c.left, cr = c.left === null ? vw - 10 : c.left + cw;
     return !(c.top >= h.top + h.height || c.top + ch <= h.top || cl >= h.left + h.width || cr <= h.left);
