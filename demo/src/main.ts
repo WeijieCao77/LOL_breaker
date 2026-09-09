@@ -3,7 +3,7 @@ import { bgmSeasonTick, showChangelog, supportNudge, tone, updCheck } from "./au
 import { AUTO_KEYS, autoAllOn, autoBar, autoBiz, autoCareerStep, autoDaily, autoNote, autoOn, autoOnce, autoPage, autoSet, autoStep, autoSweep, autoToggleAll } from "./auto";
 import { avatarOf, gicon } from "./avatar";
 import { synthBoxScore } from "./boxscore";
-import { bondMoments, bondNoteMatch, bondPanel, bondRetire, bondSplitEnd, doBondTalk } from "./bond";
+import { bondMoments, bondNoteMatch, bondPanel, bondRetire, bondSplitEnd, doBondCoach, doBondTalk } from "./bond";
 import { addStaff, cloutCard, cloutTick, doList, doSign, initRelations, initStaff, relCard, relMod } from "./clout";
 import { CUPS, activeCups, cupCard, cupDismissMatch, cupMatchCard, cupOf, cupOppName, cupPrep, cupReachName, cupResultCard, cupRoundName, cupTick, disbandCrew, dueCups, enterCup, forfeitCup, preSquadCard, resolveCupNode, startCupMatch } from "./cup";
 import { DATA } from "./data";
@@ -25,7 +25,7 @@ import { addRingTitle, breakAgendaCard, fixNote, fixtureCard, fixtureStrip, mate
 import { actListText, archiveWeek, clearPlan, noteAct, quickBtn, quickPlan, quickPlanPre, repeatLast, routineBar, runActs, runPlan, savePlan } from "./routine";
 import { askConfirm, confirmCard, continueCard, dropSave, escapeHtml, exportSave, importSave, loadGame, meName, safeName, saveBar, saveGame } from "./save";
 import { addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, noteStream, noteStreamMoney, PRIZE_PO, PRIZE_PO_LDL, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
-import { addSquad, clampWinProb, disruptSynergy, doSquad, gapVerdict, initSquad, myPower, squadActs, squadCard, squadDecay, squadOf, teamPowerOf, watchRoster } from "./squad";
+import { addSquad, clampWinProb, disruptSynergy, doBenchAct, doSquad, gapVerdict, initSquad, myPower, squadActs, squadCard, squadDecay, squadOf, teamPowerOf, watchRoster } from "./squad";
 import { starAfterMatch, starLaneBadge, starSpotHtml } from "./stars";
 import { S, setS, onEra, applyEra } from "./state";
 import { ERAS, ERA_KEYS, eraDef } from "./eras";
@@ -114,9 +114,16 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
-  {v:"v20260909j", at:"2026-09-09", items:[
+  {v:"v20260909k", at:"2026-09-09", items:[
     "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
     "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+  ]},
+  {v:"v20260909j", at:"2026-09-09", items:[
+    "<b>替补席不再替首发交学费</b>（玩家实锤：「我都替补了，首发阵容磨不磨合那是他们的事，为什么要花我的行动点」）：坐替补席的时候，训练赛和战队合练这两个纯喂默契池的行动<b>收起来</b>，只有个人收益的留着；<b>这个赛段的默契也不会在你手里往下掉</b>（原来不喂就掉，等于替补被这个池子持续抽血）。替补席多了一件事：<b>看录像</b>（1 点）——运营 +0.35、攒运营突破、战术素养 +0.2，每赛段前 3 次还给一点轮换资本",
+    "<b>媒体日给替补换了一版</b>（玩家实锤：「我一个臭替补，试训 B 合同，凭什么去接受采访放狠话」）：不再是三个记者三个问题的背景板，而是收工时被顺口问一句，一题、只有稳和狂两个口径、热度减半。「狂」的代价也换了——替补根本不上场，「输了更伤心态」对他等于零成本，现在改成<b>教练组盯得更紧，下次对位挑战每一局成功率 −5%</b>",
+    "「队伍」栏的找人聊聊多了<b>找教练聊</b>（1 点，每赛段一次，<b>不给任何数值</b>）：把你现在差在哪说清楚——场均评分、教练和经理的信任、离首发还差多少轮换资本、够不够得着挂牌。替补线和续约线最缺的从来不是数值，是信息",
+    "<b>更衣室关系的四个来源接上了</b>：战队合练、约队友吃火锅、「开个会把问题摊开讲」、「去喝两杯」——这几处界面本来就写着能缓和关系，但代码里从来没碰过那个数。同时训练赛的摩擦和媒体日的甩锅也会真的把关系拉开。关系卡上也说清楚了：<b>它和「他们对你的信任」不是一把尺</b>",
+    "<b>桌面版放宽</b>（玩家反馈：「pc 界面怪怪的……可以把所有东西铺在一个平面内，这样不用上下翻页」）：1280px 以上容器放到 1400px、1680px 以上到 1560px，内容列从约 848px 涨到 1250px；宽屏上「打这一周」那一行<b>钉在视口底部常驻</b>——原来它在第三屏。手机和小桌面一个像素不动"
   ]},
   {v:"v20260909i", at:"2026-09-09", items:[
     "<b>找人聊聊</b>（羁绊第二、三批）：「队伍」栏里每个队友都能单独找一次，<b>1 个行动点、每赛段两次、每人一次</b>。选项按你和他的角色自动变——比你强就是「找他请教」，老将是「陪他复盘」，同龄是「一起双排」，新人是「陪他加练」。陪新人加练能真的把他练起来，但<b>封在他自己的天花板里</b>：你让他更快到那儿，不是把他拔到别处去",
@@ -626,7 +633,7 @@ export const AP_SEASON=8, AP_PRE=10, AP_OFF=8, AP_HURT=4;   // 职业前 12→10
    中 2 = 半天（专项训练 / 直播一开就是四小时 / 做内容 / 真歇半天 / 合练 / 复盘 / 杯赛备战）；
    重 3 = 训练赛——整个下午连打，最耗神。
    预算同步翻倍：起步强度净中性，体感是「能做的事变多、轻的真的轻」。 */
-export const AP_COST={train:2,solo:1,stream:2,content:2,rest:1,scrim:3,vod:2,drill:2,duo:1,cupprep:2,duel:2,talk:1,boost:2,cafe:1,chill:1,watch:1};   // rest=1：玩家拍板「一个行动点休息比较合理」；boost/cafe/chill/watch 是职业前的其它活动
+export const AP_COST={train:2,solo:1,stream:2,content:2,rest:1,scrim:3,vod:2,drill:2,duo:1,cupprep:2,duel:2,talk:1,film:1,boost:2,cafe:1,chill:1,watch:1};   // rest=1：玩家拍板「一个行动点休息比较合理」；boost/cafe/chill/watch 是职业前的其它活动
 export function apCost(k){ return AP_COST[k]||1; }
 export function apTag(k){ return `<i class="apc">${apCost(k)}点</i>`; }
 export function apFor(phase){
@@ -3508,7 +3515,8 @@ export function viewSeason(){
         <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
-    <div class="row">
+    <div class="row dock">
+      <span class="dock-ap">行动点 <b>${S.ap}</b></span>
       <button class="btn primary" id="play" ${S.ap>0?'disabled':''}>
         ${S.ap>0?`还剩 ${S.ap} 个行动点`:(benched?`替补席观战 · ${SPLITS[S.split||0]}第 ${S.week}/${WEEKS} 周 →`:`打 ${SPLITS[S.split||0]}第 ${S.week}/${WEEKS} 周 · vs ${oppName} →`)}</button>
       ${quickBtn()}
@@ -6587,6 +6595,8 @@ export function bind(){
   st.querySelectorAll("[data-sign]").forEach((b: any)=>b.onclick=()=>doSign(b.dataset.sign));
   st.querySelectorAll("[data-squad]").forEach((b: any)=>b.onclick=()=>doSquad(b.dataset.squad));
   st.querySelectorAll("[data-bond]").forEach((b: any)=>b.onclick=()=>doBondTalk(b.dataset.bond));
+  st.querySelectorAll("[data-bench]").forEach((b: any)=>b.onclick=()=>doBenchAct(b.dataset.bench));
+  st.querySelectorAll("[data-coach]").forEach((b: any)=>b.onclick=()=>doBondCoach());
   const _ss=$("scrimStart"); if(_ss) _ss.onclick=()=>{ startScrim(); };
   const _sx=$("scrimClose"); if(_sx) _sx.onclick=()=>{ if(S.scrim) S.scrim.live=null; render(); };
   st.querySelectorAll("[data-scrimopt]").forEach((b: any)=>b.onclick=()=>scrimPick(+b.dataset.scrimopt));

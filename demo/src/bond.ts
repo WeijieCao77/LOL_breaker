@@ -2,6 +2,10 @@ import { DIMS, POSN, SEASONS, SPLITS, addFat, apCost, apTag, avg, capOf, clamp, 
 import { addRel } from "./clout";
 import { addBuff } from "./random";
 import { addTrust, trustOf } from "./team";
+import { canList, coachTrust, mgrTrust } from "./clout";
+import { splitRating } from "./boxscore";
+import { SCRIM_EDGE_NEED, scrimState } from "./rotation";
+import { isBenched } from "./main";
 import { checkAch } from "./achieve";
 import { S } from "./state";
 
@@ -401,7 +405,50 @@ export function bondPanel(){
           <span class="tag${r.role==="带人"||r.role==="扛旗"?" g":""}">${r.role}</span><br>
           ${c.ok?A.d:"🔒 "+c.why}${e&&e.splits?`<br><span style="color:var(--ink-3)">一起打了 ${e.splits} 个赛段${
             (e.titles||[]).length?` · ${e.titles.length} 冠`:""}${e.talks?` · 聊过 ${e.talks} 次`:""}</span>`:""}</div></button>`;
-    }).join("")}</div>
+    }).join("")}${(()=>{ const c=bondCoachCan();
+      return `<button class="act" data-coach="1" ${c.ok?"":'disabled style="opacity:.34"'}>
+        <div class="t">找教练聊 ${apTag("talk")}</div>
+        <div class="d"><b>教练组</b> · 每赛段一次<br>${c.ok
+          ?"问清楚你现在差在哪：评分、信任、离首发／挂牌还有多远"
+          :"🔒 "+c.why}</div></button>`; })()}</div>
     <p class="note">同一个动作对老将、对同龄、对新人不是一回事——<b>角色是按五维均值和年龄差自动判的</b>。
+      「找教练聊」<b>不给任何数值</b>，只把你差在哪说清楚。
       陪新人加练能真的把他练起来，但<b>封在他自己的天花板里</b>：你让他更快到那儿，不是把他拔到别处去。</p></div>`;
+}
+
+
+/* ---------- 找教练聊（原「找教练聊」并进这个面板，作者拍板 2026-09-09）----------
+   替补线和续约线最缺的从来不是数值，是**信息**：我到底差什么。
+   所以这一条是纯信息，一个数字都不给——1 个行动点，每赛段一次。 */
+export function bondCoachKey(){ return "c"+(S.si||0)+"-"+(S.split||0); }
+export function bondCoachDone(){ return !!(S.bondCoach&&S.bondCoach===bondCoachKey()); }
+export function bondCoachCan(){
+  if(!S.career||!S.team) return {ok:false,why:"还没进队"};
+  if(bondCoachDone()) return {ok:false,why:"这个赛段已经聊过了"};
+  if((S.ap||0)<apCost("talk")) return {ok:false,why:`要 ${apCost("talk")} 个行动点`};
+  return {ok:true};
+}
+export function doBondCoach(){
+  const c=bondCoachCan(); if(!c.ok) return;
+  S.ap-=apCost("talk"); S.bondCoach=bondCoachKey();
+  const bits=[];
+  const sr=splitRating();
+  bits.push(sr===null?"这个赛段还没打过正赛，数据从零开始。"
+                     :`这个赛段你的场均评分 <b>${sr.toFixed(2)}</b>（1.00 是及格线）。`);
+  bits.push(`教练对你的信任 <b>${Math.round(coachTrust())}</b>，经理 <b>${Math.round(mgrTrust())}</b>。`);
+  if(isBenched()){
+    const sc=scrimState(), inc=S.understudy;
+    const me=avg(DIMS.map(d=>(S.attrs&&S.attrs[d])||0));
+    const him=inc?avg(DIMS.map(d=>(inc.r&&inc.r[d])||50)):me;
+    bits.push(`离首发还差两条路：<b>轮换资本 ${sc.edge}/${SCRIM_EDGE_NEED}</b>（训练赛赢出来），
+      或者五维均值压过 <b>${inc?inc.id:"他"}</b>（他 ${him.toFixed(1)}，你 ${me.toFixed(1)}${
+      me>=him-2?"——已经够了，等这周的名单":`，还差 ${Math.max(0,him-2-me).toFixed(1)}`}）。`);
+  }else{
+    let L: any={ok:false,why:""};
+    try{ L=canList(); }catch(e){}
+    bits.push(L.ok?`你现在<b>说得动阵容</b>——「转会」栏里可以挂牌队友。`
+                  :`阵容上的话语权还不够：${L.why||"再打出点成绩"}。`);
+  }
+  pushEvent(`找教练聊了半小时。<br>${bits.join("<br>")}`,"info","教练");
+  render();
 }

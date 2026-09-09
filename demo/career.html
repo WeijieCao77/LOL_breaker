@@ -99,6 +99,12 @@ body::before{
   background:repeating-linear-gradient(180deg,rgba(var(--hi-rgb),.018) 0 1px,transparent 1px 3px);
 }
 .wrap{max-width:1000px;margin:0 auto;padding:0 20px 80px;position:relative;z-index:1}
+/* 桌面放宽（作者拍板 2026-09-09，玩家「冷水鱼 616」：「pc 界面怪怪的……可以把所有
+   东西铺在一个平面内，这样不用上下翻页」）。1000px 在 1920 屏上两侧各空 460px，
+   扣掉 96px 竖导航之后内容列只剩约 848px——和一台竖着的平板一样宽，于是「本周」
+   那一页要滚两到三屏。这两行只放宽容器，手机和小桌面一个像素不动。 */
+@media(min-width:1280px){ .wrap{max-width:1400px} }
+@media(min-width:1680px){ .wrap{max-width:1560px} }
 .mono{font-family:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"Liberation Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
 button{font-family:inherit;font-size:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:1px solid var(--gold);outline-offset:2px}
@@ -584,6 +590,21 @@ tr.cut td{border-bottom:2px solid var(--gold-dim)}
 #stage.sw{animation:sw-in .16s ease-out}
 @keyframes sw-in{from{opacity:.35;transform:translateY(3px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){#stage.sw{animation:none}}
+
+/* ---- 出口常驻（作者拍板 2026-09-09）----
+   玩家说的「不用上下翻页」不是按钮难找，是它在第三屏。宽屏上把「本周」那一行出口
+   （剩余行动点 + 打这一周 + 快捷 + 自动推进）钉在视口底部，行动点没用完时它照样是灰的。
+   只在 min-width:1180px 生效：手机有自己的底栏，小桌面继续走原来的单列。 */
+@media(min-width:1180px){
+  .row.dock{position:sticky;bottom:0;z-index:30;margin:14px -18px -18px;padding:12px 18px;
+    background:linear-gradient(180deg,rgba(var(--panel-rgb),.72),rgba(var(--panel-rgb),.97) 42%);
+    border-top:1px solid var(--line-hot);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .row.dock .btn.primary{flex:1 1 auto}
+  .row.dock .dock-ap{font-family:ui-monospace,"SF Mono",Consolas,Menlo,monospace;
+    font-size:12px;letter-spacing:.06em;color:var(--ink-3);white-space:nowrap;align-self:center}
+  .row.dock .dock-ap b{color:var(--dawn);font-size:15px}
+}
 .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:14px}
 input[type=text]{background:rgba(var(--void-rgb),.7);border:1px solid var(--line);
   padding:11px 14px;color:var(--gold-hi);font-size:15px;width:230px;
@@ -3093,6 +3114,7 @@ header.top.compact>.theme-top{display:none}
     let p = 0.52 + (mine - his) / 38 - (opt.risk - 0.8) * 0.1;
     p -= Math.max(0, (S.fatigue || 0) - 55) * 3e-3;
     p += (myFormMul() - 1) * 1.2;
+    p += mediaScrimAdj();
     return clamp(p, 0.12, 0.88);
   }
   function startScrim() {
@@ -4003,6 +4025,7 @@ header.top.compact>.theme-top{display:none}
   function squadDecay() {
     if (!S.squad) return;
     if (champCoreOn()) return;
+    if (S.benchedThisSplit) return;
     ["syn", "tac"].forEach((k) => {
       S.squad[k] = q1(clamp(S.squad[k] + (50 - S.squad[k]) * SQUAD_DECAY, 0, 100));
     });
@@ -4067,6 +4090,10 @@ header.top.compact>.theme-top{display:none}
             pushEvent(`训练赛里暴露了问题：<b>${t.id}</b> 的处理方式和队伍对不上，复盘会开到半夜。`, "info", "训练赛");
             addSquad("tac", 2.4);
             addTrust(t.id, -2);
+            try {
+              myRoster().filter((x) => !x.me && x.id !== t.id).forEach((o) => addRel(t.id, o.id, -1.5));
+            } catch (e) {
+            }
           }
         }
       }
@@ -4087,11 +4114,12 @@ header.top.compact>.theme-top{display:none}
       k: "drill",
       n: "战队合练",
       d: "专项练配合，团战执行会顺很多",
-      sum: () => [sumBit("syn", 4.4), "信任 +1.8"],
+      sum: () => [sumBit("syn", 4.4), "信任 +1.8", "更衣室关系 +1"],
       fat: 13,
       run: () => {
         addSquad("syn", 4.4);
         addTrustAll(1.8);
+        relAll(1);
       }
     },
     {
@@ -4108,6 +4136,7 @@ header.top.compact>.theme-top{display:none}
     }
   ];
   function doSquad(k) {
+    if (S.career && isBenched()) return;
     const inPre = !S.career && S.pre;
     const ap = inPre ? S.pre.ap : S.ap;
     const a = SQUAD_ACTS.find((x) => x.k === k);
@@ -4189,7 +4218,65 @@ header.top.compact>.theme-top{display:none}
       强援加盟那个赛段，纸面变强了，打起来往往还不如从前。</p>
   </div>`;
   }
+  var BENCH_ACTS = [
+    {
+      k: "film",
+      n: "看录像",
+      d: "坐在替补席上把首发这一场逐帧过一遍",
+      fat: 9,
+      sum: () => ["运营 +0.35", "攒运营突破", "战术素养 +0.2", "轮换资本 +0.25"],
+      run: () => {
+        S.attrs.运营 = Math.min(capOf("运营"), S.attrs.运营 + 0.35);
+        btkNote("vod", 1);
+        tacAdd(0.2);
+        addStaff("coach", 0.3);
+        const k = "f" + (S.si || 0) + "-" + (S.split || 0);
+        const w = S.filmLog && S.filmLog.k === k ? S.filmLog : S.filmLog = { k, n: 0 };
+        if (w.n < BENCH_FILM_EDGE) {
+          w.n++;
+          const sc = scrimState();
+          sc.edge = q1(Math.min(SCRIM_EDGE_NEED + 2, sc.edge + 0.25));
+        }
+      }
+    },
+    {
+      k: "duo",
+      n: "队友双排",
+      d: "排位里带一带，练默契也拉近关系",
+      fat: 4,
+      sum: () => ["信任 +1.9", "操作 +0.14"],
+      run: () => {
+        addTrustAll(1.9);
+        S.attrs.操作 = Math.min(capOf("操作"), S.attrs.操作 + 0.14);
+      }
+    }
+  ];
+  var BENCH_FILM_EDGE = 3;
+  function doBenchAct(k) {
+    if (!S.career || !isBenched()) return;
+    const a = BENCH_ACTS.find((x) => x.k === k);
+    if (!a) return;
+    const cost = apCost(k === "film" ? "film" : "duo");
+    if ((S.ap || 0) < cost) return;
+    S.ap -= cost;
+    addFat(a.fat);
+    a.run();
+    render();
+  }
+  function benchActs() {
+    const ap = S.ap || 0;
+    return `<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">替补席</h3>
+    <div class="grid g5">${BENCH_ACTS.map((a) => {
+      const cost = apCost(a.k === "film" ? "film" : "duo");
+      return `<button class="act" data-bench="${a.k}" ${ap < cost ? 'disabled style="opacity:.34"' : ""}>
+        <div class="t">${a.n} <i class="apc">${cost}点</i></div>
+        <div class="d">${a.d}${costBits([`体能<i class="dn">−${a.fat}</i>`].concat(a.sum().map((x) => x.replace(/\s*([+−-][0-9.]+)/, '<i class="up">$1</i>'))))}</div></button>`;
+    }).join("")}</div>
+    <p class="note">首发阵容的默契不再花你的行动点——<b>你不在名单上，那是他们的事</b>；
+      这个赛段的默契也不会在你手里往下掉。<span style="color:var(--ink-3)">看录像每赛段前 ${BENCH_FILM_EDGE} 次给轮换资本。</span></p>`;
+  }
   function squadActs() {
+    if (S.career && isBenched()) return benchActs();
     if (!S.squad) return "";
     const ap = !S.career && S.pre ? S.pre.ap : S.ap;
     return `<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队${!S.career && S.pre && true ? `<span class="tag g">${cupTeamName()}</span>` : ""}</h3>
@@ -4243,7 +4330,7 @@ header.top.compact>.theme-top{display:none}
     const fixOf = {
       默契: "换过人就要重新磨。多合练、多双排。",
       战术: "准备不够。战术复盘和训练赛。",
-      士气: "更衣室出问题了。处理好队友关系，或者花钱团建。",
+      士气: "更衣室出问题了。「队伍」栏里找人聊聊、约队友吃火锅、安排一次战队合练，都能把关系推回来。",
       指挥: "队里没人扛得起指挥。练自己的指挥，或者引进老将。",
       体能: "人是累的。该休息了。"
     };
@@ -7974,7 +8061,7 @@ header.top.compact>.theme-top{display:none}
   var RELAX = [
     { k: "massage", n: "按摩 90 分钟", cost: 12, fat: -18, d: "当天就能缓过来" },
     { k: "physio2", n: "专业理疗", cost: 28, fat: -34, d: "手腕和肩颈都做一遍" },
-    { k: "hotpot", n: "约队友吃火锅", cost: 22, fat: -22, trust: 7, d: "体力和关系一起补" },
+    { k: "hotpot", n: "约队友吃火锅", cost: 22, fat: -22, trust: 7, rel: 1.2, d: "体力、信任和更衣室关系一起补" },
     { k: "trip", n: "短途度假", cost: 65, fat: -60, d: "彻底断网两天" }
   ];
   function initShop() {
@@ -8488,6 +8575,7 @@ header.top.compact>.theme-top{display:none}
     addMoney("relax", -x.cost);
     addFat(x.fat);
     if (x.trust && true) addTrustAll(x.trust);
+    if (x.rel && true) relAll(x.rel);
     pushEvent(`${x.n}：体力回来了${x.trust ? "，顺便和队友聊了聊" : ""}。`, "info", "放松");
     render();
   }
@@ -9790,6 +9878,7 @@ header.top.compact>.theme-top{display:none}
       a: [
         { t: "开个会，把问题摊开讲", g: "warm", e: () => {
           addTrustAll(10);
+          relAll(4);
           addFat(8);
           addBuff("mood", 1.15, 2, "话说开了");
           return "吵了两个小时，但走出会议室的时候，气氛终于松了。";
@@ -9892,6 +9981,7 @@ header.top.compact>.theme-top{display:none}
       a: [
         { t: "去，喝两杯", g: "show", e: () => {
           addTrustAll(7);
+          relAll(3);
           addFat(-14);
           addSquad("syn", 2.2);
           return "聊开了不少事。回去的路上气氛很好。";
@@ -10604,9 +10694,53 @@ header.top.compact>.theme-top{display:none}
         <div class="d"><b>${p.id.slice(0, 9)}</b> · ${POSN[p.pos] || ""} · ${p.age || "?"} 岁
           <span class="tag${r.role === "带人" || r.role === "扛旗" ? " g" : ""}">${r.role}</span><br>
           ${c.ok ? A.d : "🔒 " + c.why}${e && e.splits ? `<br><span style="color:var(--ink-3)">一起打了 ${e.splits} 个赛段${(e.titles || []).length ? ` · ${e.titles.length} 冠` : ""}${e.talks ? ` · 聊过 ${e.talks} 次` : ""}</span>` : ""}</div></button>`;
-    }).join("")}</div>
+    }).join("")}${(() => {
+      const c = bondCoachCan();
+      return `<button class="act" data-coach="1" ${c.ok ? "" : 'disabled style="opacity:.34"'}>
+        <div class="t">找教练聊 ${apTag("talk")}</div>
+        <div class="d"><b>教练组</b> · 每赛段一次<br>${c.ok ? "问清楚你现在差在哪：评分、信任、离首发／挂牌还有多远" : "🔒 " + c.why}</div></button>`;
+    })()}</div>
     <p class="note">同一个动作对老将、对同龄、对新人不是一回事——<b>角色是按五维均值和年龄差自动判的</b>。
+      「找教练聊」<b>不给任何数值</b>，只把你差在哪说清楚。
       陪新人加练能真的把他练起来，但<b>封在他自己的天花板里</b>：你让他更快到那儿，不是把他拔到别处去。</p></div>`;
+  }
+  function bondCoachKey() {
+    return "c" + (S.si || 0) + "-" + (S.split || 0);
+  }
+  function bondCoachDone() {
+    return !!(S.bondCoach && S.bondCoach === bondCoachKey());
+  }
+  function bondCoachCan() {
+    if (!S.career || !S.team) return { ok: false, why: "还没进队" };
+    if (bondCoachDone()) return { ok: false, why: "这个赛段已经聊过了" };
+    if ((S.ap || 0) < apCost("talk")) return { ok: false, why: `要 ${apCost("talk")} 个行动点` };
+    return { ok: true };
+  }
+  function doBondCoach() {
+    const c = bondCoachCan();
+    if (!c.ok) return;
+    S.ap -= apCost("talk");
+    S.bondCoach = bondCoachKey();
+    const bits = [];
+    const sr = splitRating();
+    bits.push(sr === null ? "这个赛段还没打过正赛，数据从零开始。" : `这个赛段你的场均评分 <b>${sr.toFixed(2)}</b>（1.00 是及格线）。`);
+    bits.push(`教练对你的信任 <b>${Math.round(coachTrust())}</b>，经理 <b>${Math.round(mgrTrust())}</b>。`);
+    if (isBenched()) {
+      const sc = scrimState(), inc = S.understudy;
+      const me = avg(DIMS.map((d) => S.attrs && S.attrs[d] || 0));
+      const him = inc ? avg(DIMS.map((d) => inc.r && inc.r[d] || 50)) : me;
+      bits.push(`离首发还差两条路：<b>轮换资本 ${sc.edge}/${SCRIM_EDGE_NEED}</b>（训练赛赢出来），
+      或者五维均值压过 <b>${inc ? inc.id : "他"}</b>（他 ${him.toFixed(1)}，你 ${me.toFixed(1)}${me >= him - 2 ? "——已经够了，等这周的名单" : `，还差 ${Math.max(0, him - 2 - me).toFixed(1)}`}）。`);
+    } else {
+      let L = { ok: false, why: "" };
+      try {
+        L = canList();
+      } catch (e) {
+      }
+      bits.push(L.ok ? `你现在<b>说得动阵容</b>——「转会」栏里可以挂牌队友。` : `阵容上的话语权还不够：${L.why || "再打出点成绩"}。`);
+    }
+    pushEvent(`找教练聊了半小时。<br>${bits.join("<br>")}`, "info", "教练");
+    render();
   }
 
   // demo/src/cer.ts
@@ -10619,6 +10753,11 @@ header.top.compact>.theme-top{display:none}
     // 评级 ±1 档（一档 = 8 分）
     patch: { gold: 0.5, silver: 0, bronze: -0.3 },
     media: { bold: { heat: 15, tilt: 1.5 }, steady: { heat: 5, tilt: 1 }, blame: { heat: 10, trust: -3, tilt: 1 } },
+    /* 替补版媒体日（作者拍板 2026-09-09）：一个连正式比赛都没打过的人不该站在背景板前
+       跟三个记者放狠话。改成收工时被顺口问一句，热度减半；「狂」的代价也不能再是
+       「输了更伤心态」——替补根本不上场，那一条对他等于零成本（这正是旧版的白嫖口子）。
+       换成教练组盯得更紧：下一次对位挑战的每一局成功率 −5%。 */
+    mediaBench: { bold: { heat: 8, scrim: -0.05 }, steady: { heat: 3 } },
     trial: { gold: 1 },
     // 过关 = 该维天花板 +1（里程碑池）；没过下个赛段再来，不扣
     rehab: { gold: -1 },
@@ -10780,18 +10919,21 @@ header.top.compact>.theme-top{display:none}
     } else if (k === "media") {
       const d = !skipped && S.cer && S.cer.detail || {};
       const tone3 = d.tone;
-      if (tone3 && CER_EFF.media[tone3]) {
-        const E = CER_EFF.media[tone3];
-        S.media = { si: S.si, split: S.split || 0, tone: tone3 };
+      const bench = isBenched();
+      const T = bench ? CER_EFF.mediaBench : CER_EFF.media;
+      if (tone3 && T[tone3]) {
+        const E = T[tone3];
+        S.media = { si: S.si, split: S.split || 0, tone: tone3, bench: bench || void 0 };
         S.heat = Math.max(0, (S.heat || 0) + (E.heat || 0));
         if (E.trust) addTrustAll(E.trust);
+        if (tone3 === "blame") relAll(-1.5);
         pushEvent(
-          `媒体日：你的口径是<b>${MEDIA_TONE_N[tone3]}</b>。${tone3 === "bold" ? `热度 +15，<b>但这个赛段输了更伤心态</b>——话说出去了，就得打回来。` : tone3 === "steady" ? `热度 +5，没留下把柄。` : `热度 +10，<b>更衣室信任 −3</b>——队友看得懂你在说谁。`}`,
+          bench ? `收工的时候记者问了你一句，你的口径是<b>${MEDIA_TONE_N[tone3]}</b>。${tone3 === "bold" ? `热度 +8，<b>但教练组听见了</b>——下次对位挑战每一局成功率 −5%。` : `热度 +3。你还没有说大话的本钱，这个回答挑不出毛病。`}` : `媒体日：你的口径是<b>${MEDIA_TONE_N[tone3]}</b>。${tone3 === "bold" ? `热度 +15，<b>但这个赛段输了更伤心态</b>——话说出去了，就得打回来。` : tone3 === "steady" ? `热度 +5，没留下把柄。` : `热度 +10，<b>更衣室信任 −3</b>——队友看得懂你在说谁。`}`,
           tone3 === "blame" ? "bad" : "info",
           "媒体日"
         );
       } else {
-        pushEvent(`媒体日：三个记者三个问题，你说的都是套话。<span style="color:var(--ink-3)">没人写你。</span>`, "info", "媒体日");
+        pushEvent(bench ? `记者从你旁边走过去，没停。<span style="color:var(--ink-3)">名单上没有你的名字。</span>` : `媒体日：三个记者三个问题，你说的都是套话。<span style="color:var(--ink-3)">没人写你。</span>`, "info", "媒体日");
       }
     } else if (k === "trial") {
       const d = C.dim;
@@ -10862,7 +11004,13 @@ header.top.compact>.theme-top{display:none}
     return m && m.si === S.si && m.split === (S.split || 0) && m.tone ? m.tone : null;
   }
   function mediaTiltMul() {
+    const m = S.media;
+    if (m && m.bench) return 1;
     return mediaToneNow() === "bold" ? CER_EFF.media.bold.tilt : 1;
+  }
+  function mediaScrimAdj() {
+    const m = S.media;
+    return m && m.bench && m.tone === "bold" && m.si === S.si && m.split === (S.split || 0) ? CER_EFF.mediaBench.bold.scrim || 0 : 0;
   }
   function isFinalMatch() {
     if (!S.career) return false;
@@ -11042,7 +11190,20 @@ header.top.compact>.theme-top{display:none}
     ]) };
     return { sec: 8, qs: [q12, q2, q3, q4, q5] };
   }
+  function mediaQuizBench() {
+    const inc = S.understudy;
+    const q = {
+      q: inc ? `记者收拾器材的时候顺口问你：「${inc.id} 状态挺好的，你什么时候能上？」` : "记者收拾器材的时候顺口问你：「你什么时候能上？」",
+      ctx: "他没打开录音笔。这句话大概率不会见报——但走廊里还站着教练组的人。",
+      a: shuffle([
+        { t: "给我机会就行，我打给他看。", tone: "bold" },
+        { t: "练到位了自然会上。", tone: "steady" }
+      ])
+    };
+    return { sec: 10, qs: [q] };
+  }
   function mediaQuiz() {
+    if (isBenched()) return mediaQuizBench();
     const ls = S.lastSeason;
     const mates = (S.world && S.world[S.homeLeague || "LPL"] || []).find((t) => t.name === S.team);
     const mate = mates && mates.players.filter((p) => !p.me)[Math.floor(Math.random() * Math.max(1, mates.players.filter((p) => !p.me).length))];
@@ -12779,6 +12940,16 @@ header.top.compact>.theme-top{display:none}
     if (S.rel[k] === void 0) return;
     S.rel[k] = clamp(S.rel[k] + n, 0, 100);
   }
+  function relAll(n) {
+    if (!S.rel || !n) return;
+    let ids = [];
+    try {
+      ids = myRoster().filter((p) => !p.me).map((p) => p.id);
+    } catch (e) {
+      return;
+    }
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) addRel(ids[i], ids[j], n);
+  }
   function syncRelations() {
     if (!S.rel) {
       initRelations();
@@ -13071,9 +13242,12 @@ header.top.compact>.theme-top{display:none}
         <span class="rn">${p.a.id.slice(0, 8)} ↔ ${p.b.id.slice(0, 8)}</span>
         <span class="rb"><i style="width:${clamp(p.v, 0, 100)}%"></i></span>
         <span class="rv mono">${Math.round(p.v)}</span></div>`).join("")}</div>
-    <p class="note">这是<b>队友互相之间</b>的关系，撑的是默契——和「他们对你的信任」是两回事。
-      ${worst.v < 32 ? `<b style="color:var(--red)">${worst.a.id} 和 ${worst.b.id} 已经不怎么说话了</b>——这会直接吃掉默契。` : "目前没有闹到台面上的矛盾。"}
-      合练和团建能缓和，连败会加剧。</p></div>`;
+    <p class="note">这是<b>队友互相之间</b>的关系，撑的是默契——和「他们对你的信任」是两回事，
+      <b>两条 0–100 不是一把尺</b>：信任有二十几个来源、生涯末常常顶到 100；
+      队友互相的关系起点就是 42–61，只会慢慢动。
+      ${worst.v < 32 ? `<b style="color:var(--red)">${worst.a.id} 和 ${worst.b.id} 已经不怎么说话了</b>——这会直接吃掉默契。` : "目前没有闹到台面上的矛盾。"}<br>
+      推得动它的是这几件事：<b>「队伍」栏的找人聊聊</b>、战队合练、约队友吃火锅、
+      把矛盾摊开讲的那些际遇；连败、挂牌和买断会把它拉开。</p></div>`;
   }
 
   // demo/src/achieve_more.ts
@@ -15814,9 +15988,16 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
-    { v: "v20260909j", at: "2026-09-09", items: [
+    { v: "v20260909k", at: "2026-09-09", items: [
       "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
       "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+    ] },
+    { v: "v20260909j", at: "2026-09-09", items: [
+      "<b>替补席不再替首发交学费</b>（玩家实锤：「我都替补了，首发阵容磨不磨合那是他们的事，为什么要花我的行动点」）：坐替补席的时候，训练赛和战队合练这两个纯喂默契池的行动<b>收起来</b>，只有个人收益的留着；<b>这个赛段的默契也不会在你手里往下掉</b>（原来不喂就掉，等于替补被这个池子持续抽血）。替补席多了一件事：<b>看录像</b>（1 点）——运营 +0.35、攒运营突破、战术素养 +0.2，每赛段前 3 次还给一点轮换资本",
+      "<b>媒体日给替补换了一版</b>（玩家实锤：「我一个臭替补，试训 B 合同，凭什么去接受采访放狠话」）：不再是三个记者三个问题的背景板，而是收工时被顺口问一句，一题、只有稳和狂两个口径、热度减半。「狂」的代价也换了——替补根本不上场，「输了更伤心态」对他等于零成本，现在改成<b>教练组盯得更紧，下次对位挑战每一局成功率 −5%</b>",
+      "「队伍」栏的找人聊聊多了<b>找教练聊</b>（1 点，每赛段一次，<b>不给任何数值</b>）：把你现在差在哪说清楚——场均评分、教练和经理的信任、离首发还差多少轮换资本、够不够得着挂牌。替补线和续约线最缺的从来不是数值，是信息",
+      "<b>更衣室关系的四个来源接上了</b>：战队合练、约队友吃火锅、「开个会把问题摊开讲」、「去喝两杯」——这几处界面本来就写着能缓和关系，但代码里从来没碰过那个数。同时训练赛的摩擦和媒体日的甩锅也会真的把关系拉开。关系卡上也说清楚了：<b>它和「他们对你的信任」不是一把尺</b>",
+      "<b>桌面版放宽</b>（玩家反馈：「pc 界面怪怪的……可以把所有东西铺在一个平面内，这样不用上下翻页」）：1280px 以上容器放到 1400px、1680px 以上到 1560px，内容列从约 848px 涨到 1250px；宽屏上「打这一周」那一行<b>钉在视口底部常驻</b>——原来它在第三屏。手机和小桌面一个像素不动"
     ] },
     { v: "v20260909i", at: "2026-09-09", items: [
       "<b>找人聊聊</b>（羁绊第二、三批）：「队伍」栏里每个队友都能单独找一次，<b>1 个行动点、每赛段两次、每人一次</b>。选项按你和他的角色自动变——比你强就是「找他请教」，老将是「陪他复盘」，同龄是「一起双排」，新人是「陪他加练」。陪新人加练能真的把他练起来，但<b>封在他自己的天花板里</b>：你让他更快到那儿，不是把他拔到别处去",
@@ -16320,7 +16501,7 @@ header.top.compact>.theme-top{display:none}
   var AP_PRE = 10;
   var AP_OFF = 8;
   var AP_HURT = 4;
-  var AP_COST = { train: 2, solo: 1, stream: 2, content: 2, rest: 1, scrim: 3, vod: 2, drill: 2, duo: 1, cupprep: 2, duel: 2, talk: 1, boost: 2, cafe: 1, chill: 1, watch: 1 };
+  var AP_COST = { train: 2, solo: 1, stream: 2, content: 2, rest: 1, scrim: 3, vod: 2, drill: 2, duo: 1, cupprep: 2, duel: 2, talk: 1, film: 1, boost: 2, cafe: 1, chill: 1, watch: 1 };
   function apCost(k) {
     return AP_COST[k] || 1;
   }
@@ -19096,7 +19277,8 @@ header.top.compact>.theme-top{display:none}
         <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
-    <div class="row">
+    <div class="row dock">
+      <span class="dock-ap">行动点 <b>${S.ap}</b></span>
       <button class="btn primary" id="play" ${S.ap > 0 ? "disabled" : ""}>
         ${S.ap > 0 ? `还剩 ${S.ap} 个行动点` : benched ? `替补席观战 · ${SPLITS[S.split || 0]}第 ${S.week}/${WEEKS} 周 →` : `打 ${SPLITS[S.split || 0]}第 ${S.week}/${WEEKS} 周 · vs ${oppName} →`}</button>
       ${quickBtn()}
@@ -22591,6 +22773,8 @@ header.top.compact>.theme-top{display:none}
     st.querySelectorAll("[data-sign]").forEach((b) => b.onclick = () => doSign(b.dataset.sign));
     st.querySelectorAll("[data-squad]").forEach((b) => b.onclick = () => doSquad(b.dataset.squad));
     st.querySelectorAll("[data-bond]").forEach((b) => b.onclick = () => doBondTalk(b.dataset.bond));
+    st.querySelectorAll("[data-bench]").forEach((b) => b.onclick = () => doBenchAct(b.dataset.bench));
+    st.querySelectorAll("[data-coach]").forEach((b) => b.onclick = () => doBondCoach());
     const _ss = $("scrimStart");
     if (_ss) _ss.onclick = () => {
       startScrim();

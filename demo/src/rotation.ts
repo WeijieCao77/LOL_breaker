@@ -7,6 +7,7 @@ import { rnd } from "./rng";
 import { teamLogo } from "./rankicon";
 import { gearBonus } from "./shop";
 import { S } from "./state";
+import { mediaScrimAdj } from "./cer";
 import { addTrustAll } from "./team";
 
 /* ================= 轮换 · 赛程 · 队友伤病 =================
@@ -140,6 +141,7 @@ export function scrimOptP(opt){
   let p=0.52+(mine-his)/38-(opt.risk-0.8)*0.10;
   p-=Math.max(0,(S.fatigue||0)-55)*0.003;
   p+=(myFormMul()-1)*1.2;
+  p+=mediaScrimAdj();   // 替补版媒体日说了狂话：教练组盯得更紧，这个赛段每一局 −5%
   return clamp(p,0.12,0.88);
 }
 export function startScrim(){
