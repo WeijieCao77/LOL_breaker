@@ -1707,6 +1707,12 @@ header.top.compact>.theme-top{display:none}
   .wkgrid>.wk-next .next .sd .pw{margin-top:0;white-space:nowrap}
   .wkgrid>.wk-next .next .mid{text-align:left;border-top:1px solid var(--line);padding-top:7px}
   /* 赛程条在窄栏里横向滚动，别铺成四行——它是「还剩谁没打」，不是这张卡的主角 */
+  /* 对阵图进了 360px 的右栏：两列 176 + 230 加间距要 420px，横着放一定被切掉一半
+     （备战页实测右边那列的「vs」后面整个看不见）。窄栏里改成一列一列往下堆，
+     每列占满宽度——树读起来变成从上到下，但没有一个字被裁掉。
+     「赛事」栏目里那张还是原来的横向树，那边有 872px。 */
+  .wkgrid>.wk-next .brk-tree,.wkgrid>.wk-next .brk-board{flex-wrap:wrap;overflow-x:visible}
+  .wkgrid>.wk-next .brk-tree .bcol,.wkgrid>.wk-next .brk-board .bcol{min-width:0;width:100%}
   .wkgrid>.wk-next .fixt{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
   .wkgrid>.wk-next .fixt::-webkit-scrollbar{display:none}
   .wkgrid>.wk-next .fixt .fc{flex:none}
