@@ -49,7 +49,7 @@ if (!fs.existsSync(path.join(HERE, "src", "gen", "avatars.js"))) {
    `ACHIEVEMENTS.push(...ACH_MORE)`，抛 "Cannot access 'ACH_MORE' before initialization"。
    低概率、和这次的改动无关（改前改后各连跑 12 次都没复现，但两边都各撞见过一次），
    顺序载入让求值顺序固定下来，CI 不再看运气。循环引用本身还在，另开一条待办。 */
-const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer"];
+const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer", "share"];
 const state = await import("./src/state.ts");
 const mods = [];
 for (const m of MODULES) mods.push(await import(`./src/${m}.ts`));
@@ -299,6 +299,22 @@ function playOne(opts?) {
 /* 不碰 DOM 的几何与消毒：导览说明卡永远不能盖在聚光框上；导入的存档只能带几个排版标签 */
 function unitChecks() {
   const bad = [];
+  /* 名片图的「存到相册」那条路（作者实测 2026-09-09：手机上点「下载图片」，
+     图落进「文件」App 的下载项而不是相册）。navigator.share 只收 File，
+     所以 dataURL 得先拆成 File；node / jsdom 里没有 share，必须安静地退回长按那条路。 */
+  {
+    const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const f: any = A.dataUrlToFile(png, A.SHARE_FILE);
+    if (!f) bad.push("名片图：dataURL 拆不成 File");
+    else {
+      if (f.type !== "image/png") bad.push("名片图：拆出来的 File 类型不是 image/png，是 " + f.type);
+      if (!(f.size > 0)) bad.push("名片图：拆出来的 File 是空的");
+      if (f.name !== A.SHARE_FILE) bad.push("名片图：文件名不对 " + f.name);
+    }
+    if (A.dataUrlToFile("这不是 dataURL", "x.png")) bad.push("名片图：不是 dataURL 也拆出了 File");
+    if (A.canShareFile(f)) bad.push("名片图：这台机器上没有 navigator.share，canShareFile 却说能分享");
+    if (A.canShareFile(null)) bad.push("名片图：canShareFile(null) 应该是 false");
+  }
   /* 成就「零杀十死也能赢」判的是真实数据行，不是临场决策（玩家实锤 2026-09-09：
      19/6/15、评分 1.15 照样弹）。好数据的胜场绝不能命中，全队垫底的胜场才命中。 */
   {

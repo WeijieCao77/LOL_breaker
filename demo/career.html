@@ -1568,7 +1568,8 @@ header.top.compact>.theme-top{display:none}
 .share-loading{color:var(--ink-3);font-size:13px;padding:28px 8px;text-align:center}
 .share-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:10px 14px;border-top:1px solid var(--line);flex:none;flex-wrap:wrap}
-.share-tip{font-size:12px;color:var(--ink-3)}
+.share-tip{font-size:12px;color:var(--ink-3);flex:1 1 160px;min-width:0}
+.share-acts{display:flex;align-items:center;gap:8px;flex:none}
 
 </style>
 
@@ -14842,6 +14843,28 @@ header.top.compact>.theme-top{display:none}
       img.src = SITE_QR;
     });
   }
+  var SHARE_FILE = "破晓-生涯名片.png";
+  var SHARE_TEXT = "我的五年电竞生涯 · " + SITE_URL;
+  function dataUrlToFile(url, name) {
+    try {
+      if (typeof File !== "function" || typeof atob !== "function") return null;
+      const i = url.indexOf(",");
+      if (i < 0) return null;
+      const bin = atob(url.slice(i + 1)), buf = new Uint8Array(bin.length);
+      for (let k = 0; k < bin.length; k++) buf[k] = bin.charCodeAt(k);
+      return new File([buf], name, { type: "image/png" });
+    } catch (e) {
+      return null;
+    }
+  }
+  function canShareFile(file) {
+    try {
+      const nav = typeof navigator !== "undefined" ? navigator : null;
+      return !!(nav && typeof nav.share === "function" && typeof nav.canShare === "function" && nav.canShare({ files: [file] }));
+    } catch (e) {
+      return false;
+    }
+  }
   function shareCardOpen() {
     if (typeof document === "undefined" || document.getElementById("sharecard")) return;
     const wrapEl = document.createElement("div");
@@ -14854,8 +14877,11 @@ header.top.compact>.theme-top{display:none}
       <button type="button" class="support-close" id="share-x" aria-label="关闭">关闭 <span aria-hidden="true">×</span></button></header>
     <div class="share-body"><div class="share-loading">正在生成…</div></div>
     <footer class="share-foot">
-      <span class="share-tip">手机长按图片即可保存到相册</span>
-      <a class="btn sm" id="share-dl" download="破晓-生涯名片.png" hidden>下载图片</a>
+      <span class="share-tip" id="share-tip">正在生成…</span>
+      <span class="share-acts">
+        <button type="button" class="btn sm primary" id="share-save" hidden>存到相册</button>
+        <a class="btn sm" id="share-dl" download="破晓-生涯名片.png" hidden>下载图片</a>
+      </span>
     </footer>
   </section>`;
     const close = () => {
@@ -14884,6 +14910,23 @@ header.top.compact>.theme-top{display:none}
       if (dl) {
         dl.href = url;
         dl.hidden = false;
+      }
+      const save = wrapEl.querySelector("#share-save");
+      const tip = wrapEl.querySelector("#share-tip");
+      const file = dataUrlToFile(url, SHARE_FILE);
+      if (save && file && canShareFile(file)) {
+        save.hidden = false;
+        save.onclick = () => {
+          statEvent("sharesave");
+          try {
+            navigator.share({ files: [file], title: "破晓 · 生涯名片", text: SHARE_TEXT }).catch(() => {
+            });
+          } catch (e) {
+          }
+        };
+        if (tip) tip.textContent = "点「存到相册」走系统菜单，也可以长按图片保存";
+      } else if (tip) {
+        tip.textContent = "长按图片保存到相册；「下载图片」存到的是「文件」App 的下载项";
       }
     });
   }
@@ -14956,6 +14999,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909f", at: "2026-09-09", items: [
+      "生涯名片图多了一个「<b>存到相册</b>」按钮（作者实测：手机上点「下载图片」，iOS 弹的是下载确认框，图落在<b>「文件」App 的下载项</b>里，不是相册——和大家习惯的「保存图片」不是一回事）：现在手机上走系统分享菜单，iOS 里点「存储图像」就直接进相册，安卓同理。设备不支持的话仍然可以长按图片保存，底部那行小字也会跟着说清楚图会落到哪"
+    ] },
     { v: "v20260909e", at: "2026-09-09", items: [
       "成就「零杀十死也能赢」不再乱弹（玩家实锤：19/6/15、分均补刀 9.9、伤害占比 28%、评分 1.15，照样弹出来）：它原来的条件是「赢了 + 临场决策砸了两次」，和个人数据一点关系都没有——而一场比赛就三个节点，砸两个太常见，30 局批测里 12.9% 的胜场命中、30 个生涯全都拿到了（这可是个隐藏的梗成就）。现在读你这一场真实的那一行：<b>你是全队评分最低的那个，而且比队友均值低 0.25 以上，队伍还赢了</b>——同一批测降到 1.4% 的胜场、约 0.47 次／生涯"
     ] },

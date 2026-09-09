@@ -1547,4 +1547,5 @@ header.top.compact>.theme-top{display:none}
 .share-loading{color:var(--ink-3);font-size:13px;padding:28px 8px;text-align:center}
 .share-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:10px 14px;border-top:1px solid var(--line);flex:none;flex-wrap:wrap}
-.share-tip{font-size:12px;color:var(--ink-3)}
+.share-tip{font-size:12px;color:var(--ink-3);flex:1 1 160px;min-width:0}
+.share-acts{display:flex;align-items:center;gap:8px;flex:none}
