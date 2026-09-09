@@ -15844,6 +15844,10 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909u", at: "2026-09-09", items: [
+      "<b>「教练怎么看你」不再自相矛盾</b>（玩家实锤：「这里一边写着轮换，一边说我是认定的首发」）。卡头写的是 <b>cloutTier 的话语权档次</b>，正文写的是<b>阵容位置</b>——两个词说的根本不是一回事：「轮换」是威望 26–43 那一档（「先把位置坐稳再说别的」），说的是你在俱乐部<b>说不说得上话</b>；首发 / 替补说的是你<b>上不上场</b>。威望低但坐着首发，完全可能同时成立，可它们并排放在一张卡上就成了打架。现在<b>卡头只报阵容位置</b>（首发 / 替补），话语权档次挪到它自己那条数值旁边单独说，谁也不冒充谁",
+      "自检钉住这一条：首发和替补两个状态各跑一遍，<b>卡头必须和正文同一个口径</b>，而且卡头里不许出现任何一个话语权档次名。拿两种改坏方式验过——退回档次名、口径写反，都红"
+    ] },
     { v: "v20260909t", at: "2026-09-09", items: [
       "<b>四个「本周」形态现在是同一套界面了</b>（玩家实锤：「在休赛期或者季后赛或者其他世界赛大赛的时候，界面又变回老模式，我要的是保证这个界面一致」）。前两版分别改了赛季页和职业前页，但<b>备战页</b>（季后赛 / MSI / 世界赛之间那一页）和<b>休赛期页</b>是各自独立的函数，一个都没动到——换个阶段就变回老样子。现在四个形态共用一个骨架：主列放要宽度的东西，右栏放给你看的东西",
       "两页的右栏按各自阶段配：<b>备战页</b>是 对阵图 · 教练怎么看你 · 最近的比赛 · 电竞周报（对手已经写在主列的对阵块里了，所以右栏第一格回答的是「这轮打完往哪走」）；<b>休赛期</b>没有下一场，就是 教练怎么看你 · 最近的比赛 · 电竞周报",
@@ -21593,13 +21597,14 @@ header.top.compact>.theme-top{display:none}
     const gold = "linear-gradient(90deg,#6B5A2A,var(--gold))";
     const benched = isBenched();
     const verdict = benched ? `<b style="color:var(--gold)">你还在替补席上。</b>在训练赛里攒够对位优势才拿得到试用。` : `<b style="color:var(--cyan)">你是他认定的首发。</b>`;
-    return `<div class="card"><h2>教练怎么看你<em>${T.n}</em></h2>
+    return `<div class="card"><h2>教练怎么看你<em>${benched ? "替补" : "首发"}</em></h2>
     <div class="attrs">
       <div class="at"><div class="lb">教练</div>${bar(ct, cyan)}<div class="vn mono"><b>${ct}</b></div></div>
       <div class="at"><div class="lb">经理</div>${bar(mt, cyan)}<div class="vn mono"><b>${mt}</b></div></div>
       <div class="at"><div class="lb">威望</div>${bar(c, gold)}<div class="vn mono"><b>${c}</b></div></div>
     </div>
-    <p class="note">${verdict}　挂牌、点名引援这些要用话语权的事，在「队伍」页。</p></div>`;
+    <p class="note">${verdict}</p>
+    <p class="note">话语权 <b>${T.n}</b>（威望 ${c}）——${T.d}挂牌、点名引援这些事在「队伍」页。</p></div>`;
   }
   function matchLogCard() {
     if (!S.career || !S.log || !S.log.length) return "";
