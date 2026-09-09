@@ -30,7 +30,7 @@ import { S, setS } from "./state";
 import { statEvent } from "./stats";
 import { SPEND, addTrust, addTrustAll, avgTrust, checkMateExit, contractCheck, initTrust, payday, resolveLocker, salaryOf, syncTrust, trustDecay, trustMod, trustOf, tryLockerEvent } from "./team";
 import { traitBar, traitMul, traitUpCard } from "./trait";
-import { CLUB_TIERS, DEAL_TIERS, REG_WEEKS, TIER_ORDER, acceptPromote, acceptRenew, afterTryout, approachTeam, askDeal, askPromoteRaise, askTransfer, checkPromote, checkRankInvite, checkTopUpInvite, contractLeftText, dealCard, declineDeal, declinePromote, declineRenew, doBuyout, dropDeal, dropProOffer, exposureCap, faCard, inviteCard, inviteFloorOk, noteScoutInterest, offerSendDown, parentClub, preTransferPage, proOfferCard, promoteCard, promoteDealCard, rankCap, regRollOffer, renewCard, renewNegotiate, resolveTryoutDay, rollProOffers, selfRecommend, signDeal, signRenewDeal, signTransfer, startTryout, takeFaOffer, takeProOffer, transferPage, tryoutCard, tryoutSkill, txPhaseName, txWindowName, txWindowOpen } from "./tryout";
+import { CLUB_TIERS, DEAL_TIERS, REG_WEEKS, TIER_ORDER, acceptPromote, acceptRenew, afterTryout, approachTeam, askDeal, askPromoteRaise, askTransfer, checkPromote, checkRankInvite, checkTopUpInvite, contractLeftText, dealCard, declineDeal, declinePromote, declineRenew, doBuyout, dropDeal, dropProOffer, exposureCap, faCard, inviteCard, inviteFloorOk, noteScoutInterest, offerSendDown, parentClub, preTransferPage, proOfferCard, promoteCard, promoteDealCard, rankCap, regRollOffer, renewCard, renewNegotiate, resolveTryoutDay, rollProOffers, selfRecommend, signDeal, signRenewDeal, signTransfer, startTryout, takeFaOffer, takeProOffer, transferPage, tryoutCard, tryoutSkill, txPhaseName, txStops, txWindowName, txWindowOpen } from "./tryout";
 import { rnd, rngInit } from "./rng";
 
 /* 像素头像（可选）：data/photos/ 里的照片经 make_avatars.py 烤成 24x24。
@@ -112,6 +112,7 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
   {v:"v20260909a", at:"2026-09-09", items:[
+    "转会轨迹不再多报站数（玩家实锤：只去过一个外赛区队就回 RNG 一人一城，名片却写「转会 7 站」）：那张表本来就记着续约、买断、升上一队、下放，可名片和评语两处直接把条数当成转会次数在数。现在每一笔标性质，只有真的换了俱乐部才算一站；老存档按文案回推，数出来一样",
     "赛后拆解的「状态」拆成「你的状态」和「队友状态」两行（玩家实锤：我状态 52 刚好中性，比赛里还是给我扣分）——原来一行算的是我方五个人的状态均值对上对面五个人，你自己中性、队友低迷照样是负的，标签却像在说你；两行各自写清楚「你 X · 队友均 Y · 对面均 Z」，加起来还是原来那个数",
     "天梯有赛季重置了（玩家点名：段位一证永证，打到国服第一就永远国服第一）：每年春季赛开赛<b>掉一档</b>，而且落在那一档的中段——国服第一 → 国服前 100、王者 → 宗师、宗师 → 大师，掉到大师就不再往下。分不会自己回来，打排位能拿回去。原来那条「不守就掉」只把你拉回实力守得住的位置，实力够就永远不掉",
     "赛后拆解和赛后面板改读开赛那一刻的体能（玩家实锤：赛前自己和队伍体能都是满的，一结算却拿体能扣我的综合分，试了两次都一样）——胜负本来就是用赛前体能判的，原来却先把这场的消耗记上再算账，等于拿打完之后的体能解释一场已经打完的比赛",
@@ -4971,7 +4972,7 @@ export function careerPoster(){
   const stats=[
     ["生涯小分",`${C.w||0}<small>–</small>${C.l||0}`],
     ["冠军",`${titleCount()}`],
-    ["转会",`${(S.txLog||[]).length}<small> 站</small>`],
+    ["转会",`${txStops()}<small> 站</small>`],
     ["段位",`<span style="font-size:14px">${rankFull(S.pre?S.pre.rank:0)}</span>`],
     ["粉丝",`<span style="font-size:14px">${fanTier()}</span>`]
   ];

@@ -630,6 +630,28 @@ function unitChecks() {
     // 赛后拆解读开赛那一刻的体能（原来先扣这场的体能再算账）
     if (S.match && S.match.fat0 === undefined) bad.push("比赛没有记下开赛时的体能快照 fat0");
 
+    /* 转会轨迹只数「真的换了俱乐部」那几笔（玩家实锤 2026-09-09：只去过一个外赛区队
+       就回 RNG 一人一城，名片却写转会七站）。这张表本来就记着续约、买断、升一队、下放。 */
+    {
+      const txBak = S.txLog;
+      S.txLog = [
+        { s: "S12", text: "RNG → <b>某外赛区队</b>（LCK），赛段薪资 300 万", k: "move" },
+        { s: "S12", text: "与 某外赛区队 续约，赛段薪资 320 万", k: "renew" },
+        { s: "S13", text: "某外赛区队 → <b>RNG</b>（LPL），赛段薪资 400 万", k: "move" },
+        { s: "S13", text: "与 RNG 续约，赛段薪资 500 万", k: "renew" },
+        { s: "S14", text: "与 RNG 续约，赛段薪资 700 万", k: "renew" },
+        { s: "S15", text: "RNG → <b>RNG.R</b>（下放 LDL 打比赛）", k: "down" },
+        { s: "S15", text: "RNG.R → <b>RNG</b>（升上一队 · 赛段薪资 700 万）", k: "up" },
+      ];
+      if (A.txStops() !== 3) bad.push(`转会轨迹数错了：七笔轨迹里只有两次真转会，应是 3 站，实得 ${A.txStops()} 站`);
+      // 老存档没有 k，按文案回推也要得出同一个数
+      S.txLog = S.txLog.map((x: any) => ({ s: x.s, text: x.text }));
+      if (A.txStops() !== 3) bad.push(`老存档回推转会站数不对：应是 3 站，实得 ${A.txStops()} 站`);
+      S.txLog = [{ s: "S12", text: "与 RNG 续约，赛段薪资 500 万", k: "renew" }];
+      if (A.txStops() !== 0) bad.push("从没转过会却算出了站数（应显示「一队待到底」）");
+      S.txLog = txBak;
+    }
+
     // 天梯赛季重置：掉一档（作者拍板：上赛季王者，重置就变回宗师），掉到大师为止
     {
       const step = (v: number) => [A.rankName(v), A.rankName(A.rankResetTo(v))];

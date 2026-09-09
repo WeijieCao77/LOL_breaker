@@ -4371,7 +4371,7 @@ header.top.compact>.theme-top{display:none}
     S.pendingRenew = null;
     S.gotCut = false;
     pushEvent(`<b>${r.team}</b> 与你续约 ${r.years} 个赛段，赛段薪资 <b>${r.salary !== void 0 ? wanText(r.salary) : "—"}</b>${r.buyout !== void 0 ? `，违约金 <b>${r.buyout} 万</b>` : ""}。`, "good", "合同");
-    txNote(`与 ${r.team} 续约，赛段薪资 ${r.salary !== void 0 ? wanText(r.salary) : "—"}`);
+    txNote(`与 ${r.team} 续约，赛段薪资 ${r.salary !== void 0 ? wanText(r.salary) : "—"}`, "renew");
     render();
   }
   function renewNegotiate() {
@@ -4422,7 +4422,7 @@ header.top.compact>.theme-top{display:none}
     S.freeAgent = true;
     S.gotCut = true;
     pushEvent(`续约谈崩了：<b>${r.team}</b> 觉得你要的太多，收回了报价。你成了<b>自由身</b>——去哪由你自己在转会市场上找。`, "bad", "合同");
-    txNote(`与 ${r.team} 的续约谈崩，成为自由身`);
+    txNote(`与 ${r.team} 的续约谈崩，成为自由身`, "free");
     {
       S.offerYear = void 0;
       S.offerWnd = void 0;
@@ -4557,7 +4557,7 @@ header.top.compact>.theme-top{display:none}
     pushEvent(`你自己掏了 <b>${c.fee} 万</b>，把和 <b>${old}</b> 的合同买断了。<br>
     合同作废，你现在是<b>自由身</b>——不用再等别人来挖，也没人再替你付这笔钱。<br>
     <span style="color:var(--red)">经理和教练都记着这一笔，更衣室也知道了。</span>`, "big", "转会");
-    txNote(`自掏 ${c.fee} 万买断与 ${old} 的合同，成为自由身`);
+    txNote(`自掏 ${c.fee} 万买断与 ${old} 的合同，成为自由身`, "buyout");
     {
       S.offerYear = void 0;
       rollProOffers();
@@ -4811,7 +4811,7 @@ header.top.compact>.theme-top{display:none}
     S.rosterSig = myRoster().map((x) => x.id).sort().join("|");
     pushEvent(`<b>${d.team}</b> 把你从 <b>${old}</b> 调上了一队，新合同：赛段薪资 <b>${wanText(d.salary)}</b>（${yearPayText(d.salary)}）· 违约金 ${wanText(d.buyout)}。
     ${d.incumbent} 让出了首发位——你在 LDL 打的那些比赛，有人一直在看。`, "big", "升队");
-    txNote(`${old} → <b>${d.team}</b>（升上一队 · 赛段薪资 ${wanText(d.salary)}）`);
+    txNote(`${old} → <b>${d.team}</b>（升上一队 · 赛段薪资 ${wanText(d.salary)}）`, "up");
     checkAch("promote");
     render();
   }
@@ -4888,7 +4888,7 @@ header.top.compact>.theme-top{display:none}
     S.rosterSig = myRoster().map((x) => x.id).sort().join("|");
     pushEvent(`你被注册到 <b>${acad.name}</b>（LDL）。从替补席到首发位——
     <b>比赛打起来，数据摆出来，一队的门才会再开。</b>`, "big", "青训");
-    txNote(`${old} → <b>${acad.name}</b>（下放 LDL 打比赛）`);
+    txNote(`${old} → <b>${acad.name}</b>（下放 LDL 打比赛）`, "down");
     render();
   }
   function promoteCard() {
@@ -4917,9 +4917,19 @@ header.top.compact>.theme-top{display:none}
       ① 综合压过一队对位 1 分——${ok1 ? '<b style="color:var(--cyan)">已达成，等下个窗口</b>' : `还差 <b>${(him + 1 - me).toFixed(1)}</b> 分`}<br>
       ② 差距 3 分以内 且 本赛段胜率 ≥75%——${me >= him - 3 ? wr === null ? "数值达标，本赛段还没打满 3 场" : wr >= 0.75 ? '<b style="color:var(--cyan)">已达成，等下个窗口</b>' : `数值达标，但胜率 ${(wr * 100).toFixed(0)}% 还不够` : "数值还差得多，先练"}</p></div>`;
   }
-  function txNote(text) {
-    S.txLog = (S.txLog || []).concat([{ s: SEASONS[S.si] ? SEASONS[S.si].tag : "", text }]);
+  function txNote(text, k) {
+    S.txLog = (S.txLog || []).concat([{ s: SEASONS[S.si] ? SEASONS[S.si].tag : "", text, k: k || "move" }]);
     if (S.txLog.length > 12) S.txLog.shift();
+  }
+  function txIsMove(x) {
+    if (!x) return false;
+    if (x.k) return x.k === "move";
+    const t = String(x.text || "");
+    return /→/.test(t) && !/升上一队|下放/.test(t);
+  }
+  function txStops() {
+    const n = (S.txLog || []).filter(txIsMove).length;
+    return n ? n + 1 : 0;
   }
   function approachKey() {
     return S.si + "-" + (S.split || 0);
@@ -8059,7 +8069,7 @@ header.top.compact>.theme-top{display:none}
     <div class="tw"><table><tbody>
       <tr><td>生涯战绩</td><td class="n">${S.career.w}−${S.career.l}${st.n ? ` · 场均评分 ${(st.r / st.n).toFixed(2)}` : ""}</td></tr>
       <tr><td>冠军</td><td>${titleCount() ? `${titlesText()}${ringTitles().length ? `<br><span style="color:var(--ink-3);font-size:11.5px">「随队」是战队夺冠时你在替补席——戒指是你的；成就、突破和转会筹码只认你亲手打的。</span>` : ""}` : "还没有"}</td></tr>
-      <tr><td>转会轨迹</td><td>${S.txLog && S.txLog.length ? S.txLog.length + " 站" : "一队待到底"}</td></tr>
+      <tr><td>转会轨迹</td><td>${txStops() ? txStops() + " 站" : "一队待到底"}</td></tr>
       <tr><td>剩下的时间</td><td class="n">${left > 0 ? left + " 个赛季" : "这是最后一年"} · ${S.age} 岁</td></tr>
     </tbody></table></div>
     <p class="note" style="color:var(--ink-3)">评语和五年后的结局用同一把尺子——现在不满意，就去改写它。</p></div>`;
@@ -14632,6 +14642,7 @@ header.top.compact>.theme-top{display:none}
   var SPREAD = 16;
   var CHANGELOG = [
     { v: "v20260909a", at: "2026-09-09", items: [
+      "转会轨迹不再多报站数（玩家实锤：只去过一个外赛区队就回 RNG 一人一城，名片却写「转会 7 站」）：那张表本来就记着续约、买断、升上一队、下放，可名片和评语两处直接把条数当成转会次数在数。现在每一笔标性质，只有真的换了俱乐部才算一站；老存档按文案回推，数出来一样",
       "赛后拆解的「状态」拆成「你的状态」和「队友状态」两行（玩家实锤：我状态 52 刚好中性，比赛里还是给我扣分）——原来一行算的是我方五个人的状态均值对上对面五个人，你自己中性、队友低迷照样是负的，标签却像在说你；两行各自写清楚「你 X · 队友均 Y · 对面均 Z」，加起来还是原来那个数",
       "天梯有赛季重置了（玩家点名：段位一证永证，打到国服第一就永远国服第一）：每年春季赛开赛<b>掉一档</b>，而且落在那一档的中段——国服第一 → 国服前 100、王者 → 宗师、宗师 → 大师，掉到大师就不再往下。分不会自己回来，打排位能拿回去。原来那条「不守就掉」只把你拉回实力守得住的位置，实力够就永远不掉",
       "赛后拆解和赛后面板改读开赛那一刻的体能（玩家实锤：赛前自己和队伍体能都是满的，一结算却拿体能扣我的综合分，试了两次都一样）——胜负本来就是用赛前体能判的，原来却先把这场的消耗记上再算账，等于拿打完之后的体能解释一场已经打完的比赛",
@@ -19471,7 +19482,7 @@ header.top.compact>.theme-top{display:none}
     const stats = [
       ["生涯小分", `${C.w || 0}<small>–</small>${C.l || 0}`],
       ["冠军", `${titleCount()}`],
-      ["转会", `${(S.txLog || []).length}<small> 站</small>`],
+      ["转会", `${txStops()}<small> 站</small>`],
       ["段位", `<span style="font-size:14px">${rankFull(S.pre ? S.pre.rank : 0)}</span>`],
       ["粉丝", `<span style="font-size:14px">${fanTier()}</span>`]
     ];
