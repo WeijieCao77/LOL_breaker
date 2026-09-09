@@ -3,11 +3,12 @@ import { bgmSeasonTick, showChangelog, supportNudge, tone, updCheck } from "./au
 import { AUTO_KEYS, autoAllOn, autoBar, autoBiz, autoCareerStep, autoDaily, autoNote, autoOn, autoOnce, autoPage, autoSet, autoStep, autoSweep, autoToggleAll } from "./auto";
 import { avatarOf, gicon } from "./avatar";
 import { synthBoxScore } from "./boxscore";
+import { bondNoteMatch, bondRetire, bondSplitEnd } from "./bond";
 import { addStaff, cloutCard, cloutTick, doList, doSign, initRelations, initStaff, relCard, relMod } from "./clout";
 import { CUPS, activeCups, cupCard, cupDismissMatch, cupMatchCard, cupOf, cupOppName, cupPrep, cupReachName, cupResultCard, cupRoundName, cupTick, disbandCrew, dueCups, enterCup, forfeitCup, preSquadCard, resolveCupNode, startCupMatch } from "./cup";
 import { DATA } from "./data";
 import { formCard, formMul, formNews, formTier, myForm, myFormMul, rollForm, rollWorldForm } from "./form";
-import { awardsText, btkTrialCheck, campCard, cerApply, cerBind, cerCard, cerFinalNode, cerFinalPw, cerRecMul, cerStart, isFinalMatch, mediaTiltMul, meetCard, mgLive, verCerAdj } from "./cer";
+import { awardsText, btkTrialCheck, campCard, cerApply, cerBind, cerCard, cerFinalNode, cerFinalPw, cerRecMul, cerStart, isFinalMatch, mediaTiltMul, mediaToneNow, meetCard, mgLive, verCerAdj } from "./cer";
 import { injuryCard, injuryHit, injuryTick, injuryTrainMul, riskHint, rollInjury } from "./injury";
 import { brOthersText, brStep, findTeam, intlAdvance, intlChampCard, intlStageName, leagueOf, majorStandings, spectateIntl, startIntl, wlAdd, wlInfluence, wlRelax, worldsSlot } from "./intl";
 import { aiMarketWindow } from "./market";
@@ -28,6 +29,7 @@ import { addSquad, clampWinProb, disruptSynergy, doSquad, gapVerdict, initSquad,
 import { starAfterMatch, starLaneBadge, starSpotHtml } from "./stars";
 import { S, setS, onEra, applyEra } from "./state";
 import { ERAS, ERA_KEYS, eraDef } from "./eras";
+import { shareCardOpen } from "./share";
 import { statEvent } from "./stats";
 import { SPEND, addTrust, addTrustAll, avgTrust, checkMateExit, contractCheck, initTrust, payday, resolveLocker, salaryOf, syncTrust, trustDecay, trustMod, trustOf, tryLockerEvent } from "./team";
 import { traitBar, traitMul, traitUpCard } from "./trait";
@@ -112,9 +114,31 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
-  {v:"v20260909c", at:"2026-09-09", items:[
+  {v:"v20260909j", at:"2026-09-09", items:[
     "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
     "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+  ]},
+  {v:"v20260909h", at:"2026-09-09", items:[
+    "<b>共事账本</b>（作者点名的「羁绊」第一批，只记不改数值）：一起打过的队友从此不会被忘掉。原来队友一离开名单，你和他的一切就被删干净——一起打了三年的大哥退役那天归零，你带过的新人被卖走、下赛季碰上游戏也不认得他。现在每个同队过的人都留一条：一起打了几个赛段、一起拿过什么冠军、他是退役还是被卖走的",
+    "每个赛段结算多一句话：<b>这一年你在队里是「被带 / 并肩 / 带人」的哪一个</b>。判据是已经算好的赛后全员评分——你和队友的场均差，加上你和他们的年龄差。作者原话：「刚去的时候四个大哥带我一个，大哥老了我带一绿带四红硬带他们夺冠」——这件事引擎本来每场都在算，只是从来没被累计、也没被说出来过",
+    "生涯名片图底部多两行：<b>并肩最久</b>（谁陪你打得最久、一起拿过几冠）和<b>你带过最久</b>（哪个新人被你带了最多个赛段）。没有内容时版式不变"
+  ]},
+  {v:"v20260909g", at:"2026-09-09", items:[
+    "赛后那句狠话不再是游戏替你说的（作者实锤：「新档明明没放过狠话，却提示我的狠话被对手记下来、成了网络热梗」）：原来只要<b>爆冷赢一场</b>就有三成概率自动弹「XX 也就这样」，玩家没点过任何按钮——30 局批测里 <b>28/30 的生涯被安过，平均每局 3.9 次</b>，其中 47% 两周后变成弹幕热梗挨罚。而媒体日本来就有「狂 / 稳 / 甩锅」让你自己定调，这条完全绕过了它。现在<b>只有这个赛段你真在媒体日定了「狂」，才谈得上赛后补一句</b>；选了稳、甩锅或者跳过媒体日的人，永远不会被安上这句话",
+    "狠话的回旋镖也改了判据：原来看的是「这个赛段一共输过两场」——一个赛段十几场，输两场太容易，等于说完必挨罚。现在看的是<b>说完之后那两周打成什么样</b>，赢多于输就进赛区宣传片，输多于赢才成弹幕热梗，事件里也把这两周的战绩写出来"
+  ]},
+  {v:"v20260909f", at:"2026-09-09", items:[
+    "生涯名片图多了一个「<b>存到相册</b>」按钮（作者实测：手机上点「下载图片」，iOS 弹的是下载确认框，图落在<b>「文件」App 的下载项</b>里，不是相册——和大家习惯的「保存图片」不是一回事）：现在手机上走系统分享菜单，iOS 里点「存储图像」就直接进相册，安卓同理。设备不支持的话仍然可以长按图片保存，底部那行小字也会跟着说清楚图会落到哪"
+  ]},
+  {v:"v20260909e", at:"2026-09-09", items:[
+    "成就「零杀十死也能赢」不再乱弹（玩家实锤：19/6/15、分均补刀 9.9、伤害占比 28%、评分 1.15，照样弹出来）：它原来的条件是「赢了 + 临场决策砸了两次」，和个人数据一点关系都没有——而一场比赛就三个节点，砸两个太常见，30 局批测里 12.9% 的胜场命中、30 个生涯全都拿到了（这可是个隐藏的梗成就）。现在读你这一场真实的那一行：<b>你是全队评分最低的那个，而且比队友均值低 0.25 以上，队伍还赢了</b>——同一批测降到 1.4% 的胜场、约 0.47 次／生涯"
+  ]},
+  {v:"v20260909d", at:"2026-09-09", items:[
+    "职业前训练的卡面不再少报（玩家实锤：卡面写「操作 +0.9」，点完实际涨了 1.3）：职业前每一次训练真正写进去的是 gain × 0.85 × 1.5（1.5 是职业前的节奏系数——一年的行动点少了，每一点的产出按比例抬回去），而卡面那一侧只乘了 0.85，把这个 1.5 漏了，于是每一次训练都少报三分之一。现在预览和生效共用同一个函数"
+  ]},
+  {v:"v20260909c", at:"2026-09-09", items:[
+    "生涯结束多了一张<b>可以存进相册的名片图</b>（玩家点名：「想玩的人可以直接扫，想留作纪念的也可以一键保存」）：结局页点「生成生涯名片图」，把判词、ID、冠军、逐年轨迹、五项统计画成一张 1080×1620 的竖图，右下角是站点二维码。手机长按保存到相册，桌面点「下载图片」。原来这里只写着「截图就能发」——截图带着地址栏和底栏，发出去既不好看也没有入口",
+    "名片图是浏览器里现画的（canvas），不联网、不上传，图只在你自己手机上；二维码是内嵌的，扫出来就是 www.poxiao.lol"
   ]},
   {v:"v20260909b", at:"2026-09-09", items:[
     "第三次清足球词，这次钉死（玩家实锤：「很多时候的措辞是赢球、球队，包括挂靴」）：生涯一览的「如果今天挂靴」和退役确认里的「就此挂靴」改成退役；赛后拆解的「赢球」、媒体日的「输球」改成赢比赛 / 输掉的比赛；粉丝见面会的场地档次「小场 / 中场 / 大场」改成小型 / 中型 / 大型场地——「中场」容易被读成足球的中场。前两次都是人工扫一遍改掉、然后新写的文案又把词带回来，所以这次加了一条自检：玩家看得见的字符串里出现球队 / 球员 / 球迷 / 球星 / 球场 / 赢球 / 输球 / 打球 / 挂靴 / 板凳席，测试直接红并指到行号",
@@ -1660,6 +1684,7 @@ export function ageWorld(){
              现实里新一代选手确实一年比一年强，所以锚点跟着赛季往上走。 */
           const nr=makeRookie(p.pos,base-6+(S.si||0)*2.2,lg);
           S.retiredPool.push({p:Object.assign({},p),peak:ovr,year:SEASONS[S.si].y,lg});
+          if(team.name===S.team) bondRetire(p.id);   // 一起打过的人退役了：账本记一笔，别当他没来过
           if(lg==="LPL"||ovr>58){
             const honor = ovr>76?"一代人的记忆就此谢幕":ovr>64?"结束了自己的职业生涯":"低调退役";
             pushEvent(`<b>${p.id}</b>${p.cn?`（${p.cn}）`:""} ${p.age} 岁宣布退役，${honor}。${team.name} 提拔新秀 <b>${nr.id}</b> 接班。`,
@@ -2145,7 +2170,7 @@ export function preAct(k,dim?){
   } else if(k==="train"){
     const c=capOf(dim);
     if(dim==="操作"&&true) btkNote("op",1);   // 到瓶颈也要能攒突破进度
-    if(S.attrs[dim]<c) S.attrs[dim]=Math.min(c,S.attrs[dim]+gain(dim)*0.85*PRE_PACE);
+    if(S.attrs[dim]<c) S.attrs[dim]=Math.min(c,S.attrs[dim]+trainGain(dim));   // 卡面（costTrain）读的是同一个函数
     const sub=PRE_SPLASH[dim];   // 职业前练一项顺带练另一项（进队后没有）
     if(sub){ const sc=capOf(sub.d); if(S.attrs[sub.d]<sc) S.attrs[sub.d]=Math.min(sc,S.attrs[sub.d]+gain(sub.d)*0.85*PRE_PACE*sub.k); }
     addFat(9);
@@ -2983,9 +3008,19 @@ export const _prepMul=()=>(S.step==="prep"||(S.off&&S.off.next==="intl"))?((S.as
 /* 职业前和赛季中是两套数值（训练 ×0.85、休息 +32、直播基数不同），
    标注必须跟着当前阶段走，否则等于换个地方骗人。 */
 export const _isPre=()=>S.step==="pre";
+/* 这一次训练真能涨多少（玩家实锤 2026-09-09：卡面写「操作 +0.9」，点完实际涨了 1.3）。
+   职业前走 preAct("train")，实际写进去的是 gain × 0.85 × PRE_PACE（=1.5）；
+   而卡面这边只乘了 0.85，把职业前的节奏系数漏了——于是每一次训练都少报三分之一。
+   职业后走 doTrain，还要乘本季版本关键属性的加成。
+   预览和生效从此共用这一个函数，不会再各算各的。 */
+export function trainGain(d){
+  if(_isPre()) return gain(d)*0.85*PRE_PACE;
+  const vm=(S.career&&SEASONS[S.si]&&SEASONS[S.si].dim===d)?VER_TRAIN:1;
+  return gain(d)*vm;
+}
 export function costTrain(d){
   const capped=S.attrs[d]>=capOf(d);
-  const g=gain(d)*(_isPre()?0.85:1);
+  const g=trainGain(d);
   return costBits([_eDn(9),
     capped?null:`${d}<i class="up">+${g.toFixed(1)}</i>`]);
 }
@@ -3073,8 +3108,7 @@ export function doTrain(d){
   // 于是提示让你去做的事，你根本点不动，死锁在那儿。
   if(d==="操作"&&true) btkNote("op",1);
   // 版本答案：本季关键属性的训练收益 ×VER_TRAIN（职业后；教练组按版本抓训练）
-  const vm=(S.career&&SEASONS[S.si]&&SEASONS[S.si].dim===d)?VER_TRAIN:1;
-  if(!capped) S.attrs[d]=Math.min(capOf(d),S.attrs[d]+gain(d)*vm);
+  if(!capped) S.attrs[d]=Math.min(capOf(d),S.attrs[d]+trainGain(d));   // 卡面（costTrain）读的是同一个函数
   noteAct('train',d);
   checkAch("train");
   addFat(9); S.ap-=apCost("train"); render();
@@ -3812,6 +3846,7 @@ export function synthSeriesStats(m,won,myPw,opPw){
   S.stats=S.stats||{n:0,k:0,d:0,a:0,r:0};
   S.stats.n++; S.stats.k+=k; S.stats.d+=d; S.stats.a+=a; S.stats.r+=rating;
   m.myline={k,d,a,cs,dmg,rating}; m.box=box;
+  bondNoteMatch(box);   // 共事账本：这个赛段谁带谁，用的就是这张表（bond.ts）
   if(box&&box.carry){
     S.carries=(S.carries||0)+1; S.carrySplit=(S.carrySplit||0)+1;
     pushEvent(`<b>院长局</b>：输给 ${m.oppName}，但你评分 <b>${rating.toFixed(2)}</b> 全队最高，队友场均 ${box.mateAvg.toFixed(2)}${box.worst?`（${box.worst} ${box.worstR.toFixed(2)}）`:""}。<span style="color:var(--ink-3)">这场输比赛不算在你头上——教练组看数据，不只看比分。</span>`,"info","数据");
@@ -3916,6 +3951,9 @@ export function endMatch(){
   // 成就上下文
   const ctx={won, bo5:m.need>=3, myScore:m.sc[0], oppScore:m.sc[1],
     carry:!!(m.box&&m.box.carry), soloWin:!!(m.box&&m.box.soloWin),
+    // 这一场你自己那一行：成就要判「数据难看」就得读真实数据，不能拿临场决策当替身
+    myRating:(m.myline&&m.myline.rating!==undefined)?m.myline.rating:null,
+    meWorst:!!(m.box&&m.box.meWorst), meGap:(m.box&&m.box.meGap!==undefined)?m.box.meGap:0,
     gap:+(myPw-opPw).toFixed(2), intl:!!S.intl,
     oppLeague:leagueOf(m.oppName),
     // 点名类成就（对位 Faker 等）要看真实名单，不能拿联赛当替身——
@@ -3942,10 +3980,19 @@ export function endMatch(){
   }
   if(S.tilt<40) S._tiltWarned=false;
   S.lastFightClock=S.evClock||0;                 // 竞技锐度：记住最后一场正赛在什么时候
-  // 大胜后的采访：说不说狠话，两周后见分晓（事件链）
-  if(won&&ctx.gap<-1&&rnd()<0.30&&true){
-    queueFollowUp("bigTalk",2,{opp:m.oppName});
-    pushEvent(`赛后采访你上头了一句「<b>${m.oppName} 也就这样</b>」。话说出去就收不回来了——两周后见分晓。`,"info","舆论");
+  /* 爆冷赢球之后的那句狠话（作者实锤 2026-09-09：「我新档明明没放过狠话，
+     却提示我的狠话被记录下来成了网络热梗」）。原来这里只看「赢了 + 爆冷 + 30%」，
+     游戏直接替玩家把话说了——30 局批测里 28/30 的生涯被安过，平均每局 3.9 次，
+     其中 47% 两周后变成弹幕热梗挨罚。而两个菜单之外的媒体日本来就有「狂 / 稳 / 甩锅」
+     让你自己定调，这条却完全绕过它。
+     现在只有你这个赛段真在媒体日定了「狂」，才谈得上「补一句」——选了稳或甩锅、
+     跳过了媒体日的人，永远不会被安上这句话。 */
+  if(won&&ctx.gap<-1&&mediaToneNow()==="bold"&&rnd()<0.30){
+    // 记下说话那一刻的战绩：回旋镖该看的是「说完之后打得怎么样」，不是整个赛段的累计
+    queueFollowUp("bigTalk",2,{opp:m.oppName, si:S.si, sp:S.split||0,
+                               w0:(S.record&&S.record.w)||0, l0:(S.record&&S.record.l)||0});
+    pushEvent(`媒体日你把调子定成了「狂」，这场爆冷赢完记者又把话筒递过来——你补了一句
+      「<b>${m.oppName} 也就这样</b>」。话说出去就收不回来了，两周后见分晓。`,"info","舆论");
   }
   // 赛后归因：用判定胜负的那套数，现场算一次存下来
   {
@@ -4421,6 +4468,7 @@ export function endSeason(result,seed){
     }
   }
   cloutTick();
+  bondSplitEnd(result);   // 共事账本：这个赛段你是被带 / 并肩 / 带人的那个（bond.ts）
   rollForm();
   { rollWorldForm(); formNews(); }
   btkSplitEnd();
@@ -4987,8 +5035,12 @@ export function careerPoster(){
 }
 export function viewEnd(){
   const e=ending();
+  /* 玩家点名 2026-09-09：想要一张能存进相册、右下角带二维码的结算图。
+     原来这里只写「截图就能发」——截图带着地址栏和底栏，发出去既不好看、也没有入口。 */
   const again=`<div class="row" style="justify-content:center;align-items:center;margin:14px 0 22px;gap:14px">
-    <button class="btn" id="again">再开一局</button><span class="note" style="margin:0">上面这张名片，截图就能发。</span></div>`;
+    <button class="btn primary" id="sharecardbtn">生成生涯名片图</button>
+    <button class="btn" id="again">再开一局</button>
+    <span class="note" style="margin:0">图里带二维码，存下来或者发出去都行。</span></div>`;
   if(!S.career){                       // 从未签约：没有战队也没有战绩可展示
     return `${careerPoster()}${again}${achCard()}`;
   }
@@ -6464,6 +6516,7 @@ export function bind(){
     autoToggleAll(); };
   const _aN=$("autoNow"); if(_aN) _aN.onclick=autoOnce;
   const _aB=$("autoBack"); if(_aB) _aB.onclick=()=>{ S.tab="act"; render(); };
+  const _shc=$("sharecardbtn"); if(_shc) _shc.onclick=()=>shareCardOpen();   // 生涯名片图（share.ts）
   const _aO=$("autoOff"); if(_aO) _aO.onclick=()=>{ AUTO_KEYS.forEach(x=>{S.auto&&(S.auto[x.k]=false)}); render(); };
   st.querySelectorAll("[data-auto]").forEach((b: any)=>b.onclick=()=>{
     const k=b.dataset.auto;

@@ -1554,6 +1554,23 @@ header.top.compact>.theme-top{display:none}
 .ev-inner{max-height:calc(100svh - 28px)}
 .cer-inner{max-height:calc(100svh - 24px)}
 
+/* ---- 生涯名片图（share.ts）----
+   玩家点名：想要一张能存进相册、带二维码的结算图。浮层里放渲染好的 PNG，
+   手机长按保存，桌面走下载按钮。图本身是 1080×1620，这里只负责缩放显示。 */
+.share-overlay{display:flex;align-items:center;justify-content:center;padding:16px}
+.share-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  max-width:min(440px,94vw);max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+.share-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 14px;border-bottom:1px solid var(--line);flex:none}
+.share-head b{font-size:15px;color:var(--ink)}
+.share-body{overflow:auto;padding:12px;min-height:120px;display:flex;align-items:center;justify-content:center}
+.share-img{display:block;width:100%;height:auto;border-radius:8px}
+.share-loading{color:var(--ink-3);font-size:13px;padding:28px 8px;text-align:center}
+.share-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 14px;border-top:1px solid var(--line);flex:none;flex-wrap:wrap}
+.share-tip{font-size:12px;color:var(--ink-3);flex:1 1 160px;min-width:0}
+.share-acts{display:flex;align-items:center;gap:8px;flex:none}
+
 </style>
 
 </head>
@@ -2977,6 +2994,8 @@ header.top.compact>.theme-top{display:none}
     const best = M.concat(O).reduce((a, b) => a.rating >= b.rating ? a : b);
     const carry = !won && me.rating >= 1.15 && mates.every((x) => me.rating >= x.rating + 0.25) && mateAvg < 0.95;
     const soloWin = won && me.rating >= 1.25 && mates.length > 0 && mateAvg < 0.9 && mates.every((x) => x.rating < 1);
+    const meWorst = mates.length > 0 && mates.every((x) => x.rating >= me.rating);
+    const meGap = Math.round((me.rating - mateAvg) * 100) / 100;
     return {
       games,
       mine: M,
@@ -2984,6 +3003,8 @@ header.top.compact>.theme-top{display:none}
       mateAvg: q1(mateAvg),
       worst: worst ? worst.id : null,
       worstR: worst ? worst.rating : null,
+      meWorst,
+      meGap,
       mvp: best.id,
       carry,
       soloWin,
@@ -3841,14 +3862,14 @@ header.top.compact>.theme-top{display:none}
   }
   function pickForeignScout(champion) {
     if (rnd() >= (champion ? 0.2 : 0.1)) return null;
-    const W = { VCS: 5, PCS: 4, LJL: 3, LCO: 3, CBLOL: 2, LLA: 2, TCL: 2, LEC: 1.2, LCS: 1.2, LCK: 0.6 };
-    const pool = Object.keys(W).filter((k) => S.world && S.world[k] && S.world[k].length);
+    const W2 = { VCS: 5, PCS: 4, LJL: 3, LCO: 3, CBLOL: 2, LLA: 2, TCL: 2, LEC: 1.2, LCS: 1.2, LCK: 0.6 };
+    const pool = Object.keys(W2).filter((k) => S.world && S.world[k] && S.world[k].length);
     if (!pool.length) return null;
     let sum = 0;
-    pool.forEach((k) => sum += W[k]);
+    pool.forEach((k) => sum += W2[k]);
     let x = rnd() * sum;
     for (const k of pool) {
-      x -= W[k];
+      x -= W2[k];
       if (x <= 0) return k;
     }
     return pool[pool.length - 1];
@@ -8334,9 +8355,12 @@ header.top.compact>.theme-top{display:none}
       n: "赛后狠话的回旋镖",
       run(p) {
         const opp = p && p.opp ? p.opp : "对手";
-        if ((S.record && S.record.l || 0) >= 2) {
+        const w = S.record && S.record.w || 0, l = S.record && S.record.l || 0;
+        const same = !!(p && p.si === S.si && p.sp === (S.split || 0));
+        const dw = same ? w - (p && p.w0 || 0) : w, dl = same ? l - (p && p.l0 || 0) : l;
+        if (dl > dw) {
           S.heat = (S.heat || 0) + 10;
-          pushEvent(`两周前你赛后放的狠话被翻出来了——你们最近战绩不好，
+          pushEvent(`两周前你赛后放的狠话被翻出来了——这两周你们 <b>${dw} 胜 ${dl} 负</b>，
           <b>「${opp} 记得你说过的话」</b>成了弹幕热梗。压力给到你这边。`, "bad", "舆论");
         } else {
           addFans(6);
@@ -8746,6 +8770,219 @@ header.top.compact>.theme-top{display:none}
       看台上被记下的关注会在注册窗兑现成问询。</span></p></div>`;
   }
 
+  // demo/src/bond.ts
+  var BOND_OVR = 2;
+  var BOND_MIN_GAMES = 3;
+  var BOND_MAX = 80;
+  function bondBook() {
+    if (!S.mates) S.mates = {};
+    return S.mates;
+  }
+  function bondKey() {
+    return (S.si || 0) + "-" + (S.split || 0);
+  }
+  function bondOf(id) {
+    const b = S.mates;
+    return b && b[id] || null;
+  }
+  function bondRoleCount(e, role) {
+    if (!e || !e.roles) return 0;
+    return Object.keys(e.roles).filter((k) => e.roles[k] === role).length;
+  }
+  function bondSee(p) {
+    if (!p || p.me || !p.id) return null;
+    const b = bondBook();
+    let e = b[p.id];
+    if (!e) {
+      e = b[p.id] = {
+        id: p.id,
+        cn: p.cn || "",
+        pos: p.pos || "",
+        firstSi: S.si || 0,
+        firstKey: bondKey(),
+        lastSi: S.si || 0,
+        team: S.team || "",
+        splits: 0,
+        games: 0,
+        titles: [],
+        peakTrust: 0,
+        roles: {},
+        gone: null,
+        goneSi: null
+      };
+      bondTrim();
+    }
+    e.lastSi = S.si || 0;
+    e.gone = null;
+    e.goneSi = null;
+    if (p.cn && !e.cn) e.cn = p.cn;
+    const t = S.trust && S.trust[p.id];
+    if (typeof t === "number" && t > (e.peakTrust || 0)) e.peakTrust = q1(t);
+    return e;
+  }
+  function bondTrim() {
+    const b = S.mates || {}, ks = Object.keys(b);
+    if (ks.length <= BOND_MAX) return;
+    const drop = ks.filter((k) => b[k].gone && (b[k].splits || 0) < 2).sort((x, y) => (b[x].splits || 0) - (b[y].splits || 0));
+    let need = ks.length - BOND_MAX;
+    for (let i = 0; i < drop.length && need > 0; i++, need--) delete b[drop[i]];
+  }
+  function bondSync() {
+    if (!S.career || !S.team) return;
+    let ids = [];
+    try {
+      ids = myRoster().filter((p) => !p.me).map((p) => p.id);
+    } catch (e) {
+      return;
+    }
+    try {
+      myRoster().forEach((p) => {
+        if (!p.me) bondSee(p);
+      });
+    } catch (e) {
+    }
+    const b = bondBook();
+    Object.keys(b).forEach((k) => {
+      if (!ids.includes(k) && !b[k].gone) {
+        b[k].gone = "left";
+        b[k].goneSi = S.si || 0;
+      }
+    });
+  }
+  function bondRetire(id) {
+    const e = bondOf(id);
+    if (!e) return;
+    e.gone = "retired";
+    e.goneSi = S.si || 0;
+  }
+  function bondNoteMatch(box) {
+    if (!S.career || !box || !box.mine) return;
+    const k = bondKey();
+    let a = S.bondAcc;
+    if (!a || a.k !== k) a = S.bondAcc = { k, n: 0, me: 0, mates: {} };
+    const me = box.mine.find((x) => x.me);
+    if (!me) return;
+    a.n++;
+    a.me += me.rating;
+    box.mine.forEach((x) => {
+      if (x.me) return;
+      const r = a.mates[x.id] || (a.mates[x.id] = { n: 0, sum: 0 });
+      r.n++;
+      r.sum += x.rating;
+    });
+  }
+  function bondMyOvr() {
+    return avg(DIMS.map((d) => S.attrs && S.attrs[d] || 0));
+  }
+  function bondRoleVs(p) {
+    if (!p || p.me) return null;
+    const ovrGap = bondMyOvr() - ovrOf(p);
+    const ageGap = (S.age || 20) - (p.age || 22);
+    let role = "并肩";
+    if (ovrGap <= -BOND_OVR) role = ageGap < 0 ? "被带" : "被带飞";
+    else if (ovrGap >= BOND_OVR) role = ageGap <= 0 ? "扛旗" : "带人";
+    return { role, ovrGap: q1(ovrGap), ageGap: q1(ageGap) };
+  }
+  function bondRolesNow() {
+    const a = S.bondAcc;
+    if (!a || a.k !== bondKey() || a.n < BOND_MIN_GAMES) return null;
+    let ms = [];
+    try {
+      ms = myRoster().filter((p) => !p.me);
+    } catch (e) {
+      return null;
+    }
+    if (!ms.length) return null;
+    const per = {}, cnt = {};
+    ms.forEach((p) => {
+      const r = bondRoleVs(p);
+      if (!r) return;
+      per[p.id] = r;
+      cnt[r.role] = (cnt[r.role] || 0) + 1;
+    });
+    const ids = Object.keys(a.mates);
+    const rGap = ids.length ? q1(a.me / a.n - avg(ids.map((i) => a.mates[i].sum / Math.max(1, a.mates[i].n)))) : 0;
+    return { per, cnt, rGap, n: a.n };
+  }
+  function bondSplitEnd(result) {
+    if (!S.career || !S.team) return null;
+    const R = bondRolesNow(), key = bondKey(), a = S.bondAcc;
+    const games = a && a.k === key ? a.n : 0;
+    const title = result === "champion" && !S.benchedPO ? `${SEASONS[S.si] ? SEASONS[S.si].tag : "S"} ${S.homeLeague || "LPL"}${SPLITS[S.split || 0] || ""}` : null;
+    let ms = [];
+    try {
+      ms = myRoster().filter((p) => !p.me);
+    } catch (e) {
+      ms = [];
+    }
+    ms.forEach((p) => {
+      const e = bondSee(p);
+      if (!e) return;
+      if (e.roles[key] === void 0) e.splits = (e.splits || 0) + 1;
+      e.games = (e.games || 0) + games;
+      if (R && R.per[p.id]) e.roles[key] = R.per[p.id].role;
+      if (title && !e.titles.includes(title)) e.titles.push(title);
+    });
+    S.bondAcc = null;
+    if (R) {
+      S.bondRole = { si: S.si, sp: S.split || 0, cnt: R.cnt, rGap: R.rGap };
+      const bits = ["带人", "扛旗", "被带", "被带飞"].filter((k) => R.cnt[k]).map((k) => `<b>${k}</b> ${R.cnt[k]} 人`);
+      if (bits.length) pushEvent(
+        `${SEASONS[S.si] ? SEASONS[S.si].tag : ""}${SPLITS[S.split || 0] || ""}打完，队里这五个人的位置：${bits.join(" · ")}${R.cnt["并肩"] ? ` · 并肩 ${R.cnt["并肩"]} 人` : ""}。
+      <span style="color:var(--ink-3)">你的场均评分和他们差 ${R.rGap > 0 ? "+" : ""}${R.rGap.toFixed(2)}。</span>`,
+        "info",
+        "更衣室"
+      );
+    }
+    return R;
+  }
+  function bondLongest() {
+    const b = S.mates || {}, all = Object.keys(b).map((k) => b[k]);
+    if (!all.length) return null;
+    return all.slice().sort((x, y) => (y.splits || 0) - (x.splits || 0) || (y.titles || []).length - (x.titles || []).length)[0];
+  }
+  function bondFirstRole(e, role) {
+    if (!e || !e.roles) return null;
+    const ks = Object.keys(e.roles).filter((k) => e.roles[k] === role).sort();
+    return ks.length ? ks[0] : null;
+  }
+  function bondSiTag(key) {
+    const si = parseInt(String(key).split("-")[0], 10);
+    return SEASONS[si] && SEASONS[si].tag || "S" + si;
+  }
+  function bondProtege() {
+    const b = S.mates || {}, all = Object.keys(b).map((k) => b[k]);
+    const grew = all.filter((e) => bondRoleCount(e, "带人") >= 1 && bondRoleCount(e, "被带飞") >= 1);
+    if (grew.length) return { e: grew.sort((x, y) => bondRoleCount(y, "带人") - bondRoleCount(x, "带人"))[0], kind: "grew" };
+    const led = all.filter((e) => bondRoleCount(e, "带人") >= 2);
+    if (led.length) return { e: led.sort((x, y) => bondRoleCount(y, "带人") - bondRoleCount(x, "带人") || (y.splits || 0) - (x.splits || 0))[0], kind: "led" };
+    const past = all.filter((e) => bondRoleCount(e, "被带飞") >= 2 && (e.splits || 0) >= 2);
+    if (past.length) return { e: past.sort((x, y) => bondRoleCount(y, "被带飞") - bondRoleCount(x, "被带飞"))[0], kind: "passed" };
+    return null;
+  }
+  function bondCardLines() {
+    const out = [];
+    const L = bondLongest();
+    if (L && (L.splits || 0) >= 2) {
+      const t = (L.titles || []).length;
+      out.push({ k: "并肩最久", v: `${L.id} · ${L.splits} 个赛段${t ? ` · ${t} 冠` : ""}` });
+    }
+    const P = bondProtege();
+    if (P && P.e && (!L || P.e.id !== L.id)) {
+      const e = P.e;
+      if (P.kind === "grew") {
+        const at = bondFirstRole(e, "被带飞");
+        out.push({ k: "你带出来的", v: `${e.id} · 带了 ${bondRoleCount(e, "带人")} 个赛段${at ? `，${bondSiTag(at)} 综评超过你` : ""}` });
+      } else if (P.kind === "led") {
+        out.push({ k: "你带过最久", v: `${e.id} · ${bondRoleCount(e, "带人")} 个赛段` });
+      } else {
+        const at = bondFirstRole(e, "被带飞");
+        out.push({ k: "后来居上", v: `${e.id}${at ? ` · ${bondSiTag(at)} 综评超过你` : ""}` });
+      }
+    }
+    return out;
+  }
+
   // demo/src/team.ts
   function initTrust() {
     S.trust = {};
@@ -8785,6 +9022,7 @@ header.top.compact>.theme-top{display:none}
     ids.forEach((id) => {
       if (S.trust[id] === void 0) S.trust[id] = 46 + Math.floor(rnd() * 8);
     });
+    bondSync();
     Object.keys(S.trust).forEach((k) => {
       if (!ids.includes(k)) delete S.trust[k];
     });
@@ -9472,23 +9710,23 @@ header.top.compact>.theme-top{display:none}
       const r = rows.find((x) => x.n === n);
       return r && r.v <= -0.25 ? r : null;
     };
-    const W = { 操作: 0.34, 运营: 0.28, 心态: 0.14, 体质: 0.1 };
+    const W2 = { 操作: 0.34, 运营: 0.28, 心态: 0.14, 体质: 0.1 };
     const foes = m.opp.players || m.opp, foe = foes.find && foes.find((q) => q.pos === S.pos);
     const base = S.baseline && S.baseline[S.homeLeague || "LPL"] || 50;
-    const cmp = Object.keys(W).map((d) => {
+    const cmp = Object.keys(W2).map((d) => {
       const g = S.attrs[d] - (foe ? foe.r[d] : base);
-      return { d, g, eff: g * W[d] };
+      return { d, g, eff: g * W2[d] };
     });
     const strong = cmp.filter((x) => x.g >= 1).sort((a, b) => b.eff - a.eff).slice(0, 2);
     const weak = cmp.filter((x) => x.g < -1).sort((a, b) => a.eff - b.eff).slice(0, 2);
     const vals = DIMS.map((d) => S.attrs[d]), mu = avg(vals), sd = Math.sqrt(avg(vals.map((x) => (x - mu) ** 2)));
     const extreme = sd >= 9;
-    const topW = strong.length ? W[strong[0].d] : 0;
+    const topW = strong.length ? W2[strong[0].d] : 0;
     const net = cmp.reduce((a, x) => a + x.eff, 0);
     strong.forEach(({ d, g, eff }, i) => {
       personal.push({
         good: true,
-        q: `${d}比对位高 ${g.toFixed(0)} 分（权重 ${W[d]}）→ <b>+${pwShow(eff).toFixed(1)}</b> 战力`,
+        q: `${d}比对位高 ${g.toFixed(0)} 分（权重 ${W2[d]}）→ <b>+${pwShow(eff).toFixed(1)}</b> 战力`,
         how: i === 0 ? `这是你的本钱——临场节点里多选吃「${d}」的选项，成功率直接看这一维；训练赛对位也用它打` : `长板的每一分和短板的每一分是同一把秤：高就加、低就扣，权重一样`
       });
     });
@@ -9496,8 +9734,8 @@ header.top.compact>.theme-top{display:none}
       const capped = S.attrs[d] >= capOf(d) - 0.05;
       const P = BREAK_PATHS[d];
       personal.push({
-        q: `${d}比对位低 ${(-g).toFixed(0)} 分（权重 ${W[d]}）→ <b>${pwShow(eff).toFixed(1)}</b> 战力`,
-        how: capped && P ? `已到瓶颈——突破方法：${P.how}` : extreme && topW && W[d] < topW ? `这项权重 ${W[d]} 比你长项（${strong[0].d} ${topW}）低：补 5 点值 ${pwShow(5 * W[d]).toFixed(1)} 战力，长项练 5 点值 ${pwShow(5 * topW).toFixed(1)}——把长项练到顶更划算` : extreme && topW && W[d] >= topW ? `这项权重 ${W[d]} 不比你的长项低：补 5 点值 ${pwShow(5 * W[d]).toFixed(1)} 战力，和练长项一样划算甚至更划算——别被「极端加点」四个字骗了` : `日常多点「练${d}」，装备/课程里也有加${d}的`
+        q: `${d}比对位低 ${(-g).toFixed(0)} 分（权重 ${W2[d]}）→ <b>${pwShow(eff).toFixed(1)}</b> 战力`,
+        how: capped && P ? `已到瓶颈——突破方法：${P.how}` : extreme && topW && W2[d] < topW ? `这项权重 ${W2[d]} 比你长项（${strong[0].d} ${topW}）低：补 5 点值 ${pwShow(5 * W2[d]).toFixed(1)} 战力，长项练 5 点值 ${pwShow(5 * topW).toFixed(1)}——把长项练到顶更划算` : extreme && topW && W2[d] >= topW ? `这项权重 ${W2[d]} 不比你的长项低：补 5 点值 ${pwShow(5 * W2[d]).toFixed(1)} 战力，和练长项一样划算甚至更划算——别被「极端加点」四个字骗了` : `日常多点「练${d}」，装备/课程里也有加${d}的`
       });
     });
     if (strong.length || weak.length) personal.push({
@@ -10463,9 +10701,12 @@ header.top.compact>.theme-top{display:none}
     const v = S.verCer;
     return v && v.si === S.si ? v.adj || 0 : 0;
   }
-  function mediaTiltMul() {
+  function mediaToneNow() {
     const m = S.media;
-    return m && m.si === S.si && m.split === (S.split || 0) && m.tone === "bold" ? CER_EFF.media.bold.tilt : 1;
+    return m && m.si === S.si && m.split === (S.split || 0) && m.tone ? m.tone : null;
+  }
+  function mediaTiltMul() {
+    return mediaToneNow() === "bold" ? CER_EFF.media.bold.tilt : 1;
   }
   function isFinalMatch() {
     if (!S.career) return false;
@@ -10507,9 +10748,9 @@ header.top.compact>.theme-top{display:none}
     } catch (e) {
       top = [];
     }
-    const H = S.honors || {};
-    const wc = H.worlds && H.worlds[S.si] || ((S.career && S.career.worldsYears || []).includes(S.si) ? S.team : null);
-    const mc = H.msi && H.msi[S.si] || ((S.career && S.career.msiYears || []).includes(S.si) ? S.team : null);
+    const H2 = S.honors || {};
+    const wc = H2.worlds && H2.worlds[S.si] || ((S.career && S.career.worldsYears || []).includes(S.si) ? S.team : null);
+    const mc = H2.msi && H2.msi[S.si] || ((S.career && S.career.msiYears || []).includes(S.si) ? S.team : null);
     const lc = top[0] || rk[0] || null;
     const bonus = (n) => (n === wc ? AWARD_BONUS.worlds : 0) + (n === mc ? AWARD_BONUS.msi : 0) + (n === lc ? AWARD_BONUS.league : 0) + (rk.indexOf(n) >= 0 && rk.indexOf(n) < 4 ? AWARD_BONUS.top4 : 0);
     const bench = isBenched();
@@ -10699,12 +10940,12 @@ header.top.compact>.theme-top{display:none}
       else if (st === "game") body = `<div class="cer-eyebrow">专注 · 弹幕里按 1 → 25 点完</div><div id="cer-game" data-game="focus"></div>${btns("")}`;
       else body = resultBody(c, "stage");
     } else if (c.k === "depart") {
-      const H = worldsHost();
+      const H2 = worldsHost();
       if (st === "s1") body = `${scene("airport")}<div class="cer-eyebrow">${SEASONS[S.si].tag} 世界赛 · 出征仪式 1/3</div>
-      <p class="cer-p"><b>机场。</b>送行的粉丝举着队旗，有人在喊你的 ID。安检口你回头看了一眼——飞${H.c}的航班要 ${H.h} 个小时。</p>
+      <p class="cer-p"><b>机场。</b>送行的粉丝举着队旗，有人在喊你的 ID。安检口你回头看了一眼——飞${H2.c}的航班要 ${H2.h} 个小时。</p>
       ${btns(`<button class="btn primary" data-cer="next">登机 →</button>`)}`;
       else if (st === "s2") body = `${scene("city")}<div class="cer-eyebrow">出征仪式 2/3</div>
-      <p class="cer-p"><b>落地${H.c}。</b>时差、酒店、主办方的车。队里已经有人开始头疼，教练在群里发了一张作息表。</p>
+      <p class="cer-p"><b>落地${H2.c}。</b>时差、酒店、主办方的车。队里已经有人开始头疼，教练在群里发了一张作息表。</p>
       ${btns(`<button class="btn primary" data-cer="next">去训练室 →</button>`)}`;
       else if (st === "s3") body = `${scene("room")}<div class="cer-eyebrow">出征仪式 3/3</div>
       <p class="cer-p"><b>第一次进主办地训练室。</b>键盘是自己的，椅子不是。教练只说了一句：先把时差倒过来。</p>
@@ -11072,14 +11313,14 @@ header.top.compact>.theme-top{display:none}
         return;
       }
       kill();
-      const W = arena.clientWidth || 300, H = arena.clientHeight || 240;
+      const W2 = arena.clientWidth || 300, H2 = arena.clientHeight || 240;
       const b = document.createElement("button");
       b.type = "button";
       b.className = "mg-target";
       b.setAttribute("aria-label", "靶");
       b.style.width = b.style.height = SIZE + "px";
-      b.style.left = Math.round(rnd2(4, Math.max(4, W - SIZE - 4))) + "px";
-      b.style.top = Math.round(rnd2(4, Math.max(4, H - SIZE - 4))) + "px";
+      b.style.left = Math.round(rnd2(4, Math.max(4, W2 - SIZE - 4))) + "px";
+      b.style.top = Math.round(rnd2(4, Math.max(4, H2 - SIZE - 4))) + "px";
       spawned++;
       if (nEl) nEl.textContent = String(spawned);
       curAt = Date.now();
@@ -12260,17 +12501,17 @@ header.top.compact>.theme-top{display:none}
   function afterIntl() {
     const go = S.afterIntlGo;
     S.afterIntlGo = null;
-    const wrap = S._intlWrap;
+    const wrap2 = S._intlWrap;
     S._intlWrap = null;
     if (go === "summer") {
-      if (wrap) {
+      if (wrap2) {
         enterBreak(
           "summer",
           1,
           "季中间歇",
           `MSI 出局了。夏季赛开始前还有一点时间——<b>世界赛名额就看下个赛段</b>。`
         );
-        const ev = intlChampEvent(wrap.name, wrap.champ);
+        const ev = intlChampEvent(wrap2.name, wrap2.champ);
         queueBreakNews(2, ev.text, ev.tone, ev.tag);
         return;
       }
@@ -12282,14 +12523,14 @@ header.top.compact>.theme-top{display:none}
       );
       return;
     }
-    if (wrap) {
+    if (wrap2) {
       enterBreak(
         "wrap",
         2,
         "世界赛 · 你出局之后",
         `你的世界赛结束了，比赛还在打。<b>剩下的几周，先把自己捡起来。</b>`
       );
-      const ev = intlChampEvent(wrap.name, wrap.champ);
+      const ev = intlChampEvent(wrap2.name, wrap2.champ);
       queueBreakNews(3, ev.text, ev.tone, ev.tag);
       return;
     }
@@ -12571,14 +12812,14 @@ header.top.compact>.theme-top{display:none}
       if (Math.abs(S.staff.coach - c0) >= 0.05) log.coach.push({ why: "时间冲淡", v: q1(S.staff.coach - c0) });
       if (Math.abs(S.staff.mgr - m0) >= 0.05) log.mgr.push({ why: "时间冲淡", v: q1(S.staff.mgr - m0) });
     }
-    const H = newHonors();
-    if (H.lg) {
-      put("coach", H.lg * HONOR_COACH.lg, `联赛冠军 ×${H.lg}`);
-      put("mgr", H.lg * HONOR_MGR.lg, `联赛冠军 ×${H.lg}`);
+    const H2 = newHonors();
+    if (H2.lg) {
+      put("coach", H2.lg * HONOR_COACH.lg, `联赛冠军 ×${H2.lg}`);
+      put("mgr", H2.lg * HONOR_MGR.lg, `联赛冠军 ×${H2.lg}`);
     }
-    if (H.intl) {
-      put("coach", H.intl * HONOR_COACH.intl, `国际冠军 ×${H.intl}`);
-      put("mgr", H.intl * HONOR_MGR.intl, `国际冠军 ×${H.intl}`);
+    if (H2.intl) {
+      put("coach", H2.intl * HONOR_COACH.intl, `国际冠军 ×${H2.intl}`);
+      put("mgr", H2.intl * HONOR_MGR.intl, `国际冠军 ×${H2.intl}`);
     }
     const g = S.record ? S.record.w + S.record.l : 0;
     if (g > 0) put("coach", (S.record.w / g - 0.5) * 22, `胜率 ${Math.round(S.record.w / g * 100)}%`);
@@ -13632,9 +13873,17 @@ header.top.compact>.theme-top{display:none}
       secret: true,
       n: "零杀十死也能赢",
       tag: "梗",
-      d: "个人数据难看到不忍直视，但这把还是赢了。",
+      d: "这一场你是全队评分最低的那个，队伍还是赢了。",
+      /* 玩家实锤（2026-09-09）：19/6/15、分均补刀 9.9、伤害 28%、评分 1.15，照样弹这个成就。
+         原来的条件是「赢了 + 临场决策砸了两次」——和个人数据一点关系都没有，
+         而临场决策一场三个节点，砸两个太常见：30 局批测里 12.9% 的胜场命中，
+         30 个生涯 30 个都拿到了（这可是个 secret 的梗成就）。
+         现在读真实那一行：你是全队评分最低的，而且比队友均值低 0.25 以上。
+         同一批测下降到 1.4% 的胜场、约 0.47 次／生涯——难看到不忍直视，但真的会发生。
+         顺带一提「零杀十死」这个数字本身在本作里不可能出现：胜场 KDA 的最小值是 2.63，
+         名字是梗，判据看的是「全队你最拉」。 */
       on: "match",
-      cond: (c) => c.won && c.nodeFails >= 2,
+      cond: (c) => c.won && c.meWorst && c.meGap <= -0.25,
       flavor: "赛后采访你说：赢了就行。",
       r: { trust: 6, fame: 10 }
     },
@@ -14502,12 +14751,12 @@ header.top.compact>.theme-top{display:none}
   function starInGameHonors(teamName) {
     const out = [];
     try {
-      const H = S.honors || {};
-      Object.keys(H.worlds || {}).forEach((si) => {
-        if (H.worlds[si] === teamName) out.push(`${SEASONS[+si].tag} 世界冠军`);
+      const H2 = S.honors || {};
+      Object.keys(H2.worlds || {}).forEach((si) => {
+        if (H2.worlds[si] === teamName) out.push(`${SEASONS[+si].tag} 世界冠军`);
       });
-      Object.keys(H.msi || {}).forEach((si) => {
-        if (H.msi[si] === teamName) out.push(`${SEASONS[+si].tag} MSI 冠军`);
+      Object.keys(H2.msi || {}).forEach((si) => {
+        if (H2.msi[si] === teamName) out.push(`${SEASONS[+si].tag} MSI 冠军`);
       });
       const mine = S.career && S.career.titles || [];
       Object.keys(S.poCache || {}).forEach((k) => {
@@ -14993,6 +15242,347 @@ header.top.compact>.theme-top{display:none}
     paintTheme(readTheme());
   }
 
+  // demo/src/share.ts
+  var SITE_QR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAK4AAACuAQMAAACVwqStAAAABlBMVEULFiL///8qhWqJAAABA0lEQVR42u1XsQ3DMAwTqgN8kl/3ST5AgEpKdqesBYfW0JB4CSGRFGP5dMJ++3objudC2Ui+2IyXPZ5vXgPJBCIHHsKYjpctQ1IA2BA8A5KLkSQqRuqR4OvGAWmRkCeHrlqelHbIEJZSO+csFHhyxC2aDruRdJKwydGMVPUEJIkaUG4xTzAXr1bk9TeZdjbxoC30k3IV1XTCWj5AAi1jUirtQDIlHGueLOneKQ8pVEqeHCdZ7fMuVHExFq0IMuQyR+ixDYZUMRljb2YrETGfhMl38epJCZF0PunA1ttHmx7LY2sB6XbxzWynM6nObL47IZjOT87SQWforqVlaWb7/41+rt/vdDbChj/nTgAAAABJRU5ErkJggg==";
+  var SITE_URL = "www.poxiao.lol";
+  var W = 1080;
+  var H = 1620;
+  var CO = {
+    bg: "#0B1622",
+    panel: "#122132",
+    line: "#1E3247",
+    ink: "#E8EEF5",
+    ink2: "#9FB2C6",
+    ink3: "#6B8199",
+    gold: "#E8B559",
+    cyan: "#4FC3D9",
+    red: "#D9605E"
+  };
+  var FONT = (w, s) => `${w} ${s}px "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif`;
+  function wrap(g, text, x, y, maxW, lh, maxLines) {
+    const cs = String(text || "").split("");
+    let line = "", n = 0;
+    for (let i = 0; i < cs.length; i++) {
+      const t = line + cs[i];
+      if (g.measureText(t).width > maxW && line) {
+        if (maxLines && n >= maxLines - 1) {
+          g.fillText(line.slice(0, -1) + "…", x, y + n * lh);
+          return n + 1;
+        }
+        g.fillText(line, x, y + n * lh);
+        n++;
+        line = cs[i];
+      } else line = t;
+    }
+    if (line) {
+      g.fillText(line, x, y + n * lh);
+      n++;
+    }
+    return n;
+  }
+  function fitText(g, text, x, y, maxW, size, weight) {
+    let t = String(text || ""), sz = size;
+    while (sz > 18) {
+      g.font = FONT(weight || 700, sz);
+      if (g.measureText(t).width <= maxW) break;
+      sz -= 2;
+    }
+    g.font = FONT(weight || 700, sz);
+    while (t.length > 1 && g.measureText(t).width > maxW) t = t.slice(0, -1);
+    if (g.measureText(String(text || "")).width > maxW && t.length > 1) t = t.slice(0, -1) + "…";
+    g.fillText(t, x, y);
+  }
+  function roundRect(g, x, y, w, h, r) {
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  }
+  function yearRows() {
+    const C = S.career || {}, log = C.log || [];
+    const played = SEASONS.slice(0, Math.min(SEASONS.length, (S.si || 0) + 1));
+    let prev = null;
+    return played.map((sea, si) => {
+      const rows = log.filter((x) => x.si === si);
+      let team = rows.length ? rows[rows.length - 1].team : null;
+      if (!team) {
+        const tx = (S.txLog || []).filter((x) => String(x.s || "").indexOf(sea.tag) === 0);
+        for (const t2 of tx.slice().reverse()) {
+          const m = String(t2.text || "").match(/<b>([^<]+)<\/b>/);
+          if (m) {
+            team = m[1];
+            break;
+          }
+        }
+      }
+      if (!team && prev) team = prev;
+      if (!team && S.career && si <= (S.si || 0)) team = S.team;
+      if (team) prev = team;
+      const res = rows.map((r) => `${SPLITS[r.split] ? SPLITS[r.split][0] : ""}${r.result === "champion" ? "冠" : r.result === 3 ? "亚" : r.result === 2 ? "四强" : r.seed > 6 ? "第" + r.seed : "季后赛"}`).join(" · ");
+      const won = (C.lgYears || []).includes(si) || (C.msiYears || []).includes(si) || (C.worldsYears || []).includes(si);
+      return { tag: sea.tag, y: sea.y, team: team || "—", res: res || "—", won };
+    });
+  }
+  function drawShareCard() {
+    const cv = document.createElement("canvas");
+    cv.width = W;
+    cv.height = H;
+    const g = cv.getContext("2d");
+    if (!g) return null;
+    const e = ending();
+    g.fillStyle = CO.bg;
+    g.fillRect(0, 0, W, H);
+    g.fillStyle = CO.gold;
+    g.fillRect(0, 0, W, 6);
+    let y = 110;
+    g.textBaseline = "alphabetic";
+    g.font = FONT(700, 40);
+    g.fillStyle = CO.gold;
+    g.fillText("破晓", 72, y);
+    g.font = FONT(400, 24);
+    g.fillStyle = CO.ink3;
+    const _played = SEASONS.slice(0, Math.min(SEASONS.length, (S.si || 0) + 1));
+    g.fillText(
+      "生涯名片 · " + _played[0].tag + "–" + _played[_played.length - 1].tag + " · " + _played[0].y + "–" + _played[_played.length - 1].y,
+      72 + g.measureText("破晓").width + 120,
+      y - 4
+    );
+    y += 96;
+    g.font = FONT(700, 72);
+    g.fillStyle = CO.ink;
+    g.fillText("「" + e.n + "」", 72, y);
+    y += 54;
+    g.font = FONT(400, 28);
+    g.fillStyle = CO.ink2;
+    y += wrap(g, e.d, 72, y, W - 144, 44, 3) * 44;
+    y += 28;
+    const rawName = S && S.name ? String(S.name) : "你";
+    const idLine = [
+      rawName,
+      POSN[S.pos] || "",
+      (ORIGIN[S.origin] || {}).n || "",
+      S.career ? S.team || "—" : "",
+      (S.age || "") + " 岁"
+    ].filter(Boolean).join(" · ");
+    g.font = FONT(600, 30);
+    g.fillStyle = CO.cyan;
+    g.fillText(idLine, 72, y);
+    const own = S.career && S.career.titles || [], ring = ringTitles();
+    y += 64;
+    if (own.length || ring.length) {
+      g.font = FONT(400, 26);
+      g.fillStyle = CO.ink3;
+      g.fillText("冠军", 72, y);
+      g.font = FONT(600, 26);
+      g.fillStyle = CO.gold;
+      y += wrap(g, own.concat(ring.map((t) => t + "（随队）")).join("、"), 72, y + 40, W - 144, 40, 3) * 40 + 40;
+    } else {
+      g.font = FONT(400, 26);
+      g.fillStyle = CO.ink3;
+      g.fillText("还没有冠军", 72, y);
+      y += 40;
+    }
+    y += 34;
+    const rows = yearRows();
+    const bond = bondCardLines();
+    const bondH = bond.length ? 26 + bond.length * 40 : 0;
+    const avail = H - 270 - 40 - y - 132 - 30 - bondH;
+    const rh = Math.max(56, Math.min(112, Math.floor(avail / Math.max(1, rows.length))));
+    rows.forEach((r, i) => {
+      const yy = y + i * rh;
+      g.fillStyle = r.won ? "#1A2A1E" : CO.panel;
+      roundRect(g, 72, yy, W - 144, rh - 10, 10);
+      g.fill();
+      if (r.won) {
+        g.fillStyle = CO.gold;
+        g.fillRect(72, yy, 5, rh - 10);
+      }
+      g.font = FONT(700, 26);
+      g.fillStyle = r.won ? CO.gold : CO.ink2;
+      g.fillText(r.tag, 96, yy + (rh - 10) / 2 + 9);
+      g.font = FONT(400, 25);
+      g.fillStyle = CO.ink;
+      g.fillText(r.team, 200, yy + (rh - 10) / 2 + 9);
+      g.font = FONT(400, 25);
+      g.fillStyle = CO.ink2;
+      const rt = r.res, rw = g.measureText(rt).width;
+      g.fillText(rt, W - 96 - rw, yy + (rh - 10) / 2 + 9);
+    });
+    y += rows.length * rh + 30;
+    const C = S.career || {};
+    const stats = [
+      ["生涯小分", (C.w || 0) + "–" + (C.l || 0)],
+      ["冠军", String(titleCount())],
+      ["转会", txStops() + " 站"],
+      ["段位", rankFull(S.pre ? S.pre.rank : 0)],
+      ["粉丝", fanTier()]
+    ];
+    const cw = (W - 144) / stats.length;
+    g.fillStyle = CO.panel;
+    roundRect(g, 72, y, W - 144, 132, 12);
+    g.fill();
+    stats.forEach(([k, v], i) => {
+      const cx = 72 + cw * i + cw / 2;
+      g.textAlign = "center";
+      g.font = FONT(400, 22);
+      g.fillStyle = CO.ink3;
+      g.fillText(k, cx, y + 46);
+      g.fillStyle = CO.ink;
+      fitText(g, v, cx, y + 96, cw - 26, 32);
+      if (i) {
+        g.fillStyle = CO.line;
+        g.fillRect(72 + cw * i, y + 30, 1, 72);
+      }
+    });
+    g.textAlign = "left";
+    y += 132;
+    if (bond.length) {
+      y += 26;
+      bond.forEach((ln, i) => {
+        const ly = y + i * 40;
+        g.font = FONT(400, 24);
+        g.fillStyle = CO.ink3;
+        g.fillText(ln.k, 72, ly);
+        const kw = g.measureText(ln.k + "　").width;
+        g.font = FONT(600, 24);
+        g.fillStyle = CO.gold;
+        g.fillText(ln.v, 72 + kw, ly);
+      });
+      y += bond.length * 40;
+    }
+    const qy = H - 230;
+    g.fillStyle = CO.line;
+    g.fillRect(72, qy - 40, W - 144, 1);
+    g.font = FONT(700, 34);
+    g.fillStyle = CO.ink;
+    g.fillText("破晓 · LOL 电竞生涯模拟", 72, qy + 40);
+    g.font = FONT(400, 26);
+    g.fillStyle = CO.ink2;
+    g.fillText("扫码开一局，写你自己的五年", 72, qy + 88);
+    g.font = FONT(400, 24);
+    g.fillStyle = CO.gold;
+    g.fillText(SITE_URL, 72, qy + 136);
+    return cv;
+  }
+  function makeShareCard() {
+    return new Promise((res) => {
+      const cv = drawShareCard();
+      if (!cv) {
+        res(null);
+        return;
+      }
+      const g = cv.getContext("2d");
+      const img = new Image();
+      const qs = 168, qx = W - 72 - qs, qy = H - 230 - 8;
+      const done = () => {
+        try {
+          res(cv.toDataURL("image/png"));
+        } catch (e) {
+          res(null);
+        }
+      };
+      img.onload = () => {
+        g.fillStyle = "#fff";
+        roundRect(g, qx - 10, qy - 10, qs + 20, qs + 20, 10);
+        g.fill();
+        g.drawImage(img, qx, qy, qs, qs);
+        done();
+      };
+      img.onerror = done;
+      img.src = SITE_QR;
+    });
+  }
+  var SHARE_FILE = "破晓-生涯名片.png";
+  var SHARE_TEXT = "我的五年电竞生涯 · " + SITE_URL;
+  function dataUrlToFile(url, name) {
+    try {
+      if (typeof File !== "function" || typeof atob !== "function") return null;
+      const i = url.indexOf(",");
+      if (i < 0) return null;
+      const bin = atob(url.slice(i + 1)), buf = new Uint8Array(bin.length);
+      for (let k = 0; k < bin.length; k++) buf[k] = bin.charCodeAt(k);
+      return new File([buf], name, { type: "image/png" });
+    } catch (e) {
+      return null;
+    }
+  }
+  function canShareFile(file) {
+    try {
+      const nav = typeof navigator !== "undefined" ? navigator : null;
+      return !!(nav && typeof nav.share === "function" && typeof nav.canShare === "function" && nav.canShare({ files: [file] }));
+    } catch (e) {
+      return false;
+    }
+  }
+  function shareCardOpen() {
+    if (typeof document === "undefined" || document.getElementById("sharecard")) return;
+    const wrapEl = document.createElement("div");
+    wrapEl.id = "sharecard";
+    wrapEl.className = "rankup share-overlay";
+    wrapEl.setAttribute("role", "dialog");
+    wrapEl.setAttribute("aria-modal", "true");
+    wrapEl.innerHTML = `<section class="share-card">
+    <header class="share-head"><b>生涯名片</b>
+      <button type="button" class="support-close" id="share-x" aria-label="关闭">关闭 <span aria-hidden="true">×</span></button></header>
+    <div class="share-body"><div class="share-loading">正在生成…</div></div>
+    <footer class="share-foot">
+      <span class="share-tip" id="share-tip">正在生成…</span>
+      <span class="share-acts">
+        <button type="button" class="btn sm primary" id="share-save" hidden>存到相册</button>
+        <a class="btn sm" id="share-dl" download="破晓-生涯名片.png" hidden>下载图片</a>
+      </span>
+    </footer>
+  </section>`;
+    const close = () => {
+      document.removeEventListener("keydown", onKey);
+      wrapEl.remove();
+    };
+    const onKey = (ev) => {
+      if (ev.key === "Escape") close();
+    };
+    wrapEl.querySelector("#share-x").onclick = close;
+    wrapEl.onclick = (ev) => {
+      if (ev.target === wrapEl) close();
+    };
+    document.body.appendChild(wrapEl);
+    document.addEventListener("keydown", onKey);
+    statEvent("sharecard");
+    makeShareCard().then((url) => {
+      const body = wrapEl.querySelector(".share-body");
+      if (!body) return;
+      if (!url) {
+        body.innerHTML = `<div class="share-loading">这台设备生成不了图片，直接截图也一样能发。</div>`;
+        return;
+      }
+      body.innerHTML = `<img class="share-img" alt="生涯名片" src="${url}">`;
+      const dl = wrapEl.querySelector("#share-dl");
+      if (dl) {
+        dl.href = url;
+        dl.hidden = false;
+      }
+      const save = wrapEl.querySelector("#share-save");
+      const tip = wrapEl.querySelector("#share-tip");
+      const file = dataUrlToFile(url, SHARE_FILE);
+      if (save && file && canShareFile(file)) {
+        save.hidden = false;
+        save.onclick = () => {
+          statEvent("sharesave");
+          try {
+            navigator.share({ files: [file], title: "破晓 · 生涯名片", text: SHARE_TEXT }).catch(() => {
+            });
+          } catch (e) {
+          }
+        };
+        if (tip) tip.textContent = "点「存到相册」走系统菜单，也可以长按图片保存";
+      } else if (tip) {
+        tip.textContent = "长按图片保存到相册；「下载图片」存到的是「文件」App 的下载项";
+      }
+    });
+  }
+
   // demo/src/main.ts
   var DIMS = ["操作", "运营", "心态", "指挥", "体质"];
   var DIM_HINT = { 操作: "对线与输出", 运营: "视野与节奏", 心态: "抗压与翻盘", 指挥: "主指挥取队内最高", 体质: "耐久与状态" };
@@ -15061,9 +15651,31 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
-    { v: "v20260909c", at: "2026-09-09", items: [
+    { v: "v20260909j", at: "2026-09-09", items: [
       "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
       "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+    ] },
+    { v: "v20260909h", at: "2026-09-09", items: [
+      "<b>共事账本</b>（作者点名的「羁绊」第一批，只记不改数值）：一起打过的队友从此不会被忘掉。原来队友一离开名单，你和他的一切就被删干净——一起打了三年的大哥退役那天归零，你带过的新人被卖走、下赛季碰上游戏也不认得他。现在每个同队过的人都留一条：一起打了几个赛段、一起拿过什么冠军、他是退役还是被卖走的",
+      "每个赛段结算多一句话：<b>这一年你在队里是「被带 / 并肩 / 带人」的哪一个</b>。判据是已经算好的赛后全员评分——你和队友的场均差，加上你和他们的年龄差。作者原话：「刚去的时候四个大哥带我一个，大哥老了我带一绿带四红硬带他们夺冠」——这件事引擎本来每场都在算，只是从来没被累计、也没被说出来过",
+      "生涯名片图底部多两行：<b>并肩最久</b>（谁陪你打得最久、一起拿过几冠）和<b>你带过最久</b>（哪个新人被你带了最多个赛段）。没有内容时版式不变"
+    ] },
+    { v: "v20260909g", at: "2026-09-09", items: [
+      "赛后那句狠话不再是游戏替你说的（作者实锤：「新档明明没放过狠话，却提示我的狠话被对手记下来、成了网络热梗」）：原来只要<b>爆冷赢一场</b>就有三成概率自动弹「XX 也就这样」，玩家没点过任何按钮——30 局批测里 <b>28/30 的生涯被安过，平均每局 3.9 次</b>，其中 47% 两周后变成弹幕热梗挨罚。而媒体日本来就有「狂 / 稳 / 甩锅」让你自己定调，这条完全绕过了它。现在<b>只有这个赛段你真在媒体日定了「狂」，才谈得上赛后补一句</b>；选了稳、甩锅或者跳过媒体日的人，永远不会被安上这句话",
+      "狠话的回旋镖也改了判据：原来看的是「这个赛段一共输过两场」——一个赛段十几场，输两场太容易，等于说完必挨罚。现在看的是<b>说完之后那两周打成什么样</b>，赢多于输就进赛区宣传片，输多于赢才成弹幕热梗，事件里也把这两周的战绩写出来"
+    ] },
+    { v: "v20260909f", at: "2026-09-09", items: [
+      "生涯名片图多了一个「<b>存到相册</b>」按钮（作者实测：手机上点「下载图片」，iOS 弹的是下载确认框，图落在<b>「文件」App 的下载项</b>里，不是相册——和大家习惯的「保存图片」不是一回事）：现在手机上走系统分享菜单，iOS 里点「存储图像」就直接进相册，安卓同理。设备不支持的话仍然可以长按图片保存，底部那行小字也会跟着说清楚图会落到哪"
+    ] },
+    { v: "v20260909e", at: "2026-09-09", items: [
+      "成就「零杀十死也能赢」不再乱弹（玩家实锤：19/6/15、分均补刀 9.9、伤害占比 28%、评分 1.15，照样弹出来）：它原来的条件是「赢了 + 临场决策砸了两次」，和个人数据一点关系都没有——而一场比赛就三个节点，砸两个太常见，30 局批测里 12.9% 的胜场命中、30 个生涯全都拿到了（这可是个隐藏的梗成就）。现在读你这一场真实的那一行：<b>你是全队评分最低的那个，而且比队友均值低 0.25 以上，队伍还赢了</b>——同一批测降到 1.4% 的胜场、约 0.47 次／生涯"
+    ] },
+    { v: "v20260909d", at: "2026-09-09", items: [
+      "职业前训练的卡面不再少报（玩家实锤：卡面写「操作 +0.9」，点完实际涨了 1.3）：职业前每一次训练真正写进去的是 gain × 0.85 × 1.5（1.5 是职业前的节奏系数——一年的行动点少了，每一点的产出按比例抬回去），而卡面那一侧只乘了 0.85，把这个 1.5 漏了，于是每一次训练都少报三分之一。现在预览和生效共用同一个函数"
+    ] },
+    { v: "v20260909c", at: "2026-09-09", items: [
+      "生涯结束多了一张<b>可以存进相册的名片图</b>（玩家点名：「想玩的人可以直接扫，想留作纪念的也可以一键保存」）：结局页点「生成生涯名片图」，把判词、ID、冠军、逐年轨迹、五项统计画成一张 1080×1620 的竖图，右下角是站点二维码。手机长按保存到相册，桌面点「下载图片」。原来这里只写着「截图就能发」——截图带着地址栏和底栏，发出去既不好看也没有入口",
+      "名片图是浏览器里现画的（canvas），不联网、不上传，图只在你自己手机上；二维码是内嵌的，扫出来就是 www.poxiao.lol"
     ] },
     { v: "v20260909b", at: "2026-09-09", items: [
       "第三次清足球词，这次钉死（玩家实锤：「很多时候的措辞是赢球、球队，包括挂靴」）：生涯一览的「如果今天挂靴」和退役确认里的「就此挂靴」改成退役；赛后拆解的「赢球」、媒体日的「输球」改成赢比赛 / 输掉的比赛；粉丝见面会的场地档次「小场 / 中场 / 大场」改成小型 / 中型 / 大型场地——「中场」容易被读成足球的中场。前两次都是人工扫一遍改掉、然后新写的文案又把词带回来，所以这次加了一条自检：玩家看得见的字符串里出现球队 / 球员 / 球迷 / 球星 / 球场 / 赢球 / 输球 / 打球 / 挂靴 / 板凳席，测试直接红并指到行号",
@@ -16546,6 +17158,7 @@ header.top.compact>.theme-top{display:none}
             const base2 = S.baseline && S.baseline[lg] || avg(S.world[lg].map((t) => avg(t.players.map((q) => ovrOf(q)))));
             const nr = makeRookie(p.pos, base2 - 6 + (S.si || 0) * 2.2, lg);
             S.retiredPool.push({ p: Object.assign({}, p), peak: ovr, year: SEASONS[S.si].y, lg });
+            if (team.name === S.team) bondRetire(p.id);
             if (lg === "LPL" || ovr > 58) {
               const honor = ovr > 76 ? "一代人的记忆就此谢幕" : ovr > 64 ? "结束了自己的职业生涯" : "低调退役";
               pushEvent(
@@ -17016,7 +17629,7 @@ header.top.compact>.theme-top{display:none}
     } else if (k === "train") {
       const c = capOf(dim);
       if (dim === "操作" && true) btkNote("op", 1);
-      if (S.attrs[dim] < c) S.attrs[dim] = Math.min(c, S.attrs[dim] + gain2(dim) * 0.85 * PRE_PACE);
+      if (S.attrs[dim] < c) S.attrs[dim] = Math.min(c, S.attrs[dim] + trainGain(dim));
       const sub = PRE_SPLASH[dim];
       if (sub) {
         const sc = capOf(sub.d);
@@ -17857,9 +18470,14 @@ header.top.compact>.theme-top{display:none}
   }
   var _prepMul = () => S.step === "prep" || S.off && S.off.next === "intl" ? S.assets && S.assets.van ? 0.7 : 0.6 : 1;
   var _isPre = () => S.step === "pre";
+  function trainGain(d) {
+    if (_isPre()) return gain2(d) * 0.85 * PRE_PACE;
+    const vm = S.career && SEASONS[S.si] && SEASONS[S.si].dim === d ? VER_TRAIN : 1;
+    return gain2(d) * vm;
+  }
   function costTrain(d) {
     const capped = S.attrs[d] >= capOf(d);
-    const g = gain2(d) * (_isPre() ? 0.85 : 1);
+    const g = trainGain(d);
     return costBits([
       _eDn(9),
       capped ? null : `${d}<i class="up">+${g.toFixed(1)}</i>`
@@ -17900,8 +18518,7 @@ header.top.compact>.theme-top{display:none}
     if (S.ap < apCost("train")) return;
     const capped = S.attrs[d] >= capOf(d);
     if (d === "操作" && true) btkNote("op", 1);
-    const vm = S.career && SEASONS[S.si] && SEASONS[S.si].dim === d ? VER_TRAIN : 1;
-    if (!capped) S.attrs[d] = Math.min(capOf(d), S.attrs[d] + gain2(d) * vm);
+    if (!capped) S.attrs[d] = Math.min(capOf(d), S.attrs[d] + trainGain(d));
     noteAct("train", d);
     checkAch("train");
     addFat(9);
@@ -18676,6 +19293,7 @@ header.top.compact>.theme-top{display:none}
     S.stats.r += rating;
     m.myline = { k, d, a, cs, dmg, rating };
     m.box = box;
+    bondNoteMatch(box);
     if (box && box.carry) {
       S.carries = (S.carries || 0) + 1;
       S.carrySplit = (S.carrySplit || 0) + 1;
@@ -18764,6 +19382,10 @@ header.top.compact>.theme-top{display:none}
       oppScore: m.sc[1],
       carry: !!(m.box && m.box.carry),
       soloWin: !!(m.box && m.box.soloWin),
+      // 这一场你自己那一行：成就要判「数据难看」就得读真实数据，不能拿临场决策当替身
+      myRating: m.myline && m.myline.rating !== void 0 ? m.myline.rating : null,
+      meWorst: !!(m.box && m.box.meWorst),
+      meGap: m.box && m.box.meGap !== void 0 ? m.box.meGap : 0,
       gap: +(myPw - opPw).toFixed(2),
       intl: !!S.intl,
       oppLeague: leagueOf(m.oppName),
@@ -18788,9 +19410,16 @@ header.top.compact>.theme-top{display:none}
     }
     if (S.tilt < 40) S._tiltWarned = false;
     S.lastFightClock = S.evClock || 0;
-    if (won && ctx.gap < -1 && rnd() < 0.3 && true) {
-      queueFollowUp("bigTalk", 2, { opp: m.oppName });
-      pushEvent(`赛后采访你上头了一句「<b>${m.oppName} 也就这样</b>」。话说出去就收不回来了——两周后见分晓。`, "info", "舆论");
+    if (won && ctx.gap < -1 && mediaToneNow() === "bold" && rnd() < 0.3) {
+      queueFollowUp("bigTalk", 2, {
+        opp: m.oppName,
+        si: S.si,
+        sp: S.split || 0,
+        w0: S.record && S.record.w || 0,
+        l0: S.record && S.record.l || 0
+      });
+      pushEvent(`媒体日你把调子定成了「狂」，这场爆冷赢完记者又把话筒递过来——你补了一句
+      「<b>${m.oppName} 也就这样</b>」。话说出去就收不回来了，两周后见分晓。`, "info", "舆论");
     }
     {
       try {
@@ -19276,6 +19905,7 @@ header.top.compact>.theme-top{display:none}
       }
     }
     cloutTick();
+    bondSplitEnd(result);
     rollForm();
     {
       rollWorldForm();
@@ -19807,10 +20437,10 @@ header.top.compact>.theme-top{display:none}
     const played = SEASONS.slice(0, Math.min(SEASONS.length, (S.si || 0) + 1));
     const years = played.map((sea, si) => {
       const rows = log.filter((x) => x.si === si);
-      const H = S.honors || {};
+      const H2 = S.honors || {};
       let team = rows.length ? rows[rows.length - 1].team : null;
-      if (!team && (C.msiYears || []).includes(si) && H.msi && H.msi[si]) team = H.msi[si];
-      if (!team && (C.worldsYears || []).includes(si) && H.worlds && H.worlds[si]) team = H.worlds[si];
+      if (!team && (C.msiYears || []).includes(si) && H2.msi && H2.msi[si]) team = H2.msi[si];
+      if (!team && (C.worldsYears || []).includes(si) && H2.worlds && H2.worlds[si]) team = H2.worlds[si];
       if (!team) team = teamFromTx(si);
       if (!team && S.career && si === S.si) team = S.team;
       if (!team && prevTeam && si >= firstPro && !tx.some((x) => tagSi(x.s) === si)) team = prevTeam;
@@ -19854,7 +20484,9 @@ header.top.compact>.theme-top{display:none}
   function viewEnd() {
     const e = ending();
     const again = `<div class="row" style="justify-content:center;align-items:center;margin:14px 0 22px;gap:14px">
-    <button class="btn" id="again">再开一局</button><span class="note" style="margin:0">上面这张名片，截图就能发。</span></div>`;
+    <button class="btn primary" id="sharecardbtn">生成生涯名片图</button>
+    <button class="btn" id="again">再开一局</button>
+    <span class="note" style="margin:0">图里带二维码，存下来或者发出去都行。</span></div>`;
     if (!S.career) {
       return `${careerPoster()}${again}${achCard()}`;
     }
@@ -21645,6 +22277,8 @@ header.top.compact>.theme-top{display:none}
       S.tab = "act";
       render();
     };
+    const _shc = $("sharecardbtn");
+    if (_shc) _shc.onclick = () => shareCardOpen();
     const _aO = $("autoOff");
     if (_aO) _aO.onclick = () => {
       AUTO_KEYS.forEach((x) => {
@@ -22201,10 +22835,10 @@ header.top.compact>.theme-top{display:none}
       logBadge();
       if (document.getElementById("chlog")) return;
       const log = CHANGELOG;
-      const wrap = document.createElement("div");
-      wrap.id = "chlog";
-      wrap.className = "rankup";
-      wrap.innerHTML = `<div class="ru-inner chlog-inner" style="max-width:560px;text-align:left">
+      const wrap2 = document.createElement("div");
+      wrap2.id = "chlog";
+      wrap2.className = "rankup";
+      wrap2.innerHTML = `<div class="ru-inner chlog-inner" style="max-width:560px;text-align:left">
       <div class="chlog-head"><div class="ru-eyebrow" style="margin:0">更新日志</div>
         <button type="button" class="chlog-x" id="chlogx" aria-label="关闭更新日志">×</button></div>
       ${log.map((e) => `<h3 style="margin:14px 0 4px">${e.v}<span class="note" style="font-weight:400">　上线：${e.at}</span></h3>
@@ -22212,19 +22846,19 @@ header.top.compact>.theme-top{display:none}
       <p class="note" style="color:var(--ink-3);margin-top:12px">从 v20260901b 起记录，此前的更新不补。</p>
       <div class="row" style="justify-content:center;margin-top:10px">
         <button class="btn" id="chlogok">关闭</button></div></div>`;
-      document.body.appendChild(wrap);
+      document.body.appendChild(wrap2);
       const close = () => {
-        wrap.remove();
+        wrap2.remove();
         document.removeEventListener("keydown", onKey);
       };
       const onKey = (e) => {
         if (e.key === "Escape") close();
       };
       document.addEventListener("keydown", onKey);
-      wrap.querySelector("#chlogok").onclick = close;
-      wrap.querySelector("#chlogx").onclick = close;
-      wrap.onclick = (e) => {
-        if (e.target === wrap) close();
+      wrap2.querySelector("#chlogok").onclick = close;
+      wrap2.querySelector("#chlogx").onclick = close;
+      wrap2.onclick = (e) => {
+        if (e.target === wrap2) close();
       };
     } catch (e) {
     }
@@ -22250,13 +22884,13 @@ header.top.compact>.theme-top{display:none}
       const url = supportUrl();
       if (!url || document.getElementById("suplove") || source === "auto" && supportAutoHidden()) return;
       const qr = typeof SUPPORT_QR === "string" && SUPPORT_QR.trim() ? SUPPORT_QR.trim() : "";
-      const wrap = document.createElement("div");
-      wrap.id = "suplove";
-      wrap.className = "rankup support-overlay";
-      wrap.setAttribute("role", "dialog");
-      wrap.setAttribute("aria-modal", "true");
-      wrap.setAttribute("aria-labelledby", "support-title");
-      wrap.innerHTML = `<section class="support-card">
+      const wrap2 = document.createElement("div");
+      wrap2.id = "suplove";
+      wrap2.className = "rankup support-overlay";
+      wrap2.setAttribute("role", "dialog");
+      wrap2.setAttribute("aria-modal", "true");
+      wrap2.setAttribute("aria-labelledby", "support-title");
+      wrap2.innerHTML = `<section class="support-card">
       <header class="support-head">
         <div>
           <div class="support-kicker">支持独立创作</div>
@@ -22279,9 +22913,9 @@ header.top.compact>.theme-top{display:none}
         <span>《破晓》为程序模拟作品，与现实选手、战队和赛事无关</span>
       </footer>
     </section>`;
-      const link = wrap.querySelector("#support-link");
+      const link = wrap2.querySelector("#support-link");
       if (link) link.href = url;
-      const qrImg = wrap.querySelector("#support-qr");
+      const qrImg = wrap2.querySelector("#support-qr");
       if (qrImg) qrImg.src = qr;
       const close = (never) => {
         if (never) {
@@ -22291,21 +22925,21 @@ header.top.compact>.theme-top{display:none}
           }
         }
         document.removeEventListener("keydown", onKey);
-        wrap.remove();
+        wrap2.remove();
       };
       const onKey = (e) => {
         if (e.key === "Escape") close(false);
       };
-      wrap.querySelector("#suplove-x").onclick = () => close(false);
-      wrap.querySelector("#suplove-never").onclick = () => close(true);
-      wrap.onclick = (e) => {
-        if (e.target === wrap) close(false);
+      wrap2.querySelector("#suplove-x").onclick = () => close(false);
+      wrap2.querySelector("#suplove-never").onclick = () => close(true);
+      wrap2.onclick = (e) => {
+        if (e.target === wrap2) close(false);
       };
-      document.body.appendChild(wrap);
+      document.body.appendChild(wrap2);
       document.addEventListener("keydown", onKey);
       setTimeout(() => {
         try {
-          wrap.querySelector("#suplove-x").focus();
+          wrap2.querySelector("#suplove-x").focus();
         } catch (e) {
         }
       }, 0);
@@ -22602,7 +23236,7 @@ header.top.compact>.theme-top{display:none}
   screenCreate();
   audioInit();
   xferPull();
-  window.poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave, cerStart };
+  window.poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave, cerStart, SITE_QR };
 })();
 </script>
 

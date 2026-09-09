@@ -49,7 +49,7 @@ if (!fs.existsSync(path.join(HERE, "src", "gen", "avatars.js"))) {
    `ACHIEVEMENTS.push(...ACH_MORE)`，抛 "Cannot access 'ACH_MORE' before initialization"。
    低概率、和这次的改动无关（改前改后各连跑 12 次都没复现，但两边都各撞见过一次），
    顺序载入让求值顺序固定下来，CI 不再看运气。循环引用本身还在，另开一条待办。 */
-const MODULES = ["state", "eras", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer"];
+const MODULES = ["state", "eras", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer", "share", "bond"];
 const state = await import("./src/state.ts");
 const mods = [];
 for (const m of MODULES) mods.push(await import(`./src/${m}.ts`));
@@ -310,6 +310,125 @@ function playOne(opts?) {
 /* 不碰 DOM 的几何与消毒：导览说明卡永远不能盖在聚光框上；导入的存档只能带几个排版标签 */
 function unitChecks() {
   const bad = [];
+  /* 共事账本（羁绊第一批）。作者点名的那条弧线本来在数值里就跑着，缺的是记忆：
+     原来 syncTrust 里一行 delete 就把离队队友的一切抹掉了。 */
+  {
+    const S: any = A.S();
+    const bak = { mates: S.mates, acc: S.bondAcc, si: S.si, split: S.split, age: S.age, trust: S.trust, attrs: S.attrs };
+    S.mates = null; S.si = 1; S.split = 0; S.age = 20; S.trust = { M1: 71 };
+    const mate = (id: string, age: number) => ({ id, cn: "", pos: "top", age, r: {} });
+    // 建档 + 峰值信任
+    const e1 = A.bondSee(mate("M1", 26));
+    if (!e1 || e1.id !== "M1") bad.push("共事账本：登记不上队友");
+    if (e1.peakTrust !== 71) bad.push("共事账本：没记下他对你的峰值信任，实得 " + e1.peakTrust);
+    S.trust.M1 = 40; A.bondSee(mate("M1", 26));
+    if (e1.peakTrust !== 71) bad.push("共事账本：信任掉下来之后峰值被覆盖了");
+    // 离队 / 退役都只标记，不删
+    A.bondRetire("M1");
+    if (!A.bondOf("M1")) bad.push("共事账本：队友退役之后记录被删掉了（这正是要修的那件事）");
+    if (A.bondOf("M1").gone !== "retired") bad.push("共事账本：退役没标成 retired");
+    // 角色是对每一个人判的，两根轴（强弱 / 老少）正好是作者说的那四段
+    S.attrs = { 操作: 60, 运营: 60, 心态: 60, 指挥: 60, 体质: 60 };
+    S.age = 22;
+    const vs = (ovr: number, age: number) => A.bondRoleVs({ id: "X", age, r: { 操作: ovr, 运营: ovr, 心态: ovr, 指挥: ovr, 体质: ovr } }).role;
+    if (vs(66, 27) !== "被带") bad.push("角色：比你强又比你老，该是「被带」，实得 " + vs(66, 27));
+    if (vs(54, 27) !== "扛旗") bad.push("角色：比你弱又比你老，该是「扛旗」，实得 " + vs(54, 27));
+    if (vs(66, 19) !== "被带飞") bad.push("角色：比你强又比你年轻，该是「被带飞」，实得 " + vs(66, 19));
+    if (vs(54, 19) !== "带人") bad.push("角色：比你弱又比你年轻，该是「带人」，实得 " + vs(54, 19));
+    if (vs(61, 19) !== "并肩") bad.push("角色：只差 1 分不该分强弱，该是「并肩」，实得 " + vs(61, 19));
+    // 样本不够不下结论
+    S.bondAcc = { k: "1-0", n: 2, me: 2.0, mates: { M1: { n: 2, sum: 3.0 } } };
+    if (A.bondRolesNow()) bad.push("共事账本：只打了两场就给这个赛段定了角色");
+    S.bondAcc = null;
+    if (A.bondRolesNow()) bad.push("共事账本：没有任何场次也定出了角色");
+    // 名片两行：共事 1 个赛段不上卡，2 个才上
+    S.mates = { M1: { id: "M1", splits: 1, titles: [], roles: {} } };
+    if (A.bondCardLines().length) bad.push("共事账本：只共事过一个赛段就上了名片");
+    S.mates = { M1: { id: "M1", splits: 4, titles: ["S13 LPL春季赛"], roles: {} },
+                M2: { id: "M2", splits: 2, titles: [], roles: { "2-0": "带人", "2-1": "带人" } } };
+    const lines = A.bondCardLines();
+    if (lines.length !== 2) bad.push("共事账本：名片该有两行，实得 " + lines.length);
+    else {
+      if (!/M1/.test(lines[0].v) || !/4 个赛段/.test(lines[0].v) || !/1 冠/.test(lines[0].v))
+        bad.push("共事账本：「并肩最久」那行写错了 " + lines[0].v);
+      if (!/M2/.test(lines[1].v) || !/2 个赛段/.test(lines[1].v))
+        bad.push("共事账本：「你带过最久」那行写错了 " + lines[1].v);
+    }
+    /* 作者原话那一整条弧线：你带过他，后来他综评超过了你。
+       有这个人的时候，第二行必须写他，而且必须写清楚是哪一年被超过的。 */
+    S.mates = { M1: { id: "M1", splits: 6, titles: [], roles: {} },
+                M2: { id: "M2", splits: 3, titles: [], roles: { "2-0": "带人", "2-1": "带人", "3-0": "带人" } },
+                M3: { id: "M3", splits: 3, titles: [], roles: { "1-0": "带人", "3-1": "被带飞", "4-0": "被带飞" } } };
+    const arc = A.bondCardLines();
+    if (arc.length !== 2 || !/M3/.test(arc[1].v))
+      bad.push("共事账本：带过、后来被他超过的人没被写上名片（写的是 " + (arc[1] ? arc[1].v : "没有第二行") + "）");
+    else if (!/综评超过你/.test(arc[1].v) || !/S15/.test(arc[1].v))
+      bad.push("共事账本：「你带出来的」那行没写清是哪一年被超过 " + arc[1].v);
+    S.mates = bak.mates; S.bondAcc = bak.acc; S.si = bak.si; S.split = bak.split; S.age = bak.age; S.trust = bak.trust; S.attrs = bak.attrs;
+  }
+  /* 赛后狠话（作者实锤 2026-09-09：「新档没放过狠话，却提示狠话被记录下来成了热梗」）。
+     两条：① 没在媒体日定「狂」就不该有口径；② 回旋镖判的是说完之后那两周，
+     不是整个赛段的累计负场。 */
+  {
+    const S: any = A.S();
+    const media0 = S.media, si0 = S.si, sp0 = S.split, rec0 = S.record, ev0 = S.events;
+    S.si = 1; S.split = 0;
+    S.media = null;
+    if (A.mediaToneNow()) bad.push("狠话：没开过媒体日却报出了口径");
+    S.media = { si: 1, split: 0, tone: "steady" };
+    if (A.mediaToneNow() !== "steady") bad.push("狠话：这个赛段定的是「稳」，读出来却不是");
+    S.media = { si: 0, split: 0, tone: "bold" };
+    if (A.mediaToneNow()) bad.push("狠话：上个赛季的口径还在这个赛季生效");
+    // 回旋镖：同一个赛段，说完之后 2 胜 0 负 → 好结局；0 胜 2 负 → 弹幕热梗
+    const fire = (w: number, l: number) => {
+      S.events = []; S.record = { w, l };
+      A.FOLLOWUPS.bigTalk.run({ opp: "TEST", si: 1, sp: 0, w0: 1, l0: 1 });
+      return (S.events[0] || {}).text || "";
+    };
+    S.si = 1; S.split = 0;
+    if (!/宣传片/.test(fire(3, 1))) bad.push("狠话：说完之后 2 胜 0 负，回旋镖却没给好结局");
+    if (!/弹幕热梗/.test(fire(1, 3))) bad.push("狠话：说完之后 0 胜 2 负，回旋镖却没给坏结局");
+    if (!/宣传片/.test(fire(1, 1))) bad.push("狠话：说完之后没输过，却被判成战绩不好");
+    /* 作者说的正是这一种：赛段前面已经输了几场（「俱乐部战绩不好」），
+       但说完之后这两周是赢的——旧写法只看累计负场，照样判坏结局。 */
+    S.events = []; S.record = { w: 3, l: 3 };
+    A.FOLLOWUPS.bigTalk.run({ opp: "TEST", si: 1, sp: 0, w0: 1, l0: 3 });
+    if (!/宣传片/.test((S.events[0] || {}).text || ""))
+      bad.push("狠话：赛段前面输过三场，但说完之后 2 胜 0 负，回旋镖仍判成战绩不好");
+    S.media = media0; S.si = si0; S.split = sp0; S.record = rec0; S.events = ev0;
+  }
+  /* 名片图的「存到相册」那条路（作者实测 2026-09-09：手机上点「下载图片」，
+     图落进「文件」App 的下载项而不是相册）。navigator.share 只收 File，
+     所以 dataURL 得先拆成 File；node / jsdom 里没有 share，必须安静地退回长按那条路。 */
+  {
+    const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const f: any = A.dataUrlToFile(png, A.SHARE_FILE);
+    if (!f) bad.push("名片图：dataURL 拆不成 File");
+    else {
+      if (f.type !== "image/png") bad.push("名片图：拆出来的 File 类型不是 image/png，是 " + f.type);
+      if (!(f.size > 0)) bad.push("名片图：拆出来的 File 是空的");
+      if (f.name !== A.SHARE_FILE) bad.push("名片图：文件名不对 " + f.name);
+    }
+    if (A.dataUrlToFile("这不是 dataURL", "x.png")) bad.push("名片图：不是 dataURL 也拆出了 File");
+    if (A.canShareFile(f)) bad.push("名片图：这台机器上没有 navigator.share，canShareFile 却说能分享");
+    if (A.canShareFile(null)) bad.push("名片图：canShareFile(null) 应该是 false");
+  }
+  /* 成就「零杀十死也能赢」判的是真实数据行，不是临场决策（玩家实锤 2026-09-09：
+     19/6/15、评分 1.15 照样弹）。好数据的胜场绝不能命中，全队垫底的胜场才命中。 */
+  {
+    const z = A.ACHIEVEMENTS.find((x: any) => x.id === "zero_ten");
+    if (!z) bad.push("成就 zero_ten 不见了");
+    else {
+      const good = { won: true, nodeFails: 3, myRating: 1.15, meWorst: false, meGap: 0.22 };
+      const ugly = { won: true, nodeFails: 0, myRating: 0.86, meWorst: true, meGap: -0.31 };
+      const lost = { won: false, nodeFails: 3, myRating: 0.80, meWorst: true, meGap: -0.40 };
+      const near = { won: true, nodeFails: 3, myRating: 1.02, meWorst: true, meGap: -0.20 };
+      if (z.cond(good)) bad.push("零杀十死：好数据的胜场也命中了（评分 1.15、全队不垫底）");
+      if (!z.cond(ugly)) bad.push("零杀十死：全队垫底且比队友低 0.31 的胜场没命中");
+      if (z.cond(lost)) bad.push("零杀十死：输了也命中");
+      if (z.cond(near)) bad.push("零杀十死：只差 0.20 就命中了，门槛是 0.25");
+    }
+  }
   const overlap = (h, c, ch, cw, vw) => {
     const cl = c.left === null ? 10 : c.left, cr = c.left === null ? vw - 10 : c.left + cw;
     return !(c.top >= h.top + h.height || c.top + ch <= h.top || cl >= h.left + h.width || cr <= h.left);
@@ -613,6 +732,24 @@ function unitChecks() {
     if (Math.abs(shown - real) > 0.05) bad.push(`战队行动卡面虚标：写 +${shown}，实际 +${real}`);
     if (shown > 5.0) bad.push("默契 78 还印着原始值 5.1，收益递减没算进卡面");
 
+    /* 训练卡面写的涨幅＝真正涨进去的（玩家实锤 2026-09-09：卡面「操作 +0.9」，点完涨了 1.3）。
+       职业前实际走 gain × 0.85 × PRE_PACE，卡面原来只乘了 0.85，每次少报三分之一。 */
+    {
+      const tSnap = { step: S.step, ap: S.ap, pre: S.pre ? { ...S.pre } : null, attrs: { ...S.attrs }, career: S.career };
+      const numWas0 = A.uiNum(); A.uiSetNum(true);
+      // 职业前：走 preAct("train")
+      if (S.pre) {
+        S.career = null; S.step = "pre"; S.pre.ap = 99;
+        const d0 = "操作", before0 = S.attrs[d0];
+        const shown0 = parseFloat((A.costTrain(d0).match(/操作[^0-9+]*\+([0-9.]+)/) || [])[1] || "0");
+        A.preAct("train", d0);
+        const real0 = +(S.attrs[d0] - before0).toFixed(2);
+        if (Math.abs(shown0 - real0) > 0.12) bad.push(`职业前训练卡面虚标：写 +${shown0}，实际 +${real0}`);
+      }
+      Object.assign(S, tSnap); if (tSnap.pre) S.pre = tSnap.pre; S.attrs = tSnap.attrs;
+      A.uiSetNum(numWas0);
+    }
+
     // 打排位：卡面写的状态涨幅＝真正涨进去的（原来漏了 ×0.5）
     const soloSnap = { week: S.week, schedule: S.schedule, step: S.step, ap: S.ap, off: S.off, form: S.form, fatigue: S.fatigue };
     S.form = 57; S.step = "season"; S.ap = 8; S.off = null; S.week = 1;
@@ -850,7 +987,17 @@ if (isMain && process.argv.includes("--batch")) {
     + (b.money || 0) / 60 + (b.fame || 0) / 10 + (b.trust || 0) / 3).toFixed(1)).join(" · "));
   console.log("模块自检：赛季", A.SEASONS.length, "| 背景", A.BACKGROUNDS.length,
     "| 成就", A.ACHIEVEMENTS.length, "| 年龄", A.AGES.length, "| 段位", A.RANKS.length);
-  const r = playOne();
+  /* 端到端钉住赛后狠话：机器人一律跳过仪式（cerApply silver），
+     也就从来没在媒体日定过「狂」——那这一整局就不该有任何一句狠话被安到头上。
+     改回旧写法（只看「赢了 + 爆冷 + 30%」）跑，这里一定红。 */
+  let bigTalkSeen = 0, bigTalkAt = "", evSeen = 0;
+  const r = playOne({ hook: (S: any) => {
+    const ev = S.events || [];
+    while (evSeen < ev.length) {
+      const e = ev[evSeen++] || {};
+      if (/也就这样/.test(e.text || "")) { bigTalkSeen++; if (!bigTalkAt) bigTalkAt = `S${S.si} 第 ${e.w} 周`; }
+    }
+  }});
   console.log(JSON.stringify(r, null, 1));
   // 断言：跑不完、数值坏了都要以非零退出码失败——CI 靠这个
   const S = A.S();
@@ -859,6 +1006,7 @@ if (isMain && process.argv.includes("--batch")) {
   A.DIMS.forEach(d => { const v = S.attrs && S.attrs[d]; if (typeof v !== "number" || !isFinite(v) || v < 0 || v > 100) bad.push("属性异常 " + d + "=" + v); });
   if (typeof S.fatigue !== "number" || S.fatigue < 0 || S.fatigue > 100) bad.push("疲劳越界 " + S.fatigue);
   if (!r.saved) bad.push("存档没有写入");
+  if (bigTalkSeen) bad.push(`这一局从没在媒体日定过「狂」，却被安了 ${bigTalkSeen} 次赛后狠话（第一次在 ${bigTalkAt}）`);
   // 外设每一档都得比上一档贵、也比上一档强（外部测评抓的：320 万的鼠标比 130 万的还弱）
   Object.keys(A.GEAR).forEach(k => A.GEAR[k].forEach((g, i) => {
     if (i === 0) return;
