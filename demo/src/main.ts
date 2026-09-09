@@ -112,6 +112,9 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260909d", at:"2026-09-09", items:[
+    "职业前训练的卡面不再少报（玩家实锤：卡面写「操作 +0.9」，点完实际涨了 1.3）：职业前每一次训练真正写进去的是 gain × 0.85 × 1.5（1.5 是职业前的节奏系数——一年的行动点少了，每一点的产出按比例抬回去），而卡面那一侧只乘了 0.85，把这个 1.5 漏了，于是每一次训练都少报三分之一。现在预览和生效共用同一个函数"
+  ]},
   {v:"v20260909c", at:"2026-09-09", items:[
     "生涯结束多了一张<b>可以存进相册的名片图</b>（玩家点名：「想玩的人可以直接扫，想留作纪念的也可以一键保存」）：结局页点「生成生涯名片图」，把判词、ID、冠军、逐年轨迹、五项统计画成一张 1080×1620 的竖图，右下角是站点二维码。手机长按保存到相册，桌面点「下载图片」。原来这里只写着「截图就能发」——截图带着地址栏和底栏，发出去既不好看也没有入口",
     "名片图是浏览器里现画的（canvas），不联网、不上传，图只在你自己手机上；二维码是内嵌的，扫出来就是 www.poxiao.lol"
@@ -2180,7 +2183,7 @@ export function preAct(k,dim?){
   } else if(k==="train"){
     const c=capOf(dim);
     if(dim==="操作"&&true) btkNote("op",1);   // 到瓶颈也要能攒突破进度
-    if(S.attrs[dim]<c) S.attrs[dim]=Math.min(c,S.attrs[dim]+gain(dim)*0.85*PRE_PACE);
+    if(S.attrs[dim]<c) S.attrs[dim]=Math.min(c,S.attrs[dim]+trainGain(dim));   // 卡面（costTrain）读的是同一个函数
     const sub=PRE_SPLASH[dim];   // 职业前练一项顺带练另一项（进队后没有）
     if(sub){ const sc=capOf(sub.d); if(S.attrs[sub.d]<sc) S.attrs[sub.d]=Math.min(sc,S.attrs[sub.d]+gain(sub.d)*0.85*PRE_PACE*sub.k); }
     addFat(9);
@@ -3018,9 +3021,19 @@ export const _prepMul=()=>(S.step==="prep"||(S.off&&S.off.next==="intl"))?((S.as
 /* 职业前和赛季中是两套数值（训练 ×0.85、休息 +32、直播基数不同），
    标注必须跟着当前阶段走，否则等于换个地方骗人。 */
 export const _isPre=()=>S.step==="pre";
+/* 这一次训练真能涨多少（玩家实锤 2026-09-09：卡面写「操作 +0.9」，点完实际涨了 1.3）。
+   职业前走 preAct("train")，实际写进去的是 gain × 0.85 × PRE_PACE（=1.5）；
+   而卡面这边只乘了 0.85，把职业前的节奏系数漏了——于是每一次训练都少报三分之一。
+   职业后走 doTrain，还要乘本季版本关键属性的加成。
+   预览和生效从此共用这一个函数，不会再各算各的。 */
+export function trainGain(d){
+  if(_isPre()) return gain(d)*0.85*PRE_PACE;
+  const vm=(S.career&&SEASONS[S.si]&&SEASONS[S.si].dim===d)?VER_TRAIN:1;
+  return gain(d)*vm;
+}
 export function costTrain(d){
   const capped=S.attrs[d]>=capOf(d);
-  const g=gain(d)*(_isPre()?0.85:1);
+  const g=trainGain(d);
   return costBits([_eDn(9),
     capped?null:`${d}<i class="up">+${g.toFixed(1)}</i>`]);
 }
@@ -3108,8 +3121,7 @@ export function doTrain(d){
   // 于是提示让你去做的事，你根本点不动，死锁在那儿。
   if(d==="操作"&&true) btkNote("op",1);
   // 版本答案：本季关键属性的训练收益 ×VER_TRAIN（职业后；教练组按版本抓训练）
-  const vm=(S.career&&SEASONS[S.si]&&SEASONS[S.si].dim===d)?VER_TRAIN:1;
-  if(!capped) S.attrs[d]=Math.min(capOf(d),S.attrs[d]+gain(d)*vm);
+  if(!capped) S.attrs[d]=Math.min(capOf(d),S.attrs[d]+trainGain(d));   // 卡面（costTrain）读的是同一个函数
   noteAct('train',d);
   checkAch("train");
   addFat(9); S.ap-=apCost("train"); render();
