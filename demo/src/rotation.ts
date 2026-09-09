@@ -311,6 +311,12 @@ export function confirmStarter(why){
   const sc=scrimState(), inc=S.understudy;
   sc.trial=null; sc.pendingTrial=false;
   S.promoted=true; S.understudy=null; S.benchLock=false; S.loseStreak=0;
+  /* 2026-09-10 玩家实锤：「我第二赛段前已经从替补拉到首发了，但他还是给我替补合同」。
+     这里原来只翻 promoted 标记，S.offerKind 还留在 "sub"——而续约报价、
+     媒体日的身份口径、阵容权重读的都是它。人已经是首发，全游戏却还当你是替补。
+     当前这份合同不动（签了就是签了，中途不改数字是这个游戏一贯的规矩），
+     但身份必须跟上，否则下次重签还是按替补给钱。 */
+  if(S.offerKind==="sub") S.offerKind="start";
   const t=myTeam(); if(t&&!t.players.some(q=>q.me)&&inc){ let d=false; t.players=t.players.map(q=>(!d&&(q===inc||q.id===inc.id))?(d=true,meAsPlayer()):q); }
   pushEvent((S.homeLeague||"LPL")==="LDL"
     ? `${why}<b>教练把你正式写进了 ${S.team} 的名单</b>。${inc?inc.id+" 退回替补。":""}`

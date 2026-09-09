@@ -3141,6 +3141,7 @@ header.top.compact>.theme-top{display:none}
     S.understudy = null;
     S.benchLock = false;
     S.loseStreak = 0;
+    if (S.offerKind === "sub") S.offerKind = "start";
     const t = myTeam();
     if (t && !t.players.some((q) => q.me) && inc) {
       let d = false;
@@ -5956,6 +5957,8 @@ header.top.compact>.theme-top{display:none}
     <div class="ru-eyebrow" style="text-align:center">合同到期 · 续约报价</div>
     <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:6px">${teamLogo(r.team, 22)} <b>${r.team}</b> 想和你续约</div>
     <p class="note" style="text-align:center;margin:0 0 12px">${r.wonTitle ? "你捧回了冠军——他们不想让你走。" : "你的表现值得一份新合同。"}</p>
+    ${r.upgraded ? `<p class="note" style="text-align:center;margin:-6px 0 12px;color:var(--gold-hi)">
+      上一份还是<b>替补合同</b>，这一份按<b>首发</b>重新定价。</p>` : ""}
     <div class="grid g2" style="margin:0 0 12px">
       <div class="ver"><div class="k">新赛段薪资</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${r.salary !== void 0 ? wanHtml(r.salary) : "—"}${up(r.oldSalary, r.salary)}</div>${r.salary !== void 0 ? `<div class="k" style="font-size:10px">${yearPayText(r.salary)}${r.oldSalary !== void 0 ? ` · 原 ${wanText(r.oldSalary)}/赛段` : ""}</div>` : ""}</div>
       <div class="ver"><div class="k">年限</div><div class="v mono" style="font-size:20px">${r.years}<small> 个赛段</small></div><div class="k" style="font-size:10px;line-height:1.4">${contractSpanText(r.years)}</div></div>
@@ -7720,16 +7723,20 @@ header.top.compact>.theme-top{display:none}
     if (R.ok) {
       const raise = clamp(1.12 + (ovr - teamAvg) * 0.02 + (wonTitle ? 0.12 : 0), 1.02, 1.35);
       const old = S.contract;
-      const sal = old.salary !== void 0 ? capRaise(old.salary * raise, old.salary, old.clubTier) : void 0;
+      const nowSub = S.offerKind === "sub" || !!S.understudy && !S.promoted;
+      const upgrade = old.tier === "sub" && !nowSub ? DEAL_TIERS.start.mul / DEAL_TIERS.sub.mul : 1;
+      const base = old.salary !== void 0 ? old.salary * upgrade : void 0;
+      const sal = base !== void 0 ? capRaise(base * raise, old.salary, old.clubTier) : void 0;
       const k = buyoutRatio(old);
       S.pendingRenew = {
         team: S.team,
         years: 2,
         salary: sal,
         buyout: sal !== void 0 ? Math.round(sal * k) : old.buyout !== void 0 ? old.buyout : void 0,
-        tier: old.tier,
+        tier: upgrade > 1 ? "start" : old.tier,
         grade: old.grade,
         clubTier: old.clubTier,
+        upgraded: upgrade > 1,
         wonTitle,
         oldSalary: old.salary,
         oldBuyout: old.buyout,
@@ -15891,6 +15898,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260910a", at: "2026-09-10", items: [
+      "<b>转正之后重签，不再给替补合同</b>（玩家实锤：「我的替补合同是第一赛段的，我第二赛段是重签的，但我第二赛段前已经从替补拉到首发了，但他还是给我替补合同，穷的我吃不起火锅了」）：根子有两处——一是从替补席打上首发时，游戏只翻了一个「已转正」标记，<b>身份字段还停在「替补」</b>，而续约报价、媒体日口径、阵容权重读的都是它；二是续约直接<b>照抄旧合同的档次</b>，薪水只在旧数上乘一个 1.02~1.35 的涨幅——而首发档与替补档差 <b>1.45 倍</b>，顶格涨都够不着。现在续约先按<b>你现在是什么身份</b>定档，升了档就把基准搬到新档再谈涨幅，续约卡上会写明「上一份还是替补合同，这一份按首发重新定价」。<b>只升不降</b>：被打回替补席不会因此在续约时砍薪。三条自检钉住：转正要改身份、重签要升档、还在替补席的不能白升"
+    ] },
     { v: "v20260909w", at: "2026-09-09", items: [
       "<b>生涯名片的冠军区重做</b>（玩家实锤：「世界赛的夺冠明明是更重要的事情，但是在名片里重点被放在了下面的联赛成绩」）：原来所有冠军拿逗号串成一行、同字号同颜色，「S16 世界赛」和「S14 PCS夏季赛」一个分量；而占版面最大的是下面那张逐年常规赛名次表（八年能吃掉 896px）——<b>最重的那座奖杯被最轻的信息压住了</b>。现在分三档：<b>世界赛 46px 金色带年份独占一行</b>、MSI 次之、联赛压成灰字小号只报座数；一座国际冠军都没有时联赛自动升为主角，不会变成一片灰。逐年表行高上限 112→84，省下的高度还给冠军区"
     ] },

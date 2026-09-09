@@ -1067,6 +1067,52 @@ function unitChecks() {
       if (ev(+4, 80, 80, 30, 4).ok || !ev(+4, 80, 80, 30, 4).veto) bad.push("队友信任跌破 35 应一票否决");
       if (!ev(-20, 30, 30, 30, 0, { wonTitle: true }).ok) bad.push("今年冠军应铁续约");
       if (ev(-7, 50, 50, 50, 1).ok || !ev(-7, 50, 50, 50, 1, { aw: "mvp" }).ok) bad.push("年度 MVP 的 +12 没进式子");
+
+      /* 2026-09-10 玩家实锤：「我的替补合同是第一赛段的，我第二赛段是重签的，
+         但我第二赛段前已经从替补拉到首发了，但他还是给我替补合同，穷的我吃不起火锅了」。
+         根子有两处：confirmStarter 只翻 promoted、没改 S.offerKind；
+         contractCheck 的续约报价直接抄 old.tier、薪水只乘 1.02~1.35 的涨幅——
+         而首发档 0.80 / 替补档 0.55 差 1.45 倍，顶格涨都够不着。
+         这两条各钉一次。 */
+      {
+        const k0 = S.offerKind, u0 = S.understudy, pr0 = S.promoted;
+        // ① 从替补席转正，身份要跟着变
+        S.offerKind = "sub"; S.understudy = { id: "老首发" }; S.promoted = false;
+        A.confirmStarter("");
+        if (S.offerKind !== "start") bad.push("转正之后 offerKind 还是 sub——续约会继续按替补给钱");
+        if (S.understudy) bad.push("转正之后 understudy 没清");
+
+        // ② 转正后重签，档次和薪水都要按首发定
+        // 用这一局真实存在的队，别造一个 world 里没有的名字（myRoster 会炸）。
+        // left 给 1：contractCheck 进门先 left--，减到 0 才算到期。
+        // 今年拿了联赛冠军 → 铁续约，把「会不会被放走」这个变量从测试里排除掉。
+        const c0 = S.contract, pend0 = S.pendingRenew, lg0 = S.career.lgYears;
+        S.career.lgYears = ((S.career.lgYears) || []).concat([S.si]);
+        S.contract = { salary: 100, buyout: 600, tier: "sub", clubTier: "top", left: 1, team: S.team };
+        S.offerKind = "start"; S.understudy = null; S.promoted = true;
+        S.pendingRenew = null;
+        A.contractCheck();
+        const r = S.pendingRenew;
+        if (!r) bad.push("转正后到期没给续约报价");
+        else {
+          if (r.tier === "sub") bad.push("转正后重签，合同档次还是「替补」");
+          const ratio = A.DEAL_TIERS.start.mul / A.DEAL_TIERS.sub.mul;
+          if (!(r.salary >= Math.round(100 * ratio))) {
+            bad.push(`转正后重签还是替补价：新薪 ${r.salary}，至少该到首发档的 ${Math.round(100 * ratio)}`);
+          }
+        }
+        // ③ 一直是替补的人，续约不该白涨到首发档
+        S.contract = { salary: 100, buyout: 600, tier: "sub", clubTier: "top", left: 1, team: S.team };
+        S.offerKind = "sub"; S.understudy = { id: "老首发" }; S.promoted = false;
+        S.pendingRenew = null;
+        A.contractCheck();
+        const r2 = S.pendingRenew;
+        if (r2 && r2.tier !== "sub") bad.push("还在替补席的人，续约档次被错误升成首发");
+        if (r2 && r2.salary > 140) bad.push(`还在替补席却涨到 ${r2.salary}（涨幅上限 1.35，应 ≤135）`);
+
+        S.contract = c0; S.pendingRenew = pend0; S.career.lgYears = lg0;
+        S.offerKind = k0; S.understudy = u0; S.promoted = pr0;
+      }
       // 队魂按赛段数：老档从尾巴往前数同一支队；新档按加入时的 log 长度
       const log0 = S.career.log, team0 = S.team, tss0 = S.teamSinceSplit;
       S.career.log = [{ team: "A" }, { team: "A" }, { team: "B" }, { team: "B" }]; S.team = "B"; S.teamSinceSplit = undefined;

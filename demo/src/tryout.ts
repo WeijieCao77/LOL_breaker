@@ -1081,6 +1081,8 @@ export function renewCard(){
       teamLogo(r.team,22)} <b>${r.team}</b> 想和你续约</div>
     <p class="note" style="text-align:center;margin:0 0 12px">${
       r.wonTitle?"你捧回了冠军——他们不想让你走。":"你的表现值得一份新合同。"}</p>
+    ${r.upgraded?`<p class="note" style="text-align:center;margin:-6px 0 12px;color:var(--gold-hi)">
+      上一份还是<b>替补合同</b>，这一份按<b>首发</b>重新定价。</p>`:""}
     <div class="grid g2" style="margin:0 0 12px">
       <div class="ver"><div class="k">新赛段薪资</div><div class="v mono" style="font-size:20px;color:var(--gold-hi)">${
         r.salary!==undefined?wanHtml(r.salary):"—"}${up(r.oldSalary,r.salary)}</div>${
