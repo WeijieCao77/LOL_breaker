@@ -314,6 +314,26 @@ function playOne(opts?) {
 /* 不碰 DOM 的几何与消毒：导览说明卡永远不能盖在聚光框上；导入的存档只能带几个排版标签 */
 function unitChecks() {
   const bad = [];
+  /* 抗韩 / 内战：两条都得看**你自己在哪个赛区**，不只看对手
+     （玩家实锤 2026-09-09：「效力 LCK 战队也能触发抗韩成就」）。 */
+  {
+    const lck = A.ACHIEVEMENTS.find((x: any) => x.id === "beatlck");
+    const civil = A.ACHIEVEMENTS.find((x: any) => x.id === "lpl_civil");
+    if (!lck || !civil) bad.push("抗韩 / 内战成就不见了");
+    else {
+      // 抗韩：触发点已经保证了「国际赛 + 赢 + 对手是 LCK」，条件只负责排除「你就是 LCK」
+      if (!lck.cond({ myLeague: "LPL" })) bad.push("抗韩：LPL 选手赢下 LCK 却不算");
+      if (!lck.cond({ myLeague: "LEC" })) bad.push("抗韩：LEC 选手赢下 LCK 却不算");
+      if (!lck.cond({ myLeague: "LDL" })) bad.push("抗韩：二队选手赢下 LCK 却不算");
+      if (lck.cond({ myLeague: "LCK" })) bad.push("抗韩：效力 LCK 的人赢下 LCK 也算——这正是要修的那件事");
+      // 内战无强敌：这是 LPL 的梗，说明里写死了「另一支 LPL 队伍」
+      const civ = (my: string, opp: string) => civil.cond({ intl: true, won: true, myLeague: my, oppLeague: opp });
+      if (!civ("LPL", "LPL")) bad.push("内战：LPL 打 LPL 却不算");
+      if (civ("LCK", "LCK")) bad.push("内战：LCK 打 LCK 也弹「另一支 LPL 队伍」——文案穿帮");
+      if (civ("LPL", "LCK")) bad.push("内战：打的是 LCK，不该算内战");
+      if (civ("LCK", "LPL")) bad.push("内战：你在 LCK，赢 LPL 不是内战");
+    }
+  }
   /* 替补席（作者拍板 2026-09-09）：不再替首发交默契的学费，媒体日换替补版。 */
   {
     const S: any = A.S();
