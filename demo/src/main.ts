@@ -111,6 +111,16 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260909a", at:"2026-09-09", items:[
+    "赛后拆解和赛后面板改读开赛那一刻的体能（玩家实锤：赛前自己和队伍体能都是满的，一结算却拿体能扣我的综合分，试了两次都一样）——胜负本来就是用赛前体能判的，原来却先把这场的消耗记上再算账，等于拿打完之后的体能解释一场已经打完的比赛",
+    "战队行动的卡面不再虚标（玩家实锤：写「默契 +5.1」，实际只涨一点）：默契越高涨得越少，卡上现在直接写这一次真能涨多少，贴顶时写「已很高」；预览和生效从此是同一个函数",
+    "打排位的状态涨幅不再虚标（玩家实锤：写 +2.3，点一下只从 57 到 58）：一次排位是三把，状态按碎片时间打对折，卡面原来漏了这个对折",
+    "突破瓶颈报的上限和「我的」页对上了（玩家实锤：操作已经 84.7/85，弹窗却说上限到 79.5）——弹窗那句少加了经验顶上来的那一截",
+    "靶场最后一靶不再抢跑（玩家实锤：第 28 下金圈刚出来就直接弹结算，没给点的机会，还被算成一次没中，命中率写成 23/24）：剩余时间放不下一个完整的靶就不再放，把时间走完",
+    "顶栏的五维和「我的」页显示同一个数（玩家实锤「属性永远对不上」）：顶栏原来四舍五入到整数，84.7 被写成 85，看着像已经顶到天花板",
+    "对阵卡上的战力差和上面两个数用同一把尺（原来两个战力乘过展示系数、中间那个差值没乘，95.0 对 70.1 却写 +21.4）",
+    "换栏目回到顶部（玩家实锤：一页划到底，切过去还停在底下）"
+  ]},
   {v:"v20260908m", at:"2026-09-08", items:[
     "季后赛抽签仪式挪回开打之前（玩家实锤：季后赛已经打到 1:0，抽签才弹出来）：原来先摆好比赛再开仪式，而开仪式本身不重画，于是它要等你在比赛里点了下一步才冒出来——现在先抽签、再摆比赛，模态卡从第一帧就在，演完才轮到你打",
     "小游戏进行中不再被重画冲掉（玩家实锤：靶场点了「开始」又回到「点一下开始」）：仪式小游戏挂在每次 render 末尾，而 render 会把整块界面重写，正在跑的那一局连 DOM 带计时器一起被换掉——现在小游戏一上台就锁住重画（屏幕上只有这张模态卡），结算或跳过之后解锁"
@@ -764,7 +774,10 @@ export function breakthrough(d,n,reason,key?,kind?){
         "info","突破");
     return;
   }
-  const c0=cap(S.talent[d])+before, c1=cap(S.talent[d])+S.capBonus[d];
+  /* 报的上限要和「我的」页那一栏是同一个数（玩家实锤 2026-09-09：操作已经 84.7/85，
+     突破弹窗却说上限到 79.5）——原来这里少加了经验顶上来的那一截，也没有 99 封顶。 */
+  const exp=(S&&S.capExp)||0;
+  const c0=Math.min(99,cap(S.talent[d])+before+exp), c1=Math.min(99,cap(S.talent[d])+S.capBonus[d]+exp);
   pushEvent(`<b>瓶颈松动</b>　${reason}<br>
     <span style="color:var(--cyan)">${d}上限 ${c0.toFixed(1)} → <b>${c1.toFixed(1)}</b>（+${gotS}）</span>`,
     "big","突破");
@@ -2947,12 +2960,16 @@ export function costTrain(d){
   return costBits([_eDn(9),
     capped?null:`${d}<i class="up">+${g.toFixed(1)}</i>`]);
 }
+/* 一次「打排位」＝三把，状态涨幅按「碎片时间」打对折（doAction 里的 lightMul）。
+   预览原来漏了这个 0.5，卡上写 +2.3、实际只有 +1.2（玩家实锤 2026-09-09）。
+   两处从此读同一个常量。 */
+export const SOLO_LIGHT=0.50;
 export function costSolo(){
   if(_isPre()) return costBits([_eDn(8), `段位±`, `五维微涨`]);
   const m=_prepMul();
   let f=null;
   if(S.form!==undefined){
-    const d=((68-S.form)*0.11+1.2)*m;
+    const d=((68-S.form)*0.11+1.2)*m*SOLO_LIGHT;
     if(Math.abs(d)>=0.05) f=`状态<i class="${d>0?"up":"dn"}">${d>0?"+":"−"}${Math.abs(d).toFixed(1)}</i>`;
   }
   return costBits([_eDn(4*m), f, `五维微涨`]);   // 和 doAction 里 addFat(4*prepMul) 一致
@@ -3049,7 +3066,7 @@ export function doAction(k){
     // 但真正的价值是状态——手感这东西不练会掉。
     // 异化点数配平：1 点＝碎片时间来几把，单次收益 ×0.55——
     // 不然 1 点行动在 8 点预算下可刷，批测把 MSI 从 13 抬到 23（实测）。
-    const lightMul=0.50;
+    const lightMul=SOLO_LIGHT;   // 卡面预览（costSolo）读的是同一个常量
     const w=1+Math.floor(rnd()*3);
     rankGain(w,lightMul);
     // 段位也要跟着动。原来赛季里段位是个冻住的死数字，
@@ -3629,6 +3646,7 @@ export function startMatch(bo?,oppName?){
   }
   const need=(typeof bo==="number")?bo:(bo?3:2);   // 1=BO1 2=BO3 3=BO5
   S.match={opp,oppName:(opp&&opp.name)||on,sc:[0,0],game:1,lines:[],node:null,swing:0,done:false,
+           fat0:S.fatigue,          // 开赛那一刻的体能：赛后面板与归因都读它（见 endMatch）
            need,bo5:need>=3};
   // 竞技锐度：距离上一场正赛超过 4 周（长间歇/休赛期回来），手是生的——
   // 开局带一点负 swing，第一局打完就找回来。轻手感，不是惩罚。
@@ -3799,6 +3817,11 @@ export function tiltNote(){
 }
 export function endMatch(){
   const m=S.match,won=m.sc[0]>m.sc[1];
+  /* 开赛那一刻的体能（玩家实锤 2026-09-09：赛前自己和队伍体能都是满的，
+     一结算却按体能扣我的综合分，试了两次都一样）。这一场的胜负是用赛前体能
+     判的，可下面 addFat 先把这场的消耗记上，再算面板和拆解——于是拆解拿打完
+     之后的体能来解释一场已经打完的比赛。快照留在这里，面板和归因都读它。 */
+  const fat0=(m&&m.fat0!==undefined)?m.fat0:S.fatigue;
   if(!S.playoff&&!S.intl){
     if(won)S.record.w++;else S.record.l++;
     const HL=S.homeLeague||"LPL";
@@ -3832,7 +3855,7 @@ export function endMatch(){
 
   // 你自己的大事
   const me=S.name||"你", star=m.opp.players.filter(q=>q.pos===S.pos)[0];
-  const myPw=power(myRoster(),S.fatigue,SEASONS[S.si].fav), opPw=power(m.opp.players,0,SEASONS[S.si].fav);
+  const myPw=power(myRoster(),fat0,SEASONS[S.si].fav), opPw=power(m.opp.players,0,SEASONS[S.si].fav);
   // 首发试用：赢了坐稳，输光了回替补席（rotation.js）
   rotationAfterMatch(won,myPw-opPw);
   if(won&&myPw-opPw<-2){ S.comebacks=(S.comebacks||0)+1;   // 逆风翻盘计数
@@ -3893,7 +3916,7 @@ export function endMatch(){
   // 赛后归因：用判定胜负的那套数，现场算一次存下来
   {
     try{
-      m.attr=attribute(myRoster(),m.opp,S.fatigue,SEASONS[S.si].fav);
+      m.attr=attribute(myRoster(),m.opp,fat0,SEASONS[S.si].fav);
       // 「90% 也翻车」的说法要现场算：回放时队友状态早变了
       m.luck=pmLuckLines(m);
       // 拆解写进比赛档案：点过「继续」也能在「我的 → 比赛档案」回看。
@@ -5510,7 +5533,7 @@ export function nextMatchCard(){
       ${rival?`<span class="chipx">你的对位 <b>${rival.id}</b><i class="ovr">${N("实力 "+ovrOf(rival).toFixed(0),dimWord(ovrOf(rival)))}</i>${rival.rookie?' · 新秀':''}</span>`:""}
     </div>
     <div class="gapbar ${V.k}">
-      <div class="gv">${V.t}${uiNum()?`<span class="gd mono">${diff>=0?"+":""}${diff.toFixed(1)}</span>`:""}</div>
+      <div class="gv">${V.t}${uiNum()?`<span class="gd mono">${diff>=0?"+":""}${pwShow(diff).toFixed(1)}</span>`:""}</div>
       <div class="gt">${V.d}</div>
     </div>${fixtureStrip()}</div>`;
 }
@@ -6083,7 +6106,9 @@ export function pinbar(){
   const st=strength(S.attrs);
   const html=(ap!==null&&ap!==undefined?`<span class="pv ${ap>0?'top':'dim'}"><i>行动</i><b>${ap}</b></span>`:"")
   +(num
-    ? DIMS.map(d=>`<span class="pv ${d===top?'top':''}"><i>${d}</i><b>${S.attrs[d].toFixed(0)}</b></span>`).join("")
+    /* 和「我的」页同一个数（玩家实锤 2026-09-09：顶栏 85、我的页 84.7，「属性永远对不上」）。
+       原来这里四舍五入到整数，84.7 被写成 85，看着像已经顶到天花板了。条是横向滚动的，多一位放得下。 */
+    ? DIMS.map(d=>`<span class="pv ${d===top?'top':''}"><i>${d}</i><b>${S.attrs[d].toFixed(1)}</b></span>`).join("")
     : `<span class="pv top"><i>实力</i><b>${dimWord(st)}</b></span><span class="pv pv-top2"><i>最强</i><b>${top}</b></span>`)
   +`<span class="pv dim"><i>体能</i><b>${100-Math.round(S.fatigue)}</b></span>`
   +(S.form!==undefined&&S.career?`<span class="pv dim"><i>状态</i><b>${Math.round(myForm())}</b></span>`:"")
@@ -6235,7 +6260,8 @@ export function bind(){
   st.querySelectorAll("[data-prolg]").forEach((b: any)=>b.onclick=()=>{S.proLg=b.dataset.prolg;render()});
   st.querySelectorAll("[data-talpre]").forEach((b: any)=>b.onclick=()=>{ const x=TAL_PRESETS.find(y=>y.k===b.dataset.talpre);
     if(x){ DIMS.forEach(d=>S.talent[d]=x.t[d]||0); render(); } });
-  st.querySelectorAll("[data-tab]").forEach((b: any)=>b.onclick=()=>{S.tab=b.dataset.tab;_moreOpen=false;render()});
+  // 换栏目回到顶部（玩家实锤 2026-09-09：一页划到底，切过去还停在底下）
+  st.querySelectorAll("[data-tab]").forEach((b: any)=>b.onclick=()=>{S.tab=b.dataset.tab;_moreOpen=false;render();scrollStageTop();});
   st.querySelectorAll("[data-more]").forEach((b: any)=>b.onclick=()=>{_moreOpen=(b.dataset.more==="1")?!_moreOpen:false;render()});
   const _tr=$("tourreplay"); if(_tr) _tr.onclick=()=>{ S.tab="act"; render(); setTimeout(()=>tourStart(S.career?"season":"pre","lite"),80); };
   const _trf=$("tourreplayfull"); if(_trf) _trf.onclick=()=>{ S.tab="act"; render(); setTimeout(()=>tourStart(S.career?"season":"pre","full"),80); };

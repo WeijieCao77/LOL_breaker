@@ -591,6 +591,46 @@ function unitChecks() {
     if (S.match && (S.match.w || S.match.l)) bad.push("抽签仪式还没演，比赛已经打出了比分");
     poKeys.forEach(k => { S[k] = poSnap[k]; });
 
+    /* ---- 2026-09-09 玩家实锤的一批：预览和生效必须是同一个数 ---- */
+    // 战队行动：卡面写的默契涨幅＝真正涨进去的（原来卡面印配置表原始值，没过收益递减）
+    S.squad = { syn: 78, tac: 50 };
+    const synBefore = S.squad.syn;
+    const bit = A.sumBit("syn", 5.1);                       // 卡面那一小段
+    const shown = parseFloat((bit.match(/\+([0-9.]+)/) || [])[1] || "0");
+    A.addSquad("syn", 5.1);
+    const real = +(S.squad.syn - synBefore).toFixed(1);
+    if (Math.abs(shown - real) > 0.05) bad.push(`战队行动卡面虚标：写 +${shown}，实际 +${real}`);
+    if (shown > 5.0) bad.push("默契 78 还印着原始值 5.1，收益递减没算进卡面");
+
+    // 打排位：卡面写的状态涨幅＝真正涨进去的（原来漏了 ×0.5）
+    const soloSnap = { week: S.week, schedule: S.schedule, step: S.step, ap: S.ap, off: S.off, form: S.form, fatigue: S.fatigue };
+    S.form = 57; S.step = "season"; S.ap = 8; S.off = null; S.week = 1;
+    if (!Array.isArray(S.schedule) || !S.schedule.length)
+      S.schedule = S.world[S.homeLeague || "LPL"].filter((t: any) => t.name !== S.team).map((t: any) => t.name);
+    const numWas = A.uiNum(); A.uiSetNum(true);      // 「数值 关」时卡面只画箭头，看不到数
+    const solo = A.costSolo();
+    const soloShown = parseFloat((solo.match(/状态[^0-9+−-]*[+−-]([0-9.]+)/) || [])[1] || "0");
+    const soloF0 = S.form;
+    A.doAction("solo");
+    const soloReal = +(S.form - soloF0).toFixed(1);
+    if (Math.abs(soloShown - soloReal) > 0.15) bad.push(`打排位卡面虚标：写 +${soloShown}，实际 +${soloReal}`);
+    A.uiSetNum(numWas);
+    Object.assign(S, soloSnap);
+
+    // 突破弹窗报的上限＝「我的」页那一栏的上限（原来漏了经验加成）
+    S.capExp = 5.5; S.events = [];
+    const dim = "操作", capWant = A.capOf(dim);
+    A.breakthrough(dim, 1.0, "自检", "selfcheck_cap");
+    const line = (S.events || []).map((e: any) => e.text).join(" ");
+    const m2 = line.match(/上限 [0-9.]+ → <b>([0-9.]+)<\/b>/);
+    if (!m2) bad.push("突破没写出上限那一行");
+    else if (Math.abs(parseFloat(m2[1]) - A.capOf(dim)) > 0.05)
+      bad.push(`突破弹窗的上限和「我的」页对不上：弹窗 ${m2[1]}，实际 ${A.capOf(dim).toFixed(1)}（改前差一个经验加成 ${S.capExp}）`);
+
+    // 赛后拆解读开赛那一刻的体能（原来先扣这场的体能再算账）
+    if (S.match && S.match.fat0 === undefined) bad.push("比赛没有记下开赛时的体能快照 fat0");
+
+
   } catch (e) { bad.push("仪式自检没跑起来：" + (e && (e as any).stack || e)); }
   return bad;
 }

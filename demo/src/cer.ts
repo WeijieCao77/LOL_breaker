@@ -675,7 +675,11 @@ export function reactMount(el,opt){
     cerFinish(reactTier(rate,ms,pre),{rate,ms,hit,total:spawned,miss,stray}); };
   const kill=()=>{ if(cur){ try{ cur.remove(); }catch(e){} cur=null; } };
   const spawn=()=>{ if(done||!document.body.contains(el)) return;
-    if(Date.now()-t0>=TOTAL){ finish(); return; }
+    /* 时间不够就别再放靶（玩家实锤 2026-09-09：第 28 下金圈刚出来就直接弹结算，
+       没给点的机会，还被算成一次没中，命中率写成 23/24）。靶最长亮 LIT[1]，
+       再留 260 毫秒的手速余量——放不下一个完整的靶，就把剩下的时间走完。 */
+    const left=TOTAL-(Date.now()-t0);
+    if(left<LIT[1]+260){ const end=setTimeout(finish,Math.max(0,left)); _timers.push(end); return; }
     kill();
     const W=arena.clientWidth||300, H=arena.clientHeight||240;
     const b=document.createElement("button"); b.type="button"; b.className="mg-target"; b.setAttribute("aria-label","靶");

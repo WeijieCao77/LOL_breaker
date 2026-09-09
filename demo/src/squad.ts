@@ -33,15 +33,20 @@ export function initSquad(){
   S.squad={ syn:44+Math.floor(rnd()*10), tac:44+Math.floor(rnd()*10) };
 }
 export function squadOf(k){ return (S.squad&&S.squad[k]!==undefined)?S.squad[k]:50; }   // S.squad 可能是 null（车队散伙 / 回到路人）
+/* 一个战队行动这一次真能涨多少（玩家实锤 2026-09-09：卡上写「默契 +5.1」，
+   实际只涨一点）。卡面原来直接印配置表里的原始值，可写进去之前还要过收益递减
+   和素养继承两道：默契 78 的时候递减系数只剩 0.27，5.1 落地就是 1.4。
+   预览和生效从此共用这一个函数，不会再各算各的。 */
+export function squadGain(k,n){
+  if(!S.squad) return n;
+  const room=clamp(1-(S.squad[k]-40)/52,0.12,1);
+  const inh=(S.career&&(k==="syn"||k==="tac")&&true)?1+Math.min(40,tacOf())/200:1;
+  const to=q1(clamp(S.squad[k]+n*room*inh,0,100));
+  return q1(to-S.squad[k]);   // 贴着上限时也照实说：只剩多少就写多少
+}
 export function addSquad(k,n){
   if(!S.squad) initSquad();
-  // 收益递减：越高越难往上推，不然几次就拉满
-  const room=clamp(1-(S.squad[k]-40)/52,0.12,1);
-  // 战术素养的继承：打过成建制比赛的人懂怎么练团队——职业队里默契/战术
-  // 涨得更快（素养 40 ＝ +20%，职业前的车队不吃这个，它就是素养的来源。
-  // 首版 +40% 批测把世界赛率抬了 10 个点——一半就够）
-  const inh=(S.career&&(k==="syn"||k==="tac")&&true)?1+Math.min(40,tacOf())/200:1;
-  S.squad[k]=q1(clamp(S.squad[k]+n*room*inh,0,100));   // q1：掐掉浮点尾巴
+  S.squad[k]=q1(clamp(S.squad[k]+squadGain(k,n),0,100));
 }
 export function squadDecay(){
   if(!S.squad) return;
@@ -134,12 +139,18 @@ export function squadBreakdown(players,fatigue,verFav,team?){
 /* ---------- 战队行动（签约后才有） ---------- */
 /* sum 是给按钮上那行成本标注用的，就写在效果旁边——
    分开放两处，改了数值忘了改文案是迟早的事。 */
+/* 卡面上的一小段：写这一次真能涨多少，贴顶时直接写「已经很高」 */
+export function sumBit(k,n){
+  const nm=k==="syn"?"默契":"战术";
+  const g=squadGain(k,n);
+  return g<0.05?`${nm} 已很高` : `${nm} +${g.toFixed(1)}`;
+}
 export const SQUAD_ACTS=[
   /* 异化点数配平（2026-09-03）：训练赛 3 点＝整个下午，收益 ×1.5 对齐单点价值；
      双排 1 点＝碎片时间，收益 ×0.55——同一把尺：每点买到的东西一样多，
      区别在「一次投入的大小」和疲劳的形状。 */
   {k:"scrim", n:"训练赛", d:"和别的队打，最接近实战",
-   sum:["默契 +5.1","战术 +4.5","信任 +1.8","有几率摩擦"],
+   sum:()=>[sumBit("syn",5.1),sumBit("tac",4.5),"信任 +1.8","有几率摩擦"],
    fat:20, run:()=>{ addSquad("syn",5.1); addSquad("tac",4.5);
      addTrustAll(1.8);
      if(rnd()<0.28&&S.team){
@@ -149,16 +160,16 @@ export const SQUAD_ACTS=[
          addSquad("tac",2.4); addTrust(t.id,-2); }
      }}},
   {k:"vod", n:"战术复盘", d:"逐帧过录像，把上一场的问题挖出来",
-   sum:["战术 +4.2","运营 +0.35","攒运营突破"],
+   sum:()=>[sumBit("tac",4.2),"运营 +0.35","攒运营突破"],
    fat:9,  run:()=>{ addSquad("tac",4.2);
      btkNote("vod",1);   // 突破「运营」瓶颈的机械条件
      S.attrs.运营=Math.min(capOf("运营"),S.attrs.运营+0.35); }},
   {k:"drill", n:"战队合练", d:"专项练配合，团战执行会顺很多",
-   sum:["默契 +4.4","信任 +1.8"],
+   sum:()=>[sumBit("syn",4.4),"信任 +1.8"],
    fat:13, run:()=>{ addSquad("syn",4.4);
      addTrustAll(1.8); }},
   {k:"duo", n:"队友双排", d:"排位里带一带，练默契也拉近关系",
-   sum:["默契 +1.2","信任 +1.9","操作 +0.14"],
+   sum:()=>[sumBit("syn",1.2),"信任 +1.9","操作 +0.14"],
    fat:4,  run:()=>{ addSquad("syn",1.2);
      addTrustAll(1.9);
      S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.14); }}
@@ -270,5 +281,5 @@ export function squadActs(){
       <button class="act" data-squad="${a.k}" ${ap<(apCost(a.k))?'disabled style="opacity:.34"':''}>
         <div class="t">${a.n} ${apTag(a.k)}</div><div class="d">${a.d}${
           costBits([`体能<i class="dn">−${a.fat}</i>`]
-                .concat((a.sum||[]).map(x=>x.replace(/\s*([+−-][0-9.]+)/,'<i class="up">$1</i>'))))}</div></button>`).join("")}</div>`;
+                .concat((typeof a.sum==="function"?a.sum():(a.sum||[])).map(x=>x.replace(/\s*([+−-][0-9.]+)/,'<i class="up">$1</i>'))))}</div></button>`).join("")}</div>`;
 }
