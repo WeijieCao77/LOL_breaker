@@ -618,6 +618,24 @@ function unitChecks() {
     if (Math.abs(shown - real) > 0.05) bad.push(`战队行动卡面虚标：写 +${shown}，实际 +${real}`);
     if (shown > 5.0) bad.push("默契 78 还印着原始值 5.1，收益递减没算进卡面");
 
+    /* 训练卡面写的涨幅＝真正涨进去的（玩家实锤 2026-09-09：卡面「操作 +0.9」，点完涨了 1.3）。
+       职业前实际走 gain × 0.85 × PRE_PACE，卡面原来只乘了 0.85，每次少报三分之一。 */
+    {
+      const tSnap = { step: S.step, ap: S.ap, pre: S.pre ? { ...S.pre } : null, attrs: { ...S.attrs }, career: S.career };
+      const numWas0 = A.uiNum(); A.uiSetNum(true);
+      // 职业前：走 preAct("train")
+      if (S.pre) {
+        S.career = null; S.step = "pre"; S.pre.ap = 99;
+        const d0 = "操作", before0 = S.attrs[d0];
+        const shown0 = parseFloat((A.costTrain(d0).match(/操作[^0-9+]*\+([0-9.]+)/) || [])[1] || "0");
+        A.preAct("train", d0);
+        const real0 = +(S.attrs[d0] - before0).toFixed(2);
+        if (Math.abs(shown0 - real0) > 0.12) bad.push(`职业前训练卡面虚标：写 +${shown0}，实际 +${real0}`);
+      }
+      Object.assign(S, tSnap); if (tSnap.pre) S.pre = tSnap.pre; S.attrs = tSnap.attrs;
+      A.uiSetNum(numWas0);
+    }
+
     // 打排位：卡面写的状态涨幅＝真正涨进去的（原来漏了 ×0.5）
     const soloSnap = { week: S.week, schedule: S.schedule, step: S.step, ap: S.ap, off: S.off, form: S.form, fatigue: S.fatigue };
     S.form = 57; S.step = "season"; S.ap = 8; S.off = null; S.week = 1;
