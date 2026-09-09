@@ -1592,6 +1592,15 @@ header.top.compact>.theme-top{display:none}
 .share-tip{font-size:12px;color:var(--ink-3);flex:1 1 160px;min-width:0}
 .share-acts{display:flex;align-items:center;gap:8px;flex:none}
 
+/* 「歇够 ×N」：嵌在休息卡标题里的小胶囊（玩家实锤 2026-09-09：
+   「回体力点击困难，每回合都要点半天」）。它是卡里的第二个可点区域，
+   所以要自己拿到指针事件、也要有自己的按下反馈和键盘焦点圈。 */
+.act .apc.restall{cursor:pointer;pointer-events:auto;border-color:var(--dawn-dim);
+  color:var(--dawn);background:rgba(233,161,90,.10);padding:2px 7px;font-style:normal}
+.act .apc.restall:hover{background:rgba(233,161,90,.20);border-color:var(--dawn)}
+.act .apc.restall:active{transform:translateY(1px)}
+.act .apc.restall:focus-visible{outline:2px solid var(--dawn);outline-offset:2px}
+
 </style>
 
 </head>
@@ -15593,6 +15602,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909m", at: "2026-09-09", items: [
+      "休息多了一个「<b>歇够 ×N</b>」（玩家实锤：「回体力点击困难，每回合都要点半天」）：一次休息是 1 个行动点、约 −17 体能，而一周的疲劳轻松 +26 起——正常节奏下每周要点两三次，一整个生涯是几百次重复点击。现在体能低的时候，休息卡上会多出一个小按钮，<b>一下点完</b>：一直歇到体能回到 75，或者行动点用光为止。<b>一个数值都没改</b>——同样的行动点、同样的公式，只是不用你自己点那么多下（自检里拿「歇够」和「连点 N 次」逐项对齐，对不上就红）"
+    ] },
     { v: "v20260909l", at: "2026-09-09", items: [
       "<b>赛区分类全面清了一遍</b>（玩家实锤：「在 LCK 效力还是触发了 LPL 事件，这一部分分类问题必须要检查并修改」）：际遇「你那句话被剪进「LPL 圣经」合集」在别的赛区改叫「本赛区的名场面合集」；「某队官宣裁掉首发」的那支队原来写死从 LPL 里挑，现在从<b>你自己的赛区</b>里挑（那两个选项本来就假设那是你够得着的位置）；世界头条的「赛区格局」也从写死的 LPL vs LCK 改成<b>你所在的赛区对它最大的对手</b>",
       "同一批还清掉三处：成就「<b>韩流克星</b>」（击败三支不同 LCK 队伍）和它的计数一起加锁，效力 LCK 的人不再累积；国际赛夺冠文案里的「至暗时刻的墙，被你砸开了一道口子」<b>只对不在 LCK 的人</b>说——你自己就在 LCK 的时候那是内战不是砸墙；世界新闻里「LCK 又一次站在了最高处」对效力 LCK 的人不再是坏消息",
@@ -18626,13 +18638,47 @@ header.top.compact>.theme-top{display:none}
       checkStreamBiz();
       fireEvent("streamGift", 0.2);
     } else {
-      btkNote("rest", 1);
-      addFat((S.buff && S.buff.physio ? -23 : -17) * (S.bg && S.bg.rest || 1) * prepMul);
-      if (S.assets && S.assets.rehab) addFat(-4.5 * prepMul);
-      S.attrs.心态 = Math.min(capOf("心态"), S.attrs.心态 + 0.35 * prepMul);
-      if (S.tilt) S.tilt = Math.max(0, q1(S.tilt - (6 + (hasCourse("psy") ? 3 : 0)) * prepMul));
+      restOnce(prepMul);
     }
     S.ap -= apCost(k);
+    render();
+  }
+  function restOnce(prepMul) {
+    btkNote("rest", 1);
+    addFat((S.buff && S.buff.physio ? -23 : -17) * (S.bg && S.bg.rest || 1) * prepMul);
+    if (S.assets && S.assets.rehab) addFat(-4.5 * prepMul);
+    S.attrs.心态 = Math.min(capOf("心态"), S.attrs.心态 + 0.35 * prepMul);
+    if (S.tilt) S.tilt = Math.max(0, q1(S.tilt - (6 + (hasCourse("psy") ? 3 : 0)) * prepMul));
+  }
+  var REST_TO = 75;
+  function restPerRest() {
+    const prepMul = S.step === "prep" || S.off && S.off.next === "intl" ? S.assets && S.assets.van ? 0.7 : 0.6 : 1;
+    return Math.abs((S.buff && S.buff.physio ? -23 : -17) * (S.bg && S.bg.rest || 1) * prepMul) + (S.assets && S.assets.rehab ? 4.5 * prepMul : 0);
+  }
+  function restRoom() {
+    if (!S || S.step === "create" || !S.attrs) return 0;
+    const cost = apCost("rest"), ap = S.step === "pre" && S.pre ? S.pre.ap || 0 : S.ap || 0;
+    const per = restPerRest();
+    if (per <= 0) return 0;
+    let n = 0, fat = S.fatigue || 0;
+    while ((n + 1) * cost <= ap && fat > 100 - REST_TO) {
+      fat -= per;
+      n++;
+    }
+    return n;
+  }
+  function doRestAll() {
+    const n = restRoom();
+    if (n <= 0) return;
+    const cost = apCost("rest");
+    const prepMul = S.step === "prep" || S.off && S.off.next === "intl" ? S.assets && S.assets.van ? 0.7 : 0.6 : 1;
+    const f0 = Math.round(100 - (S.fatigue || 0));
+    for (let i = 0; i < n; i++) {
+      noteAct("do", "rest");
+      restOnce(prepMul);
+      S.ap -= cost;
+    }
+    pushEvent(`连着歇了 <b>${n}</b> 次（${n * cost} 个行动点）：体能 ${f0} → <b>${Math.round(100 - (S.fatigue || 0))}</b>。`, "info", "休息");
     render();
   }
   var AUTO_MAX = 6;
@@ -18983,7 +19029,8 @@ header.top.compact>.theme-top{display:none}
       <button class="act" data-do="content" ${S.ap < apCost("content") ? 'disabled style="opacity:.34"' : ""}>
         <div class="t">做内容 ${apTag("content")}</div><div class="d">教学 / 高光 / 复盘 / 整活——同样一点，方向不同</div></button>
       <button class="act" data-do="rest" ${S.ap < apCost("rest") ? 'disabled style="opacity:.34"' : ""}>
-        <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
+        <div class="t">休息 ${apTag("rest")}${restRoom() >= 2 ? ` <i class="apc restall" role="button" tabindex="0" title="一直休息到体能 ${REST_TO}，或者行动点用光">歇够 ×${restRoom()}</i>` : ""}</div>
+        <div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
     <div class="row dock">
@@ -19927,7 +19974,8 @@ header.top.compact>.theme-top{display:none}
       <button class="act" data-do="solo" ${S.ap < apCost("solo") ? 'disabled style="opacity:.34"' : ""}>
         <div class="t">打排位 ${apTag("solo")}</div><div class="d">找回手感${`　<b>状态 ${Math.round(myForm())}</b>`}${costSolo()}</div></button>
       <button class="act" data-do="rest" ${S.ap < apCost("rest") ? 'disabled style="opacity:.34"' : ""}>
-        <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
+        <div class="t">休息 ${apTag("rest")}${restRoom() >= 2 ? ` <i class="apc restall" role="button" tabindex="0" title="一直休息到体能 ${REST_TO}，或者行动点用光">歇够 ×${restRoom()}</i>` : ""}</div>
+        <div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
     <div class="row"><button class="btn primary" id="prepgo">上场 →</button>
@@ -20395,7 +20443,8 @@ header.top.compact>.theme-top{display:none}
       <button class="act" data-do="content" ${S.ap < apCost("content") ? 'disabled style="opacity:.34"' : ""}>
         <div class="t">做内容 ${apTag("content")}</div><div class="d">教学 / 高光 / 复盘 / 整活——同样一点，方向不同</div></button>
       <button class="act" data-do="rest" ${S.ap < apCost("rest") ? 'disabled style="opacity:.34"' : ""}>
-        <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
+        <div class="t">休息 ${apTag("rest")}${restRoom() >= 2 ? ` <i class="apc restall" role="button" tabindex="0" title="一直休息到体能 ${REST_TO}，或者行动点用光">歇够 ×${restRoom()}</i>` : ""}</div>
+        <div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
     ${S.career && !S.promoted && S.understudy && true ? scrimPanel() : ""}
@@ -22479,6 +22528,17 @@ header.top.compact>.theme-top{display:none}
     st.querySelectorAll("[data-bond]").forEach((b) => b.onclick = () => doBondTalk(b.dataset.bond));
     st.querySelectorAll("[data-bench]").forEach((b) => b.onclick = () => doBenchAct(b.dataset.bench));
     st.querySelectorAll("[data-coach]").forEach((b) => b.onclick = () => doBondCoach());
+    st.querySelectorAll(".restall").forEach((b) => {
+      const go2 = (ev) => {
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        if (ev && ev.preventDefault) ev.preventDefault();
+        doRestAll();
+      };
+      b.onclick = go2;
+      b.onkeydown = (ev) => {
+        if (ev && (ev.key === "Enter" || ev.key === " ")) go2(ev);
+      };
+    });
     const _ss = $("scrimStart");
     if (_ss) _ss.onclick = () => {
       startScrim();

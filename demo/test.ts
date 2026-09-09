@@ -314,6 +314,35 @@ function playOne(opts?) {
 /* 不碰 DOM 的几何与消毒：导览说明卡永远不能盖在聚光框上；导入的存档只能带几个排版标签 */
 function unitChecks() {
   const bad = [];
+  /* 「歇够 ×N」必须和连点 N 次休息**一模一样**（玩家实锤 2026-09-09：
+     「回体力点击困难，每回合都要点半天」）。这是个纯点击数的改动，
+     一个数值都不能动——所以拿两条路跑同一个初始状态，逐项对齐。 */
+  {
+    const S: any = A.S();
+    const bak = { ap: S.ap, fat: S.fatigue, tilt: S.tilt, xin: S.attrs && S.attrs.心态,
+                  step: S.step, off: S.off, buff: S.buff, bg: S.bg, assets: S.assets, ev: S.events };
+    const setup = () => { S.step = "season"; S.off = null; S.buff = {}; S.assets = {};
+      S.ap = 8; S.fatigue = 88; S.tilt = 40; S.attrs.心态 = 50; S.events = []; };
+    setup();
+    const n = A.restRoom();
+    if (n < 2) bad.push(`歇够：体能 12 剩 8 点，该能连歇好几次，实得 ${n}`);
+    A.doRestAll();
+    const one = { ap: S.ap, fat: +S.fatigue.toFixed(4), tilt: S.tilt, xin: +S.attrs.心态.toFixed(4) };
+    setup();
+    for (let i = 0; i < n; i++) A.doAction("rest");
+    const many = { ap: S.ap, fat: +S.fatigue.toFixed(4), tilt: S.tilt, xin: +S.attrs.心态.toFixed(4) };
+    (["ap", "fat", "tilt", "xin"] as const).forEach(k => {
+      if (one[k] !== many[k]) bad.push(`歇够：${k} 和连点 ${n} 次对不上（歇够 ${one[k]} / 连点 ${many[k]}）`);
+    });
+    // 体能已经够高就不该再冒出这个入口
+    setup(); S.fatigue = 10;
+    if (A.restRoom() !== 0) bad.push("歇够：体能已经 90 了还提示继续歇");
+    // 行动点不够就不歇
+    setup(); S.ap = 0;
+    if (A.restRoom() !== 0) bad.push("歇够：没有行动点也算得出次数");
+    S.ap = bak.ap; S.fatigue = bak.fat; S.tilt = bak.tilt; if (S.attrs) S.attrs.心态 = bak.xin;
+    S.step = bak.step; S.off = bak.off; S.buff = bak.buff; S.bg = bak.bg; S.assets = bak.assets; S.events = bak.ev;
+  }
   /* 抗韩 / 内战：两条都得看**你自己在哪个赛区**，不只看对手
      （玩家实锤 2026-09-09：「效力 LCK 战队也能触发抗韩成就」）。 */
   {
