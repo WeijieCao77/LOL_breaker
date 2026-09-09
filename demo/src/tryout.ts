@@ -397,7 +397,8 @@ export function inviteCard(){
         }catch(e){ return ""; }
       }
       const st=clubStanding(iv.team);
-      return st?`<span class="tag">LPL 第 ${st.pos}/${st.of} · 战力 ${pwShow(st.power).toFixed(1)}</span>`:"";
+      // 上一条分支已经念 iv.league 了，这条兜底原来写死 LPL——邀请来自别的赛区就穿帮
+      return st?`<span class="tag">${iv.league||S.homeLeague||"LPL"} 第 ${st.pos}/${st.of} · 战力 ${pwShow(st.power).toFixed(1)}</span>`:"";
     })()}</div>
     <p class="note" style="margin:0 0 10px">他们来找你，是因为${iv.reason}。
       <b>但找你和要你是两回事</b>——能不能签下来，看接下来这四天。<br>

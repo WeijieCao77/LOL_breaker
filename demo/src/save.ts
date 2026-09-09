@@ -1,4 +1,4 @@
-import { DIMS, GAME_VER, LDL_ROSTER, POSN, PRE_YEAR, REGION_SYN, SEASONS, anchorLeague, capOf, clamp, leagueBaseline, q1, rankFull, render, teamCode } from "./main";
+import { DIMS, GAME_VER, LDL_ROSTER, POSN, PRE_YEAR, REGION_SYN, SEASONS, SPLITS, anchorLeague, capOf, clamp, dimWord, leagueBaseline, q1, rankFull, render, teamCode } from "./main";
 import { initLedger } from "./shop";
 import { S, setS, applyEra } from "./state";
 
@@ -463,14 +463,54 @@ export function saveAgeText(at) {
   return Math.round(h / 24) + " 天前";
 }
 /* 存档里的进度摘要，让玩家确认是不是自己那一局 */
+/* 摘要行只报**你是谁**，处境全交给右边的格子（作者实锤 2026-09-09：
+   「这个封面的填充还是很丑」——原来摘要写「gtu · 上单 · 19 岁 · S12 职业前 第 1 周」，
+   右边第一格又写「进度 S12 职业前 第 1 周」、第二格「身份 上单 · 19 岁」，
+   等于拿同一句话填了两遍，看着当然空）。 */
 export function saveSummary(s) {
   try {
-    const sea = (SEASONS[s.si]) ? SEASONS[s.si].tag : "S12";
-    const who = (s.name || "无名") + " · " + (POSN[s.pos] || "");
-    if (!s.career) return `${who} · ${sea} 职业前 第 ${s.pre ? s.pre.week : 1} 周`;
-    const t = (s.career.titles || []).length;
-    return `${who} · ${sea} · ${s.team || "无队"}${t ? " · 冠军 " + t : ""}`;
+    return (s.name || "无名") + " · " + (POSN[s.pos] || "") + " · " + (s.age || 18) + " 岁";
   } catch (e) { return "存档"; }
+}
+
+/* 存档卡右边那半边（作者实锤 2026-09-09：「过去的存档的右边都是空的，放一些内容，
+   比如存档的一些数据，队伍，冠军等等」）。
+
+   只读存档 blob 里的字段，一个全局都不碰——这里的 s 是反序列化出来的那一局，
+   不是当前的 S。所以不能调 titleCount() / fanTier() 这类读全局的函数，
+   自己从 s 上算；整段包在 try 里，老档缺字段就少一格，绝不让封面页白屏。 */
+export function saveStats(s) {
+  const out: any[] = [];
+  const tile = (k, v, sub?) => out.push(`<div><div class="k">${k}</div><div class="v">${v}${sub ? `<small> ${sub}</small>` : ""}</div></div>`);
+  try {
+    const sea = (SEASONS[s.si] && SEASONS[s.si].tag) || "S12";
+    if (!s.career) {
+      tile("进度", sea + " 职业前", "第 " + ((s.pre && s.pre.week) || 1) + " 周");
+      const rk = s.pre && typeof s.pre.rank === "number" ? rankFull(s.pre.rank) : "";
+      if (rk) tile("段位", rk);
+      if (s.fans) tile("粉丝", Math.round(s.fans) + " 万");
+      if (typeof s.money === "number") tile("资金", Math.round(s.money) + " 万");
+    } else {
+      tile("赛季", sea, (SPLITS[s.split || 0] || "") + " 第 " + (s.week || 1) + " 周");
+      tile("效力", s.team || "无队", s.homeLeague || "");
+      const c = s.career || {};
+      const ts = c.titles || [];
+      tile("冠军", String(ts.length), ts.length ? ts[ts.length - 1] : "还没有");
+      tile("生涯战绩", (c.w || 0) + "−" + (c.l || 0),
+        (c.w || c.l) ? Math.round((c.w || 0) / ((c.w || 0) + (c.l || 0)) * 100) + "%" : "");
+      if ((c.worldsYears || []).length) tile("世界赛", c.worldsYears.length + " 次",
+        c.bestIntl ? String(c.bestIntl) : "");
+    }
+    const at = s.attrs || {};
+    const ds = DIMS.filter(d => typeof at[d] === "number");
+    if (ds.length) {
+      const av = ds.reduce((a, d) => a + at[d], 0) / ds.length;
+      tile("实力", dimWord(av), av.toFixed(1));
+    }
+    const n = s.ach ? Object.keys(s.ach).length : 0;
+    if (n) tile("成就", String(n), "个");
+  } catch (e) {}
+  return out.length ? `<div class="savestats">${out.join("")}</div>` : "";
 }
 
 /* ---------- 界面 ---------- */
@@ -485,12 +525,17 @@ export function continueCard() {
       <div class="row"><button class="btn ghost sm" id="savedrop">清掉它</button></div></div>`;
   }
   return `<div class="card savecont"><h2>上次的存档<em>${saveAgeText(blob.at)}</em></h2>
-    <h3>${saveSummary(blob.S)}</h3>
-    <div class="row">
-      <button class="btn" id="savecont">继续上次</button>
-      <button class="btn ghost" id="savenew">重新开一局</button>
-    </div>
-    <p class="note">重新开局会覆盖上面这个存档。</p></div>`;
+    <div class="savegrid">
+      <div class="savemain">
+        <h3>${saveSummary(blob.S)}</h3>
+        <div class="row">
+          <button class="btn" id="savecont">继续上次</button>
+          <button class="btn ghost" id="savenew">重新开一局</button>
+        </div>
+        <p class="note">重新开局会覆盖上面这个存档。</p>
+      </div>
+      ${saveStats(blob.S)}
+    </div></div>`;
 }
 /* 设置类操作：手动存、导出、导入 */
 export function saveBar() {

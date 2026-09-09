@@ -325,6 +325,106 @@ function playOne(opts?) {
 /* 不碰 DOM 的几何与消毒：导览说明卡永远不能盖在聚光框上；导入的存档只能带几个排版标签 */
 function unitChecks() {
   const bad = [];
+  /* 「选项灰的时候也会触发做不了的事件」（玩家实锤 2026-09-09）：
+     练操作已经因为「机械路径已刷满」变灰，周末却还在弹「冲击操作瓶颈断了」。
+     按钮灰不灰、面板显不显示、周末审不审判，三处必须给出同一个答案。 */
+  {
+    const S: any = A.S();
+    const bak = { attrs: S.attrs && Object.assign({}, S.attrs), capB: S.capBonus && Object.assign({}, S.capBonus),
+                  capMile: S.capMile, capSeen: S.capSeen,
+                  btk: S.btk, ev: S.events, ap: S.ap, step: S.step, career: S.career, team: S.team };
+    S.step = "season"; S.events = []; S.ap = 8;
+    S.btk = { opStreak: 2, opThisWeek: 0, vod: 0, rest: 0, apWeek: 8 };
+    S.capSeen = {}; S.capMile = {};
+    // 顶到瓶颈、机械池还没满 → 三处都说「在冲击」
+    S.capBonus = Object.assign({}, S.capBonus, { 操作: 0 });
+    A.DIMS.forEach((d: string) => { S.attrs[d] = A.capOf(d); });
+    const chasing1 = A.btkChasing("操作");
+    const note1 = A.btkChaseNote();
+    const btn1 = A.trainBtn("操作", 8);
+    if (!chasing1) bad.push("突破：顶到瓶颈、机械池没满，却说不在冲击");
+    if (!note1) bad.push("突破：在冲击却不显示冲击面板");
+    if (btn1.dis) bad.push("突破：在冲击的时候练操作按钮却是灰的");
+    // 机械池刷满 → 按钮灰、面板不显示、周末也不该再骂人
+    S.capBonus = Object.assign({}, S.capBonus, { 操作: A.CAP_MECH_MAX });
+    A.DIMS.forEach((d: string) => { S.attrs[d] = A.capOf(d); });
+    const chasing2 = A.btkChasing("操作");
+    const note2 = A.btkChaseNote();
+    const btn2 = A.trainBtn("操作", 8);
+    if (chasing2) bad.push("突破：机械路径已刷满，还说在冲击");
+    if (note2) bad.push("突破：机械路径已刷满，冲击面板还挂着");
+    if (!btn2.dis) bad.push("突破：机械路径已刷满，练操作按钮却还能点");
+    S.events = [];
+    A.btkWeekEnd();
+    const nag = (S.events || []).some((e: any) => /冲击操作瓶颈/.test(e.text || ""));
+    if (nag) bad.push("突破：按钮已经灰了，周末还在弹「冲击操作瓶颈断了」——这正是要修的那件事");
+    // 一次性收益已经领过：同样三处一致
+    S.capBonus = Object.assign({}, S.capBonus, { 操作: 0 });
+    A.DIMS.forEach((d: string) => { S.attrs[d] = A.capOf(d); });
+    S.capSeen = { op3w: 1 };
+    if (A.btkChasing("操作") !== !A.btkPathDead("操作")) bad.push("突破：一次性收益领过之后三处判断又不一致了");
+    S.attrs = bak.attrs; S.capBonus = bak.capB; S.capMile = bak.capMile; S.capSeen = bak.capSeen; S.btk = bak.btk;
+    S.events = bak.ev; S.ap = bak.ap; S.step = bak.step; S.career = bak.career; S.team = bak.team;
+  }
+  /* 「歇够 ×N」必须和连点 N 次休息**一模一样**（玩家实锤 2026-09-09：
+     「回体力点击困难，每回合都要点半天」）。这是个纯点击数的改动，
+     一个数值都不能动——所以拿两条路跑同一个初始状态，逐项对齐。 */
+  {
+    const S: any = A.S();
+    const bak = { ap: S.ap, fat: S.fatigue, tilt: S.tilt, xin: S.attrs && S.attrs.心态,
+                  step: S.step, off: S.off, buff: S.buff, bg: S.bg, assets: S.assets, ev: S.events };
+    const setup = () => { S.step = "season"; S.off = null; S.buff = {}; S.assets = {};
+      S.ap = 8; S.fatigue = 88; S.tilt = 40; S.attrs.心态 = 50; S.events = []; };
+    setup();
+    const n = A.restRoom();
+    if (n < 2) bad.push(`歇够：体能 12 剩 8 点，该能连歇好几次，实得 ${n}`);
+    A.doRestAll();
+    const one = { ap: S.ap, fat: +S.fatigue.toFixed(4), tilt: S.tilt, xin: +S.attrs.心态.toFixed(4) };
+    setup();
+    for (let i = 0; i < n; i++) A.doAction("rest");
+    const many = { ap: S.ap, fat: +S.fatigue.toFixed(4), tilt: S.tilt, xin: +S.attrs.心态.toFixed(4) };
+    (["ap", "fat", "tilt", "xin"] as const).forEach(k => {
+      if (one[k] !== many[k]) bad.push(`歇够：${k} 和连点 ${n} 次对不上（歇够 ${one[k]} / 连点 ${many[k]}）`);
+    });
+    // 体能已经够高就不该再冒出这个入口
+    setup(); S.fatigue = 10;
+    if (A.restRoom() !== 0) bad.push("歇够：体能已经 90 了还提示继续歇");
+    // 行动点不够就不歇
+    setup(); S.ap = 0;
+    if (A.restRoom() !== 0) bad.push("歇够：没有行动点也算得出次数");
+    S.ap = bak.ap; S.fatigue = bak.fat; S.tilt = bak.tilt; if (S.attrs) S.attrs.心态 = bak.xin;
+    S.step = bak.step; S.off = bak.off; S.buff = bak.buff; S.bg = bak.bg; S.assets = bak.assets; S.events = bak.ev;
+  }
+  /* 抗韩 / 内战：两条都得看**你自己在哪个赛区**，不只看对手
+     （玩家实锤 2026-09-09：「效力 LCK 战队也能触发抗韩成就」）。 */
+  {
+    const lck = A.ACHIEVEMENTS.find((x: any) => x.id === "beatlck");
+    const civil = A.ACHIEVEMENTS.find((x: any) => x.id === "lpl_civil");
+    if (!lck || !civil) bad.push("抗韩 / 内战成就不见了");
+    else {
+      // 抗韩：触发点已经保证了「国际赛 + 赢 + 对手是 LCK」，条件只负责排除「你就是 LCK」
+      if (!lck.cond({ myLeague: "LPL" })) bad.push("抗韩：LPL 选手赢下 LCK 却不算");
+      if (!lck.cond({ myLeague: "LEC" })) bad.push("抗韩：LEC 选手赢下 LCK 却不算");
+      if (!lck.cond({ myLeague: "LDL" })) bad.push("抗韩：二队选手赢下 LCK 却不算");
+      if (lck.cond({ myLeague: "LCK" })) bad.push("抗韩：效力 LCK 的人赢下 LCK 也算——这正是要修的那件事");
+      // 内战无强敌：这是 LPL 的梗，说明里写死了「另一支 LPL 队伍」
+      const civ = (my: string, opp: string) => civil.cond({ intl: true, won: true, myLeague: my, oppLeague: opp });
+      if (!civ("LPL", "LPL")) bad.push("内战：LPL 打 LPL 却不算");
+      if (civ("LCK", "LCK")) bad.push("内战：LCK 打 LCK 也弹「另一支 LPL 队伍」——文案穿帮");
+      if (civ("LPL", "LCK")) bad.push("内战：打的是 LCK，不该算内战");
+      if (civ("LCK", "LPL")) bad.push("内战：你在 LCK，赢 LPL 不是内战");
+      // 「韩流克星」是同一把锁的另一半（玩家实锤 2026-09-09 的第二封反馈）
+      const k3 = A.ACHIEVEMENTS.find((x: any) => x.id === "beat3lck");
+      if (!k3) bad.push("韩流克星成就不见了");
+      else {
+        const S: any = A.S(); const bk = S.lckBeaten;
+        S.lckBeaten = ["T1", "GEN", "DK"];
+        if (!k3.cond({ myLeague: "LPL" })) bad.push("韩流克星：LPL 选手打赢三支 LCK 却不算");
+        if (k3.cond({ myLeague: "LCK" })) bad.push("韩流克星：效力 LCK 的人也能拿——和抗韩同一个口子");
+        S.lckBeaten = bk;
+      }
+    }
+  }
   /* 替补席（作者拍板 2026-09-09）：不再替首发交默契的学费，媒体日换替补版。 */
   {
     const S: any = A.S();
@@ -419,6 +519,33 @@ function unitChecks() {
     if (vs(66, 19) !== "被带飞") bad.push("角色：比你强又比你年轻，该是「被带飞」，实得 " + vs(66, 19));
     if (vs(54, 19) !== "带人") bad.push("角色：比你弱又比你年轻，该是「带人」，实得 " + vs(54, 19));
     if (vs(61, 19) !== "并肩") bad.push("角色：只差 1 分不该分强弱，该是「并肩」，实得 " + vs(61, 19));
+    /* 场均评分要算进去（玩家 2026-09-09：「我是个 rating 很高的院长还被人带感觉有点奇怪」）。
+       五维比他低 3 分本来判「被带」；这个赛段你场均评分比他高 0.6，折 +4（封顶），
+       净 +1 就不该再说是他在带你了。改回只看五维的话，这三条一起红。 */
+    S.bondAcc = { k: "1-0", n: 5, me: 5 * 1.60, mates: { R1: { n: 5, sum: 5 * 1.00 } } };
+    const carry = A.bondRoleVs({ id: "R1", age: 27, r: { 操作: 63, 运营: 63, 心态: 63, 指挥: 63, 体质: 63 } });
+    if (carry.role === "被带") bad.push("角色：你场均评分比他高 0.6，还判成「被带」");
+    if (!carry.rGap) bad.push("角色：场均评分差没读出来，rGap=" + carry.rGap);
+    if (Math.abs(carry.radj) > A.BOND_R_CAP + 1e-6) bad.push("角色：评分修正没封顶，radj=" + carry.radj);
+    // 同场不够 3 个系列赛就不拿评分说话——两场的手感不该改判
+    S.bondAcc = { k: "1-0", n: 2, me: 2 * 1.60, mates: { R1: { n: 2, sum: 2 * 1.00 } } };
+    if (A.bondRoleVs({ id: "R1", age: 27, r: { 操作: 63, 运营: 63, 心态: 63, 指挥: 63, 体质: 63 } }).role !== "被带")
+      bad.push("角色：只同场两个系列赛就拿评分改判了");
+    S.bondAcc = null;
+    // 判断依据要能说出口：玩家问「考虑了 rating 吗」，界面得答得上
+    S.bondAcc = { k: "1-0", n: 5, me: 5 * 1.60, mates: { R1: { n: 5, sum: 5 * 1.00 } } };
+    const why = A.bondRoleWhy({ id: "R1", age: 27, r: { 操作: 63, 运营: 63, 心态: 63, 指挥: 63, 体质: 63 } });
+    if (!/五维均值/.test(why) || !/场均评分/.test(why) || !/岁/.test(why))
+      bad.push("角色依据没把三条依据都说出来：" + why);
+    S.bondAcc = null;
+    /* 标签得是人话（玩家 2026-09-09：「扛旗、带人之类的玩家看不懂是什么意思」）。
+       存档里存的仍是原来那五个键，只有界面换说法——两边都要在。 */
+    A.BOND_ROLES.forEach((k: string) => {
+      const n = A.bondRoleName(k);
+      if (!n) bad.push("角色标签：" + k + " 没有对应的说法");
+      if (k !== "并肩" && n === k) bad.push("角色标签：" + k + " 还是原样吐出来，玩家看不懂的正是这四个词");
+      if (!A.BOND_ROLE_TXT[k]) bad.push("角色标签：" + k + " 没有解释");
+    });
     // 样本不够不下结论
     S.bondAcc = { k: "1-0", n: 2, me: 2.0, mates: { M1: { n: 2, sum: 3.0 } } };
     if (A.bondRolesNow()) bad.push("共事账本：只打了两场就给这个赛段定了角色");
@@ -576,6 +703,238 @@ function unitChecks() {
       for (const k of keys) for (const bg of ["panel", "void"]) { const r = cr(t[k], t[bg]); if (!(r >= 4.5)) bad.push(`${name} --${k} ${t[k]} 在 --${bg} ${t[bg]} 上只有 ${r.toFixed(2)}:1`); }
     }
   } catch (e) { bad.push("配色对比度自检没跑起来：" + e); }
+  /* 桌面出口条（.row.dock）两条硬约束——玩家 2026-09-09 截图里的「互相遮挡」两条都踩了。
+     jsdom 不算布局，量不到遮挡，所以这里改成量**成因**：
+     ① 它是 sticky 的，只压得住排在它后面的兄弟 → 它必须是「本周」那张卡的最后一个孩子；
+     ② 背景不能是半透的 → 底下的字会透上来，看着就是重影。 */
+  try {
+    const ms = fs.readFileSync(path.join(HERE, "src", "main.ts"), "utf8");
+    const dock = ms.indexOf('<div class="row dock">');
+    if (dock < 0) bad.push("出口条：main.ts 里找不到 .row.dock");
+    else {
+      ["scrimPanel()", "本周对手"].forEach(k => {
+        const i = ms.indexOf(k, dock);
+        // 同一张卡里排在出口条后面 = 会被它糊住。卡片以 `\n  </div>` 收口。
+        const cardEnd = ms.indexOf("\n  </div>", dock);
+        if (i > 0 && cardEnd > 0 && i < cardEnd) bad.push("出口条：「" + k + "」排在 .row.dock 后面，宽屏上会被它盖住");
+      });
+    }
+    const css = fs.readFileSync(path.join(HERE, "theme.css"), "utf8");
+    const dockCss = css.slice(css.indexOf(".row.dock{"), css.indexOf("}", css.indexOf(".row.dock{")));
+    if (/rgba\(var\(--panel-rgb\),\s*\.[0-8]/.test(dockCss) || /backdrop-filter/.test(dockCss))
+      bad.push("出口条：背景是半透的 / 带 backdrop-filter，底下的字会透上来：" + dockCss.slice(0, 160));
+    /* 桌面密度那一块必须写在基准值**后面**：媒体查询不加权重，写在前面一条都不生效。
+       第一版就是写在 .wrap 旁边（文件中段之前），改完字号和格子宽度页面纹丝不动。 */
+    const wideAt = css.indexOf("/* ---- 桌面密度");
+    if (wideAt < 0) bad.push("桌面密度自检：theme.css 里找不到那一块（注释头被改了？）");
+    else ["\n.g5{", "\n.note{", "\n.act .d{", "\n.opt .d,"].forEach(k => {
+      const base = css.indexOf(k);
+      if (base < 0) { bad.push("桌面密度自检：theme.css 里找不到基准值 " + k.trim()); return; }
+      if (wideAt < base) bad.push("桌面密度：整块写在基准值 " + k.trim() + " 前面，媒体查询不加权重，一条都不会生效");
+    });
+  } catch (e) { bad.push("出口条 / 桌面密度自检没跑起来：" + e); }
+  /* 「本周」页的主列 + 右栏（作者拍板 2026-09-09，参照 VAL Player）。
+     jsdom 不算布局，所以这里量的是结构和源码顺序，不是像素。 */
+  try {
+    const ms = fs.readFileSync(path.join(HERE, "src", "main.ts"), "utf8");
+    const g = ms.indexOf('<div class="wkgrid">');
+    if (g < 0) bad.push("本周页：找不到 .wkgrid（主列 + 右栏的容器）");
+    else {
+      // 源码顺序 = 窄屏顺序：下一场 → 行动卡 → 周报。手机上先看对手再动手，最后才是报纸。
+      const iNext = ms.indexOf('class="wk-next"', g);
+      const iMain = ms.indexOf('class="wk-main"', g);
+      const iPress = ms.indexOf('class="wk-press"', g);
+      if (!(iNext > 0 && iMain > iNext && iPress > iMain))
+        bad.push(`本周页：单列顺序该是「下一场 → 行动 → 周报」，实得 next=${iNext} main=${iMain} press=${iPress}`);
+      // 行动卡（含出口条）必须整个装在主列里，否则宽屏上它会跑到右栏底下
+      const dock = ms.indexOf('<div class="row dock">', g);
+      if (!(dock > iMain && dock < iPress)) bad.push("本周页：行动卡的出口条不在 .wk-main 里");
+    }
+    const css = fs.readFileSync(path.join(HERE, "theme.css"), "utf8");
+    // 三块的摆位都得写全，少一条就会有一块掉回文档流、压到别的格子上
+    ["\.wkgrid>\.wk-main\{grid-column:1", "\.wkgrid>\.wk-next\{grid-column:2", "\.wkgrid>\.wk-press\{grid-column:2"]
+      .forEach(re => { if (!new RegExp(re).test(css)) bad.push("本周页：theme.css 缺摆位规则 " + re.replace(/\\/g, "")); });
+    // 分栏必须在媒体查询里——单列是基准，宽屏才分。写反了手机上会变成 360px 的右栏
+    const wide = css.indexOf("@media(min-width:1180px){\n  /* 360px 的右栏");
+    const base = css.indexOf(".wkgrid{display:grid");
+    if (base < 0 || wide < 0 || wide < base) bad.push("本周页：分栏没写在 @media(min-width:1180px) 里，或写在了基准值前面");
+    /* 右栏「最近的比赛」的「拆解」按钮点了要真能开——data-pmv 只是把 S.pmView 设上，
+       画出来的是 pmReplayCard()，而它原来只挂在 tabContent 上，「本周」这一页没有。
+       第一版就是这么漏的：按钮在、绑定在、点下去什么也不发生。 */
+    if (g >= 0) {
+      const act = ms.indexOf("return `${champ}", g > 0 ? 0 : 0);
+      const seasonRet = ms.lastIndexOf("return `${champ}", g);
+      if (seasonRet < 0 || ms.indexOf("pmReplayCard()", seasonRet) < 0 || ms.indexOf("pmReplayCard()", seasonRet) > g)
+        bad.push("本周页：viewSeason 没画 pmReplayCard，右栏的「拆解」按钮点了不会有反应");
+      if (ms.indexOf('data-pmv', ms.indexOf("export function railRecent")) < 0)
+        bad.push("最近的比赛：没给每场挂「拆解」按钮（data-pmv）");
+    }
+    /* 封面页页头：标语必须排在主视觉**下面**。原来图高和 padding-top 各写一条 clamp，
+       两条曲线随宽度分开走，1320px 上标语正好压在图里那行「电竞选手生涯模拟」上。
+       现在两者共用 --art，文字起点 = 图高 + 一段固定间距，宽度再怎么变都叠不上去。 */
+    if (!/header\.top:not\(\.compact\)\{--art:/.test(css))
+      bad.push("封面页头：没有 --art（图高和文字起点必须由同一个值决定）");
+    if (!/padding-top:calc\(var\(--art\)/.test(css))
+      bad.push("封面页头：文字起点没有跟着 --art 走，标语会压回图上");
+    if (!/\.keyart\{bottom:auto;height:var\(--art\)\}/.test(css))
+      bad.push("封面页头：主视觉没有用 --art 定高，它会铺满整个页头、把标语盖在图里");
+    /* 职业前那一页也得是同一套（玩家实锤 2026-09-09：「我没看到界面改动，
+       我的电竞周报去哪里了」——上一版只改了签约之后的 viewSeason）。 */
+    const pg = ms.indexOf('<div class="wkgrid pre">');
+    if (pg < 0) bad.push("职业前页：没有 .wkgrid.pre（主列 + 右栏那一套没铺到 viewPre）");
+    else ["wk-next", "wk-main", "wk-coach", "wk-press"].forEach(k => {
+      if (ms.indexOf('class="' + k + '"', pg) < 0 || ms.indexOf('class="' + k + '"', pg) > pg + 900)
+        bad.push("职业前页：右栏缺 " + k);
+    });
+    // 「谁在看你」是从行动卡里**搬**过来的，主列不该再说一遍
+    const ap = ms.indexOf("export function actPanelPre(){");
+    const apEnd = ms.indexOf("\nexport function", ap + 10);
+    if (ap > 0 && ms.slice(ap, apEnd).indexOf("还没有俱乐部会看你") >= 0)
+      bad.push("职业前页：试训门槛在行动卡和右栏各写了一遍");
+    /* 主列比右栏高得多，跨行时多出来的高度会被平摊到各行，把右栏卡拉开
+       （实测 328 / 789 / 1296）。末尾必须留一行 1fr 把富余高度吸走。 */
+    [[".wkgrid.pre{grid-template-rows:", "span 3"], [".wkgrid{grid-template-rows:", "span 4"]].forEach(([k]) => {
+      if (css.indexOf(k) < 0) bad.push("本周页：" + k + " 缺末尾吸高度的那一行 1fr，右栏会被拉开");
+    });
+    if (!/\.wkgrid\.pre>\.wk-main\{grid-column:1;grid-row:1\/span 4\}/.test(css))
+      bad.push("职业前页：主列跨的行数和 grid-template-rows 对不上");
+    if (!/\.wkgrid>\.wk-main\{grid-column:1;grid-row:1\/span 5\}/.test(css))
+      bad.push("赛季页：主列跨的行数和 grid-template-rows 对不上");
+    /* 四个「本周」形态必须用同一套骨架（玩家实锤 2026-09-09：「在休赛期或者季后赛
+       或者其他世界赛大赛的时候，界面又变回老模式，我要的是保证这个界面一致」）。
+       每加一个新形态都得自己进 .wkgrid，否则又会漏一个。 */
+    [["viewSeason", "赛季"], ["viewPre", "职业前"], ["viewPrep", "备战 / 季后赛 / 国际赛"],
+     ["viewOffseason", "休赛期"]].forEach(([fn, name]) => {
+      const at = ms.indexOf("export function " + fn + "(){");
+      if (at < 0) { bad.push("布局一致性：找不到 " + fn); return; }
+      const end = ms.indexOf("\nexport function", at + 10);
+      const body = ms.slice(at, end < 0 ? ms.length : end);
+      // 只看画「本周」那一支：别的标签页走 tabContent，不在范围内
+      if (body.indexOf('class="wkgrid') < 0)
+        bad.push("布局一致性：" + name + "（" + fn + "）还是老的单列，没进 .wkgrid");
+    });
+  } catch (e) { bad.push("本周页布局自检没跑起来：" + e); }
+  /* 「教练怎么看你」的卡头和正文不许各说各的（玩家实锤 2026-09-09：
+     一边写「轮换」一边写「你是他认定的首发」）。根子是卡头放了 cloutTier 的档次名——
+     那是**话语权**档次，不是**阵容位置**。两个状态各跑一遍：卡头必须和正文同一个口径，
+     而且卡头里不许出现任何一个话语权档次名。 */
+  {
+    const S: any = A.S();
+    const bak = { promoted: S.promoted, understudy: S.understudy, career: S.career,
+                  team: S.team, staff: S.staff, benchLock: S.benchLock, scrim: S.scrim };
+    S.career = S.career || { w: 0, l: 0, titles: [] };
+    S.team = S.team || "T1";
+    const TIERS = ["队魂", "核心", "主力", "轮换", "新人"];
+    // understudy 是「你顶谁的位」，isBenched 会拿他的五维和你比，桩必须带 r；
+    // 再把他调得比你强 + 上 benchLock，否则 isBenched 会当场把你提成首发
+    const strong: any = {}; A.DIMS.forEach((d: string) => strong[d] = 99);
+    const inc = { id: "老将", pos: S.pos || "mid", age: 24, r: strong };
+    const head = (h: string) => (h.match(/<h2>教练怎么看你<em>([^<]*)<\/em>/) || [])[1] || "";
+    // ① 首发
+    S.promoted = true; S.understudy = null;
+    let html = A.railCoach();
+    if (head(html) !== "首发") bad.push("教练卡：是首发，卡头却写「" + head(html) + "」");
+    if (html.indexOf("你是他认定的首发") < 0) bad.push("教练卡：首发状态下正文没说是首发");
+    // ② 替补
+    S.promoted = false; S.understudy = inc; S.benchLock = true; S.scrim = null;
+    html = A.railCoach();
+    if (head(html) !== "替补") bad.push("教练卡：在替补席，卡头却写「" + head(html) + "」");
+    if (html.indexOf("你还在替补席上") < 0) bad.push("教练卡：替补状态下正文没说在替补席");
+    // 两种状态下卡头都不许是话语权档次名
+    ["首发", "替补"].forEach((_, i) => {
+      S.promoted = i === 0; S.understudy = i === 0 ? null : inc;
+      const h = head(A.railCoach());
+      if (TIERS.includes(h)) bad.push("教练卡：卡头写成了话语权档次「" + h + "」，那不是阵容位置");
+    });
+    Object.assign(S, bak);
+  }
+  /* 职业前右栏那两张卡：数据都得从 S.pre 上读，别摸 S.career / S.team */
+  {
+    const S: any = A.S();
+    const bak = { pre: S.pre, career: S.career, team: S.team };
+    S.career = null; S.team = null;
+    S.pre = Object.assign({}, bak.pre || {}, { week: 1, ap: 10, rank: 30, log: [], mates: [] });
+    let n = "", sc = "";
+    try { n = A.railNext(); sc = A.railScout(); } catch (e) { bad.push("职业前右栏画不出来：" + e); }
+    if (n.indexOf("转会窗口") < 0) bad.push("下一个节点：没说距离转会窗口还有几周");
+    if (!sc || sc.indexOf("谁在看你") < 0) bad.push("谁在看你：卡片没画出来");
+    S.pre = null;
+    if (A.railNext() !== "" || A.railScout() !== "") bad.push("职业前右栏：没有 S.pre 时该返回空串");
+    Object.assign(S, bak);
+  }
+  /* 赛季结算卡上的「XX 冠军」必须念这一季实际所在的赛区（玩家实锤 2026-09-09：
+     在 T1 拿了联赛冠军，标签却写「LPL 冠军」）。源码扫描那条只管「有没有写死」，
+     这条管「换个赛区跑一遍，念出来的对不对」。 */
+  {
+    const S: any = A.S();
+    const bak = { ls: S.lastSeason, hl: S.homeLeague, si: S.si, off: S.off, tab: S.tab,
+                  team: S.team, career: S.career, attrs: S.attrs, sa0: S.seasonAttr0 };
+    S.homeLeague = "LCK"; S.team = "T1"; S.off = null; S.tab = "act"; S.si = 2;
+    S.seasonAttr0 = Object.assign({}, S.attrs);
+    S.career = Object.assign({}, S.career, { worldsYears: [], msiYears: [], log: [] });
+    S.lastSeason = { result: "champion", seed: 1, lg: "LCK", rec: { w: 7, l: 0 },
+                     grow: A.DIMS.map((d: string) => ({ d, g: 0 })) };
+    let html = "";
+    try { html = A.viewOffseason(); } catch (e) { bad.push("赛季结算卡画不出来：" + e); }
+    if (html) {
+      if (html.indexOf("LCK 冠军") < 0) bad.push("赛季结算：在 LCK 夺冠，标签没写「LCK 冠军」");
+      if (html.indexOf("LPL 冠军") >= 0) bad.push("赛季结算：在 LCK 夺冠，标签却写了「LPL 冠军」（玩家报的就是这个）");
+    }
+    // 老档没记 lg，得退回当前赛区，不能又变回 LPL
+    S.lastSeason.lg = undefined;
+    let old2 = "";
+    try { old2 = A.viewOffseason(); } catch (e) {}
+    if (old2 && old2.indexOf("LPL 冠军") >= 0) bad.push("赛季结算：老档缺 lg 时退回成了写死的 LPL");
+    // 生涯口径的赛区按打得最多的算，不是退役那一刻的
+    S.career.log = [{ lg: "LPL" }, { lg: "LPL" }, { lg: "LPL" }, { lg: "LCK" }];
+    if (A.careerLeague() !== "LPL") bad.push("生涯赛区：四个赛段里三个在 LPL，该算 LPL，实得 " + A.careerLeague());
+    S.career.log = [];
+    if (A.careerLeague() !== "LCK") bad.push("生涯赛区：没有日志时该退回当前赛区 LCK，实得 " + A.careerLeague());
+    Object.assign(S, { lastSeason: bak.ls, homeLeague: bak.hl, si: bak.si, off: bak.off,
+                       tab: bak.tab, team: bak.team, career: bak.career, seasonAttr0: bak.sa0 });
+  }
+  /* 存档卡右半边：只准读存档 blob，一个全局都不许碰（那是别人那一局的数据）。
+     传一个纯对象进去——如果实现里偷偷用了 S / titleCount() 之类，这里就炸。 */
+  {
+    const blob = { name: "阿甲", pos: "mid", si: 1, week: 3, split: 1, age: 21, team: "EDG",
+      homeLeague: "LPL", attrs: { 操作: 70, 运营: 70, 心态: 70, 指挥: 70, 体质: 70 },
+      ach: { a: 1, b: 1 }, career: { w: 10, l: 5, titles: ["S13 LPL春季赛"], worldsYears: [1] } };
+    const html = A.saveStats(blob);
+    ["EDG", "S13 LPL春季赛", "10−5", "阿甲".slice(0, 0) || "冠军", "成就"].forEach(k => {
+      if (k && html.indexOf(k) < 0) bad.push("存档卡数据：少了「" + k + "」");
+    });
+    if (A.saveStats({}).indexOf("undefined") >= 0) bad.push("存档卡数据：空存档吐出了 undefined");
+    // 职业前的档没有 career，也得有东西可看，不能是空白
+    const pre = A.saveStats({ name: "乙", pos: "top", si: 0, age: 18, pre: { week: 7 },
+      attrs: { 操作: 50, 运营: 50, 心态: 50, 指挥: 50, 体质: 50 } });
+    if (pre.indexOf("职业前") < 0) bad.push("存档卡数据：职业前的存档没写进度");
+    /* 摘要行只报「你是谁」，处境交给格子——两边不许说同一件事
+       （作者实锤：右边第一格「进度 S12 职业前 第 1 周」和左边摘要一字不差）。 */
+    const sum = A.saveSummary(blob);
+    if (sum.indexOf("21 岁") < 0) bad.push("存档卡摘要：不报年龄了");
+    ["EDG", "S13", "冠军"].forEach(k => {
+      if (sum.indexOf(k) >= 0) bad.push("存档卡摘要：又把「" + k + "」写进摘要了，右边格子已经在报它");
+    });
+    const preSum = A.saveSummary({ name: "乙", pos: "top", si: 0, age: 18, pre: { week: 7 } });
+    if (preSum.indexOf("职业前") >= 0) bad.push("存档卡摘要：职业前的进度又写回摘要了，右边「进度」格已经在报");
+  }
+  /* 周报两个落点，各干各的：本期在「本周」，往期在「新闻」，两边不重复 */
+  {
+    const S: any = A.S();
+    const bak = S.pressIssues;
+    S.pressIssues = [
+      { n: 9, label: "本期", heads: [{ c: "赛事战况", t: "本期头条" }] },
+      { n: 8, label: "上期", heads: [{ c: "选手个人", t: "往期头条甲" }] },
+      { n: 7, label: "上上期", heads: [{ c: "转会风声", t: "往期头条乙" }] }
+    ];
+    const now = A.pressCard(), all = A.pressCard("all");
+    if (!/本期头条/.test(now)) bad.push("周报：本周页那份没登本期头条");
+    if (/往期头条甲/.test(now)) bad.push("周报：本周页那份把往期版面也铺出来了（那是新闻页的事）");
+    if (!/在「新闻」栏目里/.test(now)) bad.push("周报：本周页那份没说往期去哪儿翻");
+    if (!/往期头条甲/.test(all) || !/往期头条乙/.test(all)) bad.push("周报：新闻页那份没把往期版面登全");
+    if (!/本期头条/.test(all)) bad.push("周报：新闻页那份连本期都没有");
+    S.pressIssues = bak;
+  }
   const dirty = { S: { name: "x", log: ['<div class="hi">ok</div> <span style="color:var(--cyan)">c</span> <b>b</b><br>',
     '<img src=x onerror=alert(1)><a href="https://evil">link</a><div style="position:fixed;inset:0;background:#000">cover</div><span class="hi" onclick="x()">t</span><!-- c --><script>bad()</script>'] } };
   const out = A.sanitizeSave(dirty).S.log;
@@ -624,6 +983,17 @@ function unitChecks() {
     S.cerRec = null; S.fatigue = 50; A.addFat(-10); const base = 50 - S.fatigue;
     if (!(Math.abs(drop - base * 0.8) < 0.01)) bad.push(`出征倍率没进 addFat：${drop} vs ${base}`);
     S.off = null;
+    /* 团队加分的上限必须落在这条带里——两头各有一次玩家投诉钉着：
+       下限：太低，横扫的队也进不了一阵（2026-09-09：「LNG 黄金之路了，一阵二阵只有一个辅助入选」）
+       上限：太高，冠军队整体被抬过所有人（2026-09-07：「为什么都是一个战队的」「68 分进一阵、84 分落选」）
+       10–13 这条带是扫了五档实测出来的（见 cer.ts 里那张表）。要挪出这条带，先重新量。 */
+    {
+      const B = A.AWARD_BONUS, cap = B.worlds + B.msi + B.league + B.top4;
+      if (!(cap >= 10 && cap <= 13))
+        bad.push(`颁奖夜团队加分上限 ${cap} 掉出 10–13：低了横扫进不去一阵，高了冠军队整体抬过所有人。改之前先重新量。`);
+      if (B.worlds <= B.msi) bad.push("颁奖夜：世界赛冠军的分不该低于 MSI");
+      if (A.AWARD_TEAM_CAP !== 3) bad.push(`一阵单队席位上限成了 ${A.AWARD_TEAM_CAP}——它才是挡「都是一个战队的」那道闸，动它要先量`);
+    }
     const aw = A.computeAwards(); if (!aw || aw.first.length !== 5 || !aw.mvp) bad.push("颁奖夜算不出一阵 / MVP");
     if (aw && new Set(aw.first.map((x: any) => x.pos)).size !== 5) bad.push("一阵五个位置不齐");
     A.cerStart("awards"); if (!S.cer || S.cer.k !== "awards") bad.push("颁奖夜没开场");
@@ -1171,6 +1541,120 @@ const BALL_WORDS = ["球队", "球员", "球迷", "球星", "球场", "赢球", 
     process.exit(1);
   }
   console.log("用语自检通过：玩家可见文案里没有球类词");
+}
+
+/* ---------------- 赛区自检 ----------------
+   玩家实锤 2026-09-09：「效力 lck 战队也能触发抗韩成就」「在 lck 效力还是触发了 lpl 事件，
+   这一部分分类问题必须要检查并修改」。根子都一样：把赛区名写死在**玩家看得见的话**里，
+   而那句话在任何赛区都会触发。
+
+   所以这条自检只盯一件事：**带中文的字符串里出现了赛区名**。
+   `S.homeLeague||"LPL"` 这种取名单的写法不算——那本来就是对的写法；
+   `"在国际赛场上击败一支 LCK 队伍"` 这种才算。命中的必须登记在下表里并写清为什么安全
+   （通常是「它的触发条件已经锁了赛区」），否则测试红。 */
+/* LDL 是**结构性豁免**，不逐条登记：全世界只有一个次级联赛，而它只挂在 LPL 底下
+   （main.ts 的 buildLDL：`w.LDL=buildLDL(w)`，注释写着「外赛区没有次级联赛建模——
+   试训邀请只出自 LPL/LDL」）。所以「下放 LDL」「LDL 二队名单」这些话在别的赛区
+   根本走不到，写死是安全的。
+   这个前提一旦变了（谁给别的赛区也做了二队），下面 LDL_ONLY_STILL_TRUE 那条会先红。 */
+const LDL_ONLY = /^(?:(?!\b(LPL|LCK|LEC|LCS|PCS|VCS|LJL)\b).)*$/s;
+const LEAGUE_OK: Record<string, string> = {
+  '{id:"beatlck", n:"抗韩成功", d:"在国际赛场上击败一支 LCK 队伍——前提是你自己不在 LCK。", tag:"战绩",':
+    "cond 已锁 myLeague!==LCK",
+  'd:"国际赛场上把另一支 LPL 队伍送回了家。",':
+    "lpl_civil 的 cond 已锁 myLeague===LPL && oppLeague===LPL",
+  '{id:"beat3lck", n:"韩流克星", d:"国际赛场上击败三支不同的 LCK 队伍。", tag:"战绩",':
+    "cond 已锁 myLeague!==LCK，计数那一头（main.ts 的 lckBeaten）也锁了",
+  '? `你上个月赛后采访那句话，被人剪进了「LPL 圣经」合集。`':
+    "「LPL 圣经」只发给 LPL，上一行就是那个判断",
+  '{q:"对面是 LCK 的队伍，他们的运营滴水不漏。",ctx:"跟他们比运营是自找的。",':
+    "赛前节点，when 里已判对手是 LCK",
+  '{k:"kr",   n:"韩语课",       cost:150, d:"看得懂韩援的沟通，去 LCK 打比赛不再是聋子"},':
+    "语言课的说明，在哪个赛区都成立",
+  '{k:"en",   n:"英语课",       cost:120, d:"LEC / LCS 的更衣室能听懂了"},':
+    "同上",
+  'story:"LCK 卷土重来。你刚进联赛，没人认识你。",':
+    "赛季 story 讲的是世界局势（那两年 LCK 确实统治），不是你在哪个赛区",
+  'story:"LCK 已经连冠两年。舆论开始说这个赛区不行了。",':
+    "同上，说的是 LCK 自己连冠、别人不行，和你效力哪儿无关",
+  '{sel:"#pin", t:"实力条", d:"你的水平和本周剩下的行动点。默认用文字描述：生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级（职业级 ≈ LPL 首发）。想看具体数字，点右边的「数值」。"},':
+    "实力尺的锚点本来就是 LPL（REGION_ANCHOR 里 LPL=70 是基准），这是在解释尺子怎么读，不是在讲你在哪打",
+  'text: "<b>实力尺顶端拉开</b>：全世界与你的属性整体 +5——LPL 首发整体进国服前 100、明星 85-90、你的上限抬到 95+。所有差值不变，比赛胜率一分没动。" });':
+    "同上，老档迁移时解释新尺子怎么读；LPL 首发是这把尺的刻度说明",
+  ':lck?"LCK 又一次站在了最高处。":"你在屏幕外看完了颁奖。"}`,':
+    "上一行的 own 已经把「自家赛区夺冠」分出去了",
+  'beatLCK?`决赛击败 LCK 的 ${S.match.oppName}——<b>至暗时刻的墙，被你砸开了一道口子。</b>`:""}`,':
+    "beatLCK 已锁 homeLeague!==LCK",
+  '?`决赛击败 LCK 的 <b>${c.opp}</b>——至暗时刻的墙，被你砸开了一道口子。`':
+    "同上，c.beatLCK 由上面那个变量算出来",
+};
+{
+  const bad3: string[] = [];
+  const dir = path.join(HERE, "src");
+  const walk = (d: string) => fs.readdirSync(d).flatMap((f: string) => {
+    const fp = path.join(d, f);
+    return fs.statSync(fp).isDirectory() ? walk(fp) : (f.endsWith(".ts") ? [fp] : []);
+  });
+  /* 二改（玩家实锤 2026-09-09：在 T1 拿了联赛冠军，结算卡的标签却写「LPL 冠军」）。
+     第一版是**白名单**——只查十六个「内容文件」，理由写的是「main.ts 里的是尺子与
+     更新日志」。这条理由是错的：main.ts 里除了尺子和日志，还画着结算卡、HUD、
+     赛程、结局名片一大堆玩家看得见的字，那句写死的「LPL 冠军」就在里面，
+     整整躲过了上一轮排查。
+     现在反过来做**黑名单**：默认全查，只放过两类——
+     ① 史实数据表（data / stars / eras）：那里的「LPL 2019 春季冠军」是真人真事；
+     ② main.ts 里的 CHANGELOG 数组：更新日志记的是当时发生了什么，不是活文案。 */
+  const SKIP_FILES = ["data.ts", "stars.ts", "eras.ts"];
+  const LEAGUES = /\b(LPL|LCK|LEC|LCS|PCS|VCS|LJL|LDL)\b/;
+  const CJK = /[\u4e00-\u9fff]/;
+  for (const fp of walk(dir)) {
+    const base = path.basename(fp);
+    if (SKIP_FILES.includes(base) || fp.includes(path.sep + "gen" + path.sep)) continue;
+    const raw = fs.readFileSync(fp, "utf8");
+    const lines = raw.split("\n");
+    // 更新日志那一段整块跳过：它是「当时上线了什么」的记录，不是活文案
+    let logFrom = -1, logTo = -1;
+    const logHead = raw.indexOf("export const CHANGELOG=[");
+    if (logHead >= 0) {
+      logFrom = raw.slice(0, logHead).split("\n").length - 1;
+      const logEnd = raw.indexOf("\n];", logHead);
+      logTo = logEnd < 0 ? lines.length : raw.slice(0, logEnd).split("\n").length;
+    }
+    let inBlock = false;
+    lines.forEach((ln: string, i: number) => {
+      if (logFrom >= 0 && i >= logFrom && i <= logTo) return;
+      const t = ln.trim();
+      if (inBlock) { if (ln.includes("*/")) inBlock = false; return; }
+      if (t.startsWith("//")) return;
+      if (t.startsWith("/*")) { if (!ln.includes("*/")) inBlock = true; return; }
+      // 模板里的 ${...} 是代码不是文案，先挖掉
+      const src = ln.replace(/\$\{[^}]*\}/g, "");
+      // 取出这一行里所有字符串字面量
+      const segs = src.match(/"[^"]*"|'[^']*'|`[^`]*`/g) || [];
+      if (!segs.some(g => LEAGUES.test(g) && CJK.test(g))) return;
+      if (LEAGUE_OK[t] !== undefined) return;
+      // 整行只提到 LDL：见上面 LDL_ONLY 那段——它只存在于 LPL 底下，别的赛区走不到
+      if (/\bLDL\b/.test(src) && LDL_ONLY.test(src)) return;
+      bad3.push(`${path.basename(fp)}:${i + 1} 中文文案里写死了赛区名 → ${t.slice(0, 76)}`);
+    });
+  }
+  if (bad3.length) {
+    console.error("赛区自检不通过（写死的赛区名会在别的赛区穿帮）：\n - " + bad3.join("\n - ")
+      + "\n   要么给它加赛区判断，要么连同理由登记进 test.ts 的 LEAGUE_OK。");
+    process.exit(1);
+  }
+  /* LDL 豁免的前提绊线：全世界仍然只有 LDL 一个次级联赛，而且它只挂在 LPL 底下。
+     谁哪天给别的赛区也做了二队，这里先红——那时上面那些「下放 LDL」的话就得改。 */
+  {
+    const lgs = Object.keys(A.S().world || {});
+    const known = ["LPL", "LCK", "LEC", "LCS", "PCS", "VCS", "LJL", "LLA", "CBLOL", "LCO", "TCL", "LDL"];
+    const extra = lgs.filter(l => !known.includes(l));
+    if (extra.length) {
+      console.error("赛区自检：世界里多出了没登记的联赛 " + extra.join(" / ")
+        + "\n   如果其中有次级联赛，test.ts 里 LDL 的结构性豁免就不再成立，那些「下放 LDL」的文案要改。");
+      process.exit(1);
+    }
+  }
+  console.log("赛区自检通过：中文文案里没有没登记的赛区硬编码（LDL 走结构性豁免，前提已核）");
 }
 
 if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }

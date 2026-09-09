@@ -47,8 +47,12 @@ export const ACHIEVEMENTS: any[]=[
    on:"match", cond:(c)=>c.won&&c.oppScore===0&&c.myScore>=2, r:{trust:8,fame:12}},
   {id:"revenge", n:"这笔账算平了", d:"击败一个把你淘汰过的对手。", tag:"战绩",
    on:"revenge", cond:()=>true, r:{fat:-25,fame:30,trust:10}},
-  {id:"beatlck", n:"抗韩成功", d:"在国际赛场上击败一支 LCK 队伍。", tag:"战绩",
-   on:"beatlck", cond:()=>true, r:{fat:-30,fame:60,trust:12}},
+  {id:"beatlck", n:"抗韩成功", d:"在国际赛场上击败一支 LCK 队伍——前提是你自己不在 LCK。", tag:"战绩",
+   /* 玩家实锤（2026-09-09）：「效力 LCK 战队也能触发抗韩成就」。
+      原来的条件只看对手是不是 LCK，不看你自己在哪——转会去 LCK 之后，
+      在国际赛上赢下另一支 LCK 队伍照样弹「抗韩成功」。
+      你就是韩援，赢的是自家赛区的队，这四个字没有任何意义。 */
+   on:"beatlck", cond:(c)=>c.myLeague!=="LCK", r:{fat:-30,fame:60,trust:12}},
 
   /* ---------- 成长 ---------- */
   {id:"maxdim", n:"练到头了", d:"有一项属性达到了天赋允许的上限。", tag:"成长",
@@ -83,7 +87,10 @@ export const ACHIEVEMENTS: any[]=[
 
   {id:"lpl_civil", n:"内战无强敌", tag:"梗",
    d:"国际赛场上把另一支 LPL 队伍送回了家。",
-   on:"match", cond:(c)=>c.intl&&c.won&&c.oppLeague===(S.homeLeague||"LPL"),
+   /* 同一条线上的另一半（2026-09-09）：原来写的是「对手赛区 == 我的赛区」，
+      于是效力 LCK 的人赢下 LCK 队也会弹这一条——而说明里写的是「另一支 LPL 队伍」，
+      文案当场穿帮。「内战无强敌」本来就是 LPL 的梗，那就只发给 LPL 的人。 */
+   on:"match", cond:(c)=>c.intl&&c.won&&c.myLeague==="LPL"&&c.oppLeague==="LPL",
    flavor:"弹幕齐刷刷：内战无强敌，外战无……算了不说了。",
    r:{fame:18,trust:-2}},
 
@@ -141,7 +148,7 @@ export function applyAchReward(r){
   return out;
 }
 
-/* ctx 给条件用：{won, bo5, myScore, oppScore, gap, intl, oppLeague, oppIds, laneWon, nodeFails, lostFirstTwo,
+/* ctx 给条件用：{won, bo5, myScore, oppScore, gap, intl, myLeague, oppLeague, oppIds, laneWon, nodeFails, lostFirstTwo,
    myRating, meWorst, meGap}——后三个是你这一场的真实数据行（评分、是不是全队最低、比队友均值差多少） */
 /* 扩充条目在 achieve_more.js，构建时拼进来 */
 ACHIEVEMENTS.push(...ACH_MORE);

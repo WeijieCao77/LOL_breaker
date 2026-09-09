@@ -4,7 +4,7 @@ import { AUTO_KEYS, autoAllOn, autoBar, autoBiz, autoCareerStep, autoDaily, auto
 import { avatarOf, gicon } from "./avatar";
 import { synthBoxScore } from "./boxscore";
 import { bondMoments, bondNoteMatch, bondPanel, bondRetire, bondSplitEnd, doBondCoach, doBondTalk } from "./bond";
-import { addStaff, cloutCard, cloutTick, doList, doSign, initRelations, initStaff, relCard, relMod } from "./clout";
+import { addStaff, cloutCard, cloutOf, cloutTick, cloutTier, coachTrust, doList, doSign, initRelations, initStaff, mgrTrust, relCard, relMod } from "./clout";
 import { CUPS, activeCups, cupCard, cupDismissMatch, cupMatchCard, cupOf, cupOppName, cupPrep, cupReachName, cupResultCard, cupRoundName, cupTick, disbandCrew, dueCups, enterCup, forfeitCup, preSquadCard, resolveCupNode, startCupMatch } from "./cup";
 import { DATA } from "./data";
 import { formCard, formMul, formNews, formTier, myForm, myFormMul, rollForm, rollWorldForm } from "./form";
@@ -117,6 +117,64 @@ export const CHANGELOG=[
   {v:"v20260909w", at:"2026-09-09", items:[
     "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
     "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+  ]},
+  {v:"v20260909v", at:"2026-09-09", items:[
+    "<b>年度颁奖夜的团队加分二次校准</b>（玩家实锤：「我的队伍 LNG 都拿了好多次冠军，黄金之路了，但是年度一阵二阵只有一个辅助入选，这不科学」）。上一版为了治「为什么一阵都是一个战队的」，把团队加分上限从 19 一刀砍到 7.5——但<b>同一次改动还加了「一支队最多占 3 席」那道闸</b>，「包揽五席」已经被闸挡住了，加分不必再兼职当闸。砍过头的代价这次量出来了：合成黄金之路（联赛 + MSI + 世界赛全拿）的 20 个赛季里，一阵平均只占 <b>2.25 席</b>，<b>6 次只拿到 1 席</b>——玩家看到的就是这一档",
+    "扫了五档（×1 / ×1.3 / ×1.5 / ×1.75 / ×2），把两头的投诉放在同一张表上看，取 <b>×1.5</b>（上限 11.5）：横扫的队一阵从 2.25 席升到 <b>2.75 席</b>，只拿 1 席的从 6/20 降到 <b>1/20</b>，MVP 从 75% 到 90%（<b>不是 100%</b>——再往上就变成横扫必满席必 MVP，那也不真实）。而当年那句投诉盯的指标只从 2.0 挪到 2.7、最差 6.0 → 7.7，离「68 分进一阵、84 分落选」（差 16 分）还远",
+    "自检把这条带钉住：团队加分上限必须落在 <b>10–13</b>，单队席位闸必须还是 3。<b>低了横扫进不了一阵，高了冠军队整体抬过所有人</b>——两头各有一次玩家投诉写在自检的报错里，谁想挪都得先重新量"
+  ]},
+  {v:"v20260909u", at:"2026-09-09", items:[
+    "<b>「教练怎么看你」不再自相矛盾</b>（玩家实锤：「这里一边写着轮换，一边说我是认定的首发」）。卡头写的是 <b>cloutTier 的话语权档次</b>，正文写的是<b>阵容位置</b>——两个词说的根本不是一回事：「轮换」是威望 26–43 那一档（「先把位置坐稳再说别的」），说的是你在俱乐部<b>说不说得上话</b>；首发 / 替补说的是你<b>上不上场</b>。威望低但坐着首发，完全可能同时成立，可它们并排放在一张卡上就成了打架。现在<b>卡头只报阵容位置</b>（首发 / 替补），话语权档次挪到它自己那条数值旁边单独说，谁也不冒充谁",
+    "自检钉住这一条：首发和替补两个状态各跑一遍，<b>卡头必须和正文同一个口径</b>，而且卡头里不许出现任何一个话语权档次名。拿两种改坏方式验过——退回档次名、口径写反，都红"
+  ]},
+  {v:"v20260909t", at:"2026-09-09", items:[
+    "<b>四个「本周」形态现在是同一套界面了</b>（玩家实锤：「在休赛期或者季后赛或者其他世界赛大赛的时候，界面又变回老模式，我要的是保证这个界面一致」）。前两版分别改了赛季页和职业前页，但<b>备战页</b>（季后赛 / MSI / 世界赛之间那一页）和<b>休赛期页</b>是各自独立的函数，一个都没动到——换个阶段就变回老样子。现在四个形态共用一个骨架：主列放要宽度的东西，右栏放给你看的东西",
+    "两页的右栏按各自阶段配：<b>备战页</b>是 对阵图 · 教练怎么看你 · 最近的比赛 · 电竞周报（对手已经写在主列的对阵块里了，所以右栏第一格回答的是「这轮打完往哪走」）；<b>休赛期</b>没有下一场，就是 教练怎么看你 · 最近的比赛 · 电竞周报",
+    "对阵图进 360px 右栏时<b>改成竖着堆</b>：两列 176 + 230 加间距要 420px，横着放右边那列的「vs」后面整个会被裁掉（备战页实测）。「赛事」栏目里那张还是原来的横向树，那边有 872px 的宽度",
+    "加了一条<b>布局一致性自检</b>：四个画「本周」的函数少一个进 .wkgrid，测试直接红并点名是哪一个。这类漏改今天已经是第三次了——第一次漏了职业前，第二次漏了备战和休赛期"
+  ]},
+  {v:"v20260909s", at:"2026-09-09", items:[
+    "<b>职业前那一页也改成主列 + 右栏了</b>（玩家实锤：「我没看到界面改动，我的电竞周报、教练对我的看法、最近的比赛去哪里了」）。上一版只改了<b>签约之后</b>那一页，没签约的人走的是另一套代码，整页纹丝不动。现在两页同一个骨架，右栏按职业前真正存在的东西配：<b>下一个节点</b>（下一场比赛 / 报名在第几周、够不够格、距离转会窗口还有几周）· <b>谁在看你</b>（试训门槛：卡在段位还是卡在曝光，最高能来哪一档）· <b>电竞周报</b>（它从第一周就出刊，原来只能去「新闻」栏目翻）",
+    "「教练怎么看你」和「最近的比赛」职业前<b>不做假的</b>：还没进队就没有教练、没有首发竞争，排位和杯赛也不写进比赛档案。所以那两个位置换成了上面两张——角色对得上，数据是真的",
+    "「谁在看你」的正文是从行动卡里<b>搬</b>过来的，不是复制：主列那边同时删掉了，两处不会各说一遍。行动卡因此短了一截",
+    "<b>封面页的存档卡重做</b>（玩家实锤：「这个封面的填充还是很丑，甚至没有上下居中」）。原来左边摘要写「gtu · 上单 · 19 岁 · S12 职业前 第 1 周」，右边第一格又写「进度 S12 职业前 第 1 周」、第二格「身份 上单 · 19 岁」——<b>拿同一句话填了两遍</b>，看着当然空。现在<b>摘要只报你是谁，处境全交给格子</b>；职业前的格子换成进度 · 段位 · 粉丝 · 资金 · 实力 · 成就。格子改用 flex 排，<b>末行自己长满</b>（原来 grid 换行会在末尾剩一片空格子，容器底色把那片空白画成一块实心蓝板），并且<b>上下居中</b>"
+  ]},
+  {v:"v20260909r", at:"2026-09-09", items:[
+    "<b>赛季结算卡的「冠军」标签念错赛区</b>（玩家实锤：在 <b>T1</b> 拿了联赛冠军，右上角却写「<b>LPL 冠军</b>」）。那个标签整条是写死的。现在<b>念这一季实际所在的赛区</b>，而且赛区在结算那一刻就<b>存进快照</b>——不是画卡片时才去读「你现在在哪」，否则休赛期一转会，这张卡再打开就又串了。老档没存这个字段，退回当前赛区",
+    "同一批还揪出<b>三处同样的毛病</b>：结局卡的「半程加冕 / 四强遗恨 / 赛区功勋」三段结语都写死了 LPL（「你证明了 LPL 能赢」「LPL 的观众记得你的名字」「这五年 LPL 没有塌」），一个在 LCK 打了五年的人读到的是别人的故事；试训邀请卡上「LPL 第 X/Y」那行是兜底分支写死的，上面那条分支明明已经在念真实赛区了。结局那三段按<b>生涯里打得最多的赛区</b>算——一个在 LPL 打了四年、最后一年去 LCK 养老的人，说「这五年 LCK 没有塌」也是错的",
+    "<b>赛区自检从白名单改成黑名单</b>。上一轮加的那条自检只查十六个「内容文件」，理由写的是「main.ts 里的是尺子与更新日志」——这条理由本身就是错的：main.ts 里还画着结算卡、HUD、赛程、结局名片一大堆玩家看得见的字，玩家这次报的那句就在里面，<b>整整躲过了上一轮排查</b>。现在默认全查，只放过史实数据表和更新日志本身；LDL 走结构性豁免（全世界只有它一个次级联赛、且只挂在 LPL 底下），并加了一条绊线：哪天别的赛区也有了二队，自检先红"
+  ]},
+  {v:"v20260909q", at:"2026-09-09", items:[
+    "<b>封面页的存档卡右半边不再空着</b>（作者实锤：「过去的存档的右边都是空的，放一些内容，比如存档的一些数据，队伍，冠军等等」）：左边还是「这是哪一局 + 继续 / 重开」，右边补上这一局的实际数据——<b>赛季 · 效力 · 冠军 · 生涯战绩 · 世界赛 · 实力 · 成就</b>，用的是顶部 HUD 那套格子样式，不新造一种。职业前的档没有这些，就报进度和身份。整段只读存档本身，读不出来就少一格，绝不让封面页白屏",
+    "<b>封面页头的标语不再压在主视觉上</b>（作者截图实锤）：图上本来就印着「电竞选手生涯模拟」，而我们的标语是浮在图上的——图高和文字起点原来各写一条 clamp，两条曲线随宽度分开走，1320px 宽的窗口上正好叠成一团。现在<b>图占一段固定高度、标语排在图下面</b>，两者共用同一个值，<b>宽度再怎么变都叠不上去</b>（自检按这个不变式量）。顺带整张图完整露出来了，原来下半截一直被文字压着",
+    "<b>右栏再加两张卡</b>（作者点名，照 VAL Player）：<b>教练怎么看你</b>——教练 / 经理 / 威望三条，外加一句「你是不是他认定的首发」；<b>最近的比赛</b>——近四场的对手、比分、你这场的评分，每场带一颗「<b>拆解</b>」直接开当场的赛后拆解，不用再去「世界 · 赛程」表里翻。顺手修了一个哑巴按钮：赛后拆解那层遮罩原来只挂在「本周」以外的每一页上，「本周」自己没有，按钮点下去什么也不发生",
+    "<b>「本周」页改成主列 + 右栏</b>（作者拍板，参照 VAL Player 的本周页；他的要求是「不改变风格以及按钮形状还有侧边栏样式，只是把位置布局稍微改一下」——所以配色、按钮形状、左侧竖导航一个像素没动，只挪了位置）。原来「下一场」独占一整行、行动卡再独占一整行，两张都用不满宽度，这一页却要滚三屏。现在<b>要宽度的东西占主列</b>（九个行动格子），<b>只是给你看的收进 360px 右栏</b>（这周打谁、圈子在写谁）。1920 的屏上主列 872px、右栏 360px",
+    "<b>电竞周报搬回「本周」页</b>（作者点名：「最好是能把电竞周报移动到本周栏目里放在下一场板块的隔壁做一个填充」）：本期贴在「下一场」下面，就在右栏里，每周打开就能顺手看一眼圈子在写谁；<b>往期挪到「新闻」栏目</b>，那里现在是完整存档，每期一段。两边不重复——本期在「本周」，往期在「新闻」",
+    "右栏窄，「下一场」里的对阵块跟着改成<b>竖排</b>（两队各占一行，队名和战力左右分开）：并排是 VAL Player 用三个字母队标才成立的，我们的队名是「EDward Gaming」这种长度，并排会断成两行。赛程条在窄栏里改成横向滚动，不再铺成四行",
+    "窄于 1180px 一切照旧：退回单列，顺序还是<b>下一场 → 行动 → 周报</b>，手机上先看对手、再动手、最后才是报纸，和改之前一样。自检钉住这三件：单列顺序、三块的摆位规则一条都不能少、本期和往期不许两边重复"
+  ]},
+  {v:"v20260909p", at:"2026-09-09", items:[
+    "<b>桌面版界面二改</b>（玩家实锤：「修了 ui 画面后出了很多问题，首先是互相遮挡，然后是画面占满屏幕文字小」）。<b>遮挡</b>是上一版钉在底部的那条出口条同时踩了三个坑：它排在「替补训练赛」和「本周对手」<b>前面</b>，而 sticky 只压得住排在它后面的东西，卡片一长过一屏就把这两块糊住；背景是半透渐变加毛玻璃，底下的字直接透上来看着就是重影；主按钮 <code>flex:1</code>，容器放宽到 1400 之后摊成一条 1000px 的金色板砖，把「行动点」挤到一线。现在<b>出口条挪到卡片最后、背景改实心、主按钮封顶 560px</b>，右下角还给音频浮窗留出一角（1440px 上原来压了 9px）",
+    "<b>文字小</b>是只放宽了容器、没动字号的结果：1920 的屏上正文一行能拉到 1300px，字还是 12.5px，行动格子被排成 8 列 145px 的窄条，每条说明挤成五六行。容器从 1400/1560 收回 <b>1320/1400</b>，宽屏上正文、行动标题与说明各抬一档，行动格子的下限从 140px 抬到 <b>200px</b>（8 列 → 5 列，格子大了反而说明只占一两行），正文再按 <b>76 个字</b>封顶换行。手机和小桌面一个像素没动",
+    "羁绊的<b>「扛旗 / 带人」换成大白话</b>（玩家实锤：「新加入的扛旗、带人之类的功能玩家看不懂是什么意思，要有说明要不然就把标签做的好理解」）：标签改成 <b>他带你 · 他超了你 · 你扛着他 · 你带他 · 并肩</b>，每个人卡片上直接写出<b>判断依据</b>（五维均值谁高、场均评分谁高、年龄差多少），面板底下补了一张四格说明。存档里存的还是原来那五个键，老档读出来一切照旧",
+    "羁绊角色<b>把场均评分算进去了</b>（玩家实锤：「如果我是个 rating 很高的院长还被人带感觉有点奇怪」）：原来只看五维均值，于是你数据爆炸地扛着一队老将，界面还在跟你说是他在带你。现在<b>五维均值仍是主轴，场均评分当修正项</b>——和他打够 3 个系列赛才参与，最多把判定拨动 ±4 分五维（1 分评分 ≈ 6.7 分五维），一个赛段的手感掀不翻硬实力，但你确实在扛的时候不会再被说成被带",
+    "同一批加了<b>三条自检</b>钉住这次的坑：出口条必须是卡片最后一个孩子、背景不许半透；宽屏那一块 CSS 必须写在基准值后面（媒体查询不加权重，写前面一条都不生效——第一版就是这么写的）；角色标签必须有大白话说法和解释。三条都拿旧写法验过，全部红"
+  ]},
+  {v:"v20260909o", at:"2026-09-09", items:[
+    "新增<b>玩家交流群</b>：抖音和小红书各一个，两边都是作者本人在，欢迎来聊玩法、提<b>改进建议</b>、反馈 Bug 和数值问题。右下角「⋯」里的「群」和页面最底部随时能打开；<b>玩满 10 分钟会自动弹一次</b>，就一次，弹过不再弹，弹窗上也有「别再提示」。两张码扫法不同，各自写了说明（抖音那张<b>必须在抖音 App 里扫</b>，手机相机和微信都读不出来，所以另附了群号）"
+  ]},
+  {v:"v20260909n", at:"2026-09-09", items:[
+    "灰掉的选项不再继续催你（玩家实锤：「选项灰的时候也会触发做不了的事件」）：「练操作」因为<b>机械路径已刷满</b>变灰之后，周末还在弹「冲击操作瓶颈<b>断了</b>：这周只练了 0/3 次」——逼你去点一个点不动的按钮。根子是同一件事被三处各判各的：按钮查「这条路还付不付得出钱」，冲击面板只查机械池，而周末审判只查「顶没顶到瓶颈」，最松的那个天天在骂人。现在<b>按钮灰不灰、面板显不显示、周末审不审判，问的是同一个函数</b>"
+  ]},
+  {v:"v20260909m", at:"2026-09-09", items:[
+    "休息多了一个「<b>歇够 ×N</b>」（玩家实锤：「回体力点击困难，每回合都要点半天」）：一次休息是 1 个行动点、约 −17 体能，而一周的疲劳轻松 +26 起——正常节奏下每周要点两三次，一整个生涯是几百次重复点击。现在体能低的时候，休息卡上会多出一个小按钮，<b>一下点完</b>：一直歇到体能回到 75，或者行动点用光为止。<b>一个数值都没改</b>——同样的行动点、同样的公式，只是不用你自己点那么多下（自检里拿「歇够」和「连点 N 次」逐项对齐，对不上就红）"
+  ]},
+  {v:"v20260909l", at:"2026-09-09", items:[
+    "<b>赛区分类全面清了一遍</b>（玩家实锤：「在 LCK 效力还是触发了 LPL 事件，这一部分分类问题必须要检查并修改」）：际遇「你那句话被剪进「LPL 圣经」合集」在别的赛区改叫「本赛区的名场面合集」；「某队官宣裁掉首发」的那支队原来写死从 LPL 里挑，现在从<b>你自己的赛区</b>里挑（那两个选项本来就假设那是你够得着的位置）；世界头条的「赛区格局」也从写死的 LPL vs LCK 改成<b>你所在的赛区对它最大的对手</b>",
+    "同一批还清掉三处：成就「<b>韩流克星</b>」（击败三支不同 LCK 队伍）和它的计数一起加锁，效力 LCK 的人不再累积；国际赛夺冠文案里的「至暗时刻的墙，被你砸开了一道口子」<b>只对不在 LCK 的人</b>说——你自己就在 LCK 的时候那是内战不是砸墙；世界新闻里「LCK 又一次站在了最高处」对效力 LCK 的人不再是坏消息",
+    "<b>加了一条赛区自检</b>钉住这一类：内容文件的中文文案里再出现没登记的赛区名，测试直接红并指到行号——要么给它加赛区判断，要么连同理由登记。这一类问题今天已经是第二次了",
+    "成就「<b>抗韩成功</b>」不再乱发（玩家实锤：「效力 LCK 战队也能触发抗韩成就」）：原来的条件只看对手是不是 LCK，不看你自己在哪个赛区——转会去 LCK 之后，在国际赛上赢下另一支 LCK 队伍照样弹「抗韩成功」。你就是韩援，赢的是自家赛区的队，这四个字没有意义。现在<b>你自己在 LCK 就不再触发</b>",
+    "同一条线上的另一半：「<b>内战无强敌</b>」原来写的是「对手赛区 == 我的赛区」，于是效力 LCK 的人赢下 LCK 队也会弹它——而说明里写死了「另一支 <b>LPL</b> 队伍」，文案当场穿帮。这本来就是 LPL 的梗，现在只发给<b>效力 LPL、又赢下 LPL</b> 的人"
   ]},
   {v:"v20260909j", at:"2026-09-09", items:[
     "<b>替补席不再替首发交学费</b>（玩家实锤：「我都替补了，首发阵容磨不磨合那是他们的事，为什么要花我的行动点」）：坐替补席的时候，训练赛和战队合练这两个纯喂默契池的行动<b>收起来</b>，只有个人收益的留着；<b>这个赛段的默契也不会在你手里往下掉</b>（原来不喂就掉，等于替补被这个池子持续抽血）。替补席多了一件事：<b>看录像</b>（1 点）——运营 +0.35、攒运营突破、战术素养 +0.2，每赛段前 3 次还给一点轮换资本",
@@ -627,6 +685,28 @@ export const GAME_VER=CHANGELOG[0].v+" · 回声";
    SUPPORT_QR 可选：爱发电主页二维码图的 data URI（站点 CSP 只放行 self/data:，外链图不显示）。 */
 export const SUPPORT_URL="https://ifdian.net/a/poxiao_lol";   // 玩家 2026-09-05 给的爱发电主页
 export const SUPPORT_QR="data:image/png;base64,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";   // 玩家 2026-09-05 给的爱发电官方分享卡，裁出二维码、二值化内嵌
+/* 玩家交流群：两个群，二维码都走 /img/ 静态路由（server.js 已放行 bgm|fonts|img），
+   不内联成 data URI——单文件已经 1.6MB，两张图加起来 260KB 不值得再塞进 HTML，
+   而且只有玩家真打开浮窗时才会去拿。
+
+   两张码的性质不一样，文案得分开写：
+   - 抖音那张是官方花式码（点状描边 + 中间贴头像），**通用扫码器根本读不出**（实测：
+     72 种预处理组合全部失败，而同一个解码器读标准码一次就中）。手机相机、微信扫一扫
+     都无效，必须在抖音 App 内扫。所以同时给出群号做退路。
+   - 小红书那张是标准 QR，能直接解出链接，所以另外做成可点的链接（电脑玩家不用扫）。
+     但它**有效期只有 28 天**，码面上印着 2026-10-07；到期前要重新生成一张换掉，
+     否则玩家扫了进不去。COMMUNITY_XHS_UNTIL 就是给这件事用的：过期后界面上会自己标注。 */
+/* 两张码都带 ?v= 版本串：/img/ 的响应头是 cache-control: public, max-age=86400，
+   不带版本串的话，换了新码之后老玩家还会扫到缓存里的旧码最多 24 小时。
+   小红书码 28 天就过期、必须定期换，所以这个不能省——换图时记得把 v 一起改。 */
+export const COMMUNITY_QR="img/douyin-group-qr.jpg?v=20260909";
+export const COMMUNITY_DOUYIN_ID="274886355718";
+export const COMMUNITY_QR_XHS="img/xhs-group-qr.jpg?v=20260909";
+export const COMMUNITY_XHS_URL="http://xhslink.com/m/2m6J5grMsWV";
+export const COMMUNITY_XHS_UNTIL="2026-10-07";
+/* 玩满多久自动弹一次群（玩家拍板 2026-09-09：10 分钟）。
+   只算页面真在前台的时间，跨会话累加；弹过一次就永不再弹。 */
+export const COMMUNITY_AFTER_MS=10*60*1000;
 export const AP_SEASON=8, AP_PRE=10, AP_OFF=8, AP_HURT=4;   // 职业前 12→10（2026-09-06 压年：每周少点两下）
 /* 异化点数（2026-09-03 玩家拍板）：按现实时间精力定价。
    轻 1 = 碎片时间（排位几把 / 双排 / 发简历）；
@@ -861,6 +941,20 @@ export function btkPathDead(d){
 /* 机械磨练路径的公共闸：不顶着瓶颈就不存在「顶开」这回事。
    玩家实锤：操作 80/92 随便练三周也弹突破+成就——路径只查计数从不查你在不在瓶颈上。 */
 export function btkAtCap(d){ return S.attrs&&S.attrs[d]>=capOf(d)-0.05; }
+/* 「现在还在冲击这一维的瓶颈吗」——按钮灰不灰、面板显不显示、周末审不审判，
+   三处必须问同一个函数（玩家实锤 2026-09-09：「选项灰的时候也会触发做不了的事件」——
+   练操作已经因为「机械路径已刷满」变灰，周末却还在弹「冲击操作瓶颈断了：这周只练了
+   0/3 次」，逼你去点一个点不动的按钮）。
+   原来三处各写各的：trainBtn 查 btkPathDead、btkChaseNote 只查机械池、
+   btkWeekEnd 只查「顶没顶到瓶颈」——最松的那一个天天在骂人。 */
+export function btkChasing(d){
+  d=d||"操作";
+  if(!S||!S.attrs) return false;
+  if(!btkAtCap(d)) return false;        // 没顶到瓶颈，无所谓冲击
+  if(btkPathDead(d)) return false;      // 这条机械路已经付不出钱了：池满 / 一次性收益领过了
+  const P=BREAK_PATHS[d];
+  return !!(P&&P.by==="train");         // 只有「靠继续练」的维度才谈得上每周练满
+}
 export function btkNote(d,n){ S.btk=S.btk||{opStreak:0,opThisWeek:0,vod:0,rest:0};
   if(d==="op") S.btk.opThisWeek+=n;
   else S.btk[d]=(S.btk[d]||0)+n;
@@ -917,7 +1011,7 @@ export function btkWeekEnd(){
   // 点全投操作也凑不满 3，下一次结算却按整周审判——连击被无声清零。
   const budget=(S.btk.apWeek!==undefined)?S.btk.apWeek:6;
   const invested=S.btk.opThisWeek, was=S.btk.opStreak;
-  const chasing=S.attrs&&S.attrs.操作>=capOf("操作")-0.05;
+  const chasing=btkChasing("操作");   // 和按钮、面板同一个判断
   // 异化点数后练一次操作 = 2 点，「练满 3 次」要 6 点预算——
   // 备战/出征/受伤（4 点）的周照旧按暂停处理，不计数也绝不清零
   if(budget<6){
@@ -2849,10 +2943,7 @@ export function weekDiary(){
 /* 冲瓶颈状态条：正在冲操作瓶颈时，把规则和本周进度顶在行动区最上面。
    玩家原话：「我根本不知道要每周投入三个点」——规则不能只藏在按钮小字里。 */
 export function btkChaseNote(){
-  if(!S.attrs||false) return "";
-  if(S.attrs.操作<capOf("操作")-0.05) return "";
-  // 操作没有里程碑来源，机械池满就是它的头
-  if((capMechOf("操作"))>=CAP_MECH_MAX-0.01) return "";
+  if(!btkChasing("操作")) return "";   // 和按钮、周末审判同一个判断
   const b=S.btk||{}; const op=b.opThisWeek||0, st=clamp(b.opStreak||0,0,3);
   const ap=(S.step==="pre"&&S.pre)?S.pre.ap:(S.ap||0);
   const low=(b.apWeek!==undefined&&b.apWeek<6);
@@ -3173,13 +3264,45 @@ export function doAction(k){
     checkStreamBiz();
     // 榜一大哥只会在你真的开播的时候出现，不该每周瞎摇
     fireEvent("streamGift",0.20);}
-  else{ btkNote("rest",1);
-    addFat(((S.buff&&S.buff.physio)?-23:-17)*((S.bg&&S.bg.rest)||1)*prepMul);   // 1 点碎片休息：效果 ×0.55
-    if(S.assets&&S.assets.rehab) addFat(-4.5*prepMul);      // 私人康复室（×0.55）
-    S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.35*prepMul);
-    // 休息也是泄压阀：心理课让它更管用
-    if(S.tilt) S.tilt=Math.max(0,q1(S.tilt-(6+(hasCourse("psy")?3:0))*prepMul));}
+  else{ restOnce(prepMul); }
   S.ap-=apCost(k);render();
+}
+/* 休息这一下（一个行动点的量）。抽出来给「歇够」连点用——两条路必须是同一份代码，
+   不然点一次和点五次会算出不一样的东西（test.ts 里逐项对齐钉着）。 */
+export function restOnce(prepMul){
+  btkNote("rest",1);
+  addFat(((S.buff&&S.buff.physio)?-23:-17)*((S.bg&&S.bg.rest)||1)*prepMul);   // 1 点碎片休息：效果 ×0.55
+  if(S.assets&&S.assets.rehab) addFat(-4.5*prepMul);      // 私人康复室（×0.55）
+  S.attrs.心态=Math.min(capOf("心态"),S.attrs.心态+0.35*prepMul);
+  // 休息也是泄压阀：心理课让它更管用
+  if(S.tilt) S.tilt=Math.max(0,q1(S.tilt-(6+(hasCourse("psy")?3:0))*prepMul));
+}
+/* ---------- 歇够（玩家实锤 2026-09-09：「回体力点击困难，每回合都要点半天」）----------
+   一次休息 1 点行动点、−17 体能，而一周的疲劳轻松 +26 起：正常节奏下每周要点两三次，
+   一整个生涯是几百次重复点击。这里**不改任何数值**——同样的行动点、同样的公式，
+   只是让一次点击把该点的次数一起点完：一直休息到体能回到 REST_TO 或者行动点用光。 */
+export const REST_TO=75;                 // 体能目标（= 疲劳 25）；再往上补一格收益太低
+export function restPerRest(){
+  const prepMul=(S.step==="prep"||(S.off&&S.off.next==="intl"))?((S.assets&&S.assets.van)?0.70:0.60):1;
+  return Math.abs(((S.buff&&S.buff.physio)?-23:-17)*((S.bg&&S.bg.rest)||1)*prepMul)
+        +((S.assets&&S.assets.rehab)?4.5*prepMul:0);
+}
+export function restRoom(){
+  if(!S||S.step==="create"||!S.attrs) return 0;
+  const cost=apCost("rest"), ap=(S.step==="pre"&&S.pre)?(S.pre.ap||0):(S.ap||0);
+  const per=restPerRest(); if(per<=0) return 0;
+  let n=0, fat=S.fatigue||0;
+  while((n+1)*cost<=ap && fat>100-REST_TO){ fat-=per; n++; }
+  return n;
+}
+export function doRestAll(){
+  const n=restRoom(); if(n<=0) return;
+  const cost=apCost("rest");
+  const prepMul=(S.step==="prep"||(S.off&&S.off.next==="intl"))?((S.assets&&S.assets.van)?0.70:0.60):1;
+  const f0=Math.round(100-(S.fatigue||0));
+  for(let i=0;i<n;i++){ noteAct("do","rest"); restOnce(prepMul); S.ap-=cost; }
+  pushEvent(`连着歇了 <b>${n}</b> 次（${n*cost} 个行动点）：体能 ${f0} → <b>${Math.round(100-(S.fatigue||0))}</b>。`,"info","休息");
+  render();
 }
 /* 自动推进 —— 推到「下一件需要你拿主意的事」就停。
 
@@ -3464,7 +3587,7 @@ export function tabContent(T){
     ${T==="world"?(bracketCard())+(fixtureCard())+standingsCard()+rivalCard()
       +(followUpCard())
       +newsCard():""}
-    ${T==="news"?(pressCard())+eventsCard():""}
+    ${T==="news"?(pressCard("all"))+eventsCard():""}
     ${T==="ach"?achCard():""}
     ${T==="help"?helpCard():""}`;
 }
@@ -3485,9 +3608,22 @@ export function viewSeason(){
   const benched=isBenched();
   // 「本周」和其他标签同一套格式：标签栏在最上，内容在下。
   // 原来行动卡拼在标签栏上面，是六个标签里唯一的例外——没有理由。
-  return `${champ}${scrimPop}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
+  /* 赛后拆解的遮罩：原来只挂在 tabContent 上，也就是「本周」以外的每一页都有、
+     偏偏「本周」没有。右栏的「最近的比赛」把「拆解」按钮搬到了这一页，
+     不补这一句的话按钮点下去 S.pmView 设了、却没人画——按钮看着像坏的。 */
+  return `${champ}${S.pmView!=null?pmReplayCard():""}${scrimPop}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}
   ${tabBar(TABS_SEASON)}
-  ${nextMatchCard()}
+  <!-- 「本周」页改成「主列 + 右栏」（作者拍板 2026-09-09，参照 VAL Player 的本周页；
+       他的原话：「不改变风格以及按钮形状还有侧边栏样式，只是把位置布局稍微改一下」）。
+       宽屏上行动卡独占一整行时，「下一场」和周报只能一张张往下摞，于是这一页要滚三屏，
+       横向那一大半却空着。现在：**要宽度的**（九个行动格子）占主列，
+       **只是给你看的**（这周打谁、圈子在写谁）收进右栏，两边都不再浪费。
+       源码顺序刻意是「下一场 → 行动 → 周报」：窄屏退回单列时就是这个顺序，
+       手机上先看对手、再动手、最后才是报纸，和改之前一致。
+       分栏靠下面的 grid-column / grid-row 摆位，不动源码顺序。 -->
+  <div class="wkgrid">
+  <div class="wk-next">${nextMatchCard()}</div>
+  <div class="wk-main">
   <div class="card">
     <h2>${sea.tag} ${SPLITS[S.split||0]} · 第 ${S.week}/${WEEKS} 周<em>剩余行动点 ${S.ap}${" · "+txPhaseName()}</em></h2>
     ${autoBar()}
@@ -3512,9 +3648,16 @@ export function viewSeason(){
       <button class="act" data-do="content" ${S.ap<apCost("content")?'disabled style="opacity:.34"':''}>
         <div class="t">做内容 ${apTag("content")}</div><div class="d">教学 / 高光 / 复盘 / 整活——同样一点，方向不同</div></button>
       <button class="act" data-do="rest" ${S.ap<apCost("rest")?'disabled style="opacity:.34"':''}>
-        <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
+        <div class="t">休息 ${apTag("rest")}${restRoom()>=2?` <i class="apc restall" role="button" tabindex="0" title="一直休息到体能 ${REST_TO}，或者行动点用光">歇够 ×${restRoom()}</i>`:""}</div>
+        <div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
+    ${benched&&true?scrimPanel():""}
+    ${opp&&uiNum()?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(power(opp,0,sea.fav)).toFixed(1)}）
+      vs 你队 ${pwShow(power(myRoster(),S.fatigue,sea.fav)).toFixed(1)}</p>`:""}
+    <!-- 出口条必须是这张卡的最后一个孩子：宽屏上它是 sticky 的（theme.css .row.dock），
+         而 sticky 只压得住排在它后面的兄弟。原来它排在「替补训练赛」和「本周对手」前面，
+         卡片一长过一屏就把这两块糊住了（玩家反馈 2026-09-09「互相遮挡」）。 -->
     <div class="row dock">
       <span class="dock-ap">行动点 <b>${S.ap}</b></span>
       <button class="btn primary" id="play" ${S.ap>0?'disabled':''}>
@@ -3522,11 +3665,13 @@ export function viewSeason(){
       ${quickBtn()}
       <button class="btn ghost sm" id="auto">自动推进到下一件事</button>
     </div>
-    ${benched&&true?scrimPanel():""}
-    ${opp&&uiNum()?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(power(opp,0,sea.fav)).toFixed(1)}）
-      vs 你队 ${pwShow(power(myRoster(),S.fatigue,sea.fav)).toFixed(1)}</p>`:""}
   </div>
-  ${injuryCard()}`;
+  ${injuryCard()}
+  </div>
+  <div class="wk-press">${pressCard()}</div>
+  <div class="wk-coach">${railCoach()}</div>
+  <div class="wk-recent">${railRecent()}</div>
+  </div>`;
 }
 
 /* 和际遇一样改成遮罩——更衣室是要你表态的，藏在行动卡下面等于没有 */
@@ -3925,7 +4070,9 @@ export function endMatch(){
   const swept=won&&m.sc[1]===0;
   S.sweepStreak=swept?(S.sweepStreak||0)+1:0;
   const metLegend=(m.opp.players||[]).some(q=>q.comeback);
-  if(won&&S.intl&&leagueOf(m.oppName)==="LCK"){
+  /* 「韩流克星」的计数和「抗韩成功」同一把锁（玩家实锤 2026-09-09）：
+     效力 LCK 的人赢下自家赛区的队，不该往这个本子上记。 */
+  if(won&&S.intl&&leagueOf(m.oppName)==="LCK"&&(S.homeLeague||"LPL")!=="LCK"){
     S.lckBeaten=S.lckBeaten||[];
     if(!S.lckBeaten.includes(m.oppName)) S.lckBeaten.push(m.oppName);
   }
@@ -3968,6 +4115,7 @@ export function endMatch(){
     myRating:(m.myline&&m.myline.rating!==undefined)?m.myline.rating:null,
     meWorst:!!(m.box&&m.box.meWorst), meGap:(m.box&&m.box.meGap!==undefined)?m.box.meGap:0,
     gap:+(myPw-opPw).toFixed(2), intl:!!S.intl,
+    myLeague:(S.homeLeague||"LPL"),   // 「抗韩」和「内战」都要看你自己在哪个赛区，不只看对手
     oppLeague:leagueOf(m.oppName),
     // 点名类成就（对位 Faker 等）要看真实名单，不能拿联赛当替身——
     // 玩家在国际赛碰到 BRION 这种 LCK 队也弹「被注视」，文案直接穿帮
@@ -4406,7 +4554,17 @@ export function viewPrep(){
   const pops=`${(S.autoSum&&true)?autoSumCard():""}${(S.patchNote&&true)?patchNoteCard():""}${
     S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
   if(T!=="act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
-  return `${pops}${tabBar(TABS_SEASON)}${prepPanel()}${bracketCard()}`;
+  // 备战页（季后赛 / 国际赛之间）也走同一个骨架——玩家实锤 2026-09-09：
+  // 「休赛期或者季后赛或者其他世界赛大赛的时候，界面又变回老模式」。
+  // 对阵图占「下一场」那个位子：这一页的对手已经写在 prepPanel 里了，
+  // 右栏第一格该回答的是「这轮打完往哪走」。
+  return `${pops}${tabBar(TABS_SEASON)}<div class="wkgrid">
+    <div class="wk-main">${prepPanel()}</div>
+    <div class="wk-next">${bracketCard()}</div>
+    <div class="wk-coach">${railCoach()}</div>
+    <div class="wk-recent">${railRecent()}</div>
+    <div class="wk-press">${pressCard()}</div>
+  </div>`;
 }
 export function prepPanel(){
   const P=S.prep; if(!P) return "";
@@ -4437,7 +4595,8 @@ export function prepPanel(){
         <div class="t">打排位 ${apTag("solo")}</div><div class="d">找回手感${
           `　<b>状态 ${Math.round(myForm())}</b>`}${costSolo()}</div></button>
       <button class="act" data-do="rest" ${S.ap<apCost("rest")?'disabled style="opacity:.34"':''}>
-        <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
+        <div class="t">休息 ${apTag("rest")}${restRoom()>=2?` <i class="apc restall" role="button" tabindex="0" title="一直休息到体能 ${REST_TO}，或者行动点用光">歇够 ×${restRoom()}</i>`:""}</div>
+        <div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
     <div class="row"><button class="btn primary" id="prepgo">上场 →</button>
@@ -4493,7 +4652,10 @@ export function endSeason(result,seed){
       <span style="color:var(--ink-3)">你成了自由身——休赛期的转会市场上，去哪由你自己找。</span>`,"bad","合同");
   }
   // dc==="renew" 时 S.pendingRenew 已挂起，续约报价卡会在休赛期弹出，由你拍板
-  S.lastSeason={result,seed,rec:Object.assign({},S.record),
+  // lg：这一季是在哪个赛区打的。结算卡上的「XX 冠军」得念这个，不能念写死的 LPL
+  // （玩家实锤 2026-09-09：在 T1 拿了联赛冠军，标签却写「LPL 冠军」）。
+  // 也不能在渲染时才读 S.homeLeague——休赛期转会一走，这张卡再画出来就串赛区了。
+  S.lastSeason={result,seed,lg:S.homeLeague||"LPL",rec:Object.assign({},S.record),
     grow:DIMS.map(d=>({d,g:S.attrs[d]-S.seasonAttr0[d]}))};
   // 生涯轨迹（结局名片的「五年一行」用）：每个赛段记一条——哪支队、第几名、季后赛走到哪
   S.career.log=(S.career.log||[]).concat([{si:S.si,split:S.split||0,team:S.team,lg:S.homeLeague||"LPL",
@@ -4570,10 +4732,17 @@ export function viewOffseason(){
     const T=curTab(TABS_SEASON);
     const pops=`${champ}${scrimCard()}${S.locker?lockerCard():""}${S.rndResult?randomResultCard():""}${S.rndEv?randomCard():""}`;
     if(T!=="act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
-    return `${pops}${tabBar(TABS_SEASON)}${breakAgendaCard()}${offPanel()}`;
+    // 休赛期同上。这一页没有「下一场」，右栏就是三张情况卡。
+    return `${pops}${tabBar(TABS_SEASON)}<div class="wkgrid">
+      <div class="wk-main">${breakAgendaCard()}${offPanel()}</div>
+      <div class="wk-coach">${railCoach()}</div>
+      <div class="wk-recent">${railRecent()}</div>
+      <div class="wk-press">${pressCard()}</div>
+    </div>`;
   }
   const ls=S.lastSeason,sea=SEASONS[S.si];
-  let label=ls.result==="champion"?`<span class="tag g">LPL 冠军</span>`
+  const lsLg=ls.lg||S.homeLeague||"LPL";   // 老档没记 lg，退回当前赛区
+  let label=ls.result==="champion"?`<span class="tag g">${lsLg} 冠军</span>`
     :ls.result===null?`常规赛第 ${ls.seed} 名 · 无缘季后赛`
     :`${poRoundName(ls.result)}出局（常规赛第 ${ls.seed}）`;
   // 夺了世界冠军的年，结算标题不能只念国内那半句（玩家原话：
@@ -4902,7 +5071,8 @@ export function offPanel(){
       <button class="act" data-do="content" ${S.ap<apCost("content")?'disabled style="opacity:.34"':''}>
         <div class="t">做内容 ${apTag("content")}</div><div class="d">教学 / 高光 / 复盘 / 整活——同样一点，方向不同</div></button>
       <button class="act" data-do="rest" ${S.ap<apCost("rest")?'disabled style="opacity:.34"':''}>
-        <div class="t">休息 ${apTag("rest")}</div><div class="d">清疲劳，护状态${costRest()}</div></button>
+        <div class="t">休息 ${apTag("rest")}${restRoom()>=2?` <i class="apc restall" role="button" tabindex="0" title="一直休息到体能 ${REST_TO}，或者行动点用光">歇够 ×${restRoom()}</i>`:""}</div>
+        <div class="d">清疲劳，护状态${costRest()}</div></button>
     </div>
     ${squadActs()}
     ${(S.career&&!S.promoted&&S.understudy&&true)?scrimPanel():""}
@@ -4926,6 +5096,17 @@ export function offPanel(){
 }
 
 /* ================= 结局 ================= */
+/* 结局卡上念的赛区。它说的是「这五年」，所以不能拿退役那一刻的 S.homeLeague 顶数——
+   一个在 LPL 打了四年、最后一年去 LCK 养老的人，「这五年 LCK 没有塌」是错的。
+   按生涯日志里出现最多的那个赛区算；没有日志就退回当前赛区。 */
+export function careerLeague(){
+  const log=(S.career&&S.career.log)||[];
+  const n={};
+  log.forEach(x=>{ const k=x&&x.lg; if(k) n[k]=(n[k]||0)+1; });
+  const ks=Object.keys(n);
+  if(!ks.length) return S.homeLeague||"LPL";
+  return ks.sort((a,b)=>n[b]-n[a]||a.localeCompare(b))[0];
+}
 export function ending(){
   statEvent("end");
   if(S.neverSigned) return {n:"没能上岸",
@@ -4948,16 +5129,16 @@ export function ending(){
   if(worlds===1) return {n:"世界冠军",
     d:"你捧起了那座奖杯。MSI 还差一座，但没人会因此少记你一分。"};
   if(msi>=1) return {n:"半程加冕",
-    d:"MSI 冠军。你证明了 LPL 能赢，只是最重的那一座还没到手。"};
+    d:`MSI 冠军。你证明了 ${careerLeague()} 能赢，只是最重的那一座还没到手。`};
   const depth=S.career.bestIntl||0;
   if(depth>=4) return {n:"无冕之王",
     d:"你站上过世界赛决赛的舞台，然后输掉了它。所有人都知道你有多强，只是没有奖杯。"};
   if(depth>=3) return {n:"四强遗恨",
-    d:"两次三次杀进四强，每次都差一口气。LPL 的观众记得你的名字，也记得那些没能翻过去的比赛。"};
+    d:`两次三次杀进四强，每次都差一口气。${careerLeague()} 的观众记得你的名字，也记得那些没能翻过去的比赛。`};
   if(depth>=2) return {n:"八强常客",
     d:"你带队年年打进世界赛淘汰赛，然后年年被挡在门外。稳定，但不够。"};
   if(depth>=1) return {n:"赛区功勋",
-    d:"你带队打进过世界赛正赛。没能走远，但这五年 LPL 没有塌，有你一份。"};
+    d:`你带队打进过世界赛正赛。没能走远，但这五年 ${careerLeague()} 没有塌，有你一份。`};
   if(lg>=1) return {n:"内战之王",d:"你拿过联赛冠军，却始终没能在国际赛场证明什么。五年里，最重的那一步始终没迈出去。"};
   if(best<=4) return {n:"常青树",d:"四强常客。你在联赛里站稳了，不是所有人都能做到这件事。"};
   return {n:"至暗未破",d:`${SEASONS[0].tag} 到 ${SEASONS[Math.min(S.si,SEASONS.length-1)].tag}，${S.si+1} 年。你打过、拼过、被记住过，但那座墙始终没有倒。<b>至暗时刻，最终写进了历史。</b>`};
@@ -5270,18 +5451,39 @@ export function curZone(){
   return (t&&t.z)||"act";
 }
 
-export function actPanelPre(){
-  const P=S.pre;
-  const nextR=RANKS.find(r=>r.at>P.rank);
-  return `
-  <div class="card">
-    <h2>第 ${P.week} 周<em>剩余行动点 ${P.ap}</em></h2>
-    ${autoBar()}
-    ${questCard()}
-    ${weekDiary()}
-    ${S.careerBak?`<div class="ver" style="border-left:3px solid var(--red)">你现在是<b>自由身</b>：上一份合同在 <b>${(S.pre.exPro&&S.pre.exPro.team)||"—"}</b> 结束，没人接手。
-      俱乐部看的是你现在的段位、人气和杯赛履历——职业履历封存着，签回去就接上。</div>`:""}
-    <div class="ver">${(()=>{const sc=preScore();
+/* ---------- 职业前「本周」页的右栏（作者拍板 2026-09-09）----------
+   和签约之后那一页角色一一对应，只是换成职业前真正存在的东西：
+     下一场      → railNext()   下一个节点：下一场比赛 / 报名在第几周、够不够格
+     教练怎么看你 → railScout()  谁在看你：试训门槛，卡在段位还是卡在曝光
+     电竞周报    → 同一张（它从第一周就出刊）
+   「最近的比赛」职业前没有：排位和杯赛不写进比赛档案（S.archive 只在职业赛结算里写）。
+   railScout 的正文是从 actPanelPre 里**搬**过来的，不是复制——主列那边同时删掉了，
+   两处不会各说一遍。 */
+export function railNext(){
+  const P=S.pre; if(!P) return "";
+  const n=nextMilestone();
+  const due=dueCups();
+  const live=activeCups();
+  const rows=[];
+  if(live.length) rows.push(`<p class="note" style="margin-top:0"><b style="color:var(--cyan)">正在打：${live.map(c=>c.name).join(" · ")}</b></p>`);
+  if(due.length) rows.push(`<p class="note" style="margin-top:0"><b style="color:var(--gold)">有比赛没打：${due.map(c=>c.name).join(" · ")}</b></p>`);
+  if(n){
+    const d=Math.max(0,n.w-P.week), shut=!n.dateOnly&&!n.need();
+    // 名字单独一行：360px 的栏里「城市争霸赛」和「第 6 周」并排会把名字挤断
+    rows.push(`<h3 style="margin:0 0 4px">${n.name}</h3>
+      <p class="note" style="margin-top:0"><b class="mono">第 ${n.w} 周</b>　${
+        d===0?"<b>就是本周。</b>":`还有 <b>${d}</b> 周。`}${
+        shut?`<br><span style="color:var(--red)">${n.vague?(d===0?"请柬没来":"邀请制"):(d===0?"未达门槛":"门槛未达")}</span>`:""}</p>`);
+  }else if(!live.length&&!due.length){
+    rows.push(`<p class="note" style="margin-top:0">今年的比赛都打完了，接下来就是转会窗口。</p>`);
+  }
+  rows.push(`<p class="note">距离<b>转会窗口</b>还有 <b>${Math.max(0,PRE_YEAR-P.week)}</b> 周<span style="color:var(--ink-3)">——那是年末各队定人的日子；试训邀请不等它，什么时候够格什么时候来。</span></p>`);
+  return `<div class="card"><h2>下一个节点<em>赛季前 第 ${P.week}/${PRE_WEEKS} 周</em></h2>${rows.join("")}</div>`;
+}
+export function railScout(){
+  const P=S.pre; if(!P) return "";
+  return `<div class="card"><h2>谁在看你<em>${(()=>{try{return rankFull(P.rank);}catch(e){return "";}})()}</em></h2>
+    <div class="ver" style="margin:0">${(()=>{const sc=preScore();
       const near=sc/PRE_INVITE;
       // 说清楚「还早」是早在哪——两个赛事各自打没打，状态是分开的
       const cupTxt=(()=>{
@@ -5323,7 +5525,20 @@ export function actPanelPre(){
           : worse==="rank" ? `卡在<b>段位</b>上——曝光够到 ${nm(ec)} 了，再往上冲分`
           : `卡在<b>曝光</b>上——段位够到 ${nm(rc)} 了，去打比赛、涨人气`}`;
       })()}
-      <br>距离转会窗口还有 <b>${Math.max(0,PRE_YEAR-P.week)}</b> 周<span style="color:var(--ink-3)">（那是年末各队定人的日子；试训邀请不等它，什么时候够格什么时候来）</span>。</div>
+      <br>距离转会窗口还有 <b>${Math.max(0,PRE_YEAR-P.week)}</b> 周<span style="color:var(--ink-3)">（那是年末各队定人的日子；试训邀请不等它，什么时候够格什么时候来）</span>。</div></div>`;
+}
+export function actPanelPre(){
+  const P=S.pre;
+  const nextR=RANKS.find(r=>r.at>P.rank);
+  return `
+  <div class="card">
+    <h2>第 ${P.week} 周<em>剩余行动点 ${P.ap}</em></h2>
+    ${autoBar()}
+    ${questCard()}
+    ${weekDiary()}
+    ${S.careerBak?`<div class="ver" style="border-left:3px solid var(--red)">你现在是<b>自由身</b>：上一份合同在 <b>${(S.pre.exPro&&S.pre.exPro.team)||"—"}</b> 结束，没人接手。
+      俱乐部看的是你现在的段位、人气和杯赛履历——职业履历封存着，签回去就接上。</div>`:""}
+
     <div class="ver">
       ${rankBadge(P.rank,40)}${nextR?`　→　下一档 ${nextR.n}`:`　→　已经到顶`}<br>
       ${uiNum()?`实力 <b>${soloSkill().toFixed(0)}</b><span style="color:var(--ink-3)">（五维均值，全游戏同一个数）</span>　·　当前分段门槛 <b>${rankReq(P.rank).toFixed(0)}</b>${
@@ -5391,11 +5606,20 @@ export function viewPre(){
   ${S.cupResult?cupResultCard():''}${S.signup?signupCard():''}${S.rankUp?rankUpCard():''}${S.rndResult?randomResultCard():''}${S.rndEv?randomCard():''}
   ${tabBar(TABS_PRE)}
   ${S.cupMatch?cupMatchCard():""}
-  ${T==="act"&&!S.cupMatch?actPanelPre():""}
-  ${T==="act"&&!S.cupMatch?(cupCard()):""}
-  ${T==="act"&&!S.cupMatch?(injuryCard())+attrCard():""}
+  <!-- 职业前这一页也走「主列 + 右栏」（玩家实锤 2026-09-09：「我没看到界面改动，
+       我的电竞周报去哪里了」）。上一版只改了签约之后的 viewSeason，而没签约的人
+       走的是这里，整页纹丝不动。右栏放本期周报——它从游戏第一周就出刊，
+       原来只能去「新闻」栏目翻。
+       「教练怎么看你」和「最近的比赛」职业前没有：还没进队就没有教练和首发竞争，
+       排位和杯赛也不写进比赛档案（S.archive 只在职业赛的结算里写）。 -->
+  ${T==="act"&&!S.cupMatch?`<div class="wkgrid pre">
+    <div class="wk-next">${railNext()}</div>
+    <div class="wk-main">${actPanelPre()}${cupCard()}${injuryCard()}${attrCard()}</div>
+    <div class="wk-coach">${railScout()}</div>
+    <div class="wk-press">${pressCard()}</div>
+  </div>`:""}
   ${T==="world"?scheduleCard()+proCard():""}
-  ${T==="news"?(pressCard())+eventsCard():""}
+  ${T==="news"?(pressCard("all"))+eventsCard():""}
   ${T==="tx"?(preTransferPage()):""}
   ${T==="squad"&&S.pre.mates&&S.pre.mates.length&&true?preSquadCard():""}
   ${T==="squad"&&!(S.pre.mates&&S.pre.mates.length)?lockedCard("战队实力","报名城市争霸赛或主播杯，抽到车队后解锁；签约职业战队后是完整版。",
@@ -5687,6 +5911,57 @@ export function newsCard(){
 }
 /* 比赛记录（原来塞在「世界 · 其他赛区」卡底下——玩家原话「个人数据的板为什么在其他赛区的版块里」）：
    你自己的比赛日志放「我的」页，紧挨着个人数据。 */
+/* ---------- 「本周」右栏的两张精简卡（作者点名 2026-09-09，照 VAL Player）----------
+   都是把已有的东西抽一个窄版出来，不新造数据：
+   · railRecent——最近四场，每场带一颗「拆解」直接开当场的赛后拆解
+     （data-pmv 的点击在 bindStage 里是全局绑的，按钮放哪儿都能用）。
+     原来要去「世界 · 赛程」表里翻，作者点名要在这儿点得到。
+   · railCoach——教练 / 经理怎么看你。完整的话语权、挂牌、引援仍然只在「队伍」页，
+     这里只回答「我现在是不是他认的人」。 */
+export function railRecent(){
+  const arc=S.archive||[];
+  if(!S.career||!arc.length) return "";
+  const rows=[];
+  for(let i=arc.length-1;i>=0&&rows.length<4;i--){
+    const x=arc[i]; if(!x) continue;
+    const sc=x.sc||[0,0];
+    rows.push(`<div class="rl">
+      <span class="rl-w mono">${x.tag||""}${x.w?" W"+x.w:""}</span>
+      <span class="rl-op">${x.opp||"—"}</span>
+      <span class="rl-sc ${x.win?"w":"l"} mono">${sc[0]}:${sc[1]}</span>
+      <span class="rl-r mono" title="你这场的场均评分">${typeof x.rating==="number"?x.rating.toFixed(2):"—"}</span>
+      ${x.pm?`<button class="btn ghost sm" data-pmv="${i}" title="当场的全员数据与赛后拆解">拆解</button>`:'<span class="rl-no">—</span>'}</div>`);
+  }
+  return `<div class="card"><h2>最近的比赛<em>近 ${rows.length} 场</em></h2>
+    <div class="rlog">${rows.join("")}</div>
+    <p class="note">数字是你这场的场均评分。更早的比赛在「世界 · 赛程」表里回看。</p></div>`;
+}
+export function railCoach(){
+  if(!S.career||!S.team) return "";
+  const ct=Math.round(coachTrust()), mt=Math.round(mgrTrust()), c=cloutOf(), T=cloutTier(c);
+  const bar=(v,col)=>`<div class="track"><div class="fill" style="width:${clamp(v,0,100)}%;background:${col}"></div></div>`;
+  const cyan="linear-gradient(90deg,var(--cyan-dim),var(--cyan))";
+  const gold="linear-gradient(90deg,#6B5A2A,var(--gold))";
+  const benched=isBenched();
+  const verdict=benched
+    ? `<b style="color:var(--gold)">你还在替补席上。</b>在训练赛里攒够对位优势才拿得到试用。`
+    : `<b style="color:var(--cyan)">你是他认定的首发。</b>`;
+  /* 卡头写的必须是这张卡标题问的那件事——「教练怎么看你」问的是**你算不算他的首发**。
+     初版把 cloutTier(威望) 的档次名放这儿，于是出现玩家实锤的那一幕：
+     卡头「轮换」、正文「你是他认定的首发」，一张卡自相矛盾。
+     两个词说的根本不是一回事：「轮换」是**话语权**档次（威望 26–43，
+     「先把位置坐稳再说别的」），说的是你在俱乐部说不说得上话；
+     首发 / 替补是**阵容位置**。现在卡头只报阵容位置，
+     威望档次挪到它自己那条数值旁边，谁也不冒充谁。 */
+  return `<div class="card"><h2>教练怎么看你<em>${benched?"替补":"首发"}</em></h2>
+    <div class="attrs">
+      <div class="at"><div class="lb">教练</div>${bar(ct,cyan)}<div class="vn mono"><b>${ct}</b></div></div>
+      <div class="at"><div class="lb">经理</div>${bar(mt,cyan)}<div class="vn mono"><b>${mt}</b></div></div>
+      <div class="at"><div class="lb">威望</div>${bar(c,gold)}<div class="vn mono"><b>${c}</b></div></div>
+    </div>
+    <p class="note">${verdict}</p>
+    <p class="note">话语权 <b>${T.n}</b>（威望 ${c}）——${T.d}挂牌、点名引援这些事在「队伍」页。</p></div>`;
+}
 export function matchLogCard(){
   if(!S.career||!S.log||!S.log.length) return "";
   return `<div class="card"><h2>比赛记录<em>最近 ${Math.min(12,S.log.length)} 条</em></h2>
@@ -6597,6 +6872,13 @@ export function bind(){
   st.querySelectorAll("[data-bond]").forEach((b: any)=>b.onclick=()=>doBondTalk(b.dataset.bond));
   st.querySelectorAll("[data-bench]").forEach((b: any)=>b.onclick=()=>doBenchAct(b.dataset.bench));
   st.querySelectorAll("[data-coach]").forEach((b: any)=>b.onclick=()=>doBondCoach());
+  // 「歇够」嵌在休息卡里面，得先拦住冒泡——不然会顺带触发外层的「休息一次」
+  st.querySelectorAll(".restall").forEach((b: any)=>{
+    const go=(ev)=>{ if(ev&&ev.stopPropagation) ev.stopPropagation();
+      if(ev&&ev.preventDefault) ev.preventDefault(); doRestAll(); };
+    b.onclick=go;
+    b.onkeydown=(ev)=>{ if(ev&&(ev.key==="Enter"||ev.key===" ")) go(ev); };
+  });
   const _ss=$("scrimStart"); if(_ss) _ss.onclick=()=>{ startScrim(); };
   const _sx=$("scrimClose"); if(_sx) _sx.onclick=()=>{ if(S.scrim) S.scrim.live=null; render(); };
   st.querySelectorAll("[data-scrimopt]").forEach((b: any)=>b.onclick=()=>scrimPick(+b.dataset.scrimopt));
