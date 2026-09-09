@@ -15564,18 +15564,65 @@ header.top.compact>.theme-top{display:none}
     g.fillStyle = CO.cyan;
     g.fillText(idLine, 72, y);
     const own = S.career && S.career.titles || [], ring = ringTitles();
+    const all = own.concat(ring.map((t) => t + "（随队）"));
+    const isW = (t) => /世界赛/.test(t), isM = (t) => /MSI/.test(t);
+    const yr = (t) => (String(t).match(/^S\d+/) || [""])[0];
+    const wT = all.filter(isW), mT = all.filter(isM), lT = all.filter((t) => !isW(t) && !isM(t));
     y += 64;
-    if (own.length || ring.length) {
-      g.font = FONT(400, 26);
-      g.fillStyle = CO.ink3;
-      g.fillText("冠军", 72, y);
-      g.font = FONT(600, 26);
-      g.fillStyle = CO.gold;
-      y += wrap(g, own.concat(ring.map((t) => t + "（随队）")).join("、"), 72, y + 40, W - 144, 40, 3) * 40 + 40;
-    } else {
+    if (!all.length) {
       g.font = FONT(400, 26);
       g.fillStyle = CO.ink3;
       g.fillText("还没有冠军", 72, y);
+      y += 40;
+    } else {
+      if (wT.length) {
+        g.font = FONT(400, 24);
+        g.fillStyle = CO.ink3;
+        g.fillText("世界赛冠军", 72, y);
+        y += 56;
+        g.font = FONT(700, 46);
+        g.fillStyle = CO.gold;
+        const head = wT.length > 1 ? `${wT.length} 冠` : "冠军";
+        const hw = g.measureText(head).width;
+        g.fillText(head, 72, y);
+        g.font = FONT(600, 30);
+        g.fillStyle = CO.ink;
+        g.fillText(wT.map(yr).join(" · "), 72 + hw + 24, y);
+        y += 26;
+      }
+      if (mT.length) {
+        y += 30;
+        g.font = FONT(600, 30);
+        g.fillStyle = CO.gold;
+        const mh = `MSI ${mT.length > 1 ? mT.length + " 冠" : "冠军"}`;
+        const mw = g.measureText(mh).width;
+        g.fillText(mh, 72, y);
+        g.font = FONT(400, 26);
+        g.fillStyle = CO.ink2;
+        g.fillText(mT.map(yr).join(" · "), 72 + mw + 20, y);
+      }
+      if (lT.length) {
+        const solo = !wT.length && !mT.length;
+        y += solo ? 0 : 46;
+        g.font = FONT(400, solo ? 24 : 24);
+        g.fillStyle = CO.ink3;
+        g.fillText(solo ? "联赛冠军" : `联赛及其他 ${lT.length} 座`, 72, y);
+        if (solo) {
+          y += 56;
+          g.font = FONT(700, 46);
+          g.fillStyle = CO.gold;
+          const lh = lT.length > 1 ? `${lT.length} 冠` : "冠军";
+          const lw = g.measureText(lh).width;
+          g.fillText(lh, 72, y);
+          g.font = FONT(600, 26);
+          g.fillStyle = CO.ink2;
+          y += wrap(g, lT.join("、"), 72 + lw + 24, y, W - 144 - lw - 24, 34, 2) * 34 - 34 + 6;
+        } else {
+          g.font = FONT(400, 23);
+          g.fillStyle = CO.ink3;
+          y += wrap(g, lT.join("、"), 72, y + 34, W - 144, 32, 2) * 32 + 2;
+        }
+      }
       y += 40;
     }
     y += 34;
@@ -15583,7 +15630,7 @@ header.top.compact>.theme-top{display:none}
     const bond = bondCardLines();
     const bondH = bond.length ? 26 + bond.length * 40 : 0;
     const avail = H - 270 - 40 - y - 132 - 30 - bondH;
-    const rh = Math.max(56, Math.min(112, Math.floor(avail / Math.max(1, rows.length))));
+    const rh = Math.max(56, Math.min(84, Math.floor(avail / Math.max(1, rows.length))));
     rows.forEach((r, i) => {
       const yy = y + i * rh;
       g.fillStyle = r.won ? "#1A2A1E" : CO.panel;
@@ -15844,6 +15891,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260909w", at: "2026-09-09", items: [
+      "<b>生涯名片的冠军区重做</b>（玩家实锤：「世界赛的夺冠明明是更重要的事情，但是在名片里重点被放在了下面的联赛成绩」）：原来所有冠军拿逗号串成一行、同字号同颜色，「S16 世界赛」和「S14 PCS夏季赛」一个分量；而占版面最大的是下面那张逐年常规赛名次表（八年能吃掉 896px）——<b>最重的那座奖杯被最轻的信息压住了</b>。现在分三档：<b>世界赛 46px 金色带年份独占一行</b>、MSI 次之、联赛压成灰字小号只报座数；一座国际冠军都没有时联赛自动升为主角，不会变成一片灰。逐年表行高上限 112→84，省下的高度还给冠军区"
+    ] },
     { v: "v20260909v", at: "2026-09-09", items: [
       "<b>年度颁奖夜的团队加分二次校准</b>（玩家实锤：「我的队伍 LNG 都拿了好多次冠军，黄金之路了，但是年度一阵二阵只有一个辅助入选，这不科学」）。上一版为了治「为什么一阵都是一个战队的」，把团队加分上限从 19 一刀砍到 7.5——但<b>同一次改动还加了「一支队最多占 3 席」那道闸</b>，「包揽五席」已经被闸挡住了，加分不必再兼职当闸。砍过头的代价这次量出来了：合成黄金之路（联赛 + MSI + 世界赛全拿）的 20 个赛季里，一阵平均只占 <b>2.25 席</b>，<b>6 次只拿到 1 席</b>——玩家看到的就是这一档",
       "扫了五档（×1 / ×1.3 / ×1.5 / ×1.75 / ×2），把两头的投诉放在同一张表上看，取 <b>×1.5</b>（上限 11.5）：横扫的队一阵从 2.25 席升到 <b>2.75 席</b>，只拿 1 席的从 6/20 降到 <b>1/20</b>，MVP 从 75% 到 90%（<b>不是 100%</b>——再往上就变成横扫必满席必 MVP，那也不真实）。而当年那句投诉盯的指标只从 2.0 挪到 2.7、最差 6.0 → 7.7，离「68 分进一阵、84 分落选」（差 16 分）还远",
