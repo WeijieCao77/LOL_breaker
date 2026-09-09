@@ -630,22 +630,22 @@ function unitChecks() {
     // 赛后拆解读开赛那一刻的体能（原来先扣这场的体能再算账）
     if (S.match && S.match.fat0 === undefined) bad.push("比赛没有记下开赛时的体能快照 fat0");
 
-    // 天梯赛季重置：越高掉得越多，大师及以下不动
-    if (S.pre) {
-      const rk0 = S.pre.rank;
-      S.pre.rank = 100; A.rankSeasonReset();
-      const dTop = 100 - S.pre.rank;
-      S.pre.rank = 60; A.rankSeasonReset();
-      const dMid = 60 - S.pre.rank;
-      S.pre.rank = 40; A.rankSeasonReset();
-      const dLow = 40 - S.pre.rank;
-      if (!(dTop > dMid && dMid > dLow)) bad.push(`天梯重置不是越高掉得越多：国服第一 ${dTop.toFixed(1)} / 宗师 ${dMid.toFixed(1)} / 大师以下 ${dLow.toFixed(1)}`);
-      if (dLow !== 0) bad.push(`大师及以下不该掉，掉了 ${dLow.toFixed(1)}`);
-      if (dTop < 2 || dTop > 9) bad.push(`国服第一掉的分数不在预期区间：${dTop.toFixed(1)}`);
-      S.pre.rank = rk0;
+    // 天梯赛季重置：掉一档（作者拍板：上赛季王者，重置就变回宗师），掉到大师为止
+    {
+      const step = (v: number) => [A.rankName(v), A.rankName(A.rankResetTo(v))];
+      const want: [number, string, string][] = [
+        [100, "国服前 10", "国服前 100"],
+        [90, "国服前 100", "王者"],
+        [80, "王者", "宗师"],
+        [65, "宗师", "大师"],
+      ];
+      want.forEach(([v, from, to]) => {
+        const [b, a] = step(v);
+        if (b !== from || a !== to) bad.push(`天梯重置没有正好掉一档：${v} 分 ${b} → ${a}（应为 ${from} → ${to}）`);
+      });
+      if (A.rankResetTo(44) !== 44 || A.rankResetTo(30) !== 30) bad.push("大师及以下不该动");
+      if (A.rankResetTo(50) !== 44) bad.push(`大师区间内应落到大师下沿，实际 ${A.rankResetTo(50)}`);
     }
-
-
   } catch (e) { bad.push("仪式自检没跑起来：" + (e && (e as any).stack || e)); }
   return bad;
 }
