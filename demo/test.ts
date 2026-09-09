@@ -80,6 +80,7 @@ function playOne(opts?) {
   let signups = 0, cupMatches = 0, preps = 0, cupPick = 0;
   let invites = 0, tryPick = 0, dealPick = 0, transfers = 0, renewTalks = 0;
   let maxRank = 0, scrims = 0, trials = 0, trialWins = 0, mateInj = 0, benchWeeks = 0, _trialOn = false, _injOn = false;
+  let bondTalks = 0;   // 羁绊：这一局用了几次「找人聊聊」
   const cupRuns = [], grades = [], deals = [];
   while (A.S().step !== "end" && guard++ < 40000) {
     S = A.S();
@@ -192,6 +193,17 @@ function playOne(opts?) {
         if (S.scrim) S.scrim.live = null;
       }
       if (S.pre && typeof S.pre.rank === "number" && S.pre.rank > maxRank) maxRank = S.pre.rank;
+      /* 找人聊聊（羁绊第三批）：机器人把每赛段的次数用满——难度批测要量的正是
+         「一个把这条通道用到底的人」。
+         ⚠️ 用这里做难度对照的人注意：机器人是贪心花点，8 点正好四次训练。
+         任何 1 点的新行动都会把它挤成 3 训练 + 1 排位，而排位涨状态、
+         状态直接乘在战力上——光比「开 / 关这个功能」会凭空多出七个点的夺冠率，
+         那是工具的位移不是游戏的。要比就比**同样消耗行动点、效果开 vs 关**
+         （把 bond.ts 的 BOND_TALK 全部置零跑一遍当对照）。 */
+      if (!opts.noBondTalk && S.career && S.team && S.ap > 0 && A.bondTalkLeft() > 0) {
+        const cand = A.myRoster().filter((p: any) => !p.me && A.bondTalkCan(p.id).ok);
+        if (cand.length) { A.doBondTalk(cand[0].id); bondTalks++; }
+      }
       if (S.ap > 0) {
         const _b = S.ap;
         const av = A.DIMS.filter(d => S.attrs[d] < A.capOf(d));
@@ -281,6 +293,9 @@ function playOne(opts?) {
     signups, cupMatches, preps, cupRuns,
     invites, grades, deals, transfers,
     scrims, trials, trialWins, mateInj, benchWeeks, maxRank: Math.round(maxRank*10)/10,
+    bondTalks, bondMates: Object.keys(S.mates||{}).length,
+    bondPassed: Object.keys(S.mates||{}).filter(k => (S.mates[k]||{}).passed).length,
+    bondHandover: Object.keys(S.mates||{}).filter(k => (S.mates[k]||{}).handover).length,
     scrimWins: (S.scrim && S.scrim.wins) || 0,
     contract: S.contract && S.contract.salary !== undefined ? S.contract : null,
     saved: A.hasSave(),
@@ -303,7 +318,7 @@ function unitChecks() {
      原来 syncTrust 里一行 delete 就把离队队友的一切抹掉了。 */
   {
     const S: any = A.S();
-    const bak = { mates: S.mates, acc: S.bondAcc, si: S.si, split: S.split, age: S.age, trust: S.trust, attrs: S.attrs };
+    const bak = { mates: S.mates, acc: S.bondAcc, si: S.si, split: S.split, age: S.age, trust: S.trust, attrs: S.attrs, talk: S.bondTalk, ap: S.ap };
     S.mates = null; S.si = 1; S.split = 0; S.age = 20; S.trust = { M1: 71 };
     const mate = (id: string, age: number) => ({ id, cn: "", pos: "top", age, r: {} });
     // 建档 + 峰值信任
@@ -353,7 +368,41 @@ function unitChecks() {
       bad.push("共事账本：带过、后来被他超过的人没被写上名片（写的是 " + (arc[1] ? arc[1].v : "没有第二行") + "）");
     else if (!/综评超过你/.test(arc[1].v) || !/S15/.test(arc[1].v))
       bad.push("共事账本：「你带出来的」那行没写清是哪一年被超过 " + arc[1].v);
+    /* 退役仪式点名（第二批）：陪你最久的、你带出来的，各说一句，而且必须带名字。
+       原来这里是一句通用台词，因为队友一离开名单，你和他的一切就被删了。 */
+    S.mates = { M1: { id: "M1", splits: 6, titles: ["S13 LPL夏季赛"], roles: {} },
+                M2: { id: "M2", splits: 3, titles: [], roles: { "2-0": "带人", "3-1": "被带飞" } } };
+    const fl = A.bondFarewellLines();
+    if (fl.length !== 2) bad.push("退役仪式：该有两个人说话，实得 " + fl.length);
+    else if (!/M1/.test(fl[0]) || !/M2/.test(fl[1])) bad.push("退役仪式：说话的人没有名字 " + fl.join(" / "));
+    S.mates = {};
+    if (A.bondFarewellLines().length) bad.push("退役仪式：没有共事记录时不该硬凑台词");
+
+    /* 找人聊聊（第三批）的两道闸和一条定价约束 */
+    S.mates = null; S.bondTalk = null; S.si = 1; S.split = 0; S.ap = 8;
+    S.career = S.career || { w: 0, l: 0, titles: [], log: [] }; S.team = S.team || "TEST";
+    if (!A.bondTalkCan("A").ok) bad.push("找人聊聊：一次都没用就说用不了（" + A.bondTalkCan("A").why + "）");
+    S.bondTalk = { k: A.bondTalkKey(), n: 0, ids: ["A"] };
+    if (A.bondTalkCan("A").ok) bad.push("找人聊聊：同一个人一个赛段能聊两次");
+    if (!A.bondTalkCan("B").ok) bad.push("找人聊聊：次数还没用完，换个人却聊不了");
+    S.bondTalk = { k: A.bondTalkKey(), n: A.BOND_TALK_PER_SPLIT, ids: ["A"] };
+    if (A.bondTalkCan("C").ok) bad.push("找人聊聊：这个赛段的次数用完了还能聊");
+    S.ap = 0; S.bondTalk = null;
+    if (A.bondTalkCan("A").ok) bad.push("找人聊聊：没有行动点也能聊");
+    /* 定价：1 个行动点换到的属性，必须低于训练的单点收益（2 点约换 1.0，即 0.5/点），
+       否则它会变成新的最优解，把这条通道从「关系」变成「刷属性」。 */
+    Object.keys(A.BOND_TALK).forEach((k: string) => {
+      const v = A.BOND_TALK[k];
+      if (!(v.self < 0.5)) bad.push(`找人聊聊：「${k}」给自己 ${v.self}，不比训练的单点收益低——会变成刷属性的新最优解`);
+      if (!v.t) bad.push(`找人聊聊：「${k}」没有文案`);
+    });
+    // 陪练补的是他最弱的一维，请教学的是他最强的一维
+    const fake = { id: "X", pos: "top", age: 20, r: { 操作: 70, 运营: 40, 心态: 55, 指挥: 60, 体质: 50 } };
+    if (A.bondTopDim(fake) !== "操作") bad.push("找人聊聊：请教该学他最强的一维，实得 " + A.bondTopDim(fake));
+    if (A.bondTopDim(fake, true) !== "运营") bad.push("找人聊聊：陪练该补他最弱的一维，实得 " + A.bondTopDim(fake, true));
+
     S.mates = bak.mates; S.bondAcc = bak.acc; S.si = bak.si; S.split = bak.split; S.age = bak.age; S.trust = bak.trust; S.attrs = bak.attrs;
+    S.bondTalk = bak.talk; S.ap = bak.ap;
   }
   /* 赛后狠话（作者实锤 2026-09-09：「新档没放过狠话，却提示狠话被记录下来成了热梗」）。
      两条：① 没在媒体日定「狂」就不该有口径；② 回旋镖判的是说完之后那两周，
@@ -820,7 +869,11 @@ function unitChecks() {
 function cloutChecks() {
   const bad: string[] = [];
   let weeks = 0, listOk = 0, maxCt = 0, honorRows = 0, spread = 0, pools = 0;
-  const r = playOne({ seed: 7701, strong: true, hook: (S: any, A: any) => {
+  /* 这一局关掉「找人聊聊」：话语权自检量的是「挂牌门槛够不够得着」，
+     用的是单个固定种子。机器人是贪心花点，任何 1 点的新行动都会把 8 点的
+     训练节奏挤歪，从而把这个单种子的战绩、进而把教练信任推走——那是工具的
+     位移，不是挂牌门槛坏了。羁绊自己的难度对照在 --batch 那边做（240 局）。 */
+  const r = playOne({ seed: 7701, strong: true, noBondTalk: true, hook: (S: any, A: any) => {
     if (!S.career || !S.team || S.step !== "season" || S.homeLeague === "LDL") return;
     weeks++;
     if (A.canList().ok) listOk++;
@@ -901,6 +954,10 @@ function batch(n: number, encore = false, strong = false, loyal = false) {
       worldsPerApp: +(rs.reduce((a, r) => a + r.worlds, 0) / Math.max(1, rs.reduce((a, r) => a + r.worldsApps, 0))).toFixed(3),
       appsPerCareer: +(rs.reduce((a, r) => a + r.worldsApps, 0) / n).toFixed(2),
       legend: f(r => r.ending === "传奇"), extended: f(r => r.extended) }; })(),
+    bond: { talksMean: +(rs.reduce((a, r) => a + (r.bondTalks || 0), 0) / n).toFixed(1),
+            matesMean: +(rs.reduce((a, r) => a + (r.bondMates || 0), 0) / n).toFixed(1),
+            handoverRate: +(rs.filter(r => (r.bondHandover || 0) > 0).length / n).toFixed(3),
+            passedRate: +(rs.filter(r => (r.bondPassed || 0) > 0).length / n).toFixed(3) },
     stepsMean: Math.round(rs.reduce((a, r) => a + r.steps, 0) / n),
   }, null, 1));
 }

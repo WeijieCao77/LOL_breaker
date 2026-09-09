@@ -1,4 +1,8 @@
-import { DIMS, SEASONS, SPLITS, avg, myRoster, ovrOf, pushEvent, q1 } from "./main";
+import { DIMS, POSN, SEASONS, SPLITS, addFat, apCost, apTag, avg, capOf, clamp, myRoster, ovrOf, pushEvent, q1, render } from "./main";
+import { addRel } from "./clout";
+import { addBuff } from "./random";
+import { addTrust, trustOf } from "./team";
+import { checkAch } from "./achieve";
 import { S } from "./state";
 
 /* ================= 共事账本（羁绊第一批）=================
@@ -223,4 +227,181 @@ export function bondCardLines(){
     }
   }
   return out;
+}
+
+
+/* ================= 第二批：四个时刻 =================
+   账本记下来的东西，得有人替它说话。四个时刻都只在「第一次」发生，
+   而且都从已经写好的 roles 里读，不另掷骰子。 */
+
+/* ① 交给你了：某个老将，你对他的角色第一次从「被带」翻成「扛旗 / 带人」。
+   他把指挥交出来，你接过去——他确实在退场，你确实在接班。
+   为什么选「指挥」而不是别的维：powerCore 里战力只吃 操作/运营/心态/体质，
+   指挥单独走 cmd=max(全队指挥) 那一项。所以这一笔转移对队伍战力几乎中性
+   （最多让全队最高的那个指挥小幅移位），难度不会被这段剧情推走。 */
+export const BOND_HANDOVER=1.5;
+/* ③ 他超过你了：你带过的人，第一次反过来压过你。
+   作者原话「小弟们的综评已经超越我了，开始带飞我了，就会有的感触」——
+   给的是踏实，不是打击。 */
+export const BOND_PASS_BUFF=1.12, BOND_PASS_WEEKS=2;
+
+export function bondMoments(R){
+  if(!R||!R.per) return;
+  const key=bondKey(), b=S.mates||{};
+  let ms=[];
+  try{ ms=myRoster().filter(p=>!p.me); }catch(e){ return; }
+  ms.forEach(p=>{
+    const e=b[p.id], r=R.per[p.id];
+    if(!e||!r) return;
+    // ① 接班：之前被他带过，这个赛段第一次反过来
+    if(!e.handover&&(r.role==="扛旗"||r.role==="带人")&&bondRoleCount(e,"被带")>=1){
+      e.handover=key;
+      const give=Math.min(BOND_HANDOVER,Math.max(0,(p.r&&p.r.指挥||50)-30));
+      if(give>0&&p.r){
+        p.r.指挥=clamp(p.r.指挥-give,20,99);
+        S.attrs.指挥=Math.min(capOf("指挥"),S.attrs.指挥+give);
+      }
+      addTrust(p.id,6);
+      pushEvent(`赛段复盘的最后，<b>${p.id}</b> 把开麦指挥的位置让了出来：「以后这几个球你来喊。」<br>
+        <span style="color:var(--cyan)">你的指挥 +${give.toFixed(1)}，他的指挥 −${give.toFixed(1)}。</span>
+        <span style="color:var(--ink-3)">${BOND_ROLE_TXT[r.role]}</span>`,"big","更衣室");
+    }
+    // ③ 他超过你了：你带过他，这个赛段他第一次压过你
+    if(!e.passed&&r.role==="被带飞"&&bondRoleCount(e,"带人")>=1){
+      e.passed=key;
+      addBuff("mood",BOND_PASS_BUFF,BOND_PASS_WEEKS,"看着他长起来");
+      const led=bondRoleCount(e,"带人");
+      pushEvent(`赛段数据出来了：<b>${p.id}</b> 的综评 <b>${ovrOf(p).toFixed(1)}</b>，你 ${bondMyOvr().toFixed(1)}。<br>
+        ${led>=2?`你带了他 ${led} 个赛段。`:"你带过他。"}<b>现在轮到他带你了。</b>`,"big","更衣室");
+    }
+  });
+}
+
+/* 退役仪式点名用：陪你最久的人、你带出来的人 */
+export function bondFarewellLines(){
+  const out=[];
+  const L=bondLongest();
+  if(L&&(L.splits||0)>=2){
+    const t=(L.titles||[]).length;
+    out.push(`<b>${L.id}</b>：「${(L.splits>=5?"这么多年":"这几年")}都是我们俩在一块打${t?"，那" + t + "个冠军我记得清清楚楚":""}。」`);
+  }
+  const P=bondProtege();
+  if(P&&P.e&&(!L||P.e.id!==L.id)){
+    out.push(P.kind==="grew"
+      ? `<b>${P.e.id}</b>：「我刚上来那年打崩了，是你陪我练的。后来我打得比你好了，你比我还高兴。」`
+      : P.kind==="led"
+      ? `<b>${P.e.id}</b>：「你带了我 ${bondRoleCount(P.e,"带人")} 个赛段。这些我都记着。」`
+      : `<b>${P.e.id}</b>：「我是踩着你的肩膀上来的。」`);
+  }
+  return out;
+}
+
+/* ================= 第三批：找人聊聊 =================
+   1 个行动点，每赛段总共两次、每人一次。选项按你和他的角色变——
+   同一个动作对老将、对同龄、对新人本来就不是一回事。 */
+export const BOND_TALK_PER_SPLIT=1;
+export const BOND_TALK_FAT=6;
+/* 数值刻意小：这条通道的价值在关系和剧情，不在成长。
+   给自己的那点属性按「一个行动点」定价——训练是 2 点换约 1.0，这里 1 点换 0.2 上下，
+   单位收益低于训练，不会变成新的最优解（240 局批测把关，见 PR）。 */
+/* 这张表的数字是 240 局批测定的（2026-09-09，作者要求「保证游戏的难度还是在」）。
+   过程记在这儿，免得以后有人手滑调回去，也免得再被同一个坑绊一次：
+
+   · 先说那个坑：光比「用不用这个功能」是错的。把这张表的效果**全部置零**、
+     只保留它消耗 1 个行动点，联赛夺冠率照样从 70.0% 涨到 77.5%——
+     因为批测机器人是贪心花点：8 点正好four次训练，被挤掉 1 点之后变成
+     3 次训练 + 1 次排位，而排位涨状态、状态是直接乘在战力上的。
+     那 7 个点是**测量工具自己变强了**，不是游戏变简单了。
+     正确的对照是「同样消耗行动点，效果开 vs 关」：
+       联赛夺冠率 77.5% → 78.7%、我队战力 77.67 → 77.92、生涯末五维 79.49 → 79.61，
+     全部落在噪声里（240 局，2σ≈5.9 个点）。
+   · 隔离批测还证明：账本、角色、四个时刻、退役点名一个数字都不动——
+     关掉「找人聊聊」单跑 240 局，联赛夺冠率 70.0% → 69.6%。
+   · 即便如此，这张表还是按保守口径定的，因为它是唯一会动数值的一块：
+     关系只加在**和他有关的那几对**上，不是全队十对一起涨（你陪一个人加练，
+     另外三个人之间的关系不会因此变好）；信任从初版的 +6~10 压到 +3~5
+     （avgTrust 生涯末本来就顶到 100，而 trustMod=1+(avgTrust−50)/760 直接乘在
+     全队战力上，提早顶满等于白送）；次数从每赛段两次压到**一次**——
+     每赛段挑一个人好好聊一次，也比挑两个人各聊半次更像话。 */
+export const BOND_TALK={
+  被带:  {t:"找他请教", d:"他比你强，问就是了", self:0.18, mate:0,   trust:3, rel:0.4},
+  被带飞:{t:"找他请教", d:"他现在比你强——放下面子", self:0.18, mate:0,   trust:3, rel:0.4},
+  扛旗:  {t:"陪他复盘", d:"他手速掉了，但他看得懂比赛", self:0.15, mate:0.2, trust:4, rel:0.4},
+  并肩:  {t:"一起双排", d:"练默契，也拉近关系",       self:0.10, mate:0,   trust:4, rel:0.6},
+  带人:  {t:"陪他加练", d:"你也从那个位置过来过",     self:0.12, mate:0.2, trust:5, rel:0.4}
+};
+export function bondTalkKey(){ return "t"+(S.si||0)+"-"+(S.split||0); }
+export function bondTalkState(){
+  const k=bondTalkKey();
+  if(!S.bondTalk||S.bondTalk.k!==k) S.bondTalk={k, n:0, ids:[]};
+  return S.bondTalk;
+}
+export function bondTalkLeft(){ return Math.max(0,BOND_TALK_PER_SPLIT-bondTalkState().n); }
+export function bondTalkCan(id){
+  if(!S.career||!S.team) return {ok:false,why:"还没进队"};
+  const st=bondTalkState();
+  if(st.ids.indexOf(id)>=0) return {ok:false,why:"这个赛段已经找过他了"};
+  if(bondTalkLeft()<=0) return {ok:false,why:`这个赛段的时间用完了（${BOND_TALK_PER_SPLIT} 次）`};
+  if((S.ap||0)<apCost("talk")) return {ok:false,why:`要 ${apCost("talk")} 个行动点`};
+  return {ok:true};
+}
+/* 他最强 / 最弱的那一维——请教找他最强的，陪练补他最弱的 */
+export function bondTopDim(p,worst?){
+  const r=(p&&p.r)||{};
+  let best=DIMS[0];
+  DIMS.forEach(d=>{ if(worst?((r[d]||50)<(r[best]||50)):((r[d]||50)>(r[best]||50))) best=d; });
+  return best;
+}
+export function doBondTalk(id){
+  const c=bondTalkCan(id); if(!c.ok) return;
+  let p=null;
+  try{ p=myRoster().find(x=>!x.me&&x.id===id); }catch(e){}
+  if(!p) return;
+  const r=bondRoleVs(p); if(!r) return;
+  const A=BOND_TALK[r.role]||BOND_TALK["并肩"];
+  S.ap-=apCost("talk"); addFat(BOND_TALK_FAT);
+  const st=bondTalkState(); st.n++; st.ids.push(id);
+  let line="";
+  if(A.self>0){
+    const d=(r.role==="带人"||r.role==="扛旗")?"心态":bondTopDim(p);
+    S.attrs[d]=Math.min(capOf(d),S.attrs[d]+A.self);
+    line+=`你的${d} +${A.self.toFixed(2)}`;
+  }
+  if(A.mate>0&&p.r&&p.ceil!==undefined&&ovrOf(p)<p.ceil){
+    /* 队友的成长封在他自己的天花板里，而且**只有带着 ceil 的人**才教得动——
+       ceil 是 makeRookie 给每个青训定的，2022 那批真实名单里的人没有这个字段。
+       所以你能带起来的永远是「本来就会长起来的年轻人」，你只是让他更快到那儿；
+       联赛里那些成名选手不会因为你陪他复盘而突破自己的上限。
+       世界的水位不该被玩家的行动点抬高——这是难度不被这条通道推走的第一道闸。 */
+    const d=bondTopDim(p,true);
+    p.r[d]=clamp(p.r[d]+A.mate,20,Math.min(99,p.ceil+2));
+    line+=`${line?"，":""}${p.id} 的${d} +${A.mate.toFixed(2)}`;
+  }
+  addTrust(id,A.trust);
+  // 只动和他有关的那几对（五人队里是四对），不是全队十对——见 BOND_TALK 上面那段
+  if(A.rel){ try{ myRoster().filter(x=>!x.me&&x.id!==id).forEach(o=>addRel(id,o.id,A.rel)); }catch(e){} }
+  const e=bondSee(p); if(e) e.talks=(e.talks||0)+1;
+  if(r.role==="带人") checkAch("mentor");
+  pushEvent(`${A.t}：<b>${p.id}</b>（${POSN[p.pos]||""}）。${line?`<span style="color:var(--cyan)">${line}</span>，`:""}他对你的信任 +${A.trust}，更衣室关系 +${A.rel}。`,"good","更衣室");
+  render();
+}
+export function bondPanel(){
+  if(!S.career||!S.team) return "";
+  let ms=[];
+  try{ ms=myRoster().filter(p=>!p.me); }catch(e){ return ""; }
+  if(!ms.length) return "";
+  const left=bondTalkLeft();
+  return `<div class="card"><h2>找人聊聊<em>这个赛段还剩 ${left}/${BOND_TALK_PER_SPLIT} 次</em></h2>
+    <div class="grid g5">${ms.map(p=>{
+      const r=bondRoleVs(p)||{role:"并肩"}, A=BOND_TALK[r.role]||BOND_TALK["并肩"], c=bondTalkCan(p.id);
+      const e=bondOf(p.id);
+      return `<button class="act" data-bond="${p.id}" ${c.ok?"":'disabled style="opacity:.34"'} title="${c.ok?A.d:c.why}">
+        <div class="t">${A.t} ${apTag("talk")}</div>
+        <div class="d"><b>${p.id.slice(0,9)}</b> · ${POSN[p.pos]||""} · ${p.age||"?"} 岁
+          <span class="tag${r.role==="带人"||r.role==="扛旗"?" g":""}">${r.role}</span><br>
+          ${c.ok?A.d:"🔒 "+c.why}${e&&e.splits?`<br><span style="color:var(--ink-3)">一起打了 ${e.splits} 个赛段${
+            (e.titles||[]).length?` · ${e.titles.length} 冠`:""}${e.talks?` · 聊过 ${e.talks} 次`:""}</span>`:""}</div></button>`;
+    }).join("")}</div>
+    <p class="note">同一个动作对老将、对同龄、对新人不是一回事——<b>角色是按五维均值和年龄差自动判的</b>。
+      陪新人加练能真的把他练起来，但<b>封在他自己的天花板里</b>：你让他更快到那儿，不是把他拔到别处去。</p></div>`;
 }
