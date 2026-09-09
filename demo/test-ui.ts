@@ -8,7 +8,8 @@ import { fileURLToPath } from "url";
 import { JSDOM, VirtualConsole } from "jsdom";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const html = fs.readFileSync(path.join(HERE, "career.html"), "utf8");
+/* 同 test.ts：行尾归一，免得 Windows 上的 CRLF 让字面匹配失效 */
+const html = fs.readFileSync(path.join(HERE, "career.html"), "utf8").replace(/\r\n/g, "\n");
 const bad: string[] = [];
 const tick = (ms = 0) => new Promise(r => setTimeout(r, ms));
 
