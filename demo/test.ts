@@ -1642,6 +1642,38 @@ const LEAGUE_OK: Record<string, string> = {
   console.log("赛区自检通过：中文文案里没有没登记的赛区硬编码（LDL 走结构性豁免，前提已核）");
 }
 
+/* 宿敌账本必须先记再查成就（2026-09-10 玩家实锤：第三次赢下 Knight 的队不弹，决赛打 T1 才弹；
+   「破神者」挂到了一支没有 Faker 的队头上）。顺序一反，三胜成就永远晚一场。 */
+{
+  const ms = readText(HERE, "src", "main.ts");
+  const iBeat = ms.indexOf("noteRivalBeat(m.opp.players,won);"), iAch = ms.indexOf('checkAch("match",ctx);');
+  if (iBeat < 0 || iAch < 0) bad.push("宿敌账本：找不到 noteRivalBeat / checkAch(\"match\") 的调用");
+  else if (iBeat > iAch) bad.push("宿敌账本：noteRivalBeat 必须在 checkAch(\"match\") 之前，否则三胜成就晚一场弹");
+}
+/* 商城放松卡写的必须是真正拿到的数（2026-09-10 玩家实锤：理疗写 +34 实际 +30、度假 +60 实际 +53）。
+   劳模的休息 ×0.88 在 addFat 里乘，卡面原来写的是基础值。信任同理（粘合剂 ×1.35）。 */
+try {
+  // 和 playOne 同一套开局：screenCreate 之后事件流还没建，pushEvent 会炸，得走 startPre
+  A.screenCreate(7);
+  let S = A.S();
+  S.name = "T"; S.pos = "mid"; S.origin = "academy"; S.ageIdx = 1; S.bgPick = S.bgOffer[0].k;
+  S.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+  A.startPre(); S = A.S();
+  S.traits = ["grinder"]; S.fatigue = 80; S.money = 999; S.trust = { a: 50, b: 50 };
+  const physio = A.RELAX.find((r: any) => r.k === "physio2");
+  const shown = A.relaxFat(physio);
+  const f0 = S.fatigue; A.buyRelax("physio2"); const got = f0 - S.fatigue;
+  if (Math.abs(got - shown) > 0.6) bad.push(`放松卡：专业理疗卡面写 +${shown}，实际回了 ${got.toFixed(1)}`);
+  if (shown !== 30) bad.push(`放松卡：劳模买专业理疗应写 +30（34×0.88），却写 +${shown}`);
+  const html = A.shopCard();
+  if (!html.includes(`体力 +${shown}`)) bad.push("放松卡：商城卡面没有按倍率写体力");
+  if (html.includes("体力 +34")) bad.push("放松卡：商城卡面还在写基础值 +34");
+  S.traits = ["glue"]; S.money = 999;
+  const hot = A.RELAX.find((r: any) => r.k === "hotpot");
+  const ts = A.relaxTrust(hot); const t0 = S.trust.a; A.buyRelax("hotpot"); const tg = S.trust.a - t0;
+  if (Math.abs(tg - ts) > 0.6) bad.push(`放松卡：火锅卡面写信任 +${ts}，实际涨了 ${tg.toFixed(1)}`);
+  if (!A.shopCard().includes(`信任 +${ts}`)) bad.push("放松卡：商城卡面没有按倍率写信任");
+} catch (e: any) { bad.push("放松卡测试抛异常：" + (e && e.message)); }
 if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }
   console.log("自检通过");
 }

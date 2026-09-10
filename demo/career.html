@@ -2679,6 +2679,108 @@ header.top.compact>.theme-top{display:none}
     </div></div></div>`;
   }
 
+  // demo/src/trait.ts
+  var TRAIT_AXES = { hard: "硬", warm: "暖", grind: "苦", show: "秀" };
+  var TRAIT_NEED = 5;
+  var TRAIT_OPP = { edge: "glue", glue: "edge", grinder: "star", star: "grinder" };
+  var TRAITS = [
+    {
+      k: "edge",
+      axis: "hard",
+      n: "刺头",
+      d: "你从不咽下那口气。镜头喜欢你，更衣室不一定。",
+      e: { fan: 1.18, trust: 0.8, clutch: 2.2 },
+      txt: "涨粉 +18%　·　队友信任涨幅 −20%　·　逆风时更稳（战力 +2.2）"
+    },
+    {
+      k: "glue",
+      axis: "warm",
+      n: "更衣室粘合剂",
+      d: "锅你先接，功劳你先让。队伍因为你转得顺，但没人把你当故事讲。",
+      e: { trust: 1.35, fan: 0.9 },
+      txt: "队友信任涨幅 +35%　·　涨粉 −10%"
+    },
+    {
+      k: "grinder",
+      axis: "grind",
+      n: "劳模",
+      d: "别人在应酬的时候你在训练室。练得比谁都多，也累得比谁都久。",
+      e: { train: 1.14, rest: 0.88 },
+      txt: "训练收益 +14%　·　休息回体能 −12%"
+    },
+    {
+      k: "star",
+      axis: "show",
+      n: "话题人物",
+      d: "你知道怎么让人讨论你。流量是真的，教练的白眼也是真的。",
+      e: { fan: 1.28, coachPer: -2 },
+      txt: "涨粉 +28%　·　每赛段教练信任 −2"
+    }
+  ];
+  function traitHas(k) {
+    return !!(S.traits && S.traits.indexOf(k) >= 0);
+  }
+  function traitList() {
+    return (S.traits || []).map((k) => TRAITS.find((t) => t.k === k)).filter(Boolean);
+  }
+  function traitMul(key, add) {
+    let v = add ? 0 : 1;
+    traitList().forEach((t) => {
+      const x = t.e[key];
+      if (x === void 0) return;
+      if (add) v += x;
+      else v *= x;
+    });
+    return v;
+  }
+  function addTraitPt(g) {
+    if (!g || !TRAIT_AXES[g]) return;
+    S.traitPts = S.traitPts || {};
+    S.traitPts[g] = (S.traitPts[g] || 0) + 1;
+    const t = TRAITS.find((x) => x.axis === g);
+    if (t && traitHas(TRAIT_OPP[t.k])) return;
+    if (t && !traitHas(t.k) && S.traitPts[g] >= TRAIT_NEED) {
+      S.traits = (S.traits || []).concat(t.k);
+      S.traitUp = t;
+      pushEvent(`<b>你成了「${t.n}」。</b>${t.d}<br>
+      <span style="color:var(--ink-3)">${t.txt}</span>`, "big", "人物");
+    }
+  }
+  function traitProgress() {
+    const out = [];
+    Object.keys(TRAIT_AXES).forEach((g) => {
+      const t = TRAITS.find((x) => x.axis === g);
+      if (!t || traitHas(t.k) || traitHas(TRAIT_OPP[t.k])) return;
+      const p = S.traitPts && S.traitPts[g] || 0;
+      if (p > 0) out.push({ n: t.n, axis: TRAIT_AXES[g], p, need: TRAIT_NEED });
+    });
+    return out.sort((a, b) => b.p - a.p);
+  }
+  function traitUpCard() {
+    const t = S.traitUp;
+    if (!t) return "";
+    return `<div class="rankup"><div class="ru-inner" style="max-width:480px">
+    <div class="ru-eyebrow">你成了这样的人</div>
+    <div class="ru-tier" style="font-size:30px;margin:6px 0 10px">${t.n}</div>
+    <div class="ru-txt">${t.d}</div>
+    <div class="ver" style="margin-top:14px;text-align:center">${t.txt}</div>
+    <p class="note" style="text-align:center;margin-top:12px">
+      这是这些年你一次次选出来的。<b>它不会消失。</b></p>
+    <div class="row" style="justify-content:center">
+      <button class="btn" id="traitok">知道了</button>
+    </div>
+  </div></div>`;
+  }
+  function traitBar() {
+    const has = traitList(), pg = traitProgress();
+    if (!has.length && !pg.length) return "";
+    return `<div class="traits">
+    ${has.map((t) => `<span class="trait on" title="${t.d}　${t.txt}">${t.n}</span>`).join("")}
+    ${pg.slice(0, 2).map((p) => `<span class="trait" title="再选 ${p.need - p.p} 次「${p.axis}」的选项，你就是这样的人了">
+      ${p.n} <i>${p.p}/${p.need}</i></span>`).join("")}
+  </div>`;
+  }
+
   // demo/src/form.ts
   var FORM_NEUTRAL = 52;
   function formOf(p) {
@@ -5083,7 +5185,7 @@ header.top.compact>.theme-top{display:none}
       const gap = T.expect - me;
       return `<tr><td><b>${T.n}</b></td>
       <td class="n mono">${T.expect}</td>
-      <td class="n">${rankName(need)}</td>
+      <td class="n">${rankFull(need)}</td>
       <td class="n" style="color:${okS ? "var(--cyan)" : gap <= 6 ? "var(--gold)" : "var(--red)"}">${okS ? "够了" : `差 ${gap.toFixed(0)}`}</td>
       <td class="n" style="color:${okR ? "var(--cyan)" : "var(--red)"}">${rk === null ? "—" : okR ? "够了" : "不够"}</td></tr>`;
     }).join("");
@@ -6773,7 +6875,7 @@ header.top.compact>.theme-top{display:none}
       const T = CLUB_TIERS[k], p = selfRecOdds(k);
       return `<button class="act" data-selfrec="${k}" ${c.ok ? "" : 'disabled style="opacity:.4"'}>
         <div class="t">${T.n}</div>
-        <div class="d">期望 ${T.expect}（你 ${tryoutSkill().toFixed(0)}）· 段位 ${rankName(TIER_RANK[k])} · 回信率 <b style="color:${p >= 0.2 ? "var(--cyan)" : p >= 0.08 ? "var(--gold)" : "var(--red)"}">${(p * 100).toFixed(0)}%</b></div></button>`;
+        <div class="d">期望 ${T.expect}（你 ${tryoutSkill().toFixed(0)}）· 段位 ${rankFull(TIER_RANK[k])} · 回信率 <b style="color:${p >= 0.2 ? "var(--cyan)" : p >= 0.08 ? "var(--gold)" : "var(--red)"}">${(p * 100).toFixed(0)}%</b></div></button>`;
     }).join("")}</div>
     <p class="note">没上岸也可以敲门：把排位战绩和杯赛集锦发过去。回信率看关注度、段位和你离这一档期望的差距——很低，但不是零。
       ${P.invite && P.invite.pending ? `<br><b style="color:var(--gold)">手上有一份 ${P.invite.team} 的试训邀请（回「本周」页处理）。</b>` : ""}</p></div>`;
@@ -7249,108 +7351,6 @@ header.top.compact>.theme-top{display:none}
     <p class="note">本赛季正赛样本 <b>${n}</b> 个系列赛${n ? `，场均评分 <b>${avgR.toFixed(2)}</b>（置信度 ${conf}%）` : "——还没有能拿去谈的数据"}${S.carrySplit ? `；本赛段<b>院长局 ${S.carrySplit} 次</b>——输比赛但你全队最高，教练组会翻这些录像` : ""}。<br>
       <span style="color:var(--ink-3)">教练组看的是样本：打得少，评分再高也只是「有潜力」；样本够了，数字才变成筹码。
       看台上被记下的关注会在注册窗兑现成问询。</span></p></div>`;
-  }
-
-  // demo/src/trait.ts
-  var TRAIT_AXES = { hard: "硬", warm: "暖", grind: "苦", show: "秀" };
-  var TRAIT_NEED = 5;
-  var TRAIT_OPP = { edge: "glue", glue: "edge", grinder: "star", star: "grinder" };
-  var TRAITS = [
-    {
-      k: "edge",
-      axis: "hard",
-      n: "刺头",
-      d: "你从不咽下那口气。镜头喜欢你，更衣室不一定。",
-      e: { fan: 1.18, trust: 0.8, clutch: 2.2 },
-      txt: "涨粉 +18%　·　队友信任涨幅 −20%　·　逆风时更稳（战力 +2.2）"
-    },
-    {
-      k: "glue",
-      axis: "warm",
-      n: "更衣室粘合剂",
-      d: "锅你先接，功劳你先让。队伍因为你转得顺，但没人把你当故事讲。",
-      e: { trust: 1.35, fan: 0.9 },
-      txt: "队友信任涨幅 +35%　·　涨粉 −10%"
-    },
-    {
-      k: "grinder",
-      axis: "grind",
-      n: "劳模",
-      d: "别人在应酬的时候你在训练室。练得比谁都多，也累得比谁都久。",
-      e: { train: 1.14, rest: 0.88 },
-      txt: "训练收益 +14%　·　休息回体能 −12%"
-    },
-    {
-      k: "star",
-      axis: "show",
-      n: "话题人物",
-      d: "你知道怎么让人讨论你。流量是真的，教练的白眼也是真的。",
-      e: { fan: 1.28, coachPer: -2 },
-      txt: "涨粉 +28%　·　每赛段教练信任 −2"
-    }
-  ];
-  function traitHas(k) {
-    return !!(S.traits && S.traits.indexOf(k) >= 0);
-  }
-  function traitList() {
-    return (S.traits || []).map((k) => TRAITS.find((t) => t.k === k)).filter(Boolean);
-  }
-  function traitMul(key, add) {
-    let v = add ? 0 : 1;
-    traitList().forEach((t) => {
-      const x = t.e[key];
-      if (x === void 0) return;
-      if (add) v += x;
-      else v *= x;
-    });
-    return v;
-  }
-  function addTraitPt(g) {
-    if (!g || !TRAIT_AXES[g]) return;
-    S.traitPts = S.traitPts || {};
-    S.traitPts[g] = (S.traitPts[g] || 0) + 1;
-    const t = TRAITS.find((x) => x.axis === g);
-    if (t && traitHas(TRAIT_OPP[t.k])) return;
-    if (t && !traitHas(t.k) && S.traitPts[g] >= TRAIT_NEED) {
-      S.traits = (S.traits || []).concat(t.k);
-      S.traitUp = t;
-      pushEvent(`<b>你成了「${t.n}」。</b>${t.d}<br>
-      <span style="color:var(--ink-3)">${t.txt}</span>`, "big", "人物");
-    }
-  }
-  function traitProgress() {
-    const out = [];
-    Object.keys(TRAIT_AXES).forEach((g) => {
-      const t = TRAITS.find((x) => x.axis === g);
-      if (!t || traitHas(t.k) || traitHas(TRAIT_OPP[t.k])) return;
-      const p = S.traitPts && S.traitPts[g] || 0;
-      if (p > 0) out.push({ n: t.n, axis: TRAIT_AXES[g], p, need: TRAIT_NEED });
-    });
-    return out.sort((a, b) => b.p - a.p);
-  }
-  function traitUpCard() {
-    const t = S.traitUp;
-    if (!t) return "";
-    return `<div class="rankup"><div class="ru-inner" style="max-width:480px">
-    <div class="ru-eyebrow">你成了这样的人</div>
-    <div class="ru-tier" style="font-size:30px;margin:6px 0 10px">${t.n}</div>
-    <div class="ru-txt">${t.d}</div>
-    <div class="ver" style="margin-top:14px;text-align:center">${t.txt}</div>
-    <p class="note" style="text-align:center;margin-top:12px">
-      这是这些年你一次次选出来的。<b>它不会消失。</b></p>
-    <div class="row" style="justify-content:center">
-      <button class="btn" id="traitok">知道了</button>
-    </div>
-  </div></div>`;
-  }
-  function traitBar() {
-    const has = traitList(), pg = traitProgress();
-    if (!has.length && !pg.length) return "";
-    return `<div class="traits">
-    ${has.map((t) => `<span class="trait on" title="${t.d}　${t.txt}">${t.n}</span>`).join("")}
-    ${pg.slice(0, 2).map((p) => `<span class="trait" title="再选 ${p.need - p.p} 次「${p.axis}」的选项，你就是这样的人了">
-      ${p.n} <i>${p.p}/${p.need}</i></span>`).join("")}
-  </div>`;
   }
 
   // demo/src/team.ts
@@ -7895,6 +7895,12 @@ header.top.compact>.theme-top{display:none}
     { k: "hotpot", n: "约队友吃火锅", cost: 22, fat: -22, trust: 7, rel: 1.2, d: "体力、信任和更衣室关系一起补" },
     { k: "trip", n: "短途度假", cost: 65, fat: -60, d: "彻底断网两天" }
   ];
+  function relaxFat(x) {
+    return Math.round(-x.fat * traitMul("rest") * cerRecMul());
+  }
+  function relaxTrust(x) {
+    return x.trust ? Math.round(x.trust * traitMul("trust")) : 0;
+  }
   function initShop() {
     S.gear = {};
     SLOTS.forEach((s) => S.gear[s.k] = 0);
@@ -8403,11 +8409,12 @@ header.top.compact>.theme-top{display:none}
   function buyRelax(k) {
     const x = RELAX.find((r) => r.k === k);
     if (!x || S.money < x.cost) return;
+    const gain3 = relaxFat(x), tg = relaxTrust(x);
     addMoney("relax", -x.cost);
     addFat(x.fat);
     if (x.trust && true) addTrustAll(x.trust);
     if (x.rel && true) relAll(x.rel);
-    pushEvent(`${x.n}：体力回来了${x.trust ? "，顺便和队友聊了聊" : ""}。`, "info", "放松");
+    pushEvent(`${x.n}：体力 <b>+${gain3}</b>${x.trust ? `，信任 +${tg}，顺便和队友聊了聊` : ""}。`, "info", "放松");
     render();
   }
   function gearCard() {
@@ -8452,7 +8459,7 @@ header.top.compact>.theme-top{display:none}
     <div class="grid g2">${RELAX.map((x) => `
       <button class="act" data-relax="${x.k}" ${S.money < x.cost ? 'disabled style="opacity:.35"' : ""}>
         <div class="t">${x.n} <span class="tag">${x.cost} 万</span></div>
-        <div class="d">${x.d} · 体力 +${-x.fat}${x.trust ? ` · 信任 +${x.trust}` : ""}</div></button>`).join("")}</div>
+        <div class="d">${x.d} · 体力 +${relaxFat(x)}${x.trust ? ` · 信任 +${relaxTrust(x)}` : ""}</div></button>`).join("")}</div>
     <h3 style="font-size:14px;margin-top:18px">课程 · 一次买断，永久生效</h3>
     <div class="grid g2">${COURSES.map((c) => {
       const own = hasCourse(c.k);
@@ -15019,8 +15026,10 @@ header.top.compact>.theme-top{display:none}
         if (lane && !S.starSeen[key(lane.id)]) {
           S.starSeen[key(lane.id)] = 1;
           const outlaned = ctx && ctx.laneWon;
+          S.starBig = S.starBig || {};
+          const nb = big ? S.starBig[lane.id] = (S.starBig[lane.id] || 0) + 1 : 0;
           addFans(big ? 22 : 14);
-          pushEvent(`<b>击败 ${lane.id}（${lane.ep}）。</b>${outlaned ? `对位数据压过了他——这种截图会在圈里传很久。` : `对线没占到便宜，但比分是 ${m.sc[0]}:${m.sc[1]}——赢的是五个人。`}${big ? `<br><span style="color:var(--ink-3)">大场面赢下他，你的名字第一次被放在他旁边念。</span>` : ""}`, "big", "高光");
+          pushEvent(`<b>击败 ${lane.id}（${lane.ep}）。</b>${outlaned ? `对位数据压过了他——这种截图会在圈里传很久。` : `对线没占到便宜，但比分是 ${m.sc[0]}:${m.sc[1]}——赢的是五个人。`}${big ? `<br><span style="color:var(--ink-3)">${nb <= 1 ? "大场面赢下他，你的名字第一次被放在他旁边念。" : `大场面第 ${nb} 次赢下他——圈里已经把你们放在一起说了。`}</span>` : ""}`, "big", "高光");
         } else if (!lane) {
           const s = all[0];
           if (!S.starSeen[key("T:" + s.id)]) {
@@ -15898,6 +15907,14 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260910b", at: "2026-09-10", items: [
+      "<b>存档不再丢最后一步</b>（玩家实锤：「回满体能以后，误触切出网址到浏览器首页，再重新加载回来的时候，我的体能条变成只有 50 多了」）：自动存档每 1.5 秒最多存一次，原来窗口里的第二次操作<b>不存、也不补</b>——正好卡在那一下离开页面，回来就是上一次的状态。现在窗口一过自动补存；切到后台、离开页面立刻存。任何操作都不会再因为「刚做完就走」而丢",
+      "<b>宿敌成就不再晚一场弹</b>（玩家实锤：「已经触发过一次内战无敌，结果决赛打 T1 又触发了一次」「这支队伍压根没有 Faker，却给我触发了破神者」）：「赢下 Faker / Chovy / Knight 所在的队」这本账原来记在成就检查<b>之后</b>，第三次赢下时查到的还是两次，下一场不管对手是谁都会补弹。两次「内战无」其实是两个成就——「内战无强敌」（LPL 内战，当场对）和「内战无敌手」（三胜 Knight 的队，晚了一场）。现在先记账再查成就，弹在该弹的那一场",
+      "<b>商城和休息卡写的是你真正拿到的数</b>（玩家实锤：「专业理疗写的是 +34 体力，但实际上只加了 30」「短途度假写着 +60，实际 +53」）：卡面原来写的是基础值，劳模的休息 −12%、出征仪式的恢复倍率、私人康复室的加成都只在结算时算。现在卡面、休息卡、放松后的提示全部按你此刻的倍率写；信任同理（粘合剂 +35% / 刺头 −20% 都进卡面）",
+      "<b>「对位压制」看这场的真实数据</b>（玩家实锤：数据被对面压着还弹「对位压制」）：原来拿你的纸面五维和对面首发的能力比，赢了就算「压制」。现在读赛后全员表里你和对位的评分，压过了才弹「对位压制」，没压过写「对位数据压了你一头，但队伍还是拿下了」；击败明星的高光文案同一口径",
+      "<b>试训门槛的段位底线不再三档同名</b>（玩家实锤：低 / 中 / 高三档都写「国服前 100」）：87 / 91 / 94 三个门槛落在同一个大段里，现在按点数写（国服前 100 22 点 / 110 点 / 176 点），和你自己那一栏同一把尺",
+      "<b>击败明星的高光不再每个赛段都说「第一次」</b>：「你的名字第一次被放在他旁边念」原来按赛段清零，同一位明星每个赛段赢一次就再说一遍「第一次」。现在按生涯计次，第二次起写「大场面第 N 次赢下他」"
+    ] },
     { v: "v20260910a", at: "2026-09-10", items: [
       "<b>转正之后重签，不再给替补合同</b>（玩家实锤：「我的替补合同是第一赛段的，我第二赛段是重签的，但我第二赛段前已经从替补拉到首发了，但他还是给我替补合同，穷的我吃不起火锅了」）：根子有两处——一是从替补席打上首发时，游戏只翻了一个「已转正」标记，<b>身份字段还停在「替补」</b>，而续约报价、媒体日口径、阵容权重读的都是它；二是续约直接<b>照抄旧合同的档次</b>，薪水只在旧数上乘一个 1.02~1.35 的涨幅——而首发档与替补档差 <b>1.45 倍</b>，顶格涨都够不着。现在续约先按<b>你现在是什么身份</b>定档，升了档就把基准搬到新档再谈涨幅，续约卡上会写明「上一份还是替补合同，这一份按首发重新定价」。<b>只升不降</b>：被打回替补席不会因此在续约时砍薪。三条自检钉住：转正要改身份、重签要升档、还在替补席的不能白升"
     ] },
@@ -17525,7 +17542,7 @@ header.top.compact>.theme-top{display:none}
     return { comp: clamp(55 + (me - tavg) * COMP_SLOPE + (me - lavg) * COMP_LEAGUE, 5, 98), me, tavg, lavg };
   }
   function tierOf(s) {
-    return rankName(skillToRank(s));
+    return rankName2(skillToRank(s));
   }
   var PW_SHOW = 1 / 0.86;
   function pwShow(p) {
@@ -17871,7 +17888,7 @@ header.top.compact>.theme-top{display:none}
     const bonus = S.origin === "academy" ? 3 : -2;
     return clamp(fit + bonus + rnd() * 7 - 3.5, 4, 55);
   }
-  function rankName(v) {
+  function rankName2(v) {
     let r = RANKS[0];
     RANKS.forEach((x) => {
       if (v >= x.at) r = x;
@@ -17986,7 +18003,7 @@ header.top.compact>.theme-top{display:none}
     const after = rankResetTo(before);
     if (before - after < 0.1) return;
     S.pre.rank = q1(after);
-    const b = rankName(before), a = rankName(S.pre.rank);
+    const b = rankName2(before), a = rankName2(S.pre.rank);
     pushEvent(`<b>天梯赛季重置。</b>${b === a ? `你的段位回落到 <b>${rankFull(S.pre.rank)}</b>` : `你从 <b>${b}</b> 掉到 <b>${a}</b>`}——分不会自己回来，<b>打排位</b>能拿回去。`, "info", "天梯");
   }
   function preAct(k, dim) {
@@ -17995,7 +18012,7 @@ header.top.compact>.theme-top{display:none}
     if (P.ap < _c) return;
     noteAct(k === "train" ? "train" : "pre", k === "train" ? dim : k);
     if (k === "rank") {
-      const beforeT = rankName(P.rank), beforeF = rankFull(P.rank);
+      const beforeT = rankName2(P.rank), beforeF = rankFull(P.rank);
       const lightMul = 0.5;
       const p = soloWinP(), step = rankStep() * lightMul * PRE_RANK_PACE;
       let w = 0, l = 0;
@@ -18011,7 +18028,7 @@ header.top.compact>.theme-top{display:none}
       addFat(4);
       rankGain(w, lightMul * PRE_PACE);
       ladderEncounter(0.5);
-      const afterT = rankName(P.rank), afterF = rankFull(P.rank);
+      const afterT = rankName2(P.rank), afterF = rankFull(P.rank);
       addFans(w * 0.25 * PRE_FAN_PACE);
       P.lastQ = { w, l, p };
       checkAch("rank");
@@ -18943,7 +18960,9 @@ header.top.compact>.theme-top{display:none}
   }
   function costRest() {
     if (_isPre()) return costBits([_eUp(18), `心态<i class="up">+0.3</i>`]);
-    const v = -(S.buff && S.buff.physio ? -23 : -17) * (S.bg && S.bg.rest || 1) * _prepMul();
+    const base = (S.buff && S.buff.physio ? -23 : -17) * (S.bg && S.bg.rest || 1) * _prepMul();
+    const rehab = S.assets && S.assets.rehab ? -4.5 * _prepMul() : 0;
+    const v = -(base + rehab) * traitMul("rest") * cerRecMul();
     return costBits([_eUp(v)]);
   }
   function doTrain(d) {
@@ -19328,7 +19347,7 @@ header.top.compact>.theme-top{display:none}
     <h2 style="margin:0 0 4px">推进总结 · ${A.pre ? "赛季前 " : ""}第 ${A.w0}–${A.w1} 周<em style="float:right">${A.pre ? "" : A.teamRec ? `${escapeHtml(String(A.team || S.team || ""))} 本赛段 ${A.teamRec.w}–${A.teamRec.l}${A.benched ? "　·　你在替补席" : `　·　你上场 ${A.rec.w} 胜 ${A.rec.l} 负`}` : `${A.rec.w} 胜 ${A.rec.l} 负`}</em></h2>
     <p class="note" style="margin:0 0 10px">${A.why}${A.injury ? `　<span style="color:var(--red)">目前带伤（${escapeHtml(A.injury)}）</span>` : ""}</p>
     ${rows ? `<div style="margin-bottom:10px">${rows}</div>` : ""}
-    ${A.pre ? `<div class="ver" style="margin-bottom:8px"><b>段位</b> ${rankName(A.rank.a)} → <b>${rankName(A.rank.b)}</b>　·　<b>人气</b> ${Math.round(A.fans.a)} → ${Math.round(A.fans.b)}</div>` : ""}
+    ${A.pre ? `<div class="ver" style="margin-bottom:8px"><b>段位</b> ${rankName2(A.rank.a)} → <b>${rankName2(A.rank.b)}</b>　·　<b>人气</b> ${Math.round(A.fans.a)} → ${Math.round(A.fans.b)}</div>` : ""}
     <div class="ver" style="margin-bottom:8px"><b>属性</b>　${A.attrs.map((x) => `${x.d} ${Math.round(x.b)}<small style="color:${x.b - x.a > 0.05 ? "var(--cyan)" : "var(--ink-3)"}">(${d1(x.b - x.a)})</small>`).join("　")}
       　·　实力 <b>${A.strength.b.toFixed(1)}</b><small style="color:var(--cyan)">(${d1(A.strength.b - A.strength.a)})</small>
       　·　资金 ${d1(A.money)} 万　·　体能 ${Math.round(100 - A.fat)}/100</div>
@@ -19848,8 +19867,6 @@ header.top.compact>.theme-top{display:none}
     }
     if (won && opPw - myPw > 4)
       pushEvent(`<b>${me}</b> 带队爆冷掀翻 ${m.oppName}，赛后热搜第一。`, "big", "高光");
-    else if (won && star && ovrOf(star) > 74)
-      pushEvent(`<b>${me}</b> 对位压制 <b>${star.id}</b>${star.cn ? `（${star.cn}）` : ""}，${m.oppName} 被 ${m.sc[0]}:${m.sc[1]} 拿下。`, "good", "高光");
     else if (!won && myPw - opPw > 4)
       pushEvent(`<b>${me}</b> 所在的 ${S.team} 被 ${m.oppName} 冷门击败，赛后被喷上热搜。`, "bad", "低谷");
     const f = noteForm(S.team, won);
@@ -19861,6 +19878,13 @@ header.top.compact>.theme-top{display:none}
     if (!won && myPw - opPw > 4) addTrustAll(-3);
     syncTrust();
     synthSeriesStats(m, won, myPw, opPw);
+    const _myLine = m.box && m.box.mine ? m.box.mine.find((x) => x.me) : null;
+    const _oppLine = m.box && m.box.opp ? m.box.opp.find((x) => x.pos === S.pos) : null;
+    const laneWon = !!(star && (_myLine && _oppLine ? _myLine.rating >= _oppLine.rating : avg(DIMS.map((d) => S.attrs[d])) >= ovrOf(star)));
+    if (won && !(opPw - myPw > 4) && star && ovrOf(star) > 74) {
+      if (laneWon) pushEvent(`<b>${me}</b> 对位压制 <b>${star.id}</b>${star.cn ? `（${star.cn}）` : ""}，${m.oppName} 被 ${m.sc[0]}:${m.sc[1]} 拿下。`, "good", "高光");
+      else pushEvent(`对位 <b>${star.id}</b>${star.cn ? `（${star.cn}）` : ""} 的数据压了 <b>${me}</b> 一头，但 ${S.team} 还是 ${m.sc[0]}:${m.sc[1]} 拿下了 ${m.oppName}。`, "good", "高光");
+    }
     const ctx = {
       won,
       bo5: m.need >= 3,
@@ -19881,15 +19905,15 @@ header.top.compact>.theme-top{display:none}
       // 玩家在国际赛碰到 BRION 这种 LCK 队也弹「被注视」，文案直接穿帮
       oppIds: (m.opp && m.opp.players ? m.opp.players : []).map((q) => q && q.id).filter(Boolean),
       metLegend,
-      laneWon: !!(star && avg(DIMS.map((d) => S.attrs[d])) >= ovrOf(star)),
+      laneWon,
       nodeFails: m.nodeFails || 0,
       lostFirstTwo: m.need >= 3 && m.firstTwoLost
     };
+    noteRivalBeat(m.opp.players, won);
     checkAch("match", ctx);
     starAfterMatch(m, won, ctx);
     if (won) checkAch("win", ctx);
     if (won && ctx.intl && ctx.oppLeague === "LCK") checkAch("beatlck", ctx);
-    noteRivalBeat(m.opp.players, won);
     S.tilt = clamp((S.tilt || 0) + (won ? -8 : (swept || m.sc[0] === 0 ? 18 : 12) * mediaTiltMul()), 0, 100);
     if (!won && S.tilt >= 60 && !S._tiltWarned) {
       S._tiltWarned = true;
@@ -20395,7 +20419,7 @@ header.top.compact>.theme-top{display:none}
       if (S.pre.rank > hold) {
         const before = S.pre.rank;
         S.pre.rank = q1(Math.max(hold, S.pre.rank - (S.pre.rank - hold) * 0.35));
-        if (rankName(before) !== rankName(S.pre.rank))
+        if (rankName2(before) !== rankName2(S.pre.rank))
           pushEvent(`一个赛段没怎么守天梯，段位掉到 <b>${rankFull(S.pre.rank)}</b>。分数是要用实力守的。`, "info", "排位");
       }
     }
@@ -22394,6 +22418,20 @@ header.top.compact>.theme-top{display:none}
   }
   var _renderLock = 0;
   var _autosaveAt = 0;
+  var _autosaveTimer = 0;
+  function autosaveFlush(reason) {
+    try {
+      if (_autosaveTimer) {
+        clearTimeout(_autosaveTimer);
+        _autosaveTimer = 0;
+      }
+      if (S && S.step !== "create" && S.step !== "end") {
+        _autosaveAt = Date.now();
+        saveGame(reason || "离开页面");
+      }
+    } catch (e) {
+    }
+  }
   function render() {
     if (_renderLock > 0) return;
     if (mgLive()) return;
@@ -22414,7 +22452,10 @@ header.top.compact>.theme-top{display:none}
         if (now - _autosaveAt > 1500) {
           _autosaveAt = now;
           saveGame("自动");
-        }
+        } else if (!_autosaveTimer) _autosaveTimer = setTimeout(() => {
+          _autosaveTimer = 0;
+          autosaveFlush("自动");
+        }, 1500 - (now - _autosaveAt) + 30);
       }
     } catch (e) {
     }
@@ -24016,6 +24057,10 @@ header.top.compact>.theme-top{display:none}
   screenCreate();
   audioInit();
   xferPull();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") autosaveFlush("切到后台");
+  });
+  window.addEventListener("pagehide", () => autosaveFlush("离开页面"));
   window.poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave, cerStart, SITE_QR, showCommunity, communityTick };
 })();
 </script>

@@ -186,6 +186,20 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
     else { const b = P.readSave(); if (!b || b.bad || !b.S || b.S.step !== "pre") bad.push("存档读不回来"); if (!/"seed":\d+/.test(raw)) bad.push("存档里没有随机种子"); }
     // 存档栏的版本戳与作者栏
     if (!(d.querySelector(".savebar") && d.querySelector(".savebar")!.textContent!.includes(P.ver.split(" ")[0]))) bad.push("存档栏没有版本戳");
+    // 节流窗内的最后一步不能丢（2026-09-10 玩家实锤：回满体能后误触地址栏，回来体能条只剩 50 多）
+    {
+      const S = P.S();
+      S.fatigue = 45; P.render(); await tick(1600); P.render();          // 体能 55 稳稳落盘
+      S.fatigue = 0; P.render();                                          // 1.5 秒内回满：这一次被节流
+      const b0 = P.readSave(); if (!b0 || b0.S.fatigue !== 45) bad.push("拖尾存档：测试基线不对，存档体力=" + (b0 && b0.S.fatigue));
+      await tick(1700);
+      const b1 = P.readSave(); if (!b1 || b1.S.fatigue !== 0) bad.push("拖尾存档：节流窗内的改动没有补存，重载会回到旧体能（存档 fatigue=" + (b1 && b1.S.fatigue) + "）");
+      S.fatigue = 45; P.render();                                         // 又一次落在窗口里
+      Object.defineProperty(d, "visibilityState", { get: () => "hidden", configurable: true });
+      d.dispatchEvent(new w.Event("visibilitychange"));
+      const b2 = P.readSave(); if (!b2 || b2.S.fatigue !== 45) bad.push("切到后台没有立刻存档（存档 fatigue=" + (b2 && b2.S.fatigue) + "）");
+      Object.defineProperty(d, "visibilityState", { get: () => "visible", configurable: true });
+    }
   }
   if (errors.length) bad.push("桌面：页面脚本报错 " + errors.length + " 条：" + errors.slice(0, 3).join(" | "));
   dom.window.close();

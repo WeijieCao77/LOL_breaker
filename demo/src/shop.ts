@@ -7,6 +7,8 @@ import { rnd } from "./rng";
 import { diffOf, snapshot } from "./random";
 import { escapeHtml } from "./save";
 import { S } from "./state";
+import { traitMul } from "./trait";
+import { cerRecMul } from "./cer";
 import { relAll } from "./clout";
 import { SPEND, addTrustAll, salaryOf } from "./team";
 
@@ -170,6 +172,11 @@ export const RELAX=[
   {k:"hotpot",  n:"约队友吃火锅", cost:22,  fat:-22, trust:7, rel:1.2, d:"体力、信任和更衣室关系一起补"},
   {k:"trip",    n:"短途度假",     cost:65,  fat:-60, d:"彻底断网两天"}
 ];
+/* 卡面写的必须是你真正拿到的数（玩家实锤 2026-09-10：「专业理疗写 +34 实际 +30」「短途度假写 +60 实际 +53」）。
+   体力走 addFat：劳模 ×0.88、出征仪式的恢复倍率都在结算时才乘；信任走 addTrust：粘合剂 ×1.35 / 刺头 ×0.80。
+   这里按此刻的倍率把结算值算出来给卡面和提示用——不改任何数值，只改「写的和拿的一样」。 */
+export function relaxFat(x){ return Math.round(-x.fat*traitMul("rest")*cerRecMul()); }
+export function relaxTrust(x){ return x.trust?Math.round(x.trust*traitMul("trust")):0; }
 
 export function initShop(){
   S.gear={}; SLOTS.forEach(s=>S.gear[s.k]=0);   // 0 = 自带的破烂
@@ -676,11 +683,12 @@ export function buyCourse(k){
 export function buyRelax(k){
   const x=RELAX.find(r=>r.k===k);
   if(!x||S.money<x.cost) return;
+  const gain=relaxFat(x), tg=relaxTrust(x);
   addMoney("relax",-x.cost); addFat(x.fat);
   if(x.trust&&true) addTrustAll(x.trust);
   // 更衣室关系（作者拍板 2026-09-09）：卡面本来就写着「关系一起补」，从这一版起是真的
   if(x.rel&&true) relAll(x.rel);
-  pushEvent(`${x.n}：体力回来了${x.trust?"，顺便和队友聊了聊":""}。`,"info","放松");
+  pushEvent(`${x.n}：体力 <b>+${gain}</b>${x.trust?`，信任 +${tg}，顺便和队友聊了聊`:""}。`,"info","放松");
   render();
 }
 
@@ -738,7 +746,7 @@ export function shopCard(){
     <div class="grid g2">${RELAX.map(x=>`
       <button class="act" data-relax="${x.k}" ${S.money<x.cost?'disabled style="opacity:.35"':''}>
         <div class="t">${x.n} <span class="tag">${x.cost} 万</span></div>
-        <div class="d">${x.d} · 体力 +${-x.fat}${x.trust?` · 信任 +${x.trust}`:""}</div></button>`).join("")}</div>
+        <div class="d">${x.d} · 体力 +${relaxFat(x)}${x.trust?` · 信任 +${relaxTrust(x)}`:""}</div></button>`).join("")}</div>
     <h3 style="font-size:14px;margin-top:18px">课程 · 一次买断，永久生效</h3>
     <div class="grid g2">${COURSES.map(c=>{
       const own=hasCourse(c.k);
