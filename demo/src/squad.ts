@@ -6,7 +6,7 @@ import { findTeam } from "./intl";
 import { addFat, apCost, apTag, btkNote, cap, capOf, champCoreOn, clamp, costBits, dynastyBonus, isBenched, myRoster, POSN, power, powerParts, pushEvent, PW_SHOW, pwShow, q1, render, SEASONS, strength, tacAdd, tacOf, versionFit } from "./main";
 import { rnd } from "./rng";
 import { fireEvent } from "./random";
-import { mateInjuryHit, SCRIM_EDGE_NEED, scrimState } from "./rotation";
+import { mateInjuryHit, SCRIM_EDGE_NEED, scrimState, subProxyR } from "./rotation";
 import { noteAct } from "./routine";
 import { langSyn } from "./shop";
 import { S } from "./state";
@@ -95,7 +95,7 @@ export function watchRoster(){
 export function squadBase(players){
   let s=0,wt=0;
   players.forEach(p=>{
-    const r=p.r||p;
+    const r=subProxyR(p)||p.r||p;   // 伤停替补按伤员算，和 powerCore 同一口径
     const w=p.me?(S.offerKind==="core"?1.45:1.18):1.0;
     // 能力 × 状态：同一个人，今年打成什么样是另一回事
     const fm=(p.me?myFormMul():formMul(p));

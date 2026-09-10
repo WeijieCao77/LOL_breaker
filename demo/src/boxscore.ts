@@ -50,7 +50,11 @@ export function synthBoxScore(m,won){
     if(p.me) perf+=okN*0.07-failN*0.07+((okN>=3&&failN===0)?0.05:0)-0.03;   // 200 次合成实验：差 10 分时 3/3 ≈ 全队中游、0/3 垫底；−0.03 抵消能力项减半带来的场均抬升（批测转会均值 +0.1）
     else if(side==="mine") perf+=mateShift;
     perf+=(rnd()-0.5)*0.28;
-    perf=clamp(perf,0.45,1.7);
+    /* 软上限（玩家实锤 2026-09-10：「十次里面七八次 rating 都是 1.69」）：原来 1.7 硬夹，赢下比赛 + 临场 3/3 的强选手
+       59% 的场次顶到上限，随机项被上限吃掉，后面的 KDA 和评分就成了常数（下路恒 1.69、中单 1.67）。
+       1.65 以上按一半斜率压、封顶 1.9：同一个人的评分能在 1.55–1.78 之间散开，均值几乎不动（批测对表）。 */
+    if(perf>1.65) perf=1.65+(perf-1.65)*0.5;
+    perf=clamp(perf,0.45,1.9);
     const k=q1(T[0]*perf), d=q1(T[1]*(2-perf)*0.85+0.6), a=q1(T[2]*(0.8+perf*0.25));
     const cs=q1(T[3]*(0.9+perf*0.12));
     const kda=q1((k+a)/Math.max(1,d));
@@ -113,6 +117,23 @@ export function boxScoreHtml(box,won,oppName){
   </div>`;
 }
 
+/* 年度颁奖夜的口径（玩家实锤 2026-09-10：「决赛 MVP 连年度二阵都进不了」「八强 / 半决 / 决赛全是 MVP，年度 MVP 却是队友」）：
+   看整年——两个赛段的常规赛 + 季后赛，不含国际赛（颁奖夜是联赛的颁奖夜，国际冠军另有团队加分）。
+   原来评选只读当前赛段的常规赛，季后赛整段是零权重；本场 MVP 算了、显示了，但从没存进状态。 */
+const YEAR_TAGS=["联赛","LDL","季后赛"];
+export function yearRating(si){
+  const rows=(S.archive||[]).filter(x=>x.si===si&&YEAR_TAGS.includes(x.tag)&&typeof x.rating==="number");
+  if(!rows.length) return null;
+  return avg(rows.map(x=>x.rating));
+}
+/* 本场 MVP 的评选加分：常规赛每次 +0.3、季后赛每次 +0.8，合计封顶 4。
+   第一版 0.5 / 1.0 封顶 6 批测（40 局）：年度 MVP 从每局生涯 0.97 座涨到 1.93、普通玩家 0.3 → 0.6——翻倍太猛，
+   本场 MVP 该是把决赛表现算进去的砝码，不该压过五维和团队加分。 */
+export function mvpBonus(si){
+  let b=0;
+  (S.archive||[]).forEach(x=>{ if(x.si===si&&x.mvp&&YEAR_TAGS.includes(x.tag)) b+=(x.tag==="季后赛"?0.8:0.3); });
+  return Math.min(4,b);
+}
 /* 本赛段的场均评分与院长次数——教练组看的是这个，不只看队伍战绩 */
 export function splitRating(){
   const rows=(S.archive||[]).filter(x=>x.si===S.si&&x.sp===(S.split||0)&&(x.tag==="联赛"||x.tag==="LDL"));

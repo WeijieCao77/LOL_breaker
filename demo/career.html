@@ -3330,7 +3330,7 @@ header.top.compact>.theme-top{display:none}
     const trs = rows.map((x) => {
       const t = S.world[HL].find((q) => q.name === x.opp);
       const st = (S.standings[HL] || {})[x.opp] || { w: 0, l: 0 };
-      const pw2 = t ? pwShow(power(t, 0, sea.fav)).toFixed(1) : "—";
+      const pw3 = t ? pwShow(power(t, 0, sea.fav)).toFixed(1) : "—";
       const now = x.w === S.week && S.step === "season";
       const res = x.r ? `<b class="${x.r.won ? "w" : "l"}">${x.r.won ? "胜" : "负"}</b> ${x.r.sc[0]}:${x.r.sc[1]}` : now ? "本周" : "—";
       const me = x.r ? x.r.played ? "上场" : `<span style="color:var(--ink-3)">替补席</span>` : "";
@@ -3338,7 +3338,7 @@ header.top.compact>.theme-top{display:none}
       const look = x.r && x.r.played && ai >= 0 && S.archive[ai].pm ? `<button class="btn ghost sm" data-pmv="${ai}" title="当场的全员数据与赛后拆解">看数据</button>` : "";
       return `<tr class="${now ? "me" : ""}" style="${x.r ? "" : "opacity:.8"}">
       <td class="n">${x.w}</td><td>${teamLogo(x.opp, 18)}${x.opp}</td>
-      <td class="n mono">${pw2}</td><td class="n mono">${st.w}−${st.l}</td><td class="n">${res}</td><td class="n">${me}</td><td class="n">${look}</td></tr>`;
+      <td class="n mono">${pw3}</td><td class="n mono">${st.w}−${st.l}</td><td class="n">${res}</td><td class="n">${me}</td><td class="n">${look}</td></tr>`;
     }).join("");
     return `<div class="card"><h2>赛程<em>${sea.tag} ${SPLITS[S.split || 0]} · ${rec.w}胜 ${rec.l}负</em></h2>
     <div class="tw"><table><thead><tr><th class="n">周</th><th>对手</th><th class="n">实力</th><th class="n">对手战绩</th><th class="n">结果</th><th class="n">你</th><th class="n"></th></tr></thead>
@@ -3730,6 +3730,60 @@ header.top.compact>.theme-top{display:none}
     { n: "急性肠胃炎", weeks: [1, 1], w: 3 },
     { n: "状态问题需要休整", weeks: [2, 3], w: 2 }
   ];
+  function benchSub(pos, t) {
+    try {
+      const ld = (S.world && S.world.LDL || []).find((x) => x.parent === t.name);
+      const cand = ld ? (ld.players || []).filter((q) => q && q.pos === pos && !q.me && q.r) : [];
+      if (cand.length) {
+        const q = cand.slice().sort((a, b) => ovrOf(b) - ovrOf(a))[0];
+        return {
+          id: q.id,
+          cn: q.cn || "",
+          pos,
+          age: q.age || 19,
+          r: Object.assign({}, q.r),
+          form: q.form,
+          lg: q.lg || (S.homeLeague || "LPL"),
+          rookie: true,
+          debutSi: q.debutSi,
+          sub: true
+        };
+      }
+      const mates = t.players.filter((q) => q && !q.me && q.r);
+      const lvl = Math.round(mates.length ? avg(mates.map((q) => ovrOf(q))) : 60) - 7;
+      const nr = makeRookie(pos, lvl, S.homeLeague || "LPL");
+      nr.sub = true;
+      nr.fresh = true;
+      return nr;
+    } catch (e) {
+      return null;
+    }
+  }
+  function subJoin(id, orig) {
+    try {
+      const oid = orig && orig.id;
+      if (S.trust && S.trust[id] === void 0) S.trust[id] = oid && S.trust[oid] !== void 0 ? S.trust[oid] : 50;
+      if (S.rel) {
+        myRoster().filter((q) => q && !q.me && q.id !== id).forEach((q) => {
+          const k = relKey(id, q.id);
+          if (S.rel[k] !== void 0) return;
+          const ko = oid ? relKey(oid, q.id) : null;
+          S.rel[k] = ko && S.rel[ko] !== void 0 ? S.rel[ko] : 50;
+        });
+      }
+    } catch (e) {
+    }
+  }
+  function subLeave(id) {
+    try {
+      if (S.trust) delete S.trust[id];
+      if (S.rel) Object.keys(S.rel).forEach((k) => {
+        const [a, b] = k.split("|");
+        if (a === id || b === id) delete S.rel[k];
+      });
+    } catch (e) {
+    }
+  }
   function mateInjuryRoll() {
     if (!S.career || !S.team || S.mateInjury) return;
     const t = myTeam();
@@ -3751,7 +3805,15 @@ header.top.compact>.theme-top{display:none}
           pushEvent(`<b>${p.id}</b> ${inj.n}，预计缺席 <b>${wk} 周</b>。教练把你写进了名单：<b>这 ${wk} 周里赢一场，位置就是你的。</b>`, "big", "伤病");
         else pushEvent(`<b>${p.id}</b> ${inj.n}，预计缺席 <b>${wk} 周</b>。`, "bad", "伤病");
       } else {
-        pushEvent(`队友 <b>${p.id}</b>（${POSN[p.pos] || p.pos}）${inj.n}，预计缺席 <b>${wk} 周</b>。${wk >= 2 ? "二队的人顶上来，战力要打折扣。" : "这周带伤上，发挥要打折扣。"}`, "bad", "伤病");
+        const sub = wk >= 2 ? benchSub(p.pos, t) : null;
+        if (sub) {
+          const idx = t.players.indexOf(p);
+          if (idx >= 0) t.players[idx] = sub;
+          S.mateInjury.sub = { id: sub.id, team: t.name, orig: p };
+          subJoin(sub.id, p);
+          pushEvent(`队友 <b>${p.id}</b>（${POSN[p.pos] || p.pos}）${inj.n}，预计缺席 <b>${wk} 周</b>。二队的 <b>${sub.id}</b> 顶上首发${sub.fresh ? "——青训里临时招上来的" : ""}。`, "bad", "伤病");
+        } else
+          pushEvent(`队友 <b>${p.id}</b>（${POSN[p.pos] || p.pos}）${inj.n}，预计缺席 <b>${wk} 周</b>。${wk >= 2 ? "二队的人顶上来，战力要打折扣。" : "这周带伤上，发挥要打折扣。"}`, "bad", "伤病");
       }
       break;
     }
@@ -3761,7 +3823,15 @@ header.top.compact>.theme-top{display:none}
     if (!I) return;
     I.left--;
     if (I.left <= 0) {
-      pushEvent(`<b>${I.id}</b> 伤愈归队。`, "good", "伤病");
+      if (I.sub && I.sub.orig) {
+        const t = findTeam(I.sub.team);
+        if (t) {
+          const i = t.players.findIndex((q) => q && q.id === I.sub.id);
+          if (i >= 0) t.players[i] = I.sub.orig;
+        }
+        subLeave(I.sub.id);
+        pushEvent(`<b>${I.id}</b> 伤愈归队，<b>${I.sub.id}</b> 回二队。`, "good", "伤病");
+      } else pushEvent(`<b>${I.id}</b> 伤愈归队。`, "good", "伤病");
       S.mateInjury = null;
       if (S.scrim && S.scrim.trial && S.scrim.trial.injury && !S.promoted) {
         const sc = S.scrim;
@@ -3771,19 +3841,28 @@ header.top.compact>.theme-top{display:none}
       }
     }
   }
+  function subProxyR(p) {
+    const I = S.mateInjury;
+    return I && I.sub && p && !p.me && p.id === I.sub.id && I.sub.orig && I.sub.orig.r ? I.sub.orig.r : null;
+  }
   function mateInjuryHit(p) {
     const I = S.mateInjury;
-    if (!I || !p || p.me || p.id !== I.id) return 0;
+    if (!I || !p || p.me) return 0;
+    if (I.sub && p.id === I.sub.id) return -5.5;
+    if (p.id !== I.id) return 0;
     return -5.5;
   }
   function mateInjuryTag(p) {
     const I = S.mateInjury;
-    if (!I || !p || p.id !== I.id) return "";
+    if (!I || !p) return "";
+    if (I.sub && p.id === I.sub.id) return `<span class="tag" title="顶替伤停的 ${I.id}，还有 ${I.left} 周">替</span>`;
+    if (p.id !== I.id) return "";
     return `<span class="tag l" title="${I.n} · 还有 ${I.left} 周">伤 ${I.left}周</span>`;
   }
   function mateInjuryNote() {
     const I = S.mateInjury;
     if (!I) return "";
+    if (I.sub) return `<p class="note" style="color:var(--red);margin-top:6px"><b>${I.id}</b>（${POSN[I.pos] || I.pos}）${I.n}，还要 <b>${I.left} 周</b>——二队的 <b>${I.sub.id}</b> 顶上首发，伤愈换回。</p>`;
     return `<p class="note" style="color:var(--red);margin-top:6px"><b>${I.id}</b>（${POSN[I.pos] || I.pos}）${I.n}，还要 <b>${I.left} 周</b>——这段时间他那个位置的战力打折扣。</p>`;
   }
   function addRingTitle(t) {
@@ -3824,7 +3903,8 @@ header.top.compact>.theme-top{display:none}
       if (p.me) perf += okN * 0.07 - failN * 0.07 + (okN >= 3 && failN === 0 ? 0.05 : 0) - 0.03;
       else if (side === "mine") perf += mateShift;
       perf += (rnd() - 0.5) * 0.28;
-      perf = clamp(perf, 0.45, 1.7);
+      if (perf > 1.65) perf = 1.65 + (perf - 1.65) * 0.5;
+      perf = clamp(perf, 0.45, 1.9);
       const k = q1(T[0] * perf), d = q1(T[1] * (2 - perf) * 0.85 + 0.6), a = q1(T[2] * (0.8 + perf * 0.25));
       const cs = q1(T[3] * (0.9 + perf * 0.12));
       const kda = q1((k + a) / Math.max(1, d));
@@ -3897,6 +3977,19 @@ header.top.compact>.theme-top{display:none}
     ${verdict ? `<p class="note" style="margin:8px 0 0">${verdict}</p>` : ""}
     <p class="note" style="margin:6px 0 0;color:var(--ink-3)">数据按各人数值、状态、胜负和你的临场选择合成：你选对了却输，多出来的那份「输」记在队友头上。评分 1.0 及格，1.1 以上亮眼，0.85 以下拖后腿。</p>
   </div>`;
+  }
+  var YEAR_TAGS = ["联赛", "LDL", "季后赛"];
+  function yearRating(si) {
+    const rows = (S.archive || []).filter((x) => x.si === si && YEAR_TAGS.includes(x.tag) && typeof x.rating === "number");
+    if (!rows.length) return null;
+    return avg(rows.map((x) => x.rating));
+  }
+  function mvpBonus(si) {
+    let b = 0;
+    (S.archive || []).forEach((x) => {
+      if (x.si === si && x.mvp && YEAR_TAGS.includes(x.tag)) b += x.tag === "季后赛" ? 0.8 : 0.3;
+    });
+    return Math.min(4, b);
   }
   function splitRating() {
     const rows = (S.archive || []).filter((x) => x.si === S.si && x.sp === (S.split || 0) && (x.tag === "联赛" || x.tag === "LDL"));
@@ -7781,6 +7874,7 @@ header.top.compact>.theme-top{display:none}
   function syncTrust() {
     if (!S.trust) return;
     const ids = myRoster().filter((p) => !p.me).map((p) => p.id);
+    if (S.mateInjury && S.mateInjury.sub && S.mateInjury.id && !ids.includes(S.mateInjury.id)) ids.push(S.mateInjury.id);
     ids.forEach((id) => {
       if (S.trust[id] === void 0) S.trust[id] = 46 + Math.floor(rnd() * 8);
     });
@@ -11341,8 +11435,9 @@ header.top.compact>.theme-top{display:none}
       const r = p.me ? S.attrs : p.r || {};
       let sc = avg(DIMS.map((d) => r[d] || 0)) + ((p.form === void 0 || p.form === null ? 52 : p.form) - 52) / 8 + bonus(t.name);
       if (p.me) {
-        const sr = splitRating();
+        const sr = yearRating(S.si);
         if (sr !== null) sc += (sr - 1) * 6;
+        sc += mvpBonus(S.si);
       }
       rows.push({
         id: p.me ? meName() : p.id,
@@ -12200,12 +12295,12 @@ header.top.compact>.theme-top{display:none}
     if (!st) return S.world[lg].map((t) => ({ n: t.name, w: 0, l: 0, p: 0 }));
     return Object.entries(st).map(([n, r]) => ({ n, ...r, p: r.w + r.l ? r.w / (r.w + r.l) : 0 })).sort((a, b) => b.p - a.p || b.w - a.w);
   }
-  function pw(name) {
+  function pw2(name) {
     const t = findTeam(name);
     return t ? power(t, 0, SEASONS[S.si].fav) : 50;
   }
   function winProb(a, b) {
-    return 1 / (1 + Math.exp(-(pw(a) - pw(b)) / SPREAD));
+    return 1 / (1 + Math.exp(-(pw2(a) - pw2(b)) / SPREAD));
   }
   function simBo(a, b, need) {
     let x = 0, y = 0, p = winProb(a, b);
@@ -12282,10 +12377,10 @@ header.top.compact>.theme-top{display:none}
       direct.push(...seeds[lg].slice(0, perMajor));
       if (seeds[lg][perMajor]) playin.push(seeds[lg][perMajor]);
     });
-    const minors = MINOR.filter((lg) => S.world[lg] && S.world[lg].length).map((lg) => minorChampion(lg)).sort((a, b) => pw(b) - pw(a));
+    const minors = MINOR.filter((lg) => S.world[lg] && S.world[lg].length).map((lg) => minorChampion(lg)).sort((a, b) => pw2(b) - pw2(a));
     while (direct.length < directN && minors.length) direct.push(minors.shift());
     if (!PI) {
-      const rest = playin.concat(minors).sort((a, b) => pw(b) - pw(a));
+      const rest = playin.concat(minors).sort((a, b) => pw2(b) - pw2(a));
       while (direct.length < directN && rest.length) direct.push(rest.shift());
       return { direct: direct.slice(0, directN), playin: [], seeds };
     }
@@ -12380,7 +12475,7 @@ header.top.compact>.theme-top{display:none}
         record: [0, 0],
         round: 1,
         cfg,
-        queue: playin.filter((n) => n !== S.team).sort((a, b) => pw(a) - pw(b))
+        queue: playin.filter((n) => n !== S.team).sort((a, b) => pw2(a) - pw2(b))
       };
       pushEvent(`<b>${S.team}</b> 只拿到入围赛资格，要从最底下打起。`, "bad", "世界赛");
       pushEvent(intlDrawText("世界赛入围赛", playin), "info", "世界赛");
@@ -12445,7 +12540,7 @@ header.top.compact>.theme-top{display:none}
   function brSeed(field) {
     const I = S.intl;
     const rec = (n) => I && I.swiss && I.swiss[n] ? I.swiss[n][0] * 10 - I.swiss[n][1] : 0;
-    let seeded = field.slice().sort((a, b) => rec(b) - rec(a) || pw(b) - pw(a));
+    let seeded = field.slice().sort((a, b) => rec(b) - rec(a) || pw2(b) - pw2(a));
     const mi = seeded.indexOf(S.team);
     if (mi >= 8) {
       seeded.splice(mi, 1);
@@ -12590,7 +12685,7 @@ header.top.compact>.theme-top{display:none}
       const nx = brNext();
       if (nx) return nx.opp;
       const base = (I.knockField || I.field || []).filter((n) => n !== S.team && !(I.beaten || []).includes(n));
-      base.sort((a, b) => pw(b) - pw(a));
+      base.sort((a, b) => pw2(b) - pw2(a));
       return base[0] || (I.field || []).find((n) => n !== S.team);
     }
     if (I.stage === "playin") return I.queue[Math.min(I.round - 1, I.queue.length - 1)];
@@ -12603,7 +12698,7 @@ header.top.compact>.theme-top{display:none}
   function simWholeEvent(field, stage) {
     let alive = field.slice();
     if (stage === "swiss" || stage === "groups") {
-      alive = alive.slice().sort((a, b) => pw(b) - pw(a)).slice(0, 8);
+      alive = alive.slice().sort((a, b) => pw2(b) - pw2(a)).slice(0, 8);
     }
     while (alive.length > 1) {
       const nx = [];
@@ -12621,7 +12716,7 @@ header.top.compact>.theme-top{display:none}
   function simEventStaged(field, stage) {
     let eight = field.slice().filter(Boolean);
     if (stage === "swiss" || stage === "groups") {
-      eight = eight.slice().sort((a, b) => pw(b) - pw(a)).slice(0, 8);
+      eight = eight.slice().sort((a, b) => pw2(b) - pw2(a)).slice(0, 8);
     }
     const step = (arr) => {
       const nx = [];
@@ -12954,7 +13049,7 @@ header.top.compact>.theme-top{display:none}
       return;
     }
     if (w >= needW) {
-      const others = I.field.filter((n) => n !== S.team).sort((a, b) => pw(b) - pw(a)).slice(0, 7);
+      const others = I.field.filter((n) => n !== S.team).sort((a, b) => pw2(b) - pw2(a)).slice(0, 7);
       const wasGroups = I.stage === "groups";
       I.stage = "knockout";
       I.knockField = [S.team].concat(others);
@@ -12981,7 +13076,7 @@ header.top.compact>.theme-top{display:none}
       if (n === S.team) return;
       const r = I.swiss[n];
       if (!r || r[0] >= 3 || r[1] >= 3) return;
-      const q = clamp((pw(n) - 70) / 22 + 0.5, 0.15, 0.85);
+      const q = clamp((pw2(n) - 70) / 22 + 0.5, 0.15, 0.85);
       r[rnd() < q ? 0 : 1]++;
     });
   }
@@ -13233,6 +13328,7 @@ header.top.compact>.theme-top{display:none}
       return;
     }
     const ids = myRoster().filter((p) => !p.me).map((p) => p.id);
+    if (S.mateInjury && S.mateInjury.sub && S.mateInjury.id && !ids.includes(S.mateInjury.id)) ids.push(S.mateInjury.id);
     for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
       const k = relKey(ids[i], ids[j]);
       if (S.rel[k] === void 0) S.rel[k] = 38 + Math.floor(rnd() * 14);
@@ -15535,14 +15631,14 @@ header.top.compact>.theme-top{display:none}
       if (lg === "LDL") return;
       const teams = S.world[lg];
       if (!teams || teams.length < 4) return;
-      const pw2 = (t) => {
+      const pw3 = (t) => {
         try {
           return power(t, 0, SEASONS[S.si] && SEASONS[S.si].fav);
         } catch (e) {
           return avg(t.players.map(mktOvr));
         }
       };
-      const rank = teams.slice().sort((a, b) => pw2(b) - pw2(a));
+      const rank = teams.slice().sort((a, b) => pw3(b) - pw3(a));
       const half = Math.floor(rank.length / 2);
       const top = rank.slice(0, half), bottom = rank.slice(half);
       const cap5 = Math.max(2, Math.round(teams.length * MKT.maxPerLeague));
@@ -16326,6 +16422,11 @@ header.top.compact>.theme-top{display:none}
     { v: "v20260910d", at: "2026-09-10", items: [
       "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
       "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+    ] },
+    { v: "v20260910c", at: "2026-09-10", items: [
+      "<b>年度评选看整年，季后赛和本场 MVP 都算数</b>（玩家实锤：「决赛 MVP 连年度二阵都进不了」「八强 / 半决 / 决赛全是 MVP，年度 MVP 却是队友」）：原来颁奖夜只读<b>当前赛段的常规赛</b>场均评分，季后赛整段零权重；「本场 MVP」在赛后全员表里算了、也显示了，但从没存进状态。现在评选读<b>整年（两个赛段常规赛 + 季后赛）</b>的场均评分，本场 MVP 存进档案、进评选（常规赛每次 +0.3、季后赛每次 +0.8，封顶 4）。40 局批测：普通玩家年度 MVP 从每局生涯 0.30 座到 0.53、一阵 0.72 → 0.93；强玩家 MVP 0.97 → 1.43；冠军率一动不动。第一版试过 0.5 / 1.0 封顶 6，MVP 直接翻倍，压回来了",
+      "<b>评分不再场场 1.69</b>（玩家实锤：「十次里面七八次 rating 都是 1.69」）：全员表里的发挥系数原来 1.7 硬夹，赢下比赛 + 临场 3/3 的强选手 59% 的场次顶到上限，随机项被吃掉，KDA 和评分就成了常数（下路恒 1.69、中单 1.67、打野 1.70）。现在 1.65 以上按一半斜率压、封顶 1.9：同一个人的评分在 1.55–1.78 之间散开，批测均值 1.348 → 1.348 一分不动，同一个数的占比 13% → 8%",
+      "<b>真替补席</b>（玩家实锤：「队友伤病后还是会上场打比赛，但措辞已经明确说他伤退了，伤病好了也会说他回归了，但他实际压根没下过首发」）：原来伤停只是给那个位置扣 5.5 战力，名单和赛后全员表里伤员照打。现在伤停 <b>≥2 周真的换人</b>：二队同位置最强的顶上首发，名单、战力、赛后数据都是他（名单上带「替」标），伤愈换回；外赛区没有二队就临时从青训招一个。带伤上（1 周）照旧不换人。<b>赢面不变</b>：战力公式里替补整个人按伤员的五维算再扣 5.5（和原来那个位置的折扣一样），信任和更衣室关系沿用伤员的账——只有赛后全员表按他自己的真实水平合成，账面上二队小将的数据会难看，这是真的。120 局批测：普通玩家冠军数 2.14 → 2.15；强玩家 5.2 → 4.7（同一批种子只挪一下随机序列就有 ±0.1 的波动，这一档差异还在观察）。老存档里正在进行的伤停按老规矩走完"
     ] },
     { v: "v20260910b", at: "2026-09-10", items: [
       "<b>存档不再丢最后一步</b>（玩家实锤：「回满体能以后，误触切出网址到浏览器首页，再重新加载回来的时候，我的体能条变成只有 50 多了」）：自动存档每 1.5 秒最多存一次，原来窗口里的第二次操作<b>不存、也不补</b>——正好卡在那一下离开页面，回来就是上一次的状态。现在窗口一过自动补存；切到后台、离开页面立刻存。任何操作都不会再因为「刚做完就走」而丢",
@@ -17447,7 +17548,7 @@ header.top.compact>.theme-top{display:none}
   function powerCore(players, fatigue = 0, verFav = null, team = null, parts) {
     let s = 0, wt = 0, cmd = 0;
     players.forEach((p) => {
-      const r = p.me && S && S.attrs ? S.attrs : p.r || p;
+      const r = p.me && S && S.attrs ? S.attrs : subProxyR(p) || p.r || p;
       const w = p.me ? S.offerKind === "core" ? 3.4 : 3 : 1;
       let v = r.操作 * 0.34 + r.运营 * 0.28 + r.心态 * 0.14 + r.体质 * 0.1;
       if (p.me && true) {
@@ -20105,7 +20206,8 @@ header.top.compact>.theme-top{display:none}
     }
     const tag = S.intl ? S.intl.type === "msi" ? "MSI" : "世界赛" : S.playoff ? "季后赛" : (S.homeLeague || "LPL") === "LDL" ? "LDL" : "联赛";
     S.archive = S.archive || [];
-    S.archive.push({ si: S.si, sp: S.split || 0, w: S.week, tag, opp: m.oppName, sc: m.sc.slice(), win: won, g: games, k, d, a, cs, dmg, rating, box: box || void 0 });
+    const mvp = !!(box && box.mvp && box.mine.some((x) => x.me && x.id === box.mvp));
+    S.archive.push({ si: S.si, sp: S.split || 0, w: S.week, tag, opp: m.oppName, sc: m.sc.slice(), win: won, g: games, k, d, a, cs, dmg, rating, mvp, box: box || void 0 });
     if (S.archive.length > 60) S.archive.shift();
     let keepBox = 0;
     for (let i = S.archive.length - 1; i >= 0; i--) if (S.archive[i].box && ++keepBox > 20) delete S.archive[i].box;

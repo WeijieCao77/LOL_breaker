@@ -21,7 +21,7 @@ import { buffChips, buffVal, fireEvent, randomCard, randomResultCard, resolveRan
 import { themeSeg, themeFull } from "./theme";
 import { rankBadge, rankIcon, teamLogo } from "./rankicon";
 import { noteGrudge, noteRevenge, rivalBoost, rivalCard } from "./rivals";
-import { addRingTitle, breakAgendaCard, fixNote, fixtureCard, fixtureStrip, mateInjuryHit, mateInjuryNote, mateInjuryRoll, mateInjuryTag, mateInjuryTick, ringTitles, rotationAfterMatch, scrimCard, scrimPanel, scrimPick, scrimTrialCheck, setBreakAgenda, startScrim, titleCount, titlesText } from "./rotation";
+import { addRingTitle, breakAgendaCard, fixNote, fixtureCard, fixtureStrip, mateInjuryHit, mateInjuryNote, mateInjuryRoll, mateInjuryTag, mateInjuryTick, ringTitles, rotationAfterMatch, scrimCard, scrimPanel, scrimPick, scrimTrialCheck, setBreakAgenda, startScrim, subProxyR, titleCount, titlesText } from "./rotation";
 import { actListText, archiveWeek, clearPlan, noteAct, quickBtn, quickPlan, quickPlanPre, repeatLast, routineBar, runActs, runPlan, savePlan } from "./routine";
 import { askConfirm, confirmCard, continueCard, dropSave, escapeHtml, exportSave, importSave, loadGame, meName, safeName, saveBar, saveGame } from "./save";
 import { addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, noteStream, noteStreamMoney, PRIZE_PO, PRIZE_PO_LDL, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
@@ -117,6 +117,11 @@ export const CHANGELOG=[
   {v:"v20260910d", at:"2026-09-10", items:[
     "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
     "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+  ]},
+  {v:"v20260910c", at:"2026-09-10", items:[
+    "<b>年度评选看整年，季后赛和本场 MVP 都算数</b>（玩家实锤：「决赛 MVP 连年度二阵都进不了」「八强 / 半决 / 决赛全是 MVP，年度 MVP 却是队友」）：原来颁奖夜只读<b>当前赛段的常规赛</b>场均评分，季后赛整段零权重；「本场 MVP」在赛后全员表里算了、也显示了，但从没存进状态。现在评选读<b>整年（两个赛段常规赛 + 季后赛）</b>的场均评分，本场 MVP 存进档案、进评选（常规赛每次 +0.3、季后赛每次 +0.8，封顶 4）。40 局批测：普通玩家年度 MVP 从每局生涯 0.30 座到 0.53、一阵 0.72 → 0.93；强玩家 MVP 0.97 → 1.43；冠军率一动不动。第一版试过 0.5 / 1.0 封顶 6，MVP 直接翻倍，压回来了",
+    "<b>评分不再场场 1.69</b>（玩家实锤：「十次里面七八次 rating 都是 1.69」）：全员表里的发挥系数原来 1.7 硬夹，赢下比赛 + 临场 3/3 的强选手 59% 的场次顶到上限，随机项被吃掉，KDA 和评分就成了常数（下路恒 1.69、中单 1.67、打野 1.70）。现在 1.65 以上按一半斜率压、封顶 1.9：同一个人的评分在 1.55–1.78 之间散开，批测均值 1.348 → 1.348 一分不动，同一个数的占比 13% → 8%",
+    "<b>真替补席</b>（玩家实锤：「队友伤病后还是会上场打比赛，但措辞已经明确说他伤退了，伤病好了也会说他回归了，但他实际压根没下过首发」）：原来伤停只是给那个位置扣 5.5 战力，名单和赛后全员表里伤员照打。现在伤停 <b>≥2 周真的换人</b>：二队同位置最强的顶上首发，名单、战力、赛后数据都是他（名单上带「替」标），伤愈换回；外赛区没有二队就临时从青训招一个。带伤上（1 周）照旧不换人。<b>赢面不变</b>：战力公式里替补整个人按伤员的五维算再扣 5.5（和原来那个位置的折扣一样），信任和更衣室关系沿用伤员的账——只有赛后全员表按他自己的真实水平合成，账面上二队小将的数据会难看，这是真的。120 局批测：普通玩家冠军数 2.14 → 2.15；强玩家 5.2 → 4.7（同一批种子只挪一下随机序列就有 ±0.1 的波动，这一档差异还在观察）。老存档里正在进行的伤停按老规矩走完"
   ]},
   {v:"v20260910b", at:"2026-09-10", items:[
     "<b>存档不再丢最后一步</b>（玩家实锤：「回满体能以后，误触切出网址到浏览器首页，再重新加载回来的时候，我的体能条变成只有 50 多了」）：自动存档每 1.5 秒最多存一次，原来窗口里的第二次操作<b>不存、也不补</b>——正好卡在那一下离开页面，回来就是上一次的状态。现在窗口一过自动补存；切到后台、离开页面立刻存。任何操作都不会再因为「刚做完就走」而丢",
@@ -1290,7 +1295,7 @@ export function formMorale(team){
 export function powerCore(players,fatigue=0,verFav=null,team=null,parts?){
   let s=0,wt=0,cmd=0;
   players.forEach(p=>{
-    const r=(p.me&&S&&S.attrs)?S.attrs:(p.r||p);   // 「你」直读 S.attrs：读档后名单里的拷贝可能是旧的
+    const r=(p.me&&S&&S.attrs)?S.attrs:(subProxyR(p)||p.r||p);   // 「你」直读 S.attrs：读档后名单里的拷贝可能是旧的；伤停替补按伤员算（rotation.ts）
     // 玩家定的哲学（2026-09-02）：这是五个人的游戏——队友弱，你再强也赢不了。
     // 权重只比普通队友略高（你是拿了行动点培养的那个人），
     // 冠军资格靠转会去强队挣，不靠一个人扛穿弱队。
@@ -4013,7 +4018,9 @@ export function synthSeriesStats(m,won,myPw,opPw){
   }
   const tag=S.intl?(S.intl.type==="msi"?"MSI":"世界赛"):S.playoff?"季后赛":((S.homeLeague||"LPL")==="LDL"?"LDL":"联赛");
   S.archive=(S.archive||[]);
-  S.archive.push({si:S.si,sp:S.split||0,w:S.week,tag,opp:m.oppName,sc:m.sc.slice(),win:won,g:games,k,d,a,cs,dmg,rating,box:box||undefined});
+  // 本场 MVP 存下来（玩家实锤 2026-09-10：算了、显示了，年度评选却看不见）——全员表里评分最高的那个是不是你
+  const mvp=!!(box&&box.mvp&&box.mine.some(x=>x.me&&x.id===box.mvp));
+  S.archive.push({si:S.si,sp:S.split||0,w:S.week,tag,opp:m.oppName,sc:m.sc.slice(),win:won,g:games,k,d,a,cs,dmg,rating,mvp,box:box||undefined});
   if(S.archive.length>60) S.archive.shift();
   // 全员表只留最近 20 场，存档别撑大
   let keepBox=0;
