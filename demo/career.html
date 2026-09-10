@@ -4083,6 +4083,10 @@ header.top.compact>.theme-top{display:none}
     const g = squadGain(k, n);
     return g < 0.05 ? `${nm} 已很高` : `${nm} +${g.toFixed(1)}`;
   }
+  function attrBit(d, n) {
+    const room = Math.max(0, capOf(d) - (S.attrs && S.attrs[d] || 0));
+    return room < 5e-3 ? `${d}已到上限` : `${d} +${Math.min(n, room).toFixed(2)}`;
+  }
   var SQUAD_ACTS = [
     /* 异化点数配平（2026-09-03）：训练赛 3 点＝整个下午，收益 ×1.5 对齐单点价值；
        双排 1 点＝碎片时间，收益 ×0.55——同一把尺：每点买到的东西一样多，
@@ -4116,7 +4120,7 @@ header.top.compact>.theme-top{display:none}
       k: "vod",
       n: "战术复盘",
       d: "逐帧过录像，把上一场的问题挖出来",
-      sum: () => [sumBit("tac", 4.2), "运营 +0.35"].concat(btkPathDead("运营") ? [] : ["攒运营突破"]),
+      sum: () => [sumBit("tac", 4.2), attrBit("运营", 0.35)].concat(btkPathDead("运营") ? [] : ["攒运营突破"]),
       // 运营路径到头（99 / 刷满）就别再许诺
       fat: 9,
       run: () => {
@@ -4141,7 +4145,7 @@ header.top.compact>.theme-top{display:none}
       k: "duo",
       n: "队友双排",
       d: "排位里带一带，练默契也拉近关系",
-      sum: () => [sumBit("syn", 1.2), "信任 +1.9", "操作 +0.14"],
+      sum: () => [sumBit("syn", 1.2), "信任 +1.9", attrBit("操作", 0.14)],
       fat: 4,
       run: () => {
         addSquad("syn", 1.2);
@@ -4239,7 +4243,7 @@ header.top.compact>.theme-top{display:none}
       n: "看录像",
       d: "坐在替补席上把首发这一场逐帧过一遍",
       fat: 9,
-      sum: () => ["运营 +0.35"].concat(btkPathDead("运营") ? [] : ["攒运营突破"], ["战术素养 +0.2", "轮换资本 +0.25"]),
+      sum: () => [attrBit("运营", 0.35)].concat(btkPathDead("运营") ? [] : ["攒运营突破"], ["战术素养 +0.2", "轮换资本 +0.25"]),
       run: () => {
         S.attrs.运营 = Math.min(capOf("运营"), S.attrs.运营 + 0.35);
         btkNote("vod", 1);
@@ -4259,7 +4263,7 @@ header.top.compact>.theme-top{display:none}
       n: "队友双排",
       d: "排位里带一带，练默契也拉近关系",
       fat: 4,
-      sum: () => ["信任 +1.9", "操作 +0.14"],
+      sum: () => ["信任 +1.9", attrBit("操作", 0.14)],
       run: () => {
         addTrustAll(1.9);
         S.attrs.操作 = Math.min(capOf("操作"), S.attrs.操作 + 0.14);
@@ -7991,11 +7995,14 @@ header.top.compact>.theme-top{display:none}
     { k: "hotpot", n: "约队友吃火锅", cost: 22, fat: -22, trust: 7, rel: 1.2, d: "体力、信任和更衣室关系一起补" },
     { k: "trip", n: "短途度假", cost: 65, fat: -60, d: "彻底断网两天" }
   ];
-  function relaxFat(x) {
-    return Math.round(-x.fat * traitMul("rest") * cerRecMul());
-  }
   function relaxTrust(x) {
     return x.trust ? Math.round(x.trust * traitMul("trust")) : 0;
+  }
+  function relaxFatNow(x) {
+    return Math.round(Math.min(S.fatigue || 0, -x.fat * traitMul("rest") * cerRecMul()));
+  }
+  function relaxUseless(x) {
+    return !x.trust && !x.rel && (S.fatigue || 0) < 0.5;
   }
   function initShop() {
     S.gear = {};
@@ -8504,13 +8511,13 @@ header.top.compact>.theme-top{display:none}
   }
   function buyRelax(k) {
     const x = RELAX.find((r) => r.k === k);
-    if (!x || S.money < x.cost) return;
-    const gain3 = relaxFat(x), tg = relaxTrust(x);
+    if (!x || S.money < x.cost || relaxUseless(x)) return;
+    const gain3 = relaxFatNow(x), tg = relaxTrust(x);
     addMoney("relax", -x.cost);
     addFat(x.fat);
     if (x.trust && true) addTrustAll(x.trust);
     if (x.rel && true) relAll(x.rel);
-    pushEvent(`${x.n}：体力 <b>+${gain3}</b>${x.trust ? `，信任 +${tg}，顺便和队友聊了聊` : ""}。`, "info", "放松");
+    pushEvent(`${x.n}：${gain3 > 0 ? `体力 <b>+${gain3}</b>` : "体力本来就是满的"}${x.trust ? `，信任 +${tg}，顺便和队友聊了聊` : ""}。`, "info", "放松");
     render();
   }
   function gearCard() {
@@ -8553,9 +8560,9 @@ header.top.compact>.theme-top{display:none}
     }).join("")}
     <h3 style="font-size:14px;margin-top:18px">放松 · 花钱换体力，不占行动点</h3>
     <div class="grid g2">${RELAX.map((x) => `
-      <button class="act" data-relax="${x.k}" ${S.money < x.cost ? 'disabled style="opacity:.35"' : ""}>
+      <button class="act" data-relax="${x.k}" ${S.money < x.cost || relaxUseless(x) ? 'disabled style="opacity:.35"' : ""}>
         <div class="t">${x.n} <span class="tag">${x.cost} 万</span></div>
-        <div class="d">${x.d} · 体力 +${relaxFat(x)}${x.trust ? ` · 信任 +${relaxTrust(x)}` : ""}</div></button>`).join("")}</div>
+        <div class="d">${x.d} · ${relaxFatNow(x) > 0 ? `体力 +${relaxFatNow(x)}` : "体力已满"}${x.trust ? ` · 信任 +${relaxTrust(x)}` : ""}</div></button>`).join("")}</div>
     <h3 style="font-size:14px;margin-top:18px">课程 · 一次买断，永久生效</h3>
     <div class="grid g2">${COURSES.map((c) => {
       const own = hasCourse(c.k);
@@ -8710,6 +8717,13 @@ header.top.compact>.theme-top{display:none}
   }
 
   // demo/src/random.ts
+  function gainTo(d, n) {
+    const b0 = S.attrs[d];
+    S.attrs[d] = Math.min(capOf(d), q1(S.attrs[d] + n));
+    const g = S.attrs[d] - b0;
+    if (g < 0.05) return `${d}已到上限`;
+    return `${d} +${g >= n - 0.06 ? n : +g.toFixed(1)}`;
+  }
   function pay2(n) {
     if (S.money < n) return false;
     addMoney("other", -n);
@@ -8769,8 +8783,8 @@ header.top.compact>.theme-top{display:none}
         } },
         { t: "不接，这条线不能碰", g: "grind", e: () => {
           (S.flags = S.flags || {}).clean = 1;
-          S.attrs.心态 = Math.min(capOf("心态"), q1(S.attrs.心态 + 0.5));
-          return "你回了个「不做」。多年以后如果有人翻旧账，你的记录是干净的。心态 +0.5。";
+          const gt = gainTo("心态", 0.5);
+          return `你回了个「不做」。多年以后如果有人翻旧账，你的记录是干净的。${gt}。`;
         } }
       ]
     },
@@ -8785,9 +8799,9 @@ header.top.compact>.theme-top{display:none}
       a: [
         { t: "交钱，学", cost: 3, e: () => {
           pay2(3);
-          S.attrs.指挥 = Math.min(capOf("指挥"), q1(S.attrs.指挥 + 1));
+          const gt = gainTo("指挥", 1);
           tacAdd(4, "网吧老板的两周课");
-          return "两周里他给你拆了三十场录像，讲的全是视野、时机和资源交换。<b>指挥 +1，战术素养 +4。</b>";
+          return `两周里他给你拆了三十场录像，讲的全是视野、时机和资源交换。<b>${gt}，战术素养 +4。</b>`;
         } },
         { t: "算了，自己练", g: "grind", e: () => "你觉得三万块能干别的。他也没多说。" }
       ]
@@ -8908,8 +8922,8 @@ header.top.compact>.theme-top{display:none}
           return "切片当晚就传开了。<b>热度 +12，心态 −0.3。</b>你也出了名——出的是「脾气」的名。";
         } },
         { t: "拉黑，继续打", g: "grind", e: () => {
-          S.attrs.心态 = Math.min(capOf("心态"), q1(S.attrs.心态 + 0.3));
-          return "你把他拉黑，继续补刀。弹幕安静了一会儿。<b>心态 +0.3。</b>";
+          const gt = gainTo("心态", 0.3);
+          return `你把他拉黑，继续补刀。弹幕安静了一会儿。<b>${gt}。</b>`;
         } }
       ]
     },
@@ -8946,14 +8960,13 @@ header.top.compact>.theme-top{display:none}
       a: [
         { t: "双排一周", g: "grind", e: () => {
           addFat(5);
-          S.attrs.操作 = Math.min(capOf("操作"), q1(S.attrs.操作 + 0.4));
-          S.attrs.运营 = Math.min(capOf("运营"), q1(S.attrs.运营 + 0.2));
+          const g1 = gainTo("操作", 0.4), g2 = gainTo("运营", 0.2);
           S.pre.scoutSeen = (S.pre.scoutSeen || 0) + 1;
-          return "一周里他教了你三套打线的节奏。<b>操作 +0.4，运营 +0.2</b>，他回队后在群里提过你的名字。";
+          return `一周里他教了你三套打线的节奏。<b>${g1}，${g2}</b>，他回队后在群里提过你的名字。`;
         } },
         { t: "打完就散", g: "grind", e: () => {
-          S.attrs.操作 = Math.min(capOf("操作"), q1(S.attrs.操作 + 0.1));
-          return "两把之后你们再没排过。那两把你学到一点东西。操作 +0.1。";
+          const gt = gainTo("操作", 0.1);
+          return `两把之后你们再没排过。那两把你学到一点东西。${gt}。`;
         } }
       ]
     },
@@ -9031,9 +9044,9 @@ header.top.compact>.theme-top{display:none}
         } },
         { t: "回去考试", g: "grind", e: () => {
           addFat(-10);
-          S.attrs.心态 = Math.min(capOf("心态"), q1(S.attrs.心态 + 0.4));
+          const gt = gainTo("心态", 0.4);
           S.pre.rank = Math.max(0, S.pre.rank - 1.5);
-          return "考完试你歇了几天，手生了一点。<b>体能回了不少，心态 +0.4，段位 −1.5。</b>";
+          return `考完试你歇了几天，手生了一点。<b>体能回了不少，${gt}，段位 −1.5。</b>`;
         } }
       ]
     },
@@ -9049,9 +9062,9 @@ header.top.compact>.theme-top{display:none}
         { t: "去打一周", g: "grind", e: () => {
           addFat(6);
           tacAdd(2, "给二队当陪练");
-          S.attrs.运营 = Math.min(capOf("运营"), q1(S.attrs.运营 + 0.2));
+          const gt = gainTo("运营", 0.2);
           S.pre.scoutSeen = (S.pre.scoutSeen || 0) + 2;
-          return "一周里你被他们打了三十把，也看懂了他们怎么复盘。<b>战术素养 +2，运营 +0.2</b>，教练记住了你。";
+          return `一周里你被他们打了三十把，也看懂了他们怎么复盘。<b>战术素养 +2，${gt}</b>，教练记住了你。`;
         } },
         { t: "不去，自己冲分", g: "grind", e: () => "你觉得替人当靶子不划算。他们找了别人。" }
       ]
@@ -9092,8 +9105,8 @@ header.top.compact>.theme-top{display:none}
         } },
         { t: "退回去", g: "grind", e: () => {
           addFans(4);
-          S.attrs.心态 = Math.min(capOf("心态"), q1(S.attrs.心态 + 0.2));
-          return "你把东西退了回去，在直播里说了原因。<b>弹幕刷了一屏「有原则」。</b>人气 +4，心态 +0.2。";
+          const gt = gainTo("心态", 0.2);
+          return `你把东西退了回去，在直播里说了原因。<b>弹幕刷了一屏「有原则」。</b>人气 +4，${gt}。`;
         } }
       ]
     },
@@ -9127,13 +9140,13 @@ header.top.compact>.theme-top{display:none}
         { t: "solo", g: "hard", e: () => {
           const win = rnd() < 0.5 + (S.attrs.操作 - 55) * 0.012;
           if (win) {
-            S.attrs.操作 = Math.min(capOf("操作"), q1(S.attrs.操作 + 0.3));
+            const gw = gainTo("操作", 0.3);
             S.heat = (S.heat || 0) + 8;
-            return "你赢了。他的直播间刷了一屏问号。<b>操作 +0.3，热度 +8。</b>";
+            return `你赢了。他的直播间刷了一屏问号。<b>${gw}，热度 +8。</b>`;
           }
           S.attrs.心态 = Math.max(20, q1(S.attrs.心态 - 0.2));
-          S.attrs.操作 = Math.min(capOf("操作"), q1(S.attrs.操作 + 0.15));
-          return "你输了，输得不难看。<b>心态 −0.2，操作 +0.15</b>——输给强的人也是练。";
+          const gl = gainTo("操作", 0.15);
+          return `你输了，输得不难看。<b>心态 −0.2，${gl}</b>——输给强的人也是练。`;
         } },
         { t: "不理他", g: "grind", e: () => {
           S.heat = (S.heat || 0) + 3;
@@ -9173,8 +9186,8 @@ header.top.compact>.theme-top{display:none}
       a: [
         { t: "挑三场发过去", g: "grind", e: () => {
           S.pre.scoutSeen = (S.pre.scoutSeen || 0) + 2;
-          S.attrs.运营 = Math.min(capOf("运营"), q1(S.attrs.运营 + 0.2));
-          return "两天后他回了三条语音，全是挑毛病。<b>运营 +0.2</b>，他说「继续练，我在看」。";
+          const gt = gainTo("运营", 0.2);
+          return `两天后他回了三条语音，全是挑毛病。<b>${gt}</b>，他说「继续练，我在看」。`;
         } },
         { t: "没回", g: "hard", e: () => "你觉得还没到给人看的时候。他没再问。" }
       ]
@@ -9195,8 +9208,8 @@ header.top.compact>.theme-top{display:none}
           return "那晚你的直播间涌进来几千人。<b>人气 +14，热度 +14。</b>他说下次还找你。";
         } },
         { t: "想先把分打上去", g: "grind", e: () => {
-          S.attrs.心态 = Math.min(capOf("心态"), q1(S.attrs.心态 + 0.1));
-          return "你回了「下次」。他没生气。<b>心态 +0.1。</b>";
+          const gt = gainTo("心态", 0.1);
+          return `你回了「下次」。他没生气。<b>${gt}。</b>`;
         } }
       ]
     },
@@ -9218,8 +9231,8 @@ header.top.compact>.theme-top{display:none}
         { t: "承认，公开道歉", g: "grind", e: () => {
           S.heat = Math.max(0, (S.heat || 0) * 0.78);
           addTrustAll(-1);
-          S.attrs.心态 = Math.min(capOf("心态"), q1(S.attrs.心态 + 0.5));
-          return "你发了一段不长的声明。骂的人还是骂，但也有人说「敢认」。<b>热度掉两成，心态 +0.5——这事翻篇了。</b>";
+          const gt = gainTo("心态", 0.5);
+          return `你发了一段不长的声明。骂的人还是骂，但也有人说「敢认」。<b>热度掉两成，${gt}——这事翻篇了。</b>`;
         } }
       ]
     },
@@ -10536,14 +10549,15 @@ header.top.compact>.theme-top{display:none}
       if (!e || !r) return;
       if (!e.handover && (r.role === "扛旗" || r.role === "带人") && bondRoleCount(e, "被带") >= 1) {
         e.handover = key;
-        const give = Math.min(BOND_HANDOVER, Math.max(0, (p.r && p.r.指挥 || 50) - 30));
+        let give = Math.min(BOND_HANDOVER, Math.max(0, (p.r && p.r.指挥 || 50) - 30), Math.max(0, capOf("指挥") - S.attrs.指挥));
+        if (give < 0.05) give = 0;
         if (give > 0 && p.r) {
           p.r.指挥 = clamp(p.r.指挥 - give, 20, 99);
           S.attrs.指挥 = Math.min(capOf("指挥"), S.attrs.指挥 + give);
         }
         addTrust(p.id, 6);
         pushEvent(`赛段复盘的最后，<b>${p.id}</b> 把开麦指挥的位置让了出来：「以后这几个球你来喊。」<br>
-        <span style="color:var(--cyan)">你的指挥 +${give.toFixed(1)}，他的指挥 −${give.toFixed(1)}。</span>
+        <span style="color:var(--cyan)">${give > 0 ? `你的指挥 +${give.toFixed(1)}，他的指挥 −${give.toFixed(1)}。` : `你的指挥已经到上限——他不用再让出什么，喊的人换成了你。`}</span>
         <span style="color:var(--ink-3)">${BOND_ROLE_TXT[r.role]}</span>`, "big", "更衣室");
       }
       if (!e.passed && r.role === "被带飞" && bondRoleCount(e, "带人") >= 1) {
@@ -10624,13 +10638,17 @@ header.top.compact>.theme-top{display:none}
     let line = "";
     if (A.self > 0) {
       const d = r.role === "带人" || r.role === "扛旗" ? "心态" : bondTopDim(p);
+      const b0 = S.attrs[d];
       S.attrs[d] = Math.min(capOf(d), S.attrs[d] + A.self);
-      line += `你的${d} +${A.self.toFixed(2)}`;
+      const got = S.attrs[d] - b0;
+      line += got >= 5e-3 ? `你的${d} +${got.toFixed(2)}` : `你的${d}已经到上限`;
     }
     if (A.mate > 0 && p.r && p.ceil !== void 0 && ovrOf(p) < p.ceil) {
       const d = bondTopDim(p, true);
+      const m0 = p.r[d];
       p.r[d] = clamp(p.r[d] + A.mate, 20, Math.min(99, p.ceil + 2));
-      line += `${line ? "，" : ""}${p.id} 的${d} +${A.mate.toFixed(2)}`;
+      const mg = p.r[d] - m0;
+      line += `${line ? "，" : ""}${p.id} 的${d} ${mg >= 5e-3 ? `+${mg.toFixed(2)}` : "已经到顶"}`;
     }
     addTrust(id, A.trust);
     if (A.rel) {
@@ -16051,6 +16069,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260910f", at: "2026-09-10", items: [
+      "<b>数值到顶之后，游戏不再当成「还会涨」</b>（上一版排查出来的同类问题，三条一起修）：① <b>队友接班让出指挥</b>——你的指挥已经到上限时，原来你一分没涨、他照样掉 1.5，事件还写「你的指挥 +1.5」；现在他让出的不超过你还能涨的，到顶就只换人喊，不白掉数。② <b>满体能还能花钱放松</b>——按摩、理疗、度假在体能满格时照样能买、照样扣钱，提示写「体力 +30」实际 +0；现在满体能时这三项按钮变灰（火锅还补信任和关系，照卖），卡面和提示按「此刻真正能回多少」写，体能快满时不再按满额写。③ <b>属性到上限还写「+x」</b>——战队卡（战术复盘、看录像、队友双排）、找人聊聊、职业前的随机事件和行动卡，到上限时改写「已到上限」，只涨了一截就写那一截。职业前的网吧开黑、换个游戏、看职业录像、休息四张卡原来还漏乘了职业前节奏 ×1.5（写「运营 +0.18」实际涨 0.27），一并改成真实的数。只有第①条会动数值，其余都是写法"
+    ] },
     { v: "v20260910e", at: "2026-09-10", items: [
       "<b>上限到 99 之后不再弹「破瓶颈」</b>（玩家实锤：「操作瓶颈满了 99，还出发和教练一起破瓶颈的剧情」）：99 是所有维度的硬顶，可突破试炼只看「顶没顶到当前上限」、不看这个上限是不是已经 99——于是 99 的操作照样被教练留下加练，过关还写「上限 99.0 → 99.0」，悄悄吃掉突破池。同一个漏洞还在四处：每周的「冲击操作瓶颈」判定、练操作按钮、属性卡上的「怎么破」、夺冠这类里程碑的突破提示。现在全部问同一个判断：到 99 就不开试炼、不再算在冲击、按钮和属性卡写明「已经到 99」，里程碑撞上 99 只说一句「已经到顶」。老存档里已经开着或排着队的这类试炼一并作废",
       "<b>同类的两处一起修</b>：① 突破试炼过关给的是里程碑池的「天花板 +1」——拿过几座冠军、心态 / 指挥的里程碑池已经满了的人，试炼照样开，过关却只弹「瓶颈已在极限」。现在池子付不出这一格就不开。② 运营的机械路径到头（到 99 或刷满）之后，「战术复盘」「看录像」卡上还写着「攒运营突破」，现在不写了。突破弹窗里的「+x」也改成上限实际涨了多少（原来写的是池子涨了多少，贴着 99 时比实际多）。这几处都不改任何数值：普通 / 强玩家各 120 局批测与修复前逐字节一致"
@@ -19153,8 +19174,21 @@ header.top.compact>.theme-top{display:none}
       `<i class="up">+${Math.round(inc)}</i>万`
     ]);
   }
+  function preAttrTxt(d, n) {
+    const v = n * PRE_PACE;
+    if (v < 0) return `${d} −${+(-v).toFixed(2)}`;
+    const room = Math.max(0, capOf(d) - (S.attrs && S.attrs[d] || 0));
+    return room < 5e-3 ? `${d}已到上限` : `${d} +${+Math.min(v, room).toFixed(2)}`;
+  }
+  function preTacTxt(n) {
+    const cap5 = S.career ? 60 : 40, room = Math.max(0, cap5 - tacOf()), v = n * PRE_PACE;
+    return room < 0.05 ? "战术素养已到上限" : `战术素养 +${+Math.min(v, room).toFixed(2)}`;
+  }
   function costRest() {
-    if (_isPre()) return costBits([_eUp(18), `心态<i class="up">+0.3</i>`]);
+    if (_isPre()) {
+      const t = preAttrTxt("心态", 0.3);
+      return costBits([_eUp(18), t.replace(/ ([+][0-9.]+)$/, '<i class="up">$1</i>')]);
+    }
     const base = (S.buff && S.buff.physio ? -23 : -17) * (S.bg && S.bg.rest || 1) * _prepMul();
     const rehab = S.assets && S.assets.rehab ? -4.5 * _prepMul() : 0;
     const v = -(base + rehab) * traitMul("rest") * cerRecMul();
@@ -21528,11 +21562,11 @@ header.top.compact>.theme-top{display:none}
       <button class="act" data-pre="boost" ${P.ap < apCost("boost") ? 'disabled style="opacity:.34"' : ""} title="来钱快；手会糙、心会累，接多了会留下记录">
         <div class="t">接代练 ${apTag("boost")}</div><div class="d">到手约 <b>${Math.round(3 + P.rank * 0.06)} 万</b> · ${N("心态 −0.15 · 疲劳 +8", "手会糙、心会累")}${S.flags && S.flags.boostN ? `　<span style="color:var(--ink-3)">已接 ${S.flags.boostN} 单</span>` : ""}</div></button>
       <button class="act" data-pre="cafe" ${P.ap < apCost("cafe") ? 'disabled style="opacity:.34"' : ""} title="清疲劳、稳心态；有车队的话默契一起涨">
-        <div class="t">网吧开黑 ${apTag("cafe")}</div><div class="d">${N("疲劳 −8 · 心态 +0.25 · 人气小涨", "清疲劳、稳心态、人气小涨")}${P.mates && P.mates.length ? " · 车队默契一起涨" : ""}</div></button>
+        <div class="t">网吧开黑 ${apTag("cafe")}</div><div class="d">${N(`疲劳 −8 · ${preAttrTxt("心态", 0.25)} · 人气小涨`, "清疲劳、稳心态、人气小涨")}${P.mates && P.mates.length ? " · 车队默契一起涨" : ""}</div></button>
       <button class="act" data-pre="chill" ${P.ap < apCost("chill") ? 'disabled style="opacity:.34"' : ""} title="疲劳掉得最快，但手感会生一点">
-        <div class="t">换个游戏 ${apTag("chill")}</div><div class="d">${N("疲劳 −12 · 心态 +0.2 · 操作 −0.08", "疲劳掉得最快，手感生一点")}</div></button>
+        <div class="t">换个游戏 ${apTag("chill")}</div><div class="d">${N(`疲劳 −12 · ${preAttrTxt("心态", 0.2)} · ${preAttrTxt("操作", -0.08)}`, "疲劳掉得最快，手感生一点")}</div></button>
       <button class="act" data-pre="watch" ${P.ap < apCost("watch") ? 'disabled style="opacity:.34"' : ""} title="运营和指挥的便宜课">
-        <div class="t">看职业录像 ${apTag("watch")}</div><div class="d">${N("运营 +0.18 · 指挥 +0.18 · 战术素养 +0.3", "运营和指挥的便宜课，战术素养也涨")}</div></button>
+        <div class="t">看职业录像 ${apTag("watch")}</div><div class="d">${N(`${preAttrTxt("运营", 0.18)} · ${preAttrTxt("指挥", 0.18)} · ${preTacTxt(0.3)}`, "运营和指挥的便宜课，战术素养也涨")}</div></button>
     </div>
     ${routineBar()}
     ${S.pre.mates && S.pre.mates.length && true ? squadActs() : `<h3 style="font-size:13px;color:var(--ink-3);margin:16px 0 8px">战队<span class="tag">未解锁</span></h3>

@@ -301,14 +301,16 @@ export function bondMoments(R){
     // ① 接班：之前被他带过，这个赛段第一次反过来
     if(!e.handover&&(r.role==="扛旗"||r.role==="带人")&&bondRoleCount(e,"被带")>=1){
       e.handover=key;
-      const give=Math.min(BOND_HANDOVER,Math.max(0,(p.r&&p.r.指挥||50)-30));
+      // 让出的不超过你还能涨的：你的指挥已经到上限，他就不该白掉（2026-09-10 同类排查，作者批）
+      let give=Math.min(BOND_HANDOVER,Math.max(0,(p.r&&p.r.指挥||50)-30),Math.max(0,capOf("指挥")-S.attrs.指挥));
+      if(give<0.05) give=0;
       if(give>0&&p.r){
         p.r.指挥=clamp(p.r.指挥-give,20,99);
         S.attrs.指挥=Math.min(capOf("指挥"),S.attrs.指挥+give);
       }
       addTrust(p.id,6);
       pushEvent(`赛段复盘的最后，<b>${p.id}</b> 把开麦指挥的位置让了出来：「以后这几个球你来喊。」<br>
-        <span style="color:var(--cyan)">你的指挥 +${give.toFixed(1)}，他的指挥 −${give.toFixed(1)}。</span>
+        <span style="color:var(--cyan)">${give>0?`你的指挥 +${give.toFixed(1)}，他的指挥 −${give.toFixed(1)}。`:`你的指挥已经到上限——他不用再让出什么，喊的人换成了你。`}</span>
         <span style="color:var(--ink-3)">${BOND_ROLE_TXT[r.role]}</span>`,"big","更衣室");
     }
     // ③ 他超过你了：你带过他，这个赛段他第一次压过你
@@ -409,8 +411,10 @@ export function doBondTalk(id){
   let line="";
   if(A.self>0){
     const d=(r.role==="带人"||r.role==="扛旗")?"心态":bondTopDim(p);
+    const b0=S.attrs[d];
     S.attrs[d]=Math.min(capOf(d),S.attrs[d]+A.self);
-    line+=`你的${d} +${A.self.toFixed(2)}`;
+    const got=S.attrs[d]-b0;   // 到上限写实话，不写一个涨不上去的数
+    line+=got>=0.005?`你的${d} +${got.toFixed(2)}`:`你的${d}已经到上限`;
   }
   if(A.mate>0&&p.r&&p.ceil!==undefined&&ovrOf(p)<p.ceil){
     /* 队友的成长封在他自己的天花板里，而且**只有带着 ceil 的人**才教得动——
@@ -419,8 +423,10 @@ export function doBondTalk(id){
        联赛里那些成名选手不会因为你陪他复盘而突破自己的上限。
        世界的水位不该被玩家的行动点抬高——这是难度不被这条通道推走的第一道闸。 */
     const d=bondTopDim(p,true);
+    const m0=p.r[d];
     p.r[d]=clamp(p.r[d]+A.mate,20,Math.min(99,p.ceil+2));
-    line+=`${line?"，":""}${p.id} 的${d} +${A.mate.toFixed(2)}`;
+    const mg=p.r[d]-m0;
+    line+=`${line?"，":""}${p.id} 的${d} ${mg>=0.005?`+${mg.toFixed(2)}`:"已经到顶"}`;
   }
   addTrust(id,A.trust);
   // 只动和他有关的那几对（五人队里是四对），不是全队十对——见 BOND_TALK 上面那段

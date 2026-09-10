@@ -127,6 +127,9 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260910f", at:"2026-09-10", items:[
+    "<b>数值到顶之后，游戏不再当成「还会涨」</b>（上一版排查出来的同类问题，三条一起修）：① <b>队友接班让出指挥</b>——你的指挥已经到上限时，原来你一分没涨、他照样掉 1.5，事件还写「你的指挥 +1.5」；现在他让出的不超过你还能涨的，到顶就只换人喊，不白掉数。② <b>满体能还能花钱放松</b>——按摩、理疗、度假在体能满格时照样能买、照样扣钱，提示写「体力 +30」实际 +0；现在满体能时这三项按钮变灰（火锅还补信任和关系，照卖），卡面和提示按「此刻真正能回多少」写，体能快满时不再按满额写。③ <b>属性到上限还写「+x」</b>——战队卡（战术复盘、看录像、队友双排）、找人聊聊、职业前的随机事件和行动卡，到上限时改写「已到上限」，只涨了一截就写那一截。职业前的网吧开黑、换个游戏、看职业录像、休息四张卡原来还漏乘了职业前节奏 ×1.5（写「运营 +0.18」实际涨 0.27），一并改成真实的数。只有第①条会动数值，其余都是写法"
+  ]},
   {v:"v20260910e", at:"2026-09-10", items:[
     "<b>上限到 99 之后不再弹「破瓶颈」</b>（玩家实锤：「操作瓶颈满了 99，还出发和教练一起破瓶颈的剧情」）：99 是所有维度的硬顶，可突破试炼只看「顶没顶到当前上限」、不看这个上限是不是已经 99——于是 99 的操作照样被教练留下加练，过关还写「上限 99.0 → 99.0」，悄悄吃掉突破池。同一个漏洞还在四处：每周的「冲击操作瓶颈」判定、练操作按钮、属性卡上的「怎么破」、夺冠这类里程碑的突破提示。现在全部问同一个判断：到 99 就不开试炼、不再算在冲击、按钮和属性卡写明「已经到 99」，里程碑撞上 99 只说一句「已经到顶」。老存档里已经开着或排着队的这类试炼一并作废",
     "<b>同类的两处一起修</b>：① 突破试炼过关给的是里程碑池的「天花板 +1」——拿过几座冠军、心态 / 指挥的里程碑池已经满了的人，试炼照样开，过关却只弹「瓶颈已在极限」。现在池子付不出这一格就不开。② 运营的机械路径到头（到 99 或刷满）之后，「战术复盘」「看录像」卡上还写着「攒运营突破」，现在不写了。突破弹窗里的「+x」也改成上限实际涨了多少（原来写的是池子涨了多少，贴着 99 时比实际多）。这几处都不改任何数值：普通 / 强玩家各 120 局批测与修复前逐字节一致"
@@ -3306,8 +3309,21 @@ export function costStream(){
     `热度<i class="up">+${streamFansRaw().toFixed(1)}</i>`,
     `<i class="up">+${Math.round(inc)}</i>万`]);
 }
+/* 职业前卡面上的属性收益写真正拿到的数（2026-09-10 同类排查，作者批）：原来写的是基础值——漏了职业前节奏 ×PRE_PACE
+   （写「运营 +0.18」实际涨 0.27），到上限时还照写。现在按节奏算、封在上限里，到顶写「已到上限」 */
+export function preAttrTxt(d,n){
+  const v=n*PRE_PACE;
+  if(v<0) return `${d} −${+(-v).toFixed(2)}`;
+  const room=Math.max(0,capOf(d)-((S.attrs&&S.attrs[d])||0));
+  return room<0.005?`${d}已到上限`:`${d} +${+Math.min(v,room).toFixed(2)}`;
+}
+/* 战术素养同理：职业前封顶 40、职业后 60（tacAdd） */
+export function preTacTxt(n){
+  const cap=S.career?60:40, room=Math.max(0,cap-tacOf()), v=n*PRE_PACE;
+  return room<0.05?"战术素养已到上限":`战术素养 +${+Math.min(v,room).toFixed(2)}`;
+}
 export function costRest(){
-  if(_isPre()) return costBits([_eUp(18), `心态<i class="up">+0.3</i>`]);
+  if(_isPre()){ const t=preAttrTxt("心态",0.3); return costBits([_eUp(18), t.replace(/ ([+][0-9.]+)$/,'<i class="up">$1</i>')]); }
   // 和 restOnce 同一套账：劳模 ×0.88、出征仪式的恢复倍率、私人康复室的 4.5——卡面写的必须是真正回的数（玩家实锤 2026-09-10）
   const base=((S.buff&&S.buff.physio)?-23:-17)*((S.bg&&S.bg.rest)||1)*_prepMul();
   const rehab=(S.assets&&S.assets.rehab)?-4.5*_prepMul():0;
@@ -5693,11 +5709,11 @@ export function actPanelPre(){
       <button class="act" data-pre="boost" ${P.ap<apCost("boost")?'disabled style="opacity:.34"':''} title="来钱快；手会糙、心会累，接多了会留下记录">
         <div class="t">接代练 ${apTag("boost")}</div><div class="d">到手约 <b>${Math.round(3+P.rank*0.06)} 万</b> · ${N("心态 −0.15 · 疲劳 +8","手会糙、心会累")}${(S.flags&&S.flags.boostN)?`　<span style="color:var(--ink-3)">已接 ${S.flags.boostN} 单</span>`:""}</div></button>
       <button class="act" data-pre="cafe" ${P.ap<apCost("cafe")?'disabled style="opacity:.34"':''} title="清疲劳、稳心态；有车队的话默契一起涨">
-        <div class="t">网吧开黑 ${apTag("cafe")}</div><div class="d">${N("疲劳 −8 · 心态 +0.25 · 人气小涨","清疲劳、稳心态、人气小涨")}${P.mates&&P.mates.length?" · 车队默契一起涨":""}</div></button>
+        <div class="t">网吧开黑 ${apTag("cafe")}</div><div class="d">${N(`疲劳 −8 · ${preAttrTxt("心态",0.25)} · 人气小涨`,"清疲劳、稳心态、人气小涨")}${P.mates&&P.mates.length?" · 车队默契一起涨":""}</div></button>
       <button class="act" data-pre="chill" ${P.ap<apCost("chill")?'disabled style="opacity:.34"':''} title="疲劳掉得最快，但手感会生一点">
-        <div class="t">换个游戏 ${apTag("chill")}</div><div class="d">${N("疲劳 −12 · 心态 +0.2 · 操作 −0.08","疲劳掉得最快，手感生一点")}</div></button>
+        <div class="t">换个游戏 ${apTag("chill")}</div><div class="d">${N(`疲劳 −12 · ${preAttrTxt("心态",0.2)} · ${preAttrTxt("操作",-0.08)}`,"疲劳掉得最快，手感生一点")}</div></button>
       <button class="act" data-pre="watch" ${P.ap<apCost("watch")?'disabled style="opacity:.34"':''} title="运营和指挥的便宜课">
-        <div class="t">看职业录像 ${apTag("watch")}</div><div class="d">${N("运营 +0.18 · 指挥 +0.18 · 战术素养 +0.3","运营和指挥的便宜课，战术素养也涨")}</div></button>
+        <div class="t">看职业录像 ${apTag("watch")}</div><div class="d">${N(`${preAttrTxt("运营",0.18)} · ${preAttrTxt("指挥",0.18)} · ${preTacTxt(0.3)}`,"运营和指挥的便宜课，战术素养也涨")}</div></button>
     </div>
     ${routineBar()}
     ${(S.pre.mates&&S.pre.mates.length&&true)?squadActs()

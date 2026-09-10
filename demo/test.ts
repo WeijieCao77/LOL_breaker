@@ -1854,6 +1854,59 @@ try {
   S.capBonus.运营 = A.CAP_MECH_MAX;
   if (vod.sum().includes("攒运营突破") || film.sum().includes("攒运营突破")) bad.push("战队卡：运营机械路径已刷满，战术复盘 / 看录像还写「攒运营突破」");
 } catch (e: any) { bad.push("突破试炼池满 / 攒突破卡面测试抛异常：" + (e && e.message)); }
+/* 到顶类（2026-09-10 作者批三条）：接班让出的指挥不超过你能涨的；满体能不卖纯回体力的放松、按实际能回的写；
+   属性到上限时战队卡 / 找人聊聊 / 职业前事件不写涨不上去的「+x」 */
+try {
+  const bs = readText(HERE, "src", "bond.ts");
+  if (!/let give=Math\.min\(BOND_HANDOVER,[^;]*capOf\("指挥"\)-S\.attrs\.指挥/.test(bs)) bad.push("接班：队友让出的指挥没有按你还能涨的空间封顶");
+  if (!bs.includes("你的${d}已经到上限")) bad.push("找人聊聊：属性到上限时没有改写成「已经到上限」");
+  A.screenCreate(15); let S = A.S();
+  S.name = "T"; S.pos = "mid"; S.ageIdx = 1; S.bgPick = S.bgOffer[0].k; S.origin = S.bgOffer[0].origin;
+  S.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+  A.startPre(); S = A.S();
+  // 放松
+  S.money = 999; S.fatigue = 0; S.events = [];
+  const m0 = S.money; A.buyRelax("massage");
+  if (S.money !== m0) bad.push("放松：体能是满的，按摩还收了钱");
+  if (!/体力已满/.test(A.shopCard())) bad.push("放松：满体能时卡面没写「体力已满」");
+  S.fatigue = 10; const trip = A.RELAX.find((r: any) => r.k === "trip");
+  if (A.relaxFatNow(trip) !== 10) bad.push(`放松：疲劳只剩 10，度假应写能回 10，却写 ${A.relaxFatNow(trip)}`);
+  const f1 = S.fatigue; A.buyRelax("trip");
+  if (Math.abs((f1 - S.fatigue) - 10) > 0.01) bad.push("放松：疲劳 10 时度假实际回的不是 10");
+  // 战队卡
+  A.DIMS.forEach((d: string) => { S.attrs[d] = A.capOf(d); });
+  const vod: any = A.SQUAD_ACTS.find((a: any) => a.k === "vod"), duo: any = A.SQUAD_ACTS.find((a: any) => a.k === "duo");
+  if (vod.sum().some((x: string) => /运营 \+/.test(x)) || !vod.sum().includes("运营已到上限")) bad.push("战队卡：运营已到上限，战术复盘还写「运营 +0.35」");
+  if (duo.sum().some((x: string) => /操作 \+/.test(x))) bad.push("战队卡：操作已到上限，队友双排还写「操作 +0.14」");
+  S.attrs.运营 = A.capOf("运营") - 1;
+  if (!vod.sum().includes("运营 +0.35")) bad.push("战队卡：运营没到上限，战术复盘却不写 +0.35");
+  // 职业前事件
+  S.attrs.心态 = A.capOf("心态");
+  const ev: any = A.RANDOM_EVENTS.find((x: any) => (x.a || []).some((o: any) => o.t === "拉黑，继续打"));
+  const txt = ev.a.find((o: any) => o.t === "拉黑，继续打").e();
+  if (/心态 \+0\.3/.test(txt) || !/心态已到上限/.test(txt)) bad.push("随机事件：心态已到上限，结果还写「心态 +0.3」：" + txt);
+  S.attrs.心态 = A.capOf("心态") - 2;
+  const txt2 = ev.a.find((o: any) => o.t === "拉黑，继续打").e();
+  if (!/心态 \+0\.3/.test(txt2)) bad.push("随机事件：心态没到上限，结果却不写「心态 +0.3」：" + txt2);
+} catch (e: any) { bad.push("到顶类（放松 / 卡面 / 事件）测试抛异常：" + (e && e.message)); }
+/* 职业前行动卡（2026-09-10）：属性收益写真正拿到的数（含职业前节奏 ×PRE_PACE），到上限写「已到上限」 */
+try {
+  A.screenCreate(16); let S = A.S();
+  S.name = "T"; S.pos = "mid"; S.ageIdx = 1; S.bgPick = S.bgOffer[0].k; S.origin = S.bgOffer[0].origin;
+  S.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+  A.startPre(); S = A.S();
+  S.attrs.运营 = A.capOf("运营") - 5;
+  const want = +(0.18 * A.PRE_PACE).toFixed(2);
+  if (A.preAttrTxt("运营", 0.18) !== `运营 +${want}`) bad.push(`职业前卡面：看职业录像应写运营 +${want}（含职业前节奏），却写 ${A.preAttrTxt("运营", 0.18)}`);
+  S.attrs.运营 = A.capOf("运营");
+  if (A.preAttrTxt("运营", 0.18) !== "运营已到上限") bad.push("职业前卡面：运营到上限还写 +x：" + A.preAttrTxt("运营", 0.18));
+  const numWas = A.uiNum(); A.uiSetNum(true);
+  S.attrs.心态 = A.capOf("心态");
+  const pv = A.viewPre(), rest = A.costRest();
+  A.uiSetNum(numWas);
+  if (/心态 \+0\.2/.test(pv) || !/心态已到上限/.test(pv)) bad.push("职业前卡面：心态到上限，网吧开黑 / 换个游戏还写心态 +x");
+  if (/心态<i class="up">\+/.test(rest) || !/心态已到上限/.test(rest)) bad.push("职业前休息卡：心态到上限还写 +0.3：" + rest);
+} catch (e: any) { bad.push("职业前卡面测试抛异常：" + (e && e.message)); }
 if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }
   console.log("自检通过");
 }
