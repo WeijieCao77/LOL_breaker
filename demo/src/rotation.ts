@@ -1,8 +1,8 @@
 import { checkAch } from "./achieve";
-import { addStaff } from "./clout";
+import { addStaff, relKey } from "./clout";
 import { myFormMul } from "./form";
-import { pw } from "./intl";
-import { COMP_RED, DIMS, POSN, SEASONS, SPLITS, WEEKS, addFat, apCost, apTag, avg, capOf, clamp, gain, makeRookie, myRoster, myTeam, power, pushEvent, pwShow, q1, render, starterComp } from "./main";
+import { findTeam, pw } from "./intl";
+import { COMP_RED, DIMS, POSN, SEASONS, SPLITS, WEEKS, addFat, apCost, apTag, avg, capOf, clamp, gain, makeRookie, myRoster, myTeam, ovrOf, power, pushEvent, pwShow, q1, render, starterComp } from "./main";
 import { rnd } from "./rng";
 import { teamLogo } from "./rankicon";
 import { gearBonus } from "./shop";
@@ -26,7 +26,7 @@ import { addTrustAll } from "./team";
      成功率看你那一维和他那一维的差距）。赢了攒「轮换资本」，攒到 3 教练给你
      一场正赛试用——赢了首发就是你的，输了回替补席，资本减半再来。
      训练赛战绩也会流出去：表现分里算一份，替补也能被人看见。
-   · 队友伤病：每周每人 0.4%（27 岁以上略高），一次只倒一个，1–3 周。
+   · 队友伤病：每周每人 0.4%（27 岁以上略高），一次只倒一个，1–3 周；≥2 周真换人（benchSub）。
      倒下的那个人上场要打折扣；倒的正好是你对位的首发，你就顶上——
      顶上期间赢一场，位置就是你的了。                                   */
 
@@ -391,6 +391,44 @@ export const MATE_INJ=[
   {n:"手腕劳损",weeks:[1,3],w:4},{n:"腰伤",weeks:[1,2],w:3},
   {n:"急性肠胃炎",weeks:[1,1],w:3},{n:"状态问题需要休整",weeks:[2,3],w:2}
 ];
+/* ---------- 真替补席（玩家实锤 2026-09-10：「队友伤病后还是会上场打比赛，但措辞已经明确说他伤退了」）----------
+   原来伤停只是给那个位置扣 5.5 战力，名单、赛后数据里伤员照打。现在伤停 ≥2 周就真的换人：
+   从二队（LDL）挑同位置最强的顶上首发——名单、战力、赛后全员表都是他；伤愈再换回去。
+   外赛区没有二队，就临时从青训招一个（比一队平均低一档）。带伤上（1 周）照旧不换人、照旧打折。
+   老存档里没有 sub 字段的伤停按老规矩走。 */
+export function benchSub(pos,t){
+  try{
+    const ld=(S.world&&S.world.LDL||[]).find(x=>x.parent===t.name);
+    const cand=ld?(ld.players||[]).filter(q=>q&&q.pos===pos&&!q.me&&q.r):[];
+    if(cand.length){
+      const q=cand.slice().sort((a,b)=>ovrOf(b)-ovrOf(a))[0];
+      return {id:q.id,cn:q.cn||"",pos,age:q.age||19,r:Object.assign({},q.r),form:q.form,lg:q.lg||(S.homeLeague||"LPL"),
+              rookie:true,debutSi:q.debutSi,sub:true};
+    }
+    const mates=t.players.filter(q=>q&&!q.me&&q.r);
+    const lvl=Math.round(mates.length?avg(mates.map(q=>ovrOf(q))):60)-7;
+    const nr: any=makeRookie(pos,lvl,S.homeLeague||"LPL"); nr.sub=true; nr.fresh=true; return nr;
+  }catch(e){ return null; }
+}
+/* 替补进出只动他自己的账（第一版调 syncTrust / syncRelations：它们只留当前名单，伤员一下名单，
+   多年攒的信任和关系对子全被删、伤愈回来按新人 38–51 重建——40 局批测强玩家 MSI 冠军率 47.5% → 20%）。 */
+function subJoin(id,orig){
+  try{
+    // 信任和关系直接沿用伤员的账（全队围着这个小将排战术）：更衣室数值和老模型逐项相同，也不动随机序列。
+    // 第一版按新人 46–53 / 38–51 起步：120 局批测冠军数仍比不换人低 0.2–0.3 座，就是这两个池子在漏
+    const oid=orig&&orig.id;
+    if(S.trust&&S.trust[id]===undefined) S.trust[id]=(oid&&S.trust[oid]!==undefined)?S.trust[oid]:50;
+    if(S.rel){ myRoster().filter(q=>q&&!q.me&&q.id!==id).forEach(q=>{
+      const k=relKey(id,q.id); if(S.rel[k]!==undefined) return;
+      const ko=oid?relKey(oid,q.id):null; S.rel[k]=(ko&&S.rel[ko]!==undefined)?S.rel[ko]:50; }); }
+  }catch(e){}
+}
+function subLeave(id){
+  try{
+    if(S.trust) delete S.trust[id];
+    if(S.rel) Object.keys(S.rel).forEach(k=>{ const [a,b]=k.split("|"); if(a===id||b===id) delete S.rel[k]; });
+  }catch(e){}
+}
 export function mateInjuryRoll(){
   if(!S.career||!S.team||S.mateInjury) return;
   const t=myTeam(); if(!t) return;
@@ -409,6 +447,15 @@ export function mateInjuryRoll(){
         pushEvent(`<b>${p.id}</b> ${inj.n}，预计缺席 <b>${wk} 周</b>。教练把你写进了名单：<b>这 ${wk} 周里赢一场，位置就是你的。</b>`,"big","伤病");
       else pushEvent(`<b>${p.id}</b> ${inj.n}，预计缺席 <b>${wk} 周</b>。`,"bad","伤病");
     }else{
+      const sub=(wk>=2)?benchSub(p.pos,t):null;
+      if(sub){
+        const idx=t.players.indexOf(p);
+        if(idx>=0) t.players[idx]=sub;
+        S.mateInjury.sub={id:sub.id,team:t.name,orig:p};
+        subJoin(sub.id,p);
+        pushEvent(`队友 <b>${p.id}</b>（${POSN[p.pos]||p.pos}）${inj.n}，预计缺席 <b>${wk} 周</b>。二队的 <b>${sub.id}</b> 顶上首发${
+          sub.fresh?"——青训里临时招上来的":""}。`,"bad","伤病");
+      } else
       pushEvent(`队友 <b>${p.id}</b>（${POSN[p.pos]||p.pos}）${inj.n}，预计缺席 <b>${wk} 周</b>。${
         wk>=2?"二队的人顶上来，战力要打折扣。":"这周带伤上，发挥要打折扣。"}`,"bad","伤病");
     }
@@ -419,7 +466,13 @@ export function mateInjuryTick(){
   const I=S.mateInjury; if(!I) return;
   I.left--;
   if(I.left<=0){
-    pushEvent(`<b>${I.id}</b> 伤愈归队。`,"good","伤病");
+    // 真替补席：顶上的人回二队，伤员回名单（按受伤时的队找，中途转会也不会把人塞进新队）
+    if(I.sub&&I.sub.orig){
+      const t=findTeam(I.sub.team);
+      if(t){ const i=t.players.findIndex(q=>q&&q.id===I.sub.id); if(i>=0) t.players[i]=I.sub.orig; }
+      subLeave(I.sub.id);
+      pushEvent(`<b>${I.id}</b> 伤愈归队，<b>${I.sub.id}</b> 回二队。`,"good","伤病");
+    } else pushEvent(`<b>${I.id}</b> 伤愈归队。`,"good","伤病");
     S.mateInjury=null;
     // 顶上期间没赢下来：他回来了，你回替补席
     if(S.scrim&&S.scrim.trial&&S.scrim.trial.injury&&!S.promoted){
@@ -429,17 +482,31 @@ export function mateInjuryTick(){
     }
   }
 }
-/* 战力折扣：受伤的队友在名单上就是带伤/替补顶上 */
+/* 战力折扣：受伤的队友在名单上就是带伤/替补顶上。
+   真替补席之后战力口径不变（作者的平衡基线是「那个位置 −5.5」）：顶上来的人在战力里按「伤员 − 5.5」算，
+   赛后全员表按他自己的真实水平合成——赢面和原来一样，账面上二队小将的数据会难看。
+   第一版让他按真实水平进战力：40 局批测强玩家 MSI 冠军率 47.5% → 20%，一次伤停把整支队砸穿了，压回来 */
+/* 战力公式里替补整个人按伤员的五维算（powerCore / squad 的 r 走这里），再吃 −5.5：
+   和老模型逐项相同，赢面一分不动。赛后全员表不走这里，按他自己的真实水平合成。 */
+export function subProxyR(p){
+  const I=S.mateInjury;
+  return (I&&I.sub&&p&&!p.me&&p.id===I.sub.id&&I.sub.orig&&I.sub.orig.r)?I.sub.orig.r:null;
+}
 export function mateInjuryHit(p){
-  const I=S.mateInjury; if(!I||!p||p.me||p.id!==I.id) return 0;
+  const I=S.mateInjury; if(!I||!p||p.me) return 0;
+  if(I.sub&&p.id===I.sub.id) return -5.5;
+  if(p.id!==I.id) return 0;
   return -5.5;
 }
 export function mateInjuryTag(p){
-  const I=S.mateInjury; if(!I||!p||p.id!==I.id) return "";
+  const I=S.mateInjury; if(!I||!p) return "";
+  if(I.sub&&p.id===I.sub.id) return `<span class="tag" title="顶替伤停的 ${I.id}，还有 ${I.left} 周">替</span>`;
+  if(p.id!==I.id) return "";
   return `<span class="tag l" title="${I.n} · 还有 ${I.left} 周">伤 ${I.left}周</span>`;
 }
 export function mateInjuryNote(){
   const I=S.mateInjury; if(!I) return "";
+  if(I.sub) return `<p class="note" style="color:var(--red);margin-top:6px"><b>${I.id}</b>（${POSN[I.pos]||I.pos}）${I.n}，还要 <b>${I.left} 周</b>——二队的 <b>${I.sub.id}</b> 顶上首发，伤愈换回。</p>`;
   return `<p class="note" style="color:var(--red);margin-top:6px"><b>${I.id}</b>（${POSN[I.pos]||I.pos}）${I.n}，还要 <b>${I.left} 周</b>——这段时间他那个位置的战力打折扣。</p>`;
 }
 

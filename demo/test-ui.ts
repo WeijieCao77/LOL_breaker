@@ -189,9 +189,13 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
     // 节流窗内的最后一步不能丢（2026-09-10 玩家实锤：回满体能后误触地址栏，回来体能条只剩 50 多）
     {
       const S = P.S();
-      S.fatigue = 45; P.render(); await tick(1600); P.render();          // 体能 55 稳稳落盘
+      // 基线：体能 55 稳稳落盘。上一段的仪式小游戏收尾有定时器，机器忙的时候 render() 可能还在被小游戏挡着（mgLive），
+      // 所以多试几轮，等它真的存进去再往下走——测的是节流窗，不是上一段的收尾速度
+      let b0: any = null;
+      for (let i = 0; i < 6; i++) { S.fatigue = 45; P.render(); await tick(1600); P.render(); b0 = P.readSave(); if (b0 && b0.S && b0.S.fatigue === 45) break; await tick(400); }
+      if (!b0 || b0.S.fatigue !== 45) bad.push("拖尾存档：测试基线不对，存档体力=" + (b0 && b0.S.fatigue));
       S.fatigue = 0; P.render();                                          // 1.5 秒内回满：这一次被节流
-      const b0 = P.readSave(); if (!b0 || b0.S.fatigue !== 45) bad.push("拖尾存档：测试基线不对，存档体力=" + (b0 && b0.S.fatigue));
+      b0 = P.readSave(); if (!b0 || b0.S.fatigue !== 45) bad.push("拖尾存档：节流窗内的重画不该立刻存，存档体力=" + (b0 && b0.S.fatigue));
       await tick(1700);
       const b1 = P.readSave(); if (!b1 || b1.S.fatigue !== 0) bad.push("拖尾存档：节流窗内的改动没有补存，重载会回到旧体能（存档 fatigue=" + (b1 && b1.S.fatigue) + "）");
       S.fatigue = 45; P.render();                                         // 又一次落在窗口里

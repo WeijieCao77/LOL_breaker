@@ -50,6 +50,8 @@ export function trustMod(){ return 1+(avgTrust()-50)/760; }
 export function syncTrust(){
   if(!S.trust) return;
   const ids=myRoster().filter(p=>!p.me).map(p=>p.id);
+  // 伤停换下的人还是这队的人（真替补席）：他的信任别删，伤愈回来接着用
+  if(S.mateInjury&&S.mateInjury.sub&&S.mateInjury.id&&!ids.includes(S.mateInjury.id)) ids.push(S.mateInjury.id);
   // 新队友从中性起步（46–53），不再自带 −士气：AI 队有了战绩士气之后，转会即扣分让联赛冠军 1.73 掉到 1.35（2026-09-05 批测）
   ids.forEach(id=>{ if(S.trust[id]===undefined) S.trust[id]=46+Math.floor(rnd()*8); });
   // 信任只留当前名单（数值口径不变），但「一起打过」这件事从此不再被删掉：

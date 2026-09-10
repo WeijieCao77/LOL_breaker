@@ -85,6 +85,7 @@ function playOne(opts?) {
   let signups = 0, cupMatches = 0, preps = 0, cupPick = 0;
   let invites = 0, tryPick = 0, dealPick = 0, transfers = 0, renewTalks = 0;
   let maxRank = 0, scrims = 0, trials = 0, trialWins = 0, mateInj = 0, benchWeeks = 0, _trialOn = false, _injOn = false;
+  let subWeeks = 0, subEvents = 0, _subOn = false;
   let bondTalks = 0;   // 羁绊：这一局用了几次「找人聊聊」
   const cupRuns = [], grades = [], deals = [];
   while (A.S().step !== "end" && guard++ < 40000) {
@@ -106,6 +107,7 @@ function playOne(opts?) {
     if (S.scrim && S.scrim.trial) { if (!_trialOn) trials++; _trialOn = true; }
     else { if (_trialOn && S.promoted && !S.understudy) trialWins++; _trialOn = false; }
     if (S.mateInjury) { if (!_injOn) mateInj++; _injOn = true; } else _injOn = false;
+    if (S.mateInjury && S.mateInjury.sub) { subWeeks++; if (!_subOn) subEvents++; _subOn = true; } else _subOn = false;   // 真替补席：顶上几周、几次
     if (S.rankUp) { rankUps++; S.rankUp = null; continue; }
     if (S.rndEv) { A.resolveRandom(0); continue; }
     if (S.streamOffer) {                  // 平台独家：三条路轮着走，都要测到
@@ -298,6 +300,8 @@ function playOne(opts?) {
     signups, cupMatches, preps, cupRuns,
     invites, grades, deals, transfers,
     scrims, trials, trialWins, mateInj, benchWeeks, maxRank: Math.round(maxRank*10)/10,
+    subWeeks, subEvents, subLeft: (() => { try { return A.myRoster().filter((p: any) => p && p.sub).length; } catch (e) { return -1; } })(),   // 生涯结束时名单上还赖着的替补（应为 0）
+    relN: Object.keys(S.rel || {}).length, relMean: (() => { const v = Object.values(S.rel || {}) as number[]; return v.length ? +(v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : null; })(),
     bondTalks, bondMates: Object.keys(S.mates||{}).length,
     bondPassed: Object.keys(S.mates||{}).filter(k => (S.mates[k]||{}).passed).length,
     bondHandover: Object.keys(S.mates||{}).filter(k => (S.mates[k]||{}).handover).length,
@@ -310,6 +314,12 @@ function playOne(opts?) {
     money: Math.round(S.money), fame: A.fanTier(),
     fans: Math.round(S.fans), heat: Math.round(S.heat||0),
     titles: (S.career && S.career.titles) || [],
+    awards: (S.career && S.career.awards) || [],
+    // 评分分布（2026-09-10 玩家实锤「场场 1.69」）：均值、标准差、众数占比；本场 MVP 次数（archive 只留最近 60 场）
+    ratingStats: (() => { const rs = (S.archive || []).map((x: any) => x.rating).filter((v: any) => typeof v === "number"); if (!rs.length) return null;
+      const m = rs.reduce((a: number, b: number) => a + b, 0) / rs.length; const sd = Math.sqrt(rs.reduce((a: number, b: number) => a + (b - m) * (b - m), 0) / rs.length);
+      const cnt: Record<string, number> = {}; rs.forEach((v: number) => { const k = v.toFixed(2); cnt[k] = (cnt[k] || 0) + 1; }); const top = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0];
+      return { n: rs.length, mean: +m.toFixed(3), sd: +sd.toFixed(3), mode: top[0], modeShare: +(top[1] / rs.length).toFixed(2), mvpN: (S.archive || []).filter((x: any) => x.mvp).length }; })(),
     streets: S.streets || 0, everCut: !!S.everCut, renewTalks,
     poBracket: !!(S.lastPo && S.lastPo.br),
     events: (S.events || []).length
@@ -1435,6 +1445,14 @@ function batch(n: number, encore = false, strong = false, loyal = false) {
         worldsApps: m(r => r.worldsApps), msiApps: m(r => r.msiApps), bestIntlDist: depth, bestRankMean: m(r => r.bestRank), tierSeasons: tiers, dims }; })(),
     endings: count(r => r.ending),
     titlesMean: +(rs.reduce((a, r) => a + r.titles.length, 0) / n).toFixed(2),
+    sub: { events: +(rs.reduce((a, r) => a + (r.subEvents || 0), 0) / n).toFixed(2), weeks: +(rs.reduce((a, r) => a + (r.subWeeks || 0), 0) / n).toFixed(2),
+           leftMean: +(rs.reduce((a, r) => a + Math.max(0, r.subLeft || 0), 0) / n).toFixed(2), mateInj: +(rs.reduce((a, r) => a + (r.mateInj || 0), 0) / n).toFixed(2),
+           relN: +(rs.reduce((a, r) => a + (r.relN || 0), 0) / n).toFixed(1), relMean: +(rs.reduce((a, r) => a + (r.relMean || 0), 0) / n).toFixed(1) },
+    // 颁奖夜：你拿到的年度 MVP / 一阵 / 二阵 / 新秀（每局生涯平均座数）；评分分布（众数占比高 = 场场同一个数）
+    awards: (() => { const m = (k: string) => +(rs.reduce((a, r) => a + (r.awards || []).filter((x: any) => x.kind === k).length, 0) / n).toFixed(2);
+      return { mvpPerCareer: m("mvp"), firstPerCareer: m("first"), secondPerCareer: m("second"), rookiePerCareer: m("rookie"), anyMvp: +(rs.filter(r => (r.awards || []).some((x: any) => x.kind === "mvp")).length / n).toFixed(2) }; })(),
+    rating: (() => { const xs = rs.map(r => r.ratingStats).filter(Boolean); const m = (k: string) => +(xs.reduce((a, x) => a + x[k], 0) / Math.max(1, xs.length)).toFixed(3);
+      return { n: xs.length, mean: m("mean"), sd: m("sd"), modeShare: m("modeShare"), mvpPer60: m("mvpN") }; })(),
     // 夺冠概率：任一冠军 / 联赛 / MSI / 世界赛 / 破局者（MSI+世界赛各一）/ 两冠 / 三连（王朝）
     rates: (() => { const f = (g: (r: any) => boolean) => +(rs.filter(g).length / n).toFixed(3); return {
       anyTitle: f(r => r.titles.length > 0), league: f(r => r.lg > 0), msi: f(r => r.msi > 0), worlds: f(r => r.worlds > 0),
@@ -1674,6 +1692,79 @@ try {
   if (Math.abs(tg - ts) > 0.6) bad.push(`放松卡：火锅卡面写信任 +${ts}，实际涨了 ${tg.toFixed(1)}`);
   if (!A.shopCard().includes(`信任 +${ts}`)) bad.push("放松卡：商城卡面没有按倍率写信任");
 } catch (e: any) { bad.push("放松卡测试抛异常：" + (e && e.message)); }
+/* 年度评选口径（2026-09-10 玩家实锤「决赛 MVP 连二阵都进不了」「季后赛全 MVP 年度 MVP 却是队友」）：
+   yearRating 看整年常规赛 + 季后赛、不含国际赛；本场 MVP 存进档案并按常规 0.3 / 季后 0.8 加分、封顶 4 */
+try {
+  const S = A.S();
+  const bak = S.archive;
+  S.archive = [
+    { si: 3, tag: "联赛", rating: 1.0, mvp: true }, { si: 3, tag: "季后赛", rating: 1.5, mvp: true },
+    { si: 3, tag: "MSI", rating: 2.0, mvp: true }, { si: 2, tag: "季后赛", rating: 0.5, mvp: true },
+  ];
+  const yr = A.yearRating(3);
+  if (yr === null || Math.abs(yr - 1.25) > 1e-9) bad.push(`年度评分：应为 (1.0+1.5)/2=1.25（含季后赛、不含 MSI、不含别的赛季），却是 ${yr}`);
+  const mb = A.mvpBonus(3);
+  if (Math.abs(mb - 1.1) > 1e-9) bad.push(`MVP 加分：常规 0.3 + 季后 0.8 = 1.1，却是 ${mb}`);
+  S.archive = Array.from({ length: 30 }, () => ({ si: 3, tag: "季后赛", rating: 1.5, mvp: true }));
+  if (A.mvpBonus(3) !== 4) bad.push(`MVP 加分应封顶 4，却是 ${A.mvpBonus(3)}`);
+  S.archive = bak;
+  const ms = readText(HERE, "src", "main.ts");
+  if (!/S\.archive\.push\(\{[^\n]*\bmvp\b/.test(ms)) bad.push("本场 MVP 没有写进 archive 条目");
+  const cs = readText(HERE, "src", "cer.ts");
+  if (!cs.includes("yearRating(S.si)") || !cs.includes("mvpBonus(S.si)")) bad.push("颁奖夜没有用年度口径 / MVP 加分");
+} catch (e: any) { bad.push("年度评选测试抛异常：" + (e && e.message)); }
+/* 评分软上限（2026-09-10 玩家实锤「十次里面七八次 rating 都是 1.69」）：
+   能力差 +30、赢球、临场 3/3 的强选手，100 场合成里评分不能是一个常数 */
+try {
+  const S = A.S();
+  const team = A.myTeam && A.myTeam();
+  if (S.career && team) {
+    const opp = (S.world[S.homeLeague || "LPL"] || []).find((t: any) => t.name !== S.team);
+    const a0 = Object.assign({}, S.attrs);
+    A.DIMS.forEach((d: string) => { S.attrs[d] = 92; });
+    const vals: Record<string, number> = {}; let n = 0;
+    for (let i = 0; i < 100; i++) {
+      const m = { sc: [2, 0], need: 2, nodeLog: [{ ok: true }, { ok: true }, { ok: true }], nodeFails: 0, opp: { name: opp.name, players: opp.players }, oppName: opp.name };
+      const box = A.synthBoxScore(m, true); if (!box) continue;
+      const me = box.mine.find((x: any) => x.me); if (!me) continue;
+      const k = me.rating.toFixed(2); vals[k] = (vals[k] || 0) + 1; n++;
+    }
+    Object.assign(S.attrs, a0);
+    const top = Object.values(vals).sort((a, b) => b - a)[0] || 0;
+    if (n < 50) bad.push("评分软上限：合成不出全员表（n=" + n + "）");
+    else if (Object.keys(vals).length < 5 || top / n > 0.5) bad.push(`评分软上限：100 场里只有 ${Object.keys(vals).length} 种评分、众数占 ${(top / n * 100).toFixed(0)}%——又成常数了`);
+  }
+} catch (e: any) { bad.push("评分软上限测试抛异常：" + (e && e.message)); }
+/* 真替补席（2026-09-10 玩家实锤「队友伤病后还是会上场打比赛，但措辞已经明确说他伤退了」）：
+   伤停 ≥2 周要真的换人——名单里是二队同位置的人；伤愈换回原人，替补的信任记录清掉 */
+try {
+  const S = A.S();
+  const t = A.myTeam && A.myTeam();
+  if (S.career && t && (S.homeLeague || "LPL") === "LPL") {
+    const mate = t.players.find((q: any) => q && !q.me);
+    if (mate) {
+      const sub = A.benchSub(mate.pos, t);
+      if (!sub) bad.push("替补席：LPL 一队找不到二队顶上的人");
+      else {
+        if (sub.pos !== mate.pos) bad.push(`替补席：顶上的人位置不对（${sub.pos} 顶 ${mate.pos}）`);
+        if (sub.id === mate.id) bad.push("替补席：顶上的人就是伤员自己");
+        const idx = t.players.indexOf(mate); t.players[idx] = sub;
+        S.mateInjury = { id: mate.id, pos: mate.pos, n: "手腕劳损", left: 2, sub: { id: sub.id, team: t.name, orig: mate } };
+        A.syncTrust();
+        if (!A.myRoster().some((q: any) => q.id === sub.id)) bad.push("替补席：换人后名单里没有替补");
+        if (A.myRoster().some((q: any) => q.id === mate.id)) bad.push("替补席：换人后伤员还在名单里");
+        if (!/替/.test(A.mateInjuryTag(sub))) bad.push("替补席：名单上替补没有「替」标");
+        if (!/顶上首发/.test(A.mateInjuryNote())) bad.push("替补席：伤病说明没写谁顶上");
+        A.mateInjuryTick(); if (!S.mateInjury) bad.push("替补席：还剩 1 周就提前康复了");
+        A.mateInjuryTick();
+        if (S.mateInjury) bad.push("替补席：2 周后没康复");
+        if (!A.myRoster().some((q: any) => q.id === mate.id)) bad.push("替补席：伤愈后伤员没回名单");
+        if (A.myRoster().some((q: any) => q.id === sub.id)) bad.push("替补席：伤愈后替补还占着首发");
+        if (S.trust && S.trust[sub.id] !== undefined) bad.push("替补席：替补走了信任表里还留着他");
+      }
+    }
+  }
+} catch (e: any) { bad.push("替补席测试抛异常：" + (e && e.message)); }
 if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }
   console.log("自检通过");
 }

@@ -105,6 +105,8 @@ export function relAll(n){
 export function syncRelations(){
   if(!S.rel) { initRelations(); return; }
   const ids=myRoster().filter(p=>!p.me).map(p=>p.id);
+  // 伤停换下的人还是这队的人（真替补席）：多年攒的关系对子别删
+  if(S.mateInjury&&S.mateInjury.sub&&S.mateInjury.id&&!ids.includes(S.mateInjury.id)) ids.push(S.mateInjury.id);
   for(let i=0;i<ids.length;i++) for(let j=i+1;j<ids.length;j++){
     const k=relKey(ids[i],ids[j]);
     if(S.rel[k]===undefined) S.rel[k]=38+Math.floor(rnd()*14);   // 新来的还不熟

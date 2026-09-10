@@ -16,7 +16,7 @@ import { DIMS, POSN, SEASONS, addFans, avg, breakthrough, capOf, clamp, isBenche
 import { CUPS } from "./cup";
 import { rnd } from "./rng";
 import { meName } from "./save";
-import { splitRating } from "./boxscore";
+import { mvpBonus, splitRating, yearRating } from "./boxscore";
 import { majorStandings } from "./intl";
 import { addTrustAll } from "./team";
 import { addMoney } from "./shop";
@@ -304,7 +304,11 @@ export function computeAwards(){
     if(p.me&&bench) return;
     const r=p.me?S.attrs:(p.r||{});
     let sc=avg(DIMS.map(d=>r[d]||0))+(((p.form===undefined||p.form===null)?52:p.form)-52)/8+bonus(t.name);
-    if(p.me){ const sr=splitRating(); if(sr!==null) sc+=(sr-1.0)*6; }
+    if(p.me){
+      // 年度评选看整年（常规赛 + 季后赛），不只看当前赛段的常规赛（玩家实锤 2026-09-10）
+      const sr=yearRating(S.si); if(sr!==null) sc+=(sr-1.0)*6;
+      sc+=mvpBonus(S.si);   // 本场 MVP 进评选：常规赛 +0.5 / 季后赛 +1.0 每次，封顶 6
+    }
     // 新秀 = 这个赛季头一回进一队名单（debutSi 在 makeRookie / 提拔时写下）。
     // 老存档没有这个字段，回落到原来的「20 岁以下」。
     rows.push({id:p.me?meName():p.id,cn:p.me?"":(p.cn||""),pos:p.pos,team:t.name,age:p.age||22,me:!!p.me,
