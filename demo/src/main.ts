@@ -127,6 +127,10 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260910e", at:"2026-09-10", items:[
+    "<b>上限到 99 之后不再弹「破瓶颈」</b>（玩家实锤：「操作瓶颈满了 99，还出发和教练一起破瓶颈的剧情」）：99 是所有维度的硬顶，可突破试炼只看「顶没顶到当前上限」、不看这个上限是不是已经 99——于是 99 的操作照样被教练留下加练，过关还写「上限 99.0 → 99.0」，悄悄吃掉突破池。同一个漏洞还在四处：每周的「冲击操作瓶颈」判定、练操作按钮、属性卡上的「怎么破」、夺冠这类里程碑的突破提示。现在全部问同一个判断：到 99 就不开试炼、不再算在冲击、按钮和属性卡写明「已经到 99」，里程碑撞上 99 只说一句「已经到顶」。老存档里已经开着或排着队的这类试炼一并作废",
+    "<b>同类的两处一起修</b>：① 突破试炼过关给的是里程碑池的「天花板 +1」——拿过几座冠军、心态 / 指挥的里程碑池已经满了的人，试炼照样开，过关却只弹「瓶颈已在极限」。现在池子付不出这一格就不开。② 运营的机械路径到头（到 99 或刷满）之后，「战术复盘」「看录像」卡上还写着「攒运营突破」，现在不写了。突破弹窗里的「+x」也改成上限实际涨了多少（原来写的是池子涨了多少，贴着 99 时比实际多）。这几处都不改任何数值：普通 / 强玩家各 120 局批测与修复前逐字节一致"
+  ]},
   {v:"v20260910d", at:"2026-09-10", items:[
     "<b>出身也决定天赋的形状</b>（玩家原话：「身份选项应该有他专属的加成……选身份的同时也是选天赋」）：两条路线现在各带一组<b>天花板</b>变化——<b>青训</b>心态 +2、操作 −1；<b>主播</b>操作 +2、运营 −2。只改形状、不改强弱：两条路线 × 普通 / 强玩家各 240 局批测，冠军率和场均冠军全部在噪声范围内（2σ 以内），五维按战力折算的净变化在 −0.07 到 +0.19 之间。策划稿最初那张表把主播的扣分放在体质上——体质本来就练不到顶，扣了一分不掉，等于白送主播一截，已弃用。<b>只对新开的档生效</b>：老存档的上限不动，否则已经练上去的数会被压回来",
     "<b>出身的加成写在卡上了</b>（玩家：「如果本来就有可以直接写一行小字出来」）：建档页每张出身卡下面多一行它的长处和代价，路线说明写出两条路线的专属加成、天花板变化和起始段位，出发确认页也写。默认的叙事模式只说方向（「操作↑↑ · 体质↓」），打开「数值」才写具体数——建档页不堆数字是 09-06 玩家点过的。顺带修正一句写错多时的文案：主播出身原来写「直播收益 +60%」，实际是<b>直播收入 +70%、涨热度职业前 +70% / 进队后 +60%</b>；这些数现在和代码读同一份常量，加了自检，改一边忘另一边测试就红。起始段位保持<b>青训比主播高</b>（作者定）"
@@ -906,6 +910,17 @@ export function originCapShift(d){
 export function capOf(d){
   return Math.min(99,cap(S.talent[d])+originCapShift(d)+((S.capBonus&&S.capBonus[d])||0)+((S&&S.capExp)||0));   // 99 封顶：上限加突破池不能越过 100
 }
+/* 99 是全游戏的硬顶（capOf 里的 Math.min(99,…)）。上限已经顶到 99 的维度没有「瓶颈」可破：
+   再往突破池里加也兑现不了一分（玩家实锤 2026-09-10：「操作瓶颈满了 99，还出发和教练一起破瓶颈的剧情」）。
+   突破试炼、机械路径、里程碑、属性卡的「怎么破」、练操作按钮，全部问这一个函数。 */
+export const CAP_HARD=99;
+export function capMaxed(d){ return capOf(d)>=CAP_HARD-0.001; }
+/* 突破试炼过关给的是里程碑池的「天花板 +1」：到 99 硬顶、里程碑池满、或整个突破池满，都付不出这一格——试炼就不该开
+  （同类 bug，和 99 顶一起修：多拿过几座冠军、心态 / 指挥里程碑池已满的人，过关只弹「瓶颈已在极限」） */
+export function trialCanPay(d){
+  if(capMaxed(d)) return false;
+  return capMileOf(d)<CAP_MILE_MAX-0.05&&(((S.capBonus&&S.capBonus[d])||0)<CAP_MAX_BONUS-0.05);
+}
 export function initCapBonus(){ S.capBonus={}; S.capMile={}; DIMS.forEach(d=>{S.capBonus[d]=0;S.capMile[d]=0;}); }
 export function capMileOf(d){ return (S.capMile&&S.capMile[d])||0; }
 /* 旧档没有 capMile：整个 capBonus 都按机械算（他们那 6 点本来就是单池攒的），
@@ -915,6 +930,13 @@ export function capMechOf(d){ return Math.max(0,((S.capBonus&&S.capBonus[d])||0)
 export function breakthrough(d,n,reason,key?,kind?){
   if(!S.capBonus) initCapBonus();
   if(key){ S.capSeen=S.capSeen||{}; if(S.capSeen[key]) return; S.capSeen[key]=1; }
+  // 已经到 99：池子一分都兑现不了，不再报「上限 99.0 → 99.0」、也不吃突破池。
+  // 机械路径静默（按钮和属性卡已经写明到顶）；夺冠这类里程碑说一句，免得大时刻无声
+  if(capMaxed(d)){
+    if(kind==="mile") pushEvent(`<b>${d}已经到 ${CAP_HARD}</b>　${reason}<br>
+      <span style="color:var(--ink-3)">这是所有人的终点，没有再往上的空间了。</span>`,"info","突破");
+    return;
+  }
   S.capMile=S.capMile||{};
   const before=S.capBonus[d];
   let got;
@@ -946,7 +968,7 @@ export function breakthrough(d,n,reason,key?,kind?){
   const sh=originCapShift(d);   // 出身的天花板形状（ORIGIN_CAP）也要算进来，否则和 capOf 差一截
   const c0=Math.min(99,cap(S.talent[d])+sh+before+exp), c1=Math.min(99,cap(S.talent[d])+sh+S.capBonus[d]+exp);
   pushEvent(`<b>瓶颈松动</b>　${reason}<br>
-    <span style="color:var(--cyan)">${d}上限 ${c0.toFixed(1)} → <b>${c1.toFixed(1)}</b>（+${gotS}）</span>`,
+    <span style="color:var(--cyan)">${d}上限 ${c0.toFixed(1)} → <b>${c1.toFixed(1)}</b>（+${(c1-c0).toFixed(1)}）</span>`,   // 报上限实际涨的数：贴着 99 时池子涨得比上限多
     "big","突破");
   checkAch("break");
   // 纯机械成就只认机械路径：夺冠类里程碑（mile）也走 key=undefined，原来会误发「苦练出真章」
@@ -996,6 +1018,7 @@ export function initBtk(){ S.btk={opStreak:0,opThisWeek:0,vod:0,rest:0}; }
 /* 这条机械路径还付得出钱吗？付不出就直说，别让玩家推死轮。
    两种「到头」：机械池刷满；一次性钥匙（心态的 cb3 这类）已经用过。 */
 export function btkPathDead(d){
+  if(capMaxed(d)) return `已经到 <b>${CAP_HARD}</b>，这是所有人的终点，没有瓶颈可破`;
   if(capMechOf(d)>=CAP_MECH_MAX-0.01)
     return "机械路径已刷满——再往上要靠<b>冠军</b>这样的里程碑";
   const P=BREAK_PATHS[d];
@@ -3883,11 +3906,12 @@ export function attrCard(){
       if(!hit.length||false) return "";
       return `<div class="breaks"><div class="bh">已经撞到瓶颈的维度 · 怎么破</div>${
         hit.map(d=>{const P=BREAK_PATHS[d];
-          const full=((S.capBonus&&S.capBonus[d])||0)>=CAP_MAX_BONUS-0.01;
+          const top=capMaxed(d);   // 到 99 硬顶：天赋、里程碑都推不动了
+          const full=top||((S.capBonus&&S.capBonus[d])||0)>=CAP_MAX_BONUS-0.01;
           const deadWhy=btkPathDead(d);
           return `<div class="brk ${full?'maxed':P.auto?'auto':'situ'}">
             <span class="bd">${d}</span>
-            <span class="bw">${full?"这一维已经推到极限了，天赋决定的终点就在这里。"
+            <span class="bw">${top?`已经到 ${CAP_HARD}——所有人的终点，没有再往上的路。`:full?"这一维已经推到极限了，天赋决定的终点就在这里。"
               :deadWhy?deadWhy.replace(/<[^>]+>/g,""):P.how}</span>
             <span class="bp mono">${full?"已满":deadWhy?"里程碑":P.prog()}</span></div>`}).join("")}
         <div class="bn">带 <b>·</b> 的是机械条件——肯这么练就一定拿得到，不看运气。</div></div>`;

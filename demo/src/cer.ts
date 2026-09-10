@@ -12,7 +12,7 @@
 import { S } from "./state";
 import { bondFarewellLines } from "./bond";
 import { relAll } from "./clout";
-import { DIMS, POSN, SEASONS, addFans, avg, breakthrough, capOf, clamp, isBenched, lplRank, poMyOpp, pushEvent, render } from "./main";
+import { DIMS, POSN, SEASONS, addFans, avg, breakthrough, capOf, clamp, isBenched, lplRank, poMyOpp, pushEvent, render, trialCanPay } from "./main";
 import { CUPS } from "./cup";
 import { rnd } from "./rng";
 import { meName } from "./save";
@@ -67,7 +67,10 @@ function cerOpen(c){
   if(S.cer){ S.cerQ=S.cerQ||[]; if(!S.cerQ.some(x=>x.k===c.k)) S.cerQ.push(c); }
   else S.cer=c;
 }
-function cerDequeue(){ if(!S.cer&&S.cerQ&&S.cerQ.length) S.cer=S.cerQ.shift(); }
+function cerDequeue(){
+  // 排队的突破试炼轮到时，那一维已经付不出「+1」（到 99 / 池子满）就作废（老存档里排进去的也一样）
+  while(!S.cer&&S.cerQ&&S.cerQ.length){ const c=S.cerQ.shift(); if(c&&c.k==="trial"&&c.dim&&!trialCanPay(c.dim)) continue; S.cer=c; }
+}
 /* 试训第一天、职业前杯赛决赛在职业前就会有——那时候 S.career 还是空的 */
 const PRE_OK={bench:true, final:true};
 /* 这一场要结算到哪个比赛对象上：正赛 S.match，职业前杯赛 S.cupMatch */
@@ -83,7 +86,7 @@ export function cerStart(k,extra?){
   if(k==="final"&&!liveMatch()) return;
   if(k==="bench"&&!(S.tryout&&!S.tryout.done)) return;
   if(k==="rehab"&&!S.injury) return;
-  if(k==="trial"&&!(extra&&extra.dim)) return;
+  if(k==="trial"&&(!(extra&&extra.dim)||!trialCanPay(extra.dim))) return;   // 到 99 硬顶、或突破池付不出这一格，就没有瓶颈可破
   if(k==="allstar"){ extra=Object.assign({sel:allstarSelected()},extra||{}); }
   const c=Object.assign({k,step:0},extra||{});
   if(cerAuto()){ cerApply(k,"silver",true,c); return; }
@@ -208,11 +211,12 @@ export function allstarSelected(){
   const title=((S.career.lgYears||[]).includes(S.si))||((S.career.msiYears||[]).includes(S.si))||((S.career.worldsYears||[]).includes(S.si));
   return !!(aw||title||(S.fans||0)>=900);
 }
-/* 突破试炼的触发（赛段结算时调）：撞到天花板、这一维还没过关、这个赛段没试过——一次只开一维 */
+/* 突破试炼的触发（赛段结算时调）：撞到天花板、这一维还没过关、这个赛段没试过——一次只开一维。
+   天花板已经是 99 硬顶、或突破池付不出「+1」的不算（玩家实锤 2026-09-10：操作满 99 还被教练留下破瓶颈） */
 export function btkTrialCheck(){
   if(!S.career||!S.attrs) return;
   S.btkTrial=S.btkTrial||{};
-  const d=DIMS.find(x=>S.attrs[x]>=capOf(x)-0.05&&S.btkTrial[x]!=="pass"&&S.btkTrial[x+"_si"]!==S.si);
+  const d=DIMS.find(x=>S.attrs[x]>=capOf(x)-0.05&&trialCanPay(x)&&S.btkTrial[x]!=="pass"&&S.btkTrial[x+"_si"]!==S.si);
   if(d) cerStart("trial",{dim:d});
 }
 export const MEDIA_TONE_N={bold:"狂",steady:"稳",blame:"甩锅"};

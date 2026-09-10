@@ -1806,6 +1806,54 @@ try {
   const fx = A.bgEffects(S.bgOffer[0]);
   if (fx.length && !hNum.includes(fx[0])) bad.push("建档页（数值模式）：出身卡没写背景加成：" + fx[0]);
 } catch (e: any) { bad.push("出身加成测试抛异常：" + (e && e.message)); }
+/* 上限到 99 硬顶就没有「瓶颈」可破（2026-09-10 玩家实锤：操作满 99 了还弹「教练把你留下破瓶颈」）：
+   不开突破试炼、不算在冲击、按钮写明到顶、里程碑不报「上限 99 → 99」、不吃突破池；没到 99 的维度照旧 */
+try {
+  A.screenCreate(13); let S = A.S();
+  S.name = "T"; S.pos = "mid"; S.ageIdx = 1; S.bgPick = S.bgOffer[0].k; S.origin = S.bgOffer[0].origin;
+  S.talent = { 操作: 10, 运营: 4, 心态: 2, 指挥: 2, 体质: 2 };
+  A.startPre(); S = A.S();
+  A.DIMS.forEach((d: string) => { S.attrs[d] = A.capOf(d); });
+  if (!A.capMaxed("操作") || A.capMaxed("运营")) bad.push(`99 顶：测试前提不成立（操作上限 ${A.capOf("操作")}、运营上限 ${A.capOf("运营")}）`);
+  S.career = S.career || { titles: [] }; S.cer = null; S.cerQ = []; S.btkTrial = {}; S.auto = null; S.events = [];
+  A.btkTrialCheck();
+  const trialDim = S.cer && S.cer.k === "trial" ? S.cer.dim : null;
+  if (trialDim === "操作" || (S.btkTrial && S.btkTrial["操作_si"] !== undefined)) bad.push("99 顶：操作已经 99，还开了突破试炼（教练把你留下破瓶颈）");
+  if (trialDim !== "运营") bad.push("99 顶：没到 99 的运营顶着瓶颈，突破试炼却没开（守卫拦过头了）：" + trialDim);
+  S.cer = null;
+  if (A.btkChasing("操作")) bad.push("99 顶：操作已经 99，还算在「冲击操作瓶颈」");
+  const tb = A.trainBtn("操作", 8);
+  if (!tb.dis || !/99/.test(tb.desc)) bad.push("99 顶：练操作按钮没灰、或没写明已经到 99：" + tb.desc);
+  S.capMile = S.capMile || {}; const mile0 = S.capMile.操作 || 0; S.events = [];
+  A.breakthrough("操作", 2.5, "自检夺冠", undefined, "mile");
+  const ev99 = (S.events || []).map((e: any) => e.text).join(" ");
+  if (/瓶颈松动/.test(ev99)) bad.push("99 顶：里程碑还在报「瓶颈松动 上限 99 → 99」");
+  if (!/已经到 99/.test(ev99)) bad.push("99 顶：夺冠这类里程碑撞上 99 应该说一句「已经到 99」");
+  if ((S.capMile.操作 || 0) !== mile0) bad.push("99 顶：到 99 了还在吃突破池");
+  S.events = [];
+  A.breakthrough("运营", 1.0, "自检", "selfcheck_99_ops");
+  if (!/瓶颈松动/.test((S.events || []).map((e: any) => e.text).join(" "))) bad.push("99 顶：没到 99 的运营突破被误拦了");
+} catch (e: any) { bad.push("99 顶测试抛异常：" + (e && e.message)); }
+/* 同类（2026-09-10）：突破试炼过关给的是里程碑池的「天花板 +1」——池满付不出就不开；
+   运营的机械路径到头时，战术复盘 / 看录像卡不再写「攒运营突破」 */
+try {
+  A.screenCreate(14); let S = A.S();
+  S.name = "T"; S.pos = "mid"; S.ageIdx = 1; S.bgPick = S.bgOffer[0].k; S.origin = S.bgOffer[0].origin;
+  S.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+  A.startPre(); S = A.S();
+  S.capBonus = { 操作: A.CAP_MILE_MAX, 运营: 0, 心态: 0, 指挥: 0, 体质: 0 }; S.capMile = { 操作: A.CAP_MILE_MAX };
+  A.DIMS.forEach((d: string) => { S.attrs[d] = A.capOf(d); });
+  S.career = S.career || { titles: [] }; S.cer = null; S.cerQ = []; S.btkTrial = {}; S.auto = null; S.events = [];
+  if (A.trialCanPay("操作")) bad.push("突破试炼：操作的里程碑池满了，trialCanPay 还说付得出");
+  A.btkTrialCheck();
+  const td = S.cer && S.cer.k === "trial" ? S.cer.dim : null;
+  if (td === "操作") bad.push("突破试炼：操作的里程碑池已经满了（过关也付不出天花板 +1），还开了试炼");
+  if (td !== "运营") bad.push("突破试炼：池子有空的运营顶着瓶颈，试炼却没开：" + td);
+  const vod: any = A.SQUAD_ACTS.find((a: any) => a.k === "vod"), film: any = A.BENCH_ACTS.find((a: any) => a.k === "film");
+  if (!vod.sum().includes("攒运营突破") || !film.sum().includes("攒运营突破")) bad.push("战队卡：运营路径还没到头，却不写「攒运营突破」了");
+  S.capBonus.运营 = A.CAP_MECH_MAX;
+  if (vod.sum().includes("攒运营突破") || film.sum().includes("攒运营突破")) bad.push("战队卡：运营机械路径已刷满，战术复盘 / 看录像还写「攒运营突破」");
+} catch (e: any) { bad.push("突破试炼池满 / 攒突破卡面测试抛异常：" + (e && e.message)); }
 if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }
   console.log("自检通过");
 }

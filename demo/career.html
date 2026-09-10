@@ -2170,6 +2170,7 @@ header.top.compact>.theme-top{display:none}
       relinkMe(S);
       S.patchSeen = GAME_VER;
       S.tab = "act";
+      if (S.cer && S.cer.k === "trial" && S.cer.dim && !trialCanPay(S.cer.dim)) S.cer = null;
       if (S.step === "match") S.step = S.pre && !S.career ? "pre" : "season";
       render();
       return true;
@@ -4115,7 +4116,8 @@ header.top.compact>.theme-top{display:none}
       k: "vod",
       n: "战术复盘",
       d: "逐帧过录像，把上一场的问题挖出来",
-      sum: () => [sumBit("tac", 4.2), "运营 +0.35", "攒运营突破"],
+      sum: () => [sumBit("tac", 4.2), "运营 +0.35"].concat(btkPathDead("运营") ? [] : ["攒运营突破"]),
+      // 运营路径到头（99 / 刷满）就别再许诺
       fat: 9,
       run: () => {
         addSquad("tac", 4.2);
@@ -4237,7 +4239,7 @@ header.top.compact>.theme-top{display:none}
       n: "看录像",
       d: "坐在替补席上把首发这一场逐帧过一遍",
       fat: 9,
-      sum: () => ["运营 +0.35", "攒运营突破", "战术素养 +0.2", "轮换资本 +0.25"],
+      sum: () => ["运营 +0.35"].concat(btkPathDead("运营") ? [] : ["攒运营突破"], ["战术素养 +0.2", "轮换资本 +0.25"]),
       run: () => {
         S.attrs.运营 = Math.min(capOf("运营"), S.attrs.运营 + 0.35);
         btkNote("vod", 1);
@@ -10773,7 +10775,11 @@ header.top.compact>.theme-top{display:none}
     } else S.cer = c;
   }
   function cerDequeue() {
-    if (!S.cer && S.cerQ && S.cerQ.length) S.cer = S.cerQ.shift();
+    while (!S.cer && S.cerQ && S.cerQ.length) {
+      const c = S.cerQ.shift();
+      if (c && c.k === "trial" && c.dim && !trialCanPay(c.dim)) continue;
+      S.cer = c;
+    }
   }
   var PRE_OK = { bench: true, final: true };
   function liveMatch() {
@@ -10794,7 +10800,7 @@ header.top.compact>.theme-top{display:none}
     if (k === "final" && !liveMatch()) return;
     if (k === "bench" && !(S.tryout && !S.tryout.done)) return;
     if (k === "rehab" && !S.injury) return;
-    if (k === "trial" && !(extra && extra.dim)) return;
+    if (k === "trial" && (!(extra && extra.dim) || !trialCanPay(extra.dim))) return;
     if (k === "allstar") {
       extra = Object.assign({ sel: allstarSelected() }, extra || {});
     }
@@ -10958,7 +10964,7 @@ header.top.compact>.theme-top{display:none}
   function btkTrialCheck() {
     if (!S.career || !S.attrs) return;
     S.btkTrial = S.btkTrial || {};
-    const d = DIMS.find((x) => S.attrs[x] >= capOf(x) - 0.05 && S.btkTrial[x] !== "pass" && S.btkTrial[x + "_si"] !== S.si);
+    const d = DIMS.find((x) => S.attrs[x] >= capOf(x) - 0.05 && trialCanPay(x) && S.btkTrial[x] !== "pass" && S.btkTrial[x + "_si"] !== S.si);
     if (d) cerStart("trial", { dim: d });
   }
   var MEDIA_TONE_N = { bold: "狂", steady: "稳", blame: "甩锅" };
@@ -16045,6 +16051,10 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260910e", at: "2026-09-10", items: [
+      "<b>上限到 99 之后不再弹「破瓶颈」</b>（玩家实锤：「操作瓶颈满了 99，还出发和教练一起破瓶颈的剧情」）：99 是所有维度的硬顶，可突破试炼只看「顶没顶到当前上限」、不看这个上限是不是已经 99——于是 99 的操作照样被教练留下加练，过关还写「上限 99.0 → 99.0」，悄悄吃掉突破池。同一个漏洞还在四处：每周的「冲击操作瓶颈」判定、练操作按钮、属性卡上的「怎么破」、夺冠这类里程碑的突破提示。现在全部问同一个判断：到 99 就不开试炼、不再算在冲击、按钮和属性卡写明「已经到 99」，里程碑撞上 99 只说一句「已经到顶」。老存档里已经开着或排着队的这类试炼一并作废",
+      "<b>同类的两处一起修</b>：① 突破试炼过关给的是里程碑池的「天花板 +1」——拿过几座冠军、心态 / 指挥的里程碑池已经满了的人，试炼照样开，过关却只弹「瓶颈已在极限」。现在池子付不出这一格就不开。② 运营的机械路径到头（到 99 或刷满）之后，「战术复盘」「看录像」卡上还写着「攒运营突破」，现在不写了。突破弹窗里的「+x」也改成上限实际涨了多少（原来写的是池子涨了多少，贴着 99 时比实际多）。这几处都不改任何数值：普通 / 强玩家各 120 局批测与修复前逐字节一致"
+    ] },
     { v: "v20260910d", at: "2026-09-10", items: [
       "<b>出身也决定天赋的形状</b>（玩家原话：「身份选项应该有他专属的加成……选身份的同时也是选天赋」）：两条路线现在各带一组<b>天花板</b>变化——<b>青训</b>心态 +2、操作 −1；<b>主播</b>操作 +2、运营 −2。只改形状、不改强弱：两条路线 × 普通 / 强玩家各 240 局批测，冠军率和场均冠军全部在噪声范围内（2σ 以内），五维按战力折算的净变化在 −0.07 到 +0.19 之间。策划稿最初那张表把主播的扣分放在体质上——体质本来就练不到顶，扣了一分不掉，等于白送主播一截，已弃用。<b>只对新开的档生效</b>：老存档的上限不动，否则已经练上去的数会被压回来",
       "<b>出身的加成写在卡上了</b>（玩家：「如果本来就有可以直接写一行小字出来」）：建档页每张出身卡下面多一行它的长处和代价，路线说明写出两条路线的专属加成、天花板变化和起始段位，出发确认页也写。默认的叙事模式只说方向（「操作↑↑ · 体质↓」），打开「数值」才写具体数——建档页不堆数字是 09-06 玩家点过的。顺带修正一句写错多时的文案：主播出身原来写「直播收益 +60%」，实际是<b>直播收入 +70%、涨热度职业前 +70% / 进队后 +60%</b>；这些数现在和代码读同一份常量，加了自检，改一边忘另一边测试就红。起始段位保持<b>青训比主播高</b>（作者定）"
@@ -16829,6 +16839,14 @@ header.top.compact>.theme-top{display:none}
   function capOf(d) {
     return Math.min(99, cap4(S.talent[d]) + originCapShift(d) + (S.capBonus && S.capBonus[d] || 0) + (S && S.capExp || 0));
   }
+  var CAP_HARD = 99;
+  function capMaxed(d) {
+    return capOf(d) >= CAP_HARD - 1e-3;
+  }
+  function trialCanPay(d) {
+    if (capMaxed(d)) return false;
+    return capMileOf(d) < CAP_MILE_MAX - 0.05 && (S.capBonus && S.capBonus[d] || 0) < CAP_MAX_BONUS - 0.05;
+  }
   function initCapBonus() {
     S.capBonus = {};
     S.capMile = {};
@@ -16849,6 +16867,11 @@ header.top.compact>.theme-top{display:none}
       S.capSeen = S.capSeen || {};
       if (S.capSeen[key]) return;
       S.capSeen[key] = 1;
+    }
+    if (capMaxed(d)) {
+      if (kind === "mile") pushEvent(`<b>${d}已经到 ${CAP_HARD}</b>　${reason}<br>
+      <span style="color:var(--ink-3)">这是所有人的终点，没有再往上的空间了。</span>`, "info", "突破");
+      return;
     }
     S.capMile = S.capMile || {};
     const before = S.capBonus[d];
@@ -16880,7 +16903,8 @@ header.top.compact>.theme-top{display:none}
     const c0 = Math.min(99, cap4(S.talent[d]) + sh + before + exp), c1 = Math.min(99, cap4(S.talent[d]) + sh + S.capBonus[d] + exp);
     pushEvent(
       `<b>瓶颈松动</b>　${reason}<br>
-    <span style="color:var(--cyan)">${d}上限 ${c0.toFixed(1)} → <b>${c1.toFixed(1)}</b>（+${gotS}）</span>`,
+    <span style="color:var(--cyan)">${d}上限 ${c0.toFixed(1)} → <b>${c1.toFixed(1)}</b>（+${(c1 - c0).toFixed(1)}）</span>`,
+      // 报上限实际涨的数：贴着 99 时池子涨得比上限多
       "big",
       "突破"
     );
@@ -16952,6 +16976,7 @@ header.top.compact>.theme-top{display:none}
     S.btk = { opStreak: 0, opThisWeek: 0, vod: 0, rest: 0 };
   }
   function btkPathDead(d) {
+    if (capMaxed(d)) return `已经到 <b>${CAP_HARD}</b>，这是所有人的终点，没有瓶颈可破`;
     if (capMechOf(d) >= CAP_MECH_MAX - 0.01)
       return "机械路径已刷满——再往上要靠<b>冠军</b>这样的里程碑";
     const P = BREAK_PATHS[d];
@@ -19713,11 +19738,12 @@ header.top.compact>.theme-top{display:none}
       if (!hit.length || false) return "";
       return `<div class="breaks"><div class="bh">已经撞到瓶颈的维度 · 怎么破</div>${hit.map((d) => {
         const P = BREAK_PATHS[d];
-        const full = (S.capBonus && S.capBonus[d] || 0) >= CAP_MAX_BONUS - 0.01;
+        const top = capMaxed(d);
+        const full = top || (S.capBonus && S.capBonus[d] || 0) >= CAP_MAX_BONUS - 0.01;
         const deadWhy = btkPathDead(d);
         return `<div class="brk ${full ? "maxed" : P.auto ? "auto" : "situ"}">
             <span class="bd">${d}</span>
-            <span class="bw">${full ? "这一维已经推到极限了，天赋决定的终点就在这里。" : deadWhy ? deadWhy.replace(/<[^>]+>/g, "") : P.how}</span>
+            <span class="bw">${top ? `已经到 ${CAP_HARD}——所有人的终点，没有再往上的路。` : full ? "这一维已经推到极限了，天赋决定的终点就在这里。" : deadWhy ? deadWhy.replace(/<[^>]+>/g, "") : P.how}</span>
             <span class="bp mono">${full ? "已满" : deadWhy ? "里程碑" : P.prog()}</span></div>`;
       }).join("")}
         <div class="bn">带 <b>·</b> 的是机械条件——肯这么练就一定拿得到，不看运气。</div></div>`;

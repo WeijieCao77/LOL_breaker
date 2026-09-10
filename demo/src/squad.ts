@@ -3,7 +3,7 @@ import { addRel, addStaff, relAll, relMod, syncRelations } from "./clout";
 import { cupTeamName } from "./cup";
 import { formMul, myFormMul } from "./form";
 import { findTeam } from "./intl";
-import { addFat, apCost, apTag, btkNote, cap, capOf, champCoreOn, clamp, costBits, dynastyBonus, isBenched, myRoster, POSN, power, powerParts, pushEvent, PW_SHOW, pwShow, q1, render, SEASONS, strength, tacAdd, tacOf, versionFit } from "./main";
+import { addFat, apCost, apTag, btkNote, btkPathDead, cap, capOf, champCoreOn, clamp, costBits, dynastyBonus, isBenched, myRoster, POSN, power, powerParts, pushEvent, PW_SHOW, pwShow, q1, render, SEASONS, strength, tacAdd, tacOf, versionFit } from "./main";
 import { rnd } from "./rng";
 import { fireEvent } from "./random";
 import { mateInjuryHit, SCRIM_EDGE_NEED, scrimState, subProxyR } from "./rotation";
@@ -172,7 +172,7 @@ export const SQUAD_ACTS=[
          try{ myRoster().filter(x=>!x.me&&x.id!==t.id).forEach(o=>addRel(t.id,o.id,-1.5)); }catch(e){} }
      }}},
   {k:"vod", n:"战术复盘", d:"逐帧过录像，把上一场的问题挖出来",
-   sum:()=>[sumBit("tac",4.2),"运营 +0.35","攒运营突破"],
+   sum:()=>[sumBit("tac",4.2),"运营 +0.35"].concat(btkPathDead("运营")?[]:["攒运营突破"]),   // 运营路径到头（99 / 刷满）就别再许诺
    fat:9,  run:()=>{ addSquad("tac",4.2);
      btkNote("vod",1);   // 突破「运营」瓶颈的机械条件
      S.attrs.运营=Math.min(capOf("运营"),S.attrs.运营+0.35); }},
@@ -292,7 +292,7 @@ export function squadCard(){
    「看录像」是新的：替补线原来除了对位挑战（每周最多两次）就没有别的事可做。 */
 export const BENCH_ACTS=[
   {k:"film", n:"看录像", d:"坐在替补席上把首发这一场逐帧过一遍",
-   fat:9, sum:()=>["运营 +0.35","攒运营突破","战术素养 +0.2","轮换资本 +0.25"],
+   fat:9, sum:()=>["运营 +0.35"].concat(btkPathDead("运营")?[]:["攒运营突破"],["战术素养 +0.2","轮换资本 +0.25"]),
    run:()=>{
      S.attrs.运营=Math.min(capOf("运营"),S.attrs.运营+0.35);
      btkNote("vod",1);
