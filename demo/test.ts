@@ -1765,6 +1765,47 @@ try {
     }
   }
 } catch (e: any) { bad.push("替补席测试抛异常：" + (e && e.message)); }
+/* 出身的加成（2026-09-10 作者批）：文案从常量生成、代码读同一份常量，不许再分家（原来主播 perk 手写 +60%，收入实际 ×1.7）；
+   天花板形状只对新开的档生效；形状表每条出身有加有减、总和不超过 ±1；主播起始段位不能比青训高；
+   建档页数值模式写数、叙事模式只说方向 */
+try {
+  const ms = readText(HERE, "src", "main.ts"), ss = readText(HERE, "src", "shop.ts");
+  [/S\.origin==="streamer"\?1\.[0-9]/, /S\.origin==="streamer"\?\(pre\?1\./, /S\.origin==="academy"\?1\.[0-9]/, /S\.origin==="academy"\?3:-2/].forEach(re => {
+    if (re.test(ms) || re.test(ss)) bad.push("出身加成：代码里又出现了手写倍率 " + re + "——请读 ORIGIN_MUL / ORIGIN_RANK");
+  });
+  const pct = (x: number) => Math.round((x - 1) * 100);
+  const sp = A.ORIGIN.streamer.perk, ap = A.ORIGIN.academy.perk;
+  if (!sp.includes(`收入 +${pct(A.ORIGIN_MUL.streamMoney)}%`) || !sp.includes(`+${pct(A.ORIGIN_MUL.streamHeatPre)}%`) || !sp.includes(`+${pct(A.ORIGIN_MUL.streamHeatPro)}%`)) bad.push("出身加成：主播 perk 和 ORIGIN_MUL 对不上：" + sp);
+  if (!ap.includes(`训练收益 +${pct(A.ORIGIN_MUL.academyTrain)}%`)) bad.push("出身加成：青训 perk 和 ORIGIN_MUL 对不上：" + ap);
+  if (A.ORIGIN_RANK.streamer >= A.ORIGIN_RANK.academy) bad.push("出身加成：主播起始段位不能比青训高（作者 2026-09-10 定）");
+  Object.entries(A.ORIGIN_CAP).forEach(([k, t]: any) => {
+    const v = Object.values(t) as number[]; const sum = v.reduce((a, b) => a + b, 0);
+    if (!v.some(x => x > 0) || !v.some(x => x < 0) || Math.abs(sum) > 1) bad.push(`出身天花板：${k} 的形状表要有加有减、总和不超过 ±1（现在 ${JSON.stringify(t)}）`);
+  });
+  // 新档带形状、老档（没有 originCap）不带
+  A.screenCreate(11); let S = A.S();
+  S.name = "T"; S.pos = "mid"; S.ageIdx = 1;
+  const sb = S.bgOffer.find((b: any) => b.origin === "streamer"); S.bgPick = sb.k; S.origin = "streamer";
+  S.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+  A.startPre(); S = A.S();
+  if (!S.originCap) bad.push("出身天花板：新开的档没有打上 originCap 标记");
+  const extra = (d: string) => ((S.capBonus && S.capBonus[d]) || 0) + (S.capExp || 0);
+  if (Math.abs(A.capOf("操作") - Math.min(99, A.cap(7) + A.ORIGIN_CAP.streamer.操作 + extra("操作"))) > 1e-9) bad.push("出身天花板：新档主播的操作上限没带上 +2");
+  const withShift = A.capOf("运营"); delete S.originCap;
+  if (Math.abs(A.capOf("运营") - withShift - 2) > 1e-9) bad.push("出身天花板：老存档（没有 originCap）的运营上限不该被扣 2");
+  S.originCap = 1;
+  // 建档页与出发确认页
+  const numWas = A.uiNum();
+  A.screenCreate(12); S = A.S(); S.bgPick = S.bgOffer[0].k; S.origin = S.bgOffer[0].origin; S.ageIdx = 1;
+  A.uiSetNum(true); const hNum = A.viewCreate(), sNum = A.summaryCard();
+  A.uiSetNum(false); const hWord = A.viewCreate();
+  A.uiSetNum(numWas);
+  if (!hNum.includes("天花板 心态 +2") || !hNum.includes("天花板 操作 +2") || !hNum.includes(`训练收益 +${pct(A.ORIGIN_MUL.academyTrain)}%`)) bad.push("建档页（数值模式）：路线说明没写出天花板变化和专属加成");
+  if (!sNum.includes("天花板")) bad.push("出发确认页（数值模式）：没写路线的天花板变化");
+  if (!hWord.includes("心态↑") || hWord.includes("天花板 心态 +2")) bad.push("建档页（叙事模式）：应只说方向，不写具体数");
+  const fx = A.bgEffects(S.bgOffer[0]);
+  if (fx.length && !hNum.includes(fx[0])) bad.push("建档页（数值模式）：出身卡没写背景加成：" + fx[0]);
+} catch (e: any) { bad.push("出身加成测试抛异常：" + (e && e.message)); }
 if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }
   console.log("自检通过");
 }

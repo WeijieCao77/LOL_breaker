@@ -2,7 +2,7 @@ import { checkAch } from "./achieve";
 import { AUTO_KEYS } from "./auto";
 import { gicon } from "./avatar";
 import { addStaff, cloutOf } from "./clout";
-import { SEASONS, addFans, addFat, apCost, clamp, contractTerms, fanTier, nowLabel, nowStamp, preLog, pushEvent, render } from "./main";
+import { ORIGIN_MUL, SEASONS, addFans, addFat, apCost, clamp, contractTerms, fanTier, nowLabel, nowStamp, preLog, pushEvent, render } from "./main";
 import { rnd } from "./rng";
 import { diffOf, snapshot } from "./random";
 import { escapeHtml } from "./save";
@@ -418,7 +418,7 @@ export function noteStreamMoney(v){
    所以规模不动，改成只掐尖：一周之内递减（上面）＋一个赛段的结算上限（下面）。 */
 export const STREAM_GIFT=2.2;
 export function streamIncome(){
-  const originMul=S.origin==="streamer"?1.7:1.0;
+  const originMul=S.origin==="streamer"?ORIGIN_MUL.streamMoney:1.0;
   // 独家：合同价，旱涝保收——但俱乐部那一刀先扣掉
   if(S.streamDeal) return S.streamDeal.base*originMul*(1-streamClubCut());
   // 名气进礼物公式要封顶：pow(f/40,1.22) 无上界，生涯后期名气过千时
@@ -526,7 +526,7 @@ export function signStreamDeal(kind?){
                 need:o.lvl>=2?3:2, done:0};
   addMoney("sign",sign);
   bizNote("直播独家",plat,"签了",sign,`${o.n}${kind==="club"?"（俱乐部合作平台）":kind==="rival"?"（对家平台，经理不高兴）":""}·每播保底 ${base} 万·每赛段至少播 ${o.lvl>=2?3:2} 次`);
-  const originMul=S.origin==="streamer"?1.7:1.0;
+  const originMul=S.origin==="streamer"?ORIGIN_MUL.streamMoney:1.0;
   const net=Math.round(base*originMul*(1-cut));
   let extra="";
   if(kind==="club"){
@@ -570,7 +570,7 @@ export function streamClauseCheck(){
 export function streamOfferCard(){
   const o=S.streamOffer; if(!o) return "";
   const now=Math.round(streamIncome());
-  const originMul=S.origin==="streamer"?1.7:1.0;
+  const originMul=S.origin==="streamer"?ORIGIN_MUL.streamMoney:1.0;
   const hasClub=!!(o.club&&S.team);
   const net=(cut,mul?)=>Math.round(o.base*(mul||1)*originMul*(1-cut));
   const need=o.lvl>=2?3:2;
@@ -628,7 +628,7 @@ export function streamDealCard(){
       <p class="note" style="margin:8px 0 0">自由身的<b>上限更高</b>（收入随粉丝×热度浮动），
         但<b>没有下限</b>——成绩凉了收入就跟着凉，也没有平台帮你推流。</p></div>`;
   }
-  const originMul=S.origin==="streamer"?1.7:1.0;
+  const originMul=S.origin==="streamer"?ORIGIN_MUL.streamMoney:1.0;
   const gross=Math.round(d.base*originMul);
   const net=Math.round(gross*(1-(d.cut||0)));
   const need=d.need||0, done=d.done||0;
