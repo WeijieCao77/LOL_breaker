@@ -94,7 +94,7 @@ export function tierCard(){
     const gap = T.expect - me;
     return `<tr><td><b>${T.n}</b></td>
       <td class="n mono">${T.expect}</td>
-      <td class="n">${rankName(need)}</td>
+      <td class="n">${rankFull(need)}</td>
       <td class="n" style="color:${okS?'var(--cyan)':gap<=6?'var(--gold)':'var(--red)'}">${okS?"够了":`差 ${gap.toFixed(0)}`}</td>
       <td class="n" style="color:${okR?'var(--cyan)':'var(--red)'}">${rk===null?"—":okR?"够了":"不够"}</td></tr>`;
   }).join("");
@@ -1857,7 +1857,7 @@ export function preTransferPage(){
     <div class="grid g2">${TIER_ORDER.slice().reverse().map(k=>{const T=CLUB_TIERS[k],p=selfRecOdds(k);
       return `<button class="act" data-selfrec="${k}" ${c.ok?"":'disabled style="opacity:.4"'}>
         <div class="t">${T.n}</div>
-        <div class="d">期望 ${T.expect}（你 ${tryoutSkill().toFixed(0)}）· 段位 ${rankName(TIER_RANK[k])} · 回信率 <b style="color:${p>=0.2?'var(--cyan)':p>=0.08?'var(--gold)':'var(--red)'}">${(p*100).toFixed(0)}%</b></div></button>`;}).join("")}</div>
+        <div class="d">期望 ${T.expect}（你 ${tryoutSkill().toFixed(0)}）· 段位 ${rankFull(TIER_RANK[k])} · 回信率 <b style="color:${p>=0.2?'var(--cyan)':p>=0.08?'var(--gold)':'var(--red)'}">${(p*100).toFixed(0)}%</b></div></button>`;}).join("")}</div>
     <p class="note">没上岸也可以敲门：把排位战绩和杯赛集锦发过去。回信率看关注度、段位和你离这一档期望的差距——很低，但不是零。
       ${P.invite&&P.invite.pending?`<br><b style="color:var(--gold)">手上有一份 ${P.invite.team} 的试训邀请（回「本周」页处理）。</b>`:""}</p></div>`;
   const rules=`<p class="note" style="margin:4px 2px 0">外赛区规则：外赛区<b>一线队</b>的教练组会看城市争霸赛和主播杯——走得深可能收到跨国邀请（VCS/PCS 这些缺人的赛区来得最勤）；

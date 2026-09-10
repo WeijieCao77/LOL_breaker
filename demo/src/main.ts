@@ -118,6 +118,14 @@ export const CHANGELOG=[
     "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
     "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
   ]},
+  {v:"v20260910b", at:"2026-09-10", items:[
+    "<b>存档不再丢最后一步</b>（玩家实锤：「回满体能以后，误触切出网址到浏览器首页，再重新加载回来的时候，我的体能条变成只有 50 多了」）：自动存档每 1.5 秒最多存一次，原来窗口里的第二次操作<b>不存、也不补</b>——正好卡在那一下离开页面，回来就是上一次的状态。现在窗口一过自动补存；切到后台、离开页面立刻存。任何操作都不会再因为「刚做完就走」而丢",
+    "<b>宿敌成就不再晚一场弹</b>（玩家实锤：「已经触发过一次内战无敌，结果决赛打 T1 又触发了一次」「这支队伍压根没有 Faker，却给我触发了破神者」）：「赢下 Faker / Chovy / Knight 所在的队」这本账原来记在成就检查<b>之后</b>，第三次赢下时查到的还是两次，下一场不管对手是谁都会补弹。两次「内战无」其实是两个成就——「内战无强敌」（LPL 内战，当场对）和「内战无敌手」（三胜 Knight 的队，晚了一场）。现在先记账再查成就，弹在该弹的那一场",
+    "<b>商城和休息卡写的是你真正拿到的数</b>（玩家实锤：「专业理疗写的是 +34 体力，但实际上只加了 30」「短途度假写着 +60，实际 +53」）：卡面原来写的是基础值，劳模的休息 −12%、出征仪式的恢复倍率、私人康复室的加成都只在结算时算。现在卡面、休息卡、放松后的提示全部按你此刻的倍率写；信任同理（粘合剂 +35% / 刺头 −20% 都进卡面）",
+    "<b>「对位压制」看这场的真实数据</b>（玩家实锤：数据被对面压着还弹「对位压制」）：原来拿你的纸面五维和对面首发的能力比，赢了就算「压制」。现在读赛后全员表里你和对位的评分，压过了才弹「对位压制」，没压过写「对位数据压了你一头，但队伍还是拿下了」；击败明星的高光文案同一口径",
+    "<b>试训门槛的段位底线不再三档同名</b>（玩家实锤：低 / 中 / 高三档都写「国服前 100」）：87 / 91 / 94 三个门槛落在同一个大段里，现在按点数写（国服前 100 22 点 / 110 点 / 176 点），和你自己那一栏同一把尺",
+    "<b>击败明星的高光不再每个赛段都说「第一次」</b>：「你的名字第一次被放在他旁边念」原来按赛段清零，同一位明星每个赛段赢一次就再说一遍「第一次」。现在按生涯计次，第二次起写「大场面第 N 次赢下他」"
+  ]},
   {v:"v20260910a", at:"2026-09-10", items:[
     "<b>转正之后重签，不再给替补合同</b>（玩家实锤：「我的替补合同是第一赛段的，我第二赛段是重签的，但我第二赛段前已经从替补拉到首发了，但他还是给我替补合同，穷的我吃不起火锅了」）：根子有两处——一是从替补席打上首发时，游戏只翻了一个「已转正」标记，<b>身份字段还停在「替补」</b>，而续约报价、媒体日口径、阵容权重读的都是它；二是续约直接<b>照抄旧合同的档次</b>，薪水只在旧数上乘一个 1.02~1.35 的涨幅——而首发档与替补档差 <b>1.45 倍</b>，顶格涨都够不着。现在续约先按<b>你现在是什么身份</b>定档，升了档就把基准搬到新档再谈涨幅，续约卡上会写明「上一份还是替补合同，这一份按首发重新定价」。<b>只升不降</b>：被打回替补席不会因此在续约时砍薪。三条自检钉住：转正要改身份、重签要升档、还在替补席的不能白升"
   ]},
@@ -3204,7 +3212,10 @@ export function costStream(){
 }
 export function costRest(){
   if(_isPre()) return costBits([_eUp(18), `心态<i class="up">+0.3</i>`]);
-  const v=-((S.buff&&S.buff.physio)?-23:-17)*((S.bg&&S.bg.rest)||1)*_prepMul();
+  // 和 restOnce 同一套账：劳模 ×0.88、出征仪式的恢复倍率、私人康复室的 4.5——卡面写的必须是真正回的数（玩家实锤 2026-09-10）
+  const base=((S.buff&&S.buff.physio)?-23:-17)*((S.bg&&S.bg.rest)||1)*_prepMul();
+  const rehab=(S.assets&&S.assets.rehab)?-4.5*_prepMul():0;
+  const v=-(base+rehab)*traitMul("rest")*cerRecMul();
   return costBits([_eUp(v)]);
 }
 
@@ -4097,8 +4108,7 @@ export function endMatch(){
     if(S.comebacks===3) breakthrough("心态",3.0,"你已经在落后的局面里赢过三次。队友开始相信你不会崩。","cb3"); }
   if(won&&opPw-myPw>4)
     pushEvent(`<b>${me}</b> 带队爆冷掀翻 ${m.oppName}，赛后热搜第一。`,"big","高光");
-  else if(won&&star&&ovrOf(star)>74)
-    pushEvent(`<b>${me}</b> 对位压制 <b>${star.id}</b>${star.cn?`（${star.cn}）`:""}，${m.oppName} 被 ${m.sc[0]}:${m.sc[1]} 拿下。`,"good","高光");
+  // 「对位压制」搬到下面：要先有这场的全员表，才知道对线到底谁压谁
   else if(!won&&myPw-opPw>4)
     pushEvent(`<b>${me}</b> 所在的 ${S.team} 被 ${m.oppName} 冷门击败，赛后被喷上热搜。`,"bad","低谷");
   const f=noteForm(S.team,won);
@@ -4114,6 +4124,15 @@ export function endMatch(){
   // 每个系列赛产出真实的个人数据进档案：教练组、周报、试训看的都是这些数字。
   // 成就要用到「院长」判定，所以先合成再建上下文。
   synthSeriesStats(m,won,myPw,opPw);
+  // 对线胜负看这一场的真实数据，不看纸面属性（玩家实锤 2026-09-10：赛后数据被对面压着，还弹「对位压制」）。
+  // 没有全员表（名单不全）才退回纸面比较。
+  const _myLine=m.box&&m.box.mine?m.box.mine.find(x=>x.me):null;
+  const _oppLine=m.box&&m.box.opp?m.box.opp.find(x=>x.pos===S.pos):null;
+  const laneWon=!!(star&&((_myLine&&_oppLine)?_myLine.rating>=_oppLine.rating:avg(DIMS.map(d=>S.attrs[d]))>=ovrOf(star)));
+  if(won&&!(opPw-myPw>4)&&star&&ovrOf(star)>74){
+    if(laneWon) pushEvent(`<b>${me}</b> 对位压制 <b>${star.id}</b>${star.cn?`（${star.cn}）`:""}，${m.oppName} 被 ${m.sc[0]}:${m.sc[1]} 拿下。`,"good","高光");
+    else pushEvent(`对位 <b>${star.id}</b>${star.cn?`（${star.cn}）`:""} 的数据压了 <b>${me}</b> 一头，但 ${S.team} 还是 ${m.sc[0]}:${m.sc[1]} 拿下了 ${m.oppName}。`,"good","高光");
+  }
   // 成就上下文
   const ctx={won, bo5:m.need>=3, myScore:m.sc[0], oppScore:m.sc[1],
     carry:!!(m.box&&m.box.carry), soloWin:!!(m.box&&m.box.soloWin),
@@ -4127,17 +4146,19 @@ export function endMatch(){
     // 玩家在国际赛碰到 BRION 这种 LCK 队也弹「被注视」，文案直接穿帮
     oppIds:(m.opp&&m.opp.players?m.opp.players:[]).map(q=>q&&q.id).filter(Boolean),
     metLegend,
-    laneWon:!!(star&&avg(DIMS.map(d=>S.attrs[d]))>=ovrOf(star)),
+    laneWon,
     nodeFails:m.nodeFails||0,
     lostFirstTwo:m.need>=3&&m.firstTwoLost};
+  // 宿敌账本要先记再查成就（玩家实锤 2026-09-10：第三次赢下 Knight 的队时不弹，决赛打 T1 才弹「内战无敌手」；
+  // 「破神者」也挂到了一支没有 Faker 的队头上）——原来记账在成就之后，账永远晚一场
+  noteRivalBeat(m.opp.players,won);
   checkAch("match",ctx);
   starAfterMatch(m,won,ctx);   // 明星存在感：赛后回响
   if(won) checkAch("win",ctx);
   if(won&&ctx.intl&&ctx.oppLeague==="LCK") checkAch("beatlck",ctx);
 
   // ---- 世界的回声（2026-08-31 竞品拆解移植）----
-  // 宿敌账本：赢下有明星选手的队要被记住
-  noteRivalBeat(m.opp.players,won);
+  // 宿敌账本在上面、成就之前记（见 checkAch 前的注释）
   // 心态气压：输比赛攒 Tilt，赢比赛泄压。0:2 被横扫压力翻倍。
   S.tilt=clamp((S.tilt||0)+(won?-8:(swept||m.sc[0]===0?18:12)*mediaTiltMul()),0,100);   // 媒体日说了狂话，输了更伤心态（×1.5）
   if(!won&&S.tilt>=60&&!S._tiltWarned){
@@ -6531,6 +6552,15 @@ export function scrollStageTop(){
 }
 export let _renderLock=0;
 export let _autosaveAt=0;
+export let _autosaveTimer: any=0;
+/* 立刻落盘：拖尾定时器到点、切后台、离开页面都走这里（boot.ts 挂 pagehide / visibilitychange）。
+   和 render() 里的节流共用同一个时间戳，存过就不会紧接着再存一次。 */
+export function autosaveFlush(reason?: string){
+  try{
+    if(_autosaveTimer){ clearTimeout(_autosaveTimer); _autosaveTimer=0; }
+    if(S&&S.step!=="create"&&S.step!=="end"){ _autosaveAt=Date.now(); saveGame(reason||"离开页面"); }
+  }catch(e){}
+}
 export function render(){
   if(_renderLock>0) return;                 // 托管正在连续处理，等它做完再画
   if(mgLive()) return;                      // 仪式小游戏正在跑：重画会把这一局连 DOM 带计时器换掉（见 cer.ts mgLive）
@@ -6546,6 +6576,9 @@ export function render(){
     if(S&&S.step!=="create"&&S.step!=="end"){
       const now=Date.now();
       if(now-_autosaveAt>1500){ _autosaveAt=now; saveGame("自动"); }
+      // 节流窗内的改动不能丢（玩家实锤 2026-09-10：回满体能后误触地址栏，回来体能条只剩 50 多）——
+      // 排一个拖尾存档，窗口一过就把最后的状态落盘
+      else if(!_autosaveTimer) _autosaveTimer=setTimeout(()=>{ _autosaveTimer=0; autosaveFlush("自动"); },1500-(now-_autosaveAt)+30);
     }
   }catch(e){}
   const body = S.step==="create"?viewCreate()

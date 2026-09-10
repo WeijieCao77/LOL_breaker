@@ -9,6 +9,12 @@ screenCreate();
 audioInit();   // 声音、作者栏版本号、更新日志浮窗
 xferPull();     // 老域名上的存档接力（只在 www 上生效）
 
+/* 切后台 / 离开页面立刻存档（玩家实锤 2026-09-10）：render() 里的自动存档有 1.5 秒节流，
+   误触地址栏那一下正好卡在窗口里，回来就丢了最后一次操作。手机上 beforeunload 不可靠，用 pagehide + visibilitychange。 */
+import { autosaveFlush } from "./main";
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") autosaveFlush("切到后台"); });
+window.addEventListener("pagehide", () => autosaveFlush("离开页面"));
+
 /* 控制台调试口：原来所有函数都是全局的，打包成模块后什么都摸不到了。
    留一个小窗口给作者在 DevTools 里看状态、存档、重画（线上也在，不含任何危险操作）。 */
 import { S, setS } from "./state";

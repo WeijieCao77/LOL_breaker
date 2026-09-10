@@ -204,11 +204,14 @@ export function starAfterMatch(m,won,ctx){
       if(lane&&!S.starSeen[key(lane.id)]){
         S.starSeen[key(lane.id)]=1;
         const outlaned=ctx&&ctx.laneWon;
+        // 「第一次被放在他旁边念」按生涯数（玩家实锤 2026-09-10：每个赛段都说第一次）——赛段闸只管刷屏
+        S.starBig=S.starBig||{};
+        const nb=big?(S.starBig[lane.id]=(S.starBig[lane.id]||0)+1):0;
         addFans(big?22:14);
         pushEvent(`<b>击败 ${lane.id}（${lane.ep}）。</b>${outlaned
           ?`对位数据压过了他——这种截图会在圈里传很久。`
           :`对线没占到便宜，但比分是 ${m.sc[0]}:${m.sc[1]}——赢的是五个人。`}${
-          big?`<br><span style="color:var(--ink-3)">大场面赢下他，你的名字第一次被放在他旁边念。</span>`:""}`,"big","高光");
+          big?`<br><span style="color:var(--ink-3)">${nb<=1?"大场面赢下他，你的名字第一次被放在他旁边念。":`大场面第 ${nb} 次赢下他——圈里已经把你们放在一起说了。`}</span>`:""}`,"big","高光");
       } else if(!lane){
         const s=all[0];
         if(!S.starSeen[key("T:"+s.id)]){ S.starSeen[key("T:"+s.id)]=1; addFans(big?10:6);
