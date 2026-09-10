@@ -12,6 +12,16 @@ import { addTrustAll, avgTrust, salaryOf } from "./team";
 import { addTraitPt } from "./trait";
 import { queueInvite } from "./tryout";
 
+/* 事件结果里的属性收益写实际涨了多少（2026-09-10 同类排查，作者批）：数值本来就封在上限里，
+   但原来字面上照写「心态 +0.5」——到上限写「已到上限」，只涨了一截就写那一截。数值与原来逐项相同 */
+function gainTo(d,n){
+  const b0=S.attrs[d];
+  S.attrs[d]=Math.min(capOf(d),q1(S.attrs[d]+n));
+  const g=S.attrs[d]-b0;
+  if(g<0.05) return `${d}已到上限`;
+  return `${d} +${g>=n-0.06?n:+g.toFixed(1)}`;
+}
+
 /* ================= 随机事件 =================
    有好有坏，由你的选择决定走向。
    刻意做得「不致命」——最多是两周的临时增益或者一笔小钱，
@@ -89,15 +99,15 @@ export const RANDOM_EVENTS=[
    a:[{t:"接了，几天就完", g:"hard", e:()=>{ S.money+=5; (S.flags=S.flags||{}).daida=1;
         return "五万到账。你把那个号打到了钻石，然后删了聊天记录。<b>这件事没有消失，只是暂时没人提。</b>"; }},
       {t:"不接，这条线不能碰", g:"grind", e:()=>{ (S.flags=S.flags||{}).clean=1;
-        S.attrs.心态=Math.min(capOf("心态"),q1(S.attrs.心态+0.5));
-        return "你回了个「不做」。多年以后如果有人翻旧账，你的记录是干净的。心态 +0.5。"; }}]},
+        const gt=gainTo("心态",0.5);
+        return `你回了个「不做」。多年以后如果有人翻旧账，你的记录是干净的。${gt}。`; }}]},
 
   {id:"cafecoach", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&S.money>=3,
    q:()=>`常去的那家网吧老板，聊起来才知道是退役辅助——打过次级联赛。他愿意收 <b>3 万</b>带你两周。`,
    ctx:"「你打得很凶，但你不知道为什么赢。这个我可以教。」",
    a:[{t:"交钱，学", cost:3, e:()=>{ pay(3);
-        S.attrs.指挥=Math.min(capOf("指挥"),q1(S.attrs.指挥+1)); tacAdd(4,"网吧老板的两周课");
-        return "两周里他给你拆了三十场录像，讲的全是视野、时机和资源交换。<b>指挥 +1，战术素养 +4。</b>"; }},
+        const gt=gainTo("指挥",1); tacAdd(4,"网吧老板的两周课");
+        return `两周里他给你拆了三十场录像，讲的全是视野、时机和资源交换。<b>${gt}，战术素养 +4。</b>`; }},
       {t:"算了，自己练", g:"grind", e:()=>"你觉得三万块能干别的。他也没多说。"}]},
 
   {id:"peilian", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career,
@@ -146,8 +156,8 @@ export const RANDOM_EVENTS=[
    ctx:"回怼会有人看。不回也会有人看。",
    a:[{t:"当场回怼，开麦对线", g:"hard", e:()=>{ S.heat=(S.heat||0)+12; S.attrs.心态=Math.max(20,q1(S.attrs.心态-0.3)); (S.flags=S.flags||{}).beefy=1;
         return "切片当晚就传开了。<b>热度 +12，心态 −0.3。</b>你也出了名——出的是「脾气」的名。"; }},
-      {t:"拉黑，继续打", g:"grind", e:()=>{ S.attrs.心态=Math.min(capOf("心态"),q1(S.attrs.心态+0.3));
-        return "你把他拉黑，继续补刀。弹幕安静了一会儿。<b>心态 +0.3。</b>"; }}]},
+      {t:"拉黑，继续打", g:"grind", e:()=>{ const gt=gainTo("心态",0.3);
+        return `你把他拉黑，继续补刀。弹幕安静了一会儿。<b>${gt}。</b>`; }}]},
 
   {id:"family", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&(S.fans||0)<150&&S.pre.week>=4,
    q:()=>`家里打来电话：亲戚介绍了一份工作，让你下周去面试。「打游戏能打到什么时候？」`,
@@ -160,9 +170,9 @@ export const RANDOM_EVENTS=[
   {id:"duopro", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&S.pre.rank>=65,
    q:()=>`排位里连着两把碰到同一个人，ID 是空的，操作不像路人。打完他发来好友申请：<b>「一起排两天？」</b>`,
    ctx:"后来你才知道，那是某支队的替补在练小号。",
-   a:[{t:"双排一周", g:"grind", e:()=>{ addFat(5); S.attrs.操作=Math.min(capOf("操作"),q1(S.attrs.操作+0.4)); S.attrs.运营=Math.min(capOf("运营"),q1(S.attrs.运营+0.2)); S.pre.scoutSeen=(S.pre.scoutSeen||0)+1;
-        return "一周里他教了你三套打线的节奏。<b>操作 +0.4，运营 +0.2</b>，他回队后在群里提过你的名字。"; }},
-      {t:"打完就散", g:"grind", e:()=>{ S.attrs.操作=Math.min(capOf("操作"),q1(S.attrs.操作+0.1)); return "两把之后你们再没排过。那两把你学到一点东西。操作 +0.1。"; }}]},
+   a:[{t:"双排一周", g:"grind", e:()=>{ addFat(5); const g1=gainTo("操作",0.4), g2=gainTo("运营",0.2); S.pre.scoutSeen=(S.pre.scoutSeen||0)+1;
+        return `一周里他教了你三套打线的节奏。<b>${g1}，${g2}</b>，他回队后在群里提过你的名字。`; }},
+      {t:"打完就散", g:"grind", e:()=>{ const gt=gainTo("操作",0.1); return `两把之后你们再没排过。那两把你学到一点东西。${gt}。`; }}]},
 
   {id:"keyboard", rec:0, w:1.8, max:1, when:()=>!!S.pre&&!S.career&&S.money>=3,
    q:()=>`键盘的 Q 键开始连点，关键团战放两次技能。修不好，换一把要 <b>3 万</b>。`,
@@ -190,14 +200,14 @@ export const RANDOM_EVENTS=[
    ctx:"班主任说：「你要是真能打出来，我不拦你。」",
    a:[{t:"请假，专心练", g:"hard", e:()=>{ addBuff("train",1.10,2,"请了两周假"); (S.flags=S.flags||{}).skipExam=1;
         return "两周没人管你，练到凌晨三点。<b>训练收益 +10%，两周。</b>成绩单上那一栏空着。"; }},
-      {t:"回去考试", g:"grind", e:()=>{ addFat(-10); S.attrs.心态=Math.min(capOf("心态"),q1(S.attrs.心态+0.4)); S.pre.rank=Math.max(0,S.pre.rank-1.5);
-        return "考完试你歇了几天，手生了一点。<b>体能回了不少，心态 +0.4，段位 −1.5。</b>"; }}]},
+      {t:"回去考试", g:"grind", e:()=>{ addFat(-10); const gt=gainTo("心态",0.4); S.pre.rank=Math.max(0,S.pre.rank-1.5);
+        return `考完试你歇了几天，手生了一点。<b>体能回了不少，${gt}，段位 −1.5。</b>`; }}]},
 
   {id:"acadscrim", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&preScore()>=40,
    q:()=>`一支俱乐部的<b>二队缺人打训练赛</b>，教练在群里找陪练：「不算钱，管饭，打一周。」`,
    ctx:"陪练不上名单。但你会坐在他们的训练室里。",
-   a:[{t:"去打一周", g:"grind", e:()=>{ addFat(6); tacAdd(2,"给二队当陪练"); S.attrs.运营=Math.min(capOf("运营"),q1(S.attrs.运营+0.2)); S.pre.scoutSeen=(S.pre.scoutSeen||0)+2;
-        return "一周里你被他们打了三十把，也看懂了他们怎么复盘。<b>战术素养 +2，运营 +0.2</b>，教练记住了你。"; }},
+   a:[{t:"去打一周", g:"grind", e:()=>{ addFat(6); tacAdd(2,"给二队当陪练"); const gt=gainTo("运营",0.2); S.pre.scoutSeen=(S.pre.scoutSeen||0)+2;
+        return `一周里你被他们打了三十把，也看懂了他们怎么复盘。<b>战术素养 +2，${gt}</b>，教练记住了你。`; }},
       {t:"不去，自己冲分", g:"grind", e:()=>"你觉得替人当靶子不划算。他们找了别人。"}]},
 
   {id:"crewfight", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&!!(S.pre.mates&&S.pre.mates.length),
@@ -212,8 +222,8 @@ export const RANDOM_EVENTS=[
    ctx:"东西不便宜。你不知道该不该收。",
    a:[{t:"收下，好好用", g:"show", e:()=>{ addBuff("train",1.04,4,"观众送的外设"); addFans(2);
         return "你在直播里认真谢了他。<b>训练收益 +4%，四周。</b>"; }},
-      {t:"退回去", g:"grind", e:()=>{ addFans(4); S.attrs.心态=Math.min(capOf("心态"),q1(S.attrs.心态+0.2));
-        return "你把东西退了回去，在直播里说了原因。<b>弹幕刷了一屏「有原则」。</b>人气 +4，心态 +0.2。"; }}]},
+      {t:"退回去", g:"grind", e:()=>{ addFans(4); const gt=gainTo("心态",0.2);
+        return `你把东西退了回去，在直播里说了原因。<b>弹幕刷了一屏「有原则」。</b>人气 +4，${gt}。`; }}]},
 
   {id:"platform", rec:0, w:1.8, max:1, when:()=>!!S.pre&&!S.career&&(S.fans||0)>=70&&!S.streamDeal,
    q:()=>`直播平台的运营找上门：一份<b>小合同</b>，一次性 <b>10 万</b>，条件是接下来每周至少开播两次。`,
@@ -226,9 +236,9 @@ export const RANDOM_EVENTS=[
    q:()=>`天梯上有个人连着三把在对面，把你打得很难受，赛后加你好友：<b>「solo 一把？」</b>`,
    ctx:"他直播间三千人在看。",
    a:[{t:"solo", g:"hard", e:()=>{ const win=rnd()<0.5+(S.attrs.操作-55)*0.012;
-        if(win){ S.attrs.操作=Math.min(capOf("操作"),q1(S.attrs.操作+0.3)); S.heat=(S.heat||0)+8; return "你赢了。他的直播间刷了一屏问号。<b>操作 +0.3，热度 +8。</b>"; }
-        S.attrs.心态=Math.max(20,q1(S.attrs.心态-0.2)); S.attrs.操作=Math.min(capOf("操作"),q1(S.attrs.操作+0.15));
-        return "你输了，输得不难看。<b>心态 −0.2，操作 +0.15</b>——输给强的人也是练。"; }},
+        if(win){ const gw=gainTo("操作",0.3); S.heat=(S.heat||0)+8; return `你赢了。他的直播间刷了一屏问号。<b>${gw}，热度 +8。</b>`; }
+        S.attrs.心态=Math.max(20,q1(S.attrs.心态-0.2)); const gl=gainTo("操作",0.15);
+        return `你输了，输得不难看。<b>心态 −0.2，${gl}</b>——输给强的人也是练。`; }},
       {t:"不理他", g:"grind", e:()=>{ S.heat=(S.heat||0)+3; return "他在直播里说了你两周。<b>热度 +3</b>，你一句没回。"; }}]},
 
   {id:"wristache", rec:0, w:2, when:()=>!!S.pre&&!S.career&&S.fatigue>=60,
@@ -242,8 +252,8 @@ export const RANDOM_EVENTS=[
   {id:"coachfollow", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&S.pre.week>=6&&preScore()>=38,
    q:()=>`那个加过你的青训教练又发来消息：<b>「发几场你最近的录像给我看看。」</b>`,
    ctx:"他没说会怎么样。但他问了。",
-   a:[{t:"挑三场发过去", g:"grind", e:()=>{ S.pre.scoutSeen=(S.pre.scoutSeen||0)+2; S.attrs.运营=Math.min(capOf("运营"),q1(S.attrs.运营+0.2));
-        return "两天后他回了三条语音，全是挑毛病。<b>运营 +0.2</b>，他说「继续练，我在看」。"; }},
+   a:[{t:"挑三场发过去", g:"grind", e:()=>{ S.pre.scoutSeen=(S.pre.scoutSeen||0)+2; const gt=gainTo("运营",0.2);
+        return `两天后他回了三条语音，全是挑毛病。<b>${gt}</b>，他说「继续练，我在看」。`; }},
       {t:"没回", g:"hard", e:()=>"你觉得还没到给人看的时候。他没再问。"}]},
 
   {id:"collab", rec:0, w:2, max:1, when:()=>!!S.pre&&!S.career&&(S.fans||0)>=50,
@@ -251,7 +261,7 @@ export const RANDOM_EVENTS=[
    ctx:"他打得一般，但会聊。",
    a:[{t:"连", g:"show", e:()=>{ addFans(14); S.heat=(S.heat||0)+14; addFat(5);
         return "那晚你的直播间涌进来几千人。<b>人气 +14，热度 +14。</b>他说下次还找你。"; }},
-      {t:"想先把分打上去", g:"grind", e:()=>{ S.attrs.心态=Math.min(capOf("心态"),q1(S.attrs.心态+0.1)); return "你回了「下次」。他没生气。<b>心态 +0.1。</b>"; }}]},
+      {t:"想先把分打上去", g:"grind", e:()=>{ const gt=gainTo("心态",0.1); return `你回了「下次」。他没生气。<b>${gt}。</b>`; }}]},
 
   /* ---------- 回响：职业后兑现 ---------- */
   {id:"daida_echo", rec:0, w:2, max:1, when:()=>!!S.career&&!!(S.flags&&S.flags.daida)&&(S.heat||0)>=120,
@@ -260,8 +270,8 @@ export const RANDOM_EVENTS=[
    a:[{t:"公关硬扛：不回应", g:"hard", e:()=>{ S.heat=Math.max(0,(S.heat||0)*0.6); addTrustAll(-3);
         return "热搜挂了三天。俱乐部没说话，队友也没说话——<b>但训练室安静了很多</b>。热度掉了四成。"; }},
       {t:"承认，公开道歉", g:"grind", e:()=>{ S.heat=Math.max(0,(S.heat||0)*0.78); addTrustAll(-1);
-        S.attrs.心态=Math.min(capOf("心态"),q1(S.attrs.心态+0.5));
-        return "你发了一段不长的声明。骂的人还是骂，但也有人说「敢认」。<b>热度掉两成，心态 +0.5——这事翻篇了。</b>"; }}]},
+        const gt=gainTo("心态",0.5);
+        return `你发了一段不长的声明。骂的人还是骂，但也有人说「敢认」。<b>热度掉两成，${gt}——这事翻篇了。</b>`; }}]},
 
   {id:"clean_echo", rec:0, w:1.5, max:1, when:()=>!!S.career&&!!(S.flags&&S.flags.clean)&&(S.fans||0)>=400,
    q:()=>`有人在论坛造你的谣：说你当年打排位时收钱代打。帖子被转了几千次。`,

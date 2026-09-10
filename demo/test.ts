@@ -1831,6 +1831,148 @@ try {
     }
   }
 } catch (e: any) { bad.push("替补席测试抛异常：" + (e && e.message)); }
+/* 出身的加成（2026-09-10 作者批）：文案从常量生成、代码读同一份常量，不许再分家（原来主播 perk 手写 +60%，收入实际 ×1.7）；
+   天花板形状只对新开的档生效；形状表每条出身有加有减、总和不超过 ±1；主播起始段位不能比青训高；
+   建档页数值模式写数、叙事模式只说方向 */
+try {
+  const ms = readText(HERE, "src", "main.ts"), ss = readText(HERE, "src", "shop.ts");
+  [/S\.origin==="streamer"\?1\.[0-9]/, /S\.origin==="streamer"\?\(pre\?1\./, /S\.origin==="academy"\?1\.[0-9]/, /S\.origin==="academy"\?3:-2/].forEach(re => {
+    if (re.test(ms) || re.test(ss)) bad.push("出身加成：代码里又出现了手写倍率 " + re + "——请读 ORIGIN_MUL / ORIGIN_RANK");
+  });
+  const pct = (x: number) => Math.round((x - 1) * 100);
+  const sp = A.ORIGIN.streamer.perk, ap = A.ORIGIN.academy.perk;
+  if (!sp.includes(`收入 +${pct(A.ORIGIN_MUL.streamMoney)}%`) || !sp.includes(`+${pct(A.ORIGIN_MUL.streamHeatPre)}%`) || !sp.includes(`+${pct(A.ORIGIN_MUL.streamHeatPro)}%`)) bad.push("出身加成：主播 perk 和 ORIGIN_MUL 对不上：" + sp);
+  if (!ap.includes(`训练收益 +${pct(A.ORIGIN_MUL.academyTrain)}%`)) bad.push("出身加成：青训 perk 和 ORIGIN_MUL 对不上：" + ap);
+  if (A.ORIGIN_RANK.streamer >= A.ORIGIN_RANK.academy) bad.push("出身加成：主播起始段位不能比青训高（作者 2026-09-10 定）");
+  Object.entries(A.ORIGIN_CAP).forEach(([k, t]: any) => {
+    const v = Object.values(t) as number[]; const sum = v.reduce((a, b) => a + b, 0);
+    if (!v.some(x => x > 0) || !v.some(x => x < 0) || Math.abs(sum) > 1) bad.push(`出身天花板：${k} 的形状表要有加有减、总和不超过 ±1（现在 ${JSON.stringify(t)}）`);
+  });
+  // 新档带形状、老档（没有 originCap）不带
+  A.screenCreate(11); let S = A.S();
+  S.name = "T"; S.pos = "mid"; S.ageIdx = 1;
+  const sb = S.bgOffer.find((b: any) => b.origin === "streamer"); S.bgPick = sb.k; S.origin = "streamer";
+  S.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+  A.startPre(); S = A.S();
+  if (!S.originCap) bad.push("出身天花板：新开的档没有打上 originCap 标记");
+  const extra = (d: string) => ((S.capBonus && S.capBonus[d]) || 0) + (S.capExp || 0);
+  if (Math.abs(A.capOf("操作") - Math.min(99, A.cap(7) + A.ORIGIN_CAP.streamer.操作 + extra("操作"))) > 1e-9) bad.push("出身天花板：新档主播的操作上限没带上 +2");
+  const withShift = A.capOf("运营"); delete S.originCap;
+  if (Math.abs(A.capOf("运营") - withShift - 2) > 1e-9) bad.push("出身天花板：老存档（没有 originCap）的运营上限不该被扣 2");
+  S.originCap = 1;
+  // 建档页与出发确认页
+  const numWas = A.uiNum();
+  A.screenCreate(12); S = A.S(); S.bgPick = S.bgOffer[0].k; S.origin = S.bgOffer[0].origin; S.ageIdx = 1;
+  A.uiSetNum(true); const hNum = A.viewCreate(), sNum = A.summaryCard();
+  A.uiSetNum(false); const hWord = A.viewCreate();
+  A.uiSetNum(numWas);
+  if (!hNum.includes("天花板 心态 +2") || !hNum.includes("天花板 操作 +2") || !hNum.includes(`训练收益 +${pct(A.ORIGIN_MUL.academyTrain)}%`)) bad.push("建档页（数值模式）：路线说明没写出天花板变化和专属加成");
+  if (!sNum.includes("天花板")) bad.push("出发确认页（数值模式）：没写路线的天花板变化");
+  if (!hWord.includes("心态↑") || hWord.includes("天花板 心态 +2")) bad.push("建档页（叙事模式）：应只说方向，不写具体数");
+  const fx = A.bgEffects(S.bgOffer[0]);
+  if (fx.length && !hNum.includes(fx[0])) bad.push("建档页（数值模式）：出身卡没写背景加成：" + fx[0]);
+} catch (e: any) { bad.push("出身加成测试抛异常：" + (e && e.message)); }
+/* 上限到 99 硬顶就没有「瓶颈」可破（2026-09-10 玩家实锤：操作满 99 了还弹「教练把你留下破瓶颈」）：
+   不开突破试炼、不算在冲击、按钮写明到顶、里程碑不报「上限 99 → 99」、不吃突破池；没到 99 的维度照旧 */
+try {
+  A.screenCreate(13); let S = A.S();
+  S.name = "T"; S.pos = "mid"; S.ageIdx = 1; S.bgPick = S.bgOffer[0].k; S.origin = S.bgOffer[0].origin;
+  S.talent = { 操作: 10, 运营: 4, 心态: 2, 指挥: 2, 体质: 2 };
+  A.startPre(); S = A.S();
+  A.DIMS.forEach((d: string) => { S.attrs[d] = A.capOf(d); });
+  if (!A.capMaxed("操作") || A.capMaxed("运营")) bad.push(`99 顶：测试前提不成立（操作上限 ${A.capOf("操作")}、运营上限 ${A.capOf("运营")}）`);
+  S.career = S.career || { titles: [] }; S.cer = null; S.cerQ = []; S.btkTrial = {}; S.auto = null; S.events = [];
+  A.btkTrialCheck();
+  const trialDim = S.cer && S.cer.k === "trial" ? S.cer.dim : null;
+  if (trialDim === "操作" || (S.btkTrial && S.btkTrial["操作_si"] !== undefined)) bad.push("99 顶：操作已经 99，还开了突破试炼（教练把你留下破瓶颈）");
+  if (trialDim !== "运营") bad.push("99 顶：没到 99 的运营顶着瓶颈，突破试炼却没开（守卫拦过头了）：" + trialDim);
+  S.cer = null;
+  if (A.btkChasing("操作")) bad.push("99 顶：操作已经 99，还算在「冲击操作瓶颈」");
+  const tb = A.trainBtn("操作", 8);
+  if (!tb.dis || !/99/.test(tb.desc)) bad.push("99 顶：练操作按钮没灰、或没写明已经到 99：" + tb.desc);
+  S.capMile = S.capMile || {}; const mile0 = S.capMile.操作 || 0; S.events = [];
+  A.breakthrough("操作", 2.5, "自检夺冠", undefined, "mile");
+  const ev99 = (S.events || []).map((e: any) => e.text).join(" ");
+  if (/瓶颈松动/.test(ev99)) bad.push("99 顶：里程碑还在报「瓶颈松动 上限 99 → 99」");
+  if (!/已经到 99/.test(ev99)) bad.push("99 顶：夺冠这类里程碑撞上 99 应该说一句「已经到 99」");
+  if ((S.capMile.操作 || 0) !== mile0) bad.push("99 顶：到 99 了还在吃突破池");
+  S.events = [];
+  A.breakthrough("运营", 1.0, "自检", "selfcheck_99_ops");
+  if (!/瓶颈松动/.test((S.events || []).map((e: any) => e.text).join(" "))) bad.push("99 顶：没到 99 的运营突破被误拦了");
+} catch (e: any) { bad.push("99 顶测试抛异常：" + (e && e.message)); }
+/* 同类（2026-09-10）：突破试炼过关给的是里程碑池的「天花板 +1」——池满付不出就不开；
+   运营的机械路径到头时，战术复盘 / 看录像卡不再写「攒运营突破」 */
+try {
+  A.screenCreate(14); let S = A.S();
+  S.name = "T"; S.pos = "mid"; S.ageIdx = 1; S.bgPick = S.bgOffer[0].k; S.origin = S.bgOffer[0].origin;
+  S.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+  A.startPre(); S = A.S();
+  S.capBonus = { 操作: A.CAP_MILE_MAX, 运营: 0, 心态: 0, 指挥: 0, 体质: 0 }; S.capMile = { 操作: A.CAP_MILE_MAX };
+  A.DIMS.forEach((d: string) => { S.attrs[d] = A.capOf(d); });
+  S.career = S.career || { titles: [] }; S.cer = null; S.cerQ = []; S.btkTrial = {}; S.auto = null; S.events = [];
+  if (A.trialCanPay("操作")) bad.push("突破试炼：操作的里程碑池满了，trialCanPay 还说付得出");
+  A.btkTrialCheck();
+  const td = S.cer && S.cer.k === "trial" ? S.cer.dim : null;
+  if (td === "操作") bad.push("突破试炼：操作的里程碑池已经满了（过关也付不出天花板 +1），还开了试炼");
+  if (td !== "运营") bad.push("突破试炼：池子有空的运营顶着瓶颈，试炼却没开：" + td);
+  const vod: any = A.SQUAD_ACTS.find((a: any) => a.k === "vod"), film: any = A.BENCH_ACTS.find((a: any) => a.k === "film");
+  if (!vod.sum().includes("攒运营突破") || !film.sum().includes("攒运营突破")) bad.push("战队卡：运营路径还没到头，却不写「攒运营突破」了");
+  S.capBonus.运营 = A.CAP_MECH_MAX;
+  if (vod.sum().includes("攒运营突破") || film.sum().includes("攒运营突破")) bad.push("战队卡：运营机械路径已刷满，战术复盘 / 看录像还写「攒运营突破」");
+} catch (e: any) { bad.push("突破试炼池满 / 攒突破卡面测试抛异常：" + (e && e.message)); }
+/* 到顶类（2026-09-10 作者批三条）：接班让出的指挥不超过你能涨的；满体能不卖纯回体力的放松、按实际能回的写；
+   属性到上限时战队卡 / 找人聊聊 / 职业前事件不写涨不上去的「+x」 */
+try {
+  const bs = readText(HERE, "src", "bond.ts");
+  if (!/let give=Math\.min\(BOND_HANDOVER,[^;]*capOf\("指挥"\)-S\.attrs\.指挥/.test(bs)) bad.push("接班：队友让出的指挥没有按你还能涨的空间封顶");
+  if (!bs.includes("你的${d}已经到上限")) bad.push("找人聊聊：属性到上限时没有改写成「已经到上限」");
+  A.screenCreate(15); let S = A.S();
+  S.name = "T"; S.pos = "mid"; S.ageIdx = 1; S.bgPick = S.bgOffer[0].k; S.origin = S.bgOffer[0].origin;
+  S.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+  A.startPre(); S = A.S();
+  // 放松
+  S.money = 999; S.fatigue = 0; S.events = [];
+  const m0 = S.money; A.buyRelax("massage");
+  if (S.money !== m0) bad.push("放松：体能是满的，按摩还收了钱");
+  if (!/体力已满/.test(A.shopCard())) bad.push("放松：满体能时卡面没写「体力已满」");
+  S.fatigue = 10; const trip = A.RELAX.find((r: any) => r.k === "trip");
+  if (A.relaxFatNow(trip) !== 10) bad.push(`放松：疲劳只剩 10，度假应写能回 10，却写 ${A.relaxFatNow(trip)}`);
+  const f1 = S.fatigue; A.buyRelax("trip");
+  if (Math.abs((f1 - S.fatigue) - 10) > 0.01) bad.push("放松：疲劳 10 时度假实际回的不是 10");
+  // 战队卡
+  A.DIMS.forEach((d: string) => { S.attrs[d] = A.capOf(d); });
+  const vod: any = A.SQUAD_ACTS.find((a: any) => a.k === "vod"), duo: any = A.SQUAD_ACTS.find((a: any) => a.k === "duo");
+  if (vod.sum().some((x: string) => /运营 \+/.test(x)) || !vod.sum().includes("运营已到上限")) bad.push("战队卡：运营已到上限，战术复盘还写「运营 +0.35」");
+  if (duo.sum().some((x: string) => /操作 \+/.test(x))) bad.push("战队卡：操作已到上限，队友双排还写「操作 +0.14」");
+  S.attrs.运营 = A.capOf("运营") - 1;
+  if (!vod.sum().includes("运营 +0.35")) bad.push("战队卡：运营没到上限，战术复盘却不写 +0.35");
+  // 职业前事件
+  S.attrs.心态 = A.capOf("心态");
+  const ev: any = A.RANDOM_EVENTS.find((x: any) => (x.a || []).some((o: any) => o.t === "拉黑，继续打"));
+  const txt = ev.a.find((o: any) => o.t === "拉黑，继续打").e();
+  if (/心态 \+0\.3/.test(txt) || !/心态已到上限/.test(txt)) bad.push("随机事件：心态已到上限，结果还写「心态 +0.3」：" + txt);
+  S.attrs.心态 = A.capOf("心态") - 2;
+  const txt2 = ev.a.find((o: any) => o.t === "拉黑，继续打").e();
+  if (!/心态 \+0\.3/.test(txt2)) bad.push("随机事件：心态没到上限，结果却不写「心态 +0.3」：" + txt2);
+} catch (e: any) { bad.push("到顶类（放松 / 卡面 / 事件）测试抛异常：" + (e && e.message)); }
+/* 职业前行动卡（2026-09-10）：属性收益写真正拿到的数（含职业前节奏 ×PRE_PACE），到上限写「已到上限」 */
+try {
+  A.screenCreate(16); let S = A.S();
+  S.name = "T"; S.pos = "mid"; S.ageIdx = 1; S.bgPick = S.bgOffer[0].k; S.origin = S.bgOffer[0].origin;
+  S.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+  A.startPre(); S = A.S();
+  S.attrs.运营 = A.capOf("运营") - 5;
+  const want = +(0.18 * A.PRE_PACE).toFixed(2);
+  if (A.preAttrTxt("运营", 0.18) !== `运营 +${want}`) bad.push(`职业前卡面：看职业录像应写运营 +${want}（含职业前节奏），却写 ${A.preAttrTxt("运营", 0.18)}`);
+  S.attrs.运营 = A.capOf("运营");
+  if (A.preAttrTxt("运营", 0.18) !== "运营已到上限") bad.push("职业前卡面：运营到上限还写 +x：" + A.preAttrTxt("运营", 0.18));
+  const numWas = A.uiNum(); A.uiSetNum(true);
+  S.attrs.心态 = A.capOf("心态");
+  const pv = A.viewPre(), rest = A.costRest();
+  A.uiSetNum(numWas);
+  if (/心态 \+0\.2/.test(pv) || !/心态已到上限/.test(pv)) bad.push("职业前卡面：心态到上限，网吧开黑 / 换个游戏还写心态 +x");
+  if (/心态<i class="up">\+/.test(rest) || !/心态已到上限/.test(rest)) bad.push("职业前休息卡：心态到上限还写 +0.3：" + rest);
+} catch (e: any) { bad.push("职业前卡面测试抛异常：" + (e && e.message)); }
 if (bad.length) { console.error("自检失败：\n - " + bad.join("\n - ")); process.exit(1); }
   console.log("自检通过");
 }

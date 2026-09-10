@@ -2,7 +2,7 @@ import { checkAch } from "./achieve";
 import { AUTO_KEYS } from "./auto";
 import { gicon } from "./avatar";
 import { addStaff, cloutOf } from "./clout";
-import { SEASONS, addFans, addFat, apCost, clamp, contractTerms, fanTier, nowLabel, nowStamp, preLog, pushEvent, render } from "./main";
+import { ORIGIN_MUL, SEASONS, addFans, addFat, apCost, clamp, contractTerms, fanTier, nowLabel, nowStamp, preLog, pushEvent, render } from "./main";
 import { rnd } from "./rng";
 import { diffOf, snapshot } from "./random";
 import { escapeHtml } from "./save";
@@ -177,6 +177,10 @@ export const RELAX=[
    这里按此刻的倍率把结算值算出来给卡面和提示用——不改任何数值，只改「写的和拿的一样」。 */
 export function relaxFat(x){ return Math.round(-x.fat*traitMul("rest")*cerRecMul()); }
 export function relaxTrust(x){ return x.trust?Math.round(x.trust*traitMul("trust")):0; }
+/* 此刻真正能回的体力：体能快满时回不满额，满格时是 0（2026-09-10 同类排查：满体能还能花钱买按摩，卡面写 +30 实际 +0） */
+export function relaxFatNow(x){ return Math.round(Math.min(S.fatigue||0, -x.fat*traitMul("rest")*cerRecMul())); }
+/* 纯回体力的项（没有信任 / 关系）在满体能时不卖；火锅还补信任和关系，照卖 */
+export function relaxUseless(x){ return !x.trust&&!x.rel&&(S.fatigue||0)<0.5; }
 
 export function initShop(){
   S.gear={}; SLOTS.forEach(s=>S.gear[s.k]=0);   // 0 = 自带的破烂
@@ -418,7 +422,7 @@ export function noteStreamMoney(v){
    所以规模不动，改成只掐尖：一周之内递减（上面）＋一个赛段的结算上限（下面）。 */
 export const STREAM_GIFT=2.2;
 export function streamIncome(){
-  const originMul=S.origin==="streamer"?1.7:1.0;
+  const originMul=S.origin==="streamer"?ORIGIN_MUL.streamMoney:1.0;
   // 独家：合同价，旱涝保收——但俱乐部那一刀先扣掉
   if(S.streamDeal) return S.streamDeal.base*originMul*(1-streamClubCut());
   // 名气进礼物公式要封顶：pow(f/40,1.22) 无上界，生涯后期名气过千时
@@ -526,7 +530,7 @@ export function signStreamDeal(kind?){
                 need:o.lvl>=2?3:2, done:0};
   addMoney("sign",sign);
   bizNote("直播独家",plat,"签了",sign,`${o.n}${kind==="club"?"（俱乐部合作平台）":kind==="rival"?"（对家平台，经理不高兴）":""}·每播保底 ${base} 万·每赛段至少播 ${o.lvl>=2?3:2} 次`);
-  const originMul=S.origin==="streamer"?1.7:1.0;
+  const originMul=S.origin==="streamer"?ORIGIN_MUL.streamMoney:1.0;
   const net=Math.round(base*originMul*(1-cut));
   let extra="";
   if(kind==="club"){
@@ -570,7 +574,7 @@ export function streamClauseCheck(){
 export function streamOfferCard(){
   const o=S.streamOffer; if(!o) return "";
   const now=Math.round(streamIncome());
-  const originMul=S.origin==="streamer"?1.7:1.0;
+  const originMul=S.origin==="streamer"?ORIGIN_MUL.streamMoney:1.0;
   const hasClub=!!(o.club&&S.team);
   const net=(cut,mul?)=>Math.round(o.base*(mul||1)*originMul*(1-cut));
   const need=o.lvl>=2?3:2;
@@ -628,7 +632,7 @@ export function streamDealCard(){
       <p class="note" style="margin:8px 0 0">自由身的<b>上限更高</b>（收入随粉丝×热度浮动），
         但<b>没有下限</b>——成绩凉了收入就跟着凉，也没有平台帮你推流。</p></div>`;
   }
-  const originMul=S.origin==="streamer"?1.7:1.0;
+  const originMul=S.origin==="streamer"?ORIGIN_MUL.streamMoney:1.0;
   const gross=Math.round(d.base*originMul);
   const net=Math.round(gross*(1-(d.cut||0)));
   const need=d.need||0, done=d.done||0;
@@ -682,13 +686,13 @@ export function buyCourse(k){
 }
 export function buyRelax(k){
   const x=RELAX.find(r=>r.k===k);
-  if(!x||S.money<x.cost) return;
-  const gain=relaxFat(x), tg=relaxTrust(x);
+  if(!x||S.money<x.cost||relaxUseless(x)) return;   // 满体能不收这笔钱
+  const gain=relaxFatNow(x), tg=relaxTrust(x);
   addMoney("relax",-x.cost); addFat(x.fat);
   if(x.trust&&true) addTrustAll(x.trust);
   // 更衣室关系（作者拍板 2026-09-09）：卡面本来就写着「关系一起补」，从这一版起是真的
   if(x.rel&&true) relAll(x.rel);
-  pushEvent(`${x.n}：体力 <b>+${gain}</b>${x.trust?`，信任 +${tg}，顺便和队友聊了聊`:""}。`,"info","放松");
+  pushEvent(`${x.n}：${gain>0?`体力 <b>+${gain}</b>`:"体力本来就是满的"}${x.trust?`，信任 +${tg}，顺便和队友聊了聊`:""}。`,"info","放松");
   render();
 }
 
@@ -744,9 +748,9 @@ export function shopCard(){
     }).join("")}
     <h3 style="font-size:14px;margin-top:18px">放松 · 花钱换体力，不占行动点</h3>
     <div class="grid g2">${RELAX.map(x=>`
-      <button class="act" data-relax="${x.k}" ${S.money<x.cost?'disabled style="opacity:.35"':''}>
+      <button class="act" data-relax="${x.k}" ${(S.money<x.cost||relaxUseless(x))?'disabled style="opacity:.35"':''}>
         <div class="t">${x.n} <span class="tag">${x.cost} 万</span></div>
-        <div class="d">${x.d} · 体力 +${relaxFat(x)}${x.trust?` · 信任 +${relaxTrust(x)}`:""}</div></button>`).join("")}</div>
+        <div class="d">${x.d} · ${relaxFatNow(x)>0?`体力 +${relaxFatNow(x)}`:"体力已满"}${x.trust?` · 信任 +${relaxTrust(x)}`:""}</div></button>`).join("")}</div>
     <h3 style="font-size:14px;margin-top:18px">课程 · 一次买断，永久生效</h3>
     <div class="grid g2">${COURSES.map(c=>{
       const own=hasCourse(c.k);

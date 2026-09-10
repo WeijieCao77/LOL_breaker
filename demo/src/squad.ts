@@ -3,7 +3,7 @@ import { addRel, addStaff, relAll, relMod, syncRelations } from "./clout";
 import { cupTeamName } from "./cup";
 import { formMul, myFormMul } from "./form";
 import { findTeam } from "./intl";
-import { addFat, apCost, apTag, btkNote, cap, capOf, champCoreOn, clamp, costBits, dynastyBonus, isBenched, myRoster, POSN, power, powerParts, pushEvent, PW_SHOW, pwShow, q1, render, SEASONS, strength, tacAdd, tacOf, versionFit } from "./main";
+import { addFat, apCost, apTag, btkNote, btkPathDead, cap, capOf, champCoreOn, clamp, costBits, dynastyBonus, isBenched, myRoster, POSN, power, powerParts, pushEvent, PW_SHOW, pwShow, q1, render, SEASONS, strength, tacAdd, tacOf, versionFit } from "./main";
 import { rnd } from "./rng";
 import { fireEvent } from "./random";
 import { mateInjuryHit, SCRIM_EDGE_NEED, scrimState, subProxyR } from "./rotation";
@@ -155,6 +155,11 @@ export function sumBit(k,n){
   const g=squadGain(k,n);
   return g<0.05?`${nm} 已很高` : `${nm} +${g.toFixed(1)}`;
 }
+/* 卡面上的属性收益按此刻还能涨多少写：到上限写「已到上限」，只剩一截就写那一截（2026-09-10 同类排查，作者批） */
+export function attrBit(d,n){
+  const room=Math.max(0,capOf(d)-((S.attrs&&S.attrs[d])||0));
+  return room<0.005?`${d}已到上限`:`${d} +${Math.min(n,room).toFixed(2)}`;
+}
 export const SQUAD_ACTS=[
   /* 异化点数配平（2026-09-03）：训练赛 3 点＝整个下午，收益 ×1.5 对齐单点价值；
      双排 1 点＝碎片时间，收益 ×0.55——同一把尺：每点买到的东西一样多，
@@ -172,7 +177,7 @@ export const SQUAD_ACTS=[
          try{ myRoster().filter(x=>!x.me&&x.id!==t.id).forEach(o=>addRel(t.id,o.id,-1.5)); }catch(e){} }
      }}},
   {k:"vod", n:"战术复盘", d:"逐帧过录像，把上一场的问题挖出来",
-   sum:()=>[sumBit("tac",4.2),"运营 +0.35","攒运营突破"],
+   sum:()=>[sumBit("tac",4.2),attrBit("运营",0.35)].concat(btkPathDead("运营")?[]:["攒运营突破"]),   // 运营路径到头（99 / 刷满）就别再许诺
    fat:9,  run:()=>{ addSquad("tac",4.2);
      btkNote("vod",1);   // 突破「运营」瓶颈的机械条件
      S.attrs.运营=Math.min(capOf("运营"),S.attrs.运营+0.35); }},
@@ -181,7 +186,7 @@ export const SQUAD_ACTS=[
    fat:13, run:()=>{ addSquad("syn",4.4);
      addTrustAll(1.8); relAll(1); }},
   {k:"duo", n:"队友双排", d:"排位里带一带，练默契也拉近关系",
-   sum:()=>[sumBit("syn",1.2),"信任 +1.9","操作 +0.14"],
+   sum:()=>[sumBit("syn",1.2),"信任 +1.9",attrBit("操作",0.14)],
    fat:4,  run:()=>{ addSquad("syn",1.2);
      addTrustAll(1.9);
      S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.14); }}
@@ -292,7 +297,7 @@ export function squadCard(){
    「看录像」是新的：替补线原来除了对位挑战（每周最多两次）就没有别的事可做。 */
 export const BENCH_ACTS=[
   {k:"film", n:"看录像", d:"坐在替补席上把首发这一场逐帧过一遍",
-   fat:9, sum:()=>["运营 +0.35","攒运营突破","战术素养 +0.2","轮换资本 +0.25"],
+   fat:9, sum:()=>[attrBit("运营",0.35)].concat(btkPathDead("运营")?[]:["攒运营突破"],["战术素养 +0.2","轮换资本 +0.25"]),
    run:()=>{
      S.attrs.运营=Math.min(capOf("运营"),S.attrs.运营+0.35);
      btkNote("vod",1);
@@ -306,7 +311,7 @@ export const BENCH_ACTS=[
      if(w.n<BENCH_FILM_EDGE){ w.n++; const sc=scrimState(); sc.edge=q1(Math.min(SCRIM_EDGE_NEED+2,sc.edge+0.25)); }
    }},
   {k:"duo", n:"队友双排", d:"排位里带一带，练默契也拉近关系",
-   fat:4, sum:()=>["信任 +1.9","操作 +0.14"],
+   fat:4, sum:()=>["信任 +1.9",attrBit("操作",0.14)],
    run:()=>{ addTrustAll(1.9);
      S.attrs.操作=Math.min(capOf("操作"),S.attrs.操作+0.14); }}
 ];

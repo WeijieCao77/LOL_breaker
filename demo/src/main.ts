@@ -13,7 +13,7 @@ import { injuryCard, injuryHit, injuryTick, injuryTrainMul, riskHint, rollInjury
 import { brOthersText, brStep, findTeam, intlAdvance, intlChampCard, intlStageName, leagueOf, majorStandings, spectateIntl, startIntl, wlAdd, wlInfluence, wlRelax, worldsSlot } from "./intl";
 import { aiMarketWindow } from "./market";
 import { NODES_MORE } from "./nodes";
-import { bgOf, drawBackgrounds } from "./origins";
+import { bgEffects, bgEffectsWords, bgOf, drawBackgrounds } from "./origins";
 import { attribute, pmLuckLines, pmReplayCard, postMatchCard, reviewAdvice } from "./postmatch";
 import { careerCard, followUpCard, ladderEncounter, miniPatchAdj, noteRivalBeat, patchNoteCard, pressCard, queueFollowUp, roleCard, weeklyEcho } from "./press";
 import { questCard, questWeek, questWin } from "./quest";
@@ -51,13 +51,27 @@ export const DIM_DESC={
 };
 export const POS=[{k:"top",n:"上单"},{k:"jng",n:"打野"},{k:"mid",n:"中单"},{k:"bot",n:"AD"},{k:"sup",n:"辅助"}];
 export const POSN={top:"上单",jng:"打野",mid:"中单",bot:"AD",sup:"辅助"};
+/* 出身的专属数值集中在这里：代码读它，卡面文案也从它生成，不再手写第二份（2026-09-10 作者批）。
+   原来主播的 perk 手写「直播收益 +60%」，而直播收入是 ×1.7、涨热度职业前 ×1.7 / 进队后 ×1.6——文案和代码早分家了。 */
+export const ORIGIN_MUL={streamMoney:1.7, streamHeatPre:1.7, streamHeatPro:1.6, academyTrain:1.2};
+/* 起始段位修正：青训有人带，主播时间被直播分走。作者 2026-09-10 定：主播不能比青训高 */
+export const ORIGIN_RANK: Record<string, number>={academy:3, streamer:-2};
+/* 出身的天花板形状（2026-09-10 作者批）。两条路线 × 普通 / 强玩家各 240 局两样本批测：冠军率与场均冠军全部 2σ 内，
+   五维按战力折算的净变化 −0.07～+0.19——只改形状，不改强弱。
+   负项必须压在「会练到顶」的维度上（生涯末操作贴顶≈100%、运营 80–99%）：策划稿原表把主播的 −2 放在体质上，
+   体质贴顶率是 0，扣了一分不掉，成了净加强，已弃用。
+   只对新开的档生效（S.originCap，startPre 写入）：训练是 min(上限, 属性+成长)，老档降上限会把已经练上去的数压回来。 */
+export const ORIGIN_CAP: Record<string, Record<string, number>>={streamer:{操作:2,运营:-2},academy:{心态:2,操作:-1}};
+const _pct=x=>Math.round((x-1)*100);
 export const ORIGIN={
   streamer:{n:"主播出身",d:"人气高、直播收益好；体质与运营底子薄",
     base:{操作:59,运营:50,心态:55,指挥:51,体质:48},fame:62,
-    perk:"流量加持：直播收益 +60%"},
+    perk:`流量加持：直播收入 +${_pct(ORIGIN_MUL.streamMoney)}%，涨热度职业前 +${_pct(ORIGIN_MUL.streamHeatPre)}% / 进队后 +${_pct(ORIGIN_MUL.streamHeatPro)}%`,
+    word:"直播赚得多、涨热度快"},
   academy:{n:"青训出身",d:"操作与运营扎实；人气低、期待压力大",
     base:{操作:64,运营:60,心态:50,指挥:53,体质:58},fame:14,
-    perk:"科班底子：训练收益 +20%"}
+    perk:`科班底子：训练收益 +${_pct(ORIGIN_MUL.academyTrain)}%`,
+    word:"练得快"}
 };
 /* 出道年龄：小的起点低但成长快，大的起点高但成长慢。
    衰退（ageCurve）2026-09-06 起从 24 岁起扣属性：20 岁出道最后一年、21 岁出道最后两年会尝到；
@@ -117,6 +131,17 @@ export const CHANGELOG=[
   {v:"v20260910g", at:"2026-09-10", items:[
     "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
     "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+  ]},
+  {v:"v20260910f", at:"2026-09-10", items:[
+    "<b>数值到顶之后，游戏不再当成「还会涨」</b>（上一版排查出来的同类问题，三条一起修）：① <b>队友接班让出指挥</b>——你的指挥已经到上限时，原来你一分没涨、他照样掉 1.5，事件还写「你的指挥 +1.5」；现在他让出的不超过你还能涨的，到顶就只换人喊，不白掉数。② <b>满体能还能花钱放松</b>——按摩、理疗、度假在体能满格时照样能买、照样扣钱，提示写「体力 +30」实际 +0；现在满体能时这三项按钮变灰（火锅还补信任和关系，照卖），卡面和提示按「此刻真正能回多少」写，体能快满时不再按满额写。③ <b>属性到上限还写「+x」</b>——战队卡（战术复盘、看录像、队友双排）、找人聊聊、职业前的随机事件和行动卡，到上限时改写「已到上限」，只涨了一截就写那一截。职业前的网吧开黑、换个游戏、看职业录像、休息四张卡原来还漏乘了职业前节奏 ×1.5（写「运营 +0.18」实际涨 0.27），一并改成真实的数。只有第①条会动数值，其余都是写法"
+  ]},
+  {v:"v20260910e", at:"2026-09-10", items:[
+    "<b>上限到 99 之后不再弹「破瓶颈」</b>（玩家实锤：「操作瓶颈满了 99，还出发和教练一起破瓶颈的剧情」）：99 是所有维度的硬顶，可突破试炼只看「顶没顶到当前上限」、不看这个上限是不是已经 99——于是 99 的操作照样被教练留下加练，过关还写「上限 99.0 → 99.0」，悄悄吃掉突破池。同一个漏洞还在四处：每周的「冲击操作瓶颈」判定、练操作按钮、属性卡上的「怎么破」、夺冠这类里程碑的突破提示。现在全部问同一个判断：到 99 就不开试炼、不再算在冲击、按钮和属性卡写明「已经到 99」，里程碑撞上 99 只说一句「已经到顶」。老存档里已经开着或排着队的这类试炼一并作废",
+    "<b>同类的两处一起修</b>：① 突破试炼过关给的是里程碑池的「天花板 +1」——拿过几座冠军、心态 / 指挥的里程碑池已经满了的人，试炼照样开，过关却只弹「瓶颈已在极限」。现在池子付不出这一格就不开。② 运营的机械路径到头（到 99 或刷满）之后，「战术复盘」「看录像」卡上还写着「攒运营突破」，现在不写了。突破弹窗里的「+x」也改成上限实际涨了多少（原来写的是池子涨了多少，贴着 99 时比实际多）。这几处都不改任何数值：普通 / 强玩家各 120 局批测与修复前逐字节一致"
+  ]},
+  {v:"v20260910d", at:"2026-09-10", items:[
+    "<b>出身也决定天赋的形状</b>（玩家原话：「身份选项应该有他专属的加成……选身份的同时也是选天赋」）：两条路线现在各带一组<b>天花板</b>变化——<b>青训</b>心态 +2、操作 −1；<b>主播</b>操作 +2、运营 −2。只改形状、不改强弱：两条路线 × 普通 / 强玩家各 240 局批测，冠军率和场均冠军全部在噪声范围内（2σ 以内），五维按战力折算的净变化在 −0.07 到 +0.19 之间。策划稿最初那张表把主播的扣分放在体质上——体质本来就练不到顶，扣了一分不掉，等于白送主播一截，已弃用。<b>只对新开的档生效</b>：老存档的上限不动，否则已经练上去的数会被压回来",
+    "<b>出身的加成写在卡上了</b>（玩家：「如果本来就有可以直接写一行小字出来」）：建档页每张出身卡下面多一行它的长处和代价，路线说明写出两条路线的专属加成、天花板变化和起始段位，出发确认页也写。默认的叙事模式只说方向（「操作↑↑ · 体质↓」），打开「数值」才写具体数——建档页不堆数字是 09-06 玩家点过的。顺带修正一句写错多时的文案：主播出身原来写「直播收益 +60%」，实际是<b>直播收入 +70%、涨热度职业前 +70% / 进队后 +60%</b>；这些数现在和代码读同一份常量，加了自检，改一边忘另一边测试就红。起始段位保持<b>青训比主播高</b>（作者定）"
   ]},
   {v:"v20260910c", at:"2026-09-10", items:[
     "<b>年度评选看整年，季后赛和本场 MVP 都算数</b>（玩家实锤：「决赛 MVP 连年度二阵都进不了」「八强 / 半决 / 决赛全是 MVP，年度 MVP 却是队友」）：原来颁奖夜只读<b>当前赛段的常规赛</b>场均评分，季后赛整段零权重；「本场 MVP」在赛后全员表里算了、也显示了，但从没存进状态。现在评选读<b>整年（两个赛段常规赛 + 季后赛）</b>的场均评分，本场 MVP 存进档案、进评选（常规赛每次 +0.3、季后赛每次 +0.8，封顶 4）。40 局批测：普通玩家年度 MVP 从每局生涯 0.30 座到 0.53、一阵 0.72 → 0.93；强玩家 MVP 0.97 → 1.43；冠军率一动不动。第一版试过 0.5 / 1.0 封顶 6，MVP 直接翻倍，压回来了",
@@ -858,8 +883,23 @@ export const CAP_MAX_BONUS=CAP_MECH_MAX+CAP_MILE_MAX;
 /* 经验顶瓶颈（2026-09-06 玩家拍板，变体 B4）：每打完一个赛段所有维度上限 +0.3，最多 +3——练满从 71 到 74，明星线留给突破。
    B（+1/赛段）把世界赛冠军率打到 36%、B′（+0.5）26%、B″（+0.5 + 贴顶衰减 35%）19%——上限就是难度本身；B4 在噪声带内。 */
 export const CAP_EXP_STEP=0.5, CAP_EXP_MAX=5;   // 2026-09-07：0.3/3 → 0.5/5，越打越老练，再战三年的人也还在长
+export function originCapShift(d){
+  if(!S||!S.origin||!(S.originCap||S.step==="create")) return 0;   // 建档时就要算进去（起始属性、瓶颈预览）；老存档没有标记，不动
+  const t=ORIGIN_CAP[S.origin]; return (t&&t[d])||0;
+}
 export function capOf(d){
-  return Math.min(99,cap(S.talent[d])+((S.capBonus&&S.capBonus[d])||0)+((S&&S.capExp)||0));   // 99 封顶：上限加突破池不能越过 100
+  return Math.min(99,cap(S.talent[d])+originCapShift(d)+((S.capBonus&&S.capBonus[d])||0)+((S&&S.capExp)||0));   // 99 封顶：上限加突破池不能越过 100
+}
+/* 99 是全游戏的硬顶（capOf 里的 Math.min(99,…)）。上限已经顶到 99 的维度没有「瓶颈」可破：
+   再往突破池里加也兑现不了一分（玩家实锤 2026-09-10：「操作瓶颈满了 99，还出发和教练一起破瓶颈的剧情」）。
+   突破试炼、机械路径、里程碑、属性卡的「怎么破」、练操作按钮，全部问这一个函数。 */
+export const CAP_HARD=99;
+export function capMaxed(d){ return capOf(d)>=CAP_HARD-0.001; }
+/* 突破试炼过关给的是里程碑池的「天花板 +1」：到 99 硬顶、里程碑池满、或整个突破池满，都付不出这一格——试炼就不该开
+  （同类 bug，和 99 顶一起修：多拿过几座冠军、心态 / 指挥里程碑池已满的人，过关只弹「瓶颈已在极限」） */
+export function trialCanPay(d){
+  if(capMaxed(d)) return false;
+  return capMileOf(d)<CAP_MILE_MAX-0.05&&(((S.capBonus&&S.capBonus[d])||0)<CAP_MAX_BONUS-0.05);
 }
 export function initCapBonus(){ S.capBonus={}; S.capMile={}; DIMS.forEach(d=>{S.capBonus[d]=0;S.capMile[d]=0;}); }
 export function capMileOf(d){ return (S.capMile&&S.capMile[d])||0; }
@@ -870,6 +910,13 @@ export function capMechOf(d){ return Math.max(0,((S.capBonus&&S.capBonus[d])||0)
 export function breakthrough(d,n,reason,key?,kind?){
   if(!S.capBonus) initCapBonus();
   if(key){ S.capSeen=S.capSeen||{}; if(S.capSeen[key]) return; S.capSeen[key]=1; }
+  // 已经到 99：池子一分都兑现不了，不再报「上限 99.0 → 99.0」、也不吃突破池。
+  // 机械路径静默（按钮和属性卡已经写明到顶）；夺冠这类里程碑说一句，免得大时刻无声
+  if(capMaxed(d)){
+    if(kind==="mile") pushEvent(`<b>${d}已经到 ${CAP_HARD}</b>　${reason}<br>
+      <span style="color:var(--ink-3)">这是所有人的终点，没有再往上的空间了。</span>`,"info","突破");
+    return;
+  }
   S.capMile=S.capMile||{};
   const before=S.capBonus[d];
   let got;
@@ -898,9 +945,10 @@ export function breakthrough(d,n,reason,key?,kind?){
   /* 报的上限要和「我的」页那一栏是同一个数（玩家实锤 2026-09-09：操作已经 84.7/85，
      突破弹窗却说上限到 79.5）——原来这里少加了经验顶上来的那一截，也没有 99 封顶。 */
   const exp=(S&&S.capExp)||0;
-  const c0=Math.min(99,cap(S.talent[d])+before+exp), c1=Math.min(99,cap(S.talent[d])+S.capBonus[d]+exp);
+  const sh=originCapShift(d);   // 出身的天花板形状（ORIGIN_CAP）也要算进来，否则和 capOf 差一截
+  const c0=Math.min(99,cap(S.talent[d])+sh+before+exp), c1=Math.min(99,cap(S.talent[d])+sh+S.capBonus[d]+exp);
   pushEvent(`<b>瓶颈松动</b>　${reason}<br>
-    <span style="color:var(--cyan)">${d}上限 ${c0.toFixed(1)} → <b>${c1.toFixed(1)}</b>（+${gotS}）</span>`,
+    <span style="color:var(--cyan)">${d}上限 ${c0.toFixed(1)} → <b>${c1.toFixed(1)}</b>（+${(c1-c0).toFixed(1)}）</span>`,   // 报上限实际涨的数：贴着 99 时池子涨得比上限多
     "big","突破");
   checkAch("break");
   // 纯机械成就只认机械路径：夺冠类里程碑（mile）也走 key=undefined，原来会误发「苦练出真章」
@@ -950,6 +998,7 @@ export function initBtk(){ S.btk={opStreak:0,opThisWeek:0,vod:0,rest:0}; }
 /* 这条机械路径还付得出钱吗？付不出就直说，别让玩家推死轮。
    两种「到头」：机械池刷满；一次性钥匙（心态的 cb3 这类）已经用过。 */
 export function btkPathDead(d){
+  if(capMaxed(d)) return `已经到 <b>${CAP_HARD}</b>，这是所有人的终点，没有瓶颈可破`;
   if(capMechOf(d)>=CAP_MECH_MAX-0.01)
     return "机械路径已刷满——再往上要靠<b>冠军</b>这样的里程碑";
   const P=BREAK_PATHS[d];
@@ -1958,12 +2007,24 @@ export function screenCreate(seed?: number){   // seed：无头测试指定这�
 export const talentLeft=()=>TOTAL_TALENT-DIMS.reduce((a,d)=>a+S.talent[d],0);
 
 /* 三项都选完之后，才把最终的起点摊开给玩家看一次 */
+/* 出身卡上的一行加成（2026-09-10 玩家：「如果本来就有可以直接写一行小字出来」）。
+   叙事模式只说方向（bgEffectsWords——09-06 玩家点名建档页不堆数字），数值模式写具体数；和全游戏一样走 uiNum()。 */
+export function bgFx(b){ return (uiNum()?bgEffects(b):bgEffectsWords(b)).join(" · "); }
+/* 路线的专属加成、天花板形状、起始段位——全部从 ORIGIN_MUL / ORIGIN_CAP / ORIGIN_RANK 生成 */
+export function originFx(k){
+  const o=ORIGIN[k], cp=ORIGIN_CAP[k]||{}, num=uiNum(), rk=ORIGIN_RANK[k]||0;
+  if(!o) return "";
+  const caps=DIMS.filter(d=>cp[d]).sort((a,b)=>cp[b]-cp[a])
+    .map(d=>num?`${d} ${cp[d]>0?"+":"−"}${Math.abs(cp[d])}`:`${d}${cp[d]>0?"↑":"↓"}`).join(num?" · ":" ");
+  return [num?o.perk:o.word, `天花板 ${caps}`,
+    num?`起始段位 ${rk>=0?"+":"−"}${Math.abs(rk)}`:(rk>0?"段位起点高一点":"段位起点低一点")].join(" · ");
+}
 export function summaryCard(){
   const o=ORIGIN[S.origin], A=AGES[S.ageIdx], B=bgOf(S.bgPick);
   const attrs={};
   DIMS.forEach(d=>attrs[d]=Math.min(o.base[d]-9+(A.mod[d]||0)+((B.mod&&B.mod[d])||0),capOf(d)));
   const money=B.money||0, fans=Math.max(0,o.fame+(B.fame||0));
-  // 背景带来的增益不写在脸上——照常生效，让玩家自己在打的过程中体会
+  // 背景与路线的加成写出来（2026-09-10 作者批；原来刻意不写在脸上）：叙事模式只说方向，数值模式写数
   const extra=[];
   if(B.upkeep) extra.push(`每赛段要往家里寄 ${B.upkeep} 万`);   // 这条是负担，必须告知
   return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left">
@@ -1977,6 +2038,7 @@ export function summaryCard(){
     </div>
     <p class="note">起始资金 <b>${money} 万</b>　·　粉丝 <b>${fanTier(fans)}</b>${
       extra.length?`<br>${extra.join("　·　")}`:""}</p>
+    <p class="note">${S.origin==="streamer"?"主播路线":"青训路线"}：${originFx(S.origin)}<br>${B.n}：${bgFx(B)}</p>
     <p class="note" style="color:var(--ink-3)">竖线是天赋瓶颈。剩下的，靠你自己打出来。</p>
     <div class="row" style="justify-content:center;margin-top:18px">
       <button class="btn ghost" id="startback">← 返回修改</button>
@@ -2053,8 +2115,9 @@ export function viewCreate(){
       <button class="opt ${S.bgPick===b.k?'on':''}" data-bg="${b.k}">
         <div class="t">${b.n} <span class="tag">${b.origin==="streamer"?"主播路线 · 挑战难度":"青训路线 · 标准难度"}</span></div>
         <div class="d">${b.d}</div>
+        <div class="d" style="margin-top:5px;color:var(--ink-2)">${bgFx(b)}</div>
       </button>`).join("")}</div>
-    <p class="note" style="margin-top:6px">路线是出身自带的：<b>青训路线</b>偏赛场，<b>主播路线</b>偏赛场外、难一些。每张卡的故事就是它的长处和代价。</p>
+    <p class="note" style="margin-top:6px">路线是出身自带的：<b>青训路线</b>偏赛场（${originFx("academy")}）；<b>主播路线</b>偏赛场外、难一些（${originFx("streamer")}）。每张卡的故事就是它的长处和代价。</p>
     <p class="note">${S.ageIdx!=null?`你现在 ${AGES[S.ageIdx].a} 岁，还没有战队。`:"你还没有战队。"}先用几个月打上分、攒人气、被人看见——然后才谈签约。
       生涯末期随着年龄上涨，属性会往下掉——出道越晚，尝到它越早。</p>
   </div>
@@ -2124,7 +2187,7 @@ export const PRE_WEEKS=PRE_YEAR;
 export function initialRank(){
   const sk=soloSkill();
   const fit=skillToRank(sk);                    // 实力对应的分数位置（统一标尺曲线）
-  const bonus=S.origin==="academy"?3:-2;        // 青训有人带，主播时间被直播分走
+  const bonus=S.origin==="academy"?ORIGIN_RANK.academy:ORIGIN_RANK.streamer;   // 青训有人带，主播时间被直播分走（ORIGIN_RANK）
   return clamp(fit+bonus+rnd()*7-3.5,4,55);
 }
 export function rankName(v){ let r=RANKS[0]; RANKS.forEach(x=>{if(v>=x.at)r=x}); return r.n; }
@@ -2155,6 +2218,7 @@ export function startPre(){
     btk:{opStreak:0,opThisWeek:0,vod:0,rest:0},
     ageCfg:A,bg:B,preYear:1,si:0,split:0,
     pre:{week:1,ap:PRE_AP,rank:0,scout:0,cityCup:null,streamCup:null,log:[],offers:null},
+    originCap:1,   // 出身的天花板形状只对新开的档生效（ORIGIN_CAP）
     seasonAttr0:Object.assign({},attrs),
     events:[],usedLegends:[],retiredPool:[],teamForm:{},formSeen:{},news:[],log:[],
     // 审计 P0：新档必须自带标尺版本，否则第一次读档会被当成老档整体 +15
@@ -2278,7 +2342,7 @@ export function preAct(k,dim?){
     if(P.rank>=95&&!P.top10){P.top10=true;preLog(`你冲进<b>国服前 10</b>。这个位置上的人，职业队不会看不见。`,"big");}
     if(P.rank>=99&&!P.top1){P.top1=true;preLog(`<b>国服第一。</b>这个服务器上没有人排在你前面了。`,"big");}
   } else if(k==="stream"){
-    const m=S.origin==="streamer"?1.7:1.0;
+    const m=S.origin==="streamer"?ORIGIN_MUL.streamHeatPre:1.0;
     // 单纯开播涨得很慢；真正让人记住你的是段位和战绩
     const pop=1.9+S.pre.rank*0.05;
     const gift=streamIncome()*PRE_PACE;   // 职业前节奏系数：一年的点数少了，每一点的产出按比例抬
@@ -2898,7 +2962,7 @@ export function gain(d){
   //（2×120 批测世界赛率掉 5 个点抓出来的）——减掉平移量再算，与换尺前逐点等价
   const t=S.talent[d],c=cap(t),room=clamp(1-((S.attrs[d]-SCALE_SHIFT)/(c-SCALE_SHIFT)),0,1);
   const ageM=S.age<=21?1.15:S.age<=23?1.0:S.age<=25?0.8:0.6;   // 训练收益 24–25 岁八折、26 起六折（2026-09-07 松一档，原来 24 起六折）
-  const bonus=S.origin==="academy"?1.2:1.0;
+  const bonus=S.origin==="academy"?ORIGIN_MUL.academyTrain:1.0;
   const coach=(S.buff&&S.buff.coach)?1.22:1;
   const tb=buffVal('train')*buffVal('mood');
   const tt=traitMul("train");   // 劳模练得更快
@@ -3165,7 +3229,7 @@ export function costSolo(){
    直播涨的是热度，热度再决定粉丝沉淀得多快——所以这个数是「热度 +N」。 */
 export function streamFansRaw(){
   const pre=_isPre();
-  const m=S.origin==="streamer"?(pre?1.7:1.6):1.0;
+  const m=S.origin==="streamer"?(pre?ORIGIN_MUL.streamHeatPre:ORIGIN_MUL.streamHeatPro):1.0;
   const mul=streamFansMul();
   return pre ? (1.9+((S.pre&&S.pre.rank)||0)*0.05)*m*mul : 4.5*m*mul;
 }
@@ -3215,8 +3279,21 @@ export function costStream(){
     `热度<i class="up">+${streamFansRaw().toFixed(1)}</i>`,
     `<i class="up">+${Math.round(inc)}</i>万`]);
 }
+/* 职业前卡面上的属性收益写真正拿到的数（2026-09-10 同类排查，作者批）：原来写的是基础值——漏了职业前节奏 ×PRE_PACE
+   （写「运营 +0.18」实际涨 0.27），到上限时还照写。现在按节奏算、封在上限里，到顶写「已到上限」 */
+export function preAttrTxt(d,n){
+  const v=n*PRE_PACE;
+  if(v<0) return `${d} −${+(-v).toFixed(2)}`;
+  const room=Math.max(0,capOf(d)-((S.attrs&&S.attrs[d])||0));
+  return room<0.005?`${d}已到上限`:`${d} +${+Math.min(v,room).toFixed(2)}`;
+}
+/* 战术素养同理：职业前封顶 40、职业后 60（tacAdd） */
+export function preTacTxt(n){
+  const cap=S.career?60:40, room=Math.max(0,cap-tacOf()), v=n*PRE_PACE;
+  return room<0.05?"战术素养已到上限":`战术素养 +${+Math.min(v,room).toFixed(2)}`;
+}
 export function costRest(){
-  if(_isPre()) return costBits([_eUp(18), `心态<i class="up">+0.3</i>`]);
+  if(_isPre()){ const t=preAttrTxt("心态",0.3); return costBits([_eUp(18), t.replace(/ ([+][0-9.]+)$/,'<i class="up">$1</i>')]); }
   // 和 restOnce 同一套账：劳模 ×0.88、出征仪式的恢复倍率、私人康复室的 4.5——卡面写的必须是真正回的数（玩家实锤 2026-09-10）
   const base=((S.buff&&S.buff.physio)?-23:-17)*((S.bg&&S.bg.rest)||1)*_prepMul();
   const rehab=(S.assets&&S.assets.rehab)?-4.5*_prepMul():0;
@@ -3277,7 +3354,7 @@ export function doAction(k){
     addFat(4*prepMul);
     ladderEncounter(0.50);   // 天梯撞车：按场次折算
   }
-  else if(k==="stream"){const m=S.origin==="streamer"?1.6:1.0;
+  else if(k==="stream"){const m=S.origin==="streamer"?ORIGIN_MUL.streamHeatPro:1.0;
     addFans(4.5*m*(streamFansMul()));
     { const v=streamIncome(); addMoney('stream',v); noteStreamMoney(v); }
     noteStream();                       // 记下这一周的第几场（下一场按下一档算）
@@ -3815,11 +3892,12 @@ export function attrCard(){
       if(!hit.length||false) return "";
       return `<div class="breaks"><div class="bh">已经撞到瓶颈的维度 · 怎么破</div>${
         hit.map(d=>{const P=BREAK_PATHS[d];
-          const full=((S.capBonus&&S.capBonus[d])||0)>=CAP_MAX_BONUS-0.01;
+          const top=capMaxed(d);   // 到 99 硬顶：天赋、里程碑都推不动了
+          const full=top||((S.capBonus&&S.capBonus[d])||0)>=CAP_MAX_BONUS-0.01;
           const deadWhy=btkPathDead(d);
           return `<div class="brk ${full?'maxed':P.auto?'auto':'situ'}">
             <span class="bd">${d}</span>
-            <span class="bw">${full?"这一维已经推到极限了，天赋决定的终点就在这里。"
+            <span class="bw">${top?`已经到 ${CAP_HARD}——所有人的终点，没有再往上的路。`:full?"这一维已经推到极限了，天赋决定的终点就在这里。"
               :deadWhy?deadWhy.replace(/<[^>]+>/g,""):P.how}</span>
             <span class="bp mono">${full?"已满":deadWhy?"里程碑":P.prog()}</span></div>`}).join("")}
         <div class="bn">带 <b>·</b> 的是机械条件——肯这么练就一定拿得到，不看运气。</div></div>`;
@@ -5601,11 +5679,11 @@ export function actPanelPre(){
       <button class="act" data-pre="boost" ${P.ap<apCost("boost")?'disabled style="opacity:.34"':''} title="来钱快；手会糙、心会累，接多了会留下记录">
         <div class="t">接代练 ${apTag("boost")}</div><div class="d">到手约 <b>${Math.round(3+P.rank*0.06)} 万</b> · ${N("心态 −0.15 · 疲劳 +8","手会糙、心会累")}${(S.flags&&S.flags.boostN)?`　<span style="color:var(--ink-3)">已接 ${S.flags.boostN} 单</span>`:""}</div></button>
       <button class="act" data-pre="cafe" ${P.ap<apCost("cafe")?'disabled style="opacity:.34"':''} title="清疲劳、稳心态；有车队的话默契一起涨">
-        <div class="t">网吧开黑 ${apTag("cafe")}</div><div class="d">${N("疲劳 −8 · 心态 +0.25 · 人气小涨","清疲劳、稳心态、人气小涨")}${P.mates&&P.mates.length?" · 车队默契一起涨":""}</div></button>
+        <div class="t">网吧开黑 ${apTag("cafe")}</div><div class="d">${N(`疲劳 −8 · ${preAttrTxt("心态",0.25)} · 人气小涨`,"清疲劳、稳心态、人气小涨")}${P.mates&&P.mates.length?" · 车队默契一起涨":""}</div></button>
       <button class="act" data-pre="chill" ${P.ap<apCost("chill")?'disabled style="opacity:.34"':''} title="疲劳掉得最快，但手感会生一点">
-        <div class="t">换个游戏 ${apTag("chill")}</div><div class="d">${N("疲劳 −12 · 心态 +0.2 · 操作 −0.08","疲劳掉得最快，手感生一点")}</div></button>
+        <div class="t">换个游戏 ${apTag("chill")}</div><div class="d">${N(`疲劳 −12 · ${preAttrTxt("心态",0.2)} · ${preAttrTxt("操作",-0.08)}`,"疲劳掉得最快，手感生一点")}</div></button>
       <button class="act" data-pre="watch" ${P.ap<apCost("watch")?'disabled style="opacity:.34"':''} title="运营和指挥的便宜课">
-        <div class="t">看职业录像 ${apTag("watch")}</div><div class="d">${N("运营 +0.18 · 指挥 +0.18 · 战术素养 +0.3","运营和指挥的便宜课，战术素养也涨")}</div></button>
+        <div class="t">看职业录像 ${apTag("watch")}</div><div class="d">${N(`${preAttrTxt("运营",0.18)} · ${preAttrTxt("指挥",0.18)} · ${preTacTxt(0.3)}`,"运营和指挥的便宜课，战术素养也涨")}</div></button>
     </div>
     ${routineBar()}
     ${(S.pre.mates&&S.pre.mates.length&&true)?squadActs()

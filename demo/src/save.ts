@@ -1,4 +1,4 @@
-import { DIMS, GAME_VER, LDL_ROSTER, POSN, PRE_YEAR, REGION_SYN, SEASONS, SPLITS, anchorLeague, capOf, clamp, dimWord, leagueBaseline, q1, rankFull, render, teamCode } from "./main";
+import { DIMS, GAME_VER, LDL_ROSTER, POSN, PRE_YEAR, REGION_SYN, SEASONS, SPLITS, anchorLeague, capOf, clamp, dimWord, leagueBaseline, q1, rankFull, render, teamCode, trialCanPay } from "./main";
 import { initLedger } from "./shop";
 import { S, setS, applyEra } from "./state";
 
@@ -159,6 +159,8 @@ export function loadGame() {
     // 只在右下角 📜 上打个点，玩家自己点开才看（见 audio.js 的 logBadge）
     S.patchSeen = GAME_VER;
     S.tab = "act";
+    // 老存档里开着的突破试炼：那一维已经付不出「+1」（到 99 / 池子满）就作废（2026-09-10 修 99 顶仍弹破瓶颈剧情）
+    if (S.cer && S.cer.k === "trial" && S.cer.dim && !trialCanPay(S.cer.dim)) S.cer = null;
     // 读档落在比赛中途会尴尬——回到本周界面
     if (S.step === "match") S.step = S.pre && !S.career ? "pre" : "season";
     render();
