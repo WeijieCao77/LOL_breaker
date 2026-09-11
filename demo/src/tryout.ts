@@ -1409,7 +1409,8 @@ export function signTransfer(){
     "big", "转会");
   checkAch("transfer", {to:d.team});
   // 转会也是签约——「远走他乡」这类 on:"sign" 的成就原来只在首签触发，
-  // 真转会出国反而拿不到（修误发 LDL 的同时抓出来的反向漏洞）
+  // 真转会出国反而拿不到（修误发 LDL 的同时抓出来的反向漏洞）。
+  // 不传 first：「职业前」那一栏（一年上岸 / 熬出来的 / 野路子）只在第一份合同时判（2026-09-11，achieve.ts 的 preCareerOpen）
   checkAch("sign");
   txNote(`${old} → <b>${d.team}</b>${(d.league&&d.league!==oldLg)?`（${d.league}）`:""}，赛段薪资 ${wanText(d.salary)}${fee?`，转会费 ${wanText(fee)}`:""}`);
   S.deal = null; render();

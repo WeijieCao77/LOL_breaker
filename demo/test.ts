@@ -1673,6 +1673,77 @@ function hallChecks(): string[] {
   return bad;
 }
 
+/* ---------------- 职业前成就只在第一份合同时结算（2026-09-11 作者批）----------------
+   漏洞：转会也会调 checkAch("sign")（为了「远走他乡」），而「职业前」那一栏的条件读的是签约后一直留着的 S.pre——
+   一年上岸的人被放走、在路人里熬过两年、签回来再转会，会补发「熬出来的」；
+   回到路人时 S.pre 的杯赛记录清零，之后转会补发「野路子」，再打一次杯赛补发杯赛那几项。
+   「远走他乡」照样要在转会出国时亮。 */
+function preCareerAchChecks(): string[] {
+  const bad: string[] = [];
+  const LS: any = g.localStorage;
+  const hallBak = LS.getItem(A.HALL_KEY), saveBak = LS.getItem(A.SAVE_KEY);
+  const fresh = (seed: number) => {
+    A.screenCreate(seed);
+    const s0 = A.S(); s0.name = "T"; s0.pos = "mid"; s0.origin = "academy"; s0.ageIdx = 1; s0.bgPick = s0.bgOffer[0].k;
+    s0.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+    A.startPre();
+    return A.S();
+  };
+  const signFirst = (S: any, team: string) => {
+    A.makeOffers(true);
+    S.pre.offers = [{ k: "start", team, t: "中游首发", d: "", note: "", league: "LPL" }];
+    A.acceptOffer(0);
+    return A.S();
+  };
+  // 转会：手搭一份谈妥的转会合同走 signTransfer（界面上转会的「签字」按钮走的就是它）
+  const transfer = (lg: string) => {
+    const S = A.S();
+    const team = (S.world[lg] || []).map((t: any) => t.name).find((n: string) => n !== S.team);
+    S.deal = { team, clubTier: "mid", dealTier: "start", grade: "A", kind: "start", transfer: true, league: lg,
+      salary: 100, sign: 0, years: 2, buyout: 300, asks: 1, dead: false, signed: false, log: [], reg: false };
+    A.signTransfer();
+    return A.S();
+  };
+  try {
+    // ① 第一份合同：一年上岸、没打过业余赛 →「一年上岸」「野路子」当场解锁
+    let S = fresh(9201);
+    S.pre.preYear = 1; S.pre.cityCup = null; S.pre.streamCup = null;
+    S = signFirst(S, S.world.LPL[3].name);
+    if (!S.ach.fast || !S.ach.noCup) bad.push("第一份合同时「一年上岸」「野路子」没解锁：" + Object.keys(S.ach).join(","));
+    // ② 之后的国内转会：preYear 已经熬到 3（被放走、在路人里熬过两年），不能补发「熬出来的」
+    S.pre.preYear = 3;
+    S = transfer("LPL");
+    if (S.ach.grind) bad.push("「一年上岸」的人之后国内转会，又补发了「熬出来的」");
+    // ③ 转会去外赛区：「远走他乡」照样解锁
+    S = transfer("LCK");
+    if (S.homeLeague !== "LCK") bad.push("测试前提：转会去 LCK 没转成：" + S.homeLeague);
+    else if (!S.ach.foreign) bad.push("转会去外赛区没解锁「远走他乡」");
+    // ④ 第一份合同前打过杯赛（没拿「野路子」）→ 被放走、杯赛记录清零：
+    //    回到路人期间赢下城市争霸赛不补发杯赛那一项；签回职业队再转会，不补发「野路子」
+    S = fresh(9202);
+    S.pre.preYear = 2; S.pre.cityCup = 2; S.pre.streamCup = null;
+    S = signFirst(S, S.world.LPL[3].name);
+    if (S.ach.noCup || S.ach.fast || S.ach.grind) bad.push("第一份合同时职业前那一栏判错了：" + Object.keys(S.ach).join(","));
+    A.dropToStreets(true);
+    S = A.S();
+    A.checkAch("cup", { kind: "city", win: 4 });
+    if (S.ach.citychamp) bad.push("回到路人后赢下城市争霸赛，补发了「城市争霸赛冠军」（那是职业前那一栏的）");
+    S.pre.offers = [{ k: "start", team: S.world.LPL[5].name, t: "中游首发", d: "", note: "", league: "LPL" }];
+    A.acceptOffer(0);   // 签回职业队（重返）
+    S = transfer("LPL");
+    if (S.ach.noCup) bad.push("第一份合同前打过杯赛的人，回到路人再签回来、之后转会补发了「野路子」");
+    // ⑤ 对照：从没签过约时，杯赛那几项照常解锁（别修过头）
+    S = fresh(9203);
+    A.checkAch("cup", { kind: "city", win: 4 });
+    if (!S.ach.citychamp) bad.push("职业前赢下城市争霸赛，「城市争霸赛冠军」没解锁（修过头了）");
+  } catch (e: any) { bad.push("职业前成就自检抛异常：" + ((e && e.stack) || e)); }
+  finally {
+    if (hallBak === null) LS.removeItem(A.HALL_KEY); else LS.setItem(A.HALL_KEY, hallBak);
+    if (saveBak === null) LS.removeItem(A.SAVE_KEY); else LS.setItem(A.SAVE_KEY, saveBak);
+  }
+  return bad;
+}
+
 export { playOne, unitChecks, A, SEED };
 
 /* 批测：npx tsx demo/test.ts --batch 30
@@ -1879,6 +1950,9 @@ if (isMain && process.argv.includes("--tl-probe")) {
   { const hb = hallChecks();
     if (hb.length) { console.error("成就殿堂自检不通过：\n  " + hb.join("\n  ")); process.exit(1); }
     console.log("成就殿堂自检通过：跨存档保留 · 新档奖励照发 · 按存档编号数局 · 老档补记 · 导出导入取并集留最早 · 收藏家只数本局 · 存不了殿堂照跑"); }
+  { const pc = preCareerAchChecks();
+    if (pc.length) { console.error("职业前成就自检不通过：\n  " + pc.join("\n  ")); process.exit(1); }
+    console.log("职业前成就自检通过：只在第一份合同时结算 · 转会不补发熬出来的 / 野路子 · 回到路人再打杯赛不补发 · 转会出国照样远走他乡"); }
   // 背景卡折算表（资金 60 万 / 人气 10 / 信任 3 ≈ 1 点，属性 1 点 = 1 点）：各卡并不等值，差异在形状——见 origins.js 顶部注释
   console.log("背景折算：", A.BACKGROUNDS.map(b => b.k + " " + (Object.values<number>(b.mod || {}).reduce((a, v) => a + v, 0)
     + (b.money || 0) / 60 + (b.fame || 0) / 10 + (b.trust || 0) / 3).toFixed(1)).join(" · "));

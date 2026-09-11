@@ -155,11 +155,22 @@ export function applyAchReward(r){
 ACHIEVEMENTS.push(...ACH_MORE);
 
 export let queueAchCheck=false;
+/* 「职业前」那一栏只认第一份职业合同之前的事（2026-09-11 作者批，修漏洞）。
+   转会也会调 checkAch("sign")——为了「远走他乡」在转会出国时能亮——而这一栏的条件读的是签约后一直留着的 S.pre：
+   一年上岸的人被放走、在路人里熬过两年、签回来之后一转会，preYear 已经是 3，补发「熬出来的」，和「一年上岸」挂在同一个人身上；
+   回到路人时 S.pre 的杯赛记录清零（dropToStreets），之后转会补发「野路子」，再赢一次杯赛补发杯赛那几项。
+   现在：签约钩子只在第一份合同时判这一栏（acceptOffer 传 first）；杯赛钩子只在从没签过约时判（回到路人的前职业选手身上有 careerBak）。
+   「远走他乡」在「世界」那一栏，照旧每次签约都判。 */
+function preCareerOpen(on,ctx){
+  if(on==="sign") return !!(ctx&&ctx.first);
+  return !S.career&&!S.careerBak;
+}
 function checkAchBase(on,ctx?){
   if(!S.ach) initAch();
   ctx=ctx||{};
   ACHIEVEMENTS.forEach(a=>{
     if(a.on!==on||hasAch(a.id)) return;
+    if(a.tag==="职业前"&&!preCareerOpen(on,ctx)) return;
     let ok=false;
     try{ ok=a.cond(ctx); }catch(e){ ok=false; }
     if(!ok) return;
