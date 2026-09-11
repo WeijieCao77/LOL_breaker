@@ -1,6 +1,7 @@
 import { findTeam } from "./intl";
 import { DIMS, SEASONS, SPLITS, addFans, avg, ovrOf, pushEvent } from "./main";
-import { S } from "./state";
+import { S, onEra } from "./state";
+import { eraDef } from "./eras";
 import { lgName } from "./timeline";
 
 /* ================= 明星选手：存在感 =================
@@ -18,7 +19,7 @@ import { lgName } from "./timeline";
    履历 h 写到 2021 赛季（S11）为止——游戏从 2022 开始，之后的冠军由本作的世界线
    自己写进去（S.honors + 季后赛缓存），你改写了历史，他们的履历就跟着变。 */
 
-export const STARS={
+const STARS_S12={
   /* LPL */
   Uzi:{ep:"永远的狂小狗", t:"ADC 的代名词——退役又复出，手还在",
     h:"MSI 2018 冠军 · LPL 2016 春 / 2018 春夏冠军 · S3、S4 世界赛亚军 · 2018 亚运会金牌"},
@@ -106,6 +107,11 @@ export const STARS={
   Blaber:{ep:"北美野王", t:"C9 的发动机",
     h:"LCS 2020、2021 春季冠军 · 2020 LCS 春季 MVP"}
 };
+
+/* 明星库跟着纪元走：每个纪元一份，履历写到开局前一年为止。
+   纪元没配就沿用破晓那份（也就是现状，一个字都没动）。 */
+export let STARS: any=STARS_S12;
+onEra(k=>{ STARS=eraDef(k).stars||STARS_S12; });
 
 export function starOf(id){ return id&&STARS[id] ? Object.assign({id}, STARS[id]) : null; }
 export function rosterOf(teamName){

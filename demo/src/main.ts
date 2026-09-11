@@ -28,7 +28,8 @@ import { askConfirm, confirmCard, continueCard, dropSave, escapeHtml, exportSave
 import { addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, noteStream, noteStreamMoney, PRIZE_PO, PRIZE_PO_LDL, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
 import { addSquad, clampWinProb, defendNote, defendPressure, disruptSynergy, doBenchAct, doSquad, gapVerdict, initSquad, myPower, oppMatchPw, squadActs, squadCard, squadDecay, squadOf, teamPowerOf, watchRoster } from "./squad";
 import { starAfterMatch, starLaneBadge, starSpotHtml } from "./stars";
-import { S, setS } from "./state";
+import { S, setS, onEra, applyEra } from "./state";
+import { ERAS, ERA_KEYS, eraDef } from "./eras";
 import { shareCardOpen } from "./share";
 import { statEvent } from "./stats";
 import { SPEND, addTrust, addTrustAll, avgTrust, checkMateExit, contractCheck, initTrust, payday, resolveLocker, salaryOf, syncTrust, trustDecay, trustMod, trustOf, tryLockerEvent } from "./team";
@@ -128,6 +129,10 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260911c", at:"2026-09-11", items:[
+    "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
+    "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+  ]},
   {v:"v20260911b", at:"2026-09-11", items:[
     "<b>真实时间线</b>（新档）：游戏照旧从 2022 年（S12）开局，之后每个休赛期，世界换成<b>下一年真实的首发名单</b>（2023–2026 按真实比赛数据评分）——T1 2025 年 Doran 顶替 Zeus、2026 年 Peyz 顶替 Gumayusi 这类换人都会发生；你所在的队也跟着真实名单走，你的位置和你亲手造成的变动除外。<b>赛区结构按真实改制</b>：LCS、CBLOL 与 LLA 合并成 LTA 南北两区，太平洋几个赛区合并成 LCP，2026 年 LTA 又拆回 LCS 与 CBLOL，LPL 缩编。难度按原来的曲线标定过——换的是人，不是难度。<b>老存档不变</b>",
     "<b>LDL 停办</b>（真实历史，2026 年起）：大事记、弹窗、周报都会记下这件事；二队数值最高的 25 名选手转为<b>青训储备</b>，一线队有人退役时先从他们里面提拔。你正好在二队的话，会转进母队一队当替补",
@@ -775,46 +780,18 @@ export function apFor(phase){
 }
 export const AP=AP_SEASON;   // 兼容旧引用
 export const SPLITS=["春季赛","夏季赛"];
-export const SEASONS=[
-  {y:2022,tag:"S12",ver:"射手与龙魂",fav:["bot","sup"],dim:"操作",
-   story:"LCK 卷土重来。你刚进联赛，没人认识你。",
-   msi:{mode:"groups"},                                  // 小组赛 → 淘汰赛
-   worlds:{playin:{teams:12,take:4,bo:2},main:"groups"}}, // 入围12取4 → 小组赛16
-  {y:2023,tag:"S13",ver:"打野节奏",fav:["jng"],dim:"运营",
-   story:"版本变了。上个赛季管用的东西，这个赛季不一定管用。",
-   msi:{mode:"double",playin:{teams:4,take:2,bo:3}},
-   worlds:{playin:{teams:8,take:2,bo:2},main:"swiss"}},   // 瑞士轮元年
-  {y:2024,tag:"S14",ver:"上路单带",fav:["top"],dim:"心态",
-   story:"LCK 已经连冠两年。舆论开始说这个赛区不行了。",
-   msi:{mode:"double"},                                   // 8 队双败，无入围
-   worlds:{playin:{teams:8,take:4,bo:2},main:"swiss"}},
-  {y:2025,tag:"S15",ver:"无畏征召",fav:["mid","jng"],dim:"指挥",fearless:true,
-   story:"无畏征召元年——同一个英雄一个系列赛只能用一次。英雄池深的人笑了。",
-   msi:{mode:"double",playin:{teams:4,take:2,bo:3}},
-   worlds:{playin:{teams:8,take:2,bo:3},main:"swiss"}},
-  {y:2026,tag:"S16",ver:"中野联动",fav:["mid","jng"],dim:"运营",fearless:true,
-   story:"最后一年。再拿不下，至暗时刻就写进历史了。",
-   msi:{mode:"double",playin:{teams:4,take:1,bo:3}},      // 2026 入围只取 1
-   worlds:{playin:{teams:4,take:1,bo:3},main:"swiss"}},   // 2026 入围 4 队取 1
-  /* ---- 再战三年（2026-09-07 玩家拍板）：S16 收官后可以选退役或再打，每年年末再问一次，S19 年末强制退役。
-     这三年没有史实可依（INTL_CANON / WORLDS_CANON 只到 S15），全部活模拟；版本主题是拟的。 ---- */
-  {y:2027,tag:"S17",ver:"野核回归",fav:["jng"],dim:"操作",fearless:true,
-   story:"第六年。和你同期出道的人大多已经退役——你还在。",
-   msi:{mode:"double",playin:{teams:4,take:1,bo:3}},
-   worlds:{playin:{teams:4,take:1,bo:3},main:"swiss"}},
-  {y:2028,tag:"S18",ver:"双人路时代",fav:["bot","sup"],dim:"心态",fearless:true,
-   story:"新人一年比一年快。你得靠别的东西赢。",
-   msi:{mode:"double",playin:{teams:4,take:1,bo:3}},
-   worlds:{playin:{teams:4,take:1,bo:3},main:"swiss"}},
-  {y:2029,tag:"S19",ver:"全能中单",fav:["mid"],dim:"指挥",fearless:true,
-   story:"最后一年。这一次是真的。",
-   msi:{mode:"double",playin:{teams:4,take:1,bo:3}},
-   worlds:{playin:{teams:4,take:1,bo:3},main:"swiss"}}
-];
+/* 赛季表跟着纪元走（见 eras.ts）。这里从 const 改成 let 是有意的：
+   全仓库有 96 处 `SEASONS[...]` 的读取点，ES 模块的 import 是活绑定，
+   换纪元时在这里重新赋值，那 96 处一处都不用改。 */
+export let SEASONS: any=eraDef("s12").seasons;
 /* 生涯长度：默认五年（S12–S16，下标 4）；S16 收官时选了「再打」就到 S19（下标 7）。
    凡是原来写 SEASONS.length-1 的地方都改成这个——没选之前媒体不该说「还有三年」。 */
-export const BASE_LAST=4;
+export let BASE_LAST=eraDef("s12").baseLast;   // 生涯基础年数：破晓五年、魔王纪元六年
+onEra(k=>{ const E=eraDef(k); SEASONS=E.seasons; REGION_ANCHOR=E.anchor; LCK_DYNASTY=E.dynasty;
+           BASE_LAST=E.baseLast; LPL_CODE=E.codes||{}; LDL_ROSTER=E.ldl||{}; });
 export function lastSeason(){ return (S&&S.extended)?SEASONS.length-1:BASE_LAST; }
+/* 这个纪元支不支持「再战三年」——只有破晓纪元有 S17–S19 */
+export function eraExtendable(){ return !!eraDef((S&&S.era)||"s12").extendable; }
 /* 年纪大了恢复慢（26+ 八成、28+ 六五折）：每周的自然恢复都乘它；伤病风险 injuryRisk 里本来就按年龄加 */
 export function ageRecoverMul(){ const a=(S&&S.age)||20; return a>=28?0.65:a>=26?0.8:1; }
 /* 世界赛连冠：从夺冠年份表里数最长的一串连续赛季 */
@@ -1271,7 +1248,7 @@ export function versionFit(){
    这不是随便配的难度旋钮，它就是「至暗四年」这个设定本身。
    统一标尺后拆成两层：基础实力走赛区锚（LCK 66.5，比 LPL 高 1.5），
    年份状态走这条曲线——S16 归零，主角破局的窗口敞开。 */
-export const LCK_DYNASTY=[1.6,2.2,2.2,0.9,0];   // 2026-09-08 作者拍板：S12–S14 的 LCK 优势加回（昨晚三刀把早期也砍薄了，强玩家三成多在 S12–S14 就夺冠）；S15 起照旧
+export let LCK_DYNASTY: any=eraDef("s12").dynasty;   // 赛区年份统治力，跟着纪元走
 /* 新秀赛季（签约后的第一个赛季）：你还不是完全体，临场按这个数折。和 LCK 早期优势一起把冠军推向 S15–S16；
    五年内的王朝压到 10% 以内，三连冠留给再战的三年。老档没有 since 字段就不折。 */
 export const ROOKIE_MALUS=3;
@@ -1282,8 +1259,9 @@ export const ROOKIE_MALUS=3;
    风格在维度间重分配（总和≈0，不改均值）：LCK 赢在脑子和纪律，
    LPL 枪最利，VCS 莽是天赋。默契/战术也分赛区（LCK 的强不全在个人数值）。 */
 /* 2026-09-05 全体系 +5（玩家拍板：LPL 首发整体进国服前 100、明星 85-90）：差值一分不变，胜率不动 */
-export const REGION_ANCHOR={LCK:71.5,LPL:70,LEC:68,LCS:66.5,PCS:63,VCS:62.5,LJL:60.5,LLA:60,CBLOL:60,LCO:59,TCL:59.5,
-  LCP:63};   // LCP：真实时间线 2025 年新设的赛区（PCS/VCS/LJL 头部），按 PCS 的锚；老档里没有这个键
+/* 赛区水位＝这个纪元的标尺（作者定：每个纪元用自己的标尺，不做跨年代校准）。
+   真实时间线 2025 年新设的 LCP 按 PCS 的锚，记在破晓纪元的表里（eras.ts 的 ANCHOR_S12）。 */
+export let REGION_ANCHOR: any=eraDef("s12").anchor;
 export const REGION_STYLE={
   LCK:{运营:2,指挥:1,操作:-2,体质:-1},
   LPL:{操作:2,运营:-1,心态:-1},
@@ -1539,14 +1517,8 @@ export function cloneWorld(){
    「青训队联赛」这回事，LDL 是正式的次级联赛，队伍有自己的队名。
    说明：2022 赛季 LDL 的完整队名名单没能查到可核实的来源，
    所以这里只套用命名惯例，不假装它是真实名单。 */
-export const LPL_CODE={
-  "Royal Never Give Up":"RNG","JD Gaming":"JDG","Top Esports":"TES",
-  "Victory Five":"V5","EDward Gaming":"EDG","Weibo Gaming":"WBG",
-  "LNG Esports":"LNG","Bilibili Gaming":"BLG","Oh My God":"OMG",
-  "FunPlus Phoenix":"FPX","Rare Atom":"RA","Invictus Gaming":"IG",
-  "ThunderTalk Gaming":"TT","Anyone's Legend":"AL","LGD Gaming":"LGD",
-  "Ultra Prime":"UP","Team WE":"WE"
-};
+/* 战队简称跟着纪元走（表在 eras.ts）；没配的走下面 teamCode 的首字母兜底 */
+export let LPL_CODE: any=eraDef("s12").codes;
 export function teamCode(name){
   if(LPL_CODE[name]) return LPL_CODE[name];
   // 兜底：取每个词的首字母，最多三位
@@ -1556,25 +1528,9 @@ export function teamCode(name){
    主联赛就是「2022 真实数据快照＋逐年老化」，二队用同一口径：只借名字，
    数值仍走 buildLDL 的母队锚定带（零平衡影响）。缺数据的俱乐部回落占位名。
    外赛区没有次级联赛建模——试训邀请只出自 LPL/LDL（pickClub 联赛写死）。 */
-export const LDL_ROSTER={
-  EDG:[{id:"Solokill",pos:"top"},{id:"Monki",pos:"jng"},{id:"0909",pos:"mid"},{id:"Leave",pos:"bot"},{id:"Xiamu",pos:"sup"}],
-  TES:[{id:"Aspire",pos:"top"},{id:"eight",pos:"jng"},{id:"Novice",pos:"mid"},{id:"Ylaht",pos:"bot"},{id:"Cerasus",pos:"sup"}],
-  BLG:[{id:"Myths",pos:"top"},{id:"can",pos:"jng"},{id:"pinz",pos:"mid"},{id:"Rise",pos:"bot"},{id:"Jwei",pos:"sup"}],
-  JDG:[{id:"unravel",pos:"top"},{id:"Xiao17",pos:"jng"},{id:"Insulator",pos:"mid"},{id:"TuT",pos:"bot"},{id:"Feather",pos:"sup"}],
-  RNG:[{id:"Xiaoxu",pos:"top"},{id:"lovely",pos:"jng"},{id:"Tangyuan",pos:"mid"},{id:"Asura",pos:"bot"},{id:"Mysun",pos:"sup"}],
-  WBG:[{id:"Decade",pos:"top"},{id:"Maggie",pos:"jng"},{id:"forse",pos:"mid"},{id:"Shark",pos:"bot"},{id:"Wuy",pos:"sup"}],
-  AL:[{id:"Overture",pos:"top"},{id:"icecoKe",pos:"jng"},{id:"Harder",pos:"mid"},{id:"Michi",pos:"bot"},{id:"Kaixuan",pos:"sup"}],
-  TT:[{id:"xiao7",pos:"top"},{id:"Youxin",pos:"jng"},{id:"Sky",pos:"mid"},{id:"bat",pos:"bot"},{id:"Mmy",pos:"sup"}],
-  RA:[{id:"torch",pos:"top"},{id:"Yesjun",pos:"jng"},{id:"DOING",pos:"mid"},{id:"Such",pos:"bot"},{id:"Parac",pos:"sup"}],
-  UP:[{id:"Hery",pos:"top"},{id:"yekai",pos:"jng"},{id:"xiaocaobao",pos:"mid"},{id:"rat",pos:"bot"},{id:"Missia",pos:"sup"}],
-  LGD:[{id:"Rumiki",pos:"top"},{id:"Fatfish",pos:"jng"},{id:"haichao",pos:"mid"},{id:"RanL",pos:"bot"},{id:"minghai",pos:"sup"}],
-  LNG:[{id:"Clever9",pos:"top"},{id:"Darwin",pos:"jng"},{id:"Vergil",pos:"mid"},{id:"Uneasy",pos:"bot"},{id:"yawang",pos:"sup"}],
-  V5:[{id:"Invincible",pos:"top"},{id:"pzx",pos:"jng"},{id:"Dream",pos:"mid"},{id:"Kepler",pos:"bot"},{id:"Jerry",pos:"sup"}],
-  OMG:[{id:"Munian",pos:"top"},{id:"Mori",pos:"jng"},{id:"Steel",pos:"mid"},{id:"2y1",pos:"bot"},{id:"Guang",pos:"sup"}],
-  FPX:[{id:"Kartis",pos:"top"},{id:"haoye",pos:"jng"},{id:"Qing",pos:"mid"},{id:"Xingye",pos:"bot"},{id:"Lele",pos:"sup"}],
-  WE:[{id:"Demon",pos:"top"},{id:"Yanxiang",pos:"jng"},{id:"xqw",pos:"mid"},{id:"yhp",pos:"bot"},{id:"Fahai",pos:"sup"}],
-  IG:[{id:"YSKM",pos:"top"},{id:"Beige",pos:"jng"},{id:"xzy",pos:"mid"},{id:"xiaoyueji",pos:"bot"},{id:"Mitsuki",pos:"sup"}]
-};
+/* 二队真名表跟着纪元走：新纪元没有就留空（buildLDL 会回落到生成的新秀名），
+   等以后拿到那一年次级联赛的名单再填 */
+export let LDL_ROSTER: any=eraDef("s12").ldl;
 export function buildLDL(w){
   const src=(w.LPL||[]);
   const rk=src.map(t=>({t,p:avg(t.players.map(q=>avg(DIMS.map(d=>q.r[d]))))}))
@@ -2062,8 +2018,9 @@ export function ageWorld(){
 export function screenCreate(seed?: number){   // seed：无头测试指定这一局的随机种子；界面上当 onclick 用时收到的是事件对象，rngInit 会忽略
   // 位置和年龄不给默认值（玩家点名）：开局的每一个选择都该是玩家自己按下去的
   setS({step:"create", name:"", pos:null, origin:"academy", ageIdx:null,
-       bgPick:null, bgOffer:[],
+       bgPick:null, bgOffer:[], era:"s12",
        talent:{操作:0,运营:0,心态:0,指挥:0,体质:0}});
+  applyEra("s12");
   rngInit(seed);                  // 这一局的随机种子（进存档；见 rng.ts）——先定种子
   S.bgOffer=drawBackgrounds();    // 再抽出身卡，这样同种子连出身卡都一样
   render();
@@ -2150,6 +2107,18 @@ export function viewCreate(){
   const sd=Math.sqrt(avg(t.map(x=>(x-m)**2)));
   const ad=clamp(52-(sd-1.8)*7.5,18,96);
   return `${cont}
+  <div class="card">
+    <h2>选一个纪元<em>你在哪一年出道</em></h2>
+    <div class="grid g2">${ERA_KEYS.map(k=>{ const E=ERAS[k]; return `
+      <button class="opt ${(S.era||"s12")===k?'on':''}" data-era="${k}">
+        <div class="t">${E.n} <span class="tag">${E.sub} · ${E.years}</span>${E.demo?'<span class="tag" style="color:var(--gold)">DEMO</span>':''}</div>
+        <div class="d">${E.long}</div>
+      </button>`; }).join("")}</div>
+    <p class="note">纪元决定你所处的世界：名单、赛区强弱、赛制、生涯长度全都不一样，
+      <b>各纪元的数据互不相通</b>。选定之后中途不能改。${
+      ERAS[S.era||"s12"].demo?`<br><b style="color:var(--gold)">「${ERAS[S.era||"s12"].n}」还是 DEMO</b>：
+      名单和数值是手写的脚手架，等真实数据校对——头部战队大致对，中下游和小赛区会有出入。`:""}</p>
+  </div>
   <div class="card">
     <h2>第一步 · 选手身份</h2>
     <h3>你的 ID<span class="tag">比赛服上的名字</span></h3>
@@ -2257,6 +2226,7 @@ export function rankFull(v){
   return cur.n+DIV[d];
 }
 export function startPre(){
+  applyEra(S.era||"s12");   // 纪元决定赛季表、名单快照、赛区标尺——必须在建世界之前切
   S.preLen=PRE_YEAR;   // 这一档的职业前年长；老档（20 周）读取时 save.ts 按它换算周数
   S.patchSeen=GAME_VER;   // 新开局不弹更新说明
   statEvent("start");
@@ -4935,7 +4905,7 @@ export function viewOffseason(){
   else if(msiYear) label=`<b style="color:var(--gold-hi)">MSI 冠军</b> · 联赛${label}`;
   const last=S.si>=lastSeason();
   // 五年到了：退役还是再打（玩家拍板：三年、每年都问、两座改叫「两冠」、三连才是王朝）
-  const fork=(S.si===BASE_LAST&&!S.extended)?`<div class="ver" style="margin-top:14px"><b>五年到了。</b><span class="tag" title="再战三年刚上线，还在测试：S17–S19 全部活模拟，数值和事件还会调；玩到哪里不对劲请到群里说">测试中</span> 你 ${S.age} 岁${
+  const fork=(S.si===BASE_LAST&&!S.extended&&eraExtendable())?`<div class="ver" style="margin-top:14px"><b>五年到了。</b><span class="tag" title="再战三年刚上线，还在测试：S17–S19 全部活模拟，数值和事件还会调；玩到哪里不对劲请到群里说">测试中</span> 你 ${S.age} 岁${
       S.age>=26?"，手速已经在往下走":S.age>=24?"，操作从明年起每年往下掉":"，还在平台期"}。
       退役就看生涯名片；再打三年，年纪会一年比一年大、新人一年比一年快——但三连世界冠军只有这样才拿得到，没拿过冠军的也还有一整个周期。</div>
     <div class="row"><button class="btn primary" id="encore">再打三年（测试中）→</button><button class="btn ghost" id="retire">退役，看生涯名片 →</button></div>`
@@ -6790,6 +6760,11 @@ export function render(){
 }
 export function bind(){
   const st=$("stage");
+  st.querySelectorAll("[data-era]").forEach((b: any)=>b.onclick=()=>{
+    // 换纪元＝换一个世界：赛季表、名单、赛区标尺一起换，出身卡也要按新世界重抽
+    S.era=b.dataset.era; applyEra(S.era);
+    S.bgOffer=drawBackgrounds(); S.bgPick=null;
+    render();});
   st.querySelectorAll("[data-age]").forEach((b: any)=>b.onclick=()=>{S.ageIdx=+b.dataset.age;render()});
   st.querySelectorAll("[data-bg]").forEach((b: any)=>b.onclick=()=>{
     S.bgPick=b.dataset.bg;

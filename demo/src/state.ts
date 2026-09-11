@@ -35,3 +35,15 @@ export interface GameState {
 /** screenCreate() 之前是 null；之后永远是一个完整对象 */
 export let S: GameState = null as unknown as GameState;
 export function setS(v: GameState): void { S = v; }
+
+/* ---------- 纪元切换的挂钩（2026-09-08）----------
+   纪元 = 一个自带名单、赛制、标尺的世界（见 eras.ts）。作者定的两条：
+   **不同纪元的数据不共通，每个纪元用自己的标尺** —— 所以不需要跨年代校准，
+   每个纪元内部自洽就行。
+
+   实现上不去改那 96 处 `SEASONS[...]` 的读取点：各模块把自己那几张表从 const 改成 let，
+   在这里登记一个「换纪元时重新赋值」的回调。state.ts 不 import 任何模块，
+   所以谁都能往这里登记而不产生循环引用。applyEra 在开局和读档时各调一次。 */
+const _eraHooks: Array<(k: string) => void> = [];
+export function onEra(fn: (k: string) => void): void { _eraHooks.push(fn); }
+export function applyEra(k: string): void { _eraHooks.forEach(fn => fn(k || "s12")); }

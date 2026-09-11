@@ -1,6 +1,6 @@
 import { DIMS, GAME_VER, LDL_ROSTER, POSN, PRE_YEAR, REGION_SYN, SEASONS, SPLITS, anchorLeague, capOf, clamp, dimWord, leagueBaseline, q1, rankFull, render, teamCode, trialCanPay } from "./main";
 import { initLedger } from "./shop";
-import { S, setS } from "./state";
+import { S, setS, applyEra } from "./state";
 
 /* ================= 存档 =================
 
@@ -139,6 +139,9 @@ export function loadGame() {
     // 存档时被剔除的弹窗字段补回空值，避免到处 undefined
     SAVE_SKIP.forEach(k => { if (S[k] === undefined) S[k] = null; });
     scrubFloats(S);
+    // 纪元：老档没有这个字段，一律按破晓纪元（现状）。必须在任何读 SEASONS / DATA 的迁移之前切。
+    if(!S.era) S.era="s12";
+    applyEra(S.era);
     fixLegacyAcad(S);
     fixStaleRank(S);
     if (!S.ledger && true) initLedger();   // 老档没有流水：从下一笔开始记

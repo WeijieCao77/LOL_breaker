@@ -7,7 +7,8 @@ import { rnd } from "./rng";
 import { addRingTitle, setBreakAgenda } from "./rotation";
 import { realNote, tlCanon, tlIntlMinors, tlMajors, tlOn } from "./timeline";
 import { PRIZE_MSI, PRIZE_W, addMoney } from "./shop";
-import { S } from "./state";
+import { S, onEra } from "./state";
+import { eraDef } from "./eras";
 
 /* ================= 国际赛：MSI 与 世界赛 =================
    赛制按真实历史:
@@ -130,9 +131,11 @@ export function buildWorldsField(playerResult,cfg){
     seeds[HL]=others.slice(0,4);          // 没资格，本赛区名额全给别人
   }
 
-  // 正赛 16 席 = 直进席 + 入围晋级席
-  const takeN=cfg.playin.take, directN=16-takeN;
-  const perMajor=Math.floor(directN/majors().length);      // 每个大赛区直进几支
+  /* 正赛 16 席 = 直进席 + 入围晋级席。
+     没有 playin 配置＝这一年没有入围赛，16 席全是直进（2016 就是这样，纪元模式要用）。 */
+  const PI=cfg.playin||null;
+  const takeN=PI?PI.take:0, directN=16-takeN;
+  const perMajor=Math.floor(directN/majors().length);      // 每个大赛区直进几支（真实时间线下按当年的大赛区）
   const direct=[], playin=[];
   majors().forEach(lg=>{
     direct.push(...seeds[lg].slice(0,perMajor));
@@ -142,8 +145,14 @@ export function buildWorldsField(playerResult,cfg){
     .map(lg=>minorChampion(lg)).sort((a,b)=>pw(b)-pw(a));
   // 直进席还差的，由最强的小赛区冠军补上
   while(direct.length<directN&&minorCh.length) direct.push(minorCh.shift());
-  playin.push(...minorCh.slice(0,Math.max(0,cfg.playin.teams-playin.length)));
-  return {direct:direct.slice(0,directN),playin:playin.slice(0,cfg.playin.teams),seeds};
+  if(!PI){
+    // 无入围赛：本来要去打入围的那几支，直接按实力补进正赛，凑满 16 席
+    const rest=playin.concat(minorCh).sort((a,b)=>pw(b)-pw(a));
+    while(direct.length<directN&&rest.length) direct.push(rest.shift());
+    return {direct:direct.slice(0,directN),playin:[],seeds};
+  }
+  playin.push(...minorCh.slice(0,Math.max(0,PI.teams-playin.length)));
+  return {direct:direct.slice(0,directN),playin:playin.slice(0,PI.teams),seeds};
 }
 
 /* ---------- 入围赛：8 队双败，取前 4 ---------- */
@@ -242,7 +251,7 @@ export function startIntl(type,playerResult){
     enterPrep("intl", S.intl.queue[0], cfg.playin.bo, "世界赛入围赛首战 · 赛前备战");
     return true;
   }
-  qual=canonQual(playin,simPlayIn(playin).slice(0,cfg.playin.take));
+  qual=cfg.playin?canonQual(playin,simPlayIn(playin).slice(0,cfg.playin.take)):[];
   const field=direct.concat(qual);
   if(qual.length) pushEvent(`入围赛结束（${cfg.playin.teams} 队争 ${cfg.playin.take} 个名额），<b>${qual.join("、")}</b> 晋级正赛。`,"info","世界赛");
   return openIntl("worlds",field,cfg.main);
@@ -291,7 +300,7 @@ export function intlBoNeed(){
   if(!I) return true;
   if(I.stage==="knockout") return 3;
   if(I.stage==="groups") return 1;
-  if(I.stage==="playin") return (I.cfg&&I.cfg.playin.bo)||2;
+  if(I.stage==="playin") return (I.cfg&&I.cfg.playin&&I.cfg.playin.bo)||2;
   const [w,l]=I.record;
   return (w===2||l===2)?2:1;
 }
@@ -454,13 +463,28 @@ export function simEventStaged(field,stage){
    你自己打进决赛（决赛永远真打）——影响力越大，偏得越多，这正是要的曲线。 */
 /* 史实数据层（Leaguepedia 逐条取证，gen-canon.js 生成——队名已映射到库内 2022 快照，
    库里不存在的席位不写、回落自由模拟）。si 0-3 = S12-S15；S16 无剧本。 */
-export const WORLDS_CANON={"0":{"LCK":["Gen.G","T1","Dplus Kia","Kiwoom DRX"],"LPL":["JD Gaming","Top Esports","EDward Gaming","Royal Never Give Up"],"LEC":["G2 Esports","Rogue","Fnatic","MAD Lions KOI"],"LCS":["100 Thieves","Cloud9","Evil Geniuses"],"VCS":["GAM Esports","Saigon Buffalo"],"PCS":["CTBC Flying Oyster"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Isurus"],"LCO":["Chiefs Esports Club"],"TCL":["İstanbul Wildcats"]},"1":{"LCK":["Gen.G","T1","KT Rolster","Dplus Kia"],"LPL":["JD Gaming","Bilibili Gaming","LNG Esports","Weibo Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI","Team BDS"],"LCS":["Cloud9","Team Liquid"],"VCS":["GAM Esports","Team Secret"],"PCS":["PSG Talon","CTBC Flying Oyster"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Movistar R7"]},"2":{"LCK":["Hanwha Life Esports","Gen.G","Dplus Kia","T1"],"LPL":["Bilibili Gaming","Top Esports","LNG Esports","Weibo Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI"],"LCS":["FlyQuest","Team Liquid","100 Thieves"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"LJL":["Fukuoka SoftBank HAWKS gaming"],"CBLOL":["paiN Gaming"],"LLA":["Movistar R7"]},"3":{"LCK":["Gen.G","Hanwha Life Esports","KT Rolster","T1"],"LPL":["Anyone's Legend","Bilibili Gaming","Top Esports","Invictus Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI"],"LCS":["FlyQuest","100 Thieves"],"PCS":["CTBC Flying Oyster","PSG Talon"],"VCS":["Team Secret"]}};
-export const MSI_CANON={"0":{"LCK":["T1"],"LPL":["Royal Never Give Up"],"LEC":["G2 Esports"],"LCS":["Evil Geniuses"],"PCS":["PSG Talon"],"VCS":["Saigon Buffalo"],"LJL":["DetonatioN FocusMe"],"CBLOL":["RED Canids"],"LLA":["Team Aze"],"LCO":["ORDER"],"TCL":["İstanbul Wildcats"]},"1":{"LCK":["Gen.G","T1"],"LPL":["JD Gaming","Bilibili Gaming"],"LEC":["G2 Esports","MAD Lions KOI"],"LCS":["Cloud9","Golden Guardians"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Movistar R7"]},"2":{"LCK":["Gen.G","T1"],"LPL":["Bilibili Gaming","Top Esports"],"LEC":["G2 Esports","Fnatic"],"LCS":["Team Liquid","FlyQuest"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"CBLOL":["LOUD"],"LLA":["Estral Esports"]},"3":{"LCK":["Gen.G","T1"],"LPL":["Bilibili Gaming","Anyone's Legend"],"LEC":["G2 Esports","MAD Lions KOI"],"LCS":["FlyQuest"],"CBLOL":["FURIA"],"PCS":["CTBC Flying Oyster"],"VCS":["GAM Esports"]}};
-export const LEAGUE_CANON={"LCK":{"0":["T1","Gen.G"],"1":["Gen.G","Gen.G"],"2":["Gen.G","Hanwha Life Esports"],"3":["Gen.G","Gen.G"]},"LEC":{"0":["G2 Esports","Rogue"],"1":["MAD Lions KOI","G2 Esports"],"2":["G2 Esports","G2 Esports"],"3":["MAD Lions KOI","G2 Esports"]},"LCS":{"0":["Evil Geniuses","Cloud9"],"1":["Cloud9",null],"2":["Team Liquid","FlyQuest"]},"LPL":{"0":["Royal Never Give Up","JD Gaming"],"1":["JD Gaming","JD Gaming"],"2":["Bilibili Gaming","Bilibili Gaming"],"3":["Top Esports","Bilibili Gaming"]}};
-export const INTL_CANON={
+const WORLDS_CANON_S12={"0":{"LCK":["Gen.G","T1","Dplus Kia","Kiwoom DRX"],"LPL":["JD Gaming","Top Esports","EDward Gaming","Royal Never Give Up"],"LEC":["G2 Esports","Rogue","Fnatic","MAD Lions KOI"],"LCS":["100 Thieves","Cloud9","Evil Geniuses"],"VCS":["GAM Esports","Saigon Buffalo"],"PCS":["CTBC Flying Oyster"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Isurus"],"LCO":["Chiefs Esports Club"],"TCL":["İstanbul Wildcats"]},"1":{"LCK":["Gen.G","T1","KT Rolster","Dplus Kia"],"LPL":["JD Gaming","Bilibili Gaming","LNG Esports","Weibo Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI","Team BDS"],"LCS":["Cloud9","Team Liquid"],"VCS":["GAM Esports","Team Secret"],"PCS":["PSG Talon","CTBC Flying Oyster"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Movistar R7"]},"2":{"LCK":["Hanwha Life Esports","Gen.G","Dplus Kia","T1"],"LPL":["Bilibili Gaming","Top Esports","LNG Esports","Weibo Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI"],"LCS":["FlyQuest","Team Liquid","100 Thieves"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"LJL":["Fukuoka SoftBank HAWKS gaming"],"CBLOL":["paiN Gaming"],"LLA":["Movistar R7"]},"3":{"LCK":["Gen.G","Hanwha Life Esports","KT Rolster","T1"],"LPL":["Anyone's Legend","Bilibili Gaming","Top Esports","Invictus Gaming"],"LEC":["G2 Esports","Fnatic","MAD Lions KOI"],"LCS":["FlyQuest","100 Thieves"],"PCS":["CTBC Flying Oyster","PSG Talon"],"VCS":["Team Secret"]}};
+const MSI_CANON_S12={"0":{"LCK":["T1"],"LPL":["Royal Never Give Up"],"LEC":["G2 Esports"],"LCS":["Evil Geniuses"],"PCS":["PSG Talon"],"VCS":["Saigon Buffalo"],"LJL":["DetonatioN FocusMe"],"CBLOL":["RED Canids"],"LLA":["Team Aze"],"LCO":["ORDER"],"TCL":["İstanbul Wildcats"]},"1":{"LCK":["Gen.G","T1"],"LPL":["JD Gaming","Bilibili Gaming"],"LEC":["G2 Esports","MAD Lions KOI"],"LCS":["Cloud9","Golden Guardians"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"LJL":["DetonatioN FocusMe"],"CBLOL":["LOUD"],"LLA":["Movistar R7"]},"2":{"LCK":["Gen.G","T1"],"LPL":["Bilibili Gaming","Top Esports"],"LEC":["G2 Esports","Fnatic"],"LCS":["Team Liquid","FlyQuest"],"VCS":["GAM Esports"],"PCS":["PSG Talon"],"CBLOL":["LOUD"],"LLA":["Estral Esports"]},"3":{"LCK":["Gen.G","T1"],"LPL":["Bilibili Gaming","Anyone's Legend"],"LEC":["G2 Esports","MAD Lions KOI"],"LCS":["FlyQuest"],"CBLOL":["FURIA"],"PCS":["CTBC Flying Oyster"],"VCS":["GAM Esports"]}};
+const LEAGUE_CANON_S12={"LCK":{"0":["T1","Gen.G"],"1":["Gen.G","Gen.G"],"2":["Gen.G","Hanwha Life Esports"],"3":["Gen.G","Gen.G"]},"LEC":{"0":["G2 Esports","Rogue"],"1":["MAD Lions KOI","G2 Esports"],"2":["G2 Esports","G2 Esports"],"3":["MAD Lions KOI","G2 Esports"]},"LCS":{"0":["Evil Geniuses","Cloud9"],"1":["Cloud9",null],"2":["Team Liquid","FlyQuest"]},"LPL":{"0":["Royal Never Give Up","JD Gaming"],"1":["JD Gaming","JD Gaming"],"2":["Bilibili Gaming","Bilibili Gaming"],"3":["Top Esports","Bilibili Gaming"]}};
+const INTL_CANON_S12={
   worlds:{0:"Kiwoom DRX",1:"T1",2:"T1",3:"T1"},
   msi:{0:"Royal Never Give Up",1:"JD Gaming",2:"Gen.G",3:"Gen.G"}
 };
+/* 四张史实表跟着纪元走（2026-09-08）：原来写死 2022 那一套，S6 纪元的 si=0
+   会去查它，把 Kiwoom DRX 拉进 2016 年的世界赛。所有消费点都带 `if(表[S.si])`
+   的守卫，所以**缺数据就是自由模拟**——新纪元可以先留空，以后再补。 */
+export let WORLDS_CANON: any=WORLDS_CANON_S12;
+export let MSI_CANON: any=MSI_CANON_S12;
+export let LEAGUE_CANON: any=LEAGUE_CANON_S12;
+export let INTL_CANON: any=INTL_CANON_S12;
+onEra(k=>{
+  const C=eraDef(k).canon;
+  WORLDS_CANON = C? (C.worldsSeeds||{}) : WORLDS_CANON_S12;
+  MSI_CANON    = C? (C.msiSeeds||{})    : MSI_CANON_S12;
+  LEAGUE_CANON = C? (C.leagueSeeds||{}) : LEAGUE_CANON_S12;
+  INTL_CANON   = C? (C.intl||{worlds:{},msi:{}}) : INTL_CANON_S12;
+});
+
 /* ---------- 世界线张力（2026-09-03 玩家拍板：均衡档）----------
    一个变量管全部：wl[联赛] ∈ [0,1]，0=完全按史实，1=完全活模拟。
    注入：你在联赛打一周正赛 +0.03×影响力；国际赛淘汰某赛区的队 +0.10×影响力；
@@ -561,7 +585,7 @@ export function benchedIntl(type,playerResult){
   }else{
     const cfg=F.worlds;
     const {direct,playin}=buildWorldsField(playerResult,cfg);
-    field=direct.concat(canonQual(playin,simPlayIn(playin.filter(n=>n!==S.team)).slice(0,cfg.playin.take)));
+    field=direct.concat(cfg.playin?canonQual(playin,simPlayIn(playin.filter(n=>n!==S.team)).slice(0,cfg.playin.take)):[]);
     if(field.indexOf(S.team)<0) field.push(S.team);
     stage=cfg.main;
   }
@@ -628,7 +652,7 @@ export function spectateIntl(type){
   }else{
     const cfg=F.worlds;
     const {direct,playin}=buildWorldsField(null,cfg);
-    field=direct.concat(canonQual(playin,simPlayIn(playin).slice(0,cfg.playin.take)));
+    field=direct.concat(cfg.playin?canonQual(playin,simPlayIn(playin).slice(0,cfg.playin.take)):[]);
     stage=cfg.main;
   }
   const name=type==="msi"?"MSI":"世界赛";
@@ -661,7 +685,7 @@ export function intlAdvance(){
     I.record[won?0:1]++;
     if(I.record[1]>=2){ finishIntl(`入围赛出局`,"playin"); return; }
     if(I.record[0]>=2){
-      const take=(I.cfg&&I.cfg.playin.take)||4;
+      const take=(I.cfg&&I.cfg.playin&&I.cfg.playin.take)||4;
       const qual=[S.team].concat(canonQual(I.field.filter(n=>n!==S.team),
         simPlayIn(I.field.filter(n=>n!==S.team)).slice(0,take-1)));
       S.cameFromPlayin=true;
