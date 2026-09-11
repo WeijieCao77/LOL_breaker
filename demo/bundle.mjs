@@ -29,11 +29,17 @@ function writeAvatars() {
     "/* 由 demo/bundle.mjs 生成，不进仓库；类型见 avatars.d.ts */\nexport const AVATARS_JSON = " + JSON.stringify(json) + ";\n");
 }
 
+/* Windows 上 git 检出是 CRLF：拼装前一律归一成 LF，本地产物才和 CI（Linux 检出 LF）逐字节一致。
+   原来模板是 CRLF 时，下面去掉 <title> 那一行的正则吃不到 \r，产物里多出一个空行，CI 的构建一致性就红了。
+   脚本里真正的 CR 只可能来自模板字符串里的换行，按规范它们本来就等于 LF，归一不改变任何字符串的值。 */
+const lf = s => s.replace(/\r\n/g, "\n");
+
 /* 和原 build.py 一样的拼装：样式、页头、脚本、外层文档结构 */
 function assemble(js) {
-  const tpl = fs.readFileSync(path.join(DEMO, "career_template.html"), "utf8");
-  const css = fs.readFileSync(path.join(DEMO, "theme.css"), "utf8");
-  const hdr = fs.readFileSync(path.join(DEMO, "header.html"), "utf8");
+  js = lf(js);
+  const tpl = lf(fs.readFileSync(path.join(DEMO, "career_template.html"), "utf8"));
+  const css = lf(fs.readFileSync(path.join(DEMO, "theme.css"), "utf8"));
+  const hdr = lf(fs.readFileSync(path.join(DEMO, "header.html"), "utf8"));
   let out = tpl, n;
   [out, n] = replaceOnce(out, /<style>[\s\S]*?<\/style>/, "<style>\n" + css + "\n</style>");
   if (!n) throw new Error("style block not found");
