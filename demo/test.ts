@@ -1318,7 +1318,8 @@ function unitChecks() {
     /* 转会轨迹只数「真的换了俱乐部」那几笔（玩家实锤 2026-09-09：只去过一个外赛区队
        就回 RNG 一人一城，名片却写转会七站）。这张表本来就记着续约、买断、升一队、下放。 */
     {
-      const txBak = S.txLog;
+      const txBak = S.txLog, careerBak0 = S.career, teamBak = S.team;
+      S.career = Object.assign({}, S.career || {}, { log: [] });   // 前三条只看转会记录这本账
       S.txLog = [
         { s: "S12", text: "RNG → <b>某外赛区队</b>（LCK），赛段薪资 300 万", k: "move" },
         { s: "S12", text: "与 某外赛区队 续约，赛段薪资 320 万", k: "renew" },
@@ -1334,7 +1335,34 @@ function unitChecks() {
       if (A.txStops() !== 3) bad.push(`老存档回推转会站数不对：应是 3 站，实得 ${A.txStops()} 站`);
       S.txLog = [{ s: "S12", text: "与 RNG 续约，赛段薪资 500 万", k: "renew" }];
       if (A.txStops() !== 0) bad.push("从没转过会却算出了站数（应显示「一队待到底」）");
-      S.txLog = txBak;
+
+      /* 玩家实锤 2026-09-11：待过三支队，名片写两站。三条病根各钉一条。 */
+      const lpl = S.world.LPL.map((t: any) => t.name);
+      // ① 转会记录漏了一笔（回到路人再签回来那条路原来不记）：逐赛段轨迹里换过的队也要数到
+      S.team = lpl[2];
+      S.txLog = [{ s: "S14", text: `${lpl[1]} → <b>${lpl[2]}</b>，赛段薪资 400 万`, k: "move" }];
+      S.career.log = [{ si: 0, split: 0, team: lpl[0] }, { si: 1, split: 1, team: lpl[1] }, { si: 2, split: 0, team: lpl[2] }];
+      if (A.txStops() !== 3) bad.push(`待过三支队只数出 ${A.txStops()} 站（逐赛段轨迹里的换队没算上）`);
+      // 一队和它的二队是一家：升队 / 下放不算一站
+      const acad = (S.world.LDL || []).find((t: any) => t.parent && lpl.indexOf(t.parent) >= 0);
+      if (acad) {
+        S.txLog = []; S.team = acad.parent;
+        S.career.log = [{ si: 0, split: 0, team: acad.name }, { si: 0, split: 1, team: acad.parent }];
+        if (A.txStops() !== 0) bad.push(`二队升一队被算成了换俱乐部：${A.txStops()} 站`);
+      }
+      // ② 续约记满也不能把早年的转会挤出表（原来满 12 条直接 shift）
+      S.career.log = []; S.team = lpl[1];
+      S.txLog = [{ s: "S12", text: `${lpl[0]} → <b>${lpl[1]}</b>，赛段薪资 300 万`, k: "move" }];
+      for (let i = 0; i < 30; i++) A.txNote(`与 ${lpl[1]} 续约，赛段薪资 300 万`, "renew");
+      if (A.txStops() !== 2) bad.push(`续约记满之后早年的转会被挤掉了：应是 2 站，实得 ${A.txStops()} 站`);
+      if (S.txLog.length > 24) bad.push(`转会轨迹没封顶：${S.txLog.length} 条`);
+      // ③ 回到路人再签回：签了别家记一站，签回原队不算
+      S.txLog = [];
+      A.txNoteReturn(lpl[0], lpl[1], null);
+      if (!(S.txLog.length === 1 && S.txLog[0].k === "move")) bad.push("回到路人后签了别的队，转会轨迹没记成一站");
+      A.txNoteReturn(lpl[1], lpl[1], null);
+      if (!S.txLog[1] || S.txLog[1].k === "move") bad.push("回到路人后签回原队，被算成了换俱乐部");
+      S.txLog = txBak; S.career = careerBak0; S.team = teamBak;
     }
 
     // 天梯赛季重置：掉一档（作者拍板：上赛季王者，重置就变回宗师），掉到大师为止
@@ -1365,6 +1393,39 @@ function unitChecks() {
      (2) 冠军必须进教练/经理信任（以前两个式子里都没有荣誉项，
          三连冠的人在教练眼里和一个赢球多的普通首发没区别）；
      (3) 点名引援的候选池要有梯度，不能永远是「够得着的人里最难的五个」。 */
+/* 回到路人再签回别家（玩家实锤 2026-09-11：待过三支队，名片写两站）。走真路径：
+   职业前签第一家 → 打完一个赛段 → 季中被放回路人（dropToStreets）→ 按职业前那一套签回另一家（acceptOffer）。
+   原来这条路一笔转会轨迹都不记，名片少一站；同一年待过的两支队也只写最后那支。
+   它会换掉整份存档，放在所有自检最后跑。 */
+function streetsReturnChecks() {
+  const bad: string[] = [];
+  A.screenCreate(7703);
+  let S = A.S();
+  S.name = "T"; S.pos = "mid"; S.origin = "academy"; S.ageIdx = 1; S.bgPick = S.bgOffer[0].k;
+  S.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+  A.startPre();
+  A.makeOffers(true);
+  A.acceptOffer(0);
+  S = A.S();
+  const first = S.team, lg = S.homeLeague || "LPL";
+  S.career.log = [{ si: S.si, split: 0, team: first, lg, seed: 5, result: 0, w: 5, l: 4 }];   // 春季赛在这家打完
+  A.dropToStreets(true);
+  S = A.S();
+  const other = (S.world[lg] || []).map((t: any) => t.name).find((n: string) => n !== first);
+  S.pre.offers = [{ k: "start", team: other, t: "中游首发", d: "", note: "", league: lg }];
+  A.acceptOffer(0);
+  S = A.S();
+  const last = (S.txLog || [])[(S.txLog || []).length - 1];
+  if (!last || last.k !== "move" || last.text.indexOf(first) < 0 || last.text.indexOf(other) < 0)
+    bad.push("回到路人后签回另一家，转会轨迹没记这一站：" + JSON.stringify(last));
+  if (A.txStops() !== 2) bad.push(`待过两支队，名片转会写 ${A.txStops()} 站（应是 2 站）`);
+  S.career.log = S.career.log.concat([{ si: S.si, split: 1, team: other, lg, seed: 3, result: 0, w: 6, l: 3 }]);   // 夏季赛在新东家打完
+  const poster = A.careerPoster();
+  if (poster.indexOf(`<span>${first}</span>`) < 0 || poster.indexOf(`<span>${other}</span>`) < 0)
+    bad.push(`同一年待过 ${first}、${other} 两支队，名片只写了一支`);
+  return bad;
+}
+
 function cloutChecks() {
   const bad: string[] = [];
   let weeks = 0, listOk = 0, maxCt = 0, honorRows = 0, spread = 0, pools = 0;
@@ -1480,6 +1541,10 @@ if (isMain && process.argv.includes("--batch")) {
   const unit = unitChecks();
   if (unit.length) { console.error("单元检查失败：\n - " + unit.join("\n - ")); process.exit(1); }
   console.log("单元检查通过：导览几何 · 存档消毒");
+  // 会换掉整份存档：放在单元检查之后、下面那局完整生涯（screenCreate 从头开）之前
+  { const sr = streetsReturnChecks();
+    if (sr.length) { console.error("重返职业自检不通过：\n  " + sr.join("\n  ")); process.exit(1); }
+    console.log("重返职业自检通过：签回别家记一站 · 同一年两支队都写上名片"); }
   // 背景卡折算表（资金 60 万 / 人气 10 / 信任 3 ≈ 1 点，属性 1 点 = 1 点）：各卡并不等值，差异在形状——见 origins.js 顶部注释
   console.log("背景折算：", A.BACKGROUNDS.map(b => b.k + " " + (Object.values<number>(b.mod || {}).reduce((a, v) => a + v, 0)
     + (b.money || 0) / 60 + (b.fame || 0) / 10 + (b.trust || 0) / 3).toFixed(1)).join(" · "));
