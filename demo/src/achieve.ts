@@ -1,5 +1,6 @@
 import { ACH_MORE } from "./achieve_more";
 import { gicon } from "./avatar";
+import { hallCount, hallNoteAch, hallRead, hallView } from "./hall";
 import { DIMS, SEASONS, addFans, addFat, capOf, pushEvent } from "./main";
 import { SLOTS, addMoney, hasCourse, streamIncome } from "./shop";
 import { S } from "./state";
@@ -169,9 +170,12 @@ function checkAchBase(on,ctx?){
     if(on!=="ach") queueAchCheck=true;
     pushEvent(`<b>成就解锁 · ${a.n}</b>　${a.d}${a.flavor?`<br><span style="color:var(--gold)">${a.flavor}</span>`:""}${
       gains.length?`<br><span style="color:var(--cyan)">${gains.join(" · ")}</span>`:""}`,"big","成就");
+    // 成就殿堂（2026-09-11 作者拍板）：解锁和奖励照旧只算这一局；同时记进跨存档的殿堂，
+    // 弹窗上写这是殿堂里的第一次，还是别的局早就拿过（hall.ts）
+    const hall=hallNoteAch(a.id);
     // 光写进大事记不够——解锁的那一下要被看见。
     // 可能一次解锁好几个，所以排队一个个弹。
-    S.achPop=(S.achPop||[]).concat([{n:a.n,d:a.d,flavor:a.flavor||"",tag:a.tag,gains}]);
+    S.achPop=(S.achPop||[]).concat([{n:a.n,d:a.d,flavor:a.flavor||"",tag:a.tag,gains,hall}]);
   });
 }
 
@@ -182,7 +186,7 @@ export function achPopCard(){
   const a=q[0];
   return `<div class="rankup"><div class="ru-inner" style="max-width:420px">
     <div class="ru-icon">${gicon("ach",52)}</div>
-    <div class="ru-eyebrow">成就解锁${q.length>1?`　（还有 ${q.length-1} 个）`:""}</div>
+    <div class="ru-eyebrow">成就解锁${a.hall==="first"?"　·　殿堂首次":a.hall==="had"?"　·　殿堂里已有":""}${q.length>1?`　（还有 ${q.length-1} 个）`:""}</div>
     <div class="ru-tier" style="font-size:26px">${a.n}</div>
     <div class="ru-txt">${a.d}${a.flavor?`<br><span style="color:var(--gold)">${a.flavor}</span>`:""}</div>
     ${a.gains&&a.gains.length?`<div class="evres">${a.gains.map(g=>
@@ -191,11 +195,18 @@ export function achPopCard(){
       <button class="btn" id="achpopok">${q.length>1?"下一个 →":"知道了"}</button>
     </div></div></div>`;
 }
+/* 成就页两个视图（2026-09-11 成就殿堂）：「本局」就是原来那张表，一个字没动；「殿堂」是跨存档的那一份（hall.ts）。
+   两个标签上都写着数——不点进去也知道殿堂里攒了多少 */
 export function achCard(){
   const got=ACHIEVEMENTS.filter(a=>hasAch(a.id));
+  const hall=hallRead(), view=S.achView==="hall"?"hall":"save";
+  const hn=hall?String(hallCount(hall)):"—";
+  const tab=(k,label)=>`<button type="button" class="pmtab${view===k?" on":""}" data-achv="${k}" role="tab" aria-selected="${view===k}">${label}</button>`;
+  const tabs=`<div class="pmtabs achtabs" role="tablist">${tab("save",`本局 ${got.length}/${ACHIEVEMENTS.length}`)}${tab("hall",`殿堂 ${hn}/${ACHIEVEMENTS.length}`)}</div>`;
+  if(view==="hall") return `<div class="card"><h2>成就殿堂<em>${hn} / ${ACHIEVEMENTS.length}</em></h2>${tabs}${hallView(hall)}</div>`;
   const byTag={};
   ACHIEVEMENTS.forEach(a=>{ (byTag[a.tag]=byTag[a.tag]||[]).push(a); });
-  return `<div class="card"><h2>成就<em>${got.length} / ${ACHIEVEMENTS.length}</em></h2>
+  return `<div class="card"><h2>成就<em>${got.length} / ${ACHIEVEMENTS.length}</em></h2>${tabs}
     ${Object.keys(byTag).map(t=>`
       <h3 style="font-size:13px;color:var(--ink-3);margin:14px 0 8px">${t}</h3>
       <div class="achgrid">${byTag[t].map(a=>{

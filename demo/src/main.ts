@@ -8,6 +8,7 @@ import { addStaff, cloutCard, cloutOf, cloutTick, cloutTier, coachTrust, doList,
 import { CUPS, activeCups, cupCard, cupDismissMatch, cupMatchCard, cupOf, cupOppName, cupPrep, cupReachName, cupResultCard, cupRoundName, cupTick, disbandCrew, dueCups, enterCup, forfeitCup, preSquadCard, resolveCupNode, startCupMatch } from "./cup";
 import { DATA } from "./data";
 import { formCard, formMul, formNews, formTier, myForm, myFormMul, rollForm, rollWorldForm } from "./form";
+import { newSaveId } from "./hall";
 import { awardsText, btkTrialCheck, campCard, cerApply, cerBind, cerCard, cerFinalNode, cerFinalPw, cerRecMul, cerStart, isFinalMatch, mediaTiltMul, mediaToneNow, meetCard, mgLive, verCerAdj } from "./cer";
 import { injuryCard, injuryHit, injuryTick, injuryTrainMul, riskHint, rollInjury } from "./injury";
 import { brOthersText, brStep, findTeam, intlAdvance, intlChampCard, intlStageName, leagueOf, majorStandings, spectateIntl, startIntl, wlAdd, wlInfluence, wlRelax, worldsSlot } from "./intl";
@@ -128,6 +129,9 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260911c", at:"2026-09-11", items:[
+    "<b>成就殿堂</b>（跨存档）：成就页多了「本局 / 殿堂」两个视图。殿堂记在这台设备上、不跟着哪一个存档走——<b>重开、开新档都不会清</b>：每一项成就第一次是哪一局、哪个 ID、哪个赛季、哪天解锁的，一共几局拿到过。别的局拿到、这一局还没有的画虚线金框；彩蛋成就在任何一局撞到过就不再打问号。解锁弹窗会多写一句「殿堂首次」或「殿堂里已有」，封面的存档卡写「本局 N · 殿堂 M/101」。<b>奖励照旧每一局都发</b>：新档的成就从零开始解锁、回报照给，殿堂本身不给任何数值，「收藏家」「打透了」也只数这一局。老存档打开时（或者出现在封面上时），里面已经解锁的成就会自动记进殿堂。「导出」的存档文件带着殿堂，「导入」时和这台设备上的殿堂合在一起、谁先解锁记谁，不会互相覆盖；没导出过就换浏览器或清掉网站数据的话，殿堂不会跟过去"
+  ]},
   {v:"v20260911b", at:"2026-09-11", items:[
     "<b>真实时间线</b>（新档）：游戏照旧从 2022 年（S12）开局，之后每个休赛期，世界换成<b>下一年真实的首发名单</b>（2023–2026 按真实比赛数据评分）——T1 2025 年 Doran 顶替 Zeus、2026 年 Peyz 顶替 Gumayusi 这类换人都会发生；你所在的队也跟着真实名单走，你的位置和你亲手造成的变动除外。<b>赛区结构按真实改制</b>：LCS、CBLOL 与 LLA 合并成 LTA 南北两区，太平洋几个赛区合并成 LCP，2026 年 LTA 又拆回 LCS 与 CBLOL，LPL 缩编。难度按原来的曲线标定过——换的是人，不是难度。<b>老存档不变</b>",
     "<b>LDL 停办</b>（真实历史，2026 年起）：大事记、弹窗、周报都会记下这件事；二队数值最高的 25 名选手转为<b>青训储备</b>，一线队有人退役时先从他们里面提拔。你正好在二队的话，会转进母队一队当替补",
@@ -2274,7 +2278,9 @@ export function startPre(){
     seasonAttr0:Object.assign({},attrs),
     events:[],usedLegends:[],retiredPool:[],teamForm:{},formSeen:{},news:[],log:[],
     // 审计 P0：新档必须自带标尺版本，否则第一次读档会被当成老档整体 +15
-    scaleVer:2, born:GAME_VER
+    scaleVer:2, born:GAME_VER,
+    // 存档编号：成就殿堂按它数「几局拿到过」（hall.ts）。不走 rnd()——多取一次数，整局的随机序列就挪了
+    saveId:newSaveId()
   }));
   S.pre.rank=initialRank();
   initShop(); initAch();
@@ -7105,6 +7111,8 @@ export function bind(){
   st.querySelectorAll("[data-selfrec]").forEach((b: any)=>b.onclick=()=>selfRecommend(b.dataset.selfrec));
   st.querySelectorAll("[data-txlg]").forEach((b: any)=>b.onclick=()=>{S.txLgPick=b.dataset.txlg;render()});
   const pc=$("pmclose"); if(pc) pc.onclick=()=>{S.pmView=null;render()};
+  // 成就页「本局 / 殿堂」两个视图（2026-09-11）：选择记在 S.achView，栏目里和结局页的成就卡共用
+  st.querySelectorAll("[data-achv]").forEach((b: any)=>b.onclick=()=>{ S.achView=b.dataset.achv==="hall"?"hall":"save"; render(); });
   const of=$("off"); if(of) of.onclick=doOffseason;
   const _enc=$("encore"); if(_enc) _enc.onclick=encore;
   const _ret=$("retire"); if(_ret) _ret.onclick=()=>askConfirm("退役",`<b>${meName()}</b> 就此退役？之后是生涯名片，不能再回来。`,"退役",retireNow);

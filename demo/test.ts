@@ -49,7 +49,7 @@ if (!fs.existsSync(path.join(HERE, "src", "gen", "avatars.js"))) {
    `ACHIEVEMENTS.push(...ACH_MORE)`，抛 "Cannot access 'ACH_MORE' before initialization"。
    低概率、和这次的改动无关（改前改后各连跑 12 次都没复现，但两边都各撞见过一次），
    顺序载入让求值顺序固定下来，CI 不再看运气。循环引用本身还在，另开一条待办。 */
-const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer", "share", "bond", "timeline"];
+const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "hall", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer", "share", "bond", "timeline"];
 const state = await import("./src/state.ts");
 const mods = [];
 for (const m of MODULES) mods.push(await import(`./src/${m}.ts`));
@@ -1484,6 +1484,124 @@ function cloutChecks() {
   return bad;
 }
 
+/* ---------------- 成就殿堂自检（2026-09-11 作者拍板「A + B」，奖励每局照发）----------------
+   殿堂跨存档、新档只继承殿堂；奖励每一局照发；「几局」按存档编号去重；老档读进来会补记；
+   导出带殿堂、导入取并集留最早；「收藏家」只数这一局；localStorage 抛错时游戏照跑。 */
+function hallChecks(): string[] {
+  const bad: string[] = [];
+  const LS: any = g.localStorage;
+  const hall = () => JSON.parse(LS.getItem(A.HALL_KEY) || "null");
+  const setHall = (h: any) => LS.setItem(A.HALL_KEY, JSON.stringify(h));
+  const fresh = (seed: number) => {
+    A.screenCreate(seed);
+    const s0 = A.S(); s0.name = "殿堂" + seed; s0.pos = "mid"; s0.origin = "academy"; s0.ageIdx = 1; s0.bgPick = s0.bgOffer[0].k;
+    s0.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+    A.startPre();
+    return A.S();
+  };
+  const hallBak = LS.getItem(A.HALL_KEY), saveBak = LS.getItem(A.SAVE_KEY);
+  try {
+    LS.removeItem(A.HALL_KEY);
+    // ① 这一局解锁 → 殿堂里有；弹窗写「殿堂首次」
+    let S = fresh(9101);
+    const id1 = S.saveId;
+    if (typeof id1 !== "string" || !id1) bad.push("新档没有存档编号 saveId");
+    if (Object.keys(S.ach || {}).length) bad.push("新档的 S.ach 不是空的");
+    S.pre.rank = 96; A.checkAch("rank");
+    let h = hall();
+    if (!S.ach.top10) bad.push("测试前提：天梯 96 没解锁「国服前十」");
+    if (!h || !h.a.top10 || h.a.top10.n !== 1 || h.a.top10.ids.join() !== id1 || h.a.top10.s !== "S12" || h.a.top10.who !== S.name)
+      bad.push("解锁后殿堂没记对：" + JSON.stringify(h && h.a.top10));
+    const pop1 = (S.achPop || []).find((p: any) => p.n === "国服前十");
+    if (!pop1 || pop1.hall !== "first" || !/殿堂首次/.test(A.achPopCard())) bad.push("殿堂里第一次解锁，弹窗没写「殿堂首次」：" + JSON.stringify(pop1));
+    // 同一局再解锁一次（读档回到解锁之前的样子）：不算又一局，弹窗写「殿堂里已有」
+    delete S.ach.top10; S.achPop = []; A.checkAch("rank");
+    h = hall();
+    if (h.a.top10.n !== 1) bad.push("同一个存档再解锁一次，殿堂把它算成了两局：n=" + h.a.top10.n);
+    if (!(S.achPop && S.achPop[0] && S.achPop[0].hall === "had") || !/殿堂里已有/.test(A.achPopCard())) bad.push("殿堂里已有的成就，弹窗没写「殿堂里已有」");
+    const firstAt = h.a.top10.at;
+    // ② 新开一局（screenCreate → startPre，结局页「再开一局」和封面「重新开一局」走的都是这条）：
+    //    殿堂还在、S.ach 是空的、奖励再发一次、换了存档编号才算又一局、首次时间不动
+    S = fresh(9102);
+    if (S.saveId === id1) bad.push("两局的存档编号撞了");
+    if (Object.keys(S.ach || {}).length) bad.push("新开一局 S.ach 没清空");
+    if (!(hall() && hall().a.top10)) bad.push("新开一局把殿堂清掉了");
+    // 奖励看两处：资金真的到账（职业前的名气是每周朝天花板收敛的，粉丝数当场不一定动），弹窗上列着这次发了什么
+    const m0 = S.money;
+    S.pre.rank = 96; A.checkAch("rank");
+    if (!S.ach.top10) bad.push("新档没能重新解锁殿堂里已有的成就");
+    const pop2 = (S.achPop || []).find((p: any) => p.n === "国服前十");
+    if (!(S.money > m0) || !pop2 || !(pop2.gains || []).some((x: string) => /名气/.test(x))) bad.push(`新档再解锁，奖励没有再发：资金 ${m0}→${S.money}，弹窗 ${JSON.stringify(pop2)}`);
+    if (!pop2 || pop2.hall !== "had") bad.push("新档解锁殿堂里已有的成就，弹窗没写「殿堂里已有」");
+    h = hall();
+    if (h.a.top10.n !== 2 || h.a.top10.ids.length !== 2 || h.a.top10.at !== firstAt) bad.push("换一局再解锁：殿堂应记 2 局、首次时间不变：" + JSON.stringify(h.a.top10));
+    // ③「收藏家」只数这一局：殿堂里 40 项、这一局 29 项 → 不解锁；这一局凑到 30 → 解锁
+    const ids = A.ACHIEVEMENTS.map((a: any) => a.id).filter((x: string) => x !== "ach30" && x !== "ach45");
+    const big = hall(); ids.slice(0, 40).forEach((x: string) => { big.a[x] = big.a[x] || { at: 1, who: "T", s: "", n: 1, ids: ["other"] }; }); setHall(big);
+    S.ach = {}; ids.slice(0, 29).forEach((x: string) => { S.ach[x] = 1; });
+    A.checkAch("ach");
+    if (S.ach.ach30) bad.push("「收藏家」把殿堂里的成就也数进去了（这一局只有 29 项）");
+    S.ach[ids[29]] = 1; A.checkAch("ach");
+    if (!S.ach.ach30) bad.push("这一局凑满 30 项，「收藏家」没解锁");
+    // ④ 老档迁移：没有编号的存档读进来，已解锁的成就补记进殿堂（赛季取 achLog，时间取存档时间）；再读一次不重复算局
+    LS.removeItem(A.HALL_KEY);
+    S = fresh(9103);
+    S.ach = { sweep: 1, upset: 1 }; S.achLog = [{ id: "sweep", n: "横扫", s: "S13" }, { id: "upset", n: "以下克上", s: "S14" }];
+    delete S.saveId;
+    A.saveGame("测试");
+    const blob = JSON.parse(LS.getItem(A.SAVE_KEY)); blob.at = 1700000000000; delete blob.S.saveId; LS.setItem(A.SAVE_KEY, JSON.stringify(blob));
+    if (!A.loadGame()) bad.push("迁移测试：存档读不回来");
+    S = A.S(); h = hall();
+    if (!h || !h.a.sweep || h.a.sweep.s !== "S13" || h.a.sweep.at !== 1700000000000 || !h.a.upset || h.a.upset.s !== "S14")
+      bad.push("老档读进来没有补记进殿堂：" + JSON.stringify(h && h.a));
+    if (typeof S.saveId !== "string" || !/^L/.test(S.saveId)) bad.push("老档读进来没补存档编号：" + S.saveId);
+    A.loadGame(); h = hall();
+    if (!h.a.sweep || h.a.sweep.n !== 1) bad.push("同一个老档读两次，殿堂算成了两局：" + JSON.stringify(h.a.sweep));
+    // ⑤ 导出带殿堂；导入到另一台殿堂不同的设备：取并集，首次解锁留最早的，几局按编号合起来
+    const dev = () => setHall({ v: 1, a: { top10: { at: 2000, who: "甲", s: "S12", n: 1, ids: ["dev1"] }, sweep: { at: 5000, who: "甲", s: "S13", n: 1, ids: ["dev1"] } } });
+    dev();
+    const out = JSON.parse(A.exportText());
+    if (!out.hall || !out.hall.a || !out.hall.a.top10) bad.push("导出的存档文件里没有殿堂");
+    if (!out.S || out.S.step !== "pre" || out.ver !== A.SAVE_VER) bad.push("导出的文件不再是一份完整存档");
+    out.hall = { v: 1, a: { top10: { at: 1000, who: "乙", s: "S14", n: 2, ids: ["fileA", "fileB"] }, upset: { at: 4000, who: "乙", s: "S15", n: 1, ids: ["fileA"] } } };
+    out.S.ach = {}; out.S.achLog = [];   // 这份档自己不带成就，只看两份殿堂怎么合
+    dev();
+    const err = A.importText(JSON.stringify(out));
+    if (err) bad.push("导入测试：" + err);
+    h = hall();
+    const t = h && h.a.top10;
+    if (!t || t.at !== 1000 || t.who !== "乙" || t.s !== "S14" || t.n !== 3 || ["dev1", "fileA", "fileB"].some(x => t.ids.indexOf(x) < 0))
+      bad.push("导入后「国服前十」没按并集合（应留最早的乙 / S14、3 局）：" + JSON.stringify(t));
+    if (!h.a.sweep || h.a.sweep.at !== 5000 || h.a.sweep.who !== "甲") bad.push("导入把这台设备上独有的成就弄丢 / 改掉了：" + JSON.stringify(h.a.sweep));
+    if (!h.a.upset || h.a.upset.at !== 4000) bad.push("导入没把文件里独有的成就合进来：" + JSON.stringify(h.a.upset));
+    if (JSON.parse(LS.getItem(A.SAVE_KEY)).hall !== undefined) bad.push("导入把殿堂塞进了存档本体（殿堂只该在自己那条记录里）");
+    // 导入的殿堂是别人给的数据：不认识的成就、标签、坏数字都要洗掉
+    A.importText(JSON.stringify(Object.assign({}, out, { hall: { a: { nosuch: { at: 1, n: 1, ids: [] },
+      top10: { at: 10, who: "<img src=x onerror=alert(1)>", s: "<b>", n: "9", ids: ["<x>", "ok1"] } } } })));
+    h = hall();
+    if (h.a.nosuch) bad.push("导入的殿堂里不认识的成就没洗掉");
+    if (/[<>]/.test(h.a.top10.who) || h.a.top10.s !== "" || h.a.top10.ids.some((x: string) => /[<>]/.test(x))) bad.push("导入的殿堂没消毒：" + JSON.stringify(h.a.top10));
+    // ⑥ 存不了殿堂（localStorage 抛错）：解锁照常、奖励照发、弹窗照弹，只是不写殿堂那句
+    S = fresh(9104);
+    g.localStorage = { getItem() { throw new Error("denied"); }, setItem() { throw new Error("denied"); }, removeItem() { throw new Error("denied"); } };
+    try {
+      const m1 = S.money; S.pre.rank = 96; A.checkAch("rank");
+      if (!S.ach.top10 || !(S.money > m1)) bad.push("存不了殿堂时，成就解锁 / 奖励跟着坏了");
+      const p = (S.achPop || []).find((x: any) => x.n === "国服前十");
+      if (!p || p.hall !== null) bad.push("存不了殿堂时弹窗不该写殿堂那句：" + JSON.stringify(p));
+      if (!/这台设备不让网页长期存东西/.test(A.hallView(A.hallRead()))) bad.push("存不了殿堂时殿堂视图没说清楚");
+      S.achView = "hall"; A.achCard(); S.achView = "save"; A.achCard();
+    } catch (e: any) { bad.push("存不了殿堂时抛异常：" + ((e && e.stack) || e)); }
+    finally { g.localStorage = LS; }
+  } catch (e: any) { bad.push("殿堂自检抛异常：" + ((e && e.stack) || e)); }
+  finally {
+    g.localStorage = LS;
+    if (hallBak === null) LS.removeItem(A.HALL_KEY); else LS.setItem(A.HALL_KEY, hallBak);
+    if (saveBak === null) LS.removeItem(A.SAVE_KEY); else LS.setItem(A.SAVE_KEY, saveBak);
+  }
+  return bad;
+}
+
 export { playOne, unitChecks, A, SEED };
 
 /* 批测：npx tsx demo/test.ts --batch 30
@@ -1687,6 +1805,9 @@ if (isMain && process.argv.includes("--tl-probe")) {
   { const sr = streetsReturnChecks();
     if (sr.length) { console.error("重返职业自检不通过：\n  " + sr.join("\n  ")); process.exit(1); }
     console.log("重返职业自检通过：签回别家记一站 · 同一年两支队都写上名片"); }
+  { const hb = hallChecks();
+    if (hb.length) { console.error("成就殿堂自检不通过：\n  " + hb.join("\n  ")); process.exit(1); }
+    console.log("成就殿堂自检通过：跨存档保留 · 新档奖励照发 · 按存档编号数局 · 老档补记 · 导出导入取并集留最早 · 收藏家只数本局 · 存不了殿堂照跑"); }
   // 背景卡折算表（资金 60 万 / 人气 10 / 信任 3 ≈ 1 点，属性 1 点 = 1 点）：各卡并不等值，差异在形状——见 origins.js 顶部注释
   console.log("背景折算：", A.BACKGROUNDS.map(b => b.k + " " + (Object.values<number>(b.mod || {}).reduce((a, v) => a + v, 0)
     + (b.money || 0) / 60 + (b.fame || 0) / 10 + (b.trust || 0) / 3).toFixed(1)).join(" · "));

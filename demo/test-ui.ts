@@ -204,6 +204,36 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
       const b2 = P.readSave(); if (!b2 || b2.S.fatigue !== 45) bad.push("切到后台没有立刻存档（存档 fatigue=" + (b2 && b2.S.fatigue) + "）");
       Object.defineProperty(d, "visibilityState", { get: () => "visible", configurable: true });
     }
+    // ---- 成就殿堂（2026-09-11）：成就页「本局 / 殿堂」两个视图都画得出来、标签上写着数；封面存档卡写「本局 N · 殿堂 M/总数」 ----
+    {
+      const S = P.S();
+      S.achPop = []; S.confirm = null; S.tab = "ach"; S.achView = "save"; P.render();
+      const tSave = d.querySelector<HTMLElement>('#stage [data-achv="save"]'), tHall = d.querySelector<HTMLElement>('#stage [data-achv="hall"]');
+      if (!tSave || !tHall) bad.push("成就页没有「本局 / 殿堂」两个视图标签");
+      else {
+        const ms = /本局\s*(\d+)\s*\/\s*(\d+)/.exec(tSave.textContent || ""), mh = /殿堂\s*(\d+)\s*\/\s*(\d+)/.exec(tHall.textContent || "");
+        if (!ms || !mh) bad.push("成就页的视图标签上没写数：" + tSave.textContent + " | " + tHall.textContent);
+        if (!tSave.classList.contains("on")) bad.push("成就页默认不是「本局」视图");
+        const nSave = d.querySelectorAll("#stage .achgrid .ach").length;
+        tHall.click();
+        if (S.achView !== "hall" || !d.querySelector('#stage [data-achv="hall"].on')) bad.push("点「殿堂」没切到殿堂视图");
+        const nHall = d.querySelectorAll("#stage .achgrid .ach").length;
+        if (ms && nHall < +ms[2]) bad.push(`殿堂视图只画了 ${nHall} 张卡（成就一共 ${ms[2]} 项）`);
+        if (!/重开、开新档都不会清/.test((d.getElementById("stage") as HTMLElement).textContent || "")) bad.push("殿堂视图没写清它跨存档、不清空");
+        (d.querySelector('#stage [data-achv="save"]') as HTMLElement).click();
+        if (S.achView !== "save" || d.querySelectorAll("#stage .achgrid .ach").length !== nSave) bad.push("点「本局」没切回原来那张表");
+      }
+      // 封面：存一个带两项成就的档再回到建档页——封面先把它记进殿堂，成就格写「本局 N · 殿堂 M/总数」
+      S.ach = Object.assign({}, S.ach, { sweep: 1, upset: 1 }); S.tab = "act";
+      const want = Object.keys(S.ach).length;
+      P.saveGame("测试");
+      P.screenCreate();
+      const tile = Array.from(d.querySelectorAll<HTMLElement>(".savestats > div")).find(el => /成就/.test((el.querySelector(".k") || { textContent: "" }).textContent || ""));
+      const txt = tile ? (tile.textContent || "").replace(/\s+/g, " ") : "";
+      const mt = /本局 (\d+) · 殿堂 (\d+)\/(\d+)/.exec(txt);
+      if (!mt || +mt[1] !== want) bad.push(`封面存档卡的成就格不是「本局 ${want} · 殿堂 M/总数」：` + txt);
+      else if (+mt[2] < 2) bad.push("封面没把存档里已解锁的成就记进殿堂：" + txt);
+    }
   }
   if (errors.length) bad.push("桌面：页面脚本报错 " + errors.length + " 条：" + errors.slice(0, 3).join(" | "));
   dom.window.close();

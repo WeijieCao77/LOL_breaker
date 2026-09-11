@@ -711,6 +711,14 @@ td .tlogo{margin-right:5px}
 .ach.on .ad{color:var(--ink-2)}
 .ach .af{font-size:11.5px;color:var(--gold);margin-top:6px;line-height:1.5;
   padding-top:6px;border-top:1px dashed rgba(var(--gold-rgb),.3)}
+/* 成就殿堂（2026-09-11）：本局拿到的沿用实线金框；别的局拿到、这一局还没有的画虚线金框。
+   标签复用赛后拆解的「简洁 / 详细」那一套，不新造样式 */
+.ach.hall{border-style:dashed;border-color:rgba(var(--gold-rgb),.75)}
+.ach.hall .an{color:var(--gold)}
+.ach.hall .ad{color:var(--ink-2)}
+.ach .ah{font-size:11px;color:var(--ink-3);margin-top:5px;line-height:1.45}
+.ach.on .ah,.ach.hall .ah{color:var(--gold)}
+.achtabs{margin:0 0 4px}
 
 /* ---- 段位晋级弹窗 ---- */
 .rankup{position:fixed;inset:0;z-index:50;display:grid;place-items:center;

@@ -1,3 +1,4 @@
+import { hallCount, hallImport, hallRead, hallSeedFrom, hallTotal, saveIdOf } from "./hall";
 import { DIMS, GAME_VER, LDL_ROSTER, POSN, PRE_YEAR, REGION_SYN, SEASONS, SPLITS, anchorLeague, capOf, clamp, dimWord, leagueBaseline, q1, rankFull, render, teamCode, trialCanPay } from "./main";
 import { initLedger } from "./shop";
 import { S, setS } from "./state";
@@ -152,6 +153,10 @@ export function loadGame() {
     fixScaleV3(S);
     fixScaleV4(S);
     relinkMe(S);
+    // 成就殿堂（2026-09-11）：老档没有存档编号，按开局就定死的字段补一个（同一个档每次算出来都一样）；
+    // 档里已经解锁的成就补记进殿堂——记过的不会重复算局
+    if (!S.saveId) S.saveId = saveIdOf(S);
+    hallSeedFrom(S, blob.at);
     // 老档进新版本不再弹「本次更新」（玩家 2026-09-06 实锤：它盖住了教程导览）——
     // 只在右下角 📜 上打个点，玩家自己点开才看（见 audio.js 的 logBadge）
     S.patchSeen = GAME_VER;
@@ -431,6 +436,9 @@ export function xferPull() {
           let blob = JSON.parse(raw);
           if (blob && blob.S && typeof blob.at === "number") {
             blob = migrate(sanitizeSave(blob));
+            /* 成就殿堂（2026-09-11）：老域名上那份档不管比本地新还是旧，拿过的成就都记进殿堂。
+               殿堂记录本身接不过来，也不需要接：/xfer 只递存档，而老域名 301 到 www 之后再没跑过游戏，那边不可能有殿堂 */
+            if (blob.ver === SAVE_VER && blob.S.step && blob.S.attrs) hallSeedFrom(blob.S, blob.at);
             if (blob.ver === SAVE_VER && blob.S.step && blob.S.attrs && blob.at > localAt()) {
               localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
               got = true;
@@ -506,13 +514,19 @@ export function saveStats(s) {
       const av = ds.reduce((a, d) => a + at[d], 0) / ds.length;
       tile("实力", dimWord(av), av.toFixed(1));
     }
+    // 成就格（2026-09-11 成就殿堂）：这一局几项、殿堂里几项。殿堂存不了（隐私模式）就只写本局
     const n = s.ach ? Object.keys(s.ach).length : 0;
-    if (n) tile("成就", String(n), "个");
+    const h = hallRead(), hn = h ? hallCount(h) : 0;
+    if (n || hn) tile("成就", "本局 " + n, h ? "· 殿堂 " + hn + "/" + hallTotal() : "");
   } catch (e) {}
   return out.length ? `<div class="savestats">${out.join("")}</div>` : "";
 }
 
 /* ---------- 界面 ---------- */
+/* 封面上出现的这个档先记进殿堂（2026-09-11）：老版本存下的档、老域名接力来的档，
+   玩家可能看一眼就点「重新开一局」——不在这里记，它里面的成就就再也进不了殿堂了。
+   封面上每点一下都会重画，同一份存档（同一个存档时间）只记一次 */
+let _hallSeenAt = 0;
 /* 捏人页顶部：有档就先问要不要继续 */
 export function continueCard() {
   const blob = readSave();
@@ -523,6 +537,7 @@ export function continueCard() {
       重新开一局就好——旧档不会影响新的一局。</p>
       <div class="row"><button class="btn ghost sm" id="savedrop">清掉它</button></div></div>`;
   }
+  if (blob.at !== _hallSeenAt) { _hallSeenAt = blob.at; hallSeedFrom(blob.S, blob.at); }
   return `<div class="card savecont"><h2>上次的存档<em>${saveAgeText(blob.at)}</em></h2>
     <div class="savegrid">
       <div class="savemain">
@@ -550,13 +565,22 @@ export function saveBar() {
       GAME_VER}</span>
   </div>`;
 }
+/* 导出的文件 = 存档本体 + 殿堂（2026-09-11）。殿堂不进 localStorage 里那份存档（它有自己的记录），只在文件里捎带：
+   换设备、清过浏览器数据的人，拿这份文件导回来，殿堂也跟着回来 */
+export function exportText() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return null;
+  const h = hallRead();
+  if (!h) return raw;
+  try { const blob = JSON.parse(raw); blob.hall = h; return JSON.stringify(blob); } catch (e) { return raw; }
+}
 export function exportSave() {
   saveGame("手动导出");
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return;
+    const txt = exportText();
+    if (!txt) return;
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([raw], { type: "application/json" }));
+    a.href = URL.createObjectURL(new Blob([txt], { type: "application/json" }));
     a.download = "破晓存档.json";
     document.body.appendChild(a); a.click(); a.remove();
   } catch (e) {}
@@ -574,6 +598,25 @@ export function saveShapeOk(blob) {
     return dims.every(d => { const v = s.attrs[d]; return typeof v === "number" && isFinite(v) && v >= 0 && v <= 100; });
   } catch (e) { return false; }
 }
+/* 把一份存档文件的全文装进来：返回空串是成功，否则是给玩家看的那句话。
+   从 importSave 里拆出来，无头测试才能直接喂文本（选文件、FileReader 只有浏览器里有） */
+export function importText(text) {
+  try {
+    if (typeof text === "string" && text.length > IMPORT_MAX) return "文件太大，不像是存档。";
+    let blob = JSON.parse(text);
+    if (!blob || typeof blob !== "object" || !blob.S || typeof blob.S !== "object") return "这个文件不像是存档。";
+    blob = migrate(sanitizeSave(blob));
+    if (blob.ver !== SAVE_VER) return "存档版本不符，读不了。";
+    if (!saveShapeOk(blob)) return "存档内容缺失或异常。";
+    if (typeof blob.at !== "number") blob.at = Date.now();
+    // 文件里捎带的殿堂：和这台设备上的取并集，谁先解锁记谁，永远不覆盖（hall.ts 的 hallMerge）；存档本体不留它
+    if (blob.hall) hallImport(blob.hall);
+    delete blob.hall;
+    localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
+    loadGame();
+    return "";
+  } catch (e) { return "读取失败。"; }
+}
 export function importSave() {
   try {
     const inp = document.createElement("input");
@@ -583,19 +626,7 @@ export function importSave() {
       if (!f) return;
       if (typeof f.size === "number" && f.size > IMPORT_MAX) { alert("文件太大，不像是存档。"); return; }
       const rd = new FileReader();
-      rd.onload = () => {
-        try {
-          if (typeof rd.result === "string" && rd.result.length > IMPORT_MAX) { alert("文件太大，不像是存档。"); return; }
-          let blob = JSON.parse(rd.result as string);
-          if (!blob || typeof blob !== "object" || !blob.S || typeof blob.S !== "object") { alert("这个文件不像是存档。"); return; }
-          blob = migrate(sanitizeSave(blob));
-          if (blob.ver !== SAVE_VER) { alert("存档版本不符，读不了。"); return; }
-          if (!saveShapeOk(blob)) { alert("存档内容缺失或异常。"); return; }
-          if (typeof blob.at !== "number") blob.at = Date.now();
-          localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
-          loadGame();
-        } catch (e) { alert("读取失败。"); }
-      };
+      rd.onload = () => { const msg = importText(rd.result as string); if (msg) alert(msg); };
       rd.readAsText(f);
     };
     inp.click();
