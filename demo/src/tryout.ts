@@ -364,11 +364,16 @@ export function pickClub(tier, league?){
     const lo = clamp(Math.floor(fr[0]*n), 0, n-1);
     const hi = clamp(Math.ceil(fr[1]*n)-1, lo, n-1);
     const pick = rk[lo + Math.floor(rnd()*(hi-lo+1))];
-    // 青训档次给的是俱乐部的二队（LDL），队名走 EDG.Y 这套惯例
+    // 青训档次给的是俱乐部的二队（LDL，真实队名，见 ldl.ts）
     if(tier !== "acad") return pick.n;
-    const ld=(S.world&&S.world.LDL||[]).find(t=>t.parent===pick.n);
-    // LDL 停办之后（真实时间线 2026 起）没有二队：青训档直接签母队（signDeal 会把它转成一队替补）
-    return ld ? ld.name : (S.world&&S.world.LDL ? teamCode(pick.n)+".Y" : pick.n);
+    const L=(S.world&&S.world.LDL)||[];
+    const ld=L.find(t=>t.parent===pick.n);
+    if(ld) return ld.name;
+    /* 这家当年没有二队（真实名单：2025 年只剩 10 支二队）——原来这里拼一个「XX.Y」，世界里根本没有这支队。
+       现在在同一档次里换一家有二队的；整个联赛都没有二队（2026 停办）才直接签母队（signDeal 会把它转成一队替补） */
+    const band=rk.slice(lo,hi+1).map(x=>L.find(t=>t.parent===x.n)).filter(Boolean);
+    const pool=band.length?band:L.filter(t=>t.parent);
+    return pool.length ? pool[Math.floor(rnd()*pool.length)].name : pick.n;
   }catch(e){ return null; }
 }
 /* 邀请卡：接受就进试训，拒绝就继续练。

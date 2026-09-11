@@ -49,7 +49,7 @@ if (!fs.existsSync(path.join(HERE, "src", "gen", "avatars.js"))) {
    `ACHIEVEMENTS.push(...ACH_MORE)`，抛 "Cannot access 'ACH_MORE' before initialization"。
    低概率、和这次的改动无关（改前改后各连跑 12 次都没复现，但两边都各撞见过一次），
    顺序载入让求值顺序固定下来，CI 不再看运气。循环引用本身还在，另开一条待办。 */
-const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer", "share", "bond", "timeline"];
+const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer", "share", "bond", "timeline", "ldl"];
 const state = await import("./src/state.ts");
 const mods = [];
 for (const m of MODULES) mods.push(await import(`./src/${m}.ts`));
@@ -1575,6 +1575,18 @@ function timelineChecks(): string[] {
     if (y >= 2025 && (w.LLA || w.LCO)) bad.push(`${tag} LLA / LCO 应已并入别的赛区`);
     if (y >= 2026 && w.LDL) bad.push(`${tag} LDL 应已停办`);
     if (y <= 2025 && !(w.LDL && w.LDL.length)) bad.push(`${tag} 缺 LDL`);
+    // LDL 真实名单（2026-09-11 玩家实锤「LDL 的战队名字不正确」）：队数、队名、母队都要对得上当年的真实页，一线名单里的人不在二队重复
+    if (y <= 2025 && w.LDL) {
+      const pg = A.ldlPage(y) || [];
+      if (w.LDL.length !== pg.length) bad.push(`${tag} LDL 队数 ${w.LDL.length}，真实 ${pg.length}`);
+      w.LDL.forEach((t: any) => {
+        if (!pg.some((x: any) => x.n === t.name)) bad.push(`${tag} LDL 里有一支真实名单里没有的队：${t.name}`);
+        if (t.parent && !(w.LPL || []).some((x: any) => x.name === t.parent)) bad.push(`${tag} ${t.name} 的母队 ${t.parent} 不在 LPL`);
+      });
+      const majors = new Set<string>();
+      Object.keys(w).forEach(K => { if (K !== "LDL") (w[K] || []).forEach((t: any) => (t.players || []).forEach((q: any) => majors.add(q.id))); });
+      w.LDL.forEach((t: any) => (t.players || []).forEach((q: any) => { if (majors.has(q.id)) bad.push(`${tag} ${q.id} 同时在一线和 LDL（${t.name}）`); }));
+    }
     const seen = new Set<string>();
     Object.keys(w).forEach(K => (w[K] || []).forEach((t: any) => {
       const pos = new Set((t.players || []).map((p: any) => p.pos));
@@ -1612,12 +1624,37 @@ function timelineChecks(): string[] {
   try {
     let s = sign(0, "Victory Five", "LPL"); turn(s);
     if (s.team !== "Ninjas in Pyjamas" || !found(s) || !A.myTeam() || !A.myRoster().some((p: any) => p.me)) bad.push(`V5 席位转给 NIP：S.team=${s.team}，世界里找得到=${found(s)}`);
-    s = sign(0, "V5.Y", "LDL", "sub"); turn(s);
-    if (s.team !== "NIP.Y" || !found(s)) bad.push(`二队随母队改名：S.team=${s.team}`);
+    // LDL 真实名单（2026-09-11）：V5 87 在 2023 年没有了（V5 的席位给了 NIP，这支二队变成独立队）→ 进母队席位的一队替补
+    s = sign(0, "V5 87", "LDL", "sub"); turn(s);
+    if (s.homeLeague !== "LPL" || s.team !== "Ninjas in Pyjamas" || !found(s)) bad.push(`二队在真实历史里解散，应进母队席位的一队替补：${s.homeLeague} / ${s.team}`);
+    // 同一家的二队改名：Oh My Dream（2023）→ Oh My God Academy（2024），合同照旧
+    s = sign(1, "Oh My Dream", "LDL", "sub"); turn(s);
+    if (s.homeLeague !== "LDL" || s.team !== "Oh My God Academy" || !found(s)) bad.push(`二队改名没跟上：${s.homeLeague} / ${s.team}`);
+    // 2025 年真实只剩 10 支二队：Joy Dream 解散 → JD Gaming 一队替补
+    s = sign(2, "Joy Dream", "LDL", "sub"); turn(s);
+    if (s.homeLeague !== "LPL" || s.team !== "JD Gaming" || !found(s)) bad.push(`2025 Joy Dream 解散后的去向：${s.homeLeague} / ${s.team}`);
+    // 青训档只签真实存在的二队、对阵图用简称、老存档里拼出来的「XX.Y」读档时换成真名
+    s = sign(0, "Royal Club", "LDL", "sub");
+    {
+      const L = s.world.LDL || [];
+      for (let i = 0; i < 6; i++) { const n = A.pickClub("acad"); if (!L.some((t: any) => t.name === n && t.parent)) bad.push(`青训档签到了不存在的二队：${n}`); }
+      if (A.brCode("Royal Club") !== "RYL") bad.push(`对阵图没用 LDL 简称：Royal Club → ${A.brCode("Royal Club")}`);
+      const t0 = L.find((t: any) => t.name === "Royal Club");
+      if (!t0 || t0.parent !== "Royal Never Give Up") bad.push(`2022 Royal Club 的母队不对：${t0 && t0.parent}`);
+      else {
+        t0.name = "RNG.Y"; delete t0.short;
+        s.team = "RNG.Y"; if (s.contract) s.contract.team = "RNG.Y";
+        s.standings.LDL = Object.assign({}, s.standings.LDL || {}, { "RNG.Y": { w: 2, l: 1 } }); delete s.standings.LDL["Royal Club"];
+        s.schedule = ["RNG.Y"].concat((s.schedule || []).slice(1));
+        A.fixLdlNames(s);
+        if (t0.name !== "Royal Club" || t0.short !== "RYL" || s.team !== "Royal Club" || !s.standings.LDL["Royal Club"] || s.schedule[0] !== "Royal Club" || (s.contract && s.contract.team !== "Royal Club"))
+          bad.push(`老存档二队名没换成真名：队名 ${t0.name} / 简称 ${t0.short} / S.team ${s.team} / 赛程 ${s.schedule[0]}`);
+      }
+    }
     s = sign(2, "Movistar R7", "LLA"); turn(s);
     if (s.homeLeague !== "CBLOL" || !found(s) || !A.myTeam()) bad.push(`LLA 并入 LTA 南区：homeLeague=${s.homeLeague}`);
-    s = sign(3, "JDG.Y", "LDL", "sub"); turn(s);
-    if (s.homeLeague !== "LPL" || s.team !== "JD Gaming" || !found(s) || s.world.LDL || !s.understudy) bad.push(`LDL 停办后去向：${s.homeLeague} / ${s.team}`);
+    s = sign(3, "Top Esports Challenger", "LDL", "sub"); turn(s);
+    if (s.homeLeague !== "LPL" || s.team !== "Top Esports" || !found(s) || s.world.LDL || !s.understudy) bad.push(`LDL 停办后去向：${s.homeLeague} / ${s.team}`);
     // LDL 停办要进大事记 / 弹窗 / 周报，二队高分选手转青训储备，一线队退役先从储备里提拔（2026-09-11 作者拍板）
     if (!(s.tlAcad && s.tlAcad.length) || !s.tlPop || !s.tlLdlNews) bad.push(`LDL 停办没有留下青训储备 / 弹窗 / 周报素材（储备 ${(s.tlAcad || []).length} 人）`);
     else {
