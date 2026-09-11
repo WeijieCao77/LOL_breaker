@@ -6,7 +6,8 @@ import tlLogos from "../../data/csv/timeline_logos.json";
 import { initRelations, syncRelations } from "./clout";
 import { DATA } from "./data";
 import { INTL_CANON, LEAGUE_CANON } from "./intl";
-import { CN_FIX, DECAY_W, DIMS, POSN, SEASONS, STAR_FLOOR, WORLD_DRIFT, ageCurve, anchorLeague, avg, buildLDL, clamp, makeRookie, markTeamJoin, power, pushEvent, q1, teamCode } from "./main";
+import { CN_FIX, DECAY_W, DIMS, POSN, SEASONS, STAR_FLOOR, WORLD_DRIFT, ageCurve, anchorLeague, avg, buildLDLGen, clamp, makeRookie, markTeamJoin, power, pushEvent, q1, teamCode } from "./main";
+import { ldlBuild } from "./ldl";
 import { rnd } from "./rng";
 import { STARS } from "./stars";
 import { S } from "./state";
@@ -290,7 +291,7 @@ function sanitizeRefs(w, renames) {
 }
 
 /* 2026：LDL 停办（真实历史）。还在二队的你被母队注册进一队替补席；母队没了就去一支中下游队 */
-function tlLdlEnd(w, nw, renames) {
+function tlLdlEnd(w, nw, renames, head?) {
   const ld = (w.LDL || []).find(t => t.name === S.team);
   const par = ld ? (renames.get(ld.parent) || ld.parent) : null;
   const lpl = nw.LPL || [];
@@ -303,10 +304,25 @@ function tlLdlEnd(w, nw, renames) {
   S.understudy = inc || null; S.promoted = !inc; S.offerKind = "sub";
   if (S.contract) { S.contract.team = pt.name; S.contract.tier = "sub"; }
   S.promoteDeal = null;
-  const mine = `${from || "二队"}解散，<b>${pt.name}</b> 把你注册进一队替补席${inc ? `——训练赛压过 <b>${inc.id}</b> 就能首发` : ""}。合同照旧。`;
-  pushEvent(`<b>LDL 停办</b>（真实历史）：${mine}`, "big", "时间线");
+  const mine = `${head ? "" : `${from || "二队"}解散，`}<b>${pt.name}</b> 把你注册进一队替补席${inc ? `——训练赛压过 <b>${inc.id}</b> 就能首发` : ""}。合同照旧。`;
+  pushEvent(`${head || "<b>LDL 停办</b>（真实历史）"}：${mine}`, "big", "时间线");
   if (S.tlPop) S.tlPop.mine = `<b>你的去向</b>：${mine}`;
   return true;
+}
+
+/* 换页时你在二队（2026-09-11 LDL 真实名单）：真实名单里这支队还在（或者改了名）就留下，你占着自己的位置；
+   真实历史里解散了，母队把你注册进一队替补席。返回 true = 你去了一队 */
+function ldlCarryMine(w, nw, built, renames, y) {
+  const mine = (w.LDL || []).find(t => t.name === S.team);
+  if (!mine) return false;
+  const par = mine.parent ? (renames.get(mine.parent) || mine.parent) : null;
+  const nt = built.find(t => t.name === mine.name) || (par ? built.find(t => t.parent === par) : null);
+  if (!nt) return tlLdlEnd(w, nw, renames, `<b>${mine.name}</b> 在 ${y} 年解散（真实历史）`);
+  const me = (mine.players || []).find(p => p && p.me);
+  if (me) { const i = nt.players.findIndex(p => p && p.pos === me.pos); if (i >= 0) nt.players[i] = me; else nt.players.push(me); }
+  if (S.understudy) S.understudy = nt.players.find(p => p && !p.me && p.pos === S.pos) || S.understudy;
+  if (nt.name !== mine.name) renames.set(mine.name, nt.name);
+  return false;
 }
 
 /* ---------- 换页：把世界 w 换成 y 年的真实名单 ----------
@@ -458,15 +474,25 @@ export function tlApplyYear(w, y, live) {
       if (live) tlLdlAcademy(w, y);
       if (live && S.career && S.homeLeague === "LDL") ldlMoved = tlLdlEnd(w, nw, renames);
     } else {
-      const lpl = nw.LPL || [], names = new Set(lpl.map(t => t.name));
-      w.LDL.forEach(ld => {
-        const np = renames.get(ld.parent);
-        if (np) { const on = ld.name, nn = teamCode(np) + ".Y"; ld.parent = np; ld.name = nn; if (live && S.team === on) renames.set(on, nn); }
-      });
-      nw.LDL = w.LDL.filter(ld => names.has(ld.parent) || (live && ld.name === S.team));
-      const have = new Set(nw.LDL.map(ld => ld.parent));
-      const miss = lpl.filter(t => !have.has(t.name));
-      if (miss.length) nw.LDL = nw.LDL.concat(buildLDL({ LPL: lpl }).filter(ld => miss.some(t => t.name === ld.parent)));
+      /* 2026-09-11 起：有真实名单的年份整页换成当年的 LDL（ldl.ts；玩家实锤「LDL 的战队名字不正确」，作者：「大修，按照真实的名单更新」）。
+         同一年一线名单里的人不在二队重复出现；你在的二队还在就留下（改了名跟着改），解散了就进母队一队替补席。 */
+      const taken = new Set<string>();
+      Object.keys(nw).forEach(K => { if (K !== "LDL") (nw[K] || []).forEach(t => (t.players || []).forEach(p => { if (p && !p.me) taken.add(p.id); })); });
+      const built = ldlBuild(y, nw.LPL || [], w.LDL, taken);
+      if (built) {
+        if (live && S.career && S.homeLeague === "LDL") ldlMoved = ldlCarryMine(w, nw, built, renames, y);
+        nw.LDL = built;
+      } else {
+        const lpl = nw.LPL || [], names = new Set(lpl.map(t => t.name));
+        w.LDL.forEach(ld => {
+          const np = renames.get(ld.parent);
+          if (np) { const on = ld.name, nn = teamCode(np) + ".Y"; ld.parent = np; ld.name = nn; if (live && S.team === on) renames.set(on, nn); }
+        });
+        nw.LDL = w.LDL.filter(ld => names.has(ld.parent) || (live && ld.name === S.team));
+        const have = new Set(nw.LDL.map(ld => ld.parent));
+        const miss = lpl.filter(t => !have.has(t.name));
+        if (miss.length) nw.LDL = nw.LDL.concat(buildLDLGen({ LPL: lpl }).filter(ld => miss.some(t => t.name === ld.parent)));
+      }
     }
   }
 
@@ -487,7 +513,9 @@ export function tlApplyYear(w, y, live) {
   if (S.team && renames.has(S.team)) {
     const on = S.team, nn = renames.get(S.team);
     tlRenameTeam(on, nn);
-    pushEvent(`<b>${on}</b> 的联赛席位转给了 <b>${nn}</b>（真实历史）——队名改为 <b>${nn}</b>，合同照旧。`, "big", "时间线");
+    pushEvent(S.homeLeague === "LDL"
+      ? `二队改名：<b>${on}</b> 改叫 <b>${nn}</b>（真实历史）——合同照旧。`
+      : `<b>${on}</b> 的联赛席位转给了 <b>${nn}</b>（真实历史）——队名改为 <b>${nn}</b>，合同照旧。`, "big", "时间线");
   }
   sanitizeRefs(w, renames);
   // 兜底：换页之后世界里必须找得到你的队（找不到就按名单里的「你」找回来），否则下一次渲染就崩

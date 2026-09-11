@@ -1,5 +1,6 @@
 import { hallCount, hallImport, hallRead, hallSeedFrom, hallSweep, hallTitleLine, hallTotal, saveIdOf } from "./hall";
 import { DIMS, GAME_VER, LDL_ROSTER, POSN, PRE_YEAR, REGION_SYN, SEASONS, SPLITS, anchorLeague, capOf, clamp, dimWord, leagueBaseline, q1, rankFull, render, teamCode, trialCanPay } from "./main";
+import { ldlFixOldNames } from "./ldl";
 import { initLedger } from "./shop";
 import { S, setS } from "./state";
 
@@ -188,6 +189,8 @@ export function fixLdlNames(s) {
         if (real) p.id = real.id;
       });
     });
+    // 队名：老档里拼出来的「XX.Y」换成真实队名（2026-09-11 玩家实锤「LDL 的战队名字不正确」，见 ldl.ts）
+    ldlFixOldNames(s);
   } catch (e) {}
 }
 

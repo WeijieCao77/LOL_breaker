@@ -25,6 +25,11 @@ for y in (2023, 2024, 2025, 2026):
     if os.path.exists(p):
         for ts in json.load(open(p, encoding="utf-8"))["leagues"].values():
             names += [t["n"] for t in ts]
+# LDL 真实名单（2026-09-11，data/export_ldl.py）：二队和独立队的队标
+p = os.path.join(CSV, "ldl_pages.json")
+if os.path.exists(p):
+    for ts in json.load(open(p, encoding="utf-8"))["years"].values():
+        names += [t["n"] for t in ts]
 
 out, miss = {}, []
 for n in dict.fromkeys(names):

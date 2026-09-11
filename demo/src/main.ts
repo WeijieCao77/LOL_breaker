@@ -28,6 +28,7 @@ import { actListText, archiveWeek, clearPlan, noteAct, quickBtn, quickPlan, quic
 import { askConfirm, confirmCard, continueCard, dropSave, escapeHtml, exportSave, importSave, loadGame, meName, safeName, saveBar, saveGame } from "./save";
 import { addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, noteStream, noteStreamMoney, PRIZE_PO, PRIZE_PO_LDL, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
 import { addSquad, clampWinProb, defendNote, defendPressure, disruptSynergy, doBenchAct, doSquad, gapVerdict, initSquad, myPower, oppMatchPw, squadActs, squadCard, squadDecay, squadOf, teamPowerOf, watchRoster } from "./squad";
+import { ldlBuild, ldlShort } from "./ldl";
 import { starAfterMatch, starLaneBadge, starSpotHtml } from "./stars";
 import { S, setS } from "./state";
 import { shareCardOpen } from "./share";
@@ -129,10 +130,15 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
-  {v:"v20260911c", at:"2026-09-11", items:[
+  {v:"v20260911d", at:"2026-09-11", items:[
     "<b>成就殿堂</b>（跨存档）：成就页多了「本局 / 殿堂」两个视图。殿堂记在这台设备上、不跟着哪一个存档走——<b>重开、开新档都不会清</b>：每一项成就第一次是哪一局、哪个 ID、哪个赛季、哪天解锁的，一共几局拿到过。别的局拿到、这一局还没有的画虚线金框；彩蛋成就在任何一局撞到过就不再打问号。解锁弹窗会多写一句「殿堂首次」或「殿堂里已有」，封面的存档卡写「本局 N · 殿堂 M/101」。<b>奖励照旧每一局都发</b>：新档的成就从零开始解锁、回报照给，殿堂本身不给任何数值，「收藏家」「打透了」也只数这一局。老存档打开时（或者出现在封面上时），里面已经解锁的成就会自动记进殿堂。「导出」的存档文件带着殿堂，「导入」时和这台设备上的殿堂合在一起、谁先解锁记谁，不会互相覆盖；没导出过就换浏览器或清掉网站数据的话，殿堂不会跟过去",
     "<b>殿堂专属成就</b>（七项，不算进那 101 项、没有数值奖励）：<b>五个位置</b>（五个位置都签过职业合同）、<b>走遍三大赛区</b>（LPL、LCK、LEC 各拿下过一座联赛冠军）、<b>殿堂半满 / 殿堂将满 / 全成就</b>（殿堂里集齐 50 / 80 / 101 项）、<b>两种结局</b>（「破局者」和「王朝」都打出来过，「传奇」不算其中任何一个）、<b>少年与老将</b>（17 岁开局和 21 岁开局的生涯各打完一局）。都可以分几局凑齐，凑齐时弹窗；回报只是一个<b>称号</b>——封面的存档卡上写最近拿到的那一个，生涯名片上带一枚小徽章。签过的位置和自己拿下的联赛冠军，老存档打开时会补记；结局和开局年龄补不了，从这一版起打完一局记一局",
     "<b>「职业前」那一栏的成就只在第一份职业合同时结算</b>（修漏洞）：「一年上岸」「熬出来的」「野路子」原来在之后每一次转会时都会再判一次——一年上岸的人被放走、在路人里熬过两年、签回来之后一转会，会补拿「熬出来的」，两个互相矛盾的成就挂在同一个人身上；回到路人时业余赛记录清零，之后转会会补拿「野路子」，再赢一次城市争霸赛 / 主播杯，杯赛那几项也会补发。现在这一栏只认第一份合同之前的事。<b>「远走他乡」不受影响</b>，转会去外赛区照样解锁。已经拿到的不收回"
+  ]},
+  {v:"v20260911c", at:"2026-09-11", items:[
+    "<b>LDL 换成真实名单</b>（玩家实锤：「LDL 的战队名字不正确」）：二队原来是按「母队简称 + .Y」拼出来的名字，17 支里 11 支和真实不符——JDG 的二队其实叫 <b>Joy Dream</b>、RNG 的叫 <b>Royal Club</b>、TES 的叫 <b>Top Esports Challenger</b>；2022 年真实 LDL 还有 7 支独立队（MAX、Qing Jiu、Shu Dai Xiong、TEAM ORANGE、TWELVE、Team Pinnacle、Young Miracles）也没有。现在开局就是 2022 年真实的 24 支，首发是当年真实出场最多的五个人",
+    "真实时间线的新档，每个休赛期 LDL 换成那一年的真实名单：2023 年 20 支、2024 年 19 支、2025 年只剩 10 支二队。还在队里的人带着本作里的成长留下；你所在的二队在真实历史里<b>解散</b>了，母队会把你注册进一队替补席；二队改了名（比如 Oh My Dream → Oh My God Academy）合同照旧。队名写全名，对阵图写简称（RYL、JDM、TES.C）。二队的强度带和原来一样：母队 −8、不超过 LPL 垫底三队",
+    "<b>老存档</b>：读档时二队换成真实队名（积分榜、赛程、合同一起改），队伍数量不变"
   ]},
   {v:"v20260911b", at:"2026-09-11", items:[
     "<b>真实时间线</b>（新档）：游戏照旧从 2022 年（S12）开局，之后每个休赛期，世界换成<b>下一年真实的首发名单</b>（2023–2026 按真实比赛数据评分）——T1 2025 年 Doran 顶替 Zeus、2026 年 Peyz 顶替 Gumayusi 这类换人都会发生；你所在的队也跟着真实名单走，你的位置和你亲手造成的变动除外。<b>赛区结构按真实改制</b>：LCS、CBLOL 与 LLA 合并成 LTA 南北两区，太平洋几个赛区合并成 LCP，2026 年 LTA 又拆回 LCS 与 CBLOL，LPL 缩编。难度按原来的曲线标定过——换的是人，不是难度。<b>老存档不变</b>",
@@ -1535,16 +1541,14 @@ export function cloneWorld(){
      俱乐部 = 一队（LPL 名单）+ 青训队（LDL 名单）。
      合同签给俱乐部；你注册在哪个名单，决定你在哪个联赛打比赛。
      2022 年 LPL 十七家俱乐部被强制配置青训队（LDL 当年 24 队 =
-     17 家青训 + 7 支独立队；独立队暂未做）——所以这里是全部十七家，
+     17 家青训 + 7 支独立队；2026-09-11 起两种都按真实名单建，见 ldl.ts）——十七家都有青训编制，
      不再只有后十名，「这家没有青训编制」的怪事不会再发生。
    青训队实力大致等于对应一队减 12。
    上调窗口 = 季中间歇 + 休赛期（见 checkPromote）；
    一队替补拿不到比赛时，休赛期俱乐部会提议下放（见 offerSendDown）。 */
-/* 战队简称。LDL 的二队队名用的是「简称 + 后缀」这套真实惯例
-   （EDG.Y、JDG.Y、TES.C 这种），不是「XX 青训队」——现实里没有
-   「青训队联赛」这回事，LDL 是正式的次级联赛，队伍有自己的队名。
-   说明：2022 赛季 LDL 的完整队名名单没能查到可核实的来源，
-   所以这里只套用命名惯例，不假装它是真实名单。 */
+/* 战队简称（LPL 对阵图用；老存档里拼出来的「XX.Y」二队名靠它识别）。
+   LDL 队名原来按「简称 + .Y」拼——2026-09-11 玩家实锤「LDL 的战队名字不正确」：真实二队叫 Joy Dream、Royal Club、
+   Top Esports Challenger……现在 LDL 用真实名单（ldl.ts / data/csv/ldl_pages.json，来源 rosters_LDL.csv + Oracle's Elixir）。 */
 export const LPL_CODE={
   "Royal Never Give Up":"RNG","JD Gaming":"JDG","Top Esports":"TES",
   "Victory Five":"V5","EDward Gaming":"EDG","Weibo Gaming":"WBG",
@@ -1581,7 +1585,18 @@ export const LDL_ROSTER={
   WE:[{id:"Demon",pos:"top"},{id:"Yanxiang",pos:"jng"},{id:"xqw",pos:"mid"},{id:"yhp",pos:"bot"},{id:"Fahai",pos:"sup"}],
   IG:[{id:"YSKM",pos:"top"},{id:"Beige",pos:"jng"},{id:"xzy",pos:"mid"},{id:"xiaoyueji",pos:"bot"},{id:"Mitsuki",pos:"sup"}]
 };
+/* 开局的 LDL：2022 年真实的 24 支（ldl.ts；2026-09-11 玩家实锤「LDL 的战队名字不正确」后换成真实名单）。
+   读不到真实名单时才回落到下面按母队生成的老办法。 */
 export function buildLDL(w){
+  try{
+    const taken=new Set();
+    Object.keys(w||{}).forEach(k=>{ if(k!=="LDL") (w[k]||[]).forEach(t=>(t.players||[]).forEach(p=>taken.add(p.id))); });
+    const real=ldlBuild(2022,(w&&w.LPL)||[],null,taken);
+    if(real&&real.length) return real;
+  }catch(e){}
+  return buildLDLGen(w);
+}
+export function buildLDLGen(w){
   const src=(w.LPL||[]);
   const rk=src.map(t=>({t,p:avg(t.players.map(q=>avg(DIMS.map(d=>q.r[d]))))}))
               .sort((a,b)=>b.p-a.p);
@@ -5897,7 +5912,7 @@ export function viewOffer(){
    · 杯赛：轮次阶梯（对手按轮固定，赢了打谁一目了然） */
 /* 对阵图里的队名：LPL 用惯用缩写，其余不长就写全（玩家实锤：T1 显示成「T」、Cloud9 成「C」），太长才取首字母 */
 export function brCode(n){
-  try{ if(LPL_CODE[n]) return LPL_CODE[n]; }catch(e){}
+  try{ if(LPL_CODE[n]) return LPL_CODE[n]; const ls=ldlShort(n); if(ls) return ls; }catch(e){}   // LDL 队名写全名，这里用真实简称（作者定的）
   const str=String(n||"");
   if(str.length<=14) return str;
   const w=str.split(/\s+/).filter(Boolean);
