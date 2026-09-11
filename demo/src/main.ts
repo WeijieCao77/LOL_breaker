@@ -8,7 +8,7 @@ import { addStaff, cloutCard, cloutOf, cloutTick, cloutTier, coachTrust, doList,
 import { CUPS, activeCups, cupCard, cupDismissMatch, cupMatchCard, cupOf, cupOppName, cupPrep, cupReachName, cupResultCard, cupRoundName, cupTick, disbandCrew, dueCups, enterCup, forfeitCup, preSquadCard, resolveCupNode, startCupMatch } from "./cup";
 import { DATA } from "./data";
 import { formCard, formMul, formNews, formTier, myForm, myFormMul, rollForm, rollWorldForm } from "./form";
-import { newSaveId } from "./hall";
+import { hallBadge, hallCareerEnd, newSaveId } from "./hall";
 import { awardsText, btkTrialCheck, campCard, cerApply, cerBind, cerCard, cerFinalNode, cerFinalPw, cerRecMul, cerStart, isFinalMatch, mediaTiltMul, mediaToneNow, meetCard, mgLive, verCerAdj } from "./cer";
 import { injuryCard, injuryHit, injuryTick, injuryTrainMul, riskHint, rollInjury } from "./injury";
 import { brOthersText, brStep, findTeam, intlAdvance, intlChampCard, intlStageName, leagueOf, majorStandings, spectateIntl, startIntl, wlAdd, wlInfluence, wlRelax, worldsSlot } from "./intl";
@@ -130,7 +130,8 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
   {v:"v20260911c", at:"2026-09-11", items:[
-    "<b>成就殿堂</b>（跨存档）：成就页多了「本局 / 殿堂」两个视图。殿堂记在这台设备上、不跟着哪一个存档走——<b>重开、开新档都不会清</b>：每一项成就第一次是哪一局、哪个 ID、哪个赛季、哪天解锁的，一共几局拿到过。别的局拿到、这一局还没有的画虚线金框；彩蛋成就在任何一局撞到过就不再打问号。解锁弹窗会多写一句「殿堂首次」或「殿堂里已有」，封面的存档卡写「本局 N · 殿堂 M/101」。<b>奖励照旧每一局都发</b>：新档的成就从零开始解锁、回报照给，殿堂本身不给任何数值，「收藏家」「打透了」也只数这一局。老存档打开时（或者出现在封面上时），里面已经解锁的成就会自动记进殿堂。「导出」的存档文件带着殿堂，「导入」时和这台设备上的殿堂合在一起、谁先解锁记谁，不会互相覆盖；没导出过就换浏览器或清掉网站数据的话，殿堂不会跟过去"
+    "<b>成就殿堂</b>（跨存档）：成就页多了「本局 / 殿堂」两个视图。殿堂记在这台设备上、不跟着哪一个存档走——<b>重开、开新档都不会清</b>：每一项成就第一次是哪一局、哪个 ID、哪个赛季、哪天解锁的，一共几局拿到过。别的局拿到、这一局还没有的画虚线金框；彩蛋成就在任何一局撞到过就不再打问号。解锁弹窗会多写一句「殿堂首次」或「殿堂里已有」，封面的存档卡写「本局 N · 殿堂 M/101」。<b>奖励照旧每一局都发</b>：新档的成就从零开始解锁、回报照给，殿堂本身不给任何数值，「收藏家」「打透了」也只数这一局。老存档打开时（或者出现在封面上时），里面已经解锁的成就会自动记进殿堂。「导出」的存档文件带着殿堂，「导入」时和这台设备上的殿堂合在一起、谁先解锁记谁，不会互相覆盖；没导出过就换浏览器或清掉网站数据的话，殿堂不会跟过去",
+    "<b>殿堂专属成就</b>（七项，不算进那 101 项、没有数值奖励）：<b>五个位置</b>（五个位置都签过职业合同）、<b>走遍三大赛区</b>（LPL、LCK、LEC 各拿下过一座联赛冠军）、<b>殿堂半满 / 殿堂将满 / 全成就</b>（殿堂里集齐 50 / 80 / 101 项）、<b>两种结局</b>（「破局者」和「王朝」都打出来过，「传奇」不算其中任何一个）、<b>少年与老将</b>（17 岁开局和 21 岁开局的生涯各打完一局）。都可以分几局凑齐，凑齐时弹窗；回报只是一个<b>称号</b>——封面的存档卡上写最近拿到的那一个，生涯名片上带一枚小徽章。签过的位置和自己拿下的联赛冠军，老存档打开时会补记；结局和开局年龄补不了，从这一版起打完一局记一局"
   ]},
   {v:"v20260911b", at:"2026-09-11", items:[
     "<b>真实时间线</b>（新档）：游戏照旧从 2022 年（S12）开局，之后每个休赛期，世界换成<b>下一年真实的首发名单</b>（2023–2026 按真实比赛数据评分）——T1 2025 年 Doran 顶替 Zeus、2026 年 Peyz 顶替 Gumayusi 这类换人都会发生；你所在的队也跟着真实名单走，你的位置和你亲手造成的变动除外。<b>赛区结构按真实改制</b>：LCS、CBLOL 与 LLA 合并成 LTA 南北两区，太平洋几个赛区合并成 LCP，2026 年 LTA 又拆回 LCS 与 CBLOL，LPL 缩编。难度按原来的曲线标定过——换的是人，不是难度。<b>老存档不变</b>",
@@ -843,7 +844,7 @@ export function encore(){
 export function retireNow(){
   S.retired=true;
   pushEvent(`<b>${meName()} 宣布退役。</b>`,"big","生涯");
-  S.step="end"; render();
+  S.step="end"; hallCareerEnd(); render();   // 殿堂记下结局和开局年龄（「两种结局」「少年与老将」）
 }
 
 /* ================= 工具 ================= */
@@ -2644,7 +2645,7 @@ export function preNextYear(){
   if(S.si>=lastSeason()){   // 自由身年末没人签：桌上没报价就只能退役（再战期也一样）
     // 曾打过职业的人走到时间尽头：履历接回来，结局按职业生涯算，不是「没能上岸」
     if(S.careerBak){ S.career=S.careerBak; S.careerBak=null; } else S.neverSigned=true;
-    S.step="end"; render(); return;
+    S.step="end"; hallCareerEnd(); render(); return;
   }
   S.si++; S.age++; P.preYear=(P.preYear||1)+1;
   P.week=1; P.ap=apFor('pre'); P.cityCup=null; P.streamCup=null;
@@ -5017,7 +5018,7 @@ export function doOffseason(){
   if(S.off) return;          // 已经在休赛期里了，别把周数重置回第 1 周
   if(S.si>=lastSeason()){
     if(S.extended&&S.farewell&&S.farewell.si===S.si) cerStart("farewell");   // 退役仪式：队友、教练、看台各一句话，然后看名片
-    S.step="end"; render(); return;
+    S.step="end"; hallCareerEnd(); render(); return;   // 殿堂记下结局和开局年龄（进结局页的三处都记：这里、退役、自由身走到时间尽头）
   }
   S.off={week:1, weeks:OFF_WEEKS, next:"year", label:"休赛期"};
   if((S.homeLeague||"LPL")!=="LDL") cerStart("allstar");   // 全明星周末：投票看今年的奖项 / 冠军 / 人气，入选了打技巧赛
@@ -5412,10 +5413,11 @@ export function careerPoster(){
     ["粉丝",`<span style="font-size:14px">${fanTier()}</span>`]
   ];
   const now=new Date();
+  // 身份行末尾的小徽章：殿堂专属的称号（作者批 B：只给称号不给数值；一项都没拿过就什么都不加）
   return `<div class="poster">
     <div class="po-top" style="--i:0"><span class="po-mark">破晓</span><span>生涯名片 · S12–S16 · 2022–2026</span></div>
     <div class="po-hero" style="--i:1"><div class="po-title">${e.n}</div><div class="po-story">${e.d}</div></div>
-    <div class="po-id" style="--i:2"><b>${meName()}</b> · ${POSN[S.pos]||""} · ${(ORIGIN[S.origin]||{}).n||""}${S.career?` · ${S.team||"—"}`:""} · ${S.age} 岁</div>
+    <div class="po-id" style="--i:2"><b>${meName()}</b> · ${POSN[S.pos]||""} · ${(ORIGIN[S.origin]||{}).n||""}${S.career?` · ${S.team||"—"}`:""} · ${S.age} 岁${hallBadge()}</div>
     <div class="po-wall">${wall}</div>
     <div class="po-years${played.length>5?' many':''}" style="grid-template-columns:repeat(${played.length},minmax(0,1fr))">${years}</div>
     <div class="po-stats" style="--i:9">${stats.map(([k,v])=>`<div><div class="k">${k}</div><div class="v mono">${v}</div></div>`).join("")}</div>

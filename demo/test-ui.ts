@@ -220,6 +220,7 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
         const nHall = d.querySelectorAll("#stage .achgrid .ach").length;
         if (ms && nHall < +ms[2]) bad.push(`殿堂视图只画了 ${nHall} 张卡（成就一共 ${ms[2]} 项）`);
         if (!/重开、开新档都不会清/.test((d.getElementById("stage") as HTMLElement).textContent || "")) bad.push("殿堂视图没写清它跨存档、不清空");
+        if (!Array.from(d.querySelectorAll("#stage h3")).some(e => /殿堂专属/.test(e.textContent || ""))) bad.push("殿堂视图里没有「殿堂专属」那一组");
         (d.querySelector('#stage [data-achv="save"]') as HTMLElement).click();
         if (S.achView !== "save" || d.querySelectorAll("#stage .achgrid .ach").length !== nSave) bad.push("点「本局」没切回原来那张表");
       }

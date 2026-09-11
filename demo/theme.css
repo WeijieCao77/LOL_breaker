@@ -719,6 +719,11 @@ td .tlogo{margin-right:5px}
 .ach .ah{font-size:11px;color:var(--ink-3);margin-top:5px;line-height:1.45}
 .ach.on .ah,.ach.hall .ah{color:var(--gold)}
 .achtabs{margin:0 0 4px}
+/* 殿堂专属的回报只是一个称号：封面存档卡标题下面一行、生涯名片身份行末尾一枚小徽章。金色是成就本来的颜色，不用晨光橙（那是「现在」） */
+.savemain .halltitle{margin:-6px 0 12px;font-size:12px;color:var(--ink-3);letter-spacing:.06em}
+.savemain .halltitle b{color:var(--gold-hi);font-weight:650}
+.po-hall{display:inline-block;padding:0 7px;border:1px solid rgba(var(--gold-rgb),.55);color:var(--gold-hi);
+  font-size:11px;letter-spacing:.08em;line-height:1.6;vertical-align:1px}
 
 /* ---- 段位晋级弹窗 ---- */
 .rankup{position:fixed;inset:0;z-index:50;display:grid;place-items:center;

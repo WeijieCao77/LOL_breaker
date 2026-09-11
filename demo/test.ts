@@ -1581,6 +1581,77 @@ function hallChecks(): string[] {
     h = hall();
     if (h.a.nosuch) bad.push("导入的殿堂里不认识的成就没洗掉");
     if (/[<>]/.test(h.a.top10.who) || h.a.top10.s !== "" || h.a.top10.ids.some((x: string) => /[<>]/.test(x))) bad.push("导入的殿堂没消毒：" + JSON.stringify(h.a.top10));
+    // ⑦ 殿堂专属（作者批 B）的判定只读殿堂记录（合成数据）：差一个都不亮，凑齐才亮
+    {
+      const mk = { at: 1, who: "T", s: "" };
+      const X = (id: string) => A.HALL_X.find((x: any) => x.id === id);
+      const H = (p: any) => Object.assign(A.hallEmpty(), p);
+      const on = (id: string, p: any) => !!X(id).cond(H(p));
+      const four = { top: mk, jng: mk, mid: mk, bot: mk };
+      if (on("hx_pos5", { pos: four })) bad.push("「五个位置」签过四个位置就亮了");
+      if (!on("hx_pos5", { pos: Object.assign({ sup: mk }, four) })) bad.push("「五个位置」五个位置都签过却没亮");
+      if (on("hx_lg3", { lg: { LPL: mk, LCK: mk, LCS: mk } })) bad.push("「走遍三大赛区」少了 LEC 也亮了");
+      if (!on("hx_lg3", { lg: { LPL: mk, LCK: mk, LEC: mk } })) bad.push("「走遍三大赛区」三个赛区都拿过联赛冠军却没亮");
+      const fill = (n: number) => { const a: any = {}; A.ACHIEVEMENTS.slice(0, n).forEach((x: any) => { a[x.id] = Object.assign({ n: 1, ids: [] }, mk); }); return { a }; };
+      if (on("hx_half", fill(49)) || !on("hx_half", fill(50))) bad.push("「殿堂半满」的线不在 50");
+      if (on("hx_most", fill(79)) || !on("hx_most", fill(80))) bad.push("「殿堂将满」的线不在 80");
+      const all = A.ACHIEVEMENTS.length;
+      if (on("hx_all", fill(all - 1)) || !on("hx_all", fill(all))) bad.push(`「全成就」的线不在 ${all}`);
+      if (on("hx_end2", { end: { 破局者: mk, 传奇: mk } }) || !on("hx_end2", { end: { 破局者: mk, 王朝: mk } })) bad.push("「两种结局」判错了（要破局者 + 王朝）");
+      if (on("hx_ages", { ages: { "17": mk, "20": mk } }) || !on("hx_ages", { ages: { "17": mk, "21": mk } })) bad.push("「少年与老将」判错了（要 17 岁 + 21 岁开局）");
+      if (A.HALL_X.some((x: any) => A.ACHIEVEMENTS.some((a: any) => a.id === x.id))) bad.push("殿堂专属混进了 101 项成就的表");
+      if (A.hallCount(H(Object.assign(fill(3), { x: { hx_pos5: mk, hx_lg3: mk } }))) !== 3) bad.push("殿堂计数把殿堂专属也数进去了");
+    }
+    // ⑧ 真钩子记事实、凑齐时弹一次、不给任何数值；称号上封面存档卡和生涯名片
+    {
+      const mk = { at: 1, who: "别的局", s: "S12" };
+      LS.removeItem(A.HALL_KEY);
+      S = fresh(9105);
+      A.makeOffers(true); A.acceptOffer(0);
+      S = A.S();
+      h = hall();
+      if (!h || !h.pos || !h.pos[S.pos]) bad.push("签下第一份合同后殿堂没记下这个位置：" + JSON.stringify(h && h.pos));
+      h.pos = Object.assign({ top: mk, jng: mk, bot: mk }, h.pos); setHall(h);   // 另外三个位置是别的局签的，还差辅助
+      S.achPop = []; S.pos = "sup"; A.checkAch("sign"); S.pos = "mid";
+      h = hall();
+      const px = (S.achPop || []).filter((p: any) => p.hallx);
+      if (!h.x.hx_pos5 || px.length !== 1 || px[0].n !== "五个位置") bad.push("五个位置凑齐后没弹「五个位置」（或弹了不止一个）：" + JSON.stringify(px));
+      else { S.achPop = px; if (!/殿堂专属成就/.test(A.achPopCard())) bad.push("殿堂专属的弹窗没写「殿堂专属成就」"); }
+      A.checkAch("sign"); A.hallSweep(true);
+      if ((S.achPop || []).filter((p: any) => p.hallx).length !== 1) bad.push("「五个位置」弹了不止一次");
+      S.homeLeague = "LCK"; A.checkAch("lgtitle"); S.homeLeague = "LPL";
+      if (!hall().lg.LCK) bad.push("拿下联赛冠军后殿堂没按赛区记");
+      // 生涯结束：记结局名和开局年龄；凑齐「少年与老将」时一分数值都不给
+      h = hall(); h.ages = { "17": mk }; setHall(h);
+      S.ageCfg = { a: 21 };
+      const before = JSON.stringify([S.money, S.fans, S.heat, S.fatigue, S.trust, S.attrs]);
+      S.achPop = [];
+      A.hallCareerEnd();
+      h = hall();
+      if (!h.ages["21"] || !h.end[A.ending().n]) bad.push("生涯结束时殿堂没记下开局年龄 / 结局：" + JSON.stringify({ ages: h.ages, end: h.end }));
+      if (!h.x.hx_ages || !(S.achPop || []).some((p: any) => p.hallx && p.n === "少年与老将")) bad.push("17 + 21 岁开局都打完了，没弹「少年与老将」");
+      if (JSON.stringify([S.money, S.fans, S.heat, S.fatigue, S.trust, S.attrs]) !== before) bad.push("殿堂专属给了数值（资金 / 粉丝 / 热度 / 体力 / 士气 / 属性变了）");
+      // 称号：最近拿到的那一个，上生涯名片和封面存档卡
+      h = hall(); h.x.hx_pos5.at = 10; h.x.hx_ages.at = 20; setHall(h);
+      if (A.hallTitle() !== "少年与老将") bad.push("殿堂称号不是最近拿到的那一个：" + A.hallTitle());
+      if (!/po-hall[^>]*>殿堂 · 少年与老将/.test(A.careerPoster())) bad.push("生涯名片上没有殿堂称号徽章");
+      A.saveGame("测试");
+      if (!/殿堂称号 · <b>少年与老将<\/b>/.test(A.continueCard())) bad.push("封面存档卡上没有殿堂称号");
+    }
+    // ⑨ 老档补记事实：签过约记位置；自己拿下的联赛冠军按赛区记（MSI / 世界赛不算，随队冠军本来就不在 titles 里）；
+    //    导入的事实表同样并集、留最早、洗掉坏键
+    {
+      LS.removeItem(A.HALL_KEY);
+      A.hallSeedFrom({ ach: {}, pos: "bot", seed: 77, career: { titles: ["S13 LCK春季赛", "S14 MSI", "S15 世界赛", "S15 LPL夏季赛"] } }, 1700000000000);
+      h = hall();
+      if (!h.pos.bot || !h.lg.LCK || h.lg.LCK.s !== "S13" || !h.lg.LPL || Object.keys(h.lg).length !== 2) bad.push("老档补记殿堂专属的事实不对：" + JSON.stringify({ pos: h.pos, lg: h.lg }));
+      A.hallSeedFrom({ ach: {}, pos: "top", seed: 78 }, 1700000000000);
+      if (hall().pos.top) bad.push("没签过约的老档也记了位置");
+      const m1 = A.hallMerge(A.hallClean({ pos: { mid: { at: 500, who: "甲" } }, end: { 王朝: { at: 900, who: "甲" } } }),
+                             A.hallClean({ pos: { mid: { at: 300, who: "乙" }, top: { at: 700, who: "乙" } }, end: { "<b>": { at: 1 } }, ages: { "17": { at: 5 } } }));
+      if (m1.pos.mid.at !== 300 || m1.pos.mid.who !== "乙" || !m1.pos.top || !m1.end["王朝"] || Object.keys(m1.end).length !== 1 || !m1.ages["17"])
+        bad.push("事实表导入没按「并集、留最早、洗掉坏键」合：" + JSON.stringify(m1));
+    }
     // ⑥ 存不了殿堂（localStorage 抛错）：解锁照常、奖励照发、弹窗照弹，只是不写殿堂那句
     S = fresh(9104);
     g.localStorage = { getItem() { throw new Error("denied"); }, setItem() { throw new Error("denied"); }, removeItem() { throw new Error("denied"); } };
@@ -1924,6 +1995,8 @@ const LEAGUE_OK: Record<string, string> = {
     "beatLCK 已锁 homeLeague!==LCK",
   '?`决赛击败 LCK 的 <b>${c.opp}</b>——至暗时刻的墙，被你砸开了一道口子。`':
     "同上，c.beatLCK 由上面那个变量算出来",
+  'd:"在 LPL、LCK、LEC 各拿下过一座联赛冠军——可以分几局完成。",':
+    "殿堂专属成就「走遍三大赛区」（hall.ts）：跨存档的目标，条件就是这三个赛区本身，不管你这一局在哪个赛区打都成立",
 };
 {
   const bad3: string[] = [];

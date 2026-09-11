@@ -1,6 +1,6 @@
 import { ACH_MORE } from "./achieve_more";
 import { gicon } from "./avatar";
-import { hallCount, hallNoteAch, hallRead, hallView } from "./hall";
+import { hallCount, hallNoteAch, hallObserve, hallRead, hallSweep, hallView } from "./hall";
 import { DIMS, SEASONS, addFans, addFat, capOf, pushEvent } from "./main";
 import { SLOTS, addMoney, hasCourse, streamIncome } from "./shop";
 import { S } from "./state";
@@ -186,9 +186,10 @@ export function achPopCard(){
   const a=q[0];
   return `<div class="rankup"><div class="ru-inner" style="max-width:420px">
     <div class="ru-icon">${gicon("ach",52)}</div>
-    <div class="ru-eyebrow">成就解锁${a.hall==="first"?"　·　殿堂首次":a.hall==="had"?"　·　殿堂里已有":""}${q.length>1?`　（还有 ${q.length-1} 个）`:""}</div>
+    <div class="ru-eyebrow">${a.hallx?"殿堂专属成就":"成就解锁"}${a.hall==="first"?"　·　殿堂首次":a.hall==="had"?"　·　殿堂里已有":""}${q.length>1?`　（还有 ${q.length-1} 个）`:""}</div>
     <div class="ru-tier" style="font-size:26px">${a.n}</div>
-    <div class="ru-txt">${a.d}${a.flavor?`<br><span style="color:var(--gold)">${a.flavor}</span>`:""}</div>
+    <div class="ru-txt">${a.d}${a.flavor?`<br><span style="color:var(--gold)">${a.flavor}</span>`:""}${
+      a.hallx?`<br><span style="color:var(--ink-3)">殿堂专属：不给数值，称号写在封面的存档卡和生涯名片上。</span>`:""}</div>
     ${a.gains&&a.gains.length?`<div class="evres">${a.gains.map(g=>
       `<span class="er up">${g}</span>`).join("")}</div>`:""}
     <div class="row" style="justify-content:center">
@@ -229,4 +230,7 @@ export function achCard(){
 export function checkAch(on?: any, ctx?: any){
   checkAchBase(on,ctx);
   if(queueAchCheck){ queueAchCheck=false; checkAchBase("ach",{}); }
+  // 殿堂专属要的事实（签过的位置、拿过联赛冠军的赛区）跟着钩子记；殿堂变过才重判那几项，弹窗排在这次的成就后面
+  if(on==="sign"||on==="lgtitle") hallObserve(on);
+  hallSweep();
 }

@@ -1,4 +1,4 @@
-import { hallCount, hallImport, hallRead, hallSeedFrom, hallTotal, saveIdOf } from "./hall";
+import { hallCount, hallImport, hallRead, hallSeedFrom, hallSweep, hallTitleLine, hallTotal, saveIdOf } from "./hall";
 import { DIMS, GAME_VER, LDL_ROSTER, POSN, PRE_YEAR, REGION_SYN, SEASONS, SPLITS, anchorLeague, capOf, clamp, dimWord, leagueBaseline, q1, rankFull, render, teamCode, trialCanPay } from "./main";
 import { initLedger } from "./shop";
 import { S, setS } from "./state";
@@ -157,6 +157,7 @@ export function loadGame() {
     // 档里已经解锁的成就补记进殿堂——记过的不会重复算局
     if (!S.saveId) S.saveId = saveIdOf(S);
     hallSeedFrom(S, blob.at);
+    hallSweep();   // 补记之后殿堂专属可能刚好凑齐（老档里本来就攒了五十项）——读档后的第一屏就弹
     // 老档进新版本不再弹「本次更新」（玩家 2026-09-06 实锤：它盖住了教程导览）——
     // 只在右下角 📜 上打个点，玩家自己点开才看（见 audio.js 的 logBadge）
     S.patchSeen = GAME_VER;
@@ -538,10 +539,13 @@ export function continueCard() {
       <div class="row"><button class="btn ghost sm" id="savedrop">清掉它</button></div></div>`;
   }
   if (blob.at !== _hallSeenAt) { _hallSeenAt = blob.at; hallSeedFrom(blob.S, blob.at); }
+  hallSweep();   // 补记之后凑齐了殿堂专属，就在封面上弹（和普通成就同一个弹窗）
+  // 标题下面那一行是殿堂专属的回报：最近拿到的称号（作者批 B：只给称号，不给数值）
   return `<div class="card savecont"><h2>上次的存档<em>${saveAgeText(blob.at)}</em></h2>
     <div class="savegrid">
       <div class="savemain">
         <h3>${saveSummary(blob.S)}</h3>
+        ${hallTitleLine()}
         <div class="row">
           <button class="btn" id="savecont">继续上次</button>
           <button class="btn ghost" id="savenew">重新开一局</button>
