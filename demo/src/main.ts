@@ -33,7 +33,7 @@ import { shareCardOpen } from "./share";
 import { statEvent } from "./stats";
 import { SPEND, addTrust, addTrustAll, avgTrust, checkMateExit, contractCheck, initTrust, payday, resolveLocker, salaryOf, syncTrust, trustDecay, trustMod, trustOf, tryLockerEvent } from "./team";
 import { traitBar, traitMul, traitUpCard } from "./trait";
-import { CLUB_TIERS, DEAL_TIERS, REG_WEEKS, TIER_ORDER, acceptPromote, acceptRenew, afterTryout, approachTeam, askDeal, askPromoteRaise, askTransfer, checkPromote, checkRankInvite, checkTopUpInvite, contractLeftText, dealCard, declineDeal, declinePromote, declineRenew, doBuyout, dropDeal, dropProOffer, exposureCap, faCard, inviteCard, inviteFloorOk, noteScoutInterest, offerSendDown, parentClub, preTransferPage, proOfferCard, promoteCard, promoteDealCard, rankCap, regRollOffer, renewCard, renewNegotiate, resolveTryoutDay, rollProOffers, selfRecommend, signDeal, signRenewDeal, signTransfer, startTryout, takeFaOffer, takeProOffer, transferPage, tryoutCard, tryoutSkill, txPhaseName, txStops, txWindowName, txWindowOpen } from "./tryout";
+import { CLUB_TIERS, DEAL_TIERS, REG_WEEKS, TIER_ORDER, acceptPromote, acceptRenew, afterTryout, approachTeam, askDeal, askPromoteRaise, askTransfer, checkPromote, checkRankInvite, checkTopUpInvite, contractLeftText, dealCard, declineDeal, declinePromote, declineRenew, doBuyout, dropDeal, dropProOffer, exposureCap, faCard, inviteCard, inviteFloorOk, noteScoutInterest, offerSendDown, parentClub, preTransferPage, proOfferCard, promoteCard, promoteDealCard, rankCap, regRollOffer, renewCard, renewNegotiate, resolveTryoutDay, rollProOffers, selfRecommend, signDeal, signRenewDeal, signTransfer, startTryout, takeFaOffer, takeProOffer, transferPage, tryoutCard, tryoutSkill, txNoteReturn, txPhaseName, txStops, txWindowName, txWindowOpen } from "./tryout";
 import { rnd, rngInit } from "./rng";
 
 /* 像素头像（可选）：data/photos/ 里的照片经 make_avatars.py 烤成 24x24。
@@ -131,6 +131,9 @@ export const CHANGELOG=[
   {v:"v20260911b", at:"2026-09-11", items:[
     "【DEMO】纪元模式来了：建档时可以选择你在哪一年出道。除了原来的「破晓」（S12–S16，2022 年开局），新增「魔王与首冠」（S6–S11，2016 年开局）——六年，从魔王的最后一座打到 LPL 的第一座。两个纪元各有各的名单、赛区强弱、赛制和生涯长度，数据互不相通；选定之后中途不能改，老存档一律还是破晓纪元",
     "魔王纪元还是 DEMO：名单和数值是手写的脚手架，头部战队大致对得上，中下游和小赛区会有出入，等真实数据校对。2016 年的世界赛没有入围赛（16 队直接小组赛），引擎补上了这个赛制"
+  ]},
+  {v:"v20260911a", at:"2026-09-11", items:[
+    "<b>名片上的转会站数不再少算</b>（玩家实锤：「明明在三个队伍待过，只写了两次」）：三处漏记一起修——① 被放走、回到路人之后<b>再签回职业队</b>，这一站原来根本没进转会轨迹；② 轨迹只留 12 条，打满多年、续约记满之后，<b>最早那次转会会被挤出表</b>，现在先裁续约、买断这类流水，换队的记录留到最后；③ 名片逐年那一格<b>只写每年最后那支队</b>，一年里换过队的，现在几支都写上（生涯名片图同样）。<b>老存档打开就对</b>：站数还会从每个赛段的战绩记录里再数一遍，两本账取多的那本；二队升一队、下放二队仍然不算换俱乐部。只改记录和显示，不动任何数值"
   ]},
   {v:"v20260910f", at:"2026-09-10", items:[
     "<b>数值到顶之后，游戏不再当成「还会涨」</b>（上一版排查出来的同类问题，三条一起修）：① <b>队友接班让出指挥</b>——你的指挥已经到上限时，原来你一分没涨、他照样掉 1.5，事件还写「你的指挥 +1.5」；现在他让出的不超过你还能涨的，到顶就只换人喊，不白掉数。② <b>满体能还能花钱放松</b>——按摩、理疗、度假在体能满格时照样能买、照样扣钱，提示写「体力 +30」实际 +0；现在满体能时这三项按钮变灰（火锅还补信任和关系，照卖），卡面和提示按「此刻真正能回多少」写，体能快满时不再按满额写。③ <b>属性到上限还写「+x」</b>——战队卡（战术复盘、看录像、队友双排）、找人聊聊、职业前的随机事件和行动卡，到上限时改写「已到上限」，只涨了一截就写那一截。职业前的网吧开黑、换个游戏、看职业录像、休息四张卡原来还漏乘了职业前节奏 ×1.5（写「运营 +0.18」实际涨 0.27），一并改成真实的数。只有第①条会动数值，其余都是写法"
@@ -2755,6 +2758,8 @@ export function acceptOffer(i){
   // 你自己就是那个「强援」：base 上去了，但五个人要重新磨
   disruptSynergy(1,`<b>${meName()}</b> 加盟`);
   pushEvent(`<b>${meName()}</b> 正式签约 <b>${of.team}</b>（${of.t}）。${back?"重返职业赛场——上一段履历接着算。":"职业生涯从这里开始。"}`,"big","签约");
+  // 签回职业队也进转会轨迹（玩家实锤 2026-09-11：待过三支队，名片只写两站——原来只有 signTransfer 记）
+  if(back){ const ex=(S.pre&&S.pre.exPro)||{}; txNoteReturn(ex.team, of.team, (ex.lg&&ex.lg!==lgKey)?lgKey:null); }
   if(!back) checkAch("sign");   // 重返职业不是「第一份合同」——野路子那类成就不该再发（玩家实锤）
   if(!back) pushEvent(`<b>职业队的训练和路人不一样。</b>路人时练一项顺带练另一项，进了队每一项单独练、按教练组的表来；越往高处每一分越难。`,"info","训练");
   startSeason(true);
@@ -5298,7 +5303,11 @@ export function careerPoster(){
   const years=played.map((sea,si)=>{
     const rows=log.filter(x=>x.si===si);
     const H=S.honors||{};
-    let team=rows.length?rows[rows.length-1].team:null;
+    /* 一年里待过几支队就写几支（季中转会、回到路人再签回来）——原来只写最后那支，
+       玩家实锤 2026-09-11：待过三支队，名片上只看得到两支 */
+    const teams=rows.map(r=>r.team).filter((t,i,a)=>t&&a.indexOf(t)===i);
+    if(S.career&&si===S.si&&S.team&&teams.length&&teams.indexOf(S.team)<0) teams.push(S.team);
+    let team=teams.length?teams[teams.length-1]:null;
     if(!team&&(C.msiYears||[]).includes(si)&&H.msi&&H.msi[si]) team=H.msi[si];
     if(!team&&(C.worldsYears||[]).includes(si)&&H.worlds&&H.worlds[si]) team=H.worlds[si];
     if(!team) team=teamFromTx(si);
@@ -5317,8 +5326,9 @@ export function careerPoster(){
     const pre=si<firstPro;   // 第一份职业合同之前
     return `<div class="yr${won?' won':''}" style="--i:${si}">
       <div class="yr-t">${sea.tag}<small>${sea.y}</small>${(S.farewell&&S.farewell.si===si)?`<small style="color:var(--gold)">退役赛季</small>`:""}</div>
-      <div class="yr-team">${team?`${teamLogo(team,16)}<span>${team}</span>`
-        :pre?`<span class="dim">未签约</span>`:`<span class="dim">职业中 · 队伍未记录</span>`}</div>
+      ${teams.length>1?teams.map(t=>`<div class="yr-team">${teamLogo(t,16)}<span>${t}</span></div>`).join("")
+        :`<div class="yr-team">${team?`${teamLogo(team,16)}<span>${team}</span>`
+        :pre?`<span class="dim">未签约</span>`:`<span class="dim">职业中 · 队伍未记录</span>`}</div>`}
       <div class="yr-r">${res||(pre?"":"—")}</div>
       ${it?`<div class="yr-i">${it}</div>`:""}</div>`;
   }).join("");

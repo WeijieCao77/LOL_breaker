@@ -1616,7 +1616,13 @@ export function promoteCard(){
    老存档没有 k：按文案回推（有「→」且不是升队/下放的就是转会）。 */
 export function txNote(text,k?){
   S.txLog = (S.txLog||[]).concat([{ s: SEASONS[S.si]?SEASONS[S.si].tag:"", text, k:k||"move" }]);
-  if(S.txLog.length>12) S.txLog.shift();
+  /* 封顶先裁续约、买断这类流水，换队的那几笔（带「→」的）留到最后才动。
+     原来满 12 条直接 shift：打满八年、每个赛段续一次约，最早那次转会就被挤出表，
+     名片少数一站（玩家实锤 2026-09-11：待过三支队，名片写两站）。 */
+  while(S.txLog.length>24){
+    const i=S.txLog.findIndex(x=>!/→/.test(String((x&&x.text)||"")));
+    S.txLog.splice(i>=0?i:0,1);
+  }
 }
 /* 这一笔算不算「换了一家俱乐部」 */
 export function txIsMove(x){
@@ -1625,10 +1631,30 @@ export function txIsMove(x){
   const t=String(x.text||"");                       // 老存档回推
   return /→/.test(t) && !/升上一队|下放/.test(t);
 }
-/* 转会轨迹的「站」＝起点那一家 + 每一次真的换俱乐部 */
+/* 一队和它的 LDL 二队算同一家俱乐部（升队 / 下放不算一站） */
+function clubKey(name){
+  const t=((S.world&&S.world.LDL)||[]).find(x=>x.name===name);
+  return (t&&t.parent)||name;
+}
+/* 转会轨迹的「站」＝起点那一家 + 每一次真的换俱乐部。
+   两本账取多的那本（玩家实锤 2026-09-11：待过三支队，名片写两站）：转会记录原来漏记
+   「回到路人再签回职业队」那一笔，封顶时还会挤掉早年的转会；逐赛段轨迹（career.log）
+   每个赛段都记着在哪支队，老存档也能从它数对。 */
 export function txStops(){
   const n=(S.txLog||[]).filter(txIsMove).length;
-  return n?n+1:0;
+  const C=S.career||S.careerBak, log=(C&&C.log)||[];
+  let m=0, prev=null;
+  const step=name=>{ if(!name) return; const c=clubKey(name); if(prev!==null&&c!==prev) m++; prev=c; };
+  log.forEach(x=>step(x&&x.team));
+  if(S.career) step(S.team);   // 这个赛段刚换的队，还没结算进 log
+  const k=Math.max(n,m);
+  return k?k+1:0;
+}
+/* 回到路人之后再签回职业队（acceptOffer 的「重返职业」）：签的是别家就是一站，
+   签回原来那家（或它的一队 / 二队）不算换俱乐部。原来这条路一笔不记。 */
+export function txNoteReturn(ex,team,lg?){
+  const moved=!!ex&&clubKey(ex)!==clubKey(team);
+  txNote(moved?`${ex} → <b>${team}</b>${lg?`（${lg}）`:""}，自由身重返职业`:`重新签回 <b>${team}</b>，自由身重返职业`, moved?"move":"back");
 }
 
 /* ---------- 主动接触：点名一支队自荐 ---------- */
