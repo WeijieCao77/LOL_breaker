@@ -7,8 +7,13 @@ v2 的两处修正:
 import csv, os, sys, math, gzip, json, statistics as st, collections
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(BASE, "oracleselixir", "2022_OE.csv")
 OUT = os.path.join(BASE, "csv")
+# ---- 逐年重跑同一把尺（2026-09-10 真实时间线）：默认 2022，输出文件名与原来一致 ----
+YEAR = int(os.environ.get("POXIAO_YEAR", "2022"))
+OE_DIR = os.environ.get("POXIAO_OE_DIR", os.path.join(BASE, "oracleselixir"))
+SRC = os.path.join(OE_DIR, f"{YEAR}_OE.csv")
+SUF = "" if YEAR == 2022 else f"_{YEAR}"
+
 POS = ("top", "jng", "mid", "bot", "sup")
 
 # 位置指挥惯例先验 (职业圈通识: 辅助/打野视野最广，中单常兼指挥)
@@ -57,11 +62,11 @@ for r in csv.DictReader(open(os.path.join(OUT, "players_master.csv"), encoding="
     if len(bd) >= 4 and bd[:4].isdigit():
         yr = int(bd[:4])
         if 1985 <= yr <= 2010:
-            age[(r.get("player_id") or "").lower()] = 2022 - yr
+            age[(r.get("player_id") or "").lower()] = YEAR - yr
 print("有生日的选手:", len(age), file=sys.stderr)
 
 # ---------- 3. 重算 ----------
-rows = list(csv.DictReader(open(os.path.join(OUT, "ratings_v2_final.csv"), encoding="utf-8-sig")))
+rows = list(csv.DictReader(open(os.path.join(OUT, f"ratings_v2_final{SUF}.csv"), encoding="utf-8-sig")))
 groups = collections.defaultdict(list)
 for r in rows:
     groups[(r["position"], r["tier"])].append(r)
@@ -104,10 +109,10 @@ for (pos, tier), grp in groups.items():
 
 rows.sort(key=lambda r: -float(r["总评"]))
 cols = list(rows[0].keys())
-for path, data in (("ratings_v2_final.csv", rows),
-                   ("ratings_v2_tier1.csv", [r for r in rows if r["tier"] == "1"]),
-                   ("ratings_v2_LPL.csv", [r for r in rows if r["league"] == "LPL"]),
-                   ("ratings_v2_LDL.csv", [r for r in rows if r["league"] == "LDL"])):
+for path, data in ((f"ratings_v2_final{SUF}.csv", rows),
+                   (f"ratings_v2_tier1{SUF}.csv", [r for r in rows if r["tier"] == "1"]),
+                   (f"ratings_v2_LPL{SUF}.csv", [r for r in rows if r["league"] == "LPL"]),
+                   (f"ratings_v2_LDL{SUF}.csv", [r for r in rows if r["league"] == "LDL"])):
     with open(os.path.join(OUT, path), "w", newline="", encoding="utf-8-sig") as fh:
         w = csv.DictWriter(fh, fieldnames=cols, extrasaction="ignore")
         w.writeheader(); w.writerows(data)

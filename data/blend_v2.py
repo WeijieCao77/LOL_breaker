@@ -10,11 +10,13 @@ import csv, os, math, statistics as st
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(BASE, "csv")
+YEAR = int(os.environ.get("POXIAO_YEAR", "2022"))   # 逐年重跑（默认 2022，文件名不变）
+SUF = "" if YEAR == 2022 else f"_{YEAR}"
 
 box = {r["player_id"]: r for r in csv.DictReader(
-    open(os.path.join(OUT, "ratings_v2_raw.csv"), encoding="utf-8-sig"))}
+    open(os.path.join(OUT, f"ratings_v2_raw{SUF}.csv"), encoding="utf-8-sig"))}
 imp = {r["player_id"]: r for r in csv.DictReader(
-    open(os.path.join(OUT, "impact_2022.csv"), encoding="utf-8-sig"))}
+    open(os.path.join(OUT, f"impact_{YEAR}.csv"), encoding="utf-8-sig"))}
 
 TALENT = ["操作", "运营", "心态", "指挥", "体质"]     # 玩家可分配天赋点的五维
 DERIVED = ["适应力"]                                  # 派生值，不占天赋点
@@ -73,8 +75,8 @@ def dump(path, data):
         w.writeheader(); w.writerows(data)
 
 
-dump("ratings_v2_final.csv", rows)
-dump("ratings_v2_tier1.csv", [r for r in rows if r["tier"] == "1"])
-dump("ratings_v2_LPL.csv", [r for r in rows if r["league"] == "LPL"])
-dump("ratings_v2_LDL.csv", [r for r in rows if r["league"] == "LDL"])
+dump(f"ratings_v2_final{SUF}.csv", rows)
+dump(f"ratings_v2_tier1{SUF}.csv", [r for r in rows if r["tier"] == "1"])
+dump(f"ratings_v2_LPL{SUF}.csv", [r for r in rows if r["league"] == "LPL"])
+dump(f"ratings_v2_LDL{SUF}.csv", [r for r in rows if r["league"] == "LDL"])
 print("合成完成:", len(rows), "行")

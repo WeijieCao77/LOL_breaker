@@ -10,10 +10,17 @@ import csv, os, sys, collections
 import numpy as np
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(BASE, "oracleselixir", "2022_OE.csv")
 OUT = os.path.join(BASE, "csv")
+# ---- 逐年重跑同一把尺（2026-09-10 真实时间线）：默认 2022，输出文件名与原来一致 ----
+YEAR = int(os.environ.get("POXIAO_YEAR", "2022"))
+OE_DIR = os.environ.get("POXIAO_OE_DIR", os.path.join(BASE, "oracleselixir"))
+SRC = os.path.join(OE_DIR, f"{YEAR}_OE.csv")
+SUF = "" if YEAR == 2022 else f"_{YEAR}"
+
 
 TIER1 = {"LPL", "LCK", "LEC", "LCS", "WLDs", "MSI"}
+if YEAR >= 2025:
+    TIER1 |= {"LTA N", "LTA"}     # 2025 年 LCS 改制为 LTA 北区
 POS = ("top", "jng", "mid", "bot", "sup")
 MIN_GAMES = 20
 LAMBDA = 12.0          # L2 强度：越大越保守（把低样本选手拉向均值）
@@ -105,7 +112,7 @@ for nm in names:
 rows.sort(key=lambda r: -r["impact_raw"])
 
 cols = ["player_id", "position", "league", "tier", "games", "impact_raw", "impact_z", "impact_100"]
-with open(os.path.join(OUT, "impact_2022.csv"), "w", newline="", encoding="utf-8-sig") as fh:
+with open(os.path.join(OUT, f"impact_{YEAR}.csv"), "w", newline="", encoding="utf-8-sig") as fh:
     wr = csv.DictWriter(fh, fieldnames=cols)
     wr.writeheader()
     wr.writerows(rows)

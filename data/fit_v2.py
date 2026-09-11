@@ -12,12 +12,24 @@
 import csv, os, sys, math, statistics as st, collections
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(BASE, "oracleselixir", "2022_OE.csv")
 OUT = os.path.join(BASE, "csv")
+# ---- 逐年重跑同一把尺（2026-09-10 真实时间线）：默认 2022，输出文件名与原来一致 ----
+YEAR = int(os.environ.get("POXIAO_YEAR", "2022"))
+OE_DIR = os.environ.get("POXIAO_OE_DIR", os.path.join(BASE, "oracleselixir"))
+SRC = os.path.join(OE_DIR, f"{YEAR}_OE.csv")
+SUF = "" if YEAR == 2022 else f"_{YEAR}"
+
 
 TIER1 = {"LPL", "LCK", "LEC", "LCS", "WLDs", "MSI"}
 TIER1B = {"PCS", "VCS", "CBLOL", "LJL", "LLA", "LCO", "TCL"}
 TIER2 = {"LDL", "LCKC", "LCSA", "EUM", "NLC", "LFL", "UPL", "PGC", "LMF", "LVP SL", "UL", "LHE", "LFL2"}
+if YEAR >= 2023:
+    TIER2 |= {"EM", "NACL"}   # 2023 起 EU Masters 缩写成 EM、北美二级联赛是 NACL；只对新年份生效，2022 的结果不动
+if YEAR >= 2024:
+    TIER2 |= {"PCL", "CD"}    # 太平洋二级联赛 PCL、巴西二级联赛 Circuito Desafiante
+if YEAR >= 2025:
+    TIER1 |= {"LTA N", "LTA"}     # 2025 年 LCS 改制为 LTA 北区（跨区季后赛代码 LTA）
+    TIER1B |= {"LTA S", "LCP"}    # CBLOL + LLA → LTA 南区；PCS / VCS / LJL 头部 → LCP
 POS = ("top", "jng", "mid", "bot", "sup")
 MIN_GAMES = 20
 # 样本量收缩: 一名替补顶上打 20 场，数据可能很好看——但那不是他的水平。
@@ -241,7 +253,7 @@ rows.sort(key=lambda r: -(r["操作"] + r["运营"]))
 cols = (["player_id", "position", "league", "tier", "games", "winrate",
          "behind_games", "comeback_rate", "champ_pool"]
         + list(W) + ["teams"] + FEATS)
-with open(os.path.join(OUT, "ratings_v2_raw.csv"), "w", newline="", encoding="utf-8-sig") as fh:
+with open(os.path.join(OUT, f"ratings_v2_raw{SUF}.csv"), "w", newline="", encoding="utf-8-sig") as fh:
     w = csv.DictWriter(fh, fieldnames=cols + ["z_" + d for d in W], extrasaction="ignore")
     w.writeheader()
     w.writerows(rows)
