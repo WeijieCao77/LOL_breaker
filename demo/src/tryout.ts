@@ -131,7 +131,7 @@ export function checkTryoutInvite(kind, reached, champion){
    LCK 不缺天才，VCS/PCS/LJL 缺的就是便宜能打的年轻人。 */
 export function pickForeignScout(champion){
   if(rnd() >= (champion ? 0.20 : 0.10)) return null;
-  const W={VCS:5,PCS:4,LJL:3,LCO:3,CBLOL:2,LLA:2,TCL:2,LEC:1.2,LCS:1.2,LCK:0.6};
+  const W={VCS:5,PCS:4,LJL:3,LCO:3,CBLOL:2,LLA:2,TCL:2,LEC:1.2,LCS:1.2,LCK:0.6,LCP:4};   // LCP 只在真实时间线 2025 年起存在
   const pool=Object.keys(W).filter(k=>S.world&&S.world[k]&&S.world[k].length);
   if(!pool.length) return null;
   let sum=0; pool.forEach(k=>sum+=W[k]);
@@ -367,7 +367,8 @@ export function pickClub(tier, league?){
     // 青训档次给的是俱乐部的二队（LDL），队名走 EDG.Y 这套惯例
     if(tier !== "acad") return pick.n;
     const ld=(S.world&&S.world.LDL||[]).find(t=>t.parent===pick.n);
-    return ld ? ld.name : (teamCode(pick.n)+".Y");
+    // LDL 停办之后（真实时间线 2026 起）没有二队：青训档直接签母队（signDeal 会把它转成一队替补）
+    return ld ? ld.name : (S.world&&S.world.LDL ? teamCode(pick.n)+".Y" : pick.n);
   }catch(e){ return null; }
 }
 /* 邀请卡：接受就进试训，拒绝就继续练。
@@ -938,7 +939,9 @@ export function pickForeign(perf){
   if(perf < 12){
     // 往外：没证明过自己，豪门赛区不会来；但卡住了的话，小赛区会
     if(!inRut(perf)) return null;
-    MINOR_LEAGUES.forEach(lg=>{ if(S.world[lg]&&S.world[lg].length) opts.push({lg,w:1}); });
+    // 真实时间线：小赛区按当年真实结构（2025 起有 LCP、没有 LLA / LCO）
+    (S.tl?Object.keys(S.world).filter(k=>!["LPL","LCK","LEC","LCS","LDL"].includes(k)):MINOR_LEAGUES)
+      .forEach(lg=>{ if(S.world[lg]&&S.world[lg].length) opts.push({lg,w:1}); });
     if(!opts.length) return null;
     if(rnd() >= 0.26) return null;
     const tot0=opts.reduce((a,o)=>a+o.w,0);

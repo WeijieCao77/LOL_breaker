@@ -381,6 +381,11 @@ export function pressIssue(){
   const quota=S.career?4:(gate.tier===2?2:gate.tier);
   const mine=my.slice(0,quota);
   const heads=mine.slice();
+  // 真实时间线的赛区大事（LDL 停办）：停办后第一期出刊登头条，只登一次
+  if(S.tlLdlNews&&!S.tlLdlNews.pressed){
+    heads.unshift({c:"赛区改制",t:`《LDL 正式停办：${S.tlLdlNews.teams} 支二队解散，${S.tlLdlNews.n} 名高分选手转为青训储备》`});
+    S.tlLdlNews.pressed=true;
+  }
   // 行业版面补齐到至少三条——你不上版，报纸也照常出
   pressWorldHeads().forEach(h=>{ if(heads.length<(S.career?4:3)) heads.push(h); });
   if(heads.length<2) return;                       // 理论上到不了这，留个保险

@@ -22,6 +22,7 @@ import { themeSeg, themeFull } from "./theme";
 import { rankBadge, rankIcon, teamLogo } from "./rankicon";
 import { noteGrudge, noteRevenge, rivalBoost, rivalCard } from "./rivals";
 import { addRingTitle, breakAgendaCard, fixNote, fixtureCard, fixtureStrip, mateInjuryHit, mateInjuryNote, mateInjuryRoll, mateInjuryTag, mateInjuryTick, ringTitles, rotationAfterMatch, scrimCard, scrimPanel, scrimPick, scrimTrialCheck, setBreakAgenda, startScrim, subProxyR, titleCount, titlesText } from "./rotation";
+import { lgName, noteLeagueChamp, realNote, rewriteCard, tlCatchUp, tlDisplace, tlMajors, tlOn, tlOverwrites, tlPopCard, tlReal, tlRookie, tlYearTurn } from "./timeline";
 import { actListText, archiveWeek, clearPlan, noteAct, quickBtn, quickPlan, quickPlanPre, repeatLast, routineBar, runActs, runPlan, savePlan } from "./routine";
 import { askConfirm, confirmCard, continueCard, dropSave, escapeHtml, exportSave, importSave, loadGame, meName, safeName, saveBar, saveGame } from "./save";
 import { addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, noteStream, noteStreamMoney, PRIZE_PO, PRIZE_PO_LDL, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
@@ -1271,7 +1272,8 @@ export const ROOKIE_MALUS=3;
    风格在维度间重分配（总和≈0，不改均值）：LCK 赢在脑子和纪律，
    LPL 枪最利，VCS 莽是天赋。默契/战术也分赛区（LCK 的强不全在个人数值）。 */
 /* 2026-09-05 全体系 +5（玩家拍板：LPL 首发整体进国服前 100、明星 85-90）：差值一分不变，胜率不动 */
-export const REGION_ANCHOR={LCK:71.5,LPL:70,LEC:68,LCS:66.5,PCS:63,VCS:62.5,LJL:60.5,LLA:60,CBLOL:60,LCO:59,TCL:59.5};
+export const REGION_ANCHOR={LCK:71.5,LPL:70,LEC:68,LCS:66.5,PCS:63,VCS:62.5,LJL:60.5,LLA:60,CBLOL:60,LCO:59,TCL:59.5,
+  LCP:63};   // LCP：真实时间线 2025 年新设的赛区（PCS/VCS/LJL 头部），按 PCS 的锚；老档里没有这个键
 export const REGION_STYLE={
   LCK:{运营:2,指挥:1,操作:-2,体质:-1},
   LPL:{操作:2,运营:-1,心态:-1},
@@ -1505,6 +1507,10 @@ export function cloneWorld(){
     anchorLeague(lg,w[lg]);
   });
   w.LDL=buildLDL(w);
+  // 世界年龄：这份世界被 ageWorld 推过几年（新建的从 0 算）。真实时间线按它锚定难度，老档只是多记一个数
+  try{ if(S) S.worldAge=0; }catch(e){}
+  // 真实时间线：签约时世界已经走到哪一年，就依次换上 2023…那一年的真实名单（老档不动）
+  tlCatchUp(w);
   return w;
 }
 
@@ -1655,8 +1661,9 @@ export function simWorldPre(){
       const a=ts[i],b=ts[i+1];
       const p=1/(1+Math.exp(-(power(a)-power(b))/SPREAD));
       const aw=rnd()<p;
-      S.standings[lg][a.name][aw?"w":"l"]++;
-      S.standings[lg][b.name][aw?"l":"w"]++;
+      const sl=S.standings[lg]=S.standings[lg]||{};   // 真实时间线换页后新赛区 / 新队伍还没有积分行
+      (sl[a.name]=sl[a.name]||{w:0,l:0})[aw?"w":"l"]++;
+      (sl[b.name]=sl[b.name]||{w:0,l:0})[aw?"l":"w"]++;
       if(lg==="LPL"&&rnd()<0.06){
         pushEvent(`<b>${aw?a.name:b.name}</b> 击败 ${aw?b.name:a.name}。`,"info","联赛");
       }
@@ -1666,18 +1673,19 @@ export function simWorldPre(){
   if(rnd()<0.22) proNews();
 }
 export function proNews(){
-  const lg=["LPL","LCK","LEC","LCS"][Math.floor(rnd()*4)];
+  const lgs=tlOn()?tlMajors():["LPL","LCK","LEC","LCS"];
+  const lg=lgs[Math.floor(rnd()*lgs.length)], ln=lgName(lg);
   const rk=Object.entries<any>(S.standings[lg]||{})
     .map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0})).sort((a,b)=>b.p-a.p);
-  if(!rk.length) return;
+  if(!rk.length||!(S.world[lg]||[]).length) return;
   const top=rk[0], bot=rk[rk.length-1];
   const pool=[
-    ()=>`<b>${top.n}</b> 以 ${top.w}−${top.l} 领跑 ${lg}。`,
-    ()=>`<b>${bot.n}</b> 跌到 ${lg} 垫底，传出换人消息。`,
+    ()=>`<b>${top.n}</b> 以 ${top.w}−${top.l} 领跑 ${ln}。`,
+    ()=>`<b>${bot.n}</b> 跌到 ${ln} 垫底，传出换人消息。`,
     ()=>{const t=S.world[lg][Math.floor(rnd()*S.world[lg].length)];
          const q=t.players[Math.floor(rnd()*t.players.length)];
-         return `${lg} 周最佳：<b>${q.id}</b>${q.cn?`（${q.cn}）`:""}（${t.name}）。`},
-    ()=>`${lg} 官方公布下赛季赛制调整，讨论度不低。`,
+         return `${ln} 周最佳：<b>${q.id}</b>${q.cn?`（${q.cn}）`:""}（${t.name}）。`},
+    ()=>`${ln} 官方公布下赛季赛制调整，讨论度不低。`,
     ()=>{const t=S.world[lg][Math.floor(rnd()*S.world[lg].length)];
          return `<b>${t.name}</b> 宣布启用青训选手，位置暂时保密。`}
   ];
@@ -1686,14 +1694,15 @@ export function proNews(){
 /* 职业前跨年：结算各赛区冠军，然后清空积分榜 */
 export function proSeasonWrap(){
   if(!S.standings) return;
-  ["LPL","LCK","LEC","LCS"].forEach(lg=>{
+  (tlOn()?tlMajors():["LPL","LCK","LEC","LCS"]).forEach(lg=>{
     const rk=Object.entries<any>(S.standings[lg]||{})
       .map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0})).sort((a,b)=>b.p-a.p);
-    if(rk.length) pushEvent(`${SEASONS[Math.max(0,S.si-1)].tag} <b>${lg}</b> 年度第一：<b>${rk[0].n}</b>（${rk[0].w}−${rk[0].l}）。`,
+    if(rk.length) pushEvent(`${SEASONS[Math.max(0,S.si-1)].tag} <b>${lgName(lg,Math.max(0,S.si-1))}</b> 年度第一：<b>${rk[0].n}</b>（${rk[0].w}−${rk[0].l}）。`,
       lg==="LCK"?"bad":"info","赛季");
   });
   Object.keys(S.world).forEach(lg=>{
-    S.world[lg].forEach(t=>S.standings[lg][t.name]={w:0,l:0});
+    const sl=S.standings[lg]={};   // 换页后赛区 / 队伍都可能变了：整张表重建
+    S.world[lg].forEach(t=>sl[t.name]={w:0,l:0});
   });
 }
 
@@ -1864,6 +1873,7 @@ export function capLDL(){
   }catch(e){}
 }
 export function ageWorld(){
+  S.worldAge=(S.worldAge||0)+1;
   const news=[];
   Object.keys(S.world).forEach(lg=>{
     S.world[lg].forEach(team=>{
@@ -1890,7 +1900,8 @@ export function ageWorld(){
         });
         // 退役
         const ovr=ovrOf(p);
-        if(p.age>=30||(p.age>=27&&ovr<47)){   // 全体系 +5：退役线 42→47
+        // 真实时间线的真实年份：这支队今年会换上真实名单，谁退役由真实数据说了算
+        if((p.age>=30||(p.age>=27&&ovr<47))&&!tlOverwrites(team,lg)){   // 全体系 +5：退役线 42→47
           // 新秀水平锚定「赛区开局基准」：真实联赛靠新血维持水位，
           // 若按当前均值生成，会随老将衰退形成死亡螺旋。
           const base=(S.baseline&&S.baseline[lg])||avg(S.world[lg].map(t=>avg(t.players.map(q=>ovrOf(q)))));
@@ -1900,12 +1911,12 @@ export function ageWorld(){
              生涯末我队比联赛其余高 10 分，联赛冠军率 100%、MSI 80%。
              那不是玩家变强了，是世界停在原地等他。
              现实里新一代选手确实一年比一年强，所以锚点跟着赛季往上走。 */
-          const nr=makeRookie(p.pos,base-6+(S.si||0)*2.2,lg);
+          const nr=tlRookie(p.pos,base-6+(S.si||0)*2.2,lg);   // 真实时间线先用真实新秀池（老档照旧 makeRookie）
           S.retiredPool.push({p:Object.assign({},p),peak:ovr,year:SEASONS[S.si].y,lg});
           if(team.name===S.team) bondRetire(p.id);   // 一起打过的人退役了：账本记一笔，别当他没来过
           if(lg==="LPL"||ovr>58){
             const honor = ovr>76?"一代人的记忆就此谢幕":ovr>64?"结束了自己的职业生涯":"低调退役";
-            pushEvent(`<b>${p.id}</b>${p.cn?`（${p.cn}）`:""} ${p.age} 岁宣布退役，${honor}。${team.name} 提拔新秀 <b>${nr.id}</b> 接班。`,
+            pushEvent(`<b>${p.id}</b>${p.cn?`（${p.cn}）`:""} ${p.age} 岁宣布退役，${honor}。${team.name} ${nr.fromAcad?`从青训储备提拔 <b>${nr.id}</b>（原 ${nr.acadFrom}）`:`提拔新秀 <b>${nr.id}</b>`} 接班。`,
               ovr>58?"big":"info","退役");
           }
           team.players[i]=nr;
@@ -1954,7 +1965,7 @@ export function ageWorld(){
   // 30 岁是强制退役线，复出也不能越线
   const cands=legendCands.concat(inGame)
     .filter(c=>c.age+Math.max(1,SEASONS[S.si].y-2022)<=30);
-  if(cands.length&&rnd()<0.7){
+  if(cands.length&&!tlReal()&&rnd()<0.7){   // 真实年份不编复出
     const c=cands[Math.floor(rnd()*cands.length)];
     if(c._ref) c._ref.back=true; else S.usedLegends.push(c.id);
     const homeLgs=(c.homes||["LPL"]).filter(k=>S.world[k]&&S.world[k].length);
@@ -2017,7 +2028,7 @@ export function ageWorld(){
 
   // —— 转会：两支队互换一名同位置选手 ——
   const lpl=S.world.LPL.filter(t=>t.name!==S.team);
-  if(lpl.length>=2&&rnd()<0.75){
+  if(lpl.length>=2&&!tlReal()&&rnd()<0.75){   // 真实年份的转会看真实名单
     const a=lpl[Math.floor(rnd()*lpl.length)];
     const b=lpl[Math.floor(rnd()*lpl.length)];
     if(a!==b){
@@ -2249,6 +2260,7 @@ export function startPre(){
     ageCfg:A,bg:B,preYear:1,si:0,split:0,
     pre:{week:1,ap:PRE_AP,rank:0,scout:0,cityCup:null,streamCup:null,log:[],offers:null},
     originCap:1,   // 出身的天花板形状只对新开的档生效（ORIGIN_CAP）
+    tl:1,          // 真实时间线 2022–2026 只对新开的档生效（timeline.ts）
     seasonAttr0:Object.assign({},attrs),
     events:[],usedLegends:[],retiredPool:[],teamForm:{},formSeen:{},news:[],log:[],
     // 审计 P0：新档必须自带标尺版本，否则第一次读档会被当成老档整体 +15
@@ -2628,10 +2640,14 @@ export function preNextYear(){
     P.rankInvited={}; P.fanInvited={}; P.wndGiven={};
     try{
       const nw=ageWorld();
+      tlYearTurn();   // 真实时间线换页（老档不动）
       aiMarketWindow(true);
       capWorldDrift(); capLDL();
       S.news=(S.news||[]).concat(nw||[]);
     }catch(e){}
+  }else{
+    // 职业前：老档第一次职业前不动世界；真实时间线的世界照样换上今年的真实名单（签约时会重新建）
+    try{ tlYearTurn(); }catch(e){}
   }
   ledgerRotate();
   P.rank=Math.max(0,P.rank-4);          // 一年下来手会生一点
@@ -2736,6 +2752,7 @@ export function acceptOffer(i){
      「训练赛数据压过对位才首发」打上去——那条机制本来就在，只是从来没被青训用上。 */
   const asSub = (of.k==="sub") || (lgKey==="LDL");
   if(!asSub){
+    tlDisplace(incumbent,of.team);   // 真实时间线：你顶掉了谁（老档不记）
     team.players=team.players.map(q=>q.pos===S.pos
       ? {id:S.name||"你",cn:"",pos:S.pos,age:S.age,r:S.attrs,me:true} : q);
   }
@@ -2814,7 +2831,13 @@ export function joinTeam(){
   startSeason(true);
 }
 
-export function myTeam(){ return S.world[S.homeLeague||"LPL"].find(t=>t.name===S.team); }
+export function myTeam(){
+  const w=S.world||{};
+  let t=(w[S.homeLeague||"LPL"]||[]).find(x=>x.name===S.team);
+  // 兜底：赛区改制把你的队挪了地方（真实时间线），按队名在整个世界里找回来
+  if(!t&&S.team) for(const k of Object.keys(w)){ const x=(w[k]||[]).find(y=>y.name===S.team); if(x){ S.homeLeague=k; t=x; break; } }
+  return t;
+}
 /* 在这支队待了多久（正式比赛场次）。
    玩家原话：「刚加入职业队，哪来的队友被开除，这个事件抽取也要根据玩家的游玩进度走」。
    「一起打了很久的队友被卖了」这种事件原来只判断 !!S.team——有队的第一周就能抽到。
@@ -3511,6 +3534,7 @@ export function autoClear(){
       if(S.rankUp){ S.rankUp=null; did=true; }
       else if(S.patchNote){ S.patchNote=false; did=true; }
       else if(S.intlChamp){ S.intlChamp=null; did=true; }
+      else if(S.tlPop){ S.tlPop=null; did=true; }            // 赛区大事弹窗：内容在大事记里
       else if(S.cer){ cerApply(S.cer.k,"silver",true); did=true; }   // 仪式按跳过（银档）走
       else if(S.rndResult){ S.rndResult=null; did=true; }
       else if(S.contentPick){ S.contentPick=null; did=true; }
@@ -4518,7 +4542,7 @@ export function nextWeek(){
   render();
 }
 export function lplRank(){
-  return Object.entries<any>(S.standings[S.homeLeague||"LPL"])
+  return Object.entries<any>((S.standings&&S.standings[S.homeLeague||"LPL"])||{})
     .map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0}))
     .sort((a,b)=>b.p-a.p||b.w-a.w);
 }
@@ -4540,8 +4564,9 @@ export function startPlayoff(){
       `常规赛第 ${seed} 名，无缘季后赛。<b>别人在打季后赛的这几周，你的时间是自己的</b>——练、直播、休息，都行。`);
     if(fin&&fin.length>=4){
       queueBreakNews(2,`季后赛半决赛打完：<b>${fin[0]}</b> 和 <b>${fin[1]}</b> 会师决赛，${fin[2]}、${fin[3]} 止步四强。`,"info","季后赛");
-      queueBreakNews(3,`<b>${fin[0]}</b> 击败 ${fin[1]}，夺得 ${SEASONS[S.si].tag} ${S.homeLeague||"LPL"}${SPLITS[S.split||0]}冠军。${
-        (S.homeLeague||"LPL")==="LDL"?"":S.split===0?"他们将代表赛区出战 MSI。":"他们拿到了世界赛的头号种子。"}`,"big","季后赛");
+      queueBreakNews(3,`<b>${fin[0]}</b> 击败 ${fin[1]}，夺得 ${SEASONS[S.si].tag} ${lgName(S.homeLeague||"LPL")}${SPLITS[S.split||0]}冠军。${
+        (S.homeLeague||"LPL")==="LDL"?"":S.split===0?"他们将代表赛区出战 MSI。":"他们拿到了世界赛的头号种子。"}${
+        realNote("league",S.si,fin[0],S.homeLeague||"LPL",S.split||0)}`,"big","季后赛");
     }
     return;
   }
@@ -4749,6 +4774,8 @@ export function prepPanel(){
 
 export function endSeason(result,seed){
   payday();
+  // 「你改写了什么」：先记下这个赛段你所在赛区的冠军（S.playoff 下面会清掉）
+  try{ noteLeagueChamp(result, poCanon().filter(n=>lplRank().slice(0,6).some(r=>r.n===n))); }catch(e){}
   S.capExp=Math.min(CAP_EXP_MAX,q1((S.capExp||0)+CAP_EXP_STEP));   // 经验顶瓶颈（B4）
   // 世界线张力弛豫：你不在的联赛，每个赛段往史实弹回 ×0.6
   wlRelax();
@@ -4813,14 +4840,14 @@ export function endSeason(result,seed){
     /* 战队夺冠、你全程替补：荣誉是战队的（现实里替补也有戒指，
        但这游戏的生涯表只记你亲手打下的——五人哲学的另一面）。 */
     const sp=SPLITS[S.split||0];
-    addRingTitle(`${SEASONS[S.si].tag} ${S.homeLeague||"LPL"}${sp}`);
+    addRingTitle(`${SEASONS[S.si].tag} ${lgName(S.homeLeague||"LPL")}${sp}`);
     pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${sp}冠军。</b>
       你在替补席见证了整个过程——<span style="color:var(--ink-3)">戒指有你一枚，生涯表记为<b>随队冠军</b>；
       想让奖杯写上你的名字、算进成就和转会筹码，先把首发抢下来。</span>`,"big","联赛冠军");
   }
   else if(result==="champion"){
     const sp=SPLITS[S.split||0];
-    S.career.titles.push(`${SEASONS[S.si].tag} ${S.homeLeague||"LPL"}${sp}`);
+    S.career.titles.push(`${SEASONS[S.si].tag} ${lgName(S.homeLeague||"LPL")}${sp}`);
     S.career.leagueTitles=(S.career.leagueTitles||0)+1;
     S.career.lgYears=(S.career.lgYears||[]).concat([S.si]);
     S.career.lgStreak=(S.career.lgStreak||0)+1;
@@ -4829,7 +4856,7 @@ export function endSeason(result,seed){
     fireEvent("afterchamp", 0.7);
     breakthrough("心态",2.0,"捧过一次奖杯之后，大场面对你来说不一样了。","lgtitle","mile");
     pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${sp}冠军。</b>${
-      S.split===0?"下一站 MSI。":"世界赛资格到手。"}`,"big","联赛冠军");
+      S.split===0?"下一站 MSI。":"世界赛资格到手。"}${realNote("league",S.si,S.team,S.homeLeague||"LPL",S.split||0)}`,"big","联赛冠军");
   }
   if(result!=="champion") S.career.lgStreak=0;
   checkAch("splitend");
@@ -5083,6 +5110,7 @@ export function finishOffseason(){
   S.miniPatch=null; S.patchClock=0;   // 新版本年，热修编号从 .1 重数
   const news=ageWorld();
   /* 顺序要紧（2026-09-07 修）：原来是 ageWorld → aiMarketWindow → capWorldDrift → capLDL，
+  tlYearTurn();   // 真实时间线：你影响不到的地方换上今年的真实名单（老档不动）
      于是「提拔」看到的是**还没被压回去的**二队——ageWorld 刚给 18–21 岁的青训加了 +6.28，
      capLDL 却在转会窗之后才把他们钉回 LPL 垫底三队的水平。等于每年都拿一份虚高的数据去换人。
      现在先钉水位、再开窗口：提拔看到的是二队真实的、被压过的实力。 */
@@ -5382,9 +5410,9 @@ export function viewEnd(){
     return `${careerPoster()}${again}${achCard()}`;
   }
   const champs=Object.keys(S.world).map(lg=>{
-    const r=Object.entries<any>(S.standings[lg]).map(([n,x])=>({n,...x,p:(x.w+x.l)?x.w/(x.w+x.l):0}))
+    const r=Object.entries<any>((S.standings&&S.standings[lg])||{}).map(([n,x])=>({n,...x,p:(x.w+x.l)?x.w/(x.w+x.l):0}))
       .sort((a,b)=>b.p-a.p)[0];
-    return `<tr><td>${lg}</td><td>${r.n}</td><td class="n">${r.w}−${r.l}</td></tr>`;
+    return `<tr><td>${lgName(lg)}</td><td>${r?r.n:"—"}</td><td class="n">${r?r.w+"−"+r.l:"—"}</td></tr>`;
   }).join("");
   const vets=S.world.LPL.flatMap(t=>t.players.filter(p=>p.age>=26).map(p=>({...p,t:t.name})))
     .sort((a,b)=>b.age-a.age).slice(0,5);
@@ -5404,6 +5432,7 @@ export function viewEnd(){
   </div>
   ${achCard()}
   <div class="card"><h2>五年后的世界</h2>
+  ${rewriteCard()}
     <div class="tw"><table><thead><tr><th>赛区</th><th>末季第一</th><th>战绩</th></tr></thead><tbody>${champs}</tbody></table></div>
     ${vets.length?`<h3 style="margin-top:18px;font-size:14px">仍在坚持的老将</h3>
     <div class="tw"><table><thead><tr><th>选手</th><th>战队</th><th class="n">年龄</th><th class="n">操作</th><th class="n">指挥</th></tr></thead>
@@ -5428,14 +5457,14 @@ export function lockedCard(title,how,body){
     <p class="note lockhow">🔒 ${how}</p></div>`;
 }
 export function proCard(){
-  const lgs=["LPL","LCK","LEC","LCS"];
+  const lgs=tlOn()?tlMajors():["LPL","LCK","LEC","LCS"];
   const cur=lgs.includes(S.proLg)?S.proLg:"LPL";
   const rk=Object.entries<any>((S.standings||{})[cur]||{})
     .map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0}))
     .sort((a,b)=>b.p-a.p||b.w-a.w);
   return `<div class="card"><h2>职业联赛<em>${SEASONS[S.si].tag} ${SEASONS[S.si].y} · 第 ${S.pre.week} 周</em></h2>
     <div class="filt">${lgs.map(l=>
-      `<button data-prolg="${l}" class="${l===cur?'on':''}">${l}</button>`).join("")}</div>
+      `<button data-prolg="${l}" class="${l===cur?'on':''}">${lgName(l)}</button>`).join("")}</div>
     <div class="tw"><table><thead><tr><th>#</th><th>战队</th><th class="n">战绩</th><th class="n">胜率</th></tr></thead>
     <tbody>${rk.map((r,i)=>`<tr class="${i===0?'me':''}">
       <td class="n">${i+1}</td><td>${teamLogo(r.n,18)}${r.n}</td>
@@ -6033,7 +6062,7 @@ export function standingsCard(){
         <td>${teamLogo(r.n,18)}${r.n}</td><td class="n">${r.w}−${r.l}</td></tr>`).join("")}
     </tbody></table></div>
     <p class="note">LDL 是青训联赛，没有 MSI / 世界赛资格——想上国际赛场，先上一队。</p></div>` : "";
-  return `<div class="card"><h2>${HL} 积分榜<em>第 ${S.week} 周</em></h2>
+  return `<div class="card"><h2>${lgName(HL)} 积分榜<em>第 ${S.week} 周</em></h2>
     <div class="tw"><table><thead><tr><th>#</th><th>战队</th><th>战绩</th></tr></thead><tbody>
     ${rows.map((r,i)=>`<tr class="${r.n===S.team?'me':''} ${i===5?'cut':''}">
       <td class="n">${i+1}</td><td>${teamLogo(r.n,18)}${r.n}${r.n===S.team?'<span class="tag">你</span>':''}</td>
@@ -6043,9 +6072,9 @@ export function standingsCard(){
 export function newsCard(){
   // 「其他赛区」= 除了你在的和已经单独成卡的（LPL/LDL 都有自己的卡）
   const other=Object.keys(S.world).filter(l=>l!=="LPL"&&l!=="LDL"&&l!==(S.homeLeague||"LPL")).map(lg=>{
-    const t=Object.entries<any>(S.standings[lg]).map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0}))
+    const t=Object.entries<any>((S.standings&&S.standings[lg])||{}).map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0}))
       .sort((a,b)=>b.p-a.p)[0];
-    return `<tr><td>${lg}</td><td>${t?t.n:"—"}</td><td class="n">${t?t.w+"−"+t.l:"—"}</td></tr>`;
+    return `<tr><td>${lgName(lg)}</td><td>${t?t.n:"—"}</td><td class="n">${t?t.w+"−"+t.l:"—"}</td></tr>`;
   }).join("");
   return `<div class="card"><h2>其他赛区</h2>
     <div class="tw"><table><thead><tr><th>赛区</th><th>当前第一</th><th>战绩</th></tr></thead><tbody>${other}</tbody></table></div>
@@ -6711,6 +6740,7 @@ export function render(){
     + (traitUpCard())
     + (streamOfferCard())
     + (confirmCard())
+    + (tlPopCard())         // 真实时间线的赛区大事弹窗（LDL 停办）
     + (cerCard());          // 仪式与小游戏：压在一切之上，别的弹窗散了才开场
   if(_st.setAttribute) _st.setAttribute("data-zone", curZone());
   hudCta();               // HUD 主按钮镜像本页的 .btn.primary
@@ -6895,6 +6925,7 @@ export function bind(){
   const _as=$("autosumok"); if(_as) _as.onclick=()=>{S.autoSum=null;render()};
   st.querySelectorAll("[data-content]").forEach((b: any)=>b.onclick=()=>{
     doContent(b.dataset.content); });
+  const _tp=$("tlpopok"); if(_tp) _tp.onclick=()=>{S.tlPop=null;render()};
   const _cc=$("contentcancel"); if(_cc) _cc.onclick=()=>{S.contentPick=null;render()};
   st.querySelectorAll("[data-asset]").forEach((b: any)=>b.onclick=()=>{
     buyAsset(b.dataset.asset); });

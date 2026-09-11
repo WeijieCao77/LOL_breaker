@@ -264,7 +264,7 @@ export function fixLegacyForeignAch(s) {
     if (!s.ach || !s.ach.foreign) return;
     const hl = s.homeLeague || "LPL";
     if (hl !== "LPL" && hl !== "LDL") return;          // 现在就在外赛区，拿得对
-    const marks = /（(LCK|LEC|LCS|PCS|VCS|LJL|LLA|CBLOL|LCO|TCL|LPL)）/;
+    const marks = /（(LCK|LEC|LCS|PCS|VCS|LJL|LLA|CBLOL|LCO|TCL|LPL|LCP|LTA 北区|LTA 南区)）/;   // LCP / LTA：真实时间线 2025 年的赛区
     if ((s.txLog || []).some(x => marks.test(x.text || ""))) return;   // 有跨赛区轨迹，拿得对
     delete s.ach.foreign;
     if (s.achLog) s.achLog = s.achLog.filter(x => x.id !== "foreign");

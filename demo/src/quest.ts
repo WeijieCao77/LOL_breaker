@@ -140,6 +140,9 @@ export function evPickTeam(){
    否则新闻说了一遍，世界里什么也没发生。 */
 export function evRosterChange(team){
   if(!team||!team.players||false) return null;
+  /* 真实时间线 2022–2026（si≤4）：名单由真实数据决定——新闻照发、你那边的收获照给，名单不动。
+     第一版是直接把这条随机事件从池子里拿掉，结果职业前少了一个涨粉/涨段位的来源，首年签约 .63 → .58（240 局批测抓的） */
+  if(S.tl&&(S.si||0)<=4) return null;
   const lg=leagueOf(team.name);
   const base=(S.baseline&&S.baseline[lg])||50;
   let idx=-1, worst=1e9;

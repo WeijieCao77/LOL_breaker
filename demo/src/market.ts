@@ -5,6 +5,7 @@ import { rnd } from "./rng";
 import { STARS } from "./stars";
 import { S } from "./state";
 import { syncTrust } from "./team";
+import { tlFrozen } from "./timeline";
 
 /* ================= AI 转会市场 =================
 
@@ -130,6 +131,7 @@ export function aiTransfers(){
 export function aiMarketWindow(full){
   if(!S.world) return [];
   mktHeal();
+  if(tlFrozen()) return [];   // 真实时间线的真实年份（≤2026）：名单由真实数据决定，AI 不转会、不提拔
   const moves=aiPromotions().concat(full?aiTransfers():[]);
   const news=[];
   moves.forEach(m=>{
