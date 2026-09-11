@@ -6265,14 +6265,57 @@ header.top.compact>.theme-top{display:none}
       return !!m && (+m[1] - 12 === S.si || +m[1] - 12 === S.si - 1);
     }).length;
   }
-  function defendPressure() {
-    return Math.min(DEFEND_CAP, DEFEND_PER_TITLE * defendTitles());
+  function oppDefendTitles(name) {
+    if (!name || !S) return 0;
+    const H2 = S.honors || {};
+    let n = 0;
+    [S.si, (S.si || 0) - 1].filter((si) => si >= 0).forEach((si) => {
+      ["msi", "worlds"].forEach((k) => {
+        if (H2[k] && H2[k][si] === name) n++;
+      });
+      [0, 1].forEach((sp) => {
+        const seen = /* @__PURE__ */ new Set();
+        const home = S.lgChamps && S.lgChamps[si + "|" + sp];
+        if (home) {
+          seen.add(home.lg);
+          if (home.team === name) n++;
+        }
+        Object.keys(S.poCache || {}).forEach((key) => {
+          const [a, b, lg] = key.split("|");
+          if (+a !== si || +b !== sp || seen.has(lg)) return;
+          const res = S.poCache[key];
+          if (res && res[0] === name) {
+            seen.add(lg);
+            n++;
+          }
+        });
+      });
+    });
+    return n;
   }
-  function defendNote() {
+  function defendPressure(opp) {
+    const net = defendTitles() - (opp ? oppDefendTitles(opp) : 0);
+    return Math.min(DEFEND_CAP, DEFEND_PER_TITLE * Math.max(0, net));
+  }
+  function defendNote(opp) {
     const k = defendTitles();
     if (!k) return "";
-    return `本赛季和上赛季你拿了 ${k} 座冠军，对手都在研究你：每座 +${pwShow(DEFEND_PER_TITLE).toFixed(1)}，最多 +${pwShow(DEFEND_CAP).toFixed(1)}`;
+    const per = pwShow(DEFEND_PER_TITLE).toFixed(1), cap5 = pwShow(DEFEND_CAP).toFixed(1);
+    if (!opp) return `本赛季和上赛季你拿了 ${k} 座冠军，对手都在研究你：每座 +${per}，最多 +${cap5}`;
+    const o = oppDefendTitles(opp), net = Math.max(0, k - o);
+    if (!o) return `近两个赛季你拿了 ${k} 座冠军，${opp} 一座没拿，对面在研究你：每座 +${per}，最多 +${cap5}`;
+    return net ? `近两个赛季你拿了 ${k} 座冠军，${opp} 拿了 ${o} 座，抵消后按 ${net} 座算：每座 +${per}，最多 +${cap5}` : `近两个赛季你拿了 ${k} 座冠军，${opp} 拿了 ${o} 座，两边相抵，没有卫冕压力`;
   }
+  function defendTag(opp, num) {
+    const k = defendTitles();
+    if (!k) return "";
+    const o = opp ? oppDefendTitles(opp) : 0, dp = defendPressure(opp);
+    const score = `（你 ${k} : ${o} 对面）`;
+    const tip = escAttr(defendNote(opp));
+    if (!dp) return `<small style="color:var(--ink-3)" title="${tip}"> 卫冕压力抵消${score}</small>`;
+    return `<small style="color:var(--red)" title="${tip}"> 卫冕压力 ${num || uiNum() ? "+" + pwShow(dp).toFixed(1) : "↑"}${score}</small>`;
+  }
+  var escAttr = (s) => String(s || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
   function oppMatchPw(players) {
     return power(players, 0, SEASONS[S.si].fav);
   }
@@ -6431,7 +6474,8 @@ header.top.compact>.theme-top{display:none}
     const trs = rows.map((x) => {
       const t = S.world[HL].find((q) => q.name === x.opp);
       const st = (S.standings[HL] || {})[x.opp] || { w: 0, l: 0 };
-      const pw3 = t ? pwShow(oppMatchPw(t.players)).toFixed(1) : "—";
+      const dpx = t ? defendPressure(x.opp) : 0;
+      const pw3 = t ? pwShow(oppMatchPw(t.players)).toFixed(1) + (dpx ? `<small style="color:var(--red)"> +${pwShow(dpx).toFixed(1)}</small>` : "") : "—";
       const now = x.w === S.week && S.step === "season";
       const res = x.r ? `<b class="${x.r.won ? "w" : "l"}">${x.r.won ? "胜" : "负"}</b> ${x.r.sc[0]}:${x.r.sc[1]}` : now ? "本周" : "—";
       const me = x.r ? x.r.played ? "上场" : `<span style="color:var(--ink-3)">替补席</span>` : "";
@@ -6444,7 +6488,7 @@ header.top.compact>.theme-top{display:none}
     return `<div class="card"><h2>赛程<em>${sea.tag} ${SPLITS[S.split || 0]} · ${rec.w}胜 ${rec.l}负</em></h2>
     <div class="tw"><table><thead><tr><th class="n">周</th><th>对手</th><th class="n">实力</th><th class="n">对手战绩</th><th class="n">结果</th><th class="n">你</th><th class="n"></th></tr></thead>
     <tbody>${trs}</tbody></table></div>
-    <p class="note">常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。「替补席」的场次不计入你的个人战绩。${defendPressure() ? `<br><b style="color:var(--red)">卫冕压力 +${pwShow(defendPressure()).toFixed(1)}</b>：${defendNote()}。表里每支队打你时都再加这一截。` : ""}</p></div>`;
+    <p class="note">常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。「替补席」的场次不计入你的个人战绩。${defendTitles() ? `<br><b style="color:var(--red)">卫冕压力</b>：近两个赛季你拿了 ${defendTitles()} 座冠军，对手都在研究你；对面近两个赛季也拿过冠军的，按两边的冠军数相抵。实力后面的红字，是抵消之后打你时再加的那一截。` : ""}</p></div>`;
   }
   function setBreakAgenda(items, head) {
     if (!S.off) return;
@@ -17473,6 +17517,10 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260911e", at: "2026-09-11", items: [
+      "<b>卫冕压力按两边的冠军数抵消</b>（作者拍板）：原来只看你——本赛季和上赛季你每拿一座冠军，所有对手打你都更强。现在也看对面：对面在这一局里近两个赛季也拿过冠军（联赛 / MSI / 世界赛，和你同一把尺），就按两边的冠军数相抵——你 2 座、对面 2 座，没有卫冕压力；你 3 座、对面 2 座，按 1 座算。对面战力旁边写着「卫冕压力 +X（你 3 : 2 对面）」，两边相抵时写「卫冕压力抵消」，赛程表里每支对手各算各的",
+      "顺带更正上一版的写法：界面上的战力都乘了显示系数，所以卫冕压力每座冠军显示 <b>+1.7</b>、最多 <b>+4.7</b>（上一版更新日志写的「+1.5、最多 +4」是内部数值，界面上看到的一直是 +1.7 / +3.5 / +4.7）"
+    ] },
     { v: "v20260911d", at: "2026-09-11", items: [
       "<b>成就殿堂</b>（跨存档）：成就页多了「本局 / 殿堂」两个视图。殿堂记在这台设备上、不跟着哪一个存档走——<b>重开、开新档都不会清</b>：每一项成就第一次是哪一局、哪个 ID、哪个赛季、哪天解锁的，一共几局拿到过。别的局拿到、这一局还没有的画虚线金框；彩蛋成就在任何一局撞到过就不再打问号。解锁弹窗会多写一句「殿堂首次」或「殿堂里已有」，封面的存档卡写「本局 N · 殿堂 M/101」。<b>奖励照旧每一局都发</b>：新档的成就从零开始解锁、回报照给，殿堂本身不给任何数值，「收藏家」「打透了」也只数这一局。老存档打开时（或者出现在封面上时），里面已经解锁的成就会自动记进殿堂。「导出」的存档文件带着殿堂，「导入」时和这台设备上的殿堂合在一起、谁先解锁记谁，不会互相覆盖；没导出过就换浏览器或清掉网站数据的话，殿堂不会跟过去",
       "<b>殿堂专属成就</b>（七项，不算进那 101 项、没有数值奖励）：<b>五个位置</b>（五个位置都签过职业合同）、<b>走遍三大赛区</b>（LPL、LCK、LEC 各拿下过一座联赛冠军）、<b>殿堂半满 / 殿堂将满 / 全成就</b>（殿堂里集齐 50 / 80 / 101 项）、<b>两种结局</b>（「破局者」和「王朝」都打出来过，「传奇」不算其中任何一个）、<b>少年与老将</b>（17 岁开局和 21 岁开局的生涯各打完一局）。都可以分几局凑齐，凑齐时弹窗；回报只是一个<b>称号</b>——封面的存档卡上写最近拿到的那一个，生涯名片上带一枚小徽章。签过的位置和自己拿下的联赛冠军，老存档打开时会补记；结局和开局年龄补不了，从这一版起打完一局记一局",
@@ -21142,7 +21190,7 @@ header.top.compact>.theme-top{display:none}
     </div>
     ${squadActs()}
     ${benched && true ? scrimPanel() : ""}
-    ${opp && uiNum() ? `<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(oppMatchPw(opp.players)).toFixed(1)}${defendPressure() ? `，卫冕压力 +${pwShow(defendPressure()).toFixed(1)}` : ""}）
+    ${opp && uiNum() ? `<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(oppMatchPw(opp.players)).toFixed(1)}${defendPressure(oppName) ? `，卫冕压力 +${pwShow(defendPressure(oppName)).toFixed(1)}` : ""}）
       vs 你队 ${pwShow(power(myRoster(), S.fatigue, sea.fav)).toFixed(1)}</p>` : ""}
     <!-- 出口条必须是这张卡的最后一个孩子：宽屏上它是 sticky 的（theme.css .row.dock），
          而 sticky 只压得住排在它后面的兄弟。原来它排在「替补训练赛」和「本周对手」前面，
@@ -21406,7 +21454,7 @@ header.top.compact>.theme-top{display:none}
   function gameWinP(swing) {
     const m = S.match, sea = SEASONS[S.si];
     const my = power(myRoster(), S.fatigue, sea.fav) + (swing || 0) + versionFit() + rivalBoost(m.oppName) - tiltDrag() + cerFinalPw();
-    const op = oppMatchPw(m.opp.players) + defendPressure();
+    const op = oppMatchPw(m.opp.players) + defendPressure(m.oppName);
     return clampWinProb(1 / (1 + Math.exp(-(my - op) / SPREAD)), my - op);
   }
   var NODE_SWING = 7;
@@ -21443,7 +21491,7 @@ header.top.compact>.theme-top{display:none}
   function playGame() {
     const m = S.match, sea = SEASONS[S.si];
     const my = power(myRoster(), S.fatigue, sea.fav) + m.swing + versionFit() + rivalBoost(m.oppName) - tiltDrag() + cerFinalPw();
-    const op = oppMatchPw(m.opp.players) + defendPressure();
+    const op = oppMatchPw(m.opp.players) + defendPressure(m.oppName);
     let p = 1 / (1 + Math.exp(-(my - op) / SPREAD));
     p = clampWinProb(p, my - op);
     const win = rnd() < p;
@@ -21578,7 +21626,7 @@ header.top.compact>.theme-top{display:none}
       if (!S.lckBeaten.includes(m.oppName)) S.lckBeaten.push(m.oppName);
     }
     const me = S.name || "你", star = m.opp.players.filter((q) => q.pos === S.pos)[0];
-    const myPw = power(myRoster(), S.fatigue, SEASONS[S.si].fav), opPw = oppMatchPw(m.opp.players) + defendPressure();
+    const myPw = power(myRoster(), S.fatigue, SEASONS[S.si].fav), opPw = oppMatchPw(m.opp.players) + defendPressure(m.oppName);
     rotationAfterMatch(won, myPw - opPw);
     if (won && myPw - opPw < -2) {
       S.comebacks = (S.comebacks || 0) + 1;
@@ -21751,7 +21799,7 @@ header.top.compact>.theme-top{display:none}
       return `${postMatchCard()}
     <div class="row"><button class="btn primary" id="next">继续 →</button></div>`;
     }
-    const my0 = power(myRoster(), S.fatigue, sea.fav), vf = versionFit(), fb = cerFinalPw(), my = my0 + vf + fb, op = oppMatchPw(m.opp.players), dp = defendPressure();
+    const my0 = power(myRoster(), S.fatigue, sea.fav), vf = versionFit(), fb = cerFinalPw(), my = my0 + vf + fb, op = oppMatchPw(m.opp.players), dp = defendPressure(m.oppName);
     const scKey = m.sc.join(":");
     let hit = "";
     if (_lastSc !== void 0 && _lastSc !== scKey && scKey !== "0:0") {
@@ -21765,7 +21813,7 @@ header.top.compact>.theme-top{display:none}
     <div class="vs ${hit}">
       <div class="side"><div class="nm">${teamLogo(S.team, 34)}<br>${S.team}</div><div class="pw mono">战力 ${pwShow(my0).toFixed(1)}<small style="color:var(--ink-3)"> 版本 ${vf >= 0 ? "+" : ""}${pwShow(vf).toFixed(1)}${fb ? ` <span style="color:${fb > 0 ? "var(--gold)" : "var(--red)"}">决赛夜 ${fb > 0 ? "+" : ""}${fb}</span>` : ""}</small></div></div>
       <div class="mid"><div class="score">${m.sc[0]} : ${m.sc[1]}</div>${stamp}</div>
-      <div class="side"><div class="nm">${teamLogo(m.oppName, 34)}<br>${m.oppName}</div><div class="pw mono">战力 ${pwShow(op).toFixed(1)}${dp ? `<small style="color:var(--red)" title="${defendNote()}"> 卫冕压力 +${pwShow(dp).toFixed(1)}</small>` : ""}</div></div>
+      <div class="side"><div class="nm">${teamLogo(m.oppName, 34)}<br>${m.oppName}</div><div class="pw mono">战力 ${pwShow(op).toFixed(1)}${defendTag(m.oppName, true)}</div></div>
     </div>
     ${starLaneBadge(m.oppName)}
     ${verLine(m.oppName)}
@@ -22086,7 +22134,7 @@ header.top.compact>.theme-top{display:none}
         <div class="pw">战力 ${pwShow(power(myRoster(), S.fatigue, SEASONS[S.si].fav)).toFixed(1)}<small style="color:var(--ink-3)"> 版本 ${versionFit() >= 0 ? "+" : ""}${pwShow(versionFit()).toFixed(1)}</small></div></div>
       <div class="mid">VS</div>
       <div class="sd"><div class="nm">${teamLogo(P.opp, 20)} ${P.opp}</div>
-        <div class="pw">${oppT ? `战力 ${pwShow(oppMatchPw(oppT.players)).toFixed(1)}${defendPressure() ? `<small style="color:var(--red)" title="${defendNote()}"> 卫冕压力 +${pwShow(defendPressure()).toFixed(1)}</small>` : ""}` : ""}</div></div>
+        <div class="pw">${oppT ? `战力 ${pwShow(oppMatchPw(oppT.players)).toFixed(1)}${defendTag(P.opp, true)}` : ""}</div></div>
     </div>
     ${starSpotHtml(P.opp)}
     ${verLine(P.opp)}
@@ -23327,7 +23375,7 @@ header.top.compact>.theme-top{display:none}
     const sea = SEASONS[S.si], on = S.schedule[S.week - 1];
     const opp = S.world[S.homeLeague || "LPL"].find((t) => t.name === on);
     if (!opp) return "";
-    const myPw = myPower(), opBase = oppMatchPw(opp.players), dp = defendPressure(), opPw = opBase + dp;
+    const myPw = myPower(), opBase = oppMatchPw(opp.players), dp = defendPressure(on), opPw = opBase + dp;
     const vfNow = versionFit(), myShow = myPw - vfNow;
     const star = opp.players.slice().sort((a, b) => ovrOf(b) - ovrOf(a))[0];
     const rival = opp.players.find((q) => q.pos === S.pos);
@@ -23340,7 +23388,7 @@ header.top.compact>.theme-top{display:none}
         <div class="pw">全队战力 <b>${N(pwShow(myShow).toFixed(1), dimWord(pwShow(myShow)))}</b>${uiNum() && Math.abs(vfNow) > 0.05 ? `<small style="color:var(--ink-3)"> 版本 ${vfNow >= 0 ? "+" : ""}${pwShow(vfNow).toFixed(1)}</small>` : ""}</div></div>
       <div class="mid">VS</div>
       <div class="sd"><div class="nm">${teamLogo(on, 28)}${on}${formBar(on)}</div>
-        <div class="pw">全队战力 <b>${N(pwShow(opBase).toFixed(1), dimWord(pwShow(opBase)))}</b>${dp ? `<small style="color:var(--red)" title="${defendNote()}"> 卫冕压力 ${N("+" + pwShow(dp).toFixed(1), "↑")}</small>` : ""}</div></div>
+        <div class="pw">全队战力 <b>${N(pwShow(opBase).toFixed(1), dimWord(pwShow(opBase)))}</b>${defendTag(on)}</div></div>
     </div>
     <div class="oppinfo">
       <span class="chipx">对面战绩 <b>${st.w}−${st.l}</b></span>

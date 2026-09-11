@@ -27,7 +27,7 @@ import { lgName, noteLeagueChamp, realNote, rewriteCard, tlCatchUp, tlDisplace, 
 import { actListText, archiveWeek, clearPlan, noteAct, quickBtn, quickPlan, quickPlanPre, repeatLast, routineBar, runActs, runPlan, savePlan } from "./routine";
 import { askConfirm, confirmCard, continueCard, dropSave, escapeHtml, exportSave, importSave, loadGame, meName, safeName, saveBar, saveGame } from "./save";
 import { addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, noteStream, noteStreamMoney, PRIZE_PO, PRIZE_PO_LDL, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
-import { addSquad, clampWinProb, defendNote, defendPressure, disruptSynergy, doBenchAct, doSquad, gapVerdict, initSquad, myPower, oppMatchPw, squadActs, squadCard, squadDecay, squadOf, teamPowerOf, watchRoster } from "./squad";
+import { addSquad, clampWinProb, defendNote, defendPressure, defendTag, disruptSynergy, doBenchAct, doSquad, gapVerdict, initSquad, myPower, oppMatchPw, squadActs, squadCard, squadDecay, squadOf, teamPowerOf, watchRoster } from "./squad";
 import { ldlBuild, ldlShort } from "./ldl";
 import { starAfterMatch, starLaneBadge, starSpotHtml } from "./stars";
 import { S, setS } from "./state";
@@ -130,6 +130,10 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260911e", at:"2026-09-11", items:[
+    "<b>卫冕压力按两边的冠军数抵消</b>（作者拍板）：原来只看你——本赛季和上赛季你每拿一座冠军，所有对手打你都更强。现在也看对面：对面在这一局里近两个赛季也拿过冠军（联赛 / MSI / 世界赛，和你同一把尺），就按两边的冠军数相抵——你 2 座、对面 2 座，没有卫冕压力；你 3 座、对面 2 座，按 1 座算。对面战力旁边写着「卫冕压力 +X（你 3 : 2 对面）」，两边相抵时写「卫冕压力抵消」，赛程表里每支对手各算各的",
+    "顺带更正上一版的写法：界面上的战力都乘了显示系数，所以卫冕压力每座冠军显示 <b>+1.7</b>、最多 <b>+4.7</b>（上一版更新日志写的「+1.5、最多 +4」是内部数值，界面上看到的一直是 +1.7 / +3.5 / +4.7）"
+  ]},
   {v:"v20260911d", at:"2026-09-11", items:[
     "<b>成就殿堂</b>（跨存档）：成就页多了「本局 / 殿堂」两个视图。殿堂记在这台设备上、不跟着哪一个存档走——<b>重开、开新档都不会清</b>：每一项成就第一次是哪一局、哪个 ID、哪个赛季、哪天解锁的，一共几局拿到过。别的局拿到、这一局还没有的画虚线金框；彩蛋成就在任何一局撞到过就不再打问号。解锁弹窗会多写一句「殿堂首次」或「殿堂里已有」，封面的存档卡写「本局 N · 殿堂 M/101」。<b>奖励照旧每一局都发</b>：新档的成就从零开始解锁、回报照给，殿堂本身不给任何数值，「收藏家」「打透了」也只数这一局。老存档打开时（或者出现在封面上时），里面已经解锁的成就会自动记进殿堂。「导出」的存档文件带着殿堂，「导入」时和这台设备上的殿堂合在一起、谁先解锁记谁，不会互相覆盖；没导出过就换浏览器或清掉网站数据的话，殿堂不会跟过去",
     "<b>殿堂专属成就</b>（七项，不算进那 101 项、没有数值奖励）：<b>五个位置</b>（五个位置都签过职业合同）、<b>走遍三大赛区</b>（LPL、LCK、LEC 各拿下过一座联赛冠军）、<b>殿堂半满 / 殿堂将满 / 全成就</b>（殿堂里集齐 50 / 80 / 101 项）、<b>两种结局</b>（「破局者」和「王朝」都打出来过，「传奇」不算其中任何一个）、<b>少年与老将</b>（17 岁开局和 21 岁开局的生涯各打完一局）。都可以分几局凑齐，凑齐时弹窗；回报只是一个<b>称号</b>——封面的存档卡上写最近拿到的那一个，生涯名片上带一枚小徽章。签过的位置和自己拿下的联赛冠军，老存档打开时会补记；结局和开局年龄补不了，从这一版起打完一局记一局",
@@ -3841,7 +3845,7 @@ export function viewSeason(){
     </div>
     ${squadActs()}
     ${benched&&true?scrimPanel():""}
-    ${opp&&uiNum()?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(oppMatchPw(opp.players)).toFixed(1)}${defendPressure()?`，卫冕压力 +${pwShow(defendPressure()).toFixed(1)}`:""}）
+    ${opp&&uiNum()?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(oppMatchPw(opp.players)).toFixed(1)}${defendPressure(oppName)?`，卫冕压力 +${pwShow(defendPressure(oppName)).toFixed(1)}`:""}）
       vs 你队 ${pwShow(power(myRoster(),S.fatigue,sea.fav)).toFixed(1)}</p>`:""}
     <!-- 出口条必须是这张卡的最后一个孩子：宽屏上它是 sticky 的（theme.css .row.dock），
          而 sticky 只压得住排在它后面的兄弟。原来它排在「替补训练赛」和「本周对手」前面，
@@ -4100,7 +4104,7 @@ export function tiltDrag(){
 export function gameWinP(swing){
   const m=S.match,sea=SEASONS[S.si];
   const my=power(myRoster(),S.fatigue,sea.fav)+(swing||0)+versionFit()+rivalBoost(m.oppName)-tiltDrag()+cerFinalPw();
-  const op=oppMatchPw(m.opp.players)+defendPressure();   // 卫冕被研究：见 squad.ts defendPressure
+  const op=oppMatchPw(m.opp.players)+defendPressure(m.oppName);   // 卫冕被研究：按你和对面近两季的冠军数相抵，见 squad.ts defendPressure
   return clampWinProb(1/(1+Math.exp(-(my-op)/SPREAD)), my-op);
 }
 /* 节点摆动倍率与成功率里的队友占比（2026-09-06 方案 A）：一个人拉不动四个人——
@@ -4138,7 +4142,7 @@ export function resolveNode(ai){
 export function playGame(){
   const m=S.match,sea=SEASONS[S.si];
   const my=power(myRoster(),S.fatigue,sea.fav)+m.swing+versionFit()+rivalBoost(m.oppName)-tiltDrag()+cerFinalPw();
-  const op=oppMatchPw(m.opp.players)+defendPressure();   // 卫冕被研究：见 squad.ts defendPressure
+  const op=oppMatchPw(m.opp.players)+defendPressure(m.oppName);   // 卫冕被研究：按你和对面近两季的冠军数相抵，见 squad.ts defendPressure
   let p=1/(1+Math.exp(-(my-op)/SPREAD));
   // 封顶用的差距必须把 m.swing（临场决策的结果）算进去。
   // 原来传的是不含 swing 的原始差距，于是差距一超过 GAP_WINDOW，
@@ -4275,7 +4279,7 @@ export function endMatch(){
      换成开赛体能会动平衡（120 局批测：MSI 夺冠率 10.8% → 21.7%），所以先按原样留着，
      只把赛后拆解那张卡改成读开赛体能——玩家实锤的就是那张卡。这一处口径要不要一起改，
      是一次单独的平衡决定，留给作者。 */
-  const myPw=power(myRoster(),S.fatigue,SEASONS[S.si].fav), opPw=oppMatchPw(m.opp.players)+defendPressure();
+  const myPw=power(myRoster(),S.fatigue,SEASONS[S.si].fav), opPw=oppMatchPw(m.opp.players)+defendPressure(m.oppName);
   // 首发试用：赢了坐稳，输光了回替补席（rotation.js）
   rotationAfterMatch(won,myPw-opPw);
   if(won&&myPw-opPw<-2){ S.comebacks=(S.comebacks||0)+1;   // 逆风翻盘计数
@@ -4467,7 +4471,7 @@ export function viewMatch(){
     return `${postMatchCard()}
     <div class="row"><button class="btn primary" id="next">继续 →</button></div>`;
   }
-  const my0=power(myRoster(),S.fatigue,sea.fav), vf=versionFit(), fb=cerFinalPw(), my=my0+vf+fb, op=oppMatchPw(m.opp.players), dp=defendPressure();   // 版本加成、决赛夜加成、卫冕压力单独标，不揉进「战力」
+  const my0=power(myRoster(),S.fatigue,sea.fav), vf=versionFit(), fb=cerFinalPw(), my=my0+vf+fb, op=oppMatchPw(m.opp.players), dp=defendPressure(m.oppName);   // 版本加成、决赛夜加成、卫冕压力单独标，不揉进「战力」
   // 开打编排（界面重做第二期 ②）：比分刚变的那次渲染，两侧向中线撞一下、结果字砸出来；系列赛打完的字留住
   const scKey=m.sc.join(":"); let hit="";
   if(_lastSc!==undefined&&_lastSc!==scKey&&scKey!=="0:0"){ const a=+String(_lastSc).split(":")[0]; hit=m.sc[0]>a?"hit win":"hit loss"; }
@@ -4479,7 +4483,7 @@ export function viewMatch(){
     <div class="vs ${hit}">
       <div class="side"><div class="nm">${teamLogo(S.team,34)}<br>${S.team}</div><div class="pw mono">战力 ${pwShow(my0).toFixed(1)}<small style="color:var(--ink-3)"> 版本 ${vf>=0?"+":""}${pwShow(vf).toFixed(1)}${fb?` <span style="color:${fb>0?'var(--gold)':'var(--red)'}">决赛夜 ${fb>0?"+":""}${fb}</span>`:""}</small></div></div>
       <div class="mid"><div class="score">${m.sc[0]} : ${m.sc[1]}</div>${stamp}</div>
-      <div class="side"><div class="nm">${teamLogo(m.oppName,34)}<br>${m.oppName}</div><div class="pw mono">战力 ${pwShow(op).toFixed(1)}${dp?`<small style="color:var(--red)" title="${defendNote()}"> 卫冕压力 +${pwShow(dp).toFixed(1)}</small>`:""}</div></div>
+      <div class="side"><div class="nm">${teamLogo(m.oppName,34)}<br>${m.oppName}</div><div class="pw mono">战力 ${pwShow(op).toFixed(1)}${defendTag(m.oppName,true)}</div></div>
     </div>
     ${starLaneBadge(m.oppName)}
     ${verLine(m.oppName)}
@@ -4781,8 +4785,7 @@ export function prepPanel(){
         <div class="pw">战力 ${pwShow(power(myRoster(),S.fatigue,SEASONS[S.si].fav)).toFixed(1)}<small style="color:var(--ink-3)"> 版本 ${versionFit()>=0?"+":""}${pwShow(versionFit()).toFixed(1)}</small></div></div>
       <div class="mid">VS</div>
       <div class="sd"><div class="nm">${teamLogo(P.opp,20)} ${P.opp}</div>
-        <div class="pw">${oppT?`战力 ${pwShow(oppMatchPw(oppT.players)).toFixed(1)}${
-          defendPressure()?`<small style="color:var(--red)" title="${defendNote()}"> 卫冕压力 +${pwShow(defendPressure()).toFixed(1)}</small>`:""}`:""}</div></div>
+        <div class="pw">${oppT?`战力 ${pwShow(oppMatchPw(oppT.players)).toFixed(1)}${defendTag(P.opp,true)}`:""}</div></div>
     </div>
     ${starSpotHtml(P.opp)}
     ${verLine(P.opp)}
@@ -6054,7 +6057,7 @@ export function nextMatchCard(){
      （玩家实锤 2026-09-09：队伍页和比赛面板对不上）。备战页早就是这么写的。
      判定胜负仍然用含版本的 myPower()——diff 不变。 */
   // 对面的数和判定胜负同一口径（五个人的实力加权），卫冕压力另外标——原来这里读带默契战术的整队战力，和比赛里对不上
-  const myPw=myPower(), opBase=oppMatchPw(opp.players), dp=defendPressure(), opPw=opBase+dp;
+  const myPw=myPower(), opBase=oppMatchPw(opp.players), dp=defendPressure(on), opPw=opBase+dp;
   const vfNow=versionFit(), myShow=myPw-vfNow;
   const star=opp.players.slice().sort((a,b)=>ovrOf(b)-ovrOf(a))[0];
   const rival=opp.players.find(q=>q.pos===S.pos);
@@ -6068,8 +6071,7 @@ export function nextMatchCard(){
           uiNum()&&Math.abs(vfNow)>0.05?`<small style="color:var(--ink-3)"> 版本 ${vfNow>=0?"+":""}${pwShow(vfNow).toFixed(1)}</small>`:""}</div></div>
       <div class="mid">VS</div>
       <div class="sd"><div class="nm">${teamLogo(on,28)}${on}${formBar(on)}</div>
-        <div class="pw">全队战力 <b>${N(pwShow(opBase).toFixed(1),dimWord(pwShow(opBase)))}</b>${
-          dp?`<small style="color:var(--red)" title="${defendNote()}"> 卫冕压力 ${N("+"+pwShow(dp).toFixed(1),"↑")}</small>`:""}</div></div>
+        <div class="pw">全队战力 <b>${N(pwShow(opBase).toFixed(1),dimWord(pwShow(opBase)))}</b>${defendTag(on)}</div></div>
     </div>
     <div class="oppinfo">
       <span class="chipx">对面战绩 <b>${st.w}−${st.l}</b></span>

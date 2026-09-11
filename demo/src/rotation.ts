@@ -8,7 +8,7 @@ import { teamLogo } from "./rankicon";
 import { gearBonus } from "./shop";
 import { S } from "./state";
 import { mediaScrimAdj } from "./cer";
-import { defendNote, defendPressure, oppMatchPw } from "./squad";
+import { defendPressure, defendTitles, oppMatchPw } from "./squad";
 import { addTrustAll } from "./team";
 
 /* ================= 轮换 · 赛程 · 队友伤病 =================
@@ -62,7 +62,9 @@ export function fixtureCard(){
   const trs=rows.map(x=>{
     const t=S.world[HL].find(q=>q.name===x.opp);
     const st=(S.standings[HL]||{})[x.opp]||{w:0,l:0};
-    const pw=t?pwShow(oppMatchPw(t.players)).toFixed(1):"—";   // 和比赛判定同一口径（卫冕压力写在表下）
+    // 和比赛判定同一口径；卫冕压力按两边冠军数相抵后每一行各算各的（红字是打你时再加的那一截）
+    const dpx=t?defendPressure(x.opp):0;
+    const pw=t?pwShow(oppMatchPw(t.players)).toFixed(1)+(dpx?`<small style="color:var(--red)"> +${pwShow(dpx).toFixed(1)}</small>`:""):"—";
     const now=x.w===S.week&&S.step==="season";
     const res=x.r?`<b class="${x.r.won?'w':'l'}">${x.r.won?"胜":"负"}</b> ${x.r.sc[0]}:${x.r.sc[1]}`:now?"本周":"—";
     const me=x.r?(x.r.played?"上场":`<span style="color:var(--ink-3)">替补席</span>`):"";
@@ -77,7 +79,7 @@ export function fixtureCard(){
     <div class="tw"><table><thead><tr><th class="n">周</th><th>对手</th><th class="n">实力</th><th class="n">对手战绩</th><th class="n">结果</th><th class="n">你</th><th class="n"></th></tr></thead>
     <tbody>${trs}</tbody></table></div>
     <p class="note">常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。「替补席」的场次不计入你的个人战绩。${
-      defendPressure()?`<br><b style="color:var(--red)">卫冕压力 +${pwShow(defendPressure()).toFixed(1)}</b>：${defendNote()}。表里每支队打你时都再加这一截。`:""}</p></div>`;
+      defendTitles()?`<br><b style="color:var(--red)">卫冕压力</b>：近两个赛季你拿了 ${defendTitles()} 座冠军，对手都在研究你；对面近两个赛季也拿过冠军的，按两边的冠军数相抵。实力后面的红字，是抵消之后打你时再加的那一截。`:""}</p></div>`;
 }
 
 /* ---------- 二、随队/间歇期的日程卡 ----------

@@ -3,7 +3,7 @@ import { addRel, addStaff, relAll, relMod, syncRelations } from "./clout";
 import { cupTeamName } from "./cup";
 import { formMul, myFormMul } from "./form";
 import { findTeam } from "./intl";
-import { addFat, apCost, apTag, btkNote, btkPathDead, cap, capOf, champCoreOn, clamp, costBits, dynastyBonus, isBenched, myRoster, POSN, power, powerParts, pushEvent, PW_SHOW, pwShow, q1, render, SEASONS, strength, tacAdd, tacOf, versionFit } from "./main";
+import { addFat, apCost, apTag, btkNote, btkPathDead, cap, capOf, champCoreOn, clamp, costBits, dynastyBonus, isBenched, myRoster, POSN, power, powerParts, pushEvent, PW_SHOW, pwShow, q1, render, SEASONS, strength, tacAdd, tacOf, uiNum, versionFit } from "./main";
 import { rnd } from "./rng";
 import { fireEvent } from "./random";
 import { mateInjuryHit, SCRIM_EDGE_NEED, scrimState, subProxyR } from "./rotation";
@@ -232,11 +232,55 @@ export function defendTitles(){
   if(!S.career) return 0;
   return (S.career.titles||[]).filter(x=>{ const m=/^S(\d+)/.exec(String(x)); return !!m&&(+m[1]-12===S.si||+m[1]-12===S.si-1); }).length;
 }
-export function defendPressure(){ return Math.min(DEFEND_CAP, DEFEND_PER_TITLE*defendTitles()); }
-export function defendNote(){
-  const k=defendTitles(); if(!k) return "";
-  return `本赛季和上赛季你拿了 ${k} 座冠军，对手都在研究你：每座 +${pwShow(DEFEND_PER_TITLE).toFixed(1)}，最多 +${pwShow(DEFEND_CAP).toFixed(1)}`;
+/* 对面在这一局里近两个赛季拿了几座冠军（2026-09-11 作者：「对面的战队也是这局里拿过冠军的，就对比次数进行抵消」）。
+   和你同一把尺：本赛季 + 上赛季，联赛 / MSI / 世界赛都算。
+   联赛冠军：你所在赛区读 S.lgChamps（赛段结算时记的），其余大赛区读季后赛缓存 S.poCache；国际赛读 S.honors。 */
+export function oppDefendTitles(name){
+  if(!name||!S) return 0;
+  const H=S.honors||{};
+  let n=0;
+  [S.si,(S.si||0)-1].filter(si=>si>=0).forEach(si=>{
+    ["msi","worlds"].forEach(k=>{ if(H[k]&&H[k][si]===name) n++; });
+    [0,1].forEach(sp=>{
+      const seen=new Set();
+      const home=S.lgChamps&&S.lgChamps[si+"|"+sp];
+      if(home){ seen.add(home.lg); if(home.team===name) n++; }
+      Object.keys(S.poCache||{}).forEach(key=>{
+        const [a,b,lg]=key.split("|");
+        if(+a!==si||+b!==sp||seen.has(lg)) return;
+        const res=S.poCache[key];
+        if(res&&res[0]===name){ seen.add(lg); n++; }
+      });
+    });
+  });
+  return n;
 }
+/* 卫冕压力 = 每座 +1.5 ×（你的冠军数 − 对面的冠军数，不低于 0），封顶 +4。不传对手时只看你（兜底） */
+export function defendPressure(opp?){
+  const net=defendTitles()-(opp?oppDefendTitles(opp):0);
+  return Math.min(DEFEND_CAP, DEFEND_PER_TITLE*Math.max(0,net));
+}
+export function defendNote(opp?){
+  const k=defendTitles(); if(!k) return "";
+  const per=pwShow(DEFEND_PER_TITLE).toFixed(1), cap=pwShow(DEFEND_CAP).toFixed(1);
+  if(!opp) return `本赛季和上赛季你拿了 ${k} 座冠军，对手都在研究你：每座 +${per}，最多 +${cap}`;
+  const o=oppDefendTitles(opp), net=Math.max(0,k-o);
+  if(!o) return `近两个赛季你拿了 ${k} 座冠军，${opp} 一座没拿，对面在研究你：每座 +${per}，最多 +${cap}`;
+  return net
+    ? `近两个赛季你拿了 ${k} 座冠军，${opp} 拿了 ${o} 座，抵消后按 ${net} 座算：每座 +${per}，最多 +${cap}`
+    : `近两个赛季你拿了 ${k} 座冠军，${opp} 拿了 ${o} 座，两边相抵，没有卫冕压力`;
+}
+/* 对面战力旁边那一截：「卫冕压力 +3.5（你 3 : 1 对面）」；两边相抵写「卫冕压力抵消（你 2 : 2 对面）」；你近两季一座没拿就什么都不写。
+   比分页、备战页始终写数（num=true）；下一场卡片跟着叙事 / 数值开关走 */
+export function defendTag(opp, num?){
+  const k=defendTitles(); if(!k) return "";
+  const o=opp?oppDefendTitles(opp):0, dp=defendPressure(opp);
+  const score=`（你 ${k} : ${o} 对面）`;
+  const tip=escAttr(defendNote(opp));
+  if(!dp) return `<small style="color:var(--ink-3)" title="${tip}"> 卫冕压力抵消${score}</small>`;
+  return `<small style="color:var(--red)" title="${tip}"> 卫冕压力 ${(num||uiNum())?"+"+pwShow(dp).toFixed(1):"↑"}${score}</small>`;
+}
+const escAttr=s=>String(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 /* 你比赛里对手的战力：对面五个人的实力加权（对手的默契、战术一直不进你的比赛）。
    比赛判定、赛后结算、比分页、下一场预览、备战页、赛程表都读这一个数，卫冕压力另外加、另外标。
    原来预览读的是带默契战术的整队战力（teamPowerOf），和判定胜负的数对不上。 */

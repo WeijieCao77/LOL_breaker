@@ -1331,6 +1331,22 @@ function unitChecks() {
       if (A.defendPressure() !== 3) bad.push(`两座应是 +3，实得 ${A.defendPressure()}`);
       S.career.titles = [`${tag(2)} MSI`, `${tag(2)} 世界赛`, `${tag(3)} LPL 春季赛`];
       if (A.defendPressure() !== 4) bad.push(`三座应封顶 +4，实得 ${A.defendPressure()}`);
+      // 两边冠军数相抵（2026-09-11 作者）：对面在这一局里近两个赛季也拿过冠军（联赛 / MSI / 世界赛），按次数抵消
+      {
+        const hBak = S.honors, lcBak = S.lgChamps, pcBak = S.poCache;
+        const opp = "某对手";
+        S.honors = { worlds: { 2: opp }, msi: { 1: opp } };                                   // 上赛季世界赛算；两季前的 MSI 出了窗口
+        S.lgChamps = { "3|0": { lg: "LPL", team: opp } };                                      // 本赛季春季赛，你所在赛区的冠军
+        S.poCache = { "2|1|LCK": [opp, "x", "y", "z"], "1|0|LEC": [opp, "x", "y", "z"] };      // 上赛季夏季赛外赛区冠军算，两季前的不算
+        if (A.oppDefendTitles(opp) !== 3) bad.push(`对面近两季的冠军数应是 3，实得 ${A.oppDefendTitles(opp)}`);
+        if (A.defendPressure(opp) !== 0) bad.push(`你 3 : 3 对面应该没有卫冕压力，实得 ${A.defendPressure(opp)}`);
+        if (A.defendPressure("一座没拿的队") !== 4) bad.push(`对面一座没拿，应仍按你的 3 座封顶 +4，实得 ${A.defendPressure("一座没拿的队")}`);
+        if (!/卫冕压力抵消（你 3 : 3 对面）/.test(A.defendTag(opp, true))) bad.push("两边相抵时标签没写「卫冕压力抵消」：" + A.defendTag(opp, true));
+        S.poCache = { "1|0|LEC": [opp, "x", "y", "z"] };                                      // 对面只剩 2 座
+        if (A.defendPressure(opp) !== 1.5) bad.push(`你 3 : 2 对面应按 1 座算 +1.5，实得 ${A.defendPressure(opp)}`);
+        if (!/卫冕压力 \+[0-9.]+（你 3 : 2 对面）/.test(A.defendTag(opp, true))) bad.push("卫冕压力标签没写出两边的冠军数：" + A.defendTag(opp, true));
+        S.honors = hBak; S.lgChamps = lcBak; S.poCache = pcBak;
+      }
       S.step = "season"; S.week = 1;
       if (!Array.isArray(S.schedule) || !S.schedule.length)
         S.schedule = S.world[S.homeLeague || "LPL"].filter((t: any) => t.name !== S.team).map((t: any) => t.name);
@@ -1455,28 +1471,32 @@ function streetsReturnChecks() {
 function cloutChecks() {
   const bad: string[] = [];
   let weeks = 0, listOk = 0, maxCt = 0, honorRows = 0, spread = 0, pools = 0;
-  /* 这一局关掉「找人聊聊」：话语权自检量的是「挂牌门槛够不够得着」，
-     用的是单个固定种子。机器人是贪心花点，任何 1 点的新行动都会把 8 点的
-     训练节奏挤歪，从而把这个单种子的战绩、进而把教练信任推走——那是工具的
-     位移，不是挂牌门槛坏了。羁绊自己的难度对照在 --batch 那边做（240 局）。 */
-  const r = playOne({ seed: 7701, strong: true, noBondTalk: true, hook: (S: any, A: any) => {
-    if (!S.career || !S.team || S.step !== "season" || S.homeLeague === "LDL") return;
-    weeks++;
-    if (A.canList().ok) listOk++;
-    maxCt = Math.max(maxCt, A.coachTrust());
-    const L = S.staffLog;
-    if (L && L.coach.some((x: any) => /冠军/.test(x.why) && x.v > 0)) honorRows++;
-    if (A.canSign().ok) {
-      const os = A.signTargets().map((x: any) => A.signOdds(x));
-      if (os.length >= 2) { pools++; if (Math.max(...os) - Math.min(...os) > 0.02) spread++; }
-    }
-  }});
-  if (!weeks) { bad.push("话语权自检：这一局没有打到赛季阶段"); return bad; }
+  /* 这几局关掉「找人聊聊」：话语权自检量的是「挂牌门槛够不够得着」。
+     原来只用单个固定种子——机器人是贪心花点，任何 1 点的新行动、任何一处胜率变化，都会把这一局的战绩、
+     进而把教练信任推走（2026-09-11 卫冕压力改成两边冠军数相抵后，7701 这一局的教练信任最高 88.8 → 58.2；
+     可 7701–7708 八个种子里够得着门槛的，改前 7 局、改后 6 局，挂牌占比 ≥5% 的前后都是 5 局）。那是工具的位移，不是门槛坏了。
+     现在跑三个种子合起来量：门槛看三局里最高的教练信任，挂牌占比看三局合计的赛季周。羁绊自己的难度对照在 --batch 那边做（240 局）。 */
+  let titles = 0;
+  for (const seed of [7701, 7703, 7706]) {
+    const r = playOne({ seed, strong: true, noBondTalk: true, hook: (S: any, A: any) => {
+      if (!S.career || !S.team || S.step !== "season" || S.homeLeague === "LDL") return;
+      weeks++;
+      if (A.canList().ok) listOk++;
+      maxCt = Math.max(maxCt, A.coachTrust());
+      const L = S.staffLog;
+      if (L && L.coach.some((x: any) => /冠军/.test(x.why) && x.v > 0)) honorRows++;
+      if (A.canSign().ok) {
+        const os = A.signTargets().map((x: any) => A.signOdds(x));
+        if (os.length >= 2) { pools++; if (Math.max(...os) - Math.min(...os) > 0.02) spread++; }
+      }
+    }});
+    titles += (r.lg || 0) + (r.msi || 0) + (r.worlds || 0);
+  }
+  if (!weeks) { bad.push("话语权自检：这几局都没有打到赛季阶段"); return bad; }
   if (!(listOk / weeks >= 0.05))
-    bad.push(`挂牌队友几乎用不了：${listOk}/${weeks} = ${(listOk / weeks * 100).toFixed(1)}% 的赛季周（要 >= 5%）`);
+    bad.push(`挂牌队友几乎用不了：三局合计 ${listOk}/${weeks} = ${(listOk / weeks * 100).toFixed(1)}% 的赛季周（要 >= 5%）`);
   if (!(maxCt >= A.LIST_GATE.coach))
-    bad.push(`教练信任整局最高只有 ${maxCt.toFixed(1)}，够不到挂牌门槛 ${A.LIST_GATE.coach}——门槛又变成摆设了`);
-  const titles = (r.lg || 0) + (r.msi || 0) + (r.worlds || 0);
+    bad.push(`教练信任三局里最高只有 ${maxCt.toFixed(1)}，够不到挂牌门槛 ${A.LIST_GATE.coach}——门槛又变成摆设了`);
   if (titles > 0 && !honorRows)
     bad.push(`拿了 ${titles} 座冠军，但教练信任的收支里一次都没出现荣誉项——荣誉又从公式里掉了`);
   if (pools >= 20 && !(spread / pools >= 0.5))
