@@ -1315,6 +1315,32 @@ function unitChecks() {
     // 赛后拆解读开赛那一刻的体能（原来先扣这场的体能再算账）
     if (S.match && S.match.fat0 === undefined) bad.push("比赛没有记下开赛时的体能快照 fat0");
 
+    /* 卫冕被研究（作者拍板 2026-09-11）：本赛季 + 上赛季每座冠军 +1.5，封顶 +4，更早的不算；
+       下一场预览要把卫冕压力写出来（预览和判定读同一个对手战力）。 */
+    {
+      const dSnap = { career: S.career, si: S.si, step: S.step, week: S.week, schedule: S.schedule };
+      S.career = Object.assign({}, S.career || {}, { titles: [] });
+      S.si = 3;
+      const tag = (si: number) => A.SEASONS[si].tag;
+      if (A.defendPressure() !== 0) bad.push("没拿过冠军也有卫冕压力");
+      S.career.titles = [`${tag(1)} 世界赛`];
+      if (A.defendPressure() !== 0) bad.push("两个赛季之前的冠军还在算卫冕压力");
+      S.career.titles = [`${tag(1)} 世界赛`, `${tag(2)} MSI`];
+      if (A.defendPressure() !== 1.5) bad.push(`上赛季一座冠军应是 +1.5，实得 ${A.defendPressure()}`);
+      S.career.titles = [`${tag(2)} MSI`, `${tag(3)} LPL 春季赛`];
+      if (A.defendPressure() !== 3) bad.push(`两座应是 +3，实得 ${A.defendPressure()}`);
+      S.career.titles = [`${tag(2)} MSI`, `${tag(2)} 世界赛`, `${tag(3)} LPL 春季赛`];
+      if (A.defendPressure() !== 4) bad.push(`三座应封顶 +4，实得 ${A.defendPressure()}`);
+      S.step = "season"; S.week = 1;
+      if (!Array.isArray(S.schedule) || !S.schedule.length)
+        S.schedule = S.world[S.homeLeague || "LPL"].filter((t: any) => t.name !== S.team).map((t: any) => t.name);
+      const card = A.nextMatchCard();
+      if (card && !/卫冕压力/.test(card)) bad.push("有卫冕压力时，下一场预览没写出来");
+      S.career.titles = [];
+      if (/卫冕压力/.test(A.nextMatchCard())) bad.push("没有卫冕压力时，下一场预览还写着卫冕压力");
+      Object.assign(S, dSnap);
+    }
+
     /* 转会轨迹只数「真的换了俱乐部」那几笔（玩家实锤 2026-09-09：只去过一个外赛区队
        就回 RNG 一人一城，名片却写转会七站）。这张表本来就记着续约、买断、升一队、下放。 */
     {
@@ -1593,6 +1619,9 @@ if (isMain && process.argv.includes("--tl-probe")) {
   const unit = unitChecks();
   if (unit.length) { console.error("单元检查失败：\n - " + unit.join("\n - ")); process.exit(1); }
   console.log("单元检查通过：导览几何 · 存档消毒");
+  { const tb = timelineChecks();
+    if (tb.length) { console.error("真实时间线自检不通过：\n - " + tb.join("\n - ")); process.exit(1); }
+    console.log("真实时间线自检通过：2022–2027 队数与赛区结构 · 名单去重 · 数值范围 · 锚定均值 · T1/NIP 名单"); }
   // 背景卡折算表（资金 60 万 / 人气 10 / 信任 3 ≈ 1 点，属性 1 点 = 1 点）：各卡并不等值，差异在形状——见 origins.js 顶部注释
   console.log("背景折算：", A.BACKGROUNDS.map(b => b.k + " " + (Object.values<number>(b.mod || {}).reduce((a, v) => a + v, 0)
     + (b.money || 0) / 60 + (b.fame || 0) / 10 + (b.trust || 0) / 3).toFixed(1)).join(" · "));
@@ -1619,9 +1648,6 @@ if (isMain && process.argv.includes("--tl-probe")) {
   if (!r.saved) bad.push("存档没有写入");
   if (bigTalkSeen) bad.push(`这一局从没在媒体日定过「狂」，却被安了 ${bigTalkSeen} 次赛后狠话（第一次在 ${bigTalkAt}）`);
   // 外设每一档都得比上一档贵、也比上一档强（外部测评抓的：320 万的鼠标比 130 万的还弱）
-  { const tb = timelineChecks();
-    if (tb.length) { console.error("真实时间线自检不通过：\n - " + tb.join("\n - ")); process.exit(1); }
-    console.log("真实时间线自检通过：2022–2027 队数与赛区结构 · 名单去重 · 数值范围 · 锚定均值 · T1/NIP 名单"); }
   Object.keys(A.GEAR).forEach(k => A.GEAR[k].forEach((g, i) => {
     if (i === 0) return;
     const pv = A.GEAR[k][i - 1], d = Object.keys(g.e)[0];
@@ -1678,6 +1704,12 @@ const BALL_WORDS = ["球队", "球员", "球迷", "球星", "球场", "赢球", 
    这个前提一旦变了（谁给别的赛区也做了二队），下面 LDL_ONLY_STILL_TRUE 那条会先红。 */
 const LDL_ONLY = /^(?:(?!\b(LPL|LCK|LEC|LCS|PCS|VCS|LJL)\b).)*$/s;
 const LEAGUE_OK: Record<string, string> = {
+  '2024: "LCS 缩编到 8 支队伍。",':
+    "真实时间线的年度赛区改制新闻（timeline.ts 的 TL_STRUCT_NEWS）：写的是那一年真实发生的事，对所有赛区的玩家都成立",
+  '2025: "赛区大改制：LCS 改为 <b>LTA 北区</b>，CBLOL 与 LLA 合并为 <b>LTA 南区</b>；PCS、VCS、LJL 的头部队伍组成新赛区 <b>LCP</b>；LPL 缩编到 16 支队伍。",':
+    "同上：2025 年真实赛区大改制",
+  '2026: "LTA 拆回 <b>LCS</b> 与 <b>CBLOL</b>；LPL 缩编到 14 支队伍。"':
+    "同上：2026 年真实赛区调整",
   '{id:"beatlck", n:"抗韩成功", d:"在国际赛场上击败一支 LCK 队伍——前提是你自己不在 LCK。", tag:"战绩",':
     "cond 已锁 myLeague!==LCK",
   'd:"国际赛场上把另一支 LPL 队伍送回了家。",':
@@ -1704,12 +1736,6 @@ const LEAGUE_OK: Record<string, string> = {
     "上一行的 own 已经把「自家赛区夺冠」分出去了",
   'beatLCK?`决赛击败 LCK 的 ${S.match.oppName}——<b>至暗时刻的墙，被你砸开了一道口子。</b>`:""}`,':
     "beatLCK 已锁 homeLeague!==LCK",
-  '2024: "LCS 缩编到 8 支队伍。",':
-    "真实时间线的年度赛区改制新闻（timeline.ts 的 TL_STRUCT_NEWS）：写的是那一年真实发生的事，对所有赛区的玩家都成立",
-  '2025: "赛区大改制：LCS 改为 <b>LTA 北区</b>，CBLOL 与 LLA 合并为 <b>LTA 南区</b>；PCS、VCS、LJL 的头部队伍组成新赛区 <b>LCP</b>；LPL 缩编到 16 支队伍。",':
-    "同上：2025 年真实赛区大改制",
-  '2026: "LTA 拆回 <b>LCS</b> 与 <b>CBLOL</b>；LPL 缩编到 14 支队伍。"':
-    "同上：2026 年真实赛区调整",
   '?`决赛击败 LCK 的 <b>${c.opp}</b>——至暗时刻的墙，被你砸开了一道口子。`':
     "同上，c.beatLCK 由上面那个变量算出来",
 };

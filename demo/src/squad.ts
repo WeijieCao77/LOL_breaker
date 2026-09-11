@@ -222,6 +222,25 @@ export function teamPowerOf(name){
   const t=findTeam(name); if(!t) return 50;
   return power(t,0,SEASONS[S.si].fav);
 }
+/* 卫冕被研究（作者拍板 2026-09-11：「难度偏低，有从 S13–S19 连续七年夺冠的玩家，要调高一些」）：
+   本赛季 + 上赛季你每拿一座冠军（联赛 / MSI / 世界赛），对手打你时战力 +1.5，封顶 +4。
+   一座冠军都没拿过的人不受影响，拿得越多越被研究——专压连冠。只进你自己的比赛，AI 打 AI 不算。
+   120 局含再战 A/B（真实时间线版）：普通玩家生涯冠军 6.23 → 4.58、连续≥5 年有冠 19% → 10%；
+   强玩家 10.55 → 7.59、连续≥7 年有冠 18% → 9%。 */
+export const DEFEND_PER_TITLE=1.5, DEFEND_CAP=4;
+export function defendTitles(){
+  if(!S.career) return 0;
+  return (S.career.titles||[]).filter(x=>{ const m=/^S(\d+)/.exec(String(x)); return !!m&&(+m[1]-12===S.si||+m[1]-12===S.si-1); }).length;
+}
+export function defendPressure(){ return Math.min(DEFEND_CAP, DEFEND_PER_TITLE*defendTitles()); }
+export function defendNote(){
+  const k=defendTitles(); if(!k) return "";
+  return `本赛季和上赛季你拿了 ${k} 座冠军，对手都在研究你：每座 +${pwShow(DEFEND_PER_TITLE).toFixed(1)}，最多 +${pwShow(DEFEND_CAP).toFixed(1)}`;
+}
+/* 你比赛里对手的战力：对面五个人的实力加权（对手的默契、战术一直不进你的比赛）。
+   比赛判定、赛后结算、比分页、下一场预览、备战页、赛程表都读这一个数，卫冕压力另外加、另外标。
+   原来预览读的是带默契战术的整队战力（teamPowerOf），和判定胜负的数对不上。 */
+export function oppMatchPw(players){ return power(players,0,SEASONS[S.si].fav); }
 export function myPower(){
   return power(myRoster(),S.fatigue,SEASONS[S.si].fav)+versionFit();
 }

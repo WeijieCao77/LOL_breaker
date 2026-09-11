@@ -26,7 +26,7 @@ import { lgName, noteLeagueChamp, realNote, rewriteCard, tlCatchUp, tlDisplace, 
 import { actListText, archiveWeek, clearPlan, noteAct, quickBtn, quickPlan, quickPlanPre, repeatLast, routineBar, runActs, runPlan, savePlan } from "./routine";
 import { askConfirm, confirmCard, continueCard, dropSave, escapeHtml, exportSave, importSave, loadGame, meName, safeName, saveBar, saveGame } from "./save";
 import { addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, noteStream, noteStreamMoney, PRIZE_PO, PRIZE_PO_LDL, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
-import { addSquad, clampWinProb, disruptSynergy, doBenchAct, doSquad, gapVerdict, initSquad, myPower, squadActs, squadCard, squadDecay, squadOf, teamPowerOf, watchRoster } from "./squad";
+import { addSquad, clampWinProb, defendNote, defendPressure, disruptSynergy, doBenchAct, doSquad, gapVerdict, initSquad, myPower, oppMatchPw, squadActs, squadCard, squadDecay, squadOf, teamPowerOf, watchRoster } from "./squad";
 import { starAfterMatch, starLaneBadge, starSpotHtml } from "./stars";
 import { S, setS } from "./state";
 import { shareCardOpen } from "./share";
@@ -3806,7 +3806,7 @@ export function viewSeason(){
     </div>
     ${squadActs()}
     ${benched&&true?scrimPanel():""}
-    ${opp&&uiNum()?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(power(opp,0,sea.fav)).toFixed(1)}）
+    ${opp&&uiNum()?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(oppMatchPw(opp.players)).toFixed(1)}${defendPressure()?`，卫冕压力 +${pwShow(defendPressure()).toFixed(1)}`:""}）
       vs 你队 ${pwShow(power(myRoster(),S.fatigue,sea.fav)).toFixed(1)}</p>`:""}
     <!-- 出口条必须是这张卡的最后一个孩子：宽屏上它是 sticky 的（theme.css .row.dock），
          而 sticky 只压得住排在它后面的兄弟。原来它排在「替补训练赛」和「本周对手」前面，
@@ -4065,7 +4065,7 @@ export function tiltDrag(){
 export function gameWinP(swing){
   const m=S.match,sea=SEASONS[S.si];
   const my=power(myRoster(),S.fatigue,sea.fav)+(swing||0)+versionFit()+rivalBoost(m.oppName)-tiltDrag()+cerFinalPw();
-  const op=power(m.opp.players,0,sea.fav);
+  const op=oppMatchPw(m.opp.players)+defendPressure();   // 卫冕被研究：见 squad.ts defendPressure
   return clampWinProb(1/(1+Math.exp(-(my-op)/SPREAD)), my-op);
 }
 /* 节点摆动倍率与成功率里的队友占比（2026-09-06 方案 A）：一个人拉不动四个人——
@@ -4103,7 +4103,7 @@ export function resolveNode(ai){
 export function playGame(){
   const m=S.match,sea=SEASONS[S.si];
   const my=power(myRoster(),S.fatigue,sea.fav)+m.swing+versionFit()+rivalBoost(m.oppName)-tiltDrag()+cerFinalPw();
-  const op=power(m.opp.players,0,sea.fav);
+  const op=oppMatchPw(m.opp.players)+defendPressure();   // 卫冕被研究：见 squad.ts defendPressure
   let p=1/(1+Math.exp(-(my-op)/SPREAD));
   // 封顶用的差距必须把 m.swing（临场决策的结果）算进去。
   // 原来传的是不含 swing 的原始差距，于是差距一超过 GAP_WINDOW，
@@ -4240,7 +4240,7 @@ export function endMatch(){
      换成开赛体能会动平衡（120 局批测：MSI 夺冠率 10.8% → 21.7%），所以先按原样留着，
      只把赛后拆解那张卡改成读开赛体能——玩家实锤的就是那张卡。这一处口径要不要一起改，
      是一次单独的平衡决定，留给作者。 */
-  const myPw=power(myRoster(),S.fatigue,SEASONS[S.si].fav), opPw=power(m.opp.players,0,SEASONS[S.si].fav);
+  const myPw=power(myRoster(),S.fatigue,SEASONS[S.si].fav), opPw=oppMatchPw(m.opp.players)+defendPressure();
   // 首发试用：赢了坐稳，输光了回替补席（rotation.js）
   rotationAfterMatch(won,myPw-opPw);
   if(won&&myPw-opPw<-2){ S.comebacks=(S.comebacks||0)+1;   // 逆风翻盘计数
@@ -4432,7 +4432,7 @@ export function viewMatch(){
     return `${postMatchCard()}
     <div class="row"><button class="btn primary" id="next">继续 →</button></div>`;
   }
-  const my0=power(myRoster(),S.fatigue,sea.fav), vf=versionFit(), fb=cerFinalPw(), my=my0+vf+fb, op=power(m.opp.players,0,sea.fav);   // 版本加成、决赛夜加成单独标，不揉进「战力」
+  const my0=power(myRoster(),S.fatigue,sea.fav), vf=versionFit(), fb=cerFinalPw(), my=my0+vf+fb, op=oppMatchPw(m.opp.players), dp=defendPressure();   // 版本加成、决赛夜加成、卫冕压力单独标，不揉进「战力」
   // 开打编排（界面重做第二期 ②）：比分刚变的那次渲染，两侧向中线撞一下、结果字砸出来；系列赛打完的字留住
   const scKey=m.sc.join(":"); let hit="";
   if(_lastSc!==undefined&&_lastSc!==scKey&&scKey!=="0:0"){ const a=+String(_lastSc).split(":")[0]; hit=m.sc[0]>a?"hit win":"hit loss"; }
@@ -4444,7 +4444,7 @@ export function viewMatch(){
     <div class="vs ${hit}">
       <div class="side"><div class="nm">${teamLogo(S.team,34)}<br>${S.team}</div><div class="pw mono">战力 ${pwShow(my0).toFixed(1)}<small style="color:var(--ink-3)"> 版本 ${vf>=0?"+":""}${pwShow(vf).toFixed(1)}${fb?` <span style="color:${fb>0?'var(--gold)':'var(--red)'}">决赛夜 ${fb>0?"+":""}${fb}</span>`:""}</small></div></div>
       <div class="mid"><div class="score">${m.sc[0]} : ${m.sc[1]}</div>${stamp}</div>
-      <div class="side"><div class="nm">${teamLogo(m.oppName,34)}<br>${m.oppName}</div><div class="pw mono">战力 ${pwShow(op).toFixed(1)}</div></div>
+      <div class="side"><div class="nm">${teamLogo(m.oppName,34)}<br>${m.oppName}</div><div class="pw mono">战力 ${pwShow(op).toFixed(1)}${dp?`<small style="color:var(--red)" title="${defendNote()}"> 卫冕压力 +${pwShow(dp).toFixed(1)}</small>`:""}</div></div>
     </div>
     ${starLaneBadge(m.oppName)}
     ${verLine(m.oppName)}
@@ -4746,7 +4746,8 @@ export function prepPanel(){
         <div class="pw">战力 ${pwShow(power(myRoster(),S.fatigue,SEASONS[S.si].fav)).toFixed(1)}<small style="color:var(--ink-3)"> 版本 ${versionFit()>=0?"+":""}${pwShow(versionFit()).toFixed(1)}</small></div></div>
       <div class="mid">VS</div>
       <div class="sd"><div class="nm">${teamLogo(P.opp,20)} ${P.opp}</div>
-        <div class="pw">${oppT?`战力 ${pwShow(power(oppT,0,SEASONS[S.si].fav)).toFixed(1)}`:""}</div></div>
+        <div class="pw">${oppT?`战力 ${pwShow(oppMatchPw(oppT.players)).toFixed(1)}${
+          defendPressure()?`<small style="color:var(--red)" title="${defendNote()}"> 卫冕压力 +${pwShow(defendPressure()).toFixed(1)}</small>`:""}`:""}</div></div>
     </div>
     ${starSpotHtml(P.opp)}
     ${verLine(P.opp)}
@@ -4773,9 +4774,9 @@ export function prepPanel(){
 }
 
 export function endSeason(result,seed){
-  payday();
   // 「你改写了什么」：先记下这个赛段你所在赛区的冠军（S.playoff 下面会清掉）
   try{ noteLeagueChamp(result, poCanon().filter(n=>lplRank().slice(0,6).some(r=>r.n===n))); }catch(e){}
+  payday();
   S.capExp=Math.min(CAP_EXP_MAX,q1((S.capExp||0)+CAP_EXP_STEP));   // 经验顶瓶颈（B4）
   // 世界线张力弛豫：你不在的联赛，每个赛段往史实弹回 ×0.6
   wlRelax();
@@ -5109,8 +5110,8 @@ export function finishOffseason(){
   S.yearBase=0;              // 新的一年，全年计数从头开始
   S.miniPatch=null; S.patchClock=0;   // 新版本年，热修编号从 .1 重数
   const news=ageWorld();
-  /* 顺序要紧（2026-09-07 修）：原来是 ageWorld → aiMarketWindow → capWorldDrift → capLDL，
   tlYearTurn();   // 真实时间线：你影响不到的地方换上今年的真实名单（老档不动）
+  /* 顺序要紧（2026-09-07 修）：原来是 ageWorld → aiMarketWindow → capWorldDrift → capLDL，
      于是「提拔」看到的是**还没被压回去的**二队——ageWorld 刚给 18–21 岁的青训加了 +6.28，
      capLDL 却在转会窗之后才把他们钉回 LPL 垫底三队的水平。等于每年都拿一份虚高的数据去换人。
      现在先钉水位、再开窗口：提拔看到的是二队真实的、被压过的实力。 */
@@ -5431,8 +5432,8 @@ export function viewEnd(){
     <p class="note">五年成长的形状由你开局那 20 点决定：高天赋维度练到了瓶颈，低天赋维度早早封顶。</p>
   </div>
   ${achCard()}
-  <div class="card"><h2>五年后的世界</h2>
   ${rewriteCard()}
+  <div class="card"><h2>五年后的世界</h2>
     <div class="tw"><table><thead><tr><th>赛区</th><th>末季第一</th><th>战绩</th></tr></thead><tbody>${champs}</tbody></table></div>
     ${vets.length?`<h3 style="margin-top:18px;font-size:14px">仍在坚持的老将</h3>
     <div class="tw"><table><thead><tr><th>选手</th><th>战队</th><th class="n">年龄</th><th class="n">操作</th><th class="n">指挥</th></tr></thead>
@@ -6011,7 +6012,8 @@ export function nextMatchCard(){
   /* 标题上的「全队战力」和队伍页是同一个数：版本相性单独标出来，不揉进去
      （玩家实锤 2026-09-09：队伍页和比赛面板对不上）。备战页早就是这么写的。
      判定胜负仍然用含版本的 myPower()——diff 不变。 */
-  const myPw=myPower(), opPw=teamPowerOf(on);
+  // 对面的数和判定胜负同一口径（五个人的实力加权），卫冕压力另外标——原来这里读带默契战术的整队战力，和比赛里对不上
+  const myPw=myPower(), opBase=oppMatchPw(opp.players), dp=defendPressure(), opPw=opBase+dp;
   const vfNow=versionFit(), myShow=myPw-vfNow;
   const star=opp.players.slice().sort((a,b)=>ovrOf(b)-ovrOf(a))[0];
   const rival=opp.players.find(q=>q.pos===S.pos);
@@ -6025,7 +6027,8 @@ export function nextMatchCard(){
           uiNum()&&Math.abs(vfNow)>0.05?`<small style="color:var(--ink-3)"> 版本 ${vfNow>=0?"+":""}${pwShow(vfNow).toFixed(1)}</small>`:""}</div></div>
       <div class="mid">VS</div>
       <div class="sd"><div class="nm">${teamLogo(on,28)}${on}${formBar(on)}</div>
-        <div class="pw">全队战力 <b>${N(pwShow(opPw).toFixed(1),dimWord(pwShow(opPw)))}</b></div></div>
+        <div class="pw">全队战力 <b>${N(pwShow(opBase).toFixed(1),dimWord(pwShow(opBase)))}</b>${
+          dp?`<small style="color:var(--red)" title="${defendNote()}"> 卫冕压力 ${N("+"+pwShow(dp).toFixed(1),"↑")}</small>`:""}</div></div>
     </div>
     <div class="oppinfo">
       <span class="chipx">对面战绩 <b>${st.w}−${st.l}</b></span>
@@ -6737,10 +6740,10 @@ export function render(){
   _st.innerHTML = body
     + (saveBar())
     + (achPopCard())
+    + (tlPopCard())         // 真实时间线的赛区大事弹窗（LDL 停办）
     + (traitUpCard())
     + (streamOfferCard())
     + (confirmCard())
-    + (tlPopCard())         // 真实时间线的赛区大事弹窗（LDL 停办）
     + (cerCard());          // 仪式与小游戏：压在一切之上，别的弹窗散了才开场
   if(_st.setAttribute) _st.setAttribute("data-zone", curZone());
   hudCta();               // HUD 主按钮镜像本页的 .btn.primary
@@ -6922,10 +6925,10 @@ export function bind(){
   const _cpm=$("cuppm"); if(_cpm) _cpm.onclick=()=>{ if(S.cupMatch) S.cupMatch.pmSeen=true; render(); scrollStageTop&&scrollStageTop(); };
   const _cr=$("cupresok"); if(_cr) _cr.onclick=()=>{S.cupResult=null;render()};
   const _ic=$("intlchampok"); if(_ic) _ic.onclick=()=>{S.intlChamp=null;render()};
+  const _tp=$("tlpopok"); if(_tp) _tp.onclick=()=>{S.tlPop=null;render()};
   const _as=$("autosumok"); if(_as) _as.onclick=()=>{S.autoSum=null;render()};
   st.querySelectorAll("[data-content]").forEach((b: any)=>b.onclick=()=>{
     doContent(b.dataset.content); });
-  const _tp=$("tlpopok"); if(_tp) _tp.onclick=()=>{S.tlPop=null;render()};
   const _cc=$("contentcancel"); if(_cc) _cc.onclick=()=>{S.contentPick=null;render()};
   st.querySelectorAll("[data-asset]").forEach((b: any)=>b.onclick=()=>{
     buyAsset(b.dataset.asset); });
