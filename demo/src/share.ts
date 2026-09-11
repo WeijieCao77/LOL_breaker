@@ -74,7 +74,9 @@ function yearRows(){
   let prev=null;
   return played.map((sea,si)=>{
     const rows=log.filter(x=>x.si===si);
-    let team=rows.length?rows[rows.length-1].team:null;
+    // 一年里待过几支队就写几支（和生涯名片一致，玩家实锤 2026-09-11）；沿用到下一年的是最后那支
+    const teams=rows.map(x=>x.team).filter((t,i,a)=>t&&a.indexOf(t)===i);
+    let team=teams.length?teams.join(" → "):null;
     // 兜底和生涯名片同一套：转会记录 → 沿用上一年 → 当前东家
     if(!team){
       const tx=(S.txLog||[]).filter(x=>String(x.s||"").indexOf(sea.tag)===0);
@@ -85,7 +87,7 @@ function yearRows(){
     }
     if(!team&&prev) team=prev;
     if(!team&&S.career&&si<=(S.si||0)) team=S.team;
-    if(team) prev=team;
+    if(team) prev=teams.length?teams[teams.length-1]:team;
     const res=rows.map(r=>`${SPLITS[r.split]?SPLITS[r.split][0]:""}${
       r.result==="champion"?"冠":r.result===3?"亚":r.result===2?"四强":r.seed>6?"第"+r.seed:"季后赛"}`).join(" · ");
     const won=((C as any).lgYears||[]).includes(si)||((C as any).msiYears||[]).includes(si)||((C as any).worldsYears||[]).includes(si);
@@ -208,10 +210,11 @@ export function drawShareCard(){
     g.fillStyle=r.won?"#1A2A1E":CO.panel; roundRect(g,72,yy,W-144,rh-10,10); g.fill();
     if(r.won){ g.fillStyle=CO.gold; g.fillRect(72,yy,5,rh-10); }
     g.font=FONT(700,26); g.fillStyle=r.won?CO.gold:CO.ink2; g.fillText(r.tag,96,yy+(rh-10)/2+9);
-    g.font=FONT(400,25); g.fillStyle=CO.ink;  g.fillText(r.team,200,yy+(rh-10)/2+9);
     g.font=FONT(400,25); g.fillStyle=CO.ink2;
     const rt=r.res, rw=g.measureText(rt).width;
     g.fillText(rt,W-96-rw,yy+(rh-10)/2+9);
+    // 一年两支队写成「A → B」：太长先缩字号再截断，别压到右边的名次
+    g.fillStyle=CO.ink; fitText(g,r.team,200,yy+(rh-10)/2+9,Math.max(120,W-96-rw-24-200),25,400);
   });
   y+=rows.length*rh+30;
 
