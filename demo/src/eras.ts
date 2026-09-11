@@ -123,7 +123,8 @@ const SEASONS_S6=[
 /* 各纪元的赛区水位（这就是「每个纪元自己的标尺」）。
    S6 纪元：LCK 明显更高（魔王期的统治力是真的），LPL 在追但没追上；
    LMS 那几年还是准一线（Flash Wolves 打过 SKT），比现在的 PCS 高一截。 */
-const ANCHOR_S12={LCK:71.5,LPL:70,LEC:68,LCS:66.5,PCS:63,VCS:62.5,LJL:60.5,LLA:60,CBLOL:60,LCO:59,TCL:59.5};
+const ANCHOR_S12={LCK:71.5,LPL:70,LEC:68,LCS:66.5,PCS:63,VCS:62.5,LJL:60.5,LLA:60,CBLOL:60,LCO:59,TCL:59.5,
+  LCP:63};   // LCP：真实时间线 2025 年新设的赛区（PCS/VCS/LJL 头部），按 PCS 的锚；老档里没有这个键
 const ANCHOR_S6 ={LCK:72.5,LPL:68.5,LMS:65.5,LEC:65,LCS:63,VCS:61,LJL:59,LLA:58.5,CBLOL:58.5,TCL:58.5};
 
 /* 赛区年份统治力：S6 纪元的 LCK 从 S6 的顶峰一路下滑到 S11 的零。

@@ -2,6 +2,7 @@ import { DATA } from "./data";
 import { RANKS, rankFull } from "./main";
 import { RANK_ART } from "./rankart";
 import { S } from "./state";
+import { TL_LOGOS } from "./timeline";
 
 /* ================= 段位徽章 =================
    手绘 SVG，不引用外部素材（CSP 也不允许）。
@@ -51,5 +52,8 @@ export function teamLogo(name,size){
       if(t&&t.logo) return `<img class="tlogo" src="${t.logo}" width="${size}" height="${size}" alt="">`;
     }
   }
+  // 兜底：真实时间线换页进来的新队、以及开局数据里本来缺队标的 RNG / Excel / BDS（队伍已经不在世界里时，历史页也要画得出来）
+  const tl=TL_LOGOS&&TL_LOGOS[name];
+  if(tl) return `<img class="tlogo" src="${tl}" width="${size}" height="${size}" alt="">`;
   return "";
 }

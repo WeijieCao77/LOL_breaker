@@ -2,6 +2,7 @@ import { findTeam } from "./intl";
 import { DIMS, SEASONS, SPLITS, addFans, avg, ovrOf, pushEvent } from "./main";
 import { S, onEra } from "./state";
 import { eraDef } from "./eras";
+import { lgName } from "./timeline";
 
 /* ================= 明星选手：存在感 =================
 
@@ -140,9 +141,9 @@ export function starInGameHonors(teamName){
     Object.keys(S.poCache||{}).forEach(k=>{
       const [si,sp,lg]=k.split("|"); const res=S.poCache[k];
       if(!res||res[0]!==teamName) return;
-      const tag=`${SEASONS[+si].tag} ${lg}${SPLITS[+sp]||""}`;
+      const tag=`${SEASONS[+si].tag} ${lgName(lg,+si)}${SPLITS[+sp]||""}`;
       if(mine.includes(tag)) return;                  // 那座是你亲手拿的
-      out.push(`${SEASONS[+si].tag} ${lg} ${SPLITS[+sp]||""}冠军`);
+      out.push(`${SEASONS[+si].tag} ${lgName(lg,+si)} ${SPLITS[+sp]||""}冠军`);
     });
   }catch(e){}
   return out;

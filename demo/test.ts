@@ -49,7 +49,7 @@ if (!fs.existsSync(path.join(HERE, "src", "gen", "avatars.js"))) {
    `ACHIEVEMENTS.push(...ACH_MORE)`，抛 "Cannot access 'ACH_MORE' before initialization"。
    低概率、和这次的改动无关（改前改后各连跑 12 次都没复现，但两边都各撞见过一次），
    顺序载入让求值顺序固定下来，CI 不再看运气。循环引用本身还在，另开一条待办。 */
-const MODULES = ["state", "eras", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer", "share", "bond"];
+const MODULES = ["state", "eras", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer", "share", "bond", "timeline"];
 const state = await import("./src/state.ts");
 const mods = [];
 for (const m of MODULES) mods.push(await import(`./src/${m}.ts`));
@@ -1326,6 +1326,32 @@ function unitChecks() {
     // 赛后拆解读开赛那一刻的体能（原来先扣这场的体能再算账）
     if (S.match && S.match.fat0 === undefined) bad.push("比赛没有记下开赛时的体能快照 fat0");
 
+    /* 卫冕被研究（作者拍板 2026-09-11）：本赛季 + 上赛季每座冠军 +1.5，封顶 +4，更早的不算；
+       下一场预览要把卫冕压力写出来（预览和判定读同一个对手战力）。 */
+    {
+      const dSnap = { career: S.career, si: S.si, step: S.step, week: S.week, schedule: S.schedule };
+      S.career = Object.assign({}, S.career || {}, { titles: [] });
+      S.si = 3;
+      const tag = (si: number) => A.SEASONS[si].tag;
+      if (A.defendPressure() !== 0) bad.push("没拿过冠军也有卫冕压力");
+      S.career.titles = [`${tag(1)} 世界赛`];
+      if (A.defendPressure() !== 0) bad.push("两个赛季之前的冠军还在算卫冕压力");
+      S.career.titles = [`${tag(1)} 世界赛`, `${tag(2)} MSI`];
+      if (A.defendPressure() !== 1.5) bad.push(`上赛季一座冠军应是 +1.5，实得 ${A.defendPressure()}`);
+      S.career.titles = [`${tag(2)} MSI`, `${tag(3)} LPL 春季赛`];
+      if (A.defendPressure() !== 3) bad.push(`两座应是 +3，实得 ${A.defendPressure()}`);
+      S.career.titles = [`${tag(2)} MSI`, `${tag(2)} 世界赛`, `${tag(3)} LPL 春季赛`];
+      if (A.defendPressure() !== 4) bad.push(`三座应封顶 +4，实得 ${A.defendPressure()}`);
+      S.step = "season"; S.week = 1;
+      if (!Array.isArray(S.schedule) || !S.schedule.length)
+        S.schedule = S.world[S.homeLeague || "LPL"].filter((t: any) => t.name !== S.team).map((t: any) => t.name);
+      const card = A.nextMatchCard();
+      if (card && !/卫冕压力/.test(card)) bad.push("有卫冕压力时，下一场预览没写出来");
+      S.career.titles = [];
+      if (/卫冕压力/.test(A.nextMatchCard())) bad.push("没有卫冕压力时，下一场预览还写着卫冕压力");
+      Object.assign(S, dSnap);
+    }
+
     /* 转会轨迹只数「真的换了俱乐部」那几笔（玩家实锤 2026-09-09：只去过一个外赛区队
        就回 RNG 一人一城，名片却写转会七站）。这张表本来就记着续约、买断、升一队、下放。 */
     {
@@ -1593,7 +1619,120 @@ function batch(n: number, encore = false, strong = false, loyal = false) {
   }, null, 1));
 }
 
-if (isMain && process.argv.includes("--batch")) {
+/* ---------------- 真实时间线自检（2026-09-10）----------------
+   签约时新建的世界按年份依次换页：队数、赛区结构、名单去重、数值范围、锚定均值、几支标志性名单。 */
+function timelineChecks(): string[] {
+  const bad: string[] = [];
+  A.screenCreate(4242);
+  const S0 = A.S(); S0.name = "T"; S0.pos = "mid"; S0.origin = "academy"; S0.ageIdx = 1; S0.bgPick = S0.bgOffer[0].k;
+  S0.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+  A.startPre();
+  const S = A.S();
+  if (!S.tl) bad.push("新档没有 tl 标记");
+  const COUNT: any = { LPL: [17, 17, 17, 16, 14], LCK: [10, 10, 10, 10, 10], LEC: [10, 10, 10, 10, 10], LCS: [10, 10, 8, 8, 8] };
+  for (let si = 0; si <= 5; si++) {
+    S.si = si; S.tlUsed = [];
+    const w = A.cloneWorld(), y = A.SEASONS[si].y, yi = Math.min(si, 4), tag = String(y);
+    Object.keys(COUNT).forEach(K => { const n = (w[K] || []).length; if (n !== COUNT[K][yi]) bad.push(`${tag} ${K} 队数 ${n}，应为 ${COUNT[K][yi]}`); });
+    if (y >= 2025 && !(w.LCP && w.LCP.length)) bad.push(`${tag} 没有 LCP`);
+    if (y >= 2025 && (w.LLA || w.LCO)) bad.push(`${tag} LLA / LCO 应已并入别的赛区`);
+    if (y >= 2026 && w.LDL) bad.push(`${tag} LDL 应已停办`);
+    if (y <= 2025 && !(w.LDL && w.LDL.length)) bad.push(`${tag} 缺 LDL`);
+    const seen = new Set<string>();
+    Object.keys(w).forEach(K => (w[K] || []).forEach((t: any) => {
+      const pos = new Set((t.players || []).map((p: any) => p.pos));
+      if ((t.players || []).length !== 5 || pos.size !== 5) bad.push(`${tag} ${K}/${t.name} 名单不是五个位置各一人`);
+      (t.players || []).forEach((p: any) => {
+        if (K !== "LDL") { if (seen.has(p.id)) bad.push(`${tag} ${p.id} 同时在两支队`); seen.add(p.id); }
+        A.DIMS.forEach((d: string) => { const v = p.r[d]; if (typeof v !== "number" || !isFinite(v) || v < 20 || v > 99) bad.push(`${tag} ${p.id} ${d}=${v}`); });
+      });
+    }));
+    if (si > 0) ["LPL", "LCK", "LEC", "LCS"].forEach(K => {
+      const ps = (w[K] || []).flatMap((t: any) => t.players);
+      const m = ps.reduce((a: number, p: any) => a + A.DIMS.reduce((x: number, d: string) => x + p.r[d], 0) / 5, 0) / Math.max(1, ps.length);
+      if (Math.abs(m - A.TL_MEAN[K][0]) > 0.4) bad.push(`${tag} ${K} 均值 ${m.toFixed(2)}，标定 ${A.TL_MEAN[K][0]}`);
+    });
+    const t1 = (w.LCK || []).find((t: any) => t.name === "T1");
+    const ids = t1 ? t1.players.map((p: any) => p.id) : [];
+    if (y === 2025 && !(ids.includes("Doran") && ids.includes("Faker"))) bad.push(`2025 T1 名单不对：${ids.join("/")}`);
+    if (y === 2026 && !ids.includes("Peyz")) bad.push(`2026 T1 名单不对：${ids.join("/")}`);
+    if (y === 2023 && !(w.LPL || []).some((t: any) => t.name === "Ninjas in Pyjamas")) bad.push("2023 V5 的席位没有转给 NIP");
+  }
+  // 场景：你所在的队席位易主 / 二队随母队改名 / 赛区合并 / LDL 停办 / 你顶掉了谁（正在进行的档换页）
+  const sign = (si: number, team: string, league: string, k = "start") => {
+    A.screenCreate(4343);
+    const s0 = A.S(); s0.name = "T"; s0.pos = "mid"; s0.origin = "academy"; s0.ageIdx = 1; s0.bgPick = s0.bgOffer[0].k;
+    s0.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+    A.startPre();
+    const s = A.S(); s.si = si;
+    s.pre.world = A.cloneWorld(); s.pre.baseline = A.leagueBaseline(s.pre.world);
+    s.pre.offers = [{ k, team, t: "测试", d: "", note: "", league }];
+    A.acceptOffer(0);
+    return A.S();
+  };
+  const turn = (s: any) => { s.si++; s.worldAge = (s.worldAge || 0) + 1; A.tlApplyYear(s.world, A.SEASONS[s.si].y, true); };
+  const found = (s: any) => Object.keys(s.world).some(k => (s.world[k] || []).some((t: any) => t.name === s.team));
+  try {
+    let s = sign(0, "Victory Five", "LPL"); turn(s);
+    if (s.team !== "Ninjas in Pyjamas" || !found(s) || !A.myTeam() || !A.myRoster().some((p: any) => p.me)) bad.push(`V5 席位转给 NIP：S.team=${s.team}，世界里找得到=${found(s)}`);
+    s = sign(0, "V5.Y", "LDL", "sub"); turn(s);
+    if (s.team !== "NIP.Y" || !found(s)) bad.push(`二队随母队改名：S.team=${s.team}`);
+    s = sign(2, "Movistar R7", "LLA"); turn(s);
+    if (s.homeLeague !== "CBLOL" || !found(s) || !A.myTeam()) bad.push(`LLA 并入 LTA 南区：homeLeague=${s.homeLeague}`);
+    s = sign(3, "JDG.Y", "LDL", "sub"); turn(s);
+    if (s.homeLeague !== "LPL" || s.team !== "JD Gaming" || !found(s) || s.world.LDL || !s.understudy) bad.push(`LDL 停办后去向：${s.homeLeague} / ${s.team}`);
+    // LDL 停办要进大事记 / 弹窗 / 周报，二队高分选手转青训储备，一线队退役先从储备里提拔（2026-09-11 作者拍板）
+    if (!(s.tlAcad && s.tlAcad.length) || !s.tlPop || !s.tlLdlNews) bad.push(`LDL 停办没有留下青训储备 / 弹窗 / 周报素材（储备 ${(s.tlAcad || []).length} 人）`);
+    else {
+      const nr = A.tlRookie(s.tlAcad[0].pos, 60, "LPL");
+      if (!nr || !nr.fromAcad) bad.push("LPL 有人退役时没有先从青训储备里提拔");
+      if (!(s.events || []).some((e: any) => e.tag === "赛区" && /LDL 停办/.test(e.text || ""))) bad.push("大事记里没有 LDL 停办这一条");
+    }
+    s = sign(1, "Invictus Gaming", "LPL"); turn(s);
+    if ((s.tlDisplaced || []).length < 2) bad.push(`没有记下被你顶掉的真实首发（${(s.tlDisplaced || []).length} 条）`);
+  } catch (e: any) { bad.push("换页场景崩了：" + ((e && e.stack) || e)); }
+  return bad;
+}
+/* 真实时间线探针：跑几局完整生涯，逐年快照世界（队数、LPL 真实名单占比、编出来的新秀占比、T1、你的队），外加时间线事件 */
+function tlProbe() {
+  const out: any[] = [];
+  for (const [seed, strong] of [[1001, false], [1002, true], [1003, false]] as any) {
+    const snaps: any[] = []; let lastSi = -1, evSeen = 0; const tlEv: string[] = [];
+    const r = playOne({ seed, strong, encore: true, hook: (S: any) => {
+      const ev = S.events || [];
+      while (evSeen < ev.length) {
+        const e = ev[evSeen++] || {};
+        // 时间线 / 赛区事件，外加 LDL 停办上周报头条、退役由青训储备接班（2026-09-11）
+        if (e.tag === "时间线" || e.tag === "赛区" || (e.tag === "周报" && /LDL/.test(e.text || "")) || (e.tag === "退役" && /青训储备/.test(e.text || "")))
+          tlEv.push(`S${12 + (S.si || 0)} [${e.tag}] ${String(e.text || "").replace(/<[^>]+>/g, "")}`);
+      }
+      if (!S.world || S.si === lastSi) return;
+      lastSi = S.si;
+      const y = A.SEASONS[S.si].y, pg = A.TL_PAGES[Math.min(Math.max(y, 2023), 2026)];
+      const pageIds = new Set<string>();
+      if (pg && y >= 2023) Object.values(pg.leagues).forEach((ts: any) => ts.forEach((t: any) => t.p.forEach((a: any) => pageIds.add(a[0]))));
+      const lpl = (S.world.LPL || []).flatMap((t: any) => t.players.filter((p: any) => !p.me));
+      const mine = S.team ? (Object.values(S.world).flat() as any[]).find((t: any) => t.name === S.team) : null;
+      snaps.push({ si: S.si, y, step: S.step, team: S.team || "-", HL: S.homeLeague || "-", age: S.worldAge,
+        counts: Object.fromEntries(Object.keys(S.world).map(k => [k, S.world[k].length])),
+        lplReal: (y >= 2023 && y <= 2026) ? +(lpl.filter((p: any) => pageIds.has(p.id)).length / Math.max(1, lpl.length)).toFixed(2) : "-",
+        invented: +(lpl.filter((p: any) => p.rookie && !p.prospect).length / Math.max(1, lpl.length)).toFixed(2),
+        t1: ((S.world.LCK || []).find((t: any) => t.name === "T1") || { players: [] }).players.map((p: any) => p.id).join("/"),
+        mine: mine ? mine.players.map((p: any) => p.me ? "★你" : p.id).join("/") : "-" });
+    }});
+    out.push({ seed, strong, ending: r.ending, titles: r.titles, snaps, tlEv: tlEv.slice(0, 40),
+      acad: (() => { const S2 = A.S(), lpl = ((S2.world && S2.world.LPL) || []).flatMap((t: any) => t.players);
+        return { acadYear: S2.tlAcadYear || null, left: (S2.tlAcad || []).length,
+          promotedInLPL: lpl.filter((p: any) => p && p.fromAcad).map((p: any) => `${p.id}(${p.age})`),
+          prospectsInLPL: lpl.filter((p: any) => p && p.prospect).length, inventedInLPL: lpl.filter((p: any) => p && p.rookie && !p.prospect && !p.fromAcad).length }; })(),
+      rewrite: A.rewriteRows().map((x: any) => `${x.ev}：本作 ${x.game} · 真实 ${x.real}${x.same ? "（一样）" : ""}`),
+      displaced: (A.S().tlDisplaced || []).map((x: any) => `S${12 + x.si} ${x.team} ${x.id}`) });
+  }
+  console.log(JSON.stringify(out, null, 1));
+}
+if (isMain && process.argv.includes("--tl-probe")) {
+  tlProbe();
+} else if (isMain && process.argv.includes("--batch")) {
   const i = process.argv.indexOf("--batch");
   batch(parseInt(process.argv[i + 1] || "20", 10) || 20, process.argv.includes("--encore"), process.argv.includes("--strong"), process.argv.includes("--loyal"));   // --encore：再战；--strong：强玩家；--loyal：夺冠后不走
 } else if (isMain) {
@@ -1607,6 +1746,9 @@ if (isMain && process.argv.includes("--batch")) {
   const unit = unitChecks();
   if (unit.length) { console.error("单元检查失败：\n - " + unit.join("\n - ")); process.exit(1); }
   console.log("单元检查通过：导览几何 · 存档消毒");
+  { const tb = timelineChecks();
+    if (tb.length) { console.error("真实时间线自检不通过：\n - " + tb.join("\n - ")); process.exit(1); }
+    console.log("真实时间线自检通过：2022–2027 队数与赛区结构 · 名单去重 · 数值范围 · 锚定均值 · T1/NIP 名单"); }
   // 会换掉整份存档：放在单元检查之后、下面那局完整生涯（screenCreate 从头开）之前
   { const sr = streetsReturnChecks();
     if (sr.length) { console.error("重返职业自检不通过：\n  " + sr.join("\n  ")); process.exit(1); }
@@ -1693,6 +1835,12 @@ const BALL_WORDS = ["球队", "球员", "球迷", "球星", "球场", "赢球", 
    这个前提一旦变了（谁给别的赛区也做了二队），下面 LDL_ONLY_STILL_TRUE 那条会先红。 */
 const LDL_ONLY = /^(?:(?!\b(LPL|LCK|LEC|LCS|PCS|VCS|LJL)\b).)*$/s;
 const LEAGUE_OK: Record<string, string> = {
+  '2024: "LCS 缩编到 8 支队伍。",':
+    "真实时间线的年度赛区改制新闻（timeline.ts 的 TL_STRUCT_NEWS）：写的是那一年真实发生的事，对所有赛区的玩家都成立",
+  '2025: "赛区大改制：LCS 改为 <b>LTA 北区</b>，CBLOL 与 LLA 合并为 <b>LTA 南区</b>；PCS、VCS、LJL 的头部队伍组成新赛区 <b>LCP</b>；LPL 缩编到 16 支队伍。",':
+    "同上：2025 年真实赛区大改制",
+  '2026: "LTA 拆回 <b>LCS</b> 与 <b>CBLOL</b>；LPL 缩编到 14 支队伍。"':
+    "同上：2026 年真实赛区调整",
   '{id:"beatlck", n:"抗韩成功", d:"在国际赛场上击败一支 LCK 队伍——前提是你自己不在 LCK。", tag:"战绩",':
     "cond 已锁 myLeague!==LCK",
   'd:"国际赛场上把另一支 LPL 队伍送回了家。",':
@@ -1780,7 +1928,8 @@ const LEAGUE_OK: Record<string, string> = {
      谁哪天给别的赛区也做了二队，这里先红——那时上面那些「下放 LDL」的话就得改。 */
   {
     const lgs = Object.keys(A.S().world || {});
-    const known = ["LPL", "LCK", "LEC", "LCS", "PCS", "VCS", "LJL", "LLA", "CBLOL", "LCO", "TCL", "LDL"];
+    // LCP：真实时间线 2025 年起的一级赛区（PCS/VCS/LJL 头部），不是次级联赛，LDL 的结构性豁免照样成立
+    const known = ["LPL", "LCK", "LEC", "LCS", "PCS", "VCS", "LJL", "LLA", "CBLOL", "LCO", "TCL", "LDL", "LCP"];
     const extra = lgs.filter(l => !known.includes(l));
     if (extra.length) {
       console.error("赛区自检：世界里多出了没登记的联赛 " + extra.join(" / ")

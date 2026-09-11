@@ -172,6 +172,7 @@ export function doList(id){
     const base=(S.baseline&&S.baseline[lg])||50;
     const nr=makeRookie(t.pos,base-3,S.homeLeague||"LPL");
     team.players=team.players.map(q=>q===t?nr:q);
+    if(S.tl){ S.tlOut=S.tlOut||{}; S.tlOut[t.id]=S.si; }   // 真实时间线：你亲手卖掉的人，明年真实名单里也不回你的队
     addStaff("coach",-4);                        // 教练替他惋惜
     addTrustAll(-6); relDrift(false);
     pushEvent(`你向教练组提出换掉 <b>${t.id}</b>，成功了。<br>
@@ -256,6 +257,8 @@ export function doSign(id){
     if(src) src.players=src.players.map(q=>q===x.p?makeRookie(x.p.pos,
       ((S.baseline&&S.baseline[x.lg])||50)-4,leagueOf(src.name)):q);
     team.players=team.players.map(q=>q===out?Object.assign({},x.p):q);
+    // 真实时间线：你点名签来的人留在你的队（别的队的真实名单里不再有他）；给他腾位置的人不回来
+    if(S.tl){ S.tlIn=S.tlIn||{}; S.tlIn[x.p.id]={team:S.team,pos:x.p.pos,si:S.si}; S.tlOut=S.tlOut||{}; if(out) S.tlOut[out.id]=S.si; }
     addStaff("mgr",-3);
     pushEvent(`俱乐部按你的要求把 <b>${x.p.id}</b>${x.p.cn?`（${x.p.cn}）`:""} 签了下来，
       ${out.id} 腾出位置。<br><b>这是你的话语权换来的——现在成绩得对得起它。</b>`,"big","话语权");

@@ -5,6 +5,7 @@ import { DATA } from "./data";
 import { FAN_TIERS, MID_WEEKS, SEASONS, SPREAD, breakthrough, clamp, enterBreak, enterPrep, isBenched, power, pushEvent, q1, queueBreakNews, render, champCoreStart } from "./main";
 import { rnd } from "./rng";
 import { addRingTitle, setBreakAgenda } from "./rotation";
+import { realNote, tlCanon, tlIntlMinors, tlMajors, tlOn } from "./timeline";
 import { PRIZE_MSI, PRIZE_W, addMoney } from "./shop";
 import { S, onEra } from "./state";
 import { eraDef } from "./eras";
@@ -19,6 +20,9 @@ import { eraDef } from "./eras";
 
 export const MAJOR = (DATA.major) || ["LPL","LCK","LEC","LCS"];
 export const MINOR = (DATA.minor) || [];
+/* 真实时间线：大赛区 / 有国际赛名额的小赛区按真实年份变（2025 年 LCP、LTA 南区）；老档就是上面两张表 */
+export const majors = () => tlOn() ? tlMajors() : MAJOR;
+export const minors = () => tlOn() ? tlIntlMinors() : MINOR;
 
 export function findTeam(name){
   if(!S||!S.world) return null;
@@ -35,7 +39,7 @@ export function leagueOf(name){
 }
 export function rankOf(lg){
   const st=S.standings[lg];
-  if(!st) return S.world[lg].map(t=>({n:t.name,w:0,l:0,p:0}));
+  if(!st) return (S.world[lg]||[]).map(t=>({n:t.name,w:0,l:0,p:0}));
   return Object.entries<any>(st).map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0}))
     .sort((a,b)=>b.p-a.p||b.w-a.w);
 }
@@ -48,7 +52,7 @@ export function simBo(a,b,need){ let x=0,y=0,p=winProb(a,b); while(x<need&&y<nee
    世界线张力闸：当年史实代表在库里且张力没起来，就按史实（GAM、DFM 这些） */
 export function minorChampion(lg){
   try{
-    const WC=(WORLDS_CANON[S.si])?WORLDS_CANON[S.si][lg]:null;
+    const WC=(tlCanon(WORLDS_CANON,S.si,"worlds"))?tlCanon(WORLDS_CANON,S.si,"worlds")[lg]:null;
     if(WC&&WC.length&&(S.world[lg]||[]).some(t=>t.name===WC[0])&&rnd()>=wlOf(lg)) return WC[0];
   }catch(e){}
   return S.world[lg].slice().sort((a,b)=>power(b.players)-power(a.players))[0].name;
@@ -103,13 +107,13 @@ export function buildWorldsField(playerResult,cfg){
   cfg=cfg||{playin:{teams:8,take:4}};
   const HL=S.homeLeague||"LPL";
   const seeds={};
-  MAJOR.forEach(lg=>{ seeds[lg]=majorStandings(lg); });
+  majors().forEach(lg=>{ seeds[lg]=majorStandings(lg); });
   // 世界线张力闸：逐赛区按 1−wl 概率用史实出线名单（映射到库内存在的队，
   // 缺席位由模拟排名补齐）；你自己打出来的名额在下面的 mySlot 逻辑里，永远真实
   try{
-    if(WORLDS_CANON[S.si]){
-      MAJOR.forEach(lg=>{
-        const hist=(WORLDS_CANON[S.si][lg]||[])
+    if(tlCanon(WORLDS_CANON,S.si,"worlds")){
+      majors().forEach(lg=>{
+        const hist=(tlCanon(WORLDS_CANON,S.si,"worlds")[lg]||[])
           .filter(n=>n!==S.team&&(S.world[lg]||[]).some(t=>t.name===n));
         if(hist.length&&rnd()>=wlOf(lg))
           seeds[lg]=hist.concat((seeds[lg]||[]).filter(n=>!hist.includes(n)));
@@ -131,23 +135,23 @@ export function buildWorldsField(playerResult,cfg){
      没有 playin 配置＝这一年没有入围赛，16 席全是直进（2016 就是这样，纪元模式要用）。 */
   const PI=cfg.playin||null;
   const takeN=PI?PI.take:0, directN=16-takeN;
-  const perMajor=Math.floor(directN/MAJOR.length);      // 每个大赛区直进几支
+  const perMajor=Math.floor(directN/majors().length);      // 每个大赛区直进几支（真实时间线下按当年的大赛区）
   const direct=[], playin=[];
-  MAJOR.forEach(lg=>{
+  majors().forEach(lg=>{
     direct.push(...seeds[lg].slice(0,perMajor));
     if(seeds[lg][perMajor]) playin.push(seeds[lg][perMajor]);
   });
-  const minors=MINOR.filter(lg=>S.world[lg]&&S.world[lg].length)
+  const minorCh=minors().filter(lg=>S.world[lg]&&S.world[lg].length)
     .map(lg=>minorChampion(lg)).sort((a,b)=>pw(b)-pw(a));
   // 直进席还差的，由最强的小赛区冠军补上
-  while(direct.length<directN&&minors.length) direct.push(minors.shift());
+  while(direct.length<directN&&minorCh.length) direct.push(minorCh.shift());
   if(!PI){
     // 无入围赛：本来要去打入围的那几支，直接按实力补进正赛，凑满 16 席
-    const rest=playin.concat(minors).sort((a,b)=>pw(b)-pw(a));
+    const rest=playin.concat(minorCh).sort((a,b)=>pw(b)-pw(a));
     while(direct.length<directN&&rest.length) direct.push(rest.shift());
     return {direct:direct.slice(0,directN),playin:[],seeds};
   }
-  playin.push(...minors.slice(0,Math.max(0,PI.teams-playin.length)));
+  playin.push(...minorCh.slice(0,Math.max(0,PI.teams-playin.length)));
   return {direct:direct.slice(0,directN),playin:playin.slice(0,PI.teams),seeds};
 }
 
@@ -188,7 +192,7 @@ export function startIntl(type,playerResult){
     return benchedIntl(type,playerResult);
   }
   if(type==="msi"){
-    const seeds={}; MAJOR.forEach(lg=>seeds[lg]=majorStandings(lg));
+    const seeds={}; majors().forEach(lg=>seeds[lg]=majorStandings(lg));
     /* 玩家不一定在四大赛区。开放「小赛区当低谷退路」之后，
        PCS/VCS/LJL 的联赛冠军真的会走到这一步，而 seeds[HL] 那时候是
        undefined，下一行的 .filter 直接把整局打崩（实测 300 局命中 1 次）。
@@ -202,9 +206,9 @@ export function startIntl(type,playerResult){
        2023 起 LPL/LCK 才各拿两个名额。 */
     // 世界线张力闸：MSI 名单逐赛区按 1−wl 概率用史实（你打出来的名额永远真实）
     try{
-      if(MSI_CANON[S.si]){
-        Object.keys(MSI_CANON[S.si]).forEach(lg=>{
-          const hist=(MSI_CANON[S.si][lg]||[])
+      if(tlCanon(MSI_CANON,S.si,"msi")){
+        Object.keys(tlCanon(MSI_CANON,S.si,"msi")).forEach(lg=>{
+          const hist=(tlCanon(MSI_CANON,S.si,"msi")[lg]||[])
             .filter(n=>n!==S.team&&(S.world[lg]||[]).some(t=>t.name===n));
           if(hist.length&&rnd()>=wlOf(lg))
             seeds[lg]=hist.concat((seeds[lg]||[]).filter(n=>!hist.includes(n)));
@@ -213,19 +217,19 @@ export function startIntl(type,playerResult){
     }catch(e){}
     const twoSeed = (F.msi&&F.msi.mode)!=="groups";      // 2022 那套＝每赛区一支
     const field=[];
-    MAJOR.forEach(lg=>{
+    majors().forEach(lg=>{
       const n = twoSeed && (lg==="LPL"||lg==="LCK") ? 2 : 1;
       field.push(...(seeds[lg]||[]).slice(0,n));
     });
     // 小赛区冠军也有票——MSI 本来就是各赛区冠军的舞台。
     // 2022 的 11 队正好是「四大赛区各一 + 七个小赛区各一」。
     if(!twoSeed){
-      (MINOR||[]).forEach(lg=>{
+      (minors()||[]).forEach(lg=>{
         if(!S.world[lg]||!S.world[lg].length) return;
         let cand=null;
         // 小赛区代表也过张力闸：史实代表在库里且没被扰动就按史实
         try{
-          const h=(MSI_CANON[S.si])?(MSI_CANON[S.si][lg]||[]):[];
+          const h=(tlCanon(MSI_CANON,S.si,"msi"))?(tlCanon(MSI_CANON,S.si,"msi")[lg]||[]):[];
           if(h.length&&h[0]!==S.team&&(S.world[lg]||[]).some(t=>t.name===h[0])&&rnd()>=wlOf(lg)) cand=h[0];
         }catch(e){}
         if(!cand){ const r=majorStandings(lg); cand=r&&r[0]; }
@@ -547,7 +551,7 @@ export function intlChampEvent(name,champ){
      是站在 LPL 观众那一侧写的。效力 LCK 的人看自家赛区夺冠，不是坏消息。 */
   const mine=(S.career&&S.homeLeague)||"LPL";
   const lck=leagueOf(champ)==="LCK", own=leagueOf(champ)===mine;
-  return {text:`${name}落幕，<b>${champ}</b> 捧起奖杯。${
+  return {text:`${name}落幕，<b>${champ}</b> 捧起奖杯。${realNote(name==="MSI"?"msi":"worlds",S.si,champ)}${
       own?"你所在的赛区拿下了这座奖杯——只是捧杯的人不是你。"
         :lck?"LCK 又一次站在了最高处。":"你在屏幕外看完了颁奖。"}`,
     tone:(lck&&!own)?"bad":"info", tag:name};
@@ -560,21 +564,21 @@ export function benchedIntl(type,playerResult){
   const name=type==="msi"?"MSI":"世界赛";
   let field,stage;
   if(type==="msi"){
-    const seeds={}; MAJOR.forEach(lg=>seeds[lg]=majorStandings(lg));
+    const seeds={}; majors().forEach(lg=>seeds[lg]=majorStandings(lg));
     const HL=S.homeLeague||"LPL";
     if(!seeds[HL]) seeds[HL]=majorStandings(HL)||[];
     if(playerResult==="champion") seeds[HL]=[S.team].concat(seeds[HL].filter(n=>n!==S.team));
     try{
-      if(MSI_CANON[S.si]){
-        Object.keys(MSI_CANON[S.si]).forEach(lg=>{
-          const hist=(MSI_CANON[S.si][lg]||[]).filter(n=>n!==S.team&&(S.world[lg]||[]).some(t=>t.name===n));
+      if(tlCanon(MSI_CANON,S.si,"msi")){
+        Object.keys(tlCanon(MSI_CANON,S.si,"msi")).forEach(lg=>{
+          const hist=(tlCanon(MSI_CANON,S.si,"msi")[lg]||[]).filter(n=>n!==S.team&&(S.world[lg]||[]).some(t=>t.name===n));
           if(hist.length&&rnd()>=wlOf(lg)&&seeds[lg]&&lg!==HL) seeds[lg]=hist.concat(seeds[lg].filter(n=>!hist.includes(n)));
         });
       }
     }catch(e){}
     const twoSeed=(F.msi&&F.msi.mode)!=="groups";
-    field=[]; MAJOR.forEach(lg=>{ const n=twoSeed&&(lg==="LPL"||lg==="LCK")?2:1; field.push(...(seeds[lg]||[]).slice(0,n)); });
-    if(!twoSeed) (MINOR||[]).forEach(lg=>{ if(!S.world[lg]||!S.world[lg].length) return;
+    field=[]; majors().forEach(lg=>{ const n=twoSeed&&(lg==="LPL"||lg==="LCK")?2:1; field.push(...(seeds[lg]||[]).slice(0,n)); });
+    if(!twoSeed) (minors()||[]).forEach(lg=>{ if(!S.world[lg]||!S.world[lg].length) return;
       const r=majorStandings(lg); if(r&&r[0]&&field.indexOf(r[0])<0) field.push(r[0]); });
     if(field.indexOf(S.team)<0) field.push(S.team);
     stage=F.msi.mode==="groups"?"groups":"knockout";
@@ -631,19 +635,19 @@ export function spectateIntl(type){
   let field,stage;
   if(spec){ field=spec.field; stage=spec.stage; }
   else if(type==="msi"){
-    const seeds={}; MAJOR.forEach(lg=>seeds[lg]=majorStandings(lg));
+    const seeds={}; majors().forEach(lg=>seeds[lg]=majorStandings(lg));
     // 围观的 MSI 也过世界线张力闸（和亲历版同一套史实）
     try{
-      if(MSI_CANON[S.si]){
-        MAJOR.forEach(lg=>{
-          const hist=(MSI_CANON[S.si][lg]||[])
+      if(tlCanon(MSI_CANON,S.si,"msi")){
+        majors().forEach(lg=>{
+          const hist=(tlCanon(MSI_CANON,S.si,"msi")[lg]||[])
             .filter(n=>n!==S.team&&(S.world[lg]||[]).some(t=>t.name===n));
           if(hist.length&&rnd()>=wlOf(lg))
             seeds[lg]=hist.concat((seeds[lg]||[]).filter(n=>!hist.includes(n)));
         });
       }
     }catch(e){}
-    field=MAJOR.flatMap(lg=>seeds[lg].slice(0,2));
+    field=majors().flatMap(lg=>(seeds[lg]||[]).slice(0,2));
     stage=F.msi.mode==="groups"?"groups":"knockout";
   }else{
     const cfg=F.worlds;
@@ -817,7 +821,7 @@ export function crownChampion(){
   /* 「至暗时刻的墙」是 LPL 观众的说法：你自己就在 LCK 的时候，
      决赛赢下另一支 LCK 队伍不是砸墙，是内战（玩家实锤 2026-09-09）。 */
   const beatLCK=leagueOf(S.match.oppName)==="LCK"&&(S.homeLeague||"LPL")!=="LCK";
-  pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${name} 冠军！</b>${
+  pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${name} 冠军！</b>${realNote(I.type==="msi"?"msi":"worlds",S.si,S.team)}${
     beatLCK?`决赛击败 LCK 的 ${S.match.oppName}——<b>至暗时刻的墙，被你砸开了一道口子。</b>`:""}`,
     "big",name);
   // 夺冠那一刻的总结弹窗。奖金和突破一直都发（玩家插桩验证过），

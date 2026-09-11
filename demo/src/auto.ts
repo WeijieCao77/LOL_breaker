@@ -203,6 +203,7 @@ export function autoDaily(){
     return true;
   }
   if(S.rndResult){ S.rndResult=null; render(); return true; }
+  if(S.tlPop){ S.tlPop=null; render(); return true; }   // 赛区大事弹窗（LDL 停办）：内容在大事记里
   if(S.locker){
     const ev=S.locker.ev;
     const i=autoPickOption(ev.a, ev.rec);
