@@ -102,9 +102,25 @@ export function fmtSpecChecks(): string[] {
 
 export function fmtCareerChecks(playOne: (o: any) => any, A: any): string[] {
   const bad: string[] = [];
-  /* 新档打到 2027 */
-  const r = playOne({ seed: 8801, strong: true, encore: true, noBondTalk: true });
+  /* 新档打到 2027。一路上每隔几步把界面各页真的算一遍（批测机器人不画「世界」标签页，新的积分榜 / 对阵树只有这里跑得到） */
+  const viewErr: string[] = [];
+  let views = 0;
+  const probe = (S0: any, A0: any, g: number) => {
+    if (g % 13 !== 0 || !S0.career || !S0.fmt) return;
+    const tab = S0.tab;
+    const v = (name: string, fn: () => any) => { try { fn(); views++; } catch (e: any) { if (viewErr.length < 8) viewErr.push(`${name}（${S0.step}）：${e && e.message}`); } };
+    try {
+      if (S0.step === "season") { v("本周页", () => A0.viewSeason()); ["world", "me", "team", "news"].forEach(t => v(`标签页 ${t}`, () => A0.tabContent(t))); v("积分榜", () => A0.standingsCard()); v("对阵树", () => A0.bracketCard()); }
+      if (S0.step === "match" && S0.match) v("比赛页", () => A0.viewMatch());
+      if (S0.step === "prep" && S0.prep) v("备战页", () => A0.viewPrep());
+      if (S0.step === "offseason") { v("间歇页", () => A0.viewOffseason()); v("对阵树", () => A0.bracketCard()); }
+      v("时钟", () => A0.nowLabel());
+    } finally { S0.tab = tab; }
+  };
+  const r = playOne({ seed: 8801, strong: true, encore: true, noBondTalk: true, hook: probe });
   const S = A.S();
+  if (!views) bad.push("真实赛制：界面渲染探针一次都没跑到");
+  if (viewErr.length) bad.push("真实赛制界面渲染出错：" + viewErr.join("；"));
   if (!r.ok) bad.push("真实赛制：整局没打完");
   if (!S.tl) bad.push("真实赛制：新档没开真实时间线");
   const played = (si: number) => ((S.career && S.career.log) || []).some((x: any) => x.si === si && x.seg);
