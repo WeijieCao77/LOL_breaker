@@ -189,7 +189,7 @@ export function hallSeedFrom(s, at?: number): boolean {
     const C = s.career || s.careerBak;
     if (C && !h.pos[s.pos] && hallAddFact(h, "pos", s.pos, { at: when, who, s: "" })) ch = true;
     (C && Array.isArray(C.titles) ? C.titles : []).forEach(t => {
-      const m = /^(S\d{1,2}) ([A-Z]{2,6})(春季赛|夏季赛)$/.exec(String(t));
+      const m = /^(S\d{1,2}) ([A-Z]{2,6})(春季赛|夏季赛|冬季赛|第[一二三]赛段|季后赛|赛季总决赛| Cup| Versus| Lock In| Lock-In)$/.exec(String(t));
       if (m && !h.lg[m[2]] && hallAddFact(h, "lg", m[2], { at: when, who, s: m[1] })) ch = true;
     });
     if (ch) hallWrite(h);

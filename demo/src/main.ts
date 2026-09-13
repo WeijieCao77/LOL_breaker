@@ -11,7 +11,9 @@ import { formCard, formMul, formNews, formTier, myForm, myFormMul, rollForm, rol
 import { hallBadge, hallCareerEnd, newSaveId } from "./hall";
 import { awardsText, btkTrialCheck, campCard, cerApply, cerBind, cerCard, cerFinalNode, cerFinalPw, cerRecMul, cerStart, isFinalMatch, mediaTiltMul, mediaToneNow, meetCard, mgLive, verCerAdj } from "./cer";
 import { injuryCard, injuryHit, injuryTick, injuryTrainMul, riskHint, rollInjury } from "./injury";
-import { brOthersText, brStep, findTeam, intlAdvance, intlChampCard, intlStageName, leagueOf, majorStandings, spectateIntl, startIntl, wlAdd, wlInfluence, wlRelax, worldsSlot } from "./intl";
+import { brOthersText, brStep, findTeam, intlAdvance, intlChampCard, intlName, intlStageName, leagueOf, majorStandings, spectateIntl, startIntl, wlAdd, wlInfluence, wlRelax, worldsSlot } from "./intl";
+import { fmtOn, fmtQualified } from "./fmtctl";
+import { tlBenchWeek, tlBracketCard, tlNextSplitName, tlNextWeek, tlNoMatchCard, tlPlayLabel, tlResumeSeg, tlSeasonStart, tlStageHead, tlStandingsCard, tlWeekNote } from "./season_tl";
 import { aiMarketWindow } from "./market";
 import { NODES_MORE } from "./nodes";
 import { bgEffects, bgEffectsWords, bgOf, drawBackgrounds } from "./origins";
@@ -130,6 +132,13 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260913a", at:"2026-09-13", items:[
+    "<b>真实赛制</b>（玩家实锤：2026 年 LPL 是登峰 / 坚毅 / 涅槃 + 骑士之路，游戏里还是春夏两段）：开了真实时间线的新档，2022–2026 年四大赛区都按当年的真实赛制打——LPL 2022–2024 春夏两段、十队冒泡赛，2024 夏季赛起分登峰组 / 涅槃组（涅槃组垫底会提前结束全年），2025、2026 年三段制、骑士之路、八队双败；LCK 2025 起是 LCK Cup、第 1–2 轮、Road to MSI、Legend / Rise 分组；LEC 冬春夏三段和赛季总决赛、2026 年的 LEC Versus；LCS 的 Lock In、2025 年的 LTA 北区、2026 年的 Lock-In 瑞士轮。每个赛段单独决出冠军，积分榜按真实分组显示，淘汰赛有完整对阵树，本周卡上写着这个赛段的赛制",
+    "<b>First Stand</b>（2025 起）：第一个赛段打完就是 First Stand，拿到名额就出征（单败淘汰、BO5），打完回联赛，中间不开注册窗；没去的话在训练室里看完。MSI、世界赛的名额也按当年的真实规则：赛段冠军 / 决赛两队 / 冠军积分 / 地区资格赛，MSI 分直进和入围赛，2024 起 MSI 冠军赛区和第二好的赛区各多一个世界赛名额",
+    "<b>比赛节奏按真实比赛周</b>：一周打真实那一周的比赛——多数是两个 BO3，BO1 为主的赛段一周三场，淘汰赛 BO5。每周第一场你亲自打，其余默认自动打完：战绩照记，个人收益（人气、出场费）打折；想每场都亲自打，勾本周卡上的「每场都亲自打」。合同、工资、注册窗照旧按「上半年到 MSI 结束、下半年到世界赛结束」算，年薪总额不变；联赛奖金按一年有几个冠军赛段摊薄，全年总量和原来持平",
+    "<b>2027 起赛制改回 2025 年的三段制</b>（真实历史还没有 2027 赛制，作者定的规则）：LPL 取消登峰组与涅槃组、赛季中途不再淘汰，第二、三赛段 5–12 名仍打骑士之路；LCK 下半年恢复第 3–5 轮；LEC 取消 Versus、恢复冬季赛；LCS 维持 2026 赛制。2027 年开赛时发公告（大事记、弹窗、周报头条）；国际赛规模沿用 2026",
+    "只对开了真实时间线的新档生效，老档照旧春夏两段；已经在真实时间线里打到一半的档，从下一年开赛起切到真实赛制"
+  ]},
   {v:"v20260911e", at:"2026-09-11", items:[
     "<b>卫冕压力按两边的冠军数抵消</b>（作者拍板）：原来只看你——本赛季和上赛季你每拿一座冠军，所有对手打你都更强。现在也看对面：对面在这一局里近两个赛季也拿过冠军（联赛 / MSI / 世界赛，和你同一把尺），就按两边的冠军数相抵——你 2 座、对面 2 座，没有卫冕压力；你 3 座、对面 2 座，按 1 座算。对面战力旁边写着「卫冕压力 +X（你 3 : 2 对面）」，两边相抵时写「卫冕压力抵消」，赛程表里每支对手各算各的",
     "顺带更正上一版的写法：界面上的战力都乘了显示系数，所以卫冕压力每座冠军显示 <b>+1.7</b>、最多 <b>+4.7</b>（上一版更新日志写的「+1.5、最多 +4」是内部数值，界面上看到的一直是 +1.7 / +3.5 / +4.7）"
@@ -1768,6 +1777,7 @@ export function yearTotal(){
 }
 export function yearWeek(){
   if(S.step==="pre"||S.step==="offer") return S.pre?S.pre.week:1;
+  if(fmtOn()&&S.step!=="end") return Math.max(1,S.fmt.yw||1);   // 真实赛制：各赛区一年长短不一，直接数周
   const base=S.yearBase||0;
   if(S.step==="end")       return yearTotal();
   if(S.step==="offseason"){
@@ -1791,7 +1801,7 @@ export function nowPhase(){
     return {tag:sea.tag,phase:S.careerBak?"自由身":"赛季前",detail:`${YW} · 窗口剩 ${Math.max(0,PRE_YEAR-(S.pre?S.pre.week:1))} 周`,
             urgent:S.pre&&S.pre.week>PRE_YEAR-4};
   if(S.intl){
-    const n=S.intl.type==="msi"?"MSI":"世界赛";
+    const n=intlName(S.intl.type);
     const st=S.intl.stage==="playin"?"入围赛":S.intl.stage==="groups"?"小组赛":
              S.intl.stage==="swiss"?"瑞士轮":
              (S.intl.knockRound>=3?"决赛":S.intl.knockRound===2?"半决赛":"八强");
@@ -1803,6 +1813,7 @@ export function nowPhase(){
   if(S.step==="offseason") return {tag:sea.tag,phase:(S.off&&S.off.label)||"休赛期",
     detail:S.off?`${YW} · 第 ${S.off.week}/${S.off.weeks} 周`:`${YW} · 赛季结算`,urgent:false};
   if(S.step==="end") return {tag:sea.tag,phase:"生涯结束",detail:"",urgent:false};
+  if(fmtOn()) return {tag:sea.tag,phase:tlStageHead(),detail:`${YW} · 赛段第 ${S.week} 周`,urgent:false};
   // 写清楚这是常规赛——「春季赛 第 3/7 周」看不出它和季后赛的区别
   return {tag:sea.tag,phase:SPLITS[S.split||0]+"常规赛",detail:`${YW} · 第 ${S.week}/${WEEKS} 周`,
           urgent:S.week>=WEEKS-1};
@@ -2929,6 +2940,8 @@ export function buildFixtures(){
   });
 }
 export function startSeason(first,split?){
+  // 真实时间线新档：真实赛制（season_tl.ts）。已经在老流程里打到一半的真实时间线档，等到下一年开赛才切过去
+  if(S.tl&&(S.fmt||split===undefined||split===0)){ tlSeasonStart(first,split); return; }
   const _newYear=(split===undefined||split===0);
   S.split=(split===undefined)?0:split;
   if(_newYear&&!first) rankSeasonReset();   // 天梯赛季重置：一年一次，春季赛开赛时
@@ -2978,6 +2991,8 @@ export function startSeason(first,split?){
 
 /* 赛段里换了队：剩下的常规赛按新队在轮次表里的对手打（转会 / 升队都用） */
 export function rebuildMySchedule(){
+  // 真实赛制：赛程按队名从对阵表里现取，换了队只要把挂着的那一场摘掉
+  if(fmtOn()){ const c=S.fmt.cur; if(c&&c.a!==S.team&&c.b!==S.team){ S.fmt.cur=null; if(S.schedule) S.schedule[S.week-1]=null; } return; }
   try{
     const HL=S.homeLeague||"LPL";
     if(!S.fixtures||!S.fixtures[HL]||!S.world[HL]) return;
@@ -3817,7 +3832,7 @@ export function viewSeason(){
   <div class="wk-next">${nextMatchCard()}</div>
   <div class="wk-main">
   <div class="card">
-    <h2>${sea.tag} ${SPLITS[S.split||0]} · 第 ${S.week}/${WEEKS} 周<em>剩余行动点 ${S.ap}${" · "+txPhaseName()}</em></h2>
+    <h2>${sea.tag} ${fmtOn()?`${tlStageHead()} · 第 ${S.week} 周`:`${SPLITS[S.split||0]} · 第 ${S.week}/${WEEKS} 周`}<em>剩余行动点 ${S.ap}${" · "+txPhaseName()}</em></h2>
     ${autoBar()}
     ${questCard()}
     ${weekDiary()}
@@ -3847,13 +3862,14 @@ export function viewSeason(){
     ${benched&&true?scrimPanel():""}
     ${opp&&uiNum()?`<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(oppMatchPw(opp.players)).toFixed(1)}${defendPressure(oppName)?`，卫冕压力 +${pwShow(defendPressure(oppName)).toFixed(1)}`:""}）
       vs 你队 ${pwShow(power(myRoster(),S.fatigue,sea.fav)).toFixed(1)}</p>`:""}
+    ${fmtOn()?tlWeekNote():""}
     <!-- 出口条必须是这张卡的最后一个孩子：宽屏上它是 sticky 的（theme.css .row.dock），
          而 sticky 只压得住排在它后面的兄弟。原来它排在「替补训练赛」和「本周对手」前面，
          卡片一长过一屏就把这两块糊住了（玩家反馈 2026-09-09「互相遮挡」）。 -->
     <div class="row dock">
       <span class="dock-ap">行动点 <b>${S.ap}</b></span>
       <button class="btn primary" id="play" ${S.ap>0?'disabled':''}>
-        ${S.ap>0?`还剩 ${S.ap} 个行动点`:(benched?`替补席观战 · ${SPLITS[S.split||0]}第 ${S.week}/${WEEKS} 周 →`:`打 ${SPLITS[S.split||0]}第 ${S.week}/${WEEKS} 周 · vs ${oppName} →`)}</button>
+        ${S.ap>0?`还剩 ${S.ap} 个行动点`:fmtOn()?tlPlayLabel(benched,oppName):(benched?`替补席观战 · ${SPLITS[S.split||0]}第 ${S.week}/${WEEKS} 周 →`:`打 ${SPLITS[S.split||0]}第 ${S.week}/${WEEKS} 周 · vs ${oppName} →`)}</button>
       ${quickBtn()}
       <button class="btn ghost sm" id="auto">自动推进到下一件事</button>
     </div>
@@ -4031,6 +4047,11 @@ export const NODES=[
 ];
 
 export function startMatch(bo?,oppName?){
+  // 真实赛制：这一周轮到你的那一场（BO1 / BO3 / BO5 照赛制）；这一轮没有你的比赛就直接推进
+  if(fmtOn()&&!S.intl&&oppName===undefined){
+    const c=S.fmt.cur; if(!c){ nextWeek(); return; }
+    oppName=c.a===S.team?c.b:c.a; bo=(c.bo+1)/2;
+  }
   const on=oppName||S.schedule[S.week-1];
   let opp=findTeam(on);
   /* 赛程里的队名在当前世界里找不到，findTeam 就返回 null——而 m.opp.players
@@ -4416,6 +4437,7 @@ export function simWorld(){
   // 国际赛 / 季后赛期间联赛停摆——原来每打一场国际赛都替联赛多模拟一周，
   // 世界赛期间冒出「TT 爆冷击败 EDG」还进了大事记（玩家实锤：TT 根本没来世界赛）
   if(S.intl||S.playoff) return;
+  if(fmtOn()){ aiTeamsTrain(); return; }   // 真实赛制：联赛对阵由赛历控制器按周推进（fmtctl.ts），这里只让 AI 队照常练
   aiTeamsTrain();   // 方案 B：AI 队每个常规赛周也在练
   S._upset=null;          // 每周重摇：际遇里说的冷门必须是「这一周真的发生的」
   Object.keys(S.world).forEach(lg=>{
@@ -4478,7 +4500,7 @@ export function viewMatch(){
   _lastSc=scKey;
   const stamp=hit?`<div class="stamp${m.done?' final':''}">${hit.endsWith("win")?(m.done?"胜出":"胜"):(m.done?"落败":"负")}</div>`:"";
   return `<div class="card">
-    <h2>${sea.tag} ${S.intl?intlStageName():S.playoff?"季后赛":"第 "+S.week+" 周"}<em>${
+    <h2>${sea.tag} ${S.intl?intlStageName():S.playoff?"季后赛":fmtOn()?tlStageHead()+" · 第 "+S.week+" 周":"第 "+S.week+" 周"}<em>${
       m.need===1?"单局定胜负":m.need===2?"三局两胜":"五局三胜"}</em></h2>
     <div class="vs ${hit}">
       <div class="side"><div class="nm">${teamLogo(S.team,34)}<br>${S.team}</div><div class="pw mono">战力 ${pwShow(my0).toFixed(1)}<small style="color:var(--ink-3)"> 版本 ${vf>=0?"+":""}${pwShow(vf).toFixed(1)}${fb?` <span style="color:${fb>0?'var(--gold)':'var(--red)'}">决赛夜 ${fb>0?"+":""}${fb}</span>`:""}</small></div></div>
@@ -4523,6 +4545,7 @@ export function isBenched(){
 
 /* 替补席：队伍照打，你不上场也不计个人战绩 */
 export function benchWeek(){
+  if(fmtOn()){ tlBenchWeek(); return; }   // 真实赛制：这周你们的几场都按首发阵容自动打
   S.benchedThisSplit=true;
   const on=S.schedule[S.week-1], sea=SEASONS[S.si];
   const opp=S.world[S.homeLeague||"LPL"].find(t=>t.name===on);
@@ -4553,6 +4576,7 @@ export function benchWeek(){
 export function nextWeek(){
   if(S.intl){ intlAdvance(); return; }
   if(S.playoff){ playoffAdvance(); return; }
+  if(fmtOn()){ tlNextWeek(); return; }    // 真实赛制：本周剩下的几场、别的联赛、赛段与国际赛的交接都在 season_tl.ts
   if(S.week>=WEEKS){
     // 现实里常规赛打完不会第二天就打季后赛，中间有几天到一周的间隔。
     // 这一周也是有用的：调整状态、针对性备战、把体能补回来。
@@ -4813,7 +4837,8 @@ export function prepPanel(){
 
 export function endSeason(result,seed){
   // 「你改写了什么」：先记下这个赛段你所在赛区的冠军（S.playoff 下面会清掉）
-  try{ noteLeagueChamp(result, poCanon().filter(n=>lplRank().slice(0,6).some(r=>r.n===n))); }catch(e){}
+  // 真实赛制：每个赛段的冠军、生涯记录、赛段奖金在赛段打完时就结算过了（season_tl.ts）；这里只剩半年一次的工资 / 合同 / 国际赛
+  if(!fmtOn()) try{ noteLeagueChamp(result, poCanon().filter(n=>lplRank().slice(0,6).some(r=>r.n===n))); }catch(e){}
   payday();
   S.capExp=Math.min(CAP_EXP_MAX,q1((S.capExp||0)+CAP_EXP_STEP));   // 经验顶瓶颈（B4）
   // 世界线张力弛豫：你不在的联赛，每个赛段往史实弹回 ×0.6
@@ -4866,16 +4891,17 @@ export function endSeason(result,seed){
   S.lastSeason={result,seed,lg:S.homeLeague||"LPL",rec:Object.assign({},S.record),
     grow:DIMS.map(d=>({d,g:S.attrs[d]-S.seasonAttr0[d]}))};
   // 生涯轨迹（结局名片的「五年一行」用）：每个赛段记一条——哪支队、第几名、季后赛走到哪
-  S.career.log=(S.career.log||[]).concat([{si:S.si,split:S.split||0,team:S.team,lg:S.homeLeague||"LPL",
+  if(!fmtOn()) S.career.log=(S.career.log||[]).concat([{si:S.si,split:S.split||0,team:S.team,lg:S.homeLeague||"LPL",
     seed,result,w:S.record.w,l:S.record.l}]);
   // 赛事奖金：走到哪一档发哪一档，每次都发（见 shop.js 的 PRIZE_*）
-  {
+  if(!fmtOn()){
     const tbl=(S.homeLeague||"LPL")==="LDL"?PRIZE_PO_LDL:PRIZE_PO;
     const amt=result==="champion"?tbl.champion:result===3?tbl.runner:result===2?tbl.semi:0;
     if(amt){ addMoney("prize",amt);
       pushEvent(`${SPLITS[S.split||0]}季后赛奖金到账 <b>${amt} 万</b>。`,"good","奖金"); }
   }
-  if(result==="champion"&&S.benchedPO){
+  if(fmtOn()){ /* 真实赛制：冠军头衔在赛段打完时记过了 */ }
+  else if(result==="champion"&&S.benchedPO){
     /* 战队夺冠、你全程替补：荣誉是战队的（现实里替补也有戒指，
        但这游戏的生涯表只记你亲手打下的——五人哲学的另一面）。 */
     const sp=SPLITS[S.split||0];
@@ -4897,7 +4923,7 @@ export function endSeason(result,seed){
     pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${sp}冠军。</b>${
       S.split===0?"下一站 MSI。":"世界赛资格到手。"}${realNote("league",S.si,S.team,S.homeLeague||"LPL",S.split||0)}`,"big","联赛冠军");
   }
-  if(result!=="champion") S.career.lgStreak=0;
+  if(!fmtOn()&&result!=="champion") S.career.lgStreak=0;
   checkAch("splitend");
   checkAch("money");
   S.playoff=null;
@@ -4906,6 +4932,17 @@ export function endSeason(result,seed){
   const majorLg = (S.homeLeague||"LPL")!=="LDL";
   // 玩家原话：「打完季后赛直接进世界赛……中间毫无休息」。
   // 现在出征前先过一段集结周：休整、抽签，然后才开打。
+  // 真实赛制：名额按当年真实规则（赛段冠军 / 决赛两队 / 积分 / 地区资格赛），名单在赛历控制器里
+  if(fmtOn()){
+    const E=S.split===0?"msi":"worlds";
+    if(majorLg&&fmtQualified(E)){
+      S.pendingIntl={type:E,result};
+      if(E==="msi") enterBreak("intl",1,"出征 MSI 前 · 集结",`<b>MSI 的名额到手了</b>。出发前还有一周——把状态调到最好。`);
+      else{ enterBreak("intl",2,"世界赛前 · 集结与适应",`<b>世界赛的名额到手了。</b>接下来两周：集结、飞抵主办地、适应场馆——抽签结果出来之前，把自己调整好。`); cerStart("depart"); }
+      return;
+    }
+    spectateIntl(E); return;
+  }
   if(S.split===0){
     // 春季赛结束 -> 冠军去 MSI -> 然后开夏季赛。
     // 没去 MSI 的人也不会看到世界快进：MSI 照打，结果在间歇期里分周揭晓。
@@ -5070,7 +5107,7 @@ export function offNextWeek(){
     if(nx==="intl"){                                      // 集结结束 -> 出征
       const pi=S.pendingIntl; S.pendingIntl=null;
       if(pi){
-        S.afterIntlGo = pi.type==="msi" ? "summer" : "offseason";
+        S.afterIntlGo = pi.type==="msi" ? "summer" : pi.type==="fst" ? "seg" : "offseason";
         if(startIntl(pi.type,pi.result)) return;
         // 名额判定的边缘情况（理论上到不了这里）：退回围观
         S.afterIntlGo=null; spectateIntl(pi.type); return;
@@ -5103,10 +5140,12 @@ export function offNextWeek(){
       }
       startSeason(false,1); return;
     }
+    if(nx==="seg"){ tlResumeSeg(); return; }              // 真实赛制：赛段间歇 / First Stand 之后 -> 下一个赛段
     if(nx==="playoff"){ startPlayoff(); return; }         // 休整结束 -> 季后赛
     finishOffseason(); return;
   }
   S.off.week++;
+  if(S.fmt) S.fmt.yw=(S.fmt.yw||0)+1;   // 真实赛制的全年周数（HUD）
   // MSI 落幕的那一周：季中注册窗开门（续约卡、问询、挂牌都从这一周起）
   if(S.off.wndFrom&&S.off.week>=S.off.wndFrom&&!S.off.wndOpened){
     S.off.wndOpened=true;
@@ -5258,11 +5297,13 @@ export function offPanel(){
       : S.off.next==="poEnd"
       ? `季后赛正在进行——<b>没有你</b>。结果会一轮一轮传过来，你能做的只有把这段时间用在自己身上。`
       : S.off.next==="intl"
-      ? `接下来就是 <b>${S.pendingIntl&&S.pendingIntl.type==="msi"?"MSI":"世界赛"}</b>。抽签在出征时揭晓——这几天把体能和状态调到最好。`
+      ? `接下来就是 <b>${intlName(S.pendingIntl&&S.pendingIntl.type)}</b>。抽签在出征时揭晓——这几天把体能和状态调到最好。`
+      : S.off.next==="seg"
+      ? `接下来是 <b>${SEASONS[S.si].tag} ${tlNextSplitName()}</b>。`
       : S.off.next==="wrap"
       ? `世界赛正在进行。等它落幕，这个赛季才算真的结束。`
       : S.off.next==="summer"
-      ? `接下来是 <b>${SEASONS[S.si].tag} 夏季赛</b>，还是吃 <b>${SEASONS[S.si].dim}</b>。`
+      ? `接下来是 <b>${SEASONS[S.si].tag} ${fmtOn()?tlNextSplitName():"夏季赛"}</b>，还是吃 <b>${SEASONS[S.si].dim}</b>。`
       : (nx?`下赛季是 <b>${nx.tag} ${nx.y}</b>，版本「${nx.ver}」，吃 <b>${nx.dim}</b>——现在补这一项最划算。`:"")}</p>
     ${weekDiary()}
     ${btkChaseNote()}
@@ -5292,11 +5333,12 @@ export function offPanel(){
     <div class="row"><button class="btn primary" id="offnext" ${S.ap>0?'disabled':''}>
       ${S.ap>0?`还剩 ${S.ap} 个行动点`
         :(S.off.week>=S.off.weeks
-            ?(S.off.next==="summer"?`开始夏季赛 →`
+            ?(S.off.next==="summer"?`开始${fmtOn()?tlNextSplitName():"夏季赛"} →`
+             :S.off.next==="seg"?`开始${tlNextSplitName()} →`
              :S.off.next==="playoff"?`进入季后赛 →`
              :S.off.next==="poEnd"?`季后赛落幕 · 赛段结算 →`
              :S.off.next==="wrap"?`世界赛落幕 · 赛季结算 →`
-             :S.off.next==="intl"?`出征 ${S.pendingIntl&&S.pendingIntl.type==="msi"?"MSI":"世界赛"} →`
+             :S.off.next==="intl"?`出征 ${intlName(S.pendingIntl&&S.pendingIntl.type)} →`
              :`开始 ${nx?nx.tag:"下"} 赛季 →`)
             :(S.off.week+1>S.off.weeks?`进入下一周 → ${S.off.label||"休赛期"}结束`
               :`进入下一周 → ${S.off.label||"休赛期"} 第 ${S.off.week+1}/${S.off.weeks} 周`))}</button>
@@ -5406,14 +5448,14 @@ export function careerPoster(){
     if(!team&&S.career&&si===S.si) team=S.team;
     if(!team&&prevTeam&&si>=firstPro&&!tx.some(x=>tagSi(x.s)===si)) team=prevTeam;
     if(team) prevTeam=team;
-    let res=rows.map(r=>`${SPLITS[r.split]?SPLITS[r.split][0]:""}${
+    let res=rows.map(r=>`${r.sname?r.sname+" ":SPLITS[r.split]?SPLITS[r.split][0]:""}${
       r.result==="champion"?"冠":r.result===3?"亚":r.result===2?"四强":r.seed>6?`第${r.seed}`:"季后赛"}`).join(" · ");
     if(!rows.length){   // 没有逐段记录：用当年的冠军顶上
       const tt=allT.filter(x=>tagSi(x.t)===si).map(x=>x.t.replace(/^S\d\d\s*/,"")+"冠军"+(x.ring?"（随队）":""));
       res=tt.join(" · ");
     }
     const best={}; il.filter(x=>x.si===si).forEach(x=>{ best[x.type]=Math.max(best[x.type]||0,x.d); });
-    const it=Object.entries<number>(best).map(([t,d])=>`${t==="msi"?"MSI":"世界赛"}${INTL_DEPTH_N[d]||""}`).join(" · ");
+    const it=Object.entries<number>(best).map(([t,d])=>`${intlName(t)}${INTL_DEPTH_N[d]||""}`).join(" · ");
     const won=(C.lgYears||[]).includes(si)||(C.msiYears||[]).includes(si)||(C.worldsYears||[]).includes(si);
     const pre=si<firstPro;   // 第一份职业合同之前
     return `<div class="yr${won?' won':''}" style="--i:${si}">
@@ -6023,7 +6065,7 @@ export function playoffBracketCard(){
 }
 export function bracketCard(){
   try{
-    return (S.intl?intlBracketCard():"")+((!S.intl&&S.career)?playoffBracketCard():"");
+    return (S.intl?intlBracketCard():"")+((!S.intl&&S.career)?(fmtOn()?tlBracketCard():playoffBracketCard()):"");
   }catch(e){ return ""; }
 }
 /* 杯赛阶梯：对手按轮固定（CUPS.opps），赢了打谁一目了然 */
@@ -6052,7 +6094,7 @@ export function formBar(team){
 export function nextMatchCard(){
   const sea=SEASONS[S.si], on=S.schedule[S.week-1];
   const opp=S.world[S.homeLeague||"LPL"].find(t=>t.name===on);
-  if(!opp) return "";
+  if(!opp) return fmtOn()?tlNoMatchCard():"";
   /* 标题上的「全队战力」和队伍页是同一个数：版本相性单独标出来，不揉进去
      （玩家实锤 2026-09-09：队伍页和比赛面板对不上）。备战页早就是这么写的。
      判定胜负仍然用含版本的 myPower()——diff 不变。 */
@@ -6064,7 +6106,7 @@ export function nextMatchCard(){
   const st=(S.standings[S.homeLeague||"LPL"]||{})[on]||{w:0,l:0};
   const diff=myPw-opPw;
   const V=gapVerdict(diff);
-  return `<div class="card"><h2>下一场<em>${sea.tag} 第 ${S.week} 周 · BO3</em></h2>
+  return `<div class="card"><h2>下一场<em>${sea.tag} 第 ${S.week} 周 · BO${fmtOn()&&S.fmt.cur?S.fmt.cur.bo:3}</em></h2>
     <div class="next">
       <div class="sd"><div class="nm">${teamLogo(S.team,28)}${S.team}${formBar(S.team)}</div>
         <div class="pw">全队战力 <b>${N(pwShow(myShow).toFixed(1),dimWord(pwShow(myShow)))}</b>${
@@ -6096,6 +6138,7 @@ export function eventsCard(){
       <span class="tx">${e.text}<span class="tm">${e.s}</span></span></div>`).join("")}</div></div>`;
 }
 export function standingsCard(){
+  if(fmtOn()) return tlStandingsCard();   // 真实赛制：分组积分榜 + 这个赛段的赛制
   const rows=lplRank();
   const HL=S.homeLeague||"LPL";
   // 在 LDL 打比赛不代表看不见一线——现实里二队选手天天看一队比赛。
@@ -6336,7 +6379,7 @@ export function helpCard(){
       ${li("五维与文字档位","操作 / 运营 / 心态 / 指挥 / 体质。默认用词描述：生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级（职业级 ≈ LPL 首发）。顶栏「数值」一键看具体数字。")}
       ${li("天赋与瓶颈","天赋决定成长速度和天花板，不是初始属性。撞到瓶颈后靠特定条件顶开——「我的」属性卡里每一维都写着怎么破。")}
       ${li("职业前","段位、人气、杯赛履历决定谁来找你：宗师起有青训教练看，城市争霸赛 / 主播杯打进四强也能敲门。试训邀请随时可能来，年底是转会窗口。")}
-      ${li("赛季",`常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。春季冠军去 MSI，夏季赛决定世界赛名额。赛后拆解写清赢在哪、输在哪。`)}
+      ${li("赛季",fmtOn()?`按当年的真实赛制：每周打真实那一周的比赛（BO1 / BO3 / BO5 照赛制），第一场你亲自打，其余默认自动打完。每个赛段单独决出冠军，名额按真实规则去 First Stand / MSI / 世界赛。赛后拆解写清赢在哪、输在哪。`:`常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。春季冠军去 MSI，夏季赛决定世界赛名额。赛后拆解写清赢在哪、输在哪。`)}
       ${li("合同与转会","合同按赛段签、到期日是 MSI 结束 / 世界赛结束。三层窗口：转会期（MSI 后、世界赛后）什么都能做；赛段注册期（常规赛前 5 周）自由身能签短约顶班、被挖要付 1.2 倍违约金且没签字费；常规赛最后两周、季后赛、国际赛名单锁定。窗口关了还没人签，就回到路人的日子——履历不清零。")}
       ${li("托管","一键安排、重复上回合、执行计划；自动推进只跳过「没得选的周」，有事立刻交回给你。")}
       ${li("仪式与小游戏","季后赛抽签、世界赛出征、年度颁奖夜这些节点上有一段戏，中间轮到你的 20 秒是小游戏。打好了整段有加成，打砸了有折扣，跳过按中档算——不亏不赚；托管和自动推进一律跳过。")}
@@ -7110,6 +7153,7 @@ export function bind(){
   st.querySelectorAll("[data-scrimopt]").forEach((b: any)=>b.onclick=()=>scrimPick(+b.dataset.scrimopt));
   st.querySelectorAll("[data-do]").forEach((b: any)=>b.onclick=()=>doAction(b.dataset.do));
   const p=$("play"); if(p&&!S.locker) p.onclick=()=>{isBenched()?benchWeek():startMatch(false)};
+  const fm=$("fmtman"); if(fm) fm.onchange=()=>{ S.fmtManual=!!(fm as any).checked; saveGame("设置"); render(); };   // 真实赛制：本周其余几场也亲自打
   const au=$("auto"); if(au) au.onclick=()=>{
     const f=DIMS.reduce((a,b)=>S.talent[a]>=S.talent[b]?a:b);
     askConfirm("自动推进",

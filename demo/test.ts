@@ -49,11 +49,12 @@ if (!fs.existsSync(path.join(HERE, "src", "gen", "avatars.js"))) {
    `ACHIEVEMENTS.push(...ACH_MORE)`，抛 "Cannot access 'ACH_MORE' before initialization"。
    低概率、和这次的改动无关（改前改后各连跑 12 次都没复现，但两边都各撞见过一次），
    顺序载入让求值顺序固定下来，CI 不再看运气。循环引用本身还在，另开一条待办。 */
-const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "hall", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer", "share", "bond", "timeline", "ldl"];
+const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "hall", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer", "share", "bond", "timeline", "ldl", "fmt", "fmtrun", "fmtspec", "fmtspec2", "fmtctl", "season_tl"];
 const state = await import("./src/state.ts");
 const mods = [];
 for (const m of MODULES) mods.push(await import(`./src/${m}.ts`));
 const A: any = Object.assign({}, ...mods, { S: () => state.S, setS: state.setS });
+const FC = await import("./fmt_checks.ts");   // 真实赛制自检（2026-09-13）
 /* 读源码做自检时统一行尾：Windows 上 git 检出的是 CRLF，而下面有好几处拿
    "\n…" 字面去 indexOf。不归一的话 CI（Linux/LF）全绿、作者本机却一条报错、
    几条静默失效——那几条自检等于没跑。 */
@@ -2000,6 +2001,12 @@ if (isMain && process.argv.includes("--tl-probe")) {
   { const tb = timelineChecks();
     if (tb.length) { console.error("真实时间线自检不通过：\n - " + tb.join("\n - ")); process.exit(1); }
     console.log("真实时间线自检通过：2022–2027 队数与赛区结构 · 名单去重 · 数值范围 · 锚定均值 · T1/NIP 名单"); }
+  { const fs1 = FC.fmtSpecChecks();
+    if (fs1.length) { console.error("真实赛制自检不通过：\n - " + fs1.join("\n - ")); process.exit(1); }
+    console.log("真实赛制自检通过：四大赛区 2022–2028 逐年跑通 · LPL 登峰/坚毅/涅槃与中途淘汰 · LCK 第 3–5 轮 · LEC 赛季总决赛 · LCS 瑞士轮 · 国际赛名额总数"); }
+  { const fc = FC.fmtCareerChecks(playOne, A);
+    if (fc.length) { console.error("真实赛制整局自检不通过：\n - " + fc.join("\n - ")); process.exit(1); }
+    console.log("真实赛制整局自检通过：新档打到 2027（First Stand · 2027 公告 · 三段制冠军）· 老档不走新赛制"); }
   // 会换掉整份存档：放在单元检查之后、下面那局完整生涯（screenCreate 从头开）之前
   { const sr = streetsReturnChecks();
     if (sr.length) { console.error("重返职业自检不通过：\n  " + sr.join("\n  ")); process.exit(1); }
@@ -2126,6 +2133,14 @@ const LEAGUE_OK: Record<string, string> = {
     "beatLCK 已锁 homeLeague!==LCK",
   '?`决赛击败 LCK 的 <b>${c.opp}</b>——至暗时刻的墙，被你砸开了一道口子。`':
     "同上，c.beatLCK 由上面那个变量算出来",
+  '"LPL：取消登峰组与涅槃组，赛季中途不再淘汰，所有队伍打满三个赛段；第二、三赛段 5–12 名仍打骑士之路。",':
+    "2027 赛制调整公告（season_tl.ts 的 ANN27）：写的是全世界各赛区的赛制变化，对所有赛区的玩家都成立",
+  '"LCK：下半年恢复第 3–5 轮（Legend / Rise 组内三循环）。",':
+    "同上",
+  '"LEC：取消 LEC Versus，恢复冬季赛，夏季赛恢复分组。",':
+    "同上",
+  '"LCS：维持 2026 赛制（LTA 已解散，回不到 2025）。"':
+    "同上",
   'd:"在 LPL、LCK、LEC 各拿下过一座联赛冠军——可以分几局完成。",':
     "殿堂专属成就「走遍三大赛区」（hall.ts）：跨存档的目标，条件就是这三个赛区本身，不管你这一局在哪个赛区打都成立",
 };

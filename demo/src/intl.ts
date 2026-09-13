@@ -6,8 +6,9 @@ import { FAN_TIERS, MID_WEEKS, SEASONS, SPREAD, breakthrough, clamp, enterBreak,
 import { rnd } from "./rng";
 import { addRingTitle, setBreakAgenda } from "./rotation";
 import { realNote, tlCanon, tlIntlMinors, tlMajors, tlOn } from "./timeline";
-import { PRIZE_MSI, PRIZE_W, addMoney } from "./shop";
+import { PRIZE_FST, PRIZE_MSI, PRIZE_W, addMoney } from "./shop";
 import { S } from "./state";
+import { fmtIntlField, fmtLastOrder, fmtMsiSplit, fmtOn, fmtOnIntlChamp, fmtWorldsSplit } from "./fmtctl";
 
 /* ================= 国际赛：MSI 与 世界赛 =================
    赛制按真实历史:
@@ -45,6 +46,31 @@ export function rankOf(lg){
 export function pw(name){ const t=findTeam(name); return t?power(t,0,SEASONS[S.si].fav):50; }
 export function winProb(a,b){ return 1/(1+Math.exp(-(pw(a)-pw(b))/SPREAD)); }
 export function simBo(a,b,need){ let x=0,y=0,p=winProb(a,b); while(x<need&&y<need){ rnd()<p?x++:y++; } return x>y?a:b; }
+/* 国际赛显示名：MSI / 世界赛 / First Stand（真实时间线 2025 起） */
+export function intlName(type){ return type==="msi"?"MSI":type==="fst"?"First Stand":"世界赛"; }
+export function intlKind(name){ return name==="MSI"?"msi":name==="First Stand"?"fst":"worlds"; }
+/* 真实赛制的围观 / 随队名单：按战力排种子再首尾对插（1v8、2v7…），别让两个一号种子第一轮就撞上 */
+function seedArrange(field){
+  const s=field.filter(Boolean).slice().sort((a,b)=>pw(b)-pw(a)), out=[];
+  while(s.length){ out.push(s.shift()); if(s.length) out.push(s.pop()); }
+  return out;
+}
+function fmtStaged(type,field,stage){
+  const f=(stage==="swiss"||stage==="groups")?field.slice().sort((a,b)=>pw(b)-pw(a)).slice(0,8):field;
+  return convergeStaged(type,f,simEventStaged(seedArrange(f),"knockout"));
+}
+/* 真实赛制：这一届的参赛名单（入围赛模拟掉）。benched=true 时把你的队从入围赛模拟里拿出来 */
+function fmtEventField(type,F,benched){
+  if(type==="fst") return {field:fmtIntlField("fst"),stage:"knockout"};
+  if(type==="msi"){
+    const all=fmtIntlField("msi"); S.fmt.msiField=all;
+    if(F.msi.mode==="groups") return {field:all,stage:"groups"};
+    const sp=fmtMsiSplit(), pin=benched?sp.playin.filter(n=>n!==S.team):sp.playin;
+    return {field:sp.direct.concat(sp.take>0?simPlayIn(pin).slice(0,sp.take):[]),stage:"knockout"};
+  }
+  const sp=fmtWorldsSplit(F.worlds.playin.take), pin=benched?sp.playin.filter(n=>n!==S.team):sp.playin;
+  return {field:sp.direct.concat(sp.take>0?canonQual(sp.playin,simPlayIn(pin).slice(0,sp.take)):[]),stage:F.worlds.main};
+}
 
 /* ---------- 赛区名额 ---------- */
 /* 小赛区没有联赛积分榜，直接按战力取冠军。
@@ -61,6 +87,8 @@ export function minorChampion(lg){
    不缓存的话，每次调用都会重摇一遍——「没进季后赛」时播给玩家的冠军，
    和随后组世界赛名单用的冠军，可能是两支不同的队。 */
 export function majorStandings(lg){
+  // 真实赛制：这个联赛最近打完的那个赛段的名次（冠军在前）
+  if(fmtOn()){ const o=fmtLastOrder(lg); return (o&&o.length?o:rankOf(lg).map(x=>x.n)).slice(0,4); }
   const rk=rankOf(lg).map(x=>x.n);
   if(rk.length<4) return rk;
   S.poCache=S.poCache||{};
@@ -182,6 +210,38 @@ export function startIntl(type,playerResult){
   if(isBenched()&&S.understudy){
     return benchedIntl(type,playerResult);
   }
+  /* 真实赛制：名额按当年真实规则，直进 / 入围按年份分（fmtctl.ts） */
+  if(fmtOn()){
+    if(type==="fst") return openIntl("fst",fmtIntlField("fst"),"knockout");
+    if(type==="msi"){
+      S.fmt.msiField=fmtIntlField("msi");
+      if(F.msi.mode==="groups") return openIntl("msi",S.fmt.msiField,"groups");
+      const sp=fmtMsiSplit(), cfg={playin:{teams:sp.playin.length,take:sp.take,bo:S.fmt.y>=2025?3:2},main:"knockout"};
+      if(sp.take>0&&sp.playin.includes(S.team)){
+        S.intl={type:"msi",stage:"playin",field:sp.playin,direct:sp.direct,record:[0,0],round:1,cfg,
+                queue:sp.playin.filter(n=>n!==S.team).sort((a,b)=>pw(a)-pw(b))};
+        pushEvent(`<b>${S.team}</b> 要从 MSI 入围赛打起（${sp.playin.length} 队争 ${sp.take} 个正赛名额）。`,"bad","MSI");
+        pushEvent(intlDrawText("MSI 入围赛",sp.playin),"info","MSI");
+        enterPrep("intl", S.intl.queue[0], cfg.playin.bo, "MSI 入围赛首战 · 赛前备战");
+        return true;
+      }
+      const q=sp.take>0?simPlayIn(sp.playin).slice(0,sp.take):[];
+      if(q.length) pushEvent(`MSI 入围赛结束（${sp.playin.length} 队争 ${sp.take} 个名额），<b>${q.join("、")}</b> 晋级正赛。`,"info","MSI");
+      return openIntl("msi",sp.direct.concat(q),"knockout");
+    }
+    const c0=F.worlds, sp=fmtWorldsSplit(c0.playin.take), cfg={playin:{teams:sp.playin.length,take:sp.take,bo:c0.playin.bo},main:c0.main};
+    if(sp.take>0&&sp.playin.includes(S.team)){
+      S.intl={type:"worlds",stage:"playin",field:sp.playin,direct:sp.direct,record:[0,0],round:1,cfg,
+              queue:sp.playin.filter(n=>n!==S.team).sort((a,b)=>pw(a)-pw(b))};
+      pushEvent(`<b>${S.team}</b> 只拿到入围赛资格，要从最底下打起。`,"bad","世界赛");
+      pushEvent(intlDrawText("世界赛入围赛",sp.playin),"info","世界赛");
+      enterPrep("intl", S.intl.queue[0], cfg.playin.bo, "世界赛入围赛首战 · 赛前备战");
+      return true;
+    }
+    const q=sp.take>0?canonQual(sp.playin,simPlayIn(sp.playin).slice(0,sp.take)):[];
+    if(q.length) pushEvent(`入围赛结束（${sp.playin.length} 队争 ${sp.take} 个名额），<b>${q.join("、")}</b> 晋级正赛。`,"info","世界赛");
+    return openIntl("worlds",sp.direct.concat(q),cfg.main);
+  }
   if(type==="msi"){
     const seeds={}; majors().forEach(lg=>seeds[lg]=majorStandings(lg));
     /* 玩家不一定在四大赛区。开放「小赛区当低谷退路」之后，
@@ -250,7 +310,7 @@ export function startIntl(type,playerResult){
 
 export function openIntl(type,field,stage){
   field=field.filter(Boolean);
-  const name=type==="msi"?"MSI":"世界赛";
+  const name=intlName(type);
   if(!field.includes(S.team)){
     // 你没资格进正赛。但赛事不在这里一步跑完——
     // 名单先记下来，由 spectateIntl 把它铺在接下来几周里，冠军最后揭晓。
@@ -482,6 +542,7 @@ export function wlRelax(){
   Object.keys(S.wl||{}).forEach(lg=>{ if(lg!==HL) S.wl[lg]=+(S.wl[lg]*0.6).toFixed(3); });
 }
 export function canonChamp(type){
+  if(type==="fst") return null;   // First Stand 没有史实剧本
   const t=INTL_CANON[type==="msi"?"msi":"worlds"];
   return (t&&t[S.si])||null;
 }
@@ -519,15 +580,15 @@ export function canonQual(playin,qual){
 /* 冠军播报——围观和亲历淘汰共用一句 */
 /* 荣誉账本：哪一年谁拿了 MSI / 世界赛——明星聚光灯用它把本作里改写的历史写进履历 */
 export function noteHonor(kind,si,team){
-  try{ S.honors=S.honors||{}; (S.honors[kind]=S.honors[kind]||{})[si]=team; }catch(e){}
+  try{ S.honors=S.honors||{}; (S.honors[kind]=S.honors[kind]||{})[si]=team; if(si===S.si) fmtOnIntlChamp(kind,team); }catch(e){}
 }
 export function intlChampEvent(name,champ){
-  noteHonor(name==="MSI"?"msi":"worlds",S.si,champ);
+  noteHonor(intlKind(name),S.si,champ);
   /* 赛区分类（玩家实锤 2026-09-09）：「LCK 又一次站在了最高处」+ tone:"bad"
      是站在 LPL 观众那一侧写的。效力 LCK 的人看自家赛区夺冠，不是坏消息。 */
   const mine=(S.career&&S.homeLeague)||"LPL";
   const lck=leagueOf(champ)==="LCK", own=leagueOf(champ)===mine;
-  return {text:`${name}落幕，<b>${champ}</b> 捧起奖杯。${realNote(name==="MSI"?"msi":"worlds",S.si,champ)}${
+  return {text:`${name}落幕，<b>${champ}</b> 捧起奖杯。${realNote(intlKind(name),S.si,champ)}${
       own?"你所在的赛区拿下了这座奖杯——只是捧杯的人不是你。"
         :lck?"LCK 又一次站在了最高处。":"你在屏幕外看完了颁奖。"}`,
     tone:(lck&&!own)?"bad":"info", tag:name};
@@ -537,9 +598,12 @@ export function intlChampEvent(name,champ){
    按周揭晓；战队夺冠只发团队新闻，不进你的生涯表、不触发夺冠突破。 */
 export function benchedIntl(type,playerResult){
   const F=SEASONS[S.si];
-  const name=type==="msi"?"MSI":"世界赛";
+  const name=intlName(type);
   let field,stage;
-  if(type==="msi"){
+  if(fmtOn()){
+    ({field,stage}=fmtEventField(type,F,true));
+    if(field.indexOf(S.team)<0) field.push(S.team);
+  }else if(type==="msi"){
     const seeds={}; majors().forEach(lg=>seeds[lg]=majorStandings(lg));
     const HL=S.homeLeague||"LPL";
     if(!seeds[HL]) seeds[HL]=majorStandings(HL)||[];
@@ -565,7 +629,8 @@ export function benchedIntl(type,playerResult){
     if(field.indexOf(S.team)<0) field.push(S.team);
     stage=cfg.main;
   }
-  const st=convergeStaged(type,field,simEventStaged(field,stage));
+  const st=fmtOn()?fmtStaged(type,field,stage):convergeStaged(type,field,simEventStaged(field,stage));
+  if(fmtOn()&&type==="msi") S.fmt.msiRunner=(st.two||[]).find(n=>n!==st.champ)||null;
   const champUs=st.champ===S.team;
   const our= champUs?"决赛"
     : st.two.includes(S.team)?"决赛"
@@ -573,11 +638,17 @@ export function benchedIntl(type,playerResult){
     : st.eight.includes(S.team)?"八强":"小组赛/瑞士轮";
   const bench=S.understudy?S.understudy.id:"首发";
   if(champUs&&true) addRingTitle(`${F.tag} ${name}`);
-  if(champUs) noteHonor(type==="msi"?"msi":"worlds",S.si,S.team);
+  if(champUs) noteHonor(type,S.si,S.team);
   const ev=champUs
     ? {text:`${name}落幕，<b>${S.team} 夺冠</b>——你在替补席见证了全程。<span style="color:var(--ink-3)">戒指有你一枚，生涯表记为<b>随队冠军</b>；想让它算进成就和转会筹码，把首发抢下来。</span>`,tone:"big",tag:name}
     : intlChampEvent(name,st.champ);
-  if(type==="msi"){
+  if(type==="fst"){
+    enterBreak("seg",2,"First Stand · 替补席随队",
+      `教练公布了 First Stand 名单：<b>首发还是 ${bench}</b>。你随队出征，位置在替补席——这几周把训练赛数据打上去。`);
+    queueBreakNews(1,`First Stand 开赛，${field.length} 支队伍到场。${S.team} 的比赛你都在场边看完。`,"info",name);
+    queueBreakNews(2,`First Stand 四强：${st.four.map(n=>n===S.team?`<b>${n}</b>`:n).join("、")}。`,"info",name);
+    queueBreakNews(3,ev.text,ev.tone,ev.tag);
+  }else if(type==="msi"){
     enterBreak("summer",MID_WEEKS,"季中间歇 · 随队 MSI",
       `教练公布了 ${name} 名单：<b>首发还是 ${bench}</b>。你随队出征，位置在替补席——这几周把训练赛数据打上去。`);
     queueBreakNews(1,`${name} 开赛。${S.team} 的比赛你都在场边看完。`,"info",name);
@@ -610,6 +681,7 @@ export function spectateIntl(type){
   const F=SEASONS[S.si];
   let field,stage;
   if(spec){ field=spec.field; stage=spec.stage; }
+  else if(fmtOn()) ({field,stage}=fmtEventField(type,F,false));
   else if(type==="msi"){
     const seeds={}; majors().forEach(lg=>seeds[lg]=majorStandings(lg));
     // 围观的 MSI 也过世界线张力闸（和亲历版同一套史实）
@@ -631,12 +703,20 @@ export function spectateIntl(type){
     field=direct.concat(canonQual(playin,simPlayIn(playin).slice(0,cfg.playin.take)));
     stage=cfg.main;
   }
-  const name=type==="msi"?"MSI":"世界赛";
-  const st=convergeStaged(type,field,simEventStaged(field,stage));
+  const name=intlName(type);
+  const st=fmtOn()?fmtStaged(type,field,stage):convergeStaged(type,field,simEventStaged(field,stage));
+  if(fmtOn()&&type==="msi") S.fmt.msiRunner=(st.two||[]).find(n=>n!==st.champ)||null;
   const ev=intlChampEvent(name,st.champ);
-  if(type==="msi"){
+  if(type==="fst"){
+    enterBreak("seg",2,"First Stand 进行中",
+      `第一个赛段收官。First Stand 在没有你的情况下开打——<b>下一个赛段才是你的下一战</b>，这两周把该补的补上。`);
+    queueBreakNews(1,`First Stand 开赛，${field.length} 支队伍到场。你在训练室里看完了揭幕战。`,"info",name);
+    queueBreakNews(2,`First Stand 四强出炉：${st.four.map(n=>`<b>${n}</b>`).join("、")}。`,"info",name);
+    queueBreakNews(3,ev.text,ev.tone,ev.tag);
+  }else if(type==="msi"){
     enterBreak("summer",MID_WEEKS,"季中间歇 · MSI 进行中",
-      `春季赛收官。MSI 在没有你的情况下开打——<b>夏季赛才是你的下一战</b>，这两周把该补的补上。`);
+      fmtOn()?`上半年的联赛收官。MSI 在没有你的情况下开打——<b>下半年的联赛才是你的下一战</b>，这几周把该补的补上。`
+      :`春季赛收官。MSI 在没有你的情况下开打——<b>夏季赛才是你的下一战</b>，这两周把该补的补上。`);
     queueBreakNews(1,`MSI 开赛，${field.length} 支队伍到场。你在训练室里看完了揭幕战。`,"info","MSI");
     queueBreakNews(2,`MSI 四强出炉：${st.four.map(n=>`<b>${n}</b>`).join("、")}。`,"info","MSI");
     queueBreakNews(3,ev.text,ev.tone,ev.tag);          // 间歇结束时揭晓
@@ -653,21 +733,22 @@ export function spectateIntl(type){
 /* ---------- 每场之后 ---------- */
 export function intlAdvance(){
   const I=S.intl, won=S.match.sc[0]>S.match.sc[1];
-  const name=I.type==="msi"?"MSI":"世界赛";
+  const name=intlName(I.type);
   I.metOpp=(I.metOpp||[]).concat([S.match.oppName]);
 
   /* --- 入围赛 --- */
   if(I.stage==="playin"){
     I.record[won?0:1]++;
-    if(I.record[1]>=2){ finishIntl(`入围赛出局`,"playin"); return; }
-    if(I.record[0]>=2){
+    const one=(I.field||[]).length<=2;   // 真实赛制 2025 世界赛：入围赛只有一场 BO5
+    if(I.record[1]>=(one?1:2)){ finishIntl(`入围赛出局`,"playin"); return; }
+    if(I.record[0]>=(one?1:2)){
       const take=(I.cfg&&I.cfg.playin.take)||4;
-      const qual=[S.team].concat(canonQual(I.field.filter(n=>n!==S.team),
-        simPlayIn(I.field.filter(n=>n!==S.team)).slice(0,take-1)));
+      const rest=I.field.filter(n=>n!==S.team), sim=simPlayIn(rest).slice(0,take-1);
+      const qual=[S.team].concat(I.type==="worlds"?canonQual(rest,sim):sim);
       S.cameFromPlayin=true;
       pushEvent(`<b>${S.team}</b> 从入围赛杀进正赛。`,"good",name);
       const field=I.direct.concat(qual);
-      if(!openIntl("worlds",field,(I.cfg&&I.cfg.main)||"swiss")) finishIntl("正赛出局","main");
+      if(!openIntl(I.type,field,(I.cfg&&I.cfg.main)||"swiss")) finishIntl("正赛出局","main");
       return;
     }
     I.round++; enterPrep("intl", nextIntlOpp(), intlBoNeed(), `${name}第 ${I.round} 轮 · 赛前备战`); return;
@@ -709,7 +790,7 @@ export function intlAdvance(){
     const nx=brNext();
     if(!nx){ crownChampion(); return; }
     I.knockRound++;
-    pushEvent(`世界赛${nx.label}：对手 <b>${nx.opp}</b>（${leagueOf(nx.opp)}）。${brOthersText()}`,"info","世界赛");
+    pushEvent(`${name}${nx.label}：对手 <b>${nx.opp}</b>（${leagueOf(nx.opp)}）。${brOthersText()}`,"info",name);
     enterPrep("intl", nx.opp, 3, `${name}${nx.label} · 赛前备战`); return;
   }
 
@@ -762,13 +843,14 @@ export function noteDepth(kind){
   if(S.intl) S.career.intlLog=(S.career.intlLog||[]).concat([{si:S.si,type:S.intl.type,d}]);
 }
 export function crownChampion(){
-  const I=S.intl, name=I.type==="msi"?"MSI":"世界赛";
-  noteHonor(I.type==="msi"?"msi":"worlds",S.si,S.team);
+  const I=S.intl, name=intlName(I.type);
+  if(I.type==="msi"&&S.fmt&&S.match) S.fmt.msiRunner=S.match.oppName;
+  noteHonor(I.type,S.si,S.team);
   // 世界线张力：国际冠军让全世界都开始围着你转
   try{ Object.keys(S.world).forEach(lg=>wlAdd(lg,0.10)); }catch(e){}
   // 冠军奖金每次都发——不是一次性成就（那边只发首冠纪念）
   {
-    const amt=I.type==="msi"?PRIZE_MSI.champion:PRIZE_W.champion;
+    const amt=(I.type==="msi"?PRIZE_MSI:I.type==="fst"?PRIZE_FST:PRIZE_W).champion;
     addMoney("prize",amt);
     pushEvent(`${name}冠军奖金到账 <b>${amt} 万</b>。`,"good","奖金");
   }
@@ -776,15 +858,15 @@ export function crownChampion(){
   S.career[I.type]= (S.career[I.type]||0)+1;
   champCoreStart();   // 冠军班底：接下来一年这套人不散
   // 记年份，供「双冠王 / 卫冕 / 三冠」判定
-  const yk=I.type==="msi"?"msiYears":"worldsYears";
+  const yk=I.type==="msi"?"msiYears":I.type==="fst"?"fstYears":"worldsYears";
   S.career[yk]=(S.career[yk]||[]).concat([S.si]);
   // 荣誉成就钩子（审计修复）：checkAch("msi"/"worlds") 从未被调用过——
   // 世界冠军/MSI 冠军以及挂在它们身上的双冠王/卫冕/大满贯/三冠全是死成就
-  { checkAch(I.type==="msi"?"msi":"worlds"); checkAch("crown"); }
+  { if(I.type!=="fst") checkAch(I.type==="msi"?"msi":"worlds"); checkAch("crown"); }
   // 夺冠是里程碑经历，走独立的里程碑池——机械路径刷得再满也占不掉这份
   const cap0={心态:(S.capBonus&&S.capBonus.心态)||0, 指挥:(S.capBonus&&S.capBonus.指挥)||0};
   {
-    if(I.type==="msi"){
+    if(I.type!=="worlds"){
       breakthrough("心态",2.5,"你在国际赛场的最高领奖台上站过了。大场面再也吓不到你。",undefined,"mile");
       breakthrough("指挥",2.5,"拿过冠军的人说话，队友会听。",undefined,"mile");
     }else{
@@ -797,14 +879,14 @@ export function crownChampion(){
   /* 「至暗时刻的墙」是 LPL 观众的说法：你自己就在 LCK 的时候，
      决赛赢下另一支 LCK 队伍不是砸墙，是内战（玩家实锤 2026-09-09）。 */
   const beatLCK=leagueOf(S.match.oppName)==="LCK"&&(S.homeLeague||"LPL")!=="LCK";
-  pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${name} 冠军！</b>${realNote(I.type==="msi"?"msi":"worlds",S.si,S.team)}${
+  pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${name} 冠军！</b>${realNote(I.type,S.si,S.team)}${
     beatLCK?`决赛击败 LCK 的 ${S.match.oppName}——<b>至暗时刻的墙，被你砸开了一道口子。</b>`:""}`,
     "big",name);
   // 夺冠那一刻的总结弹窗。奖金和突破一直都发（玩家插桩验证过），
   // 缺的是「这一刻」本身——大事记里一行字撑不起一座奖杯。
   S.intlChamp={type:I.type, name, tag:SEASONS[S.si].tag,
     opp:S.match?S.match.oppName:"", beatLCK,
-    prize:(I.type==="msi"?PRIZE_MSI.champion:PRIZE_W.champion),
+    prize:(I.type==="msi"?PRIZE_MSI:I.type==="fst"?PRIZE_FST:PRIZE_W).champion,
     nth:S.career[I.type], titles:S.career.titles.length, btkGain};
   S.intlResult=(S.intlResult||{}); S.intlResult[I.type]="champion";
   noteDepth("champion");
@@ -827,19 +909,19 @@ export function intlChampCard(){
     <div class="evres"><span class="er up">冠军奖金 <b>+${c.prize} 万</b></span>${
       gtxt?`<span class="er">${gtxt}</span>`:""}</div>
     <div class="row" style="justify-content:center">
-      <button class="btn" id="intlchampok">${c.type==="msi"?"带着冠军回夏季赛 →":"这个赛季，到此为止了 →"}</button></div>
+      <button class="btn" id="intlchampok">${c.type==="fst"?"带着冠军回联赛 →":c.type==="msi"?(fmtOn()?"带着冠军回国 →":"带着冠军回夏季赛 →"):"这个赛季，到此为止了 →"}</button></div>
   </div></div>`;
 }
 export function finishIntl(stageText,kind){
-  const I=S.intl, name=I.type==="msi"?"MSI":"世界赛";
-  pushEvent(`${name} ${stageText}：<b>${S.team}</b> 的赛季结束了。`,"bad",name);
+  const I=S.intl, name=intlName(I.type);
+  pushEvent(`${name} ${stageText}：<b>${S.team}</b> ${I.type==="fst"?"的 First Stand 之旅结束了":"的赛季结束了"}。`,"bad",name);
   S.intlResult=(S.intlResult||{}); S.intlResult[I.type]=kind;
   noteDepth(kind);
   // 奖金按走到的最高档结算（MSI 双败里带着三胜出局的按亚军算）
   {
     let pk=kind;
     if(I.double&&(I.wins||0)>=3&&kind==="knock") pk="final";
-    const tbl=I.type==="msi"?PRIZE_MSI:PRIZE_W;
+    const tbl=I.type==="msi"?PRIZE_MSI:I.type==="fst"?PRIZE_FST:PRIZE_W;
     const amt=tbl[pk]||tbl.main||0;
     if(amt){ addMoney("prize",amt);
       pushEvent(`${name}奖金按名次结算：<b>${amt} 万</b>。`,"info","奖金"); }
@@ -847,6 +929,7 @@ export function finishIntl(stageText,kind){
   // 你回家了，赛事还没完。剩下的对阵照打，冠军过几天才揭晓——
   // 决赛输掉是例外：刚赢你的那支队就是冠军，当场就知道。
   if(kind==="final"&&S.match){
+    if(I.type==="msi"&&S.fmt) S.fmt.msiRunner=S.team;
     const ev=intlChampEvent(name,S.match.oppName);
     pushEvent(ev.text,ev.tone,ev.tag);
   }else{
@@ -864,6 +947,12 @@ export function afterIntl(){
   // 被淘汰的人先过一段「赛事还在打」的日子，冠军在间歇的最后才揭晓。
   const go=S.afterIntlGo; S.afterIntlGo=null;
   const wrap=S._intlWrap; S._intlWrap=null;
+  // 真实赛制：First Stand 打完回联赛，中间没有注册窗
+  if(go==="seg"){
+    enterBreak("seg",1,"First Stand 之后",wrap?`First Stand 出局了。下一个赛段开打前还有一点时间。`:`捧着 First Stand 的奖杯回国，下一个赛段马上开打。`);
+    if(wrap){ const ev=intlChampEvent(wrap.name,wrap.champ); queueBreakNews(2,ev.text,ev.tone,ev.tag); }
+    return;
+  }
   if(go==="summer"){
     if(wrap){
       enterBreak("summer",1,"季中间歇",
@@ -894,7 +983,7 @@ export function afterIntl(){
 /* 界面用：当前赛事阶段名 */
 export function intlStageName(){
   const I=S.intl; if(!I) return "";
-  const n=I.type==="msi"?"MSI":"世界赛";
+  const n=intlName(I.type);
   if(I.stage==="playin") return n+" 入围赛";
   if(I.stage==="groups") return n+" 小组赛 "+I.record.join("-")+intlStakes();
   if(I.stage==="swiss")  return n+" 瑞士轮 "+I.record.join("-")+intlStakes();

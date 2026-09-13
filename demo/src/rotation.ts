@@ -40,7 +40,7 @@ export function fixNote(week,opp,sc,won,played){
 export function fixRows(){
   if(!S.schedule||!S.schedule.length) return [];
   const ok=S.fix&&S.fix.k===fixKey();
-  return S.schedule.map((opp,i)=>({w:i+1,opp,r:ok?(S.fix.rows[i+1]||null):null}));
+  return S.schedule.map((opp,i)=>({w:i+1,opp,r:ok?(S.fix.rows[i+1]||null):null})).filter(x=>x.opp);   // 真实赛制里有的周你们没比赛
 }
 /* 「本周」页的一条赛程带：每周一个小块，打过的标胜负，本周高亮 */
 export function fixtureStrip(){
@@ -78,7 +78,7 @@ export function fixtureCard(){
   return `<div class="card"><h2>赛程<em>${sea.tag} ${SPLITS[S.split||0]} · ${rec.w}胜 ${rec.l}负</em></h2>
     <div class="tw"><table><thead><tr><th class="n">周</th><th>对手</th><th class="n">实力</th><th class="n">对手战绩</th><th class="n">结果</th><th class="n">你</th><th class="n"></th></tr></thead>
     <tbody>${trs}</tbody></table></div>
-    <p class="note">常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。「替补席」的场次不计入你的个人战绩。${
+    <p class="note">${(S.tl&&S.fmt)?"真实赛制：每周打真实那一周的比赛，这里记的是你亲自上场的那几场，自动打完的场次写在大事记里。":`常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。`}「替补席」的场次不计入你的个人战绩。${
       defendTitles()?`<br><b style="color:var(--red)">卫冕压力</b>：近两个赛季你拿了 ${defendTitles()} 座冠军，对手都在研究你；对面近两个赛季也拿过冠军的，按两边的冠军数相抵。实力后面的红字，是抵消之后打你时再加的那一截。`:""}</p></div>`;
 }
 

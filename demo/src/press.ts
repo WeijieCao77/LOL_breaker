@@ -386,6 +386,11 @@ export function pressIssue(){
     heads.unshift({c:"赛区改制",t:`《LDL 正式停办：${S.tlLdlNews.teams} 支二队解散，${S.tlLdlNews.n} 名高分选手转为青训储备》`});
     S.tlLdlNews.pressed=true;
   }
+  // 真实赛制：2027 赛制调整（season_tl.ts 年初发），出刊登一次头条
+  if(S.fmtAnnNews&&!S.fmtAnnNews.pressed){
+    heads.unshift({c:"赛制改革",t:"《2027 赛季赛制调整：回到 2025 年的三段制，取消登峰组与涅槃组》"});
+    S.fmtAnnNews.pressed=true;
+  }
   // 行业版面补齐到至少三条——你不上版，报纸也照常出
   pressWorldHeads().forEach(h=>{ if(heads.length<(S.career?4:3)) heads.push(h); });
   if(heads.length<2) return;                       // 理论上到不了这，留个保险

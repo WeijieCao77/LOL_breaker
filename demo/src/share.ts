@@ -88,7 +88,7 @@ function yearRows(){
     if(!team&&prev) team=prev;
     if(!team&&S.career&&si<=(S.si||0)) team=S.team;
     if(team) prev=teams.length?teams[teams.length-1]:team;
-    const res=rows.map(r=>`${SPLITS[r.split]?SPLITS[r.split][0]:""}${
+    const res=rows.map(r=>`${r.sname?r.sname+" ":SPLITS[r.split]?SPLITS[r.split][0]:""}${
       r.result==="champion"?"冠":r.result===3?"亚":r.result===2?"四强":r.seed>6?"第"+r.seed:"季后赛"}`).join(" · ");
     const won=((C as any).lgYears||[]).includes(si)||((C as any).msiYears||[]).includes(si)||((C as any).worldsYears||[]).includes(si);
     return {tag:sea.tag, y:sea.y, team:team||"—", res:res||"—", won};
@@ -139,7 +139,7 @@ export function drawShareCard(){
      世界冠军就这么被地区赛季淹掉了。三档：世界赛最大、MSI 次之、联赛压成灰字小号。 */
   const own=((S.career as any)&&(S.career as any).titles)||[], ring=ringTitles();
   const all=own.concat(ring.map(t=>t+"（随队）"));
-  const isW=(t:string)=>/世界赛/.test(t), isM=(t:string)=>/MSI/.test(t);
+  const isW=(t:string)=>/世界赛/.test(t), isM=(t:string)=>/MSI|First Stand/.test(t);
   const yr=(t:string)=>(String(t).match(/^S\d+/)||[""])[0];        // "S16 世界赛" → "S16"
   const wT=all.filter(isW), mT=all.filter(isM), lT=all.filter(t=>!isW(t)&&!isM(t));
   y+=64;

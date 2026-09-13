@@ -18,6 +18,7 @@ import { rnd } from "./rng";
 import { meName } from "./save";
 import { mvpBonus, splitRating, yearRating } from "./boxscore";
 import { majorStandings } from "./intl";
+import { fmtOn, fmtStageNow } from "./fmtctl";
 import { addTrustAll } from "./team";
 import { addMoney } from "./shop";
 import { checkAch } from "./achieve";
@@ -248,11 +249,14 @@ export function mediaScrimAdj(){
 export function isFinalMatch(){
   if(!S.career) return false;
   if(S.intl){ const B=S.intl.br, lab=B&&B.pending&&B.pending.label; return lab==="决赛"||lab==="总决赛"; }
+  // 真实赛制：这一场是季后赛淘汰树里的决赛（模板里决赛那一场的编号都是 f）
+  if(fmtOn()){ const c=S.fmt.cur, n=fmtStageNow(); return !!(c&&n&&n.st&&n.st.kind==="po"&&c.id==="f"&&(c.a===S.team||c.b===S.team)); }
   return !!(S.playoff&&S.playoff.alive!==false&&(S.playoff.round||1)>=3);
 }
 export function finalName(){
   if(!(S.match&&!S.match.done)&&S.cupMatch&&!S.cupMatch.done){ const C=CUPS[S.cupMatch.kind]; return `${(C&&C.name)||"杯赛"}决赛`; }
-  if(S.intl) return S.intl.type==="msi"?"MSI 总决赛":"世界赛决赛";
+  if(S.intl) return S.intl.type==="msi"?"MSI 总决赛":S.intl.type==="fst"?"First Stand 决赛":"世界赛决赛";
+  if(fmtOn()){ const n=fmtStageNow(); return `${S.homeLeague||"LPL"}${n?n.sp.name:""}决赛`; }
   return `${S.homeLeague||"LPL"}${["春季赛","夏季赛"][S.split||0]||""}决赛`;
 }
 /* addFat 用：出征仪式的恢复倍率只在集结周和世界赛期间生效 */
@@ -517,7 +521,7 @@ export function cerCard(){
     else if(st==="game") body=`<div class="cer-eyebrow">决策 · 8 秒一题</div><div id="cer-game" data-game="decide" data-quiz="patch"></div>${btns("")}`;
     else body=resultBody(c,"board");
   }else if(c.k==="media"){
-    if(st==="story") body=`${scene("media")}<div class="cer-eyebrow">${SEASONS[S.si].tag} ${["春季赛","夏季赛"][S.split||0]||""} · 媒体日</div>
+    if(st==="story") body=`${scene("media")}<div class="cer-eyebrow">${SEASONS[S.si].tag} ${fmtOn()?((fmtStageNow()||{sp:{name:""}}).sp.name):(["春季赛","夏季赛"][S.split||0]||"")} · 媒体日</div>
       <p class="cer-p"><b>背景板前。</b>三个记者，三个问题，每个都在等一个标题。你说的每句话这个赛段都会被翻出来——<b>狂</b>会涨热度，但输了更伤心态；<b>稳</b>不留把柄；<b>甩锅</b>热度也涨，只是队友看得懂你在说谁。</p>
       <p class="cer-hint">不是小游戏，是<b>限时三选一</b>：每题 10 秒，不答按「稳」算。三题里占多数的那个口径，就是你这个赛段的基调。</p>
       ${btns(`<button class="btn primary" data-cer="next">面对镜头 →</button>`)}`;

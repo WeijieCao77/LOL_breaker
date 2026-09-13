@@ -71,6 +71,7 @@ export function _ledgerSum(o: any): number{ return Object.values<number>(o||{}).
 export const PRIZE_PO    ={champion:200, runner:80, semi:40};
 export const PRIZE_PO_LDL={champion:20,  runner:8,  semi:0};
 export const PRIZE_MSI   ={main:40, knock:100, final:180, champion:350};
+export const PRIZE_FST   ={main:30, knock:60, semi:90, final:130, champion:220};   // First Stand（2025 起，真实时间线）：比 MSI 小一档
 export const PRIZE_W     ={playin:30, main:60, knock:100, semi:180, final:280, champion:550};
 
 /* ---------- 财务总览卡 ---------- */

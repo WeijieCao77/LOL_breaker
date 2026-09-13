@@ -2200,7 +2200,7 @@ header.top.compact>.theme-top{display:none}
       const C = s.career || s.careerBak;
       if (C && !h.pos[s.pos] && hallAddFact(h, "pos", s.pos, { at: when, who, s: "" })) ch = true;
       (C && Array.isArray(C.titles) ? C.titles : []).forEach((t) => {
-        const m = /^(S\d{1,2}) ([A-Z]{2,6})(春季赛|夏季赛)$/.exec(String(t));
+        const m = /^(S\d{1,2}) ([A-Z]{2,6})(春季赛|夏季赛|冬季赛|第[一二三]赛段|季后赛|赛季总决赛| Cup| Versus| Lock In| Lock-In)$/.exec(String(t));
         if (m && !h.lg[m[2]] && hallAddFact(h, "lg", m[2], { at: when, who, s: m[1] })) ch = true;
       });
       if (ch) hallWrite(h);
@@ -2647,7 +2647,15 @@ header.top.compact>.theme-top{display:none}
       Object.keys(H2.msi || {}).forEach((si) => {
         if (H2.msi[si] === teamName) out.push(`${SEASONS[+si].tag} MSI 冠军`);
       });
+      Object.keys(H2.fst || {}).forEach((si) => {
+        if (H2.fst[si] === teamName) out.push(`${SEASONS[+si].tag} First Stand 冠军`);
+      });
       const mine = S.career && S.career.titles || [];
+      (S.fmtTitles || []).forEach((x) => {
+        if (x.team !== teamName || !SEASONS[x.si]) return;
+        const tag = `${SEASONS[x.si].tag} ${lgName(x.lg, x.si)}${x.t}`;
+        if (!mine.includes(tag)) out.push(`${tag}冠军`);
+      });
       Object.keys(S.poCache || {}).forEach((k) => {
         const [si, sp, lg] = k.split("|");
         const res = S.poCache[k];
@@ -2804,11 +2812,11 @@ header.top.compact>.theme-top{display:none}
   }
   function formCard() {
     if (S.form === void 0) return "";
-    const f = myForm(), T = formTier(f);
-    return `<div class="card"><h2>状态<em>${T.n}</em></h2>
+    const f = myForm(), T2 = formTier(f);
+    return `<div class="card"><h2>状态<em>${T2.n}</em></h2>
     <div class="at" style="grid-template-columns:50px 1fr 90px">
       <div class="lb">状态</div>
-      <div class="track"><div class="fill form-${T.k}" style="width:${clamp(f, 0, 100)}%"></div>
+      <div class="track"><div class="fill form-${T2.k}" style="width:${clamp(f, 0, 100)}%"></div>
         <div class="capline" style="left:${FORM_NEUTRAL}%"></div></div>
       <div class="vn mono"><b>${f}</b> ×${myFormMul().toFixed(3)}</div>
     </div>
@@ -3043,40 +3051,40 @@ header.top.compact>.theme-top{display:none}
     const okN = (m.nodeLog || []).filter((n) => n.ok).length, failN = m.nodeFails || 0;
     const mateShift = !won && okN - failN >= 1 ? -0.07 : won && failN - okN >= 1 ? 0.05 : 0;
     const line = (p, side) => {
-      const T = POS_STATLINE[p.pos] || [4.1, 2.5, 5.2, 8.8, 0.28];
+      const T2 = POS_STATLINE[p.pos] || [4.1, 2.5, 5.2, 8.8, 0.28];
       let perf = 1 + (boxAbility(p) - mean) * (p.me ? 0.025 : 0.04) + (side === "mine" ? won ? 0.12 : -0.1 : won ? -0.1 : 0.12);
       if (p.me) perf += okN * 0.07 - failN * 0.07 + (okN >= 3 && failN === 0 ? 0.05 : 0) - 0.03;
       else if (side === "mine") perf += mateShift;
       perf += (rnd() - 0.5) * 0.28;
       if (perf > 1.65) perf = 1.65 + (perf - 1.65) * 0.5;
       perf = clamp(perf, 0.45, 1.9);
-      const k = q1(T[0] * perf), d = q1(T[1] * (2 - perf) * 0.85 + 0.6), a = q1(T[2] * (0.8 + perf * 0.25));
-      const cs = q1(T[3] * (0.9 + perf * 0.12));
+      const k = q1(T2[0] * perf), d = q1(T2[1] * (2 - perf) * 0.85 + 0.6), a = q1(T2[2] * (0.8 + perf * 0.25));
+      const cs = q1(T2[3] * (0.9 + perf * 0.12));
       const kda = q1((k + a) / Math.max(1, d));
       const rating = Math.round(clamp(0.35 + perf * 0.55 + (kda - 2.6) * 0.045, 0.2, 2) * 100) / 100;
-      return { id: p.id, pos: p.pos, me: !!p.me, k, d, a, cs, kda, rating, _w: T[4] * (0.8 + perf * 0.25) };
+      return { id: p.id, pos: p.pos, me: !!p.me, k, d, a, cs, kda, rating, _w: T2[4] * (0.8 + perf * 0.25) };
     };
     const sortPos = (x, y) => BOX_POS_ORDER.indexOf(x.pos) - BOX_POS_ORDER.indexOf(y.pos);
-    const M = mine.map((p) => line(p, "mine")).sort(sortPos), O = opp.map((p) => line(p, "opp")).sort(sortPos);
-    [M, O].forEach((side) => {
+    const M2 = mine.map((p) => line(p, "mine")).sort(sortPos), O = opp.map((p) => line(p, "opp")).sort(sortPos);
+    [M2, O].forEach((side) => {
       const tot = side.reduce((s, x) => s + x._w, 0) || 1;
       side.forEach((x) => {
         x.dmg = Math.round(x._w / tot * 100);
         delete x._w;
       });
     });
-    const me = M.find((x) => x.me) || M[0];
-    const mates = M.filter((x) => !x.me);
+    const me = M2.find((x) => x.me) || M2[0];
+    const mates = M2.filter((x) => !x.me);
     const mateAvg = mates.length ? avg(mates.map((x) => x.rating)) : me.rating;
     const worst = mates.length ? mates.reduce((a, b) => a.rating <= b.rating ? a : b) : null;
-    const best = M.concat(O).reduce((a, b) => a.rating >= b.rating ? a : b);
+    const best = M2.concat(O).reduce((a, b) => a.rating >= b.rating ? a : b);
     const carry = !won && me.rating >= 1.15 && mates.every((x) => me.rating >= x.rating + 0.25) && mateAvg < 0.95;
     const soloWin = won && me.rating >= 1.25 && mates.length > 0 && mateAvg < 0.9 && mates.every((x) => x.rating < 1);
     const meWorst = mates.length > 0 && mates.every((x) => x.rating >= me.rating);
     const meGap = Math.round((me.rating - mateAvg) * 100) / 100;
     return {
       games,
-      mine: M,
+      mine: M2,
       opp: O,
       mateAvg: q1(mateAvg),
       worst: worst ? worst.id : null,
@@ -3833,11 +3841,11 @@ header.top.compact>.theme-top{display:none}
     const me = tryoutSkill();
     const rk = S.pre && typeof S.pre.rank === "number" ? S.pre.rank : null;
     const rows = TIER_ORDER.slice().reverse().map((k) => {
-      const T = CLUB_TIERS[k], need = TIER_RANK[k];
-      const okS = me >= T.expect, okR = rk === null || rk >= need;
-      const gap = T.expect - me;
-      return `<tr><td><b>${T.n}</b></td>
-      <td class="n mono">${T.expect}</td>
+      const T2 = CLUB_TIERS[k], need = TIER_RANK[k];
+      const okS = me >= T2.expect, okR = rk === null || rk >= need;
+      const gap = T2.expect - me;
+      return `<tr><td><b>${T2.n}</b></td>
+      <td class="n mono">${T2.expect}</td>
       <td class="n">${rankFull(need)}</td>
       <td class="n" style="color:${okS ? "var(--cyan)" : gap <= 6 ? "var(--gold)" : "var(--red)"}">${okS ? "够了" : `差 ${gap.toFixed(0)}`}</td>
       <td class="n" style="color:${okR ? "var(--cyan)" : "var(--red)"}">${rk === null ? "—" : okR ? "够了" : "不够"}</td></tr>`;
@@ -3998,12 +4006,12 @@ header.top.compact>.theme-top{display:none}
     if (!P) return;
     if (!canInvite(tier)) return;
     if (lg && lg !== "LPL" && tier === "acad") tier = "low";
-    const T = CLUB_TIERS[tier];
+    const T2 = CLUB_TIERS[tier];
     const noRe = P.noRe || {};
     let team = pickClub(tier, lg || void 0);
     for (let i = 0; i < 8 && team && noRe[team]; i++) team = pickClub(tier, lg || void 0);
     if (!team || noRe[team]) return;
-    P.invite = { tier, team, league: lg || null, reason, pending: true, week: P.week, expect: T.expect };
+    P.invite = { tier, team, league: lg || null, reason, pending: true, week: P.week, expect: T2.expect };
     P.inviteCd = P.week + INVITE_CD;
     P.inviteN = (P.inviteN || 0) + 1;
     preLog(`<b>${team}</b>${lg && lg !== "LPL" ? `（${lg} 赛区）` : ""} 看了你的比赛录像——${reason}。<b>他们邀请你去队里试训。</b>${lg && lg !== "LPL" ? `<br><span style="color:var(--ink-3)">跨国邀请：签了就是出海打职业。</span>` : ""}`, "big");
@@ -4050,11 +4058,11 @@ header.top.compact>.theme-top{display:none}
     const P = S.pre, iv = P && P.invite;
     if (!iv || !iv.pending) return "";
     if (S.cupMatch || S.cupResult || S.rankUp || S.rndEv || S.rndResult || S.signup) return "";
-    const T = CLUB_TIERS[iv.tier];
+    const T2 = CLUB_TIERS[iv.tier];
     const me = tryoutSkill(), gap = me - iv.expect;
     return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">
     <div class="ru-icon" style="text-align:center">${gicon("scout", 52)}</div>
-    <div class="ru-eyebrow" style="text-align:center">试训邀请 · ${T.n}${iv.league && iv.league !== "LPL" ? ` · ${iv.league} 赛区` : ""}</div>
+    <div class="ru-eyebrow" style="text-align:center">试训邀请 · ${T2.n}${iv.league && iv.league !== "LPL" ? ` · ${iv.league} 赛区` : ""}</div>
     <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:12px">${teamLogo(iv.team, 22)} <b>${iv.team}</b>${(() => {
       if (iv.league && iv.league !== "LPL") {
         try {
@@ -4145,10 +4153,10 @@ header.top.compact>.theme-top{display:none}
   function tryoutCard() {
     const t = S.tryout;
     if (!t) return "";
-    const T = CLUB_TIERS[t.tier];
+    const T2 = CLUB_TIERS[t.tier];
     if (t.done) {
       const r = t.result;
-      return `<div class="card"><h2>试训结束<em>${t.team} · ${T.n}</em></h2>
+      return `<div class="card"><h2>试训结束<em>${t.team} · ${T2.n}</em></h2>
       <div class="ver" style="text-align:center">
         <div style="font-size:44px;font-weight:700;color:${r.g === "D" ? "var(--red)" : r.g[0] === "A" ? "var(--gold-hi)" : "var(--cyan)"}">${r.g}</div>
         <div style="margin-top:6px">${r.g === "A+" ? "教练组开会时用了「捡到了」这个说法。" : r.g === "A" ? "四天下来，他们对你没有保留意见。" : r.g === "B" ? "他们觉得你能用，但还不到能托付的程度。" : r.g === "C" ? "差了一口气。要么再练一年，要么从青训做起。" : "教练组没有留你的意思。"}</div>
@@ -4177,7 +4185,7 @@ header.top.compact>.theme-top{display:none}
     // 进的是 LDL，在二队你就是主力
   };
   function makeDeal() {
-    const t = S.tryout, r = t.result, T = CLUB_TIERS[t.tier];
+    const t = S.tryout, r = t.result, T2 = CLUB_TIERS[t.tier];
     const rt = t.tier === "acad" ? "acad" : r.tier;
     const D = DEAL_TIERS[rt];
     const mul = t.tier === "acad" ? 1 : D.mul;
@@ -4189,11 +4197,11 @@ header.top.compact>.theme-top{display:none}
       dealTier: rt,
       grade: r.g,
       kind: D.k,
-      salary: Math.round(lerp(T.pay[0], T.pay[1], q) * mul),
-      sign: Math.round(lerp(T.sign[0], T.sign[1], q) * mul),
-      years: S.shortDeal ? 1 : T.years,
+      salary: Math.round(lerp(T2.pay[0], T2.pay[1], q) * mul),
+      sign: Math.round(lerp(T2.sign[0], T2.sign[1], q) * mul),
+      years: S.shortDeal ? 1 : T2.years,
       // 顶班短约：一个赛段（赛段注册期的规则）
-      buyout: Math.round(lerp(T.buyout[0], T.buyout[1], q) * mul),
+      buyout: Math.round(lerp(T2.buyout[0], T2.buyout[1], q) * mul),
       asks: 0,
       leverage: dealLeverage(r.g),
       dead: false,
@@ -4280,7 +4288,7 @@ header.top.compact>.theme-top{display:none}
   function dealCard() {
     const d = S.deal;
     if (!d) return "";
-    const D = DEAL_TIERS[d.dealTier], T = CLUB_TIERS[d.clubTier];
+    const D = DEAL_TIERS[d.dealTier], T2 = CLUB_TIERS[d.clubTier];
     if (d.dead) {
       return `<div class="card"><h2>谈判破裂<em>${d.team}</em></h2>
       <p class="note">${d.renew ? "你把价格要到了俱乐部不能接受的位置——<b>续约报价收回了</b>，你成了自由身，去转会市场自己找下家。" : "你把价格要到了对方不能接受的位置。这家今年不会再谈了。"}</p>
@@ -4289,7 +4297,7 @@ header.top.compact>.theme-top{display:none}
     }
     const lev = d.leverage;
     const st = clubStanding(d.team);
-    return `<div class="card"><h2>${d.renew ? "续约谈判" : "合同谈判"}<em>${d.team} · ${T.n}${st ? ` · ${st.lg || "LPL"} 第 ${st.pos}/${st.of}` : ""}</em></h2>
+    return `<div class="card"><h2>${d.renew ? "续约谈判" : "合同谈判"}<em>${d.team} · ${T2.n}${st ? ` · ${st.lg || "LPL"} 第 ${st.pos}/${st.of}` : ""}</em></h2>
     <h3>${D.n}<span class="tag g">${d.renew ? "续约" : "试训 " + d.grade}</span></h3>
     <div class="grid g2" style="margin:12px 0">
       <div class="ver"><div class="k">赛段薪资</div><div class="v mono" style="font-size:22px;color:var(--gold-hi)">${wanHtml(d.salary)}</div><div class="k" style="font-size:10px">${yearPayText(d.salary)}（一年两个赛段）</div></div>
@@ -4595,11 +4603,11 @@ header.top.compact>.theme-top{display:none}
   function proOfferCard() {
     const o = S.proOffer;
     if (!o) return "";
-    const T = CLUB_TIERS[o.tier], st = clubStanding(o.team);
+    const T2 = CLUB_TIERS[o.tier], st = clubStanding(o.team);
     const cur = clubStanding(S.team);
     return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left;max-height:86vh;overflow-y:auto">
     <div class="ru-icon" style="text-align:center">${gicon("transfer", 52)}</div>
-    <div class="ru-eyebrow" style="text-align:center">${o.asked ? "有人接了你的牌" : "转会问询"} · ${T.n}</div>
+    <div class="ru-eyebrow" style="text-align:center">${o.asked ? "有人接了你的牌" : "转会问询"} · ${T2.n}</div>
     <div class="ru-tier" style="font-size:21px;text-align:center;margin-bottom:12px">${teamLogo(o.team, 22)} <b>${o.team}</b>${o.league && o.league !== "LPL" ? `<span class="tag g">${o.league}${st ? ` 第 ${st.pos}/${st.of}` : ""}</span>` : st ? `<span class="tag">${st.lg || "LPL"} 第 ${st.pos}/${st.of}</span>` : ""}</div>
     <p class="note" style="margin:0 0 10px">
       你现在在 <b>${S.team}</b>${cur ? `（第 ${cur.pos}/${cur.of}）` : ""}。
@@ -4988,12 +4996,12 @@ header.top.compact>.theme-top{display:none}
     render();
   }
   function transferBudget(tier, grade) {
-    const T = CLUB_TIERS[tier] || CLUB_TIERS.low;
+    const T2 = CLUB_TIERS[tier] || CLUB_TIERS.low;
     const mul = { "A+": 2.2, "A": 1.6, "B": 1.1, "C": 0.7 }[grade] || 0.7;
-    return Math.round(T.pay[1] * 2 * mul);
+    return Math.round(T2.pay[1] * 2 * mul);
   }
   function makeProDeal(tier, team, grade, league) {
-    const T = CLUB_TIERS[tier], lerp = (a, b, x) => a + (b - a) * clamp(x, 0, 1);
+    const T2 = CLUB_TIERS[tier], lerp = (a, b, x) => a + (b - a) * clamp(x, 0, 1);
     const q = clamp((proPerf() + 6) / 30, 0.15, 1);
     const fee = S.freeAgent ? 0 : Math.round((S.contract && S.contract.buyout || 0) * (S._regDeal ? 1.2 : 1));
     const budget = transferBudget(tier, grade);
@@ -5010,15 +5018,15 @@ header.top.compact>.theme-top{display:none}
       return;
     }
     const payFloor = Math.round((S.contract && S.contract.salary || 0) * 0.85);
-    const payBase = Math.round(lerp(T.pay[0], T.pay[1], q));
+    const payBase = Math.round(lerp(T2.pay[0], T2.pay[1], q));
     let salary = Math.max(Math.min(Math.max(payBase, payFloor), payCapOf(tier)), payBase);
-    let sign = S._regDeal ? 0 : Math.round(lerp(T.sign[0], T.sign[1], q));
+    let sign = S._regDeal ? 0 : Math.round(lerp(T2.sign[0], T2.sign[1], q));
     let feeCutNote = S._regDeal ? `<div><span class="hi">赛段注册期</span> — <span class="l">买断按 1.2 倍算、没有签字费、进队默契从头磨</span></div>` : "";
     if (fee > budget) {
-      const cut = clamp(0.2 + 0.4 * (fee - budget) / (budget * 0.5), 0.2, 0.4);
-      salary = Math.round(salary * (1 - cut));
-      sign = Math.round(sign * (1 - cut));
-      feeCutNote = `<div><span class="hi">违约金</span> — <span class="l">${fee} 万超出他们的预算（${budget} 万），条件被压了 ${(cut * 100).toFixed(0)}%——他们在替你还债</span></div>`;
+      const cut2 = clamp(0.2 + 0.4 * (fee - budget) / (budget * 0.5), 0.2, 0.4);
+      salary = Math.round(salary * (1 - cut2));
+      sign = Math.round(sign * (1 - cut2));
+      feeCutNote = `<div><span class="hi">违约金</span> — <span class="l">${fee} 万超出他们的预算（${budget} 万），条件被压了 ${(cut2 * 100).toFixed(0)}%——他们在替你还债</span></div>`;
     }
     S.deal = {
       team,
@@ -5030,8 +5038,8 @@ header.top.compact>.theme-top{display:none}
       league: league || "LPL",
       salary,
       sign,
-      years: T.years,
-      buyout: Math.round(lerp(T.buyout[0], T.buyout[1], q)),
+      years: T2.years,
+      buyout: Math.round(lerp(T2.buyout[0], T2.buyout[1], q)),
       asks: 0,
       dead: false,
       signed: false,
@@ -5147,8 +5155,8 @@ header.top.compact>.theme-top{display:none}
     d.asked = true;
     const p = promoteRaiseOdds();
     if (rnd() < p) {
-      const T = CLUB_TIERS[d.clubTier] || CLUB_TIERS.mid;
-      d.salary = Math.max(Math.round(d.salary * 1.35), Math.round(T.pay[0] * 0.8));
+      const T2 = CLUB_TIERS[d.clubTier] || CLUB_TIERS.mid;
+      d.salary = Math.max(Math.round(d.salary * 1.35), Math.round(T2.pay[0] * 0.8));
       pushEvent(`经纪人把你的 LDL 数据拍在了桌上——俱乐部认了：<b>赛段薪资提到 ${wanText(d.salary)}</b>。`, "good", "升队");
     } else {
       addStaff("mgr", -4);
@@ -5489,8 +5497,8 @@ header.top.compact>.theme-top{display:none}
   }
   function selfRecOdds(tier) {
     const base = { acad: 0.15, low: 0.08, mid: 0.035, top: 0.012 }[tier] || 0.05;
-    const T = CLUB_TIERS[tier], me = tryoutSkill();
-    let p = base + Math.min(exposureScore(), 240) * 9e-4 + clamp((me - T.expect) * 0.012, -0.05, 0.1);
+    const T2 = CLUB_TIERS[tier], me = tryoutSkill();
+    let p = base + Math.min(exposureScore(), 240) * 9e-4 + clamp((me - T2.expect) * 0.012, -0.05, 0.1);
     if (!inviteFloorOk()) p *= 0.35;
     return clamp(p, 0.01, 0.45);
   }
@@ -5506,18 +5514,18 @@ header.top.compact>.theme-top{display:none}
   function selfRecommend(tier) {
     const c = canSelfRec();
     if (!c.ok) return;
-    const P = S.pre, T = CLUB_TIERS[tier];
+    const P = S.pre, T2 = CLUB_TIERS[tier];
     P.ap--;
     P.selfRecCd = P.week + 2;
     const p = selfRecOdds(tier);
     if (rnd() < p) {
       const team = pickClub(tier);
       if (team) {
-        P.invite = { tier, team, league: null, reason: "毛遂自荐", pending: true, week: P.week, expect: T.expect };
+        P.invite = { tier, team, league: null, reason: "毛遂自荐", pending: true, week: P.week, expect: T2.expect };
         P.inviteN = (P.inviteN || 0) + 1;
-        preLog(`你把集锦和战绩打包发给了几家${T.n}俱乐部——<b>${team}</b> 回了消息：<b>来试训吧。</b>`, "big");
+        preLog(`你把集锦和战绩打包发给了几家${T2.n}俱乐部——<b>${team}</b> 回了消息：<b>来试训吧。</b>`, "big");
         S.rndResult = {
-          choice: `毛遂自荐 · ${T.n}`,
+          choice: `毛遂自荐 · ${T2.n}`,
           txt: `<b>${team}</b> 回复了：愿意给你一次试训机会。<br>
           <span style="color:var(--ink-3)">机会只有一次——试训场上见真章。</span>`,
           diff: [{ n: "结果", v: "获得试训", good: true }, { n: "行动点", v: "-1", good: false }]
@@ -5525,9 +5533,9 @@ header.top.compact>.theme-top{display:none}
       }
     } else {
       const why = !inviteFloorOk() ? "段位不到宗师、比赛履历也还空白——没人打开你的附件" : exposureScore() < 45 ? "圈内关注度太低，简历排在几百份后面" : "这几家最近不缺人。数据再涨涨，或者等俱乐部自己找上门";
-      preLog(`你把简历投给了几家${T.n}俱乐部——没有回音。${why}。`, "info");
+      preLog(`你把简历投给了几家${T2.n}俱乐部——没有回音。${why}。`, "info");
       S.rndResult = {
-        choice: `毛遂自荐 · ${T.n}`,
+        choice: `毛遂自荐 · ${T2.n}`,
         txt: `没有回音。${why}。<br><span style="color:var(--ink-3)">两周后可以再投一轮。</span>`,
         diff: [{ n: "结果", v: "石沉大海", good: false }, { n: "行动点", v: "-1", good: false }]
       };
@@ -5551,10 +5559,10 @@ header.top.compact>.theme-top{display:none}
     const recCard = `<div class="card"><h2>毛遂自荐<em>每两周一轮 · 花 1 行动点</em></h2>
     ${c.ok ? "" : `<p class="note" style="color:var(--red)">🔒 ${c.why}</p>`}
     <div class="grid g2">${TIER_ORDER.slice().reverse().map((k) => {
-      const T = CLUB_TIERS[k], p = selfRecOdds(k);
+      const T2 = CLUB_TIERS[k], p = selfRecOdds(k);
       return `<button class="act" data-selfrec="${k}" ${c.ok ? "" : 'disabled style="opacity:.4"'}>
-        <div class="t">${T.n}</div>
-        <div class="d">期望 ${T.expect}（你 ${tryoutSkill().toFixed(0)}）· 段位 ${rankFull(TIER_RANK[k])} · 回信率 <b style="color:${p >= 0.2 ? "var(--cyan)" : p >= 0.08 ? "var(--gold)" : "var(--red)"}">${(p * 100).toFixed(0)}%</b></div></button>`;
+        <div class="t">${T2.n}</div>
+        <div class="d">期望 ${T2.expect}（你 ${tryoutSkill().toFixed(0)}）· 段位 ${rankFull(TIER_RANK[k])} · 回信率 <b style="color:${p >= 0.2 ? "var(--cyan)" : p >= 0.08 ? "var(--gold)" : "var(--red)"}">${(p * 100).toFixed(0)}%</b></div></button>`;
     }).join("")}</div>
     <p class="note">没上岸也可以敲门：把排位战绩和杯赛集锦发过去。回信率看关注度、段位和你离这一档期望的差距——很低，但不是零。
       ${P.invite && P.invite.pending ? `<br><b style="color:var(--gold)">手上有一份 ${P.invite.team} 的试训邀请（回「本周」页处理）。</b>` : ""}</p></div>`;
@@ -6270,9 +6278,14 @@ header.top.compact>.theme-top{display:none}
     const H2 = S.honors || {};
     let n = 0;
     [S.si, (S.si || 0) - 1].filter((si) => si >= 0).forEach((si) => {
-      ["msi", "worlds"].forEach((k) => {
+      ["msi", "worlds", "fst"].forEach((k) => {
         if (H2[k] && H2[k][si] === name) n++;
       });
+      const ft = (S.fmtTitles || []).filter((x) => x.si === si);
+      if (ft.length) {
+        n += ft.filter((x) => x.team === name).length;
+        return;
+      }
       [0, 1].forEach((sp) => {
         const seen = /* @__PURE__ */ new Set();
         const home = S.lgChamps && S.lgChamps[si + "|" + sp];
@@ -6452,7 +6465,7 @@ header.top.compact>.theme-top{display:none}
   function fixRows() {
     if (!S.schedule || !S.schedule.length) return [];
     const ok = S.fix && S.fix.k === fixKey();
-    return S.schedule.map((opp, i) => ({ w: i + 1, opp, r: ok ? S.fix.rows[i + 1] || null : null }));
+    return S.schedule.map((opp, i) => ({ w: i + 1, opp, r: ok ? S.fix.rows[i + 1] || null : null })).filter((x) => x.opp);
   }
   function fixtureStrip() {
     if (!S.career || S.step !== "season") return "";
@@ -6488,7 +6501,7 @@ header.top.compact>.theme-top{display:none}
     return `<div class="card"><h2>赛程<em>${sea.tag} ${SPLITS[S.split || 0]} · ${rec.w}胜 ${rec.l}负</em></h2>
     <div class="tw"><table><thead><tr><th class="n">周</th><th>对手</th><th class="n">实力</th><th class="n">对手战绩</th><th class="n">结果</th><th class="n">你</th><th class="n"></th></tr></thead>
     <tbody>${trs}</tbody></table></div>
-    <p class="note">常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。「替补席」的场次不计入你的个人战绩。${defendTitles() ? `<br><b style="color:var(--red)">卫冕压力</b>：近两个赛季你拿了 ${defendTitles()} 座冠军，对手都在研究你；对面近两个赛季也拿过冠军的，按两边的冠军数相抵。实力后面的红字，是抵消之后打你时再加的那一截。` : ""}</p></div>`;
+    <p class="note">${S.tl && S.fmt ? "真实赛制：每周打真实那一周的比赛，这里记的是你亲自上场的那几场，自动打完的场次写在大事记里。" : `常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。`}「替补席」的场次不计入你的个人战绩。${defendTitles() ? `<br><b style="color:var(--red)">卫冕压力</b>：近两个赛季你拿了 ${defendTitles()} 座冠军，对手都在研究你；对面近两个赛季也拿过冠军的，按两边的冠军数相抵。实力后面的红字，是抵消之后打你时再加的那一截。` : ""}</p></div>`;
   }
   function setBreakAgenda(items, head) {
     if (!S.off) return;
@@ -6701,9 +6714,9 @@ header.top.compact>.theme-top{display:none}
     const pct = clamp(Math.max(0, sc.edge) / SCRIM_EDGE_NEED * 100, 0, 100);
     const cost = apCost("duel");
     if (scrimTrialActive()) {
-      const T = sc.trial;
-      return `<div class="scrimbox trial"><b style="color:var(--gold-hi)">正赛试用中</b> · ${T.why}。
-      还有 <b>${T.games}</b> 场机会：<b>赢一场，首发就是你的</b>；输光了回替补席。</div>`;
+      const T2 = sc.trial;
+      return `<div class="scrimbox trial"><b style="color:var(--gold-hi)">正赛试用中</b> · ${T2.why}。
+      还有 <b>${T2.games}</b> 场机会：<b>赢一场，首发就是你的</b>；输光了回替补席。</div>`;
     }
     return `<div class="scrimbox">
     <div class="sb-h"><b>${acad ? "争取进名单" : "抢首发"}</b> · 对位 <b>${S.understudy.id}</b>（综合 ${him.toFixed(0)}，你 ${me.toFixed(0)}）</div>
@@ -6762,8 +6775,8 @@ header.top.compact>.theme-top{display:none}
     return false;
   }
   function revertTrial() {
-    const sc = scrimState(), T = sc.trial;
-    if (!T) return;
+    const sc = scrimState(), T2 = sc.trial;
+    if (!T2) return;
     const inc = S.understudy, t = myTeam();
     if (t && inc) {
       let done = false;
@@ -6847,21 +6860,21 @@ header.top.compact>.theme-top{display:none}
     demoteCheck(won, gap);
     const sc = S.scrim;
     if (!sc || !sc.trial) return;
-    const T = sc.trial;
+    const T2 = sc.trial;
     if (won) {
-      T.w++;
+      T2.w++;
       confirmStarter("试用期第一场就赢了。");
       return;
     }
-    T.l++;
-    if (gap < -6 && !T.forgiven) {
-      T.forgiven = true;
+    T2.l++;
+    if (gap < -6 && !T2.forgiven) {
+      T2.forgiven = true;
       pushEvent(`输了，但对手账面强太多（差 ${(-gap).toFixed(1)}），教练没把这场算在你头上：<b>再给你一场</b>。`, "info", "轮换");
       return;
     }
-    T.games--;
-    if (T.games > 0) {
-      pushEvent(`输了。名单上还是你，<b>还有 ${T.games} 场机会</b>——再输就回替补席。`, "bad", "轮换");
+    T2.games--;
+    if (T2.games > 0) {
+      pushEvent(`输了。名单上还是你，<b>还有 ${T2.games} 场机会</b>——再输就回替补席。`, "bad", "轮换");
       return;
     }
     const inc = S.understudy;
@@ -7421,6 +7434,10 @@ header.top.compact>.theme-top{display:none}
     if (S.tlLdlNews && !S.tlLdlNews.pressed) {
       heads.unshift({ c: "赛区改制", t: `《LDL 正式停办：${S.tlLdlNews.teams} 支二队解散，${S.tlLdlNews.n} 名高分选手转为青训储备》` });
       S.tlLdlNews.pressed = true;
+    }
+    if (S.fmtAnnNews && !S.fmtAnnNews.pressed) {
+      heads.unshift({ c: "赛制改革", t: "《2027 赛季赛制调整：回到 2025 年的三段制，取消登峰组与涅槃组》" });
+      S.fmtAnnNews.pressed = true;
     }
     pressWorldHeads().forEach((h) => {
       if (heads.length < (S.career ? 4 : 3)) heads.push(h);
@@ -8085,7 +8102,7 @@ header.top.compact>.theme-top{display:none}
   }
   var comp = (p) => avg(DIMS.map((d) => p && p.r && p.r[d] || 50));
   var ageIdx = () => clamp(S && S.worldAge || 0, 0, 7);
-  var tgt = (T, K) => (T[K] || T[K === "LCP" ? "PCS" : "LPL"] || T.LPL)[ageIdx()];
+  var tgt = (T2, K) => (T2[K] || T2[K === "LCP" ? "PCS" : "LPL"] || T2.LPL)[ageIdx()];
   var TL_LOGOS = timeline_logos_default;
   function dataLogo(name) {
     try {
@@ -9650,6 +9667,7 @@ header.top.compact>.theme-top{display:none}
   var PRIZE_PO = { champion: 200, runner: 80, semi: 40 };
   var PRIZE_PO_LDL = { champion: 20, runner: 8, semi: 0 };
   var PRIZE_MSI = { main: 40, knock: 100, final: 180, champion: 350 };
+  var PRIZE_FST = { main: 30, knock: 60, semi: 90, final: 130, champion: 220 };
   var PRIZE_W = { playin: 30, main: 60, knock: 100, semi: 180, final: 280, champion: 550 };
   function financeCard() {
     const led = S.ledger || { cur: _emptyLedger() };
@@ -10080,13 +10098,13 @@ header.top.compact>.theme-top{display:none}
     const plat = kind === "club" ? o.club : kind === "rival" ? o.rival : o.club || o.rival || PLATFORMS[0];
     const sign = Math.round(o.sign * (kind === "club" ? 0.8 : kind === "rival" ? 1.4 : 1));
     const base = Math.round(o.base * (kind === "rival" ? 1.15 : 1));
-    const cut = kind === "club" ? 0.2 : kind === "rival" ? 0.4 : 0;
+    const cut2 = kind === "club" ? 0.2 : kind === "rival" ? 0.4 : 0;
     S.streamDeal = {
       lvl: o.lvl,
       base,
       n: o.n,
       plat,
-      cut,
+      cut: cut2,
       kind: kind || "solo",
       need: o.lvl >= 2 ? 3 : 2,
       done: 0
@@ -10094,7 +10112,7 @@ header.top.compact>.theme-top{display:none}
     addMoney("sign", sign);
     bizNote("直播独家", plat, "签了", sign, `${o.n}${kind === "club" ? "（俱乐部合作平台）" : kind === "rival" ? "（对家平台，经理不高兴）" : ""}·每播保底 ${base} 万·每赛段至少播 ${o.lvl >= 2 ? 3 : 2} 次`);
     const originMul = S.origin === "streamer" ? ORIGIN_MUL.streamMoney : 1;
-    const net = Math.round(base * originMul * (1 - cut));
+    const net = Math.round(base * originMul * (1 - cut2));
     let extra = "";
     if (kind === "club") {
       addStaff("mgr", 6);
@@ -10142,7 +10160,7 @@ header.top.compact>.theme-top{display:none}
     const now = Math.round(streamIncome());
     const originMul = S.origin === "streamer" ? ORIGIN_MUL.streamMoney : 1;
     const hasClub = !!(o.club && S.team);
-    const net = (cut, mul) => Math.round(o.base * (mul || 1) * originMul * (1 - cut));
+    const net = (cut2, mul) => Math.round(o.base * (mul || 1) * originMul * (1 - cut2));
     const need = o.lvl >= 2 ? 3 : 2;
     return `<div class="rankup"><div class="ru-inner" style="max-width:600px;text-align:left;max-height:86vh;overflow-y:auto">
     <div class="ru-icon" style="text-align:center">${gicon("stream", 52)}</div>
@@ -10182,11 +10200,11 @@ header.top.compact>.theme-top{display:none}
   }
   function streamDealCard() {
     const d = S.streamDeal;
-    const cut = STREAM_CUTS[S.streamCutIdx || 0];
+    const cut2 = STREAM_CUTS[S.streamCutIdx || 0];
     if (!d) {
       return `<div class="card"><h2>直播合约<em>自由身</em></h2>
       <p class="note" style="margin:0 0 8px">你没有签任何平台的独家，收入跟着粉丝和热度走。</p>
-      <div class="ver">当前礼物分成 <b>${cut.n}</b>　·　每次直播约 <b>${Math.round(streamIncome())} 万</b><br>
+      <div class="ver">当前礼物分成 <b>${cut2.n}</b>　·　每次直播约 <b>${Math.round(streamIncome())} 万</b><br>
         <span style="color:var(--ink-3)">咖位上一个台阶，平台会主动上调分成；
         再上一个大台阶，才会有人来谈独家。</span></div>
       <p class="note" style="margin:8px 0 0">自由身的<b>上限更高</b>（收入随粉丝×热度浮动），
@@ -12481,6 +12499,1679 @@ header.top.compact>.theme-top{display:none}
     render();
   }
 
+  // demo/src/fmt.ts
+  function playSeries(a, b, bo, pGame, r) {
+    const need = (bo + 1) / 2;
+    let wa = 0, wb = 0;
+    while (wa < need && wb < need) {
+      if (r() < pGame) wa++;
+      else wb++;
+    }
+    return wa > wb ? { a, b, bo, w: a, l: b, sw: wa, sl: wb } : { a, b, bo, w: b, l: a, sw: wb, sl: wa };
+  }
+  function rrRounds(teams, times = 1) {
+    const t = teams.slice();
+    if (t.length < 2) return [];
+    if (t.length % 2) t.push("");
+    const n = t.length, half = n / 2, base = [];
+    let arr = t.slice();
+    for (let r = 0; r < n - 1; r++) {
+      const round = [];
+      for (let i = 0; i < half; i++) {
+        const x = arr[i], y = arr[n - 1 - i];
+        if (x && y) round.push(r % 2 ? [y, x] : [x, y]);
+      }
+      base.push(round);
+      arr = [arr[0], arr[n - 1], ...arr.slice(1, n - 1)];
+    }
+    const out = [];
+    for (let k = 0; k < times; k++) base.forEach((rd) => out.push(k % 2 ? rd.map(([x, y]) => [y, x]) : rd));
+    return out;
+  }
+  function crossRounds(A, B, superWeek) {
+    const n = Math.min(A.length, B.length), rounds = [];
+    const order = superWeek ? [...Array(n).keys()].slice(1).concat([0]) : [...Array(n).keys()];
+    order.forEach((r) => rounds.push(A.slice(0, n).map((x, i) => [x, B[(i + r) % n]])));
+    return rounds;
+  }
+  function tableOf(teams, games, seedOrder, ptsOf, base) {
+    const m = {};
+    teams.forEach((t) => {
+      m[t] = { team: t, w: 0, l: 0, gw: 0, gl: 0, pts: 0 };
+    });
+    (base || []).forEach((b) => {
+      const x = m[b.team];
+      if (x) {
+        x.w += b.w;
+        x.l += b.l;
+        x.gw += b.gw;
+        x.gl += b.gl;
+        x.pts += b.pts;
+      }
+    });
+    games.forEach((g) => {
+      if (!g.w || !g.l) return;
+      const W2 = m[g.w], L = m[g.l];
+      if (!W2 || !L) return;
+      W2.w++;
+      L.l++;
+      W2.gw += g.sw || 0;
+      W2.gl += g.sl || 0;
+      L.gw += g.sl || 0;
+      L.gl += g.sw || 0;
+      W2.pts += ptsOf ? ptsOf(g) : 1;
+    });
+    const ord = seedOrder || teams;
+    const h2h = (x, y) => {
+      let d = 0;
+      games.forEach((g) => {
+        if (g.w === x && g.l === y) d++;
+        else if (g.w === y && g.l === x) d--;
+      });
+      return d;
+    };
+    return teams.map((t) => m[t]).sort((x, y) => y.pts - x.pts || y.w - x.w || y.gw - y.gl - (x.gw - x.gl) || -h2h(x.team, y.team) || ord.indexOf(x.team) - ord.indexOf(y.team));
+  }
+  function swissPairs(teams, games, round) {
+    if (round <= 1) {
+      const n = teams.length, out2 = [];
+      for (let i = 0; i < n / 2; i++) out2.push([teams[i], teams[n - 1 - i]]);
+      return out2;
+    }
+    const wins = {};
+    teams.forEach((t) => {
+      wins[t] = 0;
+    });
+    games.forEach((g) => {
+      if (g.w && wins[g.w] !== void 0) wins[g.w]++;
+    });
+    const met = (x, y) => games.some((g) => g.a === x && g.b === y || g.a === y && g.b === x);
+    const pool = teams.slice().sort((x, y) => wins[y] - wins[x] || teams.indexOf(x) - teams.indexOf(y));
+    const out = [];
+    while (pool.length > 1) {
+      const x = pool.shift();
+      const same = pool.filter((y2) => wins[y2] === wins[x]);
+      const cand = (same.length ? same : pool).slice().reverse();
+      const y = cand.find((c) => !met(x, c)) || cand[0];
+      pool.splice(pool.indexOf(y), 1);
+      out.push([x, y]);
+    }
+    return out;
+  }
+  var M = (id, a, b, rd, bo, lose, win) => ({ id, a, b, rd, bo, lose, win });
+  function de8(b1) {
+    return [
+      M("u1a", "s1", "s8", 1, b1),
+      M("u1b", "s4", "s5", 1, b1),
+      M("u1c", "s2", "s7", 1, b1),
+      M("u1d", "s3", "s6", 1, b1),
+      M("u2a", "W:u1a", "W:u1b", 2, b1),
+      M("u2b", "W:u1c", "W:u1d", 2, b1),
+      M("l1a", "L:u1a", "L:u1b", 2, b1, 7),
+      M("l1b", "L:u1c", "L:u1d", 2, b1, 7),
+      M("uf", "W:u2a", "W:u2b", 3, 5),
+      M("l2a", "W:l1a", "L:u2b", 3, b1, 5),
+      M("l2b", "W:l1b", "L:u2a", 3, b1, 5),
+      M("l3", "W:l2a", "W:l2b", 4, 5, 4),
+      M("lf", "L:uf", "W:l3", 5, 5, 3),
+      M("f", "W:uf", "W:lf", 6, 5, 2, 1)
+    ];
+  }
+  var BRK = {
+    /* 4 队单败（小赛区简化联赛）：1v4、2v3，决赛 */
+    SE4: [M("a", "s1", "s4", 1, 5, 3), M("b", "s2", "s3", 1, 5, 3), M("f", "W:a", "W:b", 2, 5, 2, 1)],
+    /* LCK 2022：6 队单败，1 号打 4v5 胜者 */
+    SE6: [M("q1", "s3", "s6", 1, 5, 5), M("q2", "s4", "s5", 1, 5, 5), M("sf1", "s1", "W:q2", 2, 5, 3), M("sf2", "s2", "W:q1", 2, 5, 3), M("f", "W:sf1", "W:sf2", 3, 5, 2, 1)],
+    /* LCK 2023–2024、LCK 杯 2025：首轮单败，之后四队双败 */
+    LCK23: [
+      M("r1a", "s3", "s6", 1, 5, 5),
+      M("r1b", "s4", "s5", 1, 5, 5),
+      M("r2a", "s1", "W:r1b", 2, 5),
+      M("r2b", "s2", "W:r1a", 2, 5),
+      M("ubf", "W:r2a", "W:r2b", 3, 5),
+      M("lb1", "L:r2a", "L:r2b", 3, 5, 4),
+      M("lbf", "L:ubf", "W:lb1", 4, 5, 3),
+      M("f", "W:ubf", "W:lbf", 5, 5, 2, 1)
+    ],
+    /* 6 队完整双败 / 长败者组（LCK 2025 季后赛起、LCS 2024 夏、LCS 2026 夏）：1、2 号轮空 */
+    DE6F: [
+      M("u1a", "s3", "s6", 1, 5),
+      M("u1b", "s4", "s5", 1, 5),
+      M("u2a", "s1", "W:u1b", 2, 5),
+      M("u2b", "s2", "W:u1a", 2, 5),
+      M("l1", "L:u1a", "L:u1b", 2, 5, 6),
+      M("uf", "W:u2a", "W:u2b", 3, 5),
+      M("l2", "W:l1", "LL:u2a,u2b", 3, 5, 5),
+      M("l3", "HL:u2a,u2b", "W:l2", 4, 5, 4),
+      M("lf", "L:uf", "W:l3", 5, 5, 3),
+      M("f", "W:uf", "W:lf", 6, 5, 2, 1)
+    ],
+    /* 6 队双败：1–4 号胜者组、5–6 号败者组（LEC、LCS 春季赛、LCS 2026 Lock-In、赛季总决赛） */
+    DE6A: [
+      M("ua", "s1", "s4", 1, 5),
+      M("ub", "s2", "s3", 1, 5),
+      M("uf", "W:ua", "W:ub", 2, 5),
+      M("la", "HL:ua,ub", "s6", 2, 5, 5),
+      M("lb", "LL:ua,ub", "s5", 2, 5, 5),
+      M("ls", "W:la", "W:lb", 3, 5, 4),
+      M("lf", "L:uf", "W:ls", 4, 5, 3),
+      M("f", "W:uf", "W:lf", 5, 5, 2, 1)
+    ],
+    /* LPL 2022–2024 十队冒泡赛：两条单败阶梯 + 四强双败 */
+    KOTH10: [
+      M("x1", "s8", "s9", 1, 5, 9),
+      M("y1", "s7", "s10", 1, 5, 9),
+      M("x2", "s5", "W:x1", 2, 5, 7),
+      M("y2", "s6", "W:y1", 2, 5, 7),
+      M("x3", "s4", "W:x2", 3, 5, 5),
+      M("y3", "s3", "W:y2", 3, 5, 5),
+      M("r4a", "s1", "W:x3", 4, 5),
+      M("r4b", "s2", "W:y3", 4, 5),
+      M("ubf", "W:r4a", "W:r4b", 5, 5),
+      M("lb", "L:r4a", "L:r4b", 5, 5, 4),
+      M("lbf", "L:ubf", "W:lb", 6, 5, 3),
+      M("f", "W:ubf", "W:lbf", 7, 5, 2, 1)
+    ],
+    /* 8 队双败全在胜者组（LPL 2025 S2 起），全 BO5 */
+    DE8: de8(5),
+    /* LEC 前 8 双败：前两轮 BO3 */
+    DE8B: de8(3),
+    /* 8 队双败：1–4 号胜者组、5–8 号败者组（LPL 2025 S1、LEC 2025 夏、LTA 2025 第三赛段） */
+    DE8UL: [
+      M("ua", "s1", "s4", 1, 5),
+      M("ub", "s2", "s3", 1, 5),
+      M("la", "s5", "s8", 1, 5, 7),
+      M("lb", "s6", "s7", 1, 5, 7),
+      M("uf", "W:ua", "W:ub", 2, 5),
+      M("l2a", "W:la", "L:ub", 2, 5, 5),
+      M("l2b", "W:lb", "L:ua", 2, 5, 5),
+      M("l3", "W:l2a", "W:l2b", 3, 5, 4),
+      M("lf", "L:uf", "W:l3", 4, 5, 3),
+      M("f", "W:uf", "W:lf", 5, 5, 2, 1)
+    ],
+    /* 8 队双败：1、2 号轮空到胜者组第二轮，3–6 号胜者组首轮，7、8 号从败者组首轮起步
+       （LPL 2026 第三赛段总决赛：7、8 号是骑士之路胜者；LCS 2022–2023 总决赛） */
+    DE8K: [
+      M("u1a", "s3", "s6", 1, 5),
+      M("u1b", "s4", "s5", 1, 5),
+      M("u2a", "s1", "W:u1b", 2, 5),
+      M("u2b", "s2", "W:u1a", 2, 5),
+      M("l1a", "L:u1a", "s8", 2, 5, 7),
+      M("l1b", "L:u1b", "s7", 2, 5, 7),
+      M("uf", "W:u2a", "W:u2b", 3, 5),
+      M("l2a", "W:l1a", "L:u2b", 3, 5, 5),
+      M("l2b", "W:l1b", "L:u2a", 3, 5, 5),
+      M("l3", "W:l2a", "W:l2b", 4, 5, 4),
+      M("lf", "L:uf", "W:l3", 5, 5, 3),
+      M("f", "W:uf", "W:lf", 6, 5, 2, 1)
+    ],
+    /* 4 队双败取 2（LEC 2023 分组 BO3、LCK 2025 季后入围 BO5）：胜者组赢家第 1、决胜战赢家第 2 */
+    GSL4: [M("a", "s1", "s4", 1, 5), M("b", "s2", "s3", 1, 5), M("w", "W:a", "W:b", 2, 5, void 0, 1), M("e", "L:a", "L:b", 2, 5, 4), M("d", "L:w", "W:e", 3, 5, 3, 2)],
+    /* 两个 4 队 GSL 小组并排（LEC 2023 分组）：A 组 s1 s4 s5 s8、B 组 s2 s3 s6 s7；组第一 win=1、组第二 win=3 */
+    GSL8: [
+      M("aa", "s1", "s8", 1, 3),
+      M("ab", "s4", "s5", 1, 3),
+      M("ba", "s2", "s7", 1, 3),
+      M("bb", "s3", "s6", 1, 3),
+      M("aw", "W:aa", "W:ab", 2, 3, void 0, 1),
+      M("ae", "L:aa", "L:ab", 2, 3, 7),
+      M("bw", "W:ba", "W:bb", 2, 3, void 0, 1),
+      M("be", "L:ba", "L:bb", 2, 3, 7),
+      M("ad", "L:aw", "W:ae", 3, 3, 5, 3),
+      M("bd", "L:bw", "W:be", 3, 3, 5, 3)
+    ],
+    /* LEC 2023 赛段季后赛：两个小组第一在胜者组 */
+    DE4: [M("u", "s1", "s2", 1, 5), M("l", "s3", "s4", 1, 5, 4), M("lf", "L:u", "W:l", 2, 5, 3), M("f", "W:u", "W:lf", 3, 5, 2, 1)],
+    /* 瀑布赛（地区资格赛、LCK 2026 季后入围）：1v2 胜者第 1；3v4 胜者再打 1v2 负者争第 2 */
+    WF4: [M("a", "s1", "s2", 1, 5, void 0, 1), M("b", "s3", "s4", 1, 5, 4), M("c", "L:a", "W:b", 2, 5, 3, 2)],
+    /* LCK Road to MSI：5v6→4→3 的阶梯；1v2 胜者 MSI 1 号，负者对阶梯胜者争 2 号 */
+    RTMSI: [M("m1", "s5", "s6", 1, 5, 6), M("m2", "s4", "W:m1", 2, 5, 5), M("m3a", "s1", "s2", 3, 5, void 0, 1), M("m3b", "s3", "W:m2", 3, 5, 4), M("m4", "L:m3a", "W:m3b", 4, 5, 3, 2)],
+    /* LCK 杯入围赛：6 队、两队轮空，BO3 两轮 + 最后一场 BO5，取 3 */
+    PI6: [M("a", "s3", "s6", 1, 3, 5), M("b", "s4", "s5", 1, 3, 5), M("c", "s1", "W:b", 2, 3, void 0, 1), M("d", "s2", "W:a", 2, 3, void 0, 2), M("e", "L:c", "L:d", 3, 5, 4, 3)],
+    /* LTA 2025 第一赛段分区赛：8 队双败 BO3，每区取 4 */
+    Q8: [
+      M("a", "s1", "s8", 1, 3),
+      M("b", "s4", "s5", 1, 3),
+      M("c", "s2", "s7", 1, 3),
+      M("d", "s3", "s6", 1, 3),
+      M("ua", "W:a", "W:b", 2, 3, void 0, 1),
+      M("ub", "W:c", "W:d", 2, 3, void 0, 2),
+      M("la", "L:a", "L:b", 2, 3, 7),
+      M("lb", "L:c", "L:d", 2, 3, 7),
+      M("xa", "L:ua", "W:lb", 3, 3, 5, 3),
+      M("xb", "L:ub", "W:la", 3, 3, 5, 4)
+    ],
+    /* 8 队单败：BO3，决赛 BO5（LTA 2025 跨区季后赛） */
+    SE8: [M("q1", "s1", "s8", 1, 3, 5), M("q2", "s4", "s5", 1, 3, 5), M("q3", "s2", "s7", 1, 3, 5), M("q4", "s3", "s6", 1, 3, 5), M("sa", "W:q1", "W:q2", 2, 3, 3), M("sb", "W:q3", "W:q4", 2, 3, 3), M("f", "W:sa", "W:sb", 3, 5, 2, 1)],
+    /* LTA 2025 美洲总决赛：s1 北区冠军 s2 南区冠军 s3 北 2 s4 南 2 s5 北 3 s6 南 3 */
+    LTAC: [M("uf", "s1", "s2", 1, 5), M("l1a", "s3", "s6", 1, 5, 5), M("l1b", "s4", "s5", 1, 5, 5), M("l2", "W:l1a", "W:l1b", 2, 5, 4), M("lf", "L:uf", "W:l2", 3, 5, 3), M("f", "W:uf", "W:lf", 4, 5, 2, 1)],
+    /* LPL 2026 第一赛段骑士之路：s1 登峰5 s2 坚毅2 s3 登峰6 s4 坚毅1 s5 坚毅3 s6 涅槃2 s7 坚毅4 s8 涅槃1；取 4 */
+    KR3: [
+      M("m1", "s1", "s2", 1, 5, void 0, 1),
+      M("m2", "s3", "s4", 1, 5, void 0, 2),
+      M("m3", "s5", "s6", 1, 5, 7),
+      M("m4", "s7", "s8", 1, 5, 7),
+      M("r3a", "L:m1", "W:m4", 2, 5, 5, 3),
+      M("r3b", "L:m2", "W:m3", 2, 5, 5, 4)
+    ]
+  };
+  function krTpl(n, bo) {
+    const out = [];
+    for (let i = 1; i <= n; i++) out.push(M("k" + i, "s" + (2 * i - 1), "s" + 2 * i, 1, bo, n + i, i));
+    return out;
+  }
+  function bracketMatches(st) {
+    const base = st.tpl === "KR" ? krTpl(st.n || 1, st.bo || 5) : BRK[st.tpl];
+    return st.bo && st.tpl !== "KR" ? base.map((m) => ({ ...m, bo: st.bo })) : base;
+  }
+  function bracketRoundsCount(st) {
+    return Math.max(0, ...bracketMatches(st).map((m) => m.rd));
+  }
+  function slotTeam(st, slot) {
+    if (slot[0] === "s") return st.seeds[+slot.slice(1) - 1];
+    const [k, ref] = slot.split(":");
+    if (k === "W" || k === "L") {
+      const r = st.res[ref];
+      return r ? k === "W" ? r.w : r.l : void 0;
+    }
+    const [m1, m2] = ref.split(",");
+    const x = st.res[m1]?.l, y = st.res[m2]?.l;
+    if (!x || !y) return void 0;
+    const xi = st.seeds.indexOf(x), yi = st.seeds.indexOf(y);
+    const hi = xi <= yi ? x : y, lo = xi <= yi ? y : x;
+    return k === "HL" ? hi : lo;
+  }
+  function roundPairs(st, rd) {
+    return bracketMatches(st).filter((m) => m.rd === rd && !st.res[m.id]).map((m) => ({ m, a: slotTeam(st, m.a), b: slotTeam(st, m.b) })).filter((x) => x.a && x.b);
+  }
+  function bracketPlaces(st) {
+    const pl = {};
+    bracketMatches(st).forEach((m) => {
+      const r = st.res[m.id];
+      if (!r) return;
+      if (m.win !== void 0 && r.w) pl[r.w] = m.win;
+      if (m.lose !== void 0 && r.l) pl[r.l] = m.lose;
+    });
+    return Object.keys(pl).map((team) => ({ team, place: pl[team] })).sort((x, y) => x.place - y.place || st.seeds.indexOf(x.team) - st.seeds.indexOf(y.team));
+  }
+  var ptsAt = (table, place) => table && place >= 1 && place <= table.length ? table[place - 1] : 0;
+
+  // demo/src/fmtrun.ts
+  var runOf = (run, key) => run.runs.find((r) => r && r.key === key);
+  function rowsOf(run, ys, key, group) {
+    const r = runOf(run, key);
+    if (!r) return [];
+    const ss = ys.splits[run.si].stages.find((s) => s.key === key);
+    const g = group === void 0 ? r.groups.length === 1 ? r.groups[0] : { name: "", teams: r.groups.flatMap((x) => x.teams) } : r.groups.find((x) => x.name === group);
+    if (!g) return [];
+    const carried = ss.carry ? runOf(run, ss.carry)?.games || [] : [];
+    const base = ss.carrySplit ? run.outs.find((o) => o && o.key === ss.carrySplit)?.rows || [] : void 0;
+    return tableOf(g.teams, carried.concat(r.games), g.teams, (s) => s.pts || 1, base);
+  }
+  function ctxOf(run, ys) {
+    const prev = run.si > 0 && run.outs[run.si - 1] ? run.outs[run.si - 1].order : run.prevRank;
+    const c = {
+      lg: run.lg,
+      year: run.year,
+      teams: [],
+      prevRank: prev,
+      all: run.all,
+      splits: run.outs,
+      pts: run.pts,
+      slots: (ev) => run.slots && run.slots[ev] || 0,
+      rows: (key, g) => rowsOf(run, ys, key, g),
+      table: (key, g) => rowsOf(run, ys, key, g).map((x) => x.team),
+      groups: (key) => runOf(run, key)?.groups || [],
+      adv: (key, k) => {
+        const r = runOf(run, key);
+        const pl = r && r.br ? bracketPlaces(r.br) : [];
+        return (k ? pl.slice(0, k) : pl).map((x) => x.team);
+      },
+      places: (key) => {
+        const r = runOf(run, key);
+        const o = {};
+        if (r && r.br) bracketPlaces(r.br).forEach((x) => {
+          o[x.team] = x.place;
+        });
+        return o;
+      },
+      split: (key) => run.outs.find((o) => o && o.key === key),
+      br: (key) => runOf(run, key)?.br
+    };
+    const sp = ys.splits[run.si];
+    const alive = run.all.filter((t) => !run.outSeason.includes(t));
+    const byPrev = alive.slice().sort((x, y) => rank(prev, x, run.all) - rank(prev, y, run.all));
+    c.teams = sp && sp.teams ? sp.teams({ ...c, teams: byPrev }) : byPrev;
+    return c;
+  }
+  var rank = (order, t, all) => {
+    const i = order.indexOf(t);
+    return i >= 0 ? i : 1e3 + all.indexOf(t);
+  };
+  function newYear(lg, year, all, prevRank) {
+    return { lg, year, si: 0, stage: 0, runs: [], outs: [], outSeason: [], pts: {}, prevRank, all: all.slice(), wait: null, done: false };
+  }
+  function startStage(run, ys) {
+    const ss = ys.splits[run.si].stages[run.stage], c = ctxOf(run, ys);
+    const r = { key: ss.key, type: ss.type, groups: [], sched: [], games: [], rounds: 0, doneR: 0, perWeek: ss.perWeek, bo: ss.bo || 3 };
+    if (ss.type === "br") {
+      const seeds = ss.seeds ? ss.seeds(c) : c.teams;
+      r.br = { tpl: ss.tpl, seeds, res: {}, n: ss.n, bo: ss.boAll };
+      r.rounds = bracketRoundsCount(r.br);
+    } else {
+      r.groups = ss.groups ? ss.groups(c) : [{ name: "", teams: c.teams }];
+      if (ss.type === "rr") {
+        const per = r.groups.map((g) => rrRounds(g.teams, g.times || ss.times || 1));
+        r.rounds = Math.max(0, ...per.map((p) => p.length));
+        for (let i = 0; i < r.rounds; i++) r.sched.push(per.flatMap((p) => (p[i] || []).map(([a, b]) => ({ a, b, bo: r.bo }))));
+      } else if (ss.type === "cross") {
+        const rs = crossRounds(r.groups[0].teams, r.groups[1].teams, !!ss.superWeek);
+        r.rounds = rs.length;
+        rs.forEach((rd, i) => {
+          const sup = !!ss.superWeek && i === rs.length - 1;
+          r.sched.push(rd.map(([a, b]) => ({ a, b, bo: sup ? 5 : r.bo, pts: sup ? 2 : 1 })));
+        });
+      } else {
+        r.rounds = ss.swissRounds || 3;
+      }
+    }
+    run.runs[run.stage] = r;
+  }
+  function beginSplit(run, ys) {
+    run.wait = null;
+    run.stage = 0;
+    run.runs = [];
+    if (run.si >= ys.splits.length) {
+      run.done = true;
+      return;
+    }
+    startStage(run, ys);
+  }
+  function roundPending(run) {
+    const r = run.runs[run.stage];
+    if (!r || run.done || run.wait || r.doneR >= r.rounds) return [];
+    const rd = r.doneR + 1;
+    if (r.type === "br") return roundPairs(r.br, rd).map((x) => ({ a: x.a, b: x.b, bo: x.m.bo, id: x.m.id, stage: r.key, rd }));
+    if (r.type === "swiss" && !r.sched[rd - 1]) r.sched[rd - 1] = swissPairs(r.groups[0].teams, r.games, rd).map(([a, b]) => ({ a, b, bo: r.bo }));
+    const done = new Set(r.games.map((g) => g.id));
+    return (r.sched[rd - 1] || []).map((m, i) => ({ a: m.a, b: m.b, bo: m.bo, pts: m.pts, id: rd + ":" + i, stage: r.key, rd })).filter((p) => !done.has(p.id));
+  }
+  function record(run, p, s) {
+    const r = run.runs[run.stage];
+    if (!r || r.key !== p.stage) return;
+    const g = { ...s, id: p.id, pts: p.pts };
+    r.games.push(g);
+    if (r.br) r.br.res[p.id] = g;
+  }
+  function closeRound(run, ys) {
+    const r = run.runs[run.stage];
+    if (!r) return "open";
+    if (roundPending(run).length) return "open";
+    r.doneR++;
+    if (r.doneR < r.rounds) return "round";
+    const sp = ys.splits[run.si];
+    if (run.stage + 1 < sp.stages.length) {
+      run.stage++;
+      startStage(run, ys);
+      return "stage";
+    }
+    finishSplit(run, ys);
+    return "split";
+  }
+  function finishSplit(run, ys) {
+    const sp = ys.splits[run.si], c = ctxOf(run, ys);
+    const o = sp.finish(c);
+    const out = { key: sp.key, name: sp.name, ...o };
+    out.champ = out.champ || out.order[0];
+    const po = run.runs.slice().reverse().find((r) => r && r.br && (sp.stages.find((s) => s.key === r.key) || {}).kind === "po");
+    if (po && po.br) {
+      out.poN = po.br.seeds.length;
+      out.poSeeds = po.br.seeds.slice();
+    }
+    if (sp.pts) out.order.forEach((t) => {
+      const p = out.places[t];
+      run.pts[t] = (run.pts[t] || 0) + ptsAt(sp.pts, p);
+    });
+    run.outs[run.si] = out;
+    (out.outSeason || []).forEach((t) => {
+      if (!run.outSeason.includes(t)) run.outSeason.push(t);
+    });
+    run.si++;
+    if (sp.after) {
+      run.wait = sp.after;
+      run.runs = [];
+      run.stage = 0;
+      if (run.si >= ys.splits.length) run.done = true;
+      return;
+    }
+    beginSplit(run, ys);
+  }
+  function weekDone(run) {
+    const r = run.runs[run.stage];
+    return !r || run.done || !!run.wait || r.doneR % r.perWeek === 0;
+  }
+  function simWeek(run, ys, pGame, rng) {
+    if (run.done || run.wait) return;
+    let guard = 0;
+    do {
+      roundPending(run).forEach((p) => record(run, p, playSeries(p.a, p.b, p.bo, pGame(p.a, p.b), rng)));
+      const st = closeRound(run, ys);
+      if (st === "stage" || st === "split") break;
+    } while (!weekDone(run) && ++guard < 20);
+  }
+
+  // demo/src/fmtspec.ts
+  var G = (name, teams, times) => ({ name, teams, times });
+  function snake(teams, n, names) {
+    const gs = [...Array(n)].map((_, i) => G(names ? names[i] : String.fromCharCode(65 + i) + " 组", []));
+    teams.forEach((t, i) => {
+      const r = Math.floor(i / n), k = i % n;
+      gs[r % 2 ? n - 1 - k : k].teams.push(t);
+    });
+    return gs;
+  }
+  function cut(teams, sizes, names, times) {
+    let i = 0;
+    return sizes.map((s, k) => G(names[k], teams.slice(i, i += s), times && times[k]));
+  }
+  var minus = (a, ...b) => a.filter((t) => !b.some((x) => x.includes(t)));
+  function fin(c, po, tail, seq = false) {
+    const pl = c.places(po), order = [];
+    c.adv(po).concat(tail, c.teams).forEach((t) => {
+      if (t && !order.includes(t)) order.push(t);
+    });
+    const places = {};
+    order.forEach((t, i) => {
+      places[t] = seq ? i + 1 : pl[t] ?? i + 1;
+    });
+    return { order, places };
+  }
+  var topBy = (c, key, g) => c.table(key, g);
+  var slotsOf = (c, ev, order) => order.slice(0, c.slots(ev));
+  function rfSplit(lastKey) {
+    const cands = (c) => {
+      const last = c.split(lastKey);
+      const champ = last.champ;
+      const byPts = c.teams.filter((t) => t !== champ).sort((x, y) => (c.pts[y] || 0) - (c.pts[x] || 0) || (last.places[x] || 99) - (last.places[y] || 99));
+      return { champ, seed2: byPts[0], rf: byPts.slice(1, 5) };
+    };
+    return {
+      key: "rf",
+      name: "地区资格赛",
+      short: "资格赛",
+      title: false,
+      half: 1,
+      after: "worlds",
+      stages: [{ key: "rf", name: "地区资格赛", kind: "q", type: "br", tpl: "WF4", perWeek: 2, seeds: (c) => cands(c).rf }],
+      finish: (c) => {
+        const { champ, seed2 } = cands(c);
+        const rf = c.adv("rf");
+        const order = [champ, seed2, ...rf];
+        const places = {};
+        order.forEach((t, i) => {
+          places[t] = i + 1;
+        });
+        return { order, places, champ, intl: order.slice(0, c.slots("worlds")), aux: true };
+      }
+    };
+  }
+  var P_SPRING = [90, 70, 50, 30, 20, 20, 10, 10];
+  var P_SUMMER = [0, 110, 80, 60, 40, 40, 10, 10];
+  function lplClassic(year) {
+    const sp = (key, name, short, half, after, pts) => ({
+      key,
+      name,
+      short,
+      half,
+      after,
+      pts,
+      stages: [
+        { key: "rs", name: "常规赛", kind: "rr", type: "rr", times: 1, bo: 3, perWeek: 2 },
+        { key: "po", name: "季后赛", kind: "po", type: "br", tpl: "KOTH10", perWeek: 2, seeds: (c) => topBy(c, "rs").slice(0, 10) }
+      ],
+      finish: (c) => {
+        const f = fin(c, "po", topBy(c, "rs"));
+        return { ...f, intl: after ? slotsOf(c, after, f.order) : void 0 };
+      }
+    });
+    const spring = sp("spring", "春季赛", "春", 0, "msi", P_SPRING);
+    if (year < 2024) return { lg: "LPL", year, splits: [spring, sp("summer", "夏季赛", "夏", 1, null, P_SUMMER), rfSplit("summer")] };
+    const summer = {
+      key: "summer",
+      name: "夏季赛",
+      short: "夏",
+      half: 1,
+      after: null,
+      pts: [200, 110, 80, 60, 40, 40, 10, 10],
+      stages: [
+        { key: "pl", name: "定组赛", kind: "rr", type: "rr", times: 2, bo: 3, perWeek: 3, groups: (c) => snake(c.teams, 4) },
+        {
+          key: "ru",
+          name: "组内赛",
+          kind: "rr",
+          type: "rr",
+          times: 1,
+          bo: 3,
+          perWeek: 3,
+          groups: (c) => {
+            const A = [], N2 = [];
+            c.groups("pl").forEach((g) => {
+              const t = topBy(c, "pl", g.name);
+              A.push(...t.slice(0, t.length - 2));
+              N2.push(...t.slice(-2));
+            });
+            const byPrev = (x, y) => c.prevRank.indexOf(x) - c.prevRank.indexOf(y);
+            return [G("登峰组", A.sort(byPrev)), G("涅槃组", N2.sort(byPrev))];
+          }
+        },
+        { key: "kr", name: "骑士之路", kind: "ki", type: "br", tpl: "KR", n: 3, perWeek: 1, seeds: (c) => {
+          const A = topBy(c, "ru", "登峰组"), N2 = topBy(c, "ru", "涅槃组");
+          return [A[7], N2[3], A[8], N2[2], N2[0], N2[1]];
+        } },
+        { key: "po", name: "季后赛", kind: "po", type: "br", tpl: "KOTH10", perWeek: 2, seeds: (c) => topBy(c, "ru", "登峰组").slice(0, 7).concat(c.adv("kr", 3)) }
+      ],
+      finish: (c) => {
+        const A = topBy(c, "ru", "登峰组"), N2 = topBy(c, "ru", "涅槃组");
+        return { ...fin(c, "po", A.concat(N2)), outSeason: N2.slice(4) };
+      }
+    };
+    return { lg: "LPL", year, splits: [spring, summer, rfSplit("summer")] };
+  }
+  function lpl2025() {
+    const s1 = {
+      key: "s1",
+      name: "第一赛段",
+      short: "S1",
+      half: 0,
+      after: "fst",
+      pts: [20, 15, 10, 10, 5, 5, 5, 5],
+      stages: [
+        { key: "g", name: "小组赛", kind: "rr", type: "rr", times: 1, bo: 5, perWeek: 1, groups: (c) => snake(c.teams, 4) },
+        {
+          key: "po",
+          name: "季后赛",
+          kind: "po",
+          type: "br",
+          tpl: "DE8UL",
+          perWeek: 3,
+          seeds: (c) => {
+            const gs = c.groups("g").map((g) => topBy(c, "g", g.name));
+            return gs.map((t) => t[0]).concat(gs.map((t) => t[1]));
+          }
+        }
+      ],
+      finish: (c) => {
+        const f = fin(c, "po", topBy(c, "g"));
+        return { ...f, intl: slotsOf(c, "fst", f.order) };
+      }
+    };
+    const s2 = {
+      key: "s2",
+      name: "第二赛段",
+      short: "S2",
+      half: 0,
+      after: "msi",
+      pts: P_SPRING,
+      stages: [
+        { key: "pl", name: "定组赛", kind: "rr", type: "rr", times: 2, bo: 1, perWeek: 4, groups: (c) => snake(c.teams, 4) },
+        { key: "lcq", name: "登峰晋升赛", kind: "ki", type: "br", tpl: "GSL4", boAll: 3, perWeek: 3, seeds: (c) => c.groups("pl").map((g) => topBy(c, "pl", g.name)[2]) },
+        {
+          key: "ru",
+          name: "组内赛",
+          kind: "rr",
+          type: "rr",
+          bo: 3,
+          perWeek: 3,
+          groups: (c) => {
+            const gs = c.groups("pl").map((g) => topBy(c, "pl", g.name));
+            const up = c.adv("lcq", 2), lcq = c.adv("lcq");
+            const A = gs.map((t) => t[0]).concat(gs.map((t) => t[1]), up);
+            const N2 = gs.map((t) => t[3]).concat(lcq.slice(2));
+            return [G("登峰组", A, 2), G("涅槃组", N2, 1)];
+          }
+        },
+        { key: "kr", name: "骑士之路", kind: "ki", type: "br", tpl: "KR", n: 4, perWeek: 1, seeds: (c) => {
+          const A = topBy(c, "ru", "登峰组"), N2 = topBy(c, "ru", "涅槃组");
+          return [A[4], N2[0], A[5], N2[1], A[6], A[9], A[7], A[8]];
+        } },
+        { key: "po", name: "季后赛", kind: "po", type: "br", tpl: "DE8", perWeek: 3, seeds: (c) => topBy(c, "ru", "登峰组").slice(0, 4).concat(c.adv("kr", 4)) }
+      ],
+      finish: (c) => {
+        const A = topBy(c, "ru", "登峰组"), N2 = topBy(c, "ru", "涅槃组");
+        const f = fin(c, "po", A.concat(N2));
+        return { ...f, outSeason: N2.slice(4), intl: slotsOf(c, "msi", f.order) };
+      }
+    };
+    const s3 = {
+      key: "s3",
+      name: "第三赛段",
+      short: "S3",
+      half: 1,
+      after: null,
+      pts: P_SUMMER,
+      stages: [
+        {
+          key: "ru",
+          name: "组内赛",
+          kind: "rr",
+          type: "rr",
+          times: 2,
+          bo: 3,
+          perWeek: 3,
+          groups: (c) => {
+            const A = c.split("s2").order.filter((t) => c.teams.includes(t)).slice(0, 8);
+            return [G("登峰组", A), G("涅槃组", minus(c.teams, A))];
+          }
+        },
+        { key: "kr", name: "骑士之路", kind: "ki", type: "br", tpl: "KR", n: 4, perWeek: 1, seeds: (c) => {
+          const A = topBy(c, "ru", "登峰组"), N2 = topBy(c, "ru", "涅槃组");
+          return [A[4], N2[3], A[5], N2[2], A[6], N2[1], A[7], N2[0]];
+        } },
+        { key: "po", name: "赛季季后赛", kind: "po", type: "br", tpl: "DE8", perWeek: 3, seeds: (c) => topBy(c, "ru", "登峰组").slice(0, 4).concat(c.adv("kr", 4)) }
+      ],
+      finish: (c) => {
+        const A = topBy(c, "ru", "登峰组"), N2 = topBy(c, "ru", "涅槃组");
+        return fin(c, "po", A.concat(N2));
+      }
+    };
+    return { lg: "LPL", year: 2025, splits: [s1, s2, s3, rfSplit("s3")] };
+  }
+  function lpl2026() {
+    const s1 = {
+      key: "s1",
+      name: "第一赛段",
+      short: "S1",
+      half: 0,
+      after: "fst",
+      pts: [80, 50, 40, 20, 10, 10, 5, 5],
+      stages: [
+        { key: "g", name: "分组赛", kind: "rr", type: "rr", times: 2, bo: 3, perWeek: 3, groups: (c) => cut(c.teams, [6, 4, c.teams.length - 10], ["登峰组", "坚毅组", "涅槃组"]) },
+        {
+          key: "kr",
+          name: "骑士之路",
+          kind: "ki",
+          type: "br",
+          tpl: "KR3",
+          perWeek: 2,
+          seeds: (c) => {
+            const A = topBy(c, "g", "登峰组"), P = topBy(c, "g", "坚毅组"), N2 = topBy(c, "g", "涅槃组");
+            return [A[4], P[1], A[5], P[0], P[2], N2[1], P[3], N2[0]];
+          }
+        },
+        { key: "po", name: "季后赛", kind: "po", type: "br", tpl: "DE8", perWeek: 3, seeds: (c) => topBy(c, "g", "登峰组").slice(0, 4).concat(c.adv("kr", 4)) }
+      ],
+      finish: (c) => {
+        const f = fin(c, "po", topBy(c, "g", "登峰组").concat(topBy(c, "g", "坚毅组"), topBy(c, "g", "涅槃组")));
+        return { ...f, intl: slotsOf(c, "fst", f.order) };
+      }
+    };
+    const s2 = {
+      key: "s2",
+      name: "第二赛段",
+      short: "S2",
+      half: 0,
+      after: "msi",
+      pts: [110, 80, 50, 30, 15, 15, 10, 10],
+      stages: [
+        {
+          key: "ru",
+          name: "组内赛",
+          kind: "rr",
+          type: "rr",
+          bo: 3,
+          perWeek: 2,
+          groups: (c) => {
+            const A = c.split("s1").order.slice(0, 8);
+            return [G("登峰组", A, 2), G("涅槃组", minus(c.teams, A), 1)];
+          }
+        },
+        { key: "kr", name: "骑士之路", kind: "ki", type: "br", tpl: "KR", n: 4, perWeek: 1, seeds: (c) => {
+          const A = topBy(c, "ru", "登峰组"), N2 = topBy(c, "ru", "涅槃组");
+          return [A[4], N2[3], A[5], N2[2], A[6], N2[1], A[7], N2[0]];
+        } },
+        { key: "po", name: "季后赛", kind: "po", type: "br", tpl: "DE8", perWeek: 3, seeds: (c) => topBy(c, "ru", "登峰组").slice(0, 4).concat(c.adv("kr", 4)) }
+      ],
+      finish: (c) => {
+        const A = topBy(c, "ru", "登峰组"), N2 = topBy(c, "ru", "涅槃组");
+        const f = fin(c, "po", A.concat(N2));
+        return { ...f, outSeason: N2.slice(4), intl: slotsOf(c, "msi", f.order) };
+      }
+    };
+    const s3 = {
+      key: "s3",
+      name: "第三赛段",
+      short: "S3",
+      half: 1,
+      after: null,
+      pts: [0, 110, 80, 50, 30, 30, 15, 15],
+      stages: [
+        {
+          key: "ru",
+          name: "组内赛",
+          kind: "rr",
+          type: "rr",
+          times: 2,
+          bo: 3,
+          perWeek: 3,
+          groups: (c) => {
+            const A = c.split("s2").order.filter((t) => c.teams.includes(t)).slice(0, 8);
+            return [G("登峰组", A), G("涅槃组", minus(c.teams, A))];
+          }
+        },
+        { key: "kr", name: "骑士之路", kind: "ki", type: "br", tpl: "KR", n: 2, perWeek: 1, seeds: (c) => {
+          const A = topBy(c, "ru", "登峰组"), N2 = topBy(c, "ru", "涅槃组");
+          return [A[6], N2[1], A[7], N2[0]];
+        } },
+        { key: "po", name: "总决赛", kind: "po", type: "br", tpl: "DE8K", perWeek: 3, seeds: (c) => topBy(c, "ru", "登峰组").slice(0, 6).concat(c.adv("kr", 2)) }
+      ],
+      finish: (c) => {
+        const A = topBy(c, "ru", "登峰组"), N2 = topBy(c, "ru", "涅槃组");
+        return fin(c, "po", A.concat(N2));
+      }
+    };
+    return { lg: "LPL", year: 2026, splits: [s1, s2, s3, rfSplit("s3")] };
+  }
+  function lpl2027(year) {
+    const krSeeds = (t) => {
+      const n = Math.max(1, Math.min(4, Math.floor((t.length - 4) / 2)));
+      const out = [];
+      for (let i = 0; i < n; i++) out.push(t[4 + i], t[3 + 2 * n - i]);
+      return out;
+    };
+    const split = (key, name, short, half, after, pts) => ({
+      key,
+      name,
+      short,
+      half,
+      after,
+      pts,
+      stages: [
+        { key: "rs", name: "常规赛", kind: "rr", type: "rr", times: 1, bo: 3, perWeek: 2 },
+        { key: "kr", name: "骑士之路", kind: "ki", type: "br", tpl: "KR", n: 4, perWeek: 1, seeds: (c) => krSeeds(topBy(c, "rs")) },
+        { key: "po", name: key === "s3" ? "赛季季后赛" : "季后赛", kind: "po", type: "br", tpl: "DE8", perWeek: 3, seeds: (c) => topBy(c, "rs").slice(0, 4).concat(c.adv("kr", 4)) }
+      ],
+      finish: (c) => {
+        const f = fin(c, "po", topBy(c, "rs"));
+        return { ...f, intl: after ? slotsOf(c, after, f.order) : void 0 };
+      }
+    });
+    const s1 = {
+      key: "s1",
+      name: "第一赛段",
+      short: "S1",
+      half: 0,
+      after: "fst",
+      pts: [20, 15, 10, 10, 5, 5, 5, 5],
+      stages: [
+        { key: "g", name: "小组赛", kind: "rr", type: "rr", times: 1, bo: 3, perWeek: 2, groups: (c) => snake(c.teams, 2) },
+        {
+          key: "po",
+          name: "季后赛",
+          kind: "po",
+          type: "br",
+          tpl: "DE8UL",
+          perWeek: 3,
+          seeds: (c) => {
+            const [a, b] = c.groups("g").map((g) => topBy(c, "g", g.name));
+            return [a[0], b[0], a[1], b[1], a[2], b[2], a[3], b[3]];
+          }
+        }
+      ],
+      finish: (c) => {
+        const f = fin(c, "po", topBy(c, "g"));
+        return { ...f, intl: slotsOf(c, "fst", f.order) };
+      }
+    };
+    return { lg: "LPL", year, label: "2025 三段制（取消涅槃）", splits: [s1, split("s2", "第二赛段", "S2", 0, "msi", P_SPRING), split("s3", "第三赛段", "S3", 1, null, P_SUMMER), rfSplit("s3")] };
+  }
+  function lplYear(y) {
+    return y <= 2024 ? lplClassic(Math.max(2022, y)) : y === 2025 ? lpl2025() : y === 2026 ? lpl2026() : lpl2027(y);
+  }
+  function lckClassic(year) {
+    const tpl = year === 2022 ? "SE6" : "LCK23";
+    const sp = (key, name, short, half, after, pts) => ({
+      key,
+      name,
+      short,
+      half,
+      after,
+      pts,
+      stages: [
+        { key: "rs", name: "常规赛", kind: "rr", type: "rr", times: 2, bo: 3, perWeek: 2 },
+        { key: "po", name: "季后赛", kind: "po", type: "br", tpl, perWeek: 2, seeds: (c) => topBy(c, "rs").slice(0, 6) }
+      ],
+      finish: (c) => {
+        const f = fin(c, "po", topBy(c, "rs"), true);
+        return { ...f, intl: after ? slotsOf(c, after, f.order) : void 0 };
+      }
+    });
+    return { lg: "LCK", year, splits: [sp("spring", "春季赛", "春", 0, "msi", [90, 70, 50, 30, 20, 10]), sp("summer", "夏季赛", "夏", 1, null, [0, 100, 80, 50, 30, 10]), rfSplit("summer")] };
+  }
+  function lckCup(sup) {
+    const groupsOf = (c) => {
+      const gs = c.groups("gb").map((g) => ({ name: g.name, rows: c.rows("gb", g.name) }));
+      const tot = gs.map((g) => g.rows.reduce((s, r) => s + r.pts, 0));
+      const [W2, L] = tot[0] >= tot[1] ? [gs[0], gs[1]] : [gs[1], gs[0]];
+      return { W: W2.rows.map((r) => r.team), L: L.rows.map((r) => r.team), wins: Object.fromEntries(gs.flatMap((g) => g.rows.map((r) => [r.team, r.pts]))) };
+    };
+    const direct = (c) => {
+      const { W: W2, L } = groupsOf(c);
+      return sup ? [W2[0], W2[1], L[0]] : [W2[0], W2[1], W2[2]];
+    };
+    const piTeams = (c) => {
+      const { W: W2, L, wins } = groupsOf(c);
+      const t = sup ? W2.slice(2).concat(L.slice(1, 4)) : W2.slice(3).concat(L.slice(0, 4));
+      return t.sort((x, y) => wins[y] - wins[x] || c.prevRank.indexOf(x) - c.prevRank.indexOf(y));
+    };
+    return {
+      key: "cup",
+      name: "LCK Cup",
+      short: "杯",
+      title: " Cup",
+      half: 0,
+      after: "fst",
+      stages: [
+        { key: "gb", name: "组间对抗", kind: "rr", type: "cross", bo: 3, superWeek: sup, perWeek: 2, groups: (c) => snake(c.teams, 2, ["巴隆组", "远古龙组"]) },
+        { key: "pi", name: "入围赛", kind: "ki", type: "br", tpl: "PI6", perWeek: 3, seeds: piTeams },
+        { key: "po", name: "季后赛", kind: "po", type: "br", tpl: sup ? "DE6F" : "LCK23", perWeek: 3, seeds: (c) => direct(c).concat(c.adv("pi", 3)) }
+      ],
+      finish: (c) => {
+        const { W: W2, L } = groupsOf(c);
+        const f = fin(c, "po", c.adv("pi").concat(W2, L), true);
+        return { ...f, intl: slotsOf(c, "fst", f.order) };
+      }
+    };
+  }
+  function lckLong(year, rounds, piTpl) {
+    const r12 = {
+      key: "r12",
+      name: "第 1–2 轮",
+      short: "1–2 轮",
+      title: false,
+      half: 0,
+      after: "msi",
+      stages: [
+        { key: "rs", name: "常规赛", kind: "rr", type: "rr", times: 2, bo: 3, perWeek: 2 },
+        { key: "rtm", name: "Road to MSI", kind: "q", type: "br", tpl: "RTMSI", perWeek: 2, seeds: (c) => topBy(c, "rs").slice(0, 6) }
+      ],
+      finish: (c) => {
+        const f = fin(c, "rtm", topBy(c, "rs"), true);
+        return { ...f, rows: c.rows("rs"), intl: slotsOf(c, "msi", f.order) };
+      }
+    };
+    const r3 = {
+      key: "r35",
+      name: rounds === 3 ? "第 3–5 轮" : "第 3–4 轮",
+      short: rounds === 3 ? "3–5 轮" : "3–4 轮",
+      title: "季后赛",
+      half: 1,
+      after: null,
+      stages: [
+        {
+          key: "ru",
+          name: "Legend / Rise",
+          kind: "rr",
+          type: "rr",
+          times: rounds,
+          bo: 3,
+          perWeek: 3,
+          carrySplit: "r12",
+          groups: (c) => {
+            const t = (c.split("r12").rows || []).map((r) => r.team).filter((x) => c.teams.includes(x));
+            return [G("Legend 组", t.slice(0, 5)), G("Rise 组", minus(c.teams, t.slice(0, 5)))];
+          }
+        },
+        { key: "pi", name: "季后入围赛", kind: "ki", type: "br", tpl: piTpl, perWeek: 3, seeds: (c) => {
+          const L = topBy(c, "ru", "Legend 组"), R = topBy(c, "ru", "Rise 组");
+          return piTpl === "GSL4" ? [L[4], R[0], R[1], R[2]] : [L[4], R[0], R[1], R[2]];
+        } },
+        { key: "po", name: "季后赛", kind: "po", type: "br", tpl: "DE6F", perWeek: 3, seeds: (c) => topBy(c, "ru", "Legend 组").slice(0, 4).concat(c.adv("pi", 2)) }
+      ],
+      finish: (c) => {
+        const L = topBy(c, "ru", "Legend 组"), R = topBy(c, "ru", "Rise 组");
+        const f = fin(c, "po", c.adv("pi").concat(L, R), true);
+        return { ...f, intl: slotsOf(c, "worlds", f.order) };
+      }
+    };
+    return { lg: "LCK", year, splits: [lckCup(year === 2026), r12, { ...r3, after: "worlds" }] };
+  }
+  function lckYear(y) {
+    return y <= 2024 ? lckClassic(Math.max(2022, y)) : y === 2026 ? lckLong(2026, 2, "WF4") : { ...lckLong(y, 3, "GSL4"), label: y > 2026 ? "回到 2025（第 3–5 轮）" : void 0 };
+  }
+
+  // demo/src/fmtspec2.ts
+  var T = (c, key, g) => c.table(key, g);
+  var sl = (c, ev, order) => order.slice(0, c.slots(ev));
+  function lecSplit(o) {
+    const n = o.po === "DE6A" ? 6 : 8;
+    return {
+      key: o.key,
+      name: o.name,
+      short: o.name.slice(0, 1),
+      title: o.title,
+      half: o.half,
+      after: o.after,
+      pts: o.pts,
+      stages: [
+        { key: "rs", name: "常规赛", kind: "rr", type: "rr", times: o.times || 1, bo: o.bo, perWeek: o.perWeek },
+        { key: "po", name: "季后赛", kind: "po", type: "br", tpl: o.po, perWeek: o.po === "DE8B" ? 3 : 2, seeds: (c) => T(c, "rs").slice(0, n) }
+      ],
+      finish: (c) => {
+        const f = fin(c, "po", T(c, "rs"), true);
+        return { ...f, intl: o.after ? sl(c, o.after, f.order) : void 0 };
+      }
+    };
+  }
+  function lec23Split(key, name, half, after, pts) {
+    return {
+      key,
+      name,
+      short: name.slice(0, 1),
+      half,
+      after,
+      pts,
+      stages: [
+        { key: "rs", name: "常规赛", kind: "rr", type: "rr", times: 1, bo: 1, perWeek: 3 },
+        { key: "gs", name: "分组赛", kind: "ki", type: "br", tpl: "GSL8", boAll: 3, perWeek: 2, seeds: (c) => T(c, "rs").slice(0, 8) },
+        { key: "po", name: "季后赛", kind: "po", type: "br", tpl: "DE4", perWeek: 3, seeds: (c) => {
+          const r = c.br("gs").res;
+          return [r.aw.w, r.bw.w, r.ad.w, r.bd.w];
+        } }
+      ],
+      finish: (c) => {
+        const f = fin(c, "po", c.adv("gs").concat(T(c, "rs")), true);
+        return { ...f, intl: after ? sl(c, after, f.order) : void 0 };
+      }
+    };
+  }
+  function lecFinals(year) {
+    const field = (c) => {
+      const byPts = c.teams.slice().sort((x, y) => (c.pts[y] || 0) - (c.pts[x] || 0));
+      const sure = year === 2023 ? ["winter", "spring", "summer"].map((k) => c.split(k)?.champ) : [c.split("winter")?.champ, c.split("spring")?.champ].concat((c.split("summer")?.order || []).slice(0, 3));
+      const out = [];
+      sure.forEach((t) => {
+        if (t && !out.includes(t)) out.push(t);
+      });
+      byPts.forEach((t) => {
+        if (out.length < 6 && !out.includes(t)) out.push(t);
+      });
+      return out.sort((x, y) => (c.pts[y] || 0) - (c.pts[x] || 0));
+    };
+    return {
+      key: "finals",
+      name: "赛季总决赛",
+      short: "总决赛",
+      half: 1,
+      after: "worlds",
+      stages: [{ key: "po", name: "赛季总决赛", kind: "po", type: "br", tpl: "DE6A", perWeek: 2, seeds: field }],
+      finish: (c) => {
+        const f = fin(c, "po", c.teams.slice().sort((x, y) => (c.pts[y] || 0) - (c.pts[x] || 0)), true);
+        return { ...f, intl: sl(c, "worlds", f.order) };
+      }
+    };
+  }
+  function lecMsiPair(sp) {
+    return {
+      ...sp,
+      finish: (c) => {
+        const f = sp.finish(c);
+        const win = c.split("winter")?.champ;
+        const first = f.order[0];
+        const second = win && win !== first ? win : c.teams.filter((t) => t !== first).sort((x, y) => (c.pts[y] || 0) - (c.pts[x] || 0))[0];
+        return { ...f, intl: [first, second].slice(0, c.slots("msi")) };
+      }
+    };
+  }
+  function lec2025Summer() {
+    return {
+      key: "summer",
+      name: "夏季赛",
+      short: "夏",
+      half: 1,
+      after: "worlds",
+      stages: [
+        { key: "gs", name: "分组赛", kind: "rr", type: "rr", times: 1, bo: 3, perWeek: 2, groups: (c) => snake(c.teams, 2) },
+        { key: "po", name: "季后赛", kind: "po", type: "br", tpl: "DE8UL", perWeek: 2, seeds: (c) => {
+          const [a, b] = c.groups("gs").map((g) => T(c, "gs", g.name));
+          return [a[0], b[0], b[1], a[1], a[2], b[2], a[3], b[3]];
+        } }
+      ],
+      finish: (c) => {
+        const f = fin(c, "po", T(c, "gs"), true);
+        return { ...f, intl: sl(c, "worlds", f.order) };
+      }
+    };
+  }
+  function lecYear(y) {
+    if (y <= 2022) return { lg: "LEC", year: 2022, splits: [
+      lecSplit({ key: "spring", name: "春季赛", half: 0, after: "msi", bo: 1, times: 2, perWeek: 3, po: "DE6A" }),
+      lecSplit({ key: "summer", name: "夏季赛", half: 1, after: "worlds", bo: 1, times: 2, perWeek: 3, po: "DE6A" })
+    ] };
+    if (y === 2023) {
+      const ws = [120, 100, 80, 60, 50, 40, 30, 20, 10, 5], su = [180, 150, 120, 90, 75, 60, 45, 30, 15, 7];
+      return { lg: "LEC", year: y, splits: [lec23Split("winter", "冬季赛", 0, null, ws), lecMsiPair(lec23Split("spring", "春季赛", 0, "msi", ws)), lec23Split("summer", "夏季赛", 1, null, su), lecFinals(2023)] };
+    }
+    if (y === 2024) return { lg: "LEC", year: y, splits: [
+      lecSplit({ key: "winter", name: "冬季赛", half: 0, after: null, bo: 1, perWeek: 3, po: "DE8B", pts: [120, 100, 80, 60, 45, 45, 30, 30] }),
+      lecMsiPair(lecSplit({ key: "spring", name: "春季赛", half: 0, after: "msi", bo: 1, perWeek: 3, po: "DE8B", pts: [145, 120, 95, 70, 55, 55, 35, 35] })),
+      lecSplit({ key: "summer", name: "夏季赛", half: 1, after: null, bo: 1, perWeek: 3, po: "DE8B", pts: [180, 150, 120, 90, 65, 65, 45, 45] }),
+      lecFinals(2024)
+    ] };
+    if (y === 2026) return { lg: "LEC", year: y, splits: [
+      lecSplit({ key: "versus", name: "LEC Versus", title: " Versus", half: 0, after: "fst", bo: 1, perWeek: 3, po: "DE8B" }),
+      lecSplit({ key: "spring", name: "春季赛", half: 0, after: "msi", bo: 3, perWeek: 2, po: "DE6A" }),
+      lecSplit({ key: "summer", name: "夏季赛", half: 1, after: "worlds", bo: 3, perWeek: 2, po: "DE6A" })
+    ] };
+    return { lg: "LEC", year: y, label: y > 2026 ? "回到 2025（冬 · 春 · 夏）" : void 0, splits: [
+      lecSplit({ key: "winter", name: "冬季赛", half: 0, after: "fst", bo: 1, perWeek: 3, po: "DE8B" }),
+      lecSplit({ key: "spring", name: "春季赛", half: 0, after: "msi", bo: 3, perWeek: 2, po: "DE6A" }),
+      lec2025Summer()
+    ] };
+  }
+  function lcsSplit(o) {
+    const n = o.po === "DE8K" ? 8 : 6;
+    return {
+      key: o.key,
+      name: o.name,
+      short: o.name.slice(0, 1),
+      title: o.title,
+      half: o.half,
+      after: o.after,
+      stages: [
+        { key: "rs", name: "常规赛", kind: "rr", type: "rr", times: o.times, bo: o.bo, perWeek: o.perWeek },
+        { key: "po", name: o.po === "DE8K" ? "总决赛" : "季后赛", kind: "po", type: "br", tpl: o.po, perWeek: 2, seeds: (c) => T(c, "rs").slice(0, n) }
+      ],
+      finish: (c) => {
+        const f = fin(c, "po", T(c, "rs"), true);
+        return { ...f, intl: o.after ? sl(c, o.after, f.order) : void 0 };
+      }
+    };
+  }
+  function lcs2022LockIn() {
+    return {
+      key: "lockin",
+      name: "Lock In 季前杯",
+      short: "杯",
+      title: " Lock In",
+      half: 0,
+      after: null,
+      stages: [
+        { key: "gs", name: "小组赛", kind: "rr", type: "rr", times: 1, bo: 1, perWeek: 3, groups: (c) => snake(c.teams, 2) },
+        { key: "po", name: "淘汰赛", kind: "po", type: "br", tpl: "SE8", perWeek: 2, seeds: (c) => {
+          const [a, b] = c.groups("gs").map((g) => T(c, "gs", g.name));
+          return [a[0], b[0], a[1], b[1], a[2], b[2], a[3], b[3]];
+        } }
+      ],
+      finish: (c) => fin(c, "po", T(c, "gs"), true)
+    };
+  }
+  function lta2025() {
+    const s1 = {
+      key: "s1",
+      name: "第一赛段",
+      short: "S1",
+      half: 0,
+      after: "fst",
+      stages: [
+        { key: "cq", name: "分区赛", kind: "ki", type: "br", tpl: "Q8", perWeek: 1, seeds: (c) => c.teams.slice(0, 8) },
+        { key: "po", name: "跨区季后赛", kind: "po", type: "br", tpl: "SE4", boAll: 5, perWeek: 1, seeds: (c) => c.adv("cq", 4) }
+      ],
+      finish: (c) => {
+        const f = fin(c, "po", c.adv("cq"), true);
+        return { ...f, intl: sl(c, "fst", f.order) };
+      }
+    };
+    const s2 = {
+      key: "s2",
+      name: "第二赛段",
+      short: "S2",
+      half: 0,
+      after: "msi",
+      stages: [
+        { key: "pos", name: "定位赛", kind: "rr", type: "rr", times: 1, bo: 1, perWeek: 3 },
+        { key: "gs", name: "小组赛", kind: "rr", type: "rr", times: 1, bo: 3, perWeek: 1, groups: (c) => {
+          const t = T(c, "pos");
+          return [G("A 组", [t[0], t[3], t[4], t[7]]), G("B 组", [t[1], t[2], t[5], t[6]])];
+        } },
+        { key: "sd", name: "排位赛", kind: "q", type: "br", tpl: "KR", n: 4, boAll: 3, perWeek: 1, seeds: (c) => {
+          const a = T(c, "gs", "A 组"), b = T(c, "gs", "B 组");
+          return [a[0], b[0], a[1], b[1], a[2], b[3], b[2], a[3]];
+        } },
+        { key: "po", name: "季后赛", kind: "po", type: "br", tpl: "DE6A", perWeek: 2, seeds: (c) => {
+          const r = c.br("sd").res;
+          return [r.k1.w, r.k1.l, r.k2.w, r.k2.l, r.k3.w, r.k4.w];
+        } }
+      ],
+      finish: (c) => {
+        const f = fin(c, "po", c.adv("sd").concat(T(c, "pos")), true);
+        return { ...f, intl: sl(c, "msi", f.order) };
+      }
+    };
+    const s3 = {
+      key: "s3",
+      name: "第三赛段",
+      short: "S3",
+      half: 1,
+      after: "worlds",
+      stages: [
+        { key: "pp", name: "挑对手赛", kind: "rr", type: "swiss", swissRounds: 3, bo: 3, perWeek: 1 },
+        { key: "po", name: "淘汰赛", kind: "po", type: "br", tpl: "DE8UL", perWeek: 2, seeds: (c) => T(c, "pp").slice(0, 8) }
+      ],
+      finish: (c) => {
+        const f = fin(c, "po", T(c, "pp"), true);
+        return { ...f, intl: sl(c, "worlds", f.order) };
+      }
+    };
+    return { lg: "LCS", year: 2025, splits: [s1, s2, s3] };
+  }
+  function lcs2026(y) {
+    const lock = {
+      key: "lockin",
+      name: "Lock-In",
+      short: "Lock-In",
+      title: " Lock-In",
+      half: 0,
+      after: "fst",
+      stages: [
+        { key: "sw", name: "瑞士轮", kind: "rr", type: "swiss", swissRounds: 3, bo: 3, perWeek: 1 },
+        { key: "po", name: "季后赛", kind: "po", type: "br", tpl: "DE6A", perWeek: 2, seeds: (c) => T(c, "sw").slice(0, 6) }
+      ],
+      finish: (c) => {
+        const f = fin(c, "po", T(c, "sw"), true);
+        return { ...f, intl: sl(c, "fst", f.order) };
+      }
+    };
+    return { lg: "LCS", year: y, label: y > 2026 ? "沿用 2026" : void 0, splits: [
+      lock,
+      lcsSplit({ key: "spring", name: "春季赛", half: 0, after: "msi", bo: 3, times: 1, perWeek: 2, po: "DE6A" }),
+      lcsSplit({ key: "summer", name: "夏季赛", half: 1, after: "worlds", bo: 3, times: 1, perWeek: 2, po: "DE6F" })
+    ] };
+  }
+  function lcsYear(y) {
+    if (y <= 2022) return { lg: "LCS", year: 2022, splits: [
+      lcs2022LockIn(),
+      lcsSplit({ key: "spring", name: "春季赛", half: 0, after: "msi", bo: 1, times: 2, perWeek: 3, po: "DE6A" }),
+      lcsSplit({ key: "summer", name: "夏季赛", half: 1, after: "worlds", bo: 1, times: 2, perWeek: 3, po: "DE8K" })
+    ] };
+    if (y === 2023) return { lg: "LCS", year: y, splits: [
+      lcsSplit({ key: "spring", name: "春季赛", half: 0, after: "msi", bo: 1, times: 2, perWeek: 3, po: "DE6A" }),
+      lcsSplit({ key: "summer", name: "夏季赛", half: 1, after: "worlds", bo: 1, times: 2, perWeek: 3, po: "DE8K" })
+    ] };
+    if (y === 2024) return { lg: "LCS", year: y, splits: [
+      lcsSplit({ key: "spring", name: "春季赛", half: 0, after: "msi", bo: 1, times: 2, perWeek: 3, po: "DE6A" }),
+      lcsSplit({ key: "summer", name: "夏季赛", half: 1, after: "worlds", bo: 3, times: 1, perWeek: 2, po: "DE6F" })
+    ] };
+    if (y === 2025) return lta2025();
+    return lcs2026(y);
+  }
+  function minorYear(lg, y) {
+    const evs = y <= 2024 ? ["msi", "worlds"] : ["fst", "msi", "worlds"];
+    const names = evs.length === 2 ? ["春季赛", "夏季赛"] : ["第一赛段", "第二赛段", "第三赛段"];
+    return {
+      lg,
+      year: y,
+      splits: evs.map((ev, i) => ({
+        key: "m" + (i + 1),
+        name: names[i],
+        short: names[i].slice(0, evs.length === 2 ? 1 : 2),
+        half: ev === "worlds" ? 1 : 0,
+        after: ev,
+        stages: [
+          { key: "rs", name: "常规赛", kind: "rr", type: "rr", times: evs.length === 2 ? 3 : 2, bo: 3, perWeek: 1 },
+          { key: "po", name: "季后赛", kind: "po", type: "br", tpl: "SE4", perWeek: 1, seeds: (c) => T(c, "rs").slice(0, 4) }
+        ],
+        finish: (c) => {
+          const f = fin(c, "po", T(c, "rs"), true);
+          return { ...f, intl: sl(c, ev, f.order) };
+        }
+      }))
+    };
+  }
+  function ldlYear(y, teamCount) {
+    const evs = y <= 2024 ? [{ ev: "msi", name: "春季赛", pw: 1 }, { ev: "worlds", name: "夏季赛", pw: 1 }] : [{ ev: "fst", name: "第一赛段", pw: 3 }, { ev: "msi", name: "第二赛段", pw: 1 }, { ev: "worlds", name: "第三赛段", pw: 2 }];
+    return {
+      lg: "LDL",
+      year: y,
+      splits: evs.map((e, i) => ({
+        key: "d" + (i + 1),
+        name: e.name,
+        short: e.name.slice(0, y <= 2024 ? 1 : 2),
+        half: e.ev === "worlds" ? 1 : 0,
+        after: e.ev,
+        stages: [
+          { key: "rs", name: "常规赛", kind: "rr", type: "rr", times: 1, bo: 3, perWeek: e.pw, groups: (c) => teamCount > 12 ? snake(c.teams, 2) : [G("", c.teams)] },
+          {
+            key: "po",
+            name: "季后赛",
+            kind: "po",
+            type: "br",
+            tpl: "SE6",
+            perWeek: 2,
+            seeds: (c) => {
+              const gs = c.groups("rs");
+              if (gs.length < 2) return T(c, "rs").slice(0, 6);
+              const [a, b] = gs.map((g) => T(c, "rs", g.name));
+              return [a[0], b[0], a[1], b[1], a[2], b[2]];
+            }
+          }
+        ],
+        finish: (c) => fin(c, "po", T(c, "rs"), true)
+      }))
+    };
+  }
+  var INTL_SLOTS = {
+    2022: { msi: { LPL: 1, LCK: 1, LEC: 1, LCS: 1, PCS: 1, VCS: 1, CBLOL: 1, LJL: 1, LLA: 1, LCO: 1, TCL: 1 }, worlds: { LPL: 4, LCK: 4, LEC: 4, LCS: 3, PCS: 2, VCS: 2, CBLOL: 1, LJL: 1, LLA: 1, LCO: 1, TCL: 1 } },
+    2023: { msi: { LPL: 2, LCK: 2, LEC: 2, LCS: 2, PCS: 1, VCS: 1, LJL: 1, CBLOL: 1, LLA: 1 }, worlds: { LPL: 4, LCK: 4, LEC: 4, LCS: 4, PCS: 2, VCS: 2, CBLOL: 1, LLA: 1, LJL: 1 }, wqs: ["LEC", "LCS"] },
+    2024: { msi: { LPL: 2, LCK: 2, LEC: 2, LCS: 2, PCS: 1, VCS: 1, CBLOL: 1, LLA: 1 }, worlds: { LPL: 3, LCK: 3, LEC: 3, LCS: 3, PCS: 2, VCS: 2, CBLOL: 1, LLA: 1 }, bonus: true },
+    2025: { fst: { LPL: 1, LCK: 1, LEC: 1, LCS: 1, LCP: 1 }, msi: { LPL: 2, LCK: 2, LEC: 2, LCS: 1, CBLOL: 1, LCP: 2 }, worlds: { LPL: 3, LCK: 3, LEC: 3, LCS: 2, CBLOL: 1, LCP: 3 }, bonus: true },
+    2026: { fst: { LPL: 2, LCK: 2, LEC: 1, LCS: 1, CBLOL: 1, LCP: 1 }, msi: { LPL: 2, LCK: 2, LEC: 2, LCS: 2, LCP: 2, CBLOL: 1 }, worlds: { LPL: 3, LCK: 3, LEC: 3, LCS: 3, LCP: 3, CBLOL: 2 }, bonus: true }
+  };
+  var intlYear = (y) => INTL_SLOTS[Math.max(2022, Math.min(2026, y))];
+  var CANON = {
+    "LPL|2022|spring": "Royal Never Give Up",
+    "LPL|2022|summer": "JD Gaming",
+    "LPL|2023|spring": "JD Gaming",
+    "LPL|2023|summer": "JD Gaming",
+    "LPL|2024|spring": "Bilibili Gaming",
+    "LPL|2024|summer": "Bilibili Gaming",
+    "LPL|2025|s1": "Top Esports",
+    "LPL|2025|s2": "Anyone's Legend",
+    "LPL|2025|s3": "Bilibili Gaming",
+    "LCK|2022|spring": "T1",
+    "LCK|2022|summer": "Gen.G",
+    "LCK|2023|spring": "Gen.G",
+    "LCK|2023|summer": "Gen.G",
+    "LCK|2024|spring": "Gen.G",
+    "LCK|2024|summer": "Hanwha Life Esports",
+    "LCK|2025|cup": "Hanwha Life Esports",
+    "LCK|2025|r12": "Gen.G",
+    "LCK|2025|r35": "Gen.G",
+    "LCK|2026|cup": "Gen.G",
+    "LCK|2026|r12": "Hanwha Life Esports",
+    "LEC|2022|spring": "G2 Esports",
+    "LEC|2022|summer": "Rogue",
+    "LEC|2023|winter": "G2 Esports",
+    "LEC|2023|spring": "MAD Lions KOI",
+    "LEC|2023|summer": "G2 Esports",
+    "LEC|2023|finals": "G2 Esports",
+    "LEC|2024|winter": "G2 Esports",
+    "LEC|2024|spring": "G2 Esports",
+    "LEC|2024|summer": "G2 Esports",
+    "LEC|2024|finals": "G2 Esports",
+    "LEC|2025|winter": "Karmine Corp",
+    "LEC|2025|spring": "MAD Lions KOI",
+    "LEC|2025|summer": "G2 Esports",
+    "LEC|2026|versus": "G2 Esports",
+    "LEC|2026|spring": "G2 Esports",
+    "LCS|2022|lockin": "Team Liquid",
+    "LCS|2022|spring": "Evil Geniuses",
+    "LCS|2022|summer": "Cloud9",
+    "LCS|2023|spring": "Cloud9",
+    "LCS|2023|summer": "NRG",
+    "LCS|2024|spring": "Team Liquid",
+    "LCS|2024|summer": "FlyQuest",
+    "LCS|2025|s1": "Team Liquid",
+    "LCS|2025|s2": "FlyQuest",
+    "LCS|2025|s3": "FlyQuest",
+    "LCS|2026|lockin": "LYON",
+    "LCS|2026|spring": "LYON"
+  };
+  var CACHE = {};
+  function yearSpec(lg, y, teamCount = 0) {
+    const k = lg + "|" + y + "|" + (lg === "LDL" ? teamCount : "");
+    if (CACHE[k]) return CACHE[k];
+    let s = null;
+    if (lg === "LPL") s = lplYear(y);
+    else if (lg === "LCK") s = lckYear(y);
+    else if (lg === "LEC") s = lecYear(y);
+    else if (lg === "LCS") s = lcsYear(y);
+    else if (lg === "LDL") s = y <= 2025 ? ldlYear(y, teamCount) : null;
+    else s = minorYear(lg, y);
+    if (s) CACHE[k] = s;
+    return s;
+  }
+
+  // demo/src/fmtctl.ts
+  var FMT_MAJORS = ["LPL", "LCK", "LEC", "LCS"];
+  var REGION_ORDER = ["LCK", "LPL", "LEC", "LCP", "LCS", "CBLOL", "PCS", "VCS", "LJL", "LLA", "TCL", "LCO"];
+  var FMT_HOOKS = {};
+  var fmtOn = () => !!(S && S.tl && S.fmt && S.fmt.runs);
+  var fmtHome = () => S && S.homeLeague || "LPL";
+  var fmtMaster = () => FMT_MAJORS.includes(fmtHome()) ? fmtHome() : "LPL";
+  var runOf2 = (lg) => S.fmt && S.fmt.runs && S.fmt.runs[lg] || null;
+  function specOf(lg) {
+    return S.fmt ? yearSpec(lg, S.fmt.y, (S.world && S.world[lg] || []).length) : null;
+  }
+  var clampP = (p) => Math.max(0.03, Math.min(0.97, p));
+  function pGameFor(lg) {
+    const run = runOf2(lg), ys = specOf(lg);
+    const sp = run && ys ? ys.splits[run.si] : null, st = sp ? sp.stages[run.stage] : null;
+    const kind = st ? st.kind : "rr", c = run && run.canon;
+    return (a, b) => {
+      let p = winProb(a, b);
+      if (c && (kind === "po" || kind === "q") && a !== S.team && b !== S.team) {
+        if (a === c) p += 0.12;
+        else if (b === c) p -= 0.12;
+      }
+      return clampP(p);
+    };
+  }
+  function canonPick(lg, ys, si) {
+    const sp = ys.splits[si];
+    if (!sp) return null;
+    const nm = CANON[`${lg}|${ys.year}|${sp.key}`];
+    if (!nm || nm === S.team || !(S.world && S.world[lg] || []).some((t) => t.name === nm)) return null;
+    return rnd() >= wlOf(lg) ? nm : null;
+  }
+  function begin(lg) {
+    const run = runOf2(lg), ys = specOf(lg);
+    if (!run || !ys) return;
+    run.canon = canonPick(lg, ys, run.si);
+    beginSplit(run, ys);
+  }
+  function slotsFor(lg, y) {
+    const iy = intlYear(y);
+    return { fst: iy.fst && iy.fst[lg] || 0, msi: iy.msi[lg] || 0, worlds: iy.worlds[lg] || 0 };
+  }
+  function fmtStartYear() {
+    const y = SEASONS[S.si] ? SEASONS[S.si].y : 2022;
+    const prev = {};
+    if (S.fmt && S.fmt.runs) Object.keys(S.fmt.runs).forEach((lg) => {
+      const outs = (S.fmt.runs[lg].outs || []).filter((o) => o && !o.aux);
+      if (outs.length) prev[lg] = outs[outs.length - 1].order.slice();
+    });
+    const old = S.fmtPrev || {};
+    Object.keys(old).forEach((lg) => {
+      if (!prev[lg]) prev[lg] = old[lg];
+    });
+    S.fmtPrev = prev;
+    const F = { y, runs: {}, cur: null, wk: 0, yw: 0, queue: [], fstLg: null, poSeen: {} };
+    S.fmt = F;
+    Object.keys(S.world || {}).forEach((lg) => {
+      const teams = (S.world[lg] || []).map((t) => t.name);
+      if (teams.length < 2) return;
+      const ys = yearSpec(lg, y, teams.length);
+      if (!ys) return;
+      const pr = (prev[lg] || []).filter((n) => teams.includes(n));
+      const rest = teams.filter((n) => !pr.includes(n)).sort((a, b) => pw2(b) - pw2(a));
+      const run = newYear(lg, y, teams, pr.concat(rest));
+      run.slots = lg === "LDL" ? { fst: 0, msi: 0, worlds: 0 } : slotsFor(lg, y);
+      F.runs[lg] = run;
+      begin(lg);
+    });
+    fmtSyncStandings();
+  }
+  function playPair(lg, p) {
+    if (S.team && (p.a === S.team || p.b === S.team) && FMT_HOOKS.myP) {
+      const opp = p.a === S.team ? p.b : p.a, q = clampP(FMT_HOOKS.myP(opp));
+      const s = playSeries(p.a, p.b, p.bo, p.a === S.team ? q : 1 - q, rnd);
+      s.auto = true;
+      return s;
+    }
+    return playSeries(p.a, p.b, p.bo, pGameFor(lg)(p.a, p.b), rnd);
+  }
+  function fmtPump(autoMine) {
+    const lg = fmtHome(), run = runOf2(lg), ys = specOf(lg);
+    if (!run || !ys || !S.fmt) return null;
+    let guard = 0;
+    while (++guard < 60) {
+      if (run.done || run.wait || !run.runs[run.stage]) return null;
+      const pend = roundPending(run);
+      const mine = S.team ? pend.find((p) => p.a === S.team || p.b === S.team) : void 0;
+      pend.forEach((p) => {
+        if (p !== mine) record(run, p, playPair(lg, p));
+      });
+      if (mine) {
+        if (!autoMine && (S.fmt.wk === 0 || S.fmtManual)) {
+          S.fmt.cur = mine;
+          return mine;
+        }
+        const s = playPair(lg, mine);
+        record(run, mine, s);
+        S.fmt.wk++;
+        if (FMT_HOOKS.autoMine) FMT_HOOKS.autoMine(mine, s);
+      }
+      const si = run.si, st = closeRound(run, ys);
+      if (st === "split") onSplitFinished(lg, si);
+      if (st !== "round" || weekDone(run)) return null;
+    }
+    return null;
+  }
+  function fmtRecordMine(sc) {
+    const F = S.fmt, cur = F && F.cur;
+    if (!cur) return;
+    const run = runOf2(fmtHome());
+    if (!run) {
+      F.cur = null;
+      return;
+    }
+    const won = sc[0] > sc[1], opp = cur.a === S.team ? cur.b : cur.a;
+    record(run, cur, { a: cur.a, b: cur.b, bo: cur.bo, w: won ? S.team : opp, l: won ? opp : S.team, sw: Math.max(sc[0], sc[1]), sl: Math.min(sc[0], sc[1]) });
+    F.cur = null;
+    F.wk++;
+  }
+  function fmtSimOthers() {
+    Object.keys(S.fmt.runs).forEach((lg) => {
+      if (lg === fmtHome()) return;
+      const run = runOf2(lg), ys = specOf(lg);
+      if (!ys || run.done || run.wait) return;
+      const si = run.si;
+      simWeek(run, ys, pGameFor(lg), rnd);
+      if (run.si !== si) onSplitFinished(lg, si);
+    });
+  }
+  function onSplitFinished(lg, si) {
+    const run = runOf2(lg), ys = specOf(lg);
+    if (!run || !ys) return;
+    const sp = ys.splits[si], out = run.outs[si];
+    if (!sp || !out) return;
+    if (sp.title !== false && out.champ) {
+      S.fmtTitles = (S.fmtTitles || []).concat([{ si: S.si, y: ys.year, lg, t: sp.title || sp.name, team: out.champ }]).slice(-400);
+    }
+    S.fmt.queue.push({ lg, si });
+    if (lg === fmtHome() && !run.wait && !run.done) S.fmt.newSplit = true;
+  }
+  function fmtBoundary() {
+    if (!fmtOn()) return null;
+    const m = runOf2(fmtMaster()), h = runOf2(fmtHome());
+    if (!m || !m.wait) return null;
+    if (h && h !== m && !h.done && h.wait !== m.wait) return null;
+    return m.wait;
+  }
+  function fmtFastForward(E) {
+    Object.keys(S.fmt.runs).forEach((lg) => {
+      const run = runOf2(lg), ys = specOf(lg);
+      if (!ys) return;
+      let g = 0;
+      while (!run.done && !run.wait && ++g < 80) {
+        const si = run.si;
+        simWeek(run, ys, pGameFor(lg), rnd);
+        if (run.si !== si) onSplitFinished(lg, si);
+      }
+    });
+    fmtSyncStandings();
+  }
+  function fmtAfterEvent(E) {
+    if (!S.fmt) return;
+    Object.keys(S.fmt.runs).forEach((lg) => {
+      const run = runOf2(lg);
+      if (run.wait === E && !run.done) begin(lg);
+    });
+  }
+  function fmtIntlList(lg, E) {
+    const run = runOf2(lg), ys = specOf(lg);
+    if (!run || !ys) return [];
+    for (let i = ys.splits.length - 1; i >= 0; i--) if (ys.splits[i].after === E) {
+      const o = run.outs[i];
+      return o && o.intl ? o.intl.filter(Boolean) : [];
+    }
+    return [];
+  }
+  var ri = (lg) => {
+    const i = REGION_ORDER.indexOf(lg);
+    return i < 0 ? 99 : i;
+  };
+  function fmtIntlSeeds(E) {
+    if (!S.fmt) return [];
+    return Object.keys(S.fmt.runs).filter((lg) => lg !== "LDL").map((lg) => ({ lg, seeds: fmtIntlList(lg, E) })).filter((x) => x.seeds.length).sort((a, b) => ri(a.lg) - ri(b.lg));
+  }
+  function fmtIntlField(E) {
+    if (E === "worlds") return fmtWorldsTeams();
+    const L = fmtIntlSeeds(E), out = [];
+    const n = Math.max(0, ...L.map((x) => x.seeds.length));
+    for (let k = 0; k < n; k++) L.forEach((x) => {
+      if (x.seeds[k] && !out.includes(x.seeds[k])) out.push(x.seeds[k]);
+    });
+    return out;
+  }
+  function fmtWorldsTeams() {
+    const L = fmtIntlSeeds("worlds"), out = [];
+    const n = Math.max(0, ...L.map((x) => x.seeds.length));
+    for (let k = 0; k < n; k++) L.forEach((x) => {
+      if (x.seeds[k] && !out.includes(x.seeds[k])) out.push(x.seeds[k]);
+    });
+    const wqs = intlYear(S.fmt.y).wqs;
+    if (wqs && !S.fmt.wqs) {
+      const a = fmtIntlList(wqs[0], "worlds")[3], b = fmtIntlList(wqs[1], "worlds")[3];
+      if (a && b) {
+        const s = playSeries(a, b, 5, winProb(a, b), rnd);
+        S.fmt.wqs = { a, b, loser: s.l };
+      }
+    }
+    return S.fmt.wqs ? out.filter((t) => t !== S.fmt.wqs.loser) : out;
+  }
+  function fmtQualified(E) {
+    return !!S.team && fmtIntlField(E).includes(S.team);
+  }
+  function fmtMsiSplit() {
+    const y = S.fmt.y, L = fmtIntlSeeds("msi");
+    const dl = y >= 2026 ? ["LPL", "LCK", "LEC", "LCS", "LCP", "CBLOL"] : y === 2025 ? ["LPL", "LCK", "LEC", "LCS", "LCP"] : ["LPL", "LCK", "LEC", "LCS"];
+    const direct = L.filter((x) => dl.includes(x.lg)).map((x) => x.seeds[0]).filter(Boolean);
+    const extra = y === 2023 ? "LCK" : y >= 2025 ? S.fmt.fstLg : null;
+    const ex = extra ? L.find((x) => x.lg === extra) : null;
+    if (ex && ex.seeds[1]) direct.push(ex.seeds[1]);
+    const playin = fmtIntlField("msi").filter((t) => !direct.includes(t));
+    return { direct, playin, take: Math.max(0, 8 - direct.length) };
+  }
+  function fmtWorldsSplit(take) {
+    const all = fmtWorldsTeams(), directN = Math.max(0, 16 - take);
+    if (all.length <= 16) return { direct: all, playin: [], take: 0 };
+    return { direct: all.slice(0, directN), playin: all.slice(directN), take };
+  }
+  function fmtOnIntlChamp(kind, team) {
+    if (!fmtOn() || !team) return;
+    if (kind === "fst") S.fmt.fstLg = leagueOf(team);
+    if (kind === "msi" && intlYear(S.fmt.y).bonus && !S.fmt.msiBonus) {
+      S.fmt.msiBonus = 1;
+      const pool = (S.fmt.msiField || []).filter((n) => n && n !== team);
+      const runner = S.fmt.msiRunner && S.fmt.msiRunner !== team ? S.fmt.msiRunner : pool.slice().sort((a, b) => pw2(b) - pw2(a))[0];
+      const la = leagueOf(team);
+      let lb = runner ? leagueOf(runner) : null;
+      if (lb === la) {
+        const alt = pool.filter((n) => leagueOf(n) !== la).sort((a, b) => pw2(b) - pw2(a))[0];
+        lb = alt ? leagueOf(alt) : null;
+      }
+      [la, lb].forEach((lg) => {
+        const r = lg ? runOf2(lg) : null;
+        if (r) {
+          r.slots = r.slots || {};
+          r.slots.worlds = (r.slots.worlds || 0) + 1;
+        }
+      });
+    }
+  }
+  function fmtSyncStandings() {
+    if (!fmtOn()) return;
+    S.standings = S.standings || {};
+    Object.keys(S.fmt.runs).forEach((lg) => {
+      const run = runOf2(lg);
+      const live = run.runs.filter(Boolean);
+      if (!live.length) return;
+      const tbl = {};
+      (S.world && S.world[lg] || []).forEach((t) => {
+        tbl[t.name] = { w: 0, l: 0 };
+      });
+      const rr = live.filter((r) => r.type !== "br"), use = rr.length ? rr : live;
+      use.forEach((r) => r.games.forEach((g) => {
+        if (g.w && tbl[g.w]) tbl[g.w].w++;
+        if (g.l && tbl[g.l]) tbl[g.l].l++;
+      }));
+      const ys = specOf(lg), sp = ys && ys.splits[run.si];
+      const carry = sp && sp.stages.find((s) => s.carrySplit);
+      if (carry) (run.outs.find((o) => o && o.key === carry.carrySplit)?.rows || []).forEach((b) => {
+        if (tbl[b.team]) {
+          tbl[b.team].w += b.w;
+          tbl[b.team].l += b.l;
+        }
+      });
+      S.standings[lg] = tbl;
+    });
+  }
+  function fmtLastOrder(lg) {
+    const run = runOf2(lg);
+    if (!run) return null;
+    const outs = run.outs.filter((o) => o && !o.aux);
+    return outs.length ? outs[outs.length - 1].order.slice() : null;
+  }
+  function fmtStageNow(lg) {
+    const L = lg || fmtHome(), run = runOf2(L), ys = specOf(L);
+    if (!run || !ys) return null;
+    const idle = !!run.wait || run.done || !run.runs[run.stage];
+    const si = Math.max(0, Math.min(ys.splits.length - 1, idle ? run.si - 1 : run.si));
+    const sp = ys.splits[si];
+    const st = idle ? null : sp.stages[run.stage];
+    const r = idle ? null : run.runs[run.stage];
+    return { lg: L, run, ys, sp, st, r, idle };
+  }
+  function fmtFirstOfHalf() {
+    const n = fmtStageNow();
+    if (!n) return true;
+    const i = n.ys.splits.indexOf(n.sp);
+    return i <= 0 || n.ys.splits[i - 1].half !== n.sp.half;
+  }
+  var TPL_NAME = {
+    KOTH10: "十队冒泡赛 BO5",
+    DE8: "八队双败 BO5",
+    DE8B: "八队双败",
+    DE8UL: "八队双败 BO5",
+    DE8K: "八队双败 BO5",
+    DE6A: "六队双败 BO5",
+    DE6F: "六队双败 BO5",
+    SE6: "六队单败 BO5",
+    LCK23: "首轮单败＋四队双败 BO5",
+    SE4: "四队单败 BO5",
+    SE8: "八队单败",
+    GSL4: "四队双败",
+    GSL8: "两个 GSL 小组 BO3",
+    DE4: "四队双败 BO5",
+    WF4: "瀑布赛 BO5",
+    RTMSI: "五场 BO5 阶梯",
+    PI6: "六队入围赛",
+    Q8: "八队双败 BO3 取四",
+    LTAC: "六队双败 BO5",
+    KR: "单场 BO5",
+    KR3: "三轮 BO5"
+  };
+  function fmtFormatLine(sp) {
+    return sp.stages.map((s) => {
+      if (s.type === "br") return `${s.name}（${TPL_NAME[s.tpl || ""] || "淘汰赛"}）`;
+      const t = s.type === "swiss" ? `瑞士轮 ${s.swissRounds || 3} 轮` : s.type === "cross" ? "组间对抗" : s.groups ? "组内循环" : `${["", "单", "双", "三"][s.times || 1]}循环`;
+      return `${s.name}（${t} BO${s.bo || 3}）`;
+    }).join(" → ");
+  }
+  function fmtBracketRounds(r) {
+    const B = r.br, ms = bracketMatches(B), max = Math.max(0, ...ms.map((m) => m.rd)), out = [];
+    for (let rd = 1; rd <= max; rd++) {
+      const list = ms.filter((m) => m.rd === rd);
+      const pairs = list.map((m) => [slotTeam(B, m.a) || null, slotTeam(B, m.b) || null]);
+      const winners = list.map((m) => B.res[m.id] && B.res[m.id].w || null);
+      const done = list.every((m) => !!B.res[m.id]), now = !done && rd === r.doneR + 1;
+      const final = list.length === 1 && list[0].win === 1;
+      out.push({ label: final ? "决赛" : `第 ${rd} 轮`, pairs, winners, done, now, ph: !done && !now, final });
+    }
+    return out;
+  }
+
   // demo/src/cer.ts
   var TIER_N2 = { gold: "金档", silver: "银档", bronze: "铜档" };
   var CER_EFF = {
@@ -12659,9 +14350,9 @@ header.top.compact>.theme-top{display:none}
       const d = !skipped && S.cer && S.cer.detail || {};
       const tone3 = d.tone;
       const bench = isBenched();
-      const T = bench ? CER_EFF.mediaBench : CER_EFF.media;
-      if (tone3 && T[tone3]) {
-        const E = T[tone3];
+      const T2 = bench ? CER_EFF.mediaBench : CER_EFF.media;
+      if (tone3 && T2[tone3]) {
+        const E = T2[tone3];
         S.media = { si: S.si, split: S.split || 0, tone: tone3, bench: bench || void 0 };
         S.heat = Math.max(0, (S.heat || 0) + (E.heat || 0));
         if (E.trust) addTrustAll(E.trust);
@@ -12757,6 +14448,10 @@ header.top.compact>.theme-top{display:none}
       const B = S.intl.br, lab = B && B.pending && B.pending.label;
       return lab === "决赛" || lab === "总决赛";
     }
+    if (fmtOn()) {
+      const c = S.fmt.cur, n = fmtStageNow();
+      return !!(c && n && n.st && n.st.kind === "po" && c.id === "f" && (c.a === S.team || c.b === S.team));
+    }
     return !!(S.playoff && S.playoff.alive !== false && (S.playoff.round || 1) >= 3);
   }
   function finalName() {
@@ -12764,7 +14459,11 @@ header.top.compact>.theme-top{display:none}
       const C = CUPS[S.cupMatch.kind];
       return `${C && C.name || "杯赛"}决赛`;
     }
-    if (S.intl) return S.intl.type === "msi" ? "MSI 总决赛" : "世界赛决赛";
+    if (S.intl) return S.intl.type === "msi" ? "MSI 总决赛" : S.intl.type === "fst" ? "First Stand 决赛" : "世界赛决赛";
+    if (fmtOn()) {
+      const n = fmtStageNow();
+      return `${S.homeLeague || "LPL"}${n ? n.sp.name : ""}决赛`;
+    }
     return `${S.homeLeague || "LPL"}${["春季赛", "夏季赛"][S.split || 0] || ""}决赛`;
   }
   function cerRecMul() {
@@ -13035,7 +14734,7 @@ header.top.compact>.theme-top{display:none}
       else if (st === "game") body = `<div class="cer-eyebrow">决策 · 8 秒一题</div><div id="cer-game" data-game="decide" data-quiz="patch"></div>${btns("")}`;
       else body = resultBody(c, "board");
     } else if (c.k === "media") {
-      if (st === "story") body = `${scene("media")}<div class="cer-eyebrow">${SEASONS[S.si].tag} ${["春季赛", "夏季赛"][S.split || 0] || ""} · 媒体日</div>
+      if (st === "story") body = `${scene("media")}<div class="cer-eyebrow">${SEASONS[S.si].tag} ${fmtOn() ? (fmtStageNow() || { sp: { name: "" } }).sp.name : ["春季赛", "夏季赛"][S.split || 0] || ""} · 媒体日</div>
       <p class="cer-p"><b>背景板前。</b>三个记者，三个问题，每个都在等一个标题。你说的每句话这个赛段都会被翻出来——<b>狂</b>会涨热度，但输了更伤心态；<b>稳</b>不留把柄；<b>甩锅</b>热度也涨，只是队友看得懂你在说谁。</p>
       <p class="cer-hint">不是小游戏，是<b>限时三选一</b>：每题 10 秒，不答按「稳」算。三题里占多数的那个口径，就是你这个赛段的基调。</p>
       ${btns(`<button class="btn primary" data-cer="next">面对镜头 →</button>`)}`;
@@ -13680,6 +15379,36 @@ header.top.compact>.theme-top{display:none}
     }
     return x > y ? a : b;
   }
+  function intlName(type) {
+    return type === "msi" ? "MSI" : type === "fst" ? "First Stand" : "世界赛";
+  }
+  function intlKind(name) {
+    return name === "MSI" ? "msi" : name === "First Stand" ? "fst" : "worlds";
+  }
+  function seedArrange(field) {
+    const s = field.filter(Boolean).slice().sort((a, b) => pw2(b) - pw2(a)), out = [];
+    while (s.length) {
+      out.push(s.shift());
+      if (s.length) out.push(s.pop());
+    }
+    return out;
+  }
+  function fmtStaged(type, field, stage) {
+    const f = stage === "swiss" || stage === "groups" ? field.slice().sort((a, b) => pw2(b) - pw2(a)).slice(0, 8) : field;
+    return convergeStaged(type, f, simEventStaged(seedArrange(f), "knockout"));
+  }
+  function fmtEventField(type, F, benched) {
+    if (type === "fst") return { field: fmtIntlField("fst"), stage: "knockout" };
+    if (type === "msi") {
+      const all = fmtIntlField("msi");
+      S.fmt.msiField = all;
+      if (F.msi.mode === "groups") return { field: all, stage: "groups" };
+      const sp2 = fmtMsiSplit(), pin2 = benched ? sp2.playin.filter((n) => n !== S.team) : sp2.playin;
+      return { field: sp2.direct.concat(sp2.take > 0 ? simPlayIn(pin2).slice(0, sp2.take) : []), stage: "knockout" };
+    }
+    const sp = fmtWorldsSplit(F.worlds.playin.take), pin = benched ? sp.playin.filter((n) => n !== S.team) : sp.playin;
+    return { field: sp.direct.concat(sp.take > 0 ? canonQual(sp.playin, simPlayIn(pin).slice(0, sp.take)) : []), stage: F.worlds.main };
+  }
   function minorChampion(lg) {
     try {
       const WC = tlCanon(WORLDS_CANON, S.si, "worlds") ? tlCanon(WORLDS_CANON, S.si, "worlds")[lg] : null;
@@ -13689,6 +15418,10 @@ header.top.compact>.theme-top{display:none}
     return S.world[lg].slice().sort((a, b) => power(b.players) - power(a.players))[0].name;
   }
   function majorStandings(lg) {
+    if (fmtOn()) {
+      const o = fmtLastOrder(lg);
+      return (o && o.length ? o : rankOf(lg).map((x) => x.n)).slice(0, 4);
+    }
     const rk = rankOf(lg).map((x) => x.n);
     if (rk.length < 4) return rk;
     S.poCache = S.poCache || {};
@@ -13789,6 +15522,53 @@ header.top.compact>.theme-top{display:none}
     if (isBenched() && S.understudy) {
       return benchedIntl(type, playerResult);
     }
+    if (fmtOn()) {
+      if (type === "fst") return openIntl("fst", fmtIntlField("fst"), "knockout");
+      if (type === "msi") {
+        S.fmt.msiField = fmtIntlField("msi");
+        if (F.msi.mode === "groups") return openIntl("msi", S.fmt.msiField, "groups");
+        const sp2 = fmtMsiSplit(), cfg3 = { playin: { teams: sp2.playin.length, take: sp2.take, bo: S.fmt.y >= 2025 ? 3 : 2 }, main: "knockout" };
+        if (sp2.take > 0 && sp2.playin.includes(S.team)) {
+          S.intl = {
+            type: "msi",
+            stage: "playin",
+            field: sp2.playin,
+            direct: sp2.direct,
+            record: [0, 0],
+            round: 1,
+            cfg: cfg3,
+            queue: sp2.playin.filter((n) => n !== S.team).sort((a, b) => pw2(a) - pw2(b))
+          };
+          pushEvent(`<b>${S.team}</b> 要从 MSI 入围赛打起（${sp2.playin.length} 队争 ${sp2.take} 个正赛名额）。`, "bad", "MSI");
+          pushEvent(intlDrawText("MSI 入围赛", sp2.playin), "info", "MSI");
+          enterPrep("intl", S.intl.queue[0], cfg3.playin.bo, "MSI 入围赛首战 · 赛前备战");
+          return true;
+        }
+        const q2 = sp2.take > 0 ? simPlayIn(sp2.playin).slice(0, sp2.take) : [];
+        if (q2.length) pushEvent(`MSI 入围赛结束（${sp2.playin.length} 队争 ${sp2.take} 个名额），<b>${q2.join("、")}</b> 晋级正赛。`, "info", "MSI");
+        return openIntl("msi", sp2.direct.concat(q2), "knockout");
+      }
+      const c0 = F.worlds, sp = fmtWorldsSplit(c0.playin.take), cfg2 = { playin: { teams: sp.playin.length, take: sp.take, bo: c0.playin.bo }, main: c0.main };
+      if (sp.take > 0 && sp.playin.includes(S.team)) {
+        S.intl = {
+          type: "worlds",
+          stage: "playin",
+          field: sp.playin,
+          direct: sp.direct,
+          record: [0, 0],
+          round: 1,
+          cfg: cfg2,
+          queue: sp.playin.filter((n) => n !== S.team).sort((a, b) => pw2(a) - pw2(b))
+        };
+        pushEvent(`<b>${S.team}</b> 只拿到入围赛资格，要从最底下打起。`, "bad", "世界赛");
+        pushEvent(intlDrawText("世界赛入围赛", sp.playin), "info", "世界赛");
+        enterPrep("intl", S.intl.queue[0], cfg2.playin.bo, "世界赛入围赛首战 · 赛前备战");
+        return true;
+      }
+      const q = sp.take > 0 ? canonQual(sp.playin, simPlayIn(sp.playin).slice(0, sp.take)) : [];
+      if (q.length) pushEvent(`入围赛结束（${sp.playin.length} 队争 ${sp.take} 个名额），<b>${q.join("、")}</b> 晋级正赛。`, "info", "世界赛");
+      return openIntl("worlds", sp.direct.concat(q), cfg2.main);
+    }
     if (type === "msi") {
       const seeds = {};
       majors().forEach((lg) => seeds[lg] = majorStandings(lg));
@@ -13854,7 +15634,7 @@ header.top.compact>.theme-top{display:none}
   }
   function openIntl(type, field, stage) {
     field = field.filter(Boolean);
-    const name = type === "msi" ? "MSI" : "世界赛";
+    const name = intlName(type);
     if (!field.includes(S.team)) {
       S._spec = { type, field: field.slice(), stage };
       return false;
@@ -14128,6 +15908,7 @@ header.top.compact>.theme-top{display:none}
     });
   }
   function canonChamp(type) {
+    if (type === "fst") return null;
     const t = INTL_CANON[type === "msi" ? "msi" : "worlds"];
     return t && t[S.si] || null;
   }
@@ -14161,24 +15942,28 @@ header.top.compact>.theme-top{display:none}
     try {
       S.honors = S.honors || {};
       (S.honors[kind] = S.honors[kind] || {})[si] = team;
+      if (si === S.si) fmtOnIntlChamp(kind, team);
     } catch (e) {
     }
   }
   function intlChampEvent(name, champ) {
-    noteHonor(name === "MSI" ? "msi" : "worlds", S.si, champ);
+    noteHonor(intlKind(name), S.si, champ);
     const mine = S.career && S.homeLeague || "LPL";
     const lck = leagueOf(champ) === "LCK", own = leagueOf(champ) === mine;
     return {
-      text: `${name}落幕，<b>${champ}</b> 捧起奖杯。${realNote(name === "MSI" ? "msi" : "worlds", S.si, champ)}${own ? "你所在的赛区拿下了这座奖杯——只是捧杯的人不是你。" : lck ? "LCK 又一次站在了最高处。" : "你在屏幕外看完了颁奖。"}`,
+      text: `${name}落幕，<b>${champ}</b> 捧起奖杯。${realNote(intlKind(name), S.si, champ)}${own ? "你所在的赛区拿下了这座奖杯——只是捧杯的人不是你。" : lck ? "LCK 又一次站在了最高处。" : "你在屏幕外看完了颁奖。"}`,
       tone: lck && !own ? "bad" : "info",
       tag: name
     };
   }
   function benchedIntl(type, playerResult) {
     const F = SEASONS[S.si];
-    const name = type === "msi" ? "MSI" : "世界赛";
+    const name = intlName(type);
     let field, stage;
-    if (type === "msi") {
+    if (fmtOn()) {
+      ({ field, stage } = fmtEventField(type, F, true));
+      if (field.indexOf(S.team) < 0) field.push(S.team);
+    } else if (type === "msi") {
       const seeds = {};
       majors().forEach((lg) => seeds[lg] = majorStandings(lg));
       const HL = S.homeLeague || "LPL";
@@ -14213,14 +15998,25 @@ header.top.compact>.theme-top{display:none}
       if (field.indexOf(S.team) < 0) field.push(S.team);
       stage = cfg.main;
     }
-    const st = convergeStaged(type, field, simEventStaged(field, stage));
+    const st = fmtOn() ? fmtStaged(type, field, stage) : convergeStaged(type, field, simEventStaged(field, stage));
+    if (fmtOn() && type === "msi") S.fmt.msiRunner = (st.two || []).find((n) => n !== st.champ) || null;
     const champUs = st.champ === S.team;
     const our = champUs ? "决赛" : st.two.includes(S.team) ? "决赛" : st.four.includes(S.team) ? "四强" : st.eight.includes(S.team) ? "八强" : "小组赛/瑞士轮";
     const bench = S.understudy ? S.understudy.id : "首发";
     if (champUs && true) addRingTitle(`${F.tag} ${name}`);
-    if (champUs) noteHonor(type === "msi" ? "msi" : "worlds", S.si, S.team);
+    if (champUs) noteHonor(type, S.si, S.team);
     const ev = champUs ? { text: `${name}落幕，<b>${S.team} 夺冠</b>——你在替补席见证了全程。<span style="color:var(--ink-3)">戒指有你一枚，生涯表记为<b>随队冠军</b>；想让它算进成就和转会筹码，把首发抢下来。</span>`, tone: "big", tag: name } : intlChampEvent(name, st.champ);
-    if (type === "msi") {
+    if (type === "fst") {
+      enterBreak(
+        "seg",
+        2,
+        "First Stand · 替补席随队",
+        `教练公布了 First Stand 名单：<b>首发还是 ${bench}</b>。你随队出征，位置在替补席——这几周把训练赛数据打上去。`
+      );
+      queueBreakNews(1, `First Stand 开赛，${field.length} 支队伍到场。${S.team} 的比赛你都在场边看完。`, "info", name);
+      queueBreakNews(2, `First Stand 四强：${st.four.map((n) => n === S.team ? `<b>${n}</b>` : n).join("、")}。`, "info", name);
+      queueBreakNews(3, ev.text, ev.tone, ev.tag);
+    } else if (type === "msi") {
       enterBreak(
         "summer",
         MID_WEEKS,
@@ -14262,7 +16058,8 @@ header.top.compact>.theme-top{display:none}
     if (spec) {
       field = spec.field;
       stage = spec.stage;
-    } else if (type === "msi") {
+    } else if (fmtOn()) ({ field, stage } = fmtEventField(type, F, false));
+    else if (type === "msi") {
       const seeds = {};
       majors().forEach((lg) => seeds[lg] = majorStandings(lg));
       try {
@@ -14283,15 +16080,26 @@ header.top.compact>.theme-top{display:none}
       field = direct.concat(canonQual(playin, simPlayIn(playin).slice(0, cfg.playin.take)));
       stage = cfg.main;
     }
-    const name = type === "msi" ? "MSI" : "世界赛";
-    const st = convergeStaged(type, field, simEventStaged(field, stage));
+    const name = intlName(type);
+    const st = fmtOn() ? fmtStaged(type, field, stage) : convergeStaged(type, field, simEventStaged(field, stage));
+    if (fmtOn() && type === "msi") S.fmt.msiRunner = (st.two || []).find((n) => n !== st.champ) || null;
     const ev = intlChampEvent(name, st.champ);
-    if (type === "msi") {
+    if (type === "fst") {
+      enterBreak(
+        "seg",
+        2,
+        "First Stand 进行中",
+        `第一个赛段收官。First Stand 在没有你的情况下开打——<b>下一个赛段才是你的下一战</b>，这两周把该补的补上。`
+      );
+      queueBreakNews(1, `First Stand 开赛，${field.length} 支队伍到场。你在训练室里看完了揭幕战。`, "info", name);
+      queueBreakNews(2, `First Stand 四强出炉：${st.four.map((n) => `<b>${n}</b>`).join("、")}。`, "info", name);
+      queueBreakNews(3, ev.text, ev.tone, ev.tag);
+    } else if (type === "msi") {
       enterBreak(
         "summer",
         MID_WEEKS,
         "季中间歇 · MSI 进行中",
-        `春季赛收官。MSI 在没有你的情况下开打——<b>夏季赛才是你的下一战</b>，这两周把该补的补上。`
+        fmtOn() ? `上半年的联赛收官。MSI 在没有你的情况下开打——<b>下半年的联赛才是你的下一战</b>，这几周把该补的补上。` : `春季赛收官。MSI 在没有你的情况下开打——<b>夏季赛才是你的下一战</b>，这两周把该补的补上。`
       );
       queueBreakNews(1, `MSI 开赛，${field.length} 支队伍到场。你在训练室里看完了揭幕战。`, "info", "MSI");
       queueBreakNews(2, `MSI 四强出炉：${st.four.map((n) => `<b>${n}</b>`).join("、")}。`, "info", "MSI");
@@ -14311,24 +16119,23 @@ header.top.compact>.theme-top{display:none}
   }
   function intlAdvance() {
     const I = S.intl, won = S.match.sc[0] > S.match.sc[1];
-    const name = I.type === "msi" ? "MSI" : "世界赛";
+    const name = intlName(I.type);
     I.metOpp = (I.metOpp || []).concat([S.match.oppName]);
     if (I.stage === "playin") {
       I.record[won ? 0 : 1]++;
-      if (I.record[1] >= 2) {
+      const one = (I.field || []).length <= 2;
+      if (I.record[1] >= (one ? 1 : 2)) {
         finishIntl(`入围赛出局`, "playin");
         return;
       }
-      if (I.record[0] >= 2) {
+      if (I.record[0] >= (one ? 1 : 2)) {
         const take = I.cfg && I.cfg.playin.take || 4;
-        const qual = [S.team].concat(canonQual(
-          I.field.filter((n) => n !== S.team),
-          simPlayIn(I.field.filter((n) => n !== S.team)).slice(0, take - 1)
-        ));
+        const rest = I.field.filter((n) => n !== S.team), sim = simPlayIn(rest).slice(0, take - 1);
+        const qual = [S.team].concat(I.type === "worlds" ? canonQual(rest, sim) : sim);
         S.cameFromPlayin = true;
         pushEvent(`<b>${S.team}</b> 从入围赛杀进正赛。`, "good", name);
         const field = I.direct.concat(qual);
-        if (!openIntl("worlds", field, I.cfg && I.cfg.main || "swiss")) finishIntl("正赛出局", "main");
+        if (!openIntl(I.type, field, I.cfg && I.cfg.main || "swiss")) finishIntl("正赛出局", "main");
         return;
       }
       I.round++;
@@ -14389,7 +16196,7 @@ header.top.compact>.theme-top{display:none}
         return;
       }
       I.knockRound++;
-      pushEvent(`世界赛${nx.label}：对手 <b>${nx.opp}</b>（${leagueOf(nx.opp)}）。${brOthersText()}`, "info", "世界赛");
+      pushEvent(`${name}${nx.label}：对手 <b>${nx.opp}</b>（${leagueOf(nx.opp)}）。${brOthersText()}`, "info", name);
       enterPrep("intl", nx.opp, 3, `${name}${nx.label} · 赛前备战`);
       return;
     }
@@ -14441,29 +16248,30 @@ header.top.compact>.theme-top{display:none}
     if (S.intl) S.career.intlLog = (S.career.intlLog || []).concat([{ si: S.si, type: S.intl.type, d }]);
   }
   function crownChampion() {
-    const I = S.intl, name = I.type === "msi" ? "MSI" : "世界赛";
-    noteHonor(I.type === "msi" ? "msi" : "worlds", S.si, S.team);
+    const I = S.intl, name = intlName(I.type);
+    if (I.type === "msi" && S.fmt && S.match) S.fmt.msiRunner = S.match.oppName;
+    noteHonor(I.type, S.si, S.team);
     try {
       Object.keys(S.world).forEach((lg) => wlAdd(lg, 0.1));
     } catch (e) {
     }
     {
-      const amt = I.type === "msi" ? PRIZE_MSI.champion : PRIZE_W.champion;
+      const amt = (I.type === "msi" ? PRIZE_MSI : I.type === "fst" ? PRIZE_FST : PRIZE_W).champion;
       addMoney("prize", amt);
       pushEvent(`${name}冠军奖金到账 <b>${amt} 万</b>。`, "good", "奖金");
     }
     S.career.titles.push(`${SEASONS[S.si].tag} ${name}`);
     S.career[I.type] = (S.career[I.type] || 0) + 1;
     champCoreStart();
-    const yk = I.type === "msi" ? "msiYears" : "worldsYears";
+    const yk = I.type === "msi" ? "msiYears" : I.type === "fst" ? "fstYears" : "worldsYears";
     S.career[yk] = (S.career[yk] || []).concat([S.si]);
     {
-      checkAch(I.type === "msi" ? "msi" : "worlds");
+      if (I.type !== "fst") checkAch(I.type === "msi" ? "msi" : "worlds");
       checkAch("crown");
     }
     const cap0 = { 心态: S.capBonus && S.capBonus.心态 || 0, 指挥: S.capBonus && S.capBonus.指挥 || 0 };
     {
-      if (I.type === "msi") {
+      if (I.type !== "worlds") {
         breakthrough("心态", 2.5, "你在国际赛场的最高领奖台上站过了。大场面再也吓不到你。", void 0, "mile");
         breakthrough("指挥", 2.5, "拿过冠军的人说话，队友会听。", void 0, "mile");
       } else {
@@ -14477,7 +16285,7 @@ header.top.compact>.theme-top{display:none}
     };
     const beatLCK = leagueOf(S.match.oppName) === "LCK" && (S.homeLeague || "LPL") !== "LCK";
     pushEvent(
-      `<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${name} 冠军！</b>${realNote(I.type === "msi" ? "msi" : "worlds", S.si, S.team)}${beatLCK ? `决赛击败 LCK 的 ${S.match.oppName}——<b>至暗时刻的墙，被你砸开了一道口子。</b>` : ""}`,
+      `<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${name} 冠军！</b>${realNote(I.type, S.si, S.team)}${beatLCK ? `决赛击败 LCK 的 ${S.match.oppName}——<b>至暗时刻的墙，被你砸开了一道口子。</b>` : ""}`,
       "big",
       name
     );
@@ -14487,7 +16295,7 @@ header.top.compact>.theme-top{display:none}
       tag: SEASONS[S.si].tag,
       opp: S.match ? S.match.oppName : "",
       beatLCK,
-      prize: I.type === "msi" ? PRIZE_MSI.champion : PRIZE_W.champion,
+      prize: (I.type === "msi" ? PRIZE_MSI : I.type === "fst" ? PRIZE_FST : PRIZE_W).champion,
       nth: S.career[I.type],
       titles: S.career.titles.length,
       btkGain
@@ -14510,19 +16318,19 @@ header.top.compact>.theme-top{display:none}
     <div class="ru-txt">${c.beatLCK ? `决赛击败 LCK 的 <b>${c.opp}</b>——至暗时刻的墙，被你砸开了一道口子。` : `决赛击败 <b>${c.opp}</b>。这座奖杯从今天起写着你的名字。`}${c.nth >= 2 ? `<br>这是你的第 ${c.nth} 座${c.name}冠军。` : ""}</div>
     <div class="evres"><span class="er up">冠军奖金 <b>+${c.prize} 万</b></span>${gtxt ? `<span class="er">${gtxt}</span>` : ""}</div>
     <div class="row" style="justify-content:center">
-      <button class="btn" id="intlchampok">${c.type === "msi" ? "带着冠军回夏季赛 →" : "这个赛季，到此为止了 →"}</button></div>
+      <button class="btn" id="intlchampok">${c.type === "fst" ? "带着冠军回联赛 →" : c.type === "msi" ? fmtOn() ? "带着冠军回国 →" : "带着冠军回夏季赛 →" : "这个赛季，到此为止了 →"}</button></div>
   </div></div>`;
   }
   function finishIntl(stageText, kind) {
-    const I = S.intl, name = I.type === "msi" ? "MSI" : "世界赛";
-    pushEvent(`${name} ${stageText}：<b>${S.team}</b> 的赛季结束了。`, "bad", name);
+    const I = S.intl, name = intlName(I.type);
+    pushEvent(`${name} ${stageText}：<b>${S.team}</b> ${I.type === "fst" ? "的 First Stand 之旅结束了" : "的赛季结束了"}。`, "bad", name);
     S.intlResult = S.intlResult || {};
     S.intlResult[I.type] = kind;
     noteDepth(kind);
     {
       let pk = kind;
       if (I.double && (I.wins || 0) >= 3 && kind === "knock") pk = "final";
-      const tbl = I.type === "msi" ? PRIZE_MSI : PRIZE_W;
+      const tbl = I.type === "msi" ? PRIZE_MSI : I.type === "fst" ? PRIZE_FST : PRIZE_W;
       const amt = tbl[pk] || tbl.main || 0;
       if (amt) {
         addMoney("prize", amt);
@@ -14530,6 +16338,7 @@ header.top.compact>.theme-top{display:none}
       }
     }
     if (kind === "final" && S.match) {
+      if (I.type === "msi" && S.fmt) S.fmt.msiRunner = S.team;
       const ev = intlChampEvent(name, S.match.oppName);
       pushEvent(ev.text, ev.tone, ev.tag);
     } else {
@@ -14547,6 +16356,14 @@ header.top.compact>.theme-top{display:none}
     S.afterIntlGo = null;
     const wrap2 = S._intlWrap;
     S._intlWrap = null;
+    if (go === "seg") {
+      enterBreak("seg", 1, "First Stand 之后", wrap2 ? `First Stand 出局了。下一个赛段开打前还有一点时间。` : `捧着 First Stand 的奖杯回国，下一个赛段马上开打。`);
+      if (wrap2) {
+        const ev = intlChampEvent(wrap2.name, wrap2.champ);
+        queueBreakNews(2, ev.text, ev.tone, ev.tag);
+      }
+      return;
+    }
     if (go === "summer") {
       if (wrap2) {
         enterBreak(
@@ -14586,7 +16403,7 @@ header.top.compact>.theme-top{display:none}
   function intlStageName() {
     const I = S.intl;
     if (!I) return "";
-    const n = I.type === "msi" ? "MSI" : "世界赛";
+    const n = intlName(I.type);
     if (I.stage === "playin") return n + " 入围赛";
     if (I.stage === "groups") return n + " 小组赛 " + I.record.join("-") + intlStakes();
     if (I.stage === "swiss") return n + " 瑞士轮 " + I.record.join("-") + intlStakes();
@@ -14904,13 +16721,13 @@ header.top.compact>.theme-top{display:none}
   }
   function cloutCard() {
     if (!S.team) return "";
-    const c = cloutOf(), T = cloutTier(c);
-    const L = canList(), G = canSign();
+    const c = cloutOf(), T2 = cloutTier(c);
+    const L = canList(), G2 = canSign();
     const mates = myRoster().filter((p) => !p.me);
     const bar = (v, col) => `<div class="track"><div class="fill" style="width:${clamp(v, 0, 100)}%;background:${col}"></div></div>`;
     const gold = "linear-gradient(90deg,#6B5A2A,var(--gold))";
     const cyan = "linear-gradient(90deg,var(--cyan-dim),var(--cyan))";
-    return `<div class="card"><h2>话语权<em>${T.n}</em></h2>
+    return `<div class="card"><h2>话语权<em>${T2.n}</em></h2>
     <div class="attrs">
       <div class="at"><div class="lb">威望</div>${bar(c, gold)}
         <div class="vn mono"><b>${c}</b></div></div>
@@ -14919,7 +16736,7 @@ header.top.compact>.theme-top{display:none}
       <div class="at"><div class="lb">经理</div>${bar(mgrTrust(), cyan)}
         <div class="vn mono"><b>${Math.round(mgrTrust())}</b></div></div>
     </div>
-    <p class="note">${T.d}　威望来自冠军、人气、你在队里的分量和生涯战绩。</p>
+    <p class="note">${T2.d}　威望来自冠军、人气、你在队里的分量和生涯战绩。</p>
     ${trustLedger()}
 
     <h3 style="font-size:13px;color:var(--ink-3);margin:18px 0 8px">挂牌队友
@@ -14934,8 +16751,8 @@ header.top.compact>.theme-top{display:none}
     }).join("")}</div>` : `<p class="note lockhow">🔒 ${L.why}</p>`}
 
     <h3 style="font-size:13px;color:var(--ink-3);margin:18px 0 8px">点名引援
-      ${G.ok ? '<span class="tag g">可以提</span>' : '<span class="tag">条件不足</span>'}</h3>
-    ${G.ok ? (() => {
+      ${G2.ok ? '<span class="tag g">可以提</span>' : '<span class="tag">条件不足</span>'}</h3>
+    ${G2.ok ? (() => {
       const ts = signTargets();
       return ts.length ? `<div class="grid g2">${ts.map((x) => {
         const p = signOdds(x);
@@ -14944,7 +16761,7 @@ header.top.compact>.theme-top{display:none}
            <div class="d">${POSN[x.p.pos]}　来自 ${x.team}
              成算 <b style="color:${p >= 0.5 ? "var(--cyan)" : p >= 0.3 ? "var(--gold)" : "var(--red)"}">${(p * 100).toFixed(0)}%</b></div></button>`;
       }).join("")}</div>` : `<p class="note">现在没有你够得着又值得要的人。</p>`;
-    })() : `<p class="note lockhow">🔒 ${G.why}</p>`}
+    })() : `<p class="note lockhow">🔒 ${G2.why}</p>`}
   </div>`;
   }
   function trustLedger() {
@@ -16135,11 +17952,11 @@ header.top.compact>.theme-top{display:none}
     return (S.money || 0) - AUTO_RESERVE;
   }
   function autoGearOrder() {
-    const rank = {};
-    DIMS.slice().sort((a, b) => S.attrs[b] - S.attrs[a]).forEach((d, i) => rank[d] = i);
+    const rank2 = {};
+    DIMS.slice().sort((a, b) => S.attrs[b] - S.attrs[a]).forEach((d, i) => rank2[d] = i);
     return SLOTS.slice().sort((a, b) => {
       const da = Object.keys(GEAR[a.k][1].e)[0], db = Object.keys(GEAR[b.k][1].e)[0];
-      return (rank[da] === void 0 ? 9 : rank[da]) - (rank[db] === void 0 ? 9 : rank[db]);
+      return (rank2[da] === void 0 ? 9 : rank2[da]) - (rank2[db] === void 0 ? 9 : rank2[db]);
     });
   }
   function autoCourseWanted() {
@@ -16693,9 +18510,9 @@ header.top.compact>.theme-top{display:none}
           return avg(t.players.map(mktOvr));
         }
       };
-      const rank = teams.slice().sort((a, b) => pw3(b) - pw3(a));
-      const half = Math.floor(rank.length / 2);
-      const top = rank.slice(0, half), bottom = rank.slice(half);
+      const rank2 = teams.slice().sort((a, b) => pw3(b) - pw3(a));
+      const half = Math.floor(rank2.length / 2);
+      const top = rank2.slice(0, half), bottom = rank2.slice(half);
       const cap5 = Math.max(2, Math.round(teams.length * MKT.maxPerLeague));
       let moves = 0;
       const cands = [];
@@ -16751,6 +18568,366 @@ header.top.compact>.theme-top{display:none}
       S.news = (S.news || []).concat([`<div class="hi">— ${full ? "休赛期" : "季中"}转会窗口：${moves.length} 笔变动 —</div>`]).concat(news.slice(0, 14));
     }
     return moves;
+  }
+
+  // demo/src/season_tl.ts
+  FMT_HOOKS.myP = (opp) => {
+    const t = findTeam(opp);
+    if (!t) return 0.5;
+    const fav = SEASONS[S.si].fav, bench = !!(S.fmt && S.fmt.benchWk);
+    const my = power(myRoster(), S.fatigue || 0, fav) + (bench ? 0 : versionFit() + rivalBoost(opp) - tiltDrag());
+    const op = oppMatchPw(t.players) + defendPressure(opp);
+    return clampWinProb(1 / (1 + Math.exp(-(my - op) / SPREAD)), my - op);
+  };
+  FMT_HOOKS.autoMine = (p, s) => {
+    const F = S.fmt, won = s.w === S.team, opp = p.a === S.team ? p.b : p.a, bench = !!F.benchWk;
+    const sc = won ? [s.sw, s.sl] : [s.sl, s.sw];
+    if (!bench) {
+      S.record = S.record || { w: 0, l: 0 };
+      S.record[won ? "w" : "l"]++;
+      addFans(won ? 3 : -1);
+      addFat(6);
+      addMoney("match", fmtHome() === "LDL" ? won ? 1 : 0 : won ? 4 : 2);
+    } else addFans(-0.8);
+    (F.autoLines = F.autoLines || []).push(`${S.team} ${sc[0]}:${sc[1]} ${won ? "击败" : "负于"} <b>${escapeHtml(opp)}</b>（BO${p.bo}${bench ? "，你在替补席" : "，自动打完"}）`);
+  };
+  var ANN27 = [
+    "LPL：取消登峰组与涅槃组，赛季中途不再淘汰，所有队伍打满三个赛段；第二、三赛段 5–12 名仍打骑士之路。",
+    "LCK：下半年恢复第 3–5 轮（Legend / Rise 组内三循环）。",
+    "LEC：取消 LEC Versus，恢复冬季赛，夏季赛恢复分组。",
+    "LCS：维持 2026 赛制（LTA 已解散，回不到 2025）。"
+  ];
+  function tlAnnounce(y) {
+    if (y !== 2027 || S.fmtAnn27) return;
+    S.fmtAnn27 = 1;
+    pushEvent(`<b>2027 赛季赛制调整：回到 2025 年的三段制</b>。第一赛段决出 First Stand 名额，第二赛段决出 MSI 名额，第三赛段决出世界赛名额，赛季积分决定二号种子。<br>${ANN27.join("<br>")}`, "big", "赛区");
+    S.tlPop = {
+      eyebrow: "2027 · 赛制调整",
+      title: "赛制改回 2025",
+      body: `联盟宣布：2027 赛季起，赛制回到 <b>2025 年的三段制</b>。<br>${ANN27.join("<br>")}<br><span style="color:var(--ink-3)">国际赛规模沿用 2026：First Stand 8 队、MSI 11 队、世界赛 19 队。</span>`
+    };
+    S.fmtAnnNews = { pressed: false };
+  }
+  function tlSeasonStart(first, split) {
+    const newYear2 = split === void 0 || split === 0;
+    S.split = split === void 0 ? 0 : split;
+    if (newYear2 && !first) rankSeasonReset();
+    S.carrySplit = 0;
+    S.benchedPO = false;
+    S.loseStreak = 0;
+    S.benchLock = false;
+    const y = SEASONS[S.si] ? SEASONS[S.si].y : 2022;
+    if (newYear2 || !S.fmt || S.fmt.y !== y) {
+      fmtStartYear();
+      tlAnnounce(y);
+    } else fmtAfterEvent("msi");
+    S.week = 0;
+    S.ap = apFor("season");
+    S.record = { w: 0, l: 0 };
+    S.step = "season";
+    S.tab = "act";
+    S.schedule = [];
+    tlWeekStart();
+    ledgerRotate();
+    saveGame("赛季开始");
+    if (S.benchedThisSplit) {
+      S.benchedSplits = (S.benchedSplits || 0) + 1;
+      S.benchedThisSplit = false;
+    }
+    if (S.split === 0) S.seasonAttr0 = Object.assign({}, S.attrs);
+    S.buff = {};
+    const sea = SEASONS[S.si], n = fmtStageNow();
+    if (S.split === 1 && n) pushEvent(`<b>${sea.tag} ${lgName(fmtHome())}${n.sp.name}开赛</b>。世界赛名额就看下半年。`, "big", "赛段");
+    if (!first && S.split === 0) {
+      S.log.push(`<div class="hi">— ${sea.tag} 赛季开始（版本：${sea.ver}）—</div>`);
+      pushEvent(`<b>${sea.tag} 开赛</b>，版本主题「${sea.ver}」。本赛季 ${sea.fav.map((x) => POSN[x]).join("、")} 是红利位，<b>${sea.dim}</b>的权重上升。`, "big", "版本");
+      fireEvent("patch", 0.5);
+    }
+    if (n && S.career) pushEvent(`${sea.tag} ${lgName(fmtHome())}${n.sp.name}赛制：${fmtFormatLine(n.sp)}。`, "info", "赛制");
+    if (S.career && fmtHome() !== "LDL") {
+      if (S.extended && S.si === lastSeason() && S.split === 0) cerStart("farewell0");
+      if (S.split === 0) cerStart("patch");
+      cerStart("media");
+    }
+    render();
+  }
+  function tlWeekStart() {
+    const F = S.fmt;
+    if (!F) return;
+    S.week = (S.week || 0) + 1;
+    F.wk = 0;
+    F.cur = null;
+    F.benchWk = false;
+    F.yw = (F.yw || 0) + 1;
+    const p = fmtPump(false);
+    S.schedule = S.schedule || [];
+    S.schedule[S.week - 1] = p ? p.a === S.team ? p.b : p.a : null;
+    fmtSyncStandings();
+    const n = fmtStageNow();
+    if (n && n.st && n.st.kind === "po" && n.r && n.r.br && S.team && n.r.br.seeds.includes(S.team)) {
+      const k = `${F.y}|${n.sp.key}|${n.st.key}`;
+      F.poSeen = F.poSeen || {};
+      if (!F.poSeen[k]) {
+        F.poSeen[k] = 1;
+        const seed = n.r.br.seeds.indexOf(S.team) + 1;
+        S.playoffSeed = seed;
+        if (S.career) {
+          S.career.best = Math.min(S.career.best || 99, seed);
+          checkAch("playoff");
+        }
+      }
+    }
+  }
+  function tlNextWeek() {
+    const F = S.fmt;
+    if (F.cur && S.match && S.match.done) fmtRecordMine(S.match.sc);
+    S.match = null;
+    const nx = fmtPump(!!F.benchWk);
+    if (nx) {
+      S.step = "match";
+      startMatch();
+      return;
+    }
+    tlEndWeek();
+  }
+  function tlBenchWeek() {
+    const F = S.fmt;
+    S.benchedThisSplit = true;
+    F.benchWk = true;
+    F.cur = null;
+    S.match = null;
+    fmtPump(true);
+    tlEndWeek();
+  }
+  function tlEndWeek() {
+    const F = S.fmt;
+    if (F.autoLines && F.autoLines.length) {
+      pushEvent(F.autoLines.join("<br>"), "info", "赛程");
+      F.autoLines = [];
+    }
+    fmtSimOthers();
+    fmtSyncStandings();
+    tlProcessQueue();
+    const E = fmtBoundary();
+    if (E) {
+      fmtFastForward(E);
+      tlProcessQueue();
+      tlRouteEvent(E);
+      return;
+    }
+    if (F.newSplit) {
+      F.newSplit = false;
+      const run = runOf2(fmtHome()), ys = specOf(fmtHome()), nx = run && ys ? ys.splits[run.si] : null;
+      if (!nx || nx.key !== "rf") {
+        enterBreak("seg", 1, "赛段间歇", `<b>${tlNextSplitName()}</b>下周开打。赛段之间歇一周：调整状态，把该补的补上。`);
+        return;
+      }
+    }
+    tlWeekAdvance();
+  }
+  function tlWeekAdvance() {
+    S.step = "season";
+    S.ap = apFor("season");
+    addFat(-10 * ageRecoverMul());
+    tlWeekStart();
+    if (S.week <= REG_WEEKS && S.career && fmtFirstOfHalf()) {
+      if (S.week === 3) aiMarketWindow(false);
+      if (S.week >= 2) regRollOffer();
+    }
+    if (S.assets && S.assets.apt) addFat(-4);
+    weeklyEcho();
+    injuryTick();
+    rollInjury("赛季中");
+    mateInjuryTick();
+    mateInjuryRoll();
+    archiveWeek();
+    btkWeekEnd();
+    tickBuffs();
+    fanWeek();
+    questWeek();
+    if (rnd() < 0.14) tryRandomEvent();
+    saveGame("S" + S.si + " 第" + S.week + "周");
+    render();
+  }
+  function tlNextSplitName() {
+    const run = runOf2(fmtHome()), ys = specOf(fmtHome());
+    const sp = run && ys ? ys.splits[Math.min(run.si, ys.splits.length - 1)] : null;
+    return sp ? sp.name : "下一个赛段";
+  }
+  function tlResumeSeg() {
+    fmtAfterEvent("fst");
+    S.match = null;
+    S.step = "season";
+    S.ap = apFor("season");
+    S.record = { w: 0, l: 0 };
+    S.week = 0;
+    S.schedule = [];
+    S.tab = "act";
+    tlWeekStart();
+    const sea = SEASONS[S.si], n = fmtStageNow();
+    if (n && !n.idle) pushEvent(`<b>${sea.tag} ${lgName(fmtHome())}${n.sp.name}开赛</b>。赛制：${fmtFormatLine(n.sp)}。`, "big", "赛段");
+    if (S.career && fmtHome() !== "LDL") cerStart("media");
+    saveGame("赛段开始");
+    render();
+  }
+  function myResultOf(out) {
+    const place = out.places[S.team];
+    if (!place) return { result: null, seed: 99, place: 99 };
+    const inPo = (out.poSeeds || []).includes(S.team);
+    const result = out.champ === S.team ? "champion" : !inPo ? null : place === 2 ? 3 : place <= 4 ? 2 : 1;
+    return { result, seed: inPo ? out.poSeeds.indexOf(S.team) + 1 : place, place };
+  }
+  function homeChampNews(lg, sp, out) {
+    if (sp.title === false || !out.champ) return;
+    pushEvent(`<b>${escapeHtml(out.champ)}</b> 夺得 ${SEASONS[S.si].tag} ${lgName(lg)}${sp.title || sp.name}冠军。`, "big", "联赛");
+  }
+  function mySplitEnd(lg, sp, out, splits) {
+    const sea = SEASONS[S.si], F = S.fmt;
+    if (out.aux) {
+      const i = (out.intl || []).indexOf(S.team);
+      if (i >= 0) pushEvent(`${sp.name}结束：${S.team} 拿到<b>世界赛 ${i + 1} 号种子</b>。`, "good", "赛段");
+      else if (out.places[S.team]) pushEvent(`${sp.name}结束：${S.team} 没能拿到世界赛名额。`, "bad", "赛段");
+      return;
+    }
+    const { result, seed, place } = myResultOf(out);
+    F.lastMine = { result, seed };
+    if (sp.title !== false) S.career.best = Math.min(S.career.best || 99, place);
+    S.career.log = (S.career.log || []).concat([{ si: S.si, split: S.split || 0, seg: sp.key, sname: sp.short, team: S.team, lg, seed: place, result, w: (S.record || {}).w || 0, l: (S.record || {}).l || 0 }]);
+    const titled = sp.title !== false;
+    if (titled) {
+      const nT = splits.filter((s) => s.title !== false).length, mul = 2 / Math.max(2, nT);
+      const tbl = lg === "LDL" ? PRIZE_PO_LDL : PRIZE_PO;
+      const base = result === "champion" ? tbl.champion : result === 3 ? tbl.runner : result === 2 ? tbl.semi : 0;
+      const amt = Math.round(base * mul);
+      if (amt) {
+        addMoney("prize", amt);
+        pushEvent(`${sp.name}奖金到账 <b>${amt} 万</b>。`, "good", "奖金");
+      }
+    }
+    const title = `${sea.tag} ${lgName(lg)}${sp.title || sp.name}`;
+    if (titled && result === "champion") {
+      if (isBenched()) {
+        addRingTitle(title);
+        pushEvent(`<b>${S.team} 夺得 ${title}冠军。</b>你在替补席见证了整个过程——<span style="color:var(--ink-3)">生涯表记为<b>随队冠军</b>。</span>`, "big", "联赛冠军");
+      } else {
+        S.career.titles.push(title);
+        S.career.leagueTitles = (S.career.leagueTitles || 0) + 1;
+        S.career.lgYears = (S.career.lgYears || []).concat([S.si]);
+        S.career.lgStreak = (S.career.lgStreak || 0) + 1;
+        checkAch("lgtitle");
+        checkAch("crown");
+        fireEvent("afterchamp", 0.7);
+        breakthrough("心态", 2, "捧过一次奖杯之后，大场面对你来说不一样了。", "lgtitle", "mile");
+        const next = sp.after && fmtIntlList(lg, sp.after).includes(S.team) ? sp.after === "fst" ? "下一站 First Stand。" : sp.after === "msi" ? "下一站 MSI。" : "世界赛资格到手。" : "";
+        pushEvent(`<b>${S.team} 夺得 ${title}冠军。</b>${next}`, "big", "联赛冠军");
+      }
+    } else {
+      if (titled) S.career.lgStreak = 0;
+      homeChampNews(lg, sp, out);
+      const how = result === 3 ? "决赛惜败" : result === 2 ? "止步四强" : result === 1 ? "季后赛出局" : `排第 ${place} 名，没进季后赛`;
+      pushEvent(`${sp.name}收官：${S.team} ${how}。`, result ? "info" : "bad", "赛段");
+    }
+    if ((out.outSeason || []).includes(S.team))
+      pushEvent(`<b>${S.team} 这一年剩下的联赛没有比赛了</b>——涅槃组垫底，按赛制提前结束全年。接下来的几个赛段，时间是你自己的。`, "bad", "赛段");
+  }
+  function tlProcessQueue() {
+    const F = S.fmt;
+    if (!F || !F.queue || !F.queue.length) return;
+    F.queue.splice(0).forEach((q) => {
+      const run = runOf2(q.lg), ys = specOf(q.lg);
+      if (!run || !ys) return;
+      const sp = ys.splits[q.si], out = run.outs[q.si];
+      if (!sp || !out) return;
+      if (q.lg === fmtHome()) {
+        if (S.team && S.career) mySplitEnd(q.lg, sp, out, ys.splits);
+        else homeChampNews(q.lg, sp, out);
+      } else if (FMT_MAJORS.includes(q.lg) && sp.title !== false && out.champ)
+        S.news = (S.news || []).concat([`<div>${SEASONS[S.si].tag} ${lgName(q.lg)} ${sp.name}：<b>${escapeHtml(out.champ)}</b> 夺冠。</div>`]);
+    });
+  }
+  function tlRouteEvent(E) {
+    const F = S.fmt, lr = F.lastMine || { result: null, seed: 99 };
+    if (E === "fst") {
+      if (S.career && fmtHome() !== "LDL" && fmtQualified("fst")) {
+        S.pendingIntl = { type: "fst", result: lr.result };
+        enterBreak("intl", 1, "出征 First Stand 前 · 集结", `<b>First Stand 的名额到手了。</b>出发前还有一周——把状态调到最好。`);
+        return;
+      }
+      spectateIntl("fst");
+      return;
+    }
+    F.lastMine = null;
+    endSeason(lr.result, lr.seed);
+  }
+  function tlStageHead() {
+    const n = fmtStageNow();
+    if (!n) return "";
+    return `${n.sp.name} · ${n.st ? n.st.name : "已结束"}`;
+  }
+  function tlPlayLabel(benched, opp) {
+    const n = fmtStageNow(), c = S.fmt && S.fmt.cur, stage = n && n.st ? n.st.name : "";
+    if (benched) return `替补席观战 · ${stage || "本周"} →`;
+    if (!c || !opp) return n && n.idle ? `这个赛段你们打完了 · 推进一周 →` : `这一轮没有你们的比赛 · 推进一周 →`;
+    return `打 ${stage} · vs ${opp}（BO${c.bo}）→`;
+  }
+  function tlWeekCount() {
+    const n = fmtStageNow();
+    if (!n || !n.r || !S.team) return 0;
+    const r = n.r;
+    if (r.type === "br") return S.fmt.cur ? 1 : 0;
+    const start = r.doneR - r.doneR % r.perWeek, end = Math.min(r.rounds, start + r.perWeek);
+    let k = 0;
+    for (let i = start; i < end; i++) (r.sched[i] || []).forEach((p) => {
+      if (p.a === S.team || p.b === S.team) k++;
+    });
+    return k;
+  }
+  function tlWeekNote() {
+    const k = tlWeekCount(), c = S.fmt && S.fmt.cur;
+    if (!c) return "";
+    return `<p class="note">这一周你们${k > 1 ? `一共 <b>${k} 场</b>：第一场你亲自打，其余默认自动打完（战绩照记，个人收益打折）。` : "有一场比赛。"}
+    <label style="margin-left:6px"><input type="checkbox" id="fmtman" ${S.fmtManual ? "checked" : ""}> 每场都亲自打</label></p>`;
+  }
+  function tlNoMatchCard() {
+    const n = fmtStageNow();
+    if (!n) return "";
+    const r = S.standings && S.standings[fmtHome()] && S.standings[fmtHome()][S.team];
+    return `<div class="card"><h2>本周<em>${SEASONS[S.si].tag} ${escapeHtml(tlStageHead())}</em></h2>
+    <p class="note" style="margin:0">${n.idle ? `这个赛段你们的比赛打完了，别的队还在打。` : `这一轮没有你们的比赛（轮空或在等上一轮的结果）。`}${r ? `本赛段战绩 <b>${r.w}−${r.l}</b>。` : ""}</p></div>`;
+  }
+  function tlStandingsCard() {
+    const n = fmtStageNow();
+    if (!n) return "";
+    let r = n.r && n.r.type !== "br" ? n.r : null, st = r ? n.st : null;
+    if (!r && !n.idle) for (let i = n.run.stage - 1; i >= 0; i--) {
+      const x = n.run.runs[i];
+      if (x && x.type !== "br") {
+        r = x;
+        st = n.sp.stages[i];
+        break;
+      }
+    }
+    const c = ctxOf(n.run, n.ys);
+    const tables = r && st ? r.groups.map((g) => {
+      const rows = c.rows(st.key, r.groups.length > 1 ? g.name : void 0);
+      return `<div class="tw"><table><thead><tr><th>#</th><th>${escapeHtml(g.name || "战队")}</th><th>战绩</th><th>小分</th></tr></thead><tbody>${rows.map((x, i) => `<tr class="${x.team === S.team ? "me" : ""}"><td class="n">${i + 1}</td><td>${teamLogo(x.team, 18)}${escapeHtml(x.team)}${x.team === S.team ? '<span class="tag">你</span>' : ""}</td><td class="n">${x.w}−${x.l}</td><td class="n">${x.gw}−${x.gl}</td></tr>`).join("")}</tbody></table></div>`;
+    }).join("") : "";
+    const done = (n.run.outs || []).filter((o) => o && o.champ && !o.aux && (n.ys.splits.find((s) => s.key === o.key) || {}).title !== false).map((o) => `${escapeHtml(o.name)} <b>${escapeHtml(o.champ)}</b>`).join(" · ");
+    return `<div class="card"><h2>${lgName(n.lg)} · ${escapeHtml(n.sp.name)}<em>${st ? escapeHtml(st.name) : "淘汰赛 / 已结束"} · 第 ${S.week} 周</em></h2>
+    ${tables || `<p class="note">这个阶段没有积分榜${n.r && n.r.br ? "，看对阵树" : ""}。</p>`}
+    <p class="note">赛制：${fmtFormatLine(n.sp)}${done ? `<br>今年已决出：${done}` : ""}${(n.run.outSeason || []).length ? `<br>全年淘汰：${n.run.outSeason.map(escapeHtml).join("、")}` : ""}</p></div>`;
+  }
+  function tlBracketCard() {
+    if (!S.career || !S.team) return "";
+    const n = fmtStageNow();
+    if (!n || !n.r || !n.r.br || !n.st) return "";
+    const rounds = fmtBracketRounds(n.r), last = rounds[rounds.length - 1];
+    const champ = last && last.final ? last.winners[0] : null;
+    const cur = S.fmt.cur, opp = cur ? cur.a === S.team ? cur.b : cur.a : null;
+    const seedCol = `<div class="bcol"><div class="bh">种子</div>${n.r.br.seeds.map((t, i) => `<div class="bm seed ${t === S.team ? "now" : ""}">${brTeam(t)}<span class="bsd">#${i + 1}</span></div>`).join("")}</div>`;
+    return `<div class="card"><h2>${escapeHtml(n.sp.name)} · ${escapeHtml(n.st.name)}<em>对阵树</em></h2>
+    <div class="brk-tree">${seedCol}${koTree(rounds, champ).replace('<div class="brk-tree">', "").replace(/<\/div>$/, "")}</div>
+    <p class="note">${champ ? `冠军 <b>${escapeHtml(champ)}</b>。` : opp ? `下一场 vs <b>${escapeHtml(opp)}</b>（BO${cur.bo}）。` : ""}亮字是赢了的队、划掉的是被淘汰的，晨光橙框是你。</p></div>`;
   }
 
   // demo/src/origins.ts
@@ -17135,7 +19312,7 @@ header.top.compact>.theme-top{display:none}
       if (!team && prev) team = prev;
       if (!team && S.career && si <= (S.si || 0)) team = S.team;
       if (team) prev = teams.length ? teams[teams.length - 1] : team;
-      const res = rows.map((r) => `${SPLITS[r.split] ? SPLITS[r.split][0] : ""}${r.result === "champion" ? "冠" : r.result === 3 ? "亚" : r.result === 2 ? "四强" : r.seed > 6 ? "第" + r.seed : "季后赛"}`).join(" · ");
+      const res = rows.map((r) => `${r.sname ? r.sname + " " : SPLITS[r.split] ? SPLITS[r.split][0] : ""}${r.result === "champion" ? "冠" : r.result === 3 ? "亚" : r.result === 2 ? "四强" : r.seed > 6 ? "第" + r.seed : "季后赛"}`).join(" · ");
       const won = (C.lgYears || []).includes(si) || (C.msiYears || []).includes(si) || (C.worldsYears || []).includes(si);
       return { tag: sea.tag, y: sea.y, team: team || "—", res: res || "—", won };
     });
@@ -17186,7 +19363,7 @@ header.top.compact>.theme-top{display:none}
     g.fillText(idLine, 72, y);
     const own = S.career && S.career.titles || [], ring = ringTitles();
     const all = own.concat(ring.map((t) => t + "（随队）"));
-    const isW = (t) => /世界赛/.test(t), isM = (t) => /MSI/.test(t);
+    const isW = (t) => /世界赛/.test(t), isM = (t) => /MSI|First Stand/.test(t);
     const yr = (t) => (String(t).match(/^S\d+/) || [""])[0];
     const wT = all.filter(isW), mT = all.filter(isM), lT = all.filter((t) => !isW(t) && !isM(t));
     y += 64;
@@ -17517,6 +19694,13 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260913a", at: "2026-09-13", items: [
+      "<b>真实赛制</b>（玩家实锤：2026 年 LPL 是登峰 / 坚毅 / 涅槃 + 骑士之路，游戏里还是春夏两段）：开了真实时间线的新档，2022–2026 年四大赛区都按当年的真实赛制打——LPL 2022–2024 春夏两段、十队冒泡赛，2024 夏季赛起分登峰组 / 涅槃组（涅槃组垫底会提前结束全年），2025、2026 年三段制、骑士之路、八队双败；LCK 2025 起是 LCK Cup、第 1–2 轮、Road to MSI、Legend / Rise 分组；LEC 冬春夏三段和赛季总决赛、2026 年的 LEC Versus；LCS 的 Lock In、2025 年的 LTA 北区、2026 年的 Lock-In 瑞士轮。每个赛段单独决出冠军，积分榜按真实分组显示，淘汰赛有完整对阵树，本周卡上写着这个赛段的赛制",
+      "<b>First Stand</b>（2025 起）：第一个赛段打完就是 First Stand，拿到名额就出征（单败淘汰、BO5），打完回联赛，中间不开注册窗；没去的话在训练室里看完。MSI、世界赛的名额也按当年的真实规则：赛段冠军 / 决赛两队 / 冠军积分 / 地区资格赛，MSI 分直进和入围赛，2024 起 MSI 冠军赛区和第二好的赛区各多一个世界赛名额",
+      "<b>比赛节奏按真实比赛周</b>：一周打真实那一周的比赛——多数是两个 BO3，BO1 为主的赛段一周三场，淘汰赛 BO5。每周第一场你亲自打，其余默认自动打完：战绩照记，个人收益（人气、出场费）打折；想每场都亲自打，勾本周卡上的「每场都亲自打」。合同、工资、注册窗照旧按「上半年到 MSI 结束、下半年到世界赛结束」算，年薪总额不变；联赛奖金按一年有几个冠军赛段摊薄，全年总量和原来持平",
+      "<b>2027 起赛制改回 2025 年的三段制</b>（真实历史还没有 2027 赛制，作者定的规则）：LPL 取消登峰组与涅槃组、赛季中途不再淘汰，第二、三赛段 5–12 名仍打骑士之路；LCK 下半年恢复第 3–5 轮；LEC 取消 Versus、恢复冬季赛；LCS 维持 2026 赛制。2027 年开赛时发公告（大事记、弹窗、周报头条）；国际赛规模沿用 2026",
+      "只对开了真实时间线的新档生效，老档照旧春夏两段；已经在真实时间线里打到一半的档，从下一年开赛起切到真实赛制"
+    ] },
     { v: "v20260911e", at: "2026-09-11", items: [
       "<b>卫冕压力按两边的冠军数抵消</b>（作者拍板）：原来只看你——本赛季和上赛季你每拿一座冠军，所有对手打你都更强。现在也看对面：对面在这一局里近两个赛季也拿过冠军（联赛 / MSI / 世界赛，和你同一把尺），就按两边的冠军数相抵——你 2 座、对面 2 座，没有卫冕压力；你 3 座、对面 2 座，按 1 座算。对面战力旁边写着「卫冕压力 +X（你 3 : 2 对面）」，两边相抵时写「卫冕压力抵消」，赛程表里每支对手各算各的",
       "顺带更正上一版的写法：界面上的战力都乘了显示系数，所以卫冕压力每座冠军显示 <b>+1.7</b>、最多 <b>+4.7</b>（上一版更新日志写的「+1.5、最多 +4」是内部数值，界面上看到的一直是 +1.7 / +3.5 / +4.7）"
@@ -19083,9 +21267,9 @@ header.top.compact>.theme-top{display:none}
         const a = ts[i], b = ts[i + 1];
         const p = 1 / (1 + Math.exp(-(power(a) - power(b)) / SPREAD));
         const aw = rnd() < p;
-        const sl = S.standings[lg] = S.standings[lg] || {};
-        (sl[a.name] = sl[a.name] || { w: 0, l: 0 })[aw ? "w" : "l"]++;
-        (sl[b.name] = sl[b.name] || { w: 0, l: 0 })[aw ? "l" : "w"]++;
+        const sl2 = S.standings[lg] = S.standings[lg] || {};
+        (sl2[a.name] = sl2[a.name] || { w: 0, l: 0 })[aw ? "w" : "l"]++;
+        (sl2[b.name] = sl2[b.name] || { w: 0, l: 0 })[aw ? "l" : "w"]++;
         if (lg === "LPL" && rnd() < 0.06) {
           pushEvent(`<b>${aw ? a.name : b.name}</b> 击败 ${aw ? b.name : a.name}。`, "info", "联赛");
         }
@@ -19126,8 +21310,8 @@ header.top.compact>.theme-top{display:none}
       );
     });
     Object.keys(S.world).forEach((lg) => {
-      const sl = S.standings[lg] = {};
-      S.world[lg].forEach((t) => sl[t.name] = { w: 0, l: 0 });
+      const sl2 = S.standings[lg] = {};
+      S.world[lg].forEach((t) => sl2[t.name] = { w: 0, l: 0 });
     });
   }
   var YEAR_PHASES = [
@@ -19152,6 +21336,7 @@ header.top.compact>.theme-top{display:none}
   }
   function yearWeek() {
     if (S.step === "pre" || S.step === "offer") return S.pre ? S.pre.week : 1;
+    if (fmtOn() && S.step !== "end") return Math.max(1, S.fmt.yw || 1);
     const base = S.yearBase || 0;
     if (S.step === "end") return yearTotal();
     if (S.step === "offseason") {
@@ -19178,7 +21363,7 @@ header.top.compact>.theme-top{display:none}
         urgent: S.pre && S.pre.week > PRE_YEAR - 4
       };
     if (S.intl) {
-      const n = S.intl.type === "msi" ? "MSI" : "世界赛";
+      const n = intlName(S.intl.type);
       const st = S.intl.stage === "playin" ? "入围赛" : S.intl.stage === "groups" ? "小组赛" : S.intl.stage === "swiss" ? "瑞士轮" : S.intl.knockRound >= 3 ? "决赛" : S.intl.knockRound === 2 ? "半决赛" : "八强";
       return { tag: sea.tag, phase: n, detail: `${YW} · ${st}`, urgent: true };
     }
@@ -19196,6 +21381,7 @@ header.top.compact>.theme-top{display:none}
       urgent: false
     };
     if (S.step === "end") return { tag: sea.tag, phase: "生涯结束", detail: "", urgent: false };
+    if (fmtOn()) return { tag: sea.tag, phase: tlStageHead(), detail: `${YW} · 赛段第 ${S.week} 周`, urgent: false };
     return {
       tag: sea.tag,
       phase: SPLITS[S.split || 0] + "常规赛",
@@ -19284,9 +21470,9 @@ header.top.compact>.theme-top{display:none}
         const cur = avg(ps.map((q) => avg(DIMS.map((d) => q.r[d]))));
         const allowed = anchor + WORLD_DRIFT * (S.si || 0);
         if (cur <= allowed) return;
-        const cut = cur - allowed;
+        const cut2 = cur - allowed;
         ps.forEach((q) => DIMS.forEach((d) => {
-          q.r[d] = q1(clamp(q.r[d] - cut, 30, 99));
+          q.r[d] = q1(clamp(q.r[d] - cut2, 30, 99));
         }));
       });
     } catch (e) {
@@ -19301,11 +21487,11 @@ header.top.compact>.theme-top{display:none}
       L.forEach((t) => {
         const a = tavg(t);
         if (!(a > low)) return;
-        const cut = a - low;
+        const cut2 = a - low;
         (t.players || []).forEach((q) => {
           if (q.me) return;
           DIMS.forEach((d) => {
-            q.r[d] = q1(clamp(q.r[d] - cut, 45, 99));
+            q.r[d] = q1(clamp(q.r[d] - cut2, 45, 99));
           });
         });
       });
@@ -20171,7 +22357,7 @@ header.top.compact>.theme-top{display:none}
   function wndDeliver(o, why) {
     const P = S.pre;
     if (!P || !o) return false;
-    const T = CLUB_TIERS[o.tier];
+    const T2 = CLUB_TIERS[o.tier];
     P.invite = {
       tier: o.tier,
       team: o.team,
@@ -20179,7 +22365,7 @@ header.top.compact>.theme-top{display:none}
       reason: why || o.label,
       pending: true,
       week: P.week,
-      expect: T.expect
+      expect: T2.expect
     };
     P.inviteN = (P.inviteN || 0) + 1;
     preLog(`<b>${o.team}</b>${o.league ? `（${o.league} 赛区）` : ""}发来试训邀请——${o.label}。`, "big");
@@ -20381,6 +22567,10 @@ header.top.compact>.theme-top{display:none}
     });
   }
   function startSeason(first, split) {
+    if (S.tl && (S.fmt || split === void 0 || split === 0)) {
+      tlSeasonStart(first, split);
+      return;
+    }
     const _newYear = split === void 0 || split === 0;
     S.split = split === void 0 ? 0 : split;
     if (_newYear && !first) rankSeasonReset();
@@ -20434,6 +22624,14 @@ header.top.compact>.theme-top{display:none}
     render();
   }
   function rebuildMySchedule() {
+    if (fmtOn()) {
+      const c = S.fmt.cur;
+      if (c && c.a !== S.team && c.b !== S.team) {
+        S.fmt.cur = null;
+        if (S.schedule) S.schedule[S.week - 1] = null;
+      }
+      return;
+    }
     try {
       const HL = S.homeLeague || "LPL";
       if (!S.fixtures || !S.fixtures[HL] || !S.world[HL]) return;
@@ -21124,25 +23322,25 @@ header.top.compact>.theme-top{display:none}
     <div class="row" style="justify-content:center;margin-top:8px"><button class="btn" id="autosumok">知道了</button></div>
   </div></div>`;
   }
-  function tabContent(T) {
+  function tabContent(T2) {
     return `${S.pmView != null && true ? pmReplayCard() : ""}
-    ${T === "me" ? attrCard() + formCard() + dataCard() + matchLogCard() + careerCard() + gearCard() : ""}
-    ${T === "team" ? squadCard() + roleCard() + promoteCard() + teamCard() + bondPanel() + relCard() + cloutCard() : ""}
-    ${T === "shop" ? economyCards() : ""}
-    ${T === "tx" ? transferPage() : ""}
-    ${T === "auto" ? autoPage() : ""}
-    ${T === "world" ? bracketCard() + fixtureCard() + standingsCard() + rivalCard() + followUpCard() + newsCard() : ""}
-    ${T === "news" ? pressCard("all") + eventsCard() : ""}
-    ${T === "ach" ? achCard() : ""}
-    ${T === "help" ? helpCard() : ""}`;
+    ${T2 === "me" ? attrCard() + formCard() + dataCard() + matchLogCard() + careerCard() + gearCard() : ""}
+    ${T2 === "team" ? squadCard() + roleCard() + promoteCard() + teamCard() + bondPanel() + relCard() + cloutCard() : ""}
+    ${T2 === "shop" ? economyCards() : ""}
+    ${T2 === "tx" ? transferPage() : ""}
+    ${T2 === "auto" ? autoPage() : ""}
+    ${T2 === "world" ? bracketCard() + fixtureCard() + standingsCard() + rivalCard() + followUpCard() + newsCard() : ""}
+    ${T2 === "news" ? pressCard("all") + eventsCard() : ""}
+    ${T2 === "ach" ? achCard() : ""}
+    ${T2 === "help" ? helpCard() : ""}`;
   }
   function viewSeason() {
-    const sea = SEASONS[S.si], T = curTab(TABS_SEASON);
+    const sea = SEASONS[S.si], T2 = curTab(TABS_SEASON);
     const champ = (S.intlChamp && true ? intlChampCard() : "") + (S.contentPick && true ? contentCard() : "") + (S.promoteDeal && true ? promoteDealCard() : "") + (S.patchNote && true ? patchNoteCard() : "") + (S.autoSum && true ? autoSumCard() : "");
     const scrimPop = scrimCard();
-    if (T !== "act") return `${champ}${scrimPop}${S.locker ? lockerCard() : ""}${S.rndResult ? randomResultCard() : ""}${S.rndEv ? randomCard() : ""}
+    if (T2 !== "act") return `${champ}${scrimPop}${S.locker ? lockerCard() : ""}${S.rndResult ? randomResultCard() : ""}${S.rndEv ? randomCard() : ""}
     ${tabBar(TABS_SEASON)}
-    ${tabContent(T)}`;
+    ${tabContent(T2)}`;
     const oppName = S.schedule[S.week - 1];
     const opp = S.world[S.homeLeague || "LPL"].find((t) => t.name === oppName);
     const fit = versionFit();
@@ -21161,7 +23359,7 @@ header.top.compact>.theme-top{display:none}
   <div class="wk-next">${nextMatchCard()}</div>
   <div class="wk-main">
   <div class="card">
-    <h2>${sea.tag} ${SPLITS[S.split || 0]} · 第 ${S.week}/${WEEKS} 周<em>剩余行动点 ${S.ap}${" · " + txPhaseName()}</em></h2>
+    <h2>${sea.tag} ${fmtOn() ? `${tlStageHead()} · 第 ${S.week} 周` : `${SPLITS[S.split || 0]} · 第 ${S.week}/${WEEKS} 周`}<em>剩余行动点 ${S.ap}${" · " + txPhaseName()}</em></h2>
     ${autoBar()}
     ${questCard()}
     ${weekDiary()}
@@ -21192,13 +23390,14 @@ header.top.compact>.theme-top{display:none}
     ${benched && true ? scrimPanel() : ""}
     ${opp && uiNum() ? `<p class="note">本周对手 <b>${oppName}</b>（战力 ${pwShow(oppMatchPw(opp.players)).toFixed(1)}${defendPressure(oppName) ? `，卫冕压力 +${pwShow(defendPressure(oppName)).toFixed(1)}` : ""}）
       vs 你队 ${pwShow(power(myRoster(), S.fatigue, sea.fav)).toFixed(1)}</p>` : ""}
+    ${fmtOn() ? tlWeekNote() : ""}
     <!-- 出口条必须是这张卡的最后一个孩子：宽屏上它是 sticky 的（theme.css .row.dock），
          而 sticky 只压得住排在它后面的兄弟。原来它排在「替补训练赛」和「本周对手」前面，
          卡片一长过一屏就把这两块糊住了（玩家反馈 2026-09-09「互相遮挡」）。 -->
     <div class="row dock">
       <span class="dock-ap">行动点 <b>${S.ap}</b></span>
       <button class="btn primary" id="play" ${S.ap > 0 ? "disabled" : ""}>
-        ${S.ap > 0 ? `还剩 ${S.ap} 个行动点` : benched ? `替补席观战 · ${SPLITS[S.split || 0]}第 ${S.week}/${WEEKS} 周 →` : `打 ${SPLITS[S.split || 0]}第 ${S.week}/${WEEKS} 周 · vs ${oppName} →`}</button>
+        ${S.ap > 0 ? `还剩 ${S.ap} 个行动点` : fmtOn() ? tlPlayLabel(benched, oppName) : benched ? `替补席观战 · ${SPLITS[S.split || 0]}第 ${S.week}/${WEEKS} 周 →` : `打 ${SPLITS[S.split || 0]}第 ${S.week}/${WEEKS} 周 · vs ${oppName} →`}</button>
       ${quickBtn()}
       <button class="btn ghost sm" id="auto">自动推进到下一件事</button>
     </div>
@@ -21240,11 +23439,11 @@ header.top.compact>.theme-top{display:none}
   function contractTerms() {
     const c = S.contract || {};
     if (c.salary === void 0) return "";
-    const T = c.clubTier ? CLUB_TIERS[c.clubTier] : null;
+    const T2 = c.clubTier ? CLUB_TIERS[c.clubTier] : null;
     const D = c.tier ? DEAL_TIERS[c.tier] : null;
     const paid = salaryOf();
     return `<div class="card"><h2>我的合同<em>剩 ${c.left || 0}/${c.years || 0} 赛段${c.left ? " · " + contractLeftText() : ""}</em></h2>
-    <h3>${S.team || ""}${T ? "　" + T.n : ""}${D ? "　" + D.n : ""}${c.grade ? `<span class="tag g">试训 ${c.grade}</span>` : ""}${(S.homeLeague || "LPL") === "LDL" ? `<span class="tag g">注册：LDL 二队名单</span>${parentClub() ? `<span class="tag">母队 ${parentClub()}</span>` : ""}` : `<span class="tag">注册：${S.homeLeague || "LPL"} 一队名单</span>`}</h3>
+    <h3>${S.team || ""}${T2 ? "　" + T2.n : ""}${D ? "　" + D.n : ""}${c.grade ? `<span class="tag g">试训 ${c.grade}</span>` : ""}${(S.homeLeague || "LPL") === "LDL" ? `<span class="tag g">注册：LDL 二队名单</span>${parentClub() ? `<span class="tag">母队 ${parentClub()}</span>` : ""}` : `<span class="tag">注册：${S.homeLeague || "LPL"} 一队名单</span>`}</h3>
     <div class="grid g2" style="margin-top:10px">
       <div class="ver"><div class="k">签约赛段薪资</div>
         <div class="v mono" style="font-size:20px;color:var(--gold-hi)">${wanHtml(c.salary)}</div>
@@ -21377,6 +23576,15 @@ header.top.compact>.theme-top{display:none}
     }
   ];
   function startMatch(bo, oppName) {
+    if (fmtOn() && !S.intl && oppName === void 0) {
+      const c = S.fmt.cur;
+      if (!c) {
+        nextWeek();
+        return;
+      }
+      oppName = c.a === S.team ? c.b : c.a;
+      bo = (c.bo + 1) / 2;
+    }
     const on = oppName || S.schedule[S.week - 1];
     let opp = findTeam(on);
     if (!opp) {
@@ -21749,6 +23957,10 @@ header.top.compact>.theme-top{display:none}
   }
   function simWorld() {
     if (S.intl || S.playoff) return;
+    if (fmtOn()) {
+      aiTeamsTrain();
+      return;
+    }
     aiTeamsTrain();
     S._upset = null;
     Object.keys(S.world).forEach((lg) => {
@@ -21809,7 +24021,7 @@ header.top.compact>.theme-top{display:none}
     _lastSc = scKey;
     const stamp = hit ? `<div class="stamp${m.done ? " final" : ""}">${hit.endsWith("win") ? m.done ? "胜出" : "胜" : m.done ? "落败" : "负"}</div>` : "";
     return `<div class="card">
-    <h2>${sea.tag} ${S.intl ? intlStageName() : S.playoff ? "季后赛" : "第 " + S.week + " 周"}<em>${m.need === 1 ? "单局定胜负" : m.need === 2 ? "三局两胜" : "五局三胜"}</em></h2>
+    <h2>${sea.tag} ${S.intl ? intlStageName() : S.playoff ? "季后赛" : fmtOn() ? tlStageHead() + " · 第 " + S.week + " 周" : "第 " + S.week + " 周"}<em>${m.need === 1 ? "单局定胜负" : m.need === 2 ? "三局两胜" : "五局三胜"}</em></h2>
     <div class="vs ${hit}">
       <div class="side"><div class="nm">${teamLogo(S.team, 34)}<br>${S.team}</div><div class="pw mono">战力 ${pwShow(my0).toFixed(1)}<small style="color:var(--ink-3)"> 版本 ${vf >= 0 ? "+" : ""}${pwShow(vf).toFixed(1)}${fb ? ` <span style="color:${fb > 0 ? "var(--gold)" : "var(--red)"}">决赛夜 ${fb > 0 ? "+" : ""}${fb}</span>` : ""}</small></div></div>
       <div class="mid"><div class="score">${m.sc[0]} : ${m.sc[1]}</div>${stamp}</div>
@@ -21850,6 +24062,10 @@ header.top.compact>.theme-top{display:none}
     return true;
   }
   function benchWeek() {
+    if (fmtOn()) {
+      tlBenchWeek();
+      return;
+    }
     S.benchedThisSplit = true;
     const on = S.schedule[S.week - 1], sea = SEASONS[S.si];
     const opp = S.world[S.homeLeague || "LPL"].find((t) => t.name === on);
@@ -21883,6 +24099,10 @@ header.top.compact>.theme-top{display:none}
     }
     if (S.playoff) {
       playoffAdvance();
+      return;
+    }
+    if (fmtOn()) {
+      tlNextWeek();
       return;
     }
     if (S.week >= WEEKS) {
@@ -21922,7 +24142,7 @@ header.top.compact>.theme-top{display:none}
     S.playoffSeed = seed;
     if (seed > 6) {
       S.playoff = null;
-      const fin = majorStandings(S.homeLeague || "LPL");
+      const fin2 = majorStandings(S.homeLeague || "LPL");
       S.pendingEnd = { result: null, seed };
       enterBreak(
         "poEnd",
@@ -21930,9 +24150,9 @@ header.top.compact>.theme-top{display:none}
         SPLITS[S.split || 0] + "季后赛 · 场边",
         `常规赛第 ${seed} 名，无缘季后赛。<b>别人在打季后赛的这几周，你的时间是自己的</b>——练、直播、休息，都行。`
       );
-      if (fin && fin.length >= 4) {
-        queueBreakNews(2, `季后赛半决赛打完：<b>${fin[0]}</b> 和 <b>${fin[1]}</b> 会师决赛，${fin[2]}、${fin[3]} 止步四强。`, "info", "季后赛");
-        queueBreakNews(3, `<b>${fin[0]}</b> 击败 ${fin[1]}，夺得 ${SEASONS[S.si].tag} ${lgName(S.homeLeague || "LPL")}${SPLITS[S.split || 0]}冠军。${(S.homeLeague || "LPL") === "LDL" ? "" : S.split === 0 ? "他们将代表赛区出战 MSI。" : "他们拿到了世界赛的头号种子。"}${realNote("league", S.si, fin[0], S.homeLeague || "LPL", S.split || 0)}`, "big", "季后赛");
+      if (fin2 && fin2.length >= 4) {
+        queueBreakNews(2, `季后赛半决赛打完：<b>${fin2[0]}</b> 和 <b>${fin2[1]}</b> 会师决赛，${fin2[2]}、${fin2[3]} 止步四强。`, "info", "季后赛");
+        queueBreakNews(3, `<b>${fin2[0]}</b> 击败 ${fin2[1]}，夺得 ${SEASONS[S.si].tag} ${lgName(S.homeLeague || "LPL")}${SPLITS[S.split || 0]}冠军。${(S.homeLeague || "LPL") === "LDL" ? "" : S.split === 0 ? "他们将代表赛区出战 MSI。" : "他们拿到了世界赛的头号种子。"}${realNote("league", S.si, fin2[0], S.homeLeague || "LPL", S.split || 0)}`, "big", "季后赛");
       }
       return;
     }
@@ -22110,9 +24330,9 @@ header.top.compact>.theme-top{display:none}
     startMatch(true, P.opp);
   }
   function viewPrep() {
-    const T = curTab(TABS_SEASON);
+    const T2 = curTab(TABS_SEASON);
     const pops = `${S.autoSum && true ? autoSumCard() : ""}${S.patchNote && true ? patchNoteCard() : ""}${S.locker ? lockerCard() : ""}${S.rndResult ? randomResultCard() : ""}${S.rndEv ? randomCard() : ""}`;
-    if (T !== "act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
+    if (T2 !== "act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T2)}`;
     return `${pops}${tabBar(TABS_SEASON)}<div class="wkgrid">
     <div class="wk-main">${prepPanel()}</div>
     <div class="wk-next">${bracketCard()}</div>
@@ -22161,7 +24381,7 @@ header.top.compact>.theme-top{display:none}
   </div>`;
   }
   function endSeason(result, seed) {
-    try {
+    if (!fmtOn()) try {
       noteLeagueChamp(result, poCanon().filter((n) => lplRank().slice(0, 6).some((r) => r.n === n)));
     } catch (e) {
     }
@@ -22218,7 +24438,7 @@ header.top.compact>.theme-top{display:none}
       rec: Object.assign({}, S.record),
       grow: DIMS.map((d) => ({ d, g: S.attrs[d] - S.seasonAttr0[d] }))
     };
-    S.career.log = (S.career.log || []).concat([{
+    if (!fmtOn()) S.career.log = (S.career.log || []).concat([{
       si: S.si,
       split: S.split || 0,
       team: S.team,
@@ -22228,7 +24448,7 @@ header.top.compact>.theme-top{display:none}
       w: S.record.w,
       l: S.record.l
     }]);
-    {
+    if (!fmtOn()) {
       const tbl = (S.homeLeague || "LPL") === "LDL" ? PRIZE_PO_LDL : PRIZE_PO;
       const amt = result === "champion" ? tbl.champion : result === 3 ? tbl.runner : result === 2 ? tbl.semi : 0;
       if (amt) {
@@ -22236,7 +24456,8 @@ header.top.compact>.theme-top{display:none}
         pushEvent(`${SPLITS[S.split || 0]}季后赛奖金到账 <b>${amt} 万</b>。`, "good", "奖金");
       }
     }
-    if (result === "champion" && S.benchedPO) {
+    if (fmtOn()) {
+    } else if (result === "champion" && S.benchedPO) {
       const sp = SPLITS[S.split || 0];
       addRingTitle(`${SEASONS[S.si].tag} ${lgName(S.homeLeague || "LPL")}${sp}`);
       pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${sp}冠军。</b>
@@ -22254,12 +24475,26 @@ header.top.compact>.theme-top{display:none}
       breakthrough("心态", 2, "捧过一次奖杯之后，大场面对你来说不一样了。", "lgtitle", "mile");
       pushEvent(`<b>${S.team} 夺得 ${SEASONS[S.si].tag} ${sp}冠军。</b>${S.split === 0 ? "下一站 MSI。" : "世界赛资格到手。"}${realNote("league", S.si, S.team, S.homeLeague || "LPL", S.split || 0)}`, "big", "联赛冠军");
     }
-    if (result !== "champion") S.career.lgStreak = 0;
+    if (!fmtOn() && result !== "champion") S.career.lgStreak = 0;
     checkAch("splitend");
     checkAch("money");
     S.playoff = null;
     S.poForm = 0;
     const majorLg = (S.homeLeague || "LPL") !== "LDL";
+    if (fmtOn()) {
+      const E = S.split === 0 ? "msi" : "worlds";
+      if (majorLg && fmtQualified(E)) {
+        S.pendingIntl = { type: E, result };
+        if (E === "msi") enterBreak("intl", 1, "出征 MSI 前 · 集结", `<b>MSI 的名额到手了</b>。出发前还有一周——把状态调到最好。`);
+        else {
+          enterBreak("intl", 2, "世界赛前 · 集结与适应", `<b>世界赛的名额到手了。</b>接下来两周：集结、飞抵主办地、适应场馆——抽签结果出来之前，把自己调整好。`);
+          cerStart("depart");
+        }
+        return;
+      }
+      spectateIntl(E);
+      return;
+    }
     if (S.split === 0) {
       if (majorLg && result === "champion") {
         S.pendingIntl = { type: "msi", result };
@@ -22290,9 +24525,9 @@ header.top.compact>.theme-top{display:none}
   function viewOffseason() {
     const champ = (S.intlChamp && true ? intlChampCard() : "") + (S.contentPick && true ? contentCard() : "") + (S.promoteDeal && true ? promoteDealCard() : "") + (S.patchNote && true ? patchNoteCard() : "") + (S.autoSum && true ? autoSumCard() : "");
     if (S.off) {
-      const T = curTab(TABS_SEASON);
+      const T2 = curTab(TABS_SEASON);
       const pops = `${champ}${scrimCard()}${S.locker ? lockerCard() : ""}${S.rndResult ? randomResultCard() : ""}${S.rndEv ? randomCard() : ""}`;
-      if (T !== "act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T)}`;
+      if (T2 !== "act") return `${pops}${tabBar(TABS_SEASON)}${tabContent(T2)}`;
       return `${pops}${tabBar(TABS_SEASON)}<div class="wkgrid">
       <div class="wk-main">${breakAgendaCard()}${offPanel()}</div>
       <div class="wk-coach">${railCoach()}</div>
@@ -22401,7 +24636,7 @@ header.top.compact>.theme-top{display:none}
         const pi = S.pendingIntl;
         S.pendingIntl = null;
         if (pi) {
-          S.afterIntlGo = pi.type === "msi" ? "summer" : "offseason";
+          S.afterIntlGo = pi.type === "msi" ? "summer" : pi.type === "fst" ? "seg" : "offseason";
           if (startIntl(pi.type, pi.result)) return;
           S.afterIntlGo = null;
           spectateIntl(pi.type);
@@ -22437,6 +24672,10 @@ header.top.compact>.theme-top{display:none}
         startSeason(false, 1);
         return;
       }
+      if (nx === "seg") {
+        tlResumeSeg();
+        return;
+      }
       if (nx === "playoff") {
         startPlayoff();
         return;
@@ -22445,6 +24684,7 @@ header.top.compact>.theme-top{display:none}
       return;
     }
     S.off.week++;
+    if (S.fmt) S.fmt.yw = (S.fmt.yw || 0) + 1;
     if (S.off.wndFrom && S.off.week >= S.off.wndFrom && !S.off.wndOpened) {
       S.off.wndOpened = true;
       if (S.off.next === "summer") {
@@ -22615,7 +24855,7 @@ header.top.compact>.theme-top{display:none}
   ${faCard()}${campCard()}${meetCard()}
   <div class="card">
     <h2>${S.off.label || "休赛期"}<em>第 ${S.off.week}/${S.off.weeks} 周 · 剩余行动点 ${S.ap}</em></h2>
-    <p class="note">没有比赛要打。${S.off.next === "playoff" ? `接下来就是 <b>季后赛</b>——把体能和状态调到最好，一场定生死。` : S.off.next === "poEnd" ? `季后赛正在进行——<b>没有你</b>。结果会一轮一轮传过来，你能做的只有把这段时间用在自己身上。` : S.off.next === "intl" ? `接下来就是 <b>${S.pendingIntl && S.pendingIntl.type === "msi" ? "MSI" : "世界赛"}</b>。抽签在出征时揭晓——这几天把体能和状态调到最好。` : S.off.next === "wrap" ? `世界赛正在进行。等它落幕，这个赛季才算真的结束。` : S.off.next === "summer" ? `接下来是 <b>${SEASONS[S.si].tag} 夏季赛</b>，还是吃 <b>${SEASONS[S.si].dim}</b>。` : nx ? `下赛季是 <b>${nx.tag} ${nx.y}</b>，版本「${nx.ver}」，吃 <b>${nx.dim}</b>——现在补这一项最划算。` : ""}</p>
+    <p class="note">没有比赛要打。${S.off.next === "playoff" ? `接下来就是 <b>季后赛</b>——把体能和状态调到最好，一场定生死。` : S.off.next === "poEnd" ? `季后赛正在进行——<b>没有你</b>。结果会一轮一轮传过来，你能做的只有把这段时间用在自己身上。` : S.off.next === "intl" ? `接下来就是 <b>${intlName(S.pendingIntl && S.pendingIntl.type)}</b>。抽签在出征时揭晓——这几天把体能和状态调到最好。` : S.off.next === "seg" ? `接下来是 <b>${SEASONS[S.si].tag} ${tlNextSplitName()}</b>。` : S.off.next === "wrap" ? `世界赛正在进行。等它落幕，这个赛季才算真的结束。` : S.off.next === "summer" ? `接下来是 <b>${SEASONS[S.si].tag} ${fmtOn() ? tlNextSplitName() : "夏季赛"}</b>，还是吃 <b>${SEASONS[S.si].dim}</b>。` : nx ? `下赛季是 <b>${nx.tag} ${nx.y}</b>，版本「${nx.ver}」，吃 <b>${nx.dim}</b>——现在补这一项最划算。` : ""}</p>
     ${weekDiary()}
     ${btkChaseNote()}
     ${fatigueBar()}
@@ -22644,7 +24884,7 @@ header.top.compact>.theme-top{display:none}
         挂牌、买断、主动接触都在<b>「转会」栏</b>——想动就趁现在。</p>`;
     })()}
     <div class="row"><button class="btn primary" id="offnext" ${S.ap > 0 ? "disabled" : ""}>
-      ${S.ap > 0 ? `还剩 ${S.ap} 个行动点` : S.off.week >= S.off.weeks ? S.off.next === "summer" ? `开始夏季赛 →` : S.off.next === "playoff" ? `进入季后赛 →` : S.off.next === "poEnd" ? `季后赛落幕 · 赛段结算 →` : S.off.next === "wrap" ? `世界赛落幕 · 赛季结算 →` : S.off.next === "intl" ? `出征 ${S.pendingIntl && S.pendingIntl.type === "msi" ? "MSI" : "世界赛"} →` : `开始 ${nx ? nx.tag : "下"} 赛季 →` : S.off.week + 1 > S.off.weeks ? `进入下一周 → ${S.off.label || "休赛期"}结束` : `进入下一周 → ${S.off.label || "休赛期"} 第 ${S.off.week + 1}/${S.off.weeks} 周`}</button>
+      ${S.ap > 0 ? `还剩 ${S.ap} 个行动点` : S.off.week >= S.off.weeks ? S.off.next === "summer" ? `开始${fmtOn() ? tlNextSplitName() : "夏季赛"} →` : S.off.next === "seg" ? `开始${tlNextSplitName()} →` : S.off.next === "playoff" ? `进入季后赛 →` : S.off.next === "poEnd" ? `季后赛落幕 · 赛段结算 →` : S.off.next === "wrap" ? `世界赛落幕 · 赛季结算 →` : S.off.next === "intl" ? `出征 ${intlName(S.pendingIntl && S.pendingIntl.type)} →` : `开始 ${nx ? nx.tag : "下"} 赛季 →` : S.off.week + 1 > S.off.weeks ? `进入下一周 → ${S.off.label || "休赛期"}结束` : `进入下一周 → ${S.off.label || "休赛期"} 第 ${S.off.week + 1}/${S.off.weeks} 周`}</button>
       ${quickBtn()}</div>
   </div>`;
   }
@@ -22724,8 +24964,8 @@ header.top.compact>.theme-top{display:none}
       const m = t.match(/S(\d\d)/);
       return m ? +m[1] : 0;
     };
-    const rank = { worlds: 0, msi: 1, lg: 2 };
-    const troph = own.map((t) => ({ t, k: kind(t), y: yearOf(t), ring: false })).concat(ring.map((t) => ({ t, k: kind(t), y: yearOf(t), ring: true }))).sort((a, b) => rank[a.k] - rank[b.k] || a.y - b.y);
+    const rank2 = { worlds: 0, msi: 1, lg: 2 };
+    const troph = own.map((t) => ({ t, k: kind(t), y: yearOf(t), ring: false })).concat(ring.map((t) => ({ t, k: kind(t), y: yearOf(t), ring: true }))).sort((a, b) => rank2[a.k] - rank2[b.k] || a.y - b.y);
     const wall = troph.length ? troph.map((x, i) => `<div class="tp ${x.k}${x.ring ? " ring" : ""}" style="--i:${i}">
       <div class="tp-ic">${x.k === "worlds" ? "🏆" : x.k === "msi" ? "🥇" : "🏅"}</div>
       <div class="tp-n">${x.t.replace(/^S\d\d\s*/, "")}</div>
@@ -22761,7 +25001,7 @@ header.top.compact>.theme-top{display:none}
       if (!team && S.career && si === S.si) team = S.team;
       if (!team && prevTeam && si >= firstPro && !tx.some((x) => tagSi(x.s) === si)) team = prevTeam;
       if (team) prevTeam = team;
-      let res = rows.map((r) => `${SPLITS[r.split] ? SPLITS[r.split][0] : ""}${r.result === "champion" ? "冠" : r.result === 3 ? "亚" : r.result === 2 ? "四强" : r.seed > 6 ? `第${r.seed}` : "季后赛"}`).join(" · ");
+      let res = rows.map((r) => `${r.sname ? r.sname + " " : SPLITS[r.split] ? SPLITS[r.split][0] : ""}${r.result === "champion" ? "冠" : r.result === 3 ? "亚" : r.result === 2 ? "四强" : r.seed > 6 ? `第${r.seed}` : "季后赛"}`).join(" · ");
       if (!rows.length) {
         const tt = allT.filter((x) => tagSi(x.t) === si).map((x) => x.t.replace(/^S\d\d\s*/, "") + "冠军" + (x.ring ? "（随队）" : ""));
         res = tt.join(" · ");
@@ -22770,7 +25010,7 @@ header.top.compact>.theme-top{display:none}
       il.filter((x) => x.si === si).forEach((x) => {
         best[x.type] = Math.max(best[x.type] || 0, x.d);
       });
-      const it = Object.entries(best).map(([t, d]) => `${t === "msi" ? "MSI" : "世界赛"}${INTL_DEPTH_N[d] || ""}`).join(" · ");
+      const it = Object.entries(best).map(([t, d]) => `${intlName(t)}${INTL_DEPTH_N[d] || ""}`).join(" · ");
       const won = (C.lgYears || []).includes(si) || (C.msiYears || []).includes(si) || (C.worldsYears || []).includes(si);
       const pre = si < firstPro;
       return `<div class="yr${won ? " won" : ""}" style="--i:${si}">
@@ -23138,7 +25378,7 @@ header.top.compact>.theme-top{display:none}
   </div>`;
   }
   function viewPre() {
-    const P = S.pre, T = curTab(TABS_PRE);
+    const P = S.pre, T2 = curTab(TABS_PRE);
     if (S.tryout) return tryoutCard();
     if (S.deal) return dealCard();
     return `
@@ -23153,17 +25393,17 @@ header.top.compact>.theme-top{display:none}
        原来只能去「新闻」栏目翻。
        「教练怎么看你」和「最近的比赛」职业前没有：还没进队就没有教练和首发竞争，
        排位和杯赛也不写进比赛档案（S.archive 只在职业赛的结算里写）。 -->
-  ${T === "act" && !S.cupMatch ? `<div class="wkgrid pre">
+  ${T2 === "act" && !S.cupMatch ? `<div class="wkgrid pre">
     <div class="wk-next">${railNext()}</div>
     <div class="wk-main">${actPanelPre()}${cupCard()}${injuryCard()}${attrCard()}</div>
     <div class="wk-coach">${railScout()}</div>
     <div class="wk-press">${pressCard()}</div>
   </div>` : ""}
-  ${T === "world" ? scheduleCard() + proCard() : ""}
-  ${T === "news" ? pressCard("all") + eventsCard() : ""}
-  ${T === "tx" ? preTransferPage() : ""}
-  ${T === "squad" && S.pre.mates && S.pre.mates.length && true ? preSquadCard() : ""}
-  ${T === "squad" && !(S.pre.mates && S.pre.mates.length) ? lockedCard(
+  ${T2 === "world" ? scheduleCard() + proCard() : ""}
+  ${T2 === "news" ? pressCard("all") + eventsCard() : ""}
+  ${T2 === "tx" ? preTransferPage() : ""}
+  ${T2 === "squad" && S.pre.mates && S.pre.mates.length && true ? preSquadCard() : ""}
+  ${T2 === "squad" && !(S.pre.mates && S.pre.mates.length) ? lockedCard(
       "战队实力",
       "报名城市争霸赛或主播杯，抽到车队后解锁；签约职业战队后是完整版。",
       `<p>加入战队后，这里会显示：</p>
@@ -23180,16 +25420,16 @@ header.top.compact>.theme-top{display:none}
       "签约职业战队后解锁完整版。",
       `<p class="note" style="margin:0">每个队友对你有独立的信任度，会因为你的选择涨落，也会影响全队发挥。</p>`
     ) : ""}
-  ${T === "auto" ? autoPage() : ""}
-  ${T === "shop" ? financeCard() + streamDealCard() + gearCard() + shopCard() + prizeNote() + lockedCard(
+  ${T2 === "auto" ? autoPage() : ""}
+  ${T2 === "shop" ? financeCard() + streamDealCard() + gearCard() + shopCard() + prizeNote() + lockedCard(
       "俱乐部资源",
       "签约职业战队后解锁。",
       `<p class="note" style="margin:0">私教、理疗师、团队建设、舆论公关——
           进队之后才用得上，也才付得起。</p>`
     ) : ""}
-  ${T === "ach" ? achCard() : ""}
-  ${T === "help" ? helpCard() : ""}
-  ${T !== "log" ? "" : `<div class="card"><h2>生涯日志<em>${nowLabel()}</em></h2>
+  ${T2 === "ach" ? achCard() : ""}
+  ${T2 === "help" ? helpCard() : ""}
+  ${T2 !== "log" ? "" : `<div class="card"><h2>生涯日志<em>${nowLabel()}</em></h2>
     <div class="feed">${P.log.slice(-40).reverse().map((l) => `<div class="ev ${l.tone}">
       <span class="tg">${l.stamp || "W" + l.w}</span><span class="tx">${l.t}</span></div>`).join("")}</div></div>`}`;
   }
@@ -23345,7 +25585,7 @@ header.top.compact>.theme-top{display:none}
   }
   function bracketCard() {
     try {
-      return (S.intl ? intlBracketCard() : "") + (!S.intl && S.career ? playoffBracketCard() : "");
+      return (S.intl ? intlBracketCard() : "") + (!S.intl && S.career ? fmtOn() ? tlBracketCard() : playoffBracketCard() : "");
     } catch (e) {
       return "";
     }
@@ -23374,7 +25614,7 @@ header.top.compact>.theme-top{display:none}
   function nextMatchCard() {
     const sea = SEASONS[S.si], on = S.schedule[S.week - 1];
     const opp = S.world[S.homeLeague || "LPL"].find((t) => t.name === on);
-    if (!opp) return "";
+    if (!opp) return fmtOn() ? tlNoMatchCard() : "";
     const myPw = myPower(), opBase = oppMatchPw(opp.players), dp = defendPressure(on), opPw = opBase + dp;
     const vfNow = versionFit(), myShow = myPw - vfNow;
     const star = opp.players.slice().sort((a, b) => ovrOf(b) - ovrOf(a))[0];
@@ -23382,7 +25622,7 @@ header.top.compact>.theme-top{display:none}
     const st = (S.standings[S.homeLeague || "LPL"] || {})[on] || { w: 0, l: 0 };
     const diff = myPw - opPw;
     const V = gapVerdict(diff);
-    return `<div class="card"><h2>下一场<em>${sea.tag} 第 ${S.week} 周 · BO3</em></h2>
+    return `<div class="card"><h2>下一场<em>${sea.tag} 第 ${S.week} 周 · BO${fmtOn() && S.fmt.cur ? S.fmt.cur.bo : 3}</em></h2>
     <div class="next">
       <div class="sd"><div class="nm">${teamLogo(S.team, 28)}${S.team}${formBar(S.team)}</div>
         <div class="pw">全队战力 <b>${N(pwShow(myShow).toFixed(1), dimWord(pwShow(myShow)))}</b>${uiNum() && Math.abs(vfNow) > 0.05 ? `<small style="color:var(--ink-3)"> 版本 ${vfNow >= 0 ? "+" : ""}${pwShow(vfNow).toFixed(1)}</small>` : ""}</div></div>
@@ -23413,6 +25653,7 @@ header.top.compact>.theme-top{display:none}
       <span class="tx">${e.text}<span class="tm">${e.s}</span></span></div>`).join("")}</div></div>`;
   }
   function standingsCard() {
+    if (fmtOn()) return tlStandingsCard();
     const rows = lplRank();
     const HL = S.homeLeague || "LPL";
     const lpl = HL === "LDL" ? `<div class="card"><h2>LPL 积分榜<em>一线联赛</em></h2>
@@ -23458,7 +25699,7 @@ header.top.compact>.theme-top{display:none}
   }
   function railCoach() {
     if (!S.career || !S.team) return "";
-    const ct = Math.round(coachTrust()), mt = Math.round(mgrTrust()), c = cloutOf(), T = cloutTier(c);
+    const ct = Math.round(coachTrust()), mt = Math.round(mgrTrust()), c = cloutOf(), T2 = cloutTier(c);
     const bar = (v, col) => `<div class="track"><div class="fill" style="width:${clamp(v, 0, 100)}%;background:${col}"></div></div>`;
     const cyan = "linear-gradient(90deg,var(--cyan-dim),var(--cyan))";
     const gold = "linear-gradient(90deg,#6B5A2A,var(--gold))";
@@ -23471,7 +25712,7 @@ header.top.compact>.theme-top{display:none}
       <div class="at"><div class="lb">威望</div>${bar(c, gold)}<div class="vn mono"><b>${c}</b></div></div>
     </div>
     <p class="note">${verdict}</p>
-    <p class="note">话语权 <b>${T.n}</b>（威望 ${c}）——${T.d}挂牌、点名引援这些事在「队伍」页。</p></div>`;
+    <p class="note">话语权 <b>${T2.n}</b>（威望 ${c}）——${T2.d}挂牌、点名引援这些事在「队伍」页。</p></div>`;
   }
   function matchLogCard() {
     if (!S.career || !S.log || !S.log.length) return "";
@@ -23656,7 +25897,7 @@ header.top.compact>.theme-top{display:none}
       ${li("五维与文字档位", "操作 / 运营 / 心态 / 指挥 / 体质。默认用词描述：生疏 → 入门 → 扎实 → 精通 → 职业级 → 顶尖 → 世界级（职业级 ≈ LPL 首发）。顶栏「数值」一键看具体数字。")}
       ${li("天赋与瓶颈", "天赋决定成长速度和天花板，不是初始属性。撞到瓶颈后靠特定条件顶开——「我的」属性卡里每一维都写着怎么破。")}
       ${li("职业前", "段位、人气、杯赛履历决定谁来找你：宗师起有青训教练看，城市争霸赛 / 主播杯打进四强也能敲门。试训邀请随时可能来，年底是转会窗口。")}
-      ${li("赛季", `常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。春季冠军去 MSI，夏季赛决定世界赛名额。赛后拆解写清赢在哪、输在哪。`)}
+      ${li("赛季", fmtOn() ? `按当年的真实赛制：每周打真实那一周的比赛（BO1 / BO3 / BO5 照赛制），第一场你亲自打，其余默认自动打完。每个赛段单独决出冠军，名额按真实规则去 First Stand / MSI / 世界赛。赛后拆解写清赢在哪、输在哪。` : `常规赛 ${WEEKS} 周每周一场 BO3，前六进季后赛。春季冠军去 MSI，夏季赛决定世界赛名额。赛后拆解写清赢在哪、输在哪。`)}
       ${li("合同与转会", "合同按赛段签、到期日是 MSI 结束 / 世界赛结束。三层窗口：转会期（MSI 后、世界赛后）什么都能做；赛段注册期（常规赛前 5 周）自由身能签短约顶班、被挖要付 1.2 倍违约金且没签字费；常规赛最后两周、季后赛、国际赛名单锁定。窗口关了还没人签，就回到路人的日子——履历不清零。")}
       ${li("托管", "一键安排、重复上回合、执行计划；自动推进只跳过「没得选的周」，有事立刻交回给你。")}
       ${li("仪式与小游戏", "季后赛抽签、世界赛出征、年度颁奖夜这些节点上有一段戏，中间轮到你的 20 秒是小游戏。打好了整段有加成，打砸了有折扣，跳过按中档算——不亏不赚；托管和自动推进一律跳过。")}
@@ -23953,14 +26194,14 @@ header.top.compact>.theme-top{display:none}
     let top, left = null;
     const squeeze = () => {
       top = Math.max(10, vh - ch - 10);
-      const cut = top - gap - pad;
-      if (cut - r.top >= MIN) {
-        r.bottom = cut;
+      const cut2 = top - gap - pad;
+      if (cut2 - r.top >= MIN) {
+        r.bottom = cut2;
         return;
       }
       top = 10;
-      const cut2 = top + ch + gap + pad;
-      if (r.bottom - cut2 >= MIN) r.top = cut2;
+      const cut22 = top + ch + gap + pad;
+      if (r.bottom - cut22 >= MIN) r.top = cut22;
     };
     if (mobile) {
       if (r.top > vh * 0.5 && above >= 10) top = above;
@@ -24857,6 +27098,12 @@ header.top.compact>.theme-top{display:none}
     const p = $("play");
     if (p && !S.locker) p.onclick = () => {
       isBenched() ? benchWeek() : startMatch(false);
+    };
+    const fm = $("fmtman");
+    if (fm) fm.onchange = () => {
+      S.fmtManual = !!fm.checked;
+      saveGame("设置");
+      render();
     };
     const au = $("auto");
     if (au) au.onclick = () => {

@@ -240,7 +240,10 @@ export function oppDefendTitles(name){
   const H=S.honors||{};
   let n=0;
   [S.si,(S.si||0)-1].filter(si=>si>=0).forEach(si=>{
-    ["msi","worlds"].forEach(k=>{ if(H[k]&&H[k][si]===name) n++; });
+    ["msi","worlds","fst"].forEach(k=>{ if(H[k]&&H[k][si]===name) n++; });
+    // 真实赛制：每个赛段的冠军记在 S.fmtTitles（所有赛区都有）；没有这一年的记录才读老账本
+    const ft=(S.fmtTitles||[]).filter(x=>x.si===si);
+    if(ft.length){ n+=ft.filter(x=>x.team===name).length; return; }
     [0,1].forEach(sp=>{
       const seen=new Set();
       const home=S.lgChamps&&S.lgChamps[si+"|"+sp];

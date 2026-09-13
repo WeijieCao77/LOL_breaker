@@ -131,7 +131,14 @@ export function starInGameHonors(teamName){
     const H=S.honors||{};
     Object.keys(H.worlds||{}).forEach(si=>{ if(H.worlds[si]===teamName) out.push(`${SEASONS[+si].tag} 世界冠军`); });
     Object.keys(H.msi||{}).forEach(si=>{ if(H.msi[si]===teamName) out.push(`${SEASONS[+si].tag} MSI 冠军`); });
+    Object.keys(H.fst||{}).forEach(si=>{ if(H.fst[si]===teamName) out.push(`${SEASONS[+si].tag} First Stand 冠军`); });
     const mine=(S.career&&S.career.titles)||[];
+    // 真实赛制：各赛段冠军
+    (S.fmtTitles||[]).forEach(x=>{
+      if(x.team!==teamName||!SEASONS[x.si]) return;
+      const tag=`${SEASONS[x.si].tag} ${lgName(x.lg,x.si)}${x.t}`;
+      if(!mine.includes(tag)) out.push(`${tag}冠军`);
+    });
     Object.keys(S.poCache||{}).forEach(k=>{
       const [si,sp,lg]=k.split("|"); const res=S.poCache[k];
       if(!res||res[0]!==teamName) return;
