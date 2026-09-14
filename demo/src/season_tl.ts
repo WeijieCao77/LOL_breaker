@@ -215,6 +215,8 @@ function mySplitEnd(lg: string, sp: SplitSpec, out: SplitOut, splits: SplitSpec[
   if (sp.title !== false) S.career.best = Math.min(S.career.best || 99, place);
   S.career.log = (S.career.log || []).concat([{ si: S.si, split: S.split || 0, seg: sp.key, sname: sp.short, team: S.team, lg, seed: place, result, w: (S.record || {}).w || 0, l: (S.record || {}).l || 0 }]);
   const titled = sp.title !== false;
+  // 卫冕压力的折算系数（2026-09-14）：这一年出冠军的赛段超过两个，每座联赛冠军按 2/n 算（三段制 = 2/3）
+  const foldW = 2 / Math.max(2, splits.filter(s => s.title !== false).length);
   if (titled) {
     // 奖金：一年里有冠军的赛段变多了，每段按比例摊薄——全年奖金量和两段制持平
     const nT = splits.filter(s => s.title !== false).length, mul = 2 / Math.max(2, nT);
@@ -230,6 +232,7 @@ function mySplitEnd(lg: string, sp: SplitSpec, out: SplitOut, splits: SplitSpec[
       pushEvent(`<b>${S.team} 夺得 ${title}冠军。</b>你在替补席见证了整个过程——<span style="color:var(--ink-3)">生涯表记为<b>随队冠军</b>。</span>`, "big", "联赛冠军");
     } else {
       S.career.titles.push(title);
+      S.career.defW = Object.assign({}, S.career.defW || {}, { [title]: foldW });
       S.career.leagueTitles = (S.career.leagueTitles || 0) + 1;
       S.career.lgYears = (S.career.lgYears || []).concat([S.si]);
       S.career.lgStreak = (S.career.lgStreak || 0) + 1;

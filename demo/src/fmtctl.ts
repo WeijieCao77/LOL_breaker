@@ -154,7 +154,9 @@ function onSplitFinished(lg: string, si: number) {
   const run = runOf(lg), ys = specOf(lg); if (!run || !ys) return;
   const sp = ys.splits[si], out = run.outs[si]; if (!sp || !out) return;
   if (sp.title !== false && out.champ) {
-    S.fmtTitles = (S.fmtTitles || []).concat([{ si: S.si, y: ys.year, lg, t: sp.title || sp.name, team: out.champ }]).slice(-400);
+    // w：卫冕压力的折算系数，这一年出冠军的赛段超过两个就按 2/n 算（squad.ts oppDefendTitles）
+    const w = 2 / Math.max(2, ys.splits.filter(s => s.title !== false).length);
+    S.fmtTitles = (S.fmtTitles || []).concat([{ si: S.si, y: ys.year, lg, t: sp.title || sp.name, team: out.champ, w }]).slice(-400);
   }
   S.fmt.queue.push({ lg, si });
   if (lg === fmtHome() && !run.wait && !run.done) S.fmt.newSplit = true;

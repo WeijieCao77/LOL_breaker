@@ -3394,13 +3394,19 @@ header.top.compact>.theme-top{display:none}
             });
           } catch (e) {
           }
-          tail = worst && worst.f < 0.97 ? `回放里 <b>${worst.id}</b> 慢了半拍（状态系数 ${worst.f.toFixed(2)}，全队最低）——不过 ${g.p}% 本来也保不了底。` : `没什么可甩的——${g.p}% 就是十次里还要输一次，这次骰子背。`;
+          const every = Math.max(2, Math.round(100 / Math.max(1, 100 - g.p)));
+          tail = worst && worst.f < 0.97 ? `回放里 <b>${worst.id}</b> 慢了半拍（状态系数 ${worst.f.toFixed(2)}，全队最低）——不过 ${g.p}% 本来也保不了底，大约 ${every} 局就会输 1 局。` : `没什么可甩的——${g.p}% 的赢面大约 ${every} 局就会输 1 局，这次骰子背。`;
         }
         out.push(`第${g.g}局赢面 <b>${g.p}%</b> 还是丢了：${tail}`);
       }
       if (g.win && g.p <= 30)
         out.push(`第${g.g}局赢面只有 <b>${g.p}%</b> 却拿下了——运气也是实力的一部分，但别指望它常来。`);
     });
+    const gl = m.gameLog || [];
+    if (gl.length && m.sc && m.sc[0] < m.sc[1] && gl.every((g) => g.p >= 70)) {
+      const q = gl.reduce((a, g) => a * (g.win ? g.p / 100 : 1 - g.p / 100), 1);
+      out.push(`每一局赢面都在 70% 以上，整场还是输了——这样的比分走势大约 <b>${Math.max(2, Math.round(1 / Math.max(q, 1e-6)))}</b> 场才碰上一次。数值只决定每局赢面，不保证结果。`);
+    }
     return out;
   }
   function postMatchCard() {
@@ -6298,24 +6304,32 @@ header.top.compact>.theme-top{display:none}
   }
   var DEFEND_PER_TITLE = 1.5;
   var DEFEND_CAP = 4;
+  var round3 = (v) => Math.round(v * 1e3) / 1e3;
+  function titleWeight(x) {
+    const s = String(x);
+    if (/First Stand/.test(s)) return 0;
+    const w = S.career && S.career.defW && S.career.defW[s];
+    return typeof w === "number" ? w : 1;
+  }
   function defendTitles() {
     if (!S.career) return 0;
-    return (S.career.titles || []).filter((x) => {
+    return round3((S.career.titles || []).filter((x) => {
       const m = /^S(\d+)/.exec(String(x));
       return !!m && (+m[1] - 12 === S.si || +m[1] - 12 === S.si - 1);
-    }).length;
+    }).reduce((a, x) => a + titleWeight(x), 0));
   }
+  var fmtTitleN = (v) => Number.isInteger(v) ? String(v) : v.toFixed(1);
   function oppDefendTitles(name) {
     if (!name || !S) return 0;
     const H2 = S.honors || {};
     let n = 0;
     [S.si, (S.si || 0) - 1].filter((si) => si >= 0).forEach((si) => {
-      ["msi", "worlds", "fst"].forEach((k) => {
+      ["msi", "worlds"].forEach((k) => {
         if (H2[k] && H2[k][si] === name) n++;
       });
       const ft = (S.fmtTitles || []).filter((x) => x.si === si);
       if (ft.length) {
-        n += ft.filter((x) => x.team === name).length;
+        n += ft.filter((x) => x.team === name).reduce((a, x) => a + (typeof x.w === "number" ? x.w : 1), 0);
         return;
       }
       [0, 1].forEach((sp) => {
@@ -6336,26 +6350,27 @@ header.top.compact>.theme-top{display:none}
         });
       });
     });
-    return n;
+    return round3(n);
   }
   function defendPressure(opp) {
-    const net = defendTitles() - (opp ? oppDefendTitles(opp) : 0);
+    const net = round3(defendTitles() - (opp ? oppDefendTitles(opp) : 0));
     return Math.min(DEFEND_CAP, DEFEND_PER_TITLE * Math.max(0, net));
   }
   function defendNote(opp) {
     const k = defendTitles();
     if (!k) return "";
     const per = pwShow(DEFEND_PER_TITLE).toFixed(1), cap5 = pwShow(DEFEND_CAP).toFixed(1);
-    if (!opp) return `本赛季和上赛季你拿了 ${k} 座冠军，对手都在研究你：每座 +${per}，最多 +${cap5}`;
-    const o = oppDefendTitles(opp), net = Math.max(0, k - o);
-    if (!o) return `近两个赛季你拿了 ${k} 座冠军，${opp} 一座没拿，对面在研究你：每座 +${per}，最多 +${cap5}`;
-    return net ? `近两个赛季你拿了 ${k} 座冠军，${opp} 拿了 ${o} 座，抵消后按 ${net} 座算：每座 +${per}，最多 +${cap5}` : `近两个赛季你拿了 ${k} 座冠军，${opp} 拿了 ${o} 座，两边相抵，没有卫冕压力`;
+    const rule = "（三段制年份的联赛冠军每座按 2/3 算，First Stand 不算）";
+    if (!opp) return `本赛季和上赛季你的冠军折算 ${fmtTitleN(k)} 座，对手都在研究你：每座 +${per}，最多 +${cap5}${rule}`;
+    const o = oppDefendTitles(opp), net = round3(Math.max(0, k - o));
+    if (!o) return `近两个赛季你的冠军折算 ${fmtTitleN(k)} 座，${opp} 一座没拿，对面在研究你：每座 +${per}，最多 +${cap5}${rule}`;
+    return net ? `近两个赛季你的冠军折算 ${fmtTitleN(k)} 座，${opp} 折算 ${fmtTitleN(o)} 座，抵消后按 ${fmtTitleN(net)} 座算：每座 +${per}，最多 +${cap5}${rule}` : `近两个赛季你的冠军折算 ${fmtTitleN(k)} 座，${opp} 折算 ${fmtTitleN(o)} 座，两边相抵，没有卫冕压力${rule}`;
   }
   function defendTag(opp, num) {
     const k = defendTitles();
     if (!k) return "";
     const o = opp ? oppDefendTitles(opp) : 0, dp = defendPressure(opp);
-    const score = `（你 ${k} : ${o} 对面）`;
+    const score = `（你 ${fmtTitleN(k)} : ${fmtTitleN(o)} 对面）`;
     const tip = escAttr(defendNote(opp));
     if (!dp) return `<small style="color:var(--ink-3)" title="${tip}"> 卫冕压力抵消${score}</small>`;
     return `<small style="color:var(--red)" title="${tip}"> 卫冕压力 ${num || uiNum() ? "+" + pwShow(dp).toFixed(1) : "↑"}${score}</small>`;
@@ -6369,7 +6384,7 @@ header.top.compact>.theme-top{display:none}
   }
   var GAP_WINDOW = 12;
   function gapVerdict(diff) {
-    if (diff >= GAP_WINDOW) return { k: "crush", t: "实力碾压", d: "正常打就能赢，别浪。" };
+    if (diff >= GAP_WINDOW) return { k: "crush", t: "实力碾压", d: "大优势，但不是必胜——单局照样会丢，别浪。" };
     if (diff >= 3) return { k: "edge", t: "占优", d: "稳住节奏就行。" };
     if (diff > -3) return { k: "even", t: "势均力敌", d: "胜负就在那几个关键决策上。" };
     if (diff > -GAP_WINDOW) return { k: "under", t: "劣势", d: "硬碰硬赢不了，得赌一把。" };
@@ -14166,7 +14181,8 @@ header.top.compact>.theme-top{display:none}
     const sp = ys.splits[si], out = run.outs[si];
     if (!sp || !out) return;
     if (sp.title !== false && out.champ) {
-      S.fmtTitles = (S.fmtTitles || []).concat([{ si: S.si, y: ys.year, lg, t: sp.title || sp.name, team: out.champ }]).slice(-400);
+      const w = 2 / Math.max(2, ys.splits.filter((s) => s.title !== false).length);
+      S.fmtTitles = (S.fmtTitles || []).concat([{ si: S.si, y: ys.year, lg, t: sp.title || sp.name, team: out.champ, w }]).slice(-400);
     }
     S.fmt.queue.push({ lg, si });
     if (lg === fmtHome() && !run.wait && !run.done) S.fmt.newSplit = true;
@@ -18994,6 +19010,7 @@ header.top.compact>.theme-top{display:none}
     if (sp.title !== false) S.career.best = Math.min(S.career.best || 99, place);
     S.career.log = (S.career.log || []).concat([{ si: S.si, split: S.split || 0, seg: sp.key, sname: sp.short, team: S.team, lg, seed: place, result, w: (S.record || {}).w || 0, l: (S.record || {}).l || 0 }]);
     const titled = sp.title !== false;
+    const foldW = 2 / Math.max(2, splits.filter((s) => s.title !== false).length);
     if (titled) {
       const nT = splits.filter((s) => s.title !== false).length, mul = 2 / Math.max(2, nT);
       const tbl = lg === "LDL" ? PRIZE_PO_LDL : PRIZE_PO;
@@ -19011,6 +19028,7 @@ header.top.compact>.theme-top{display:none}
         pushEvent(`<b>${S.team} 夺得 ${title}冠军。</b>你在替补席见证了整个过程——<span style="color:var(--ink-3)">生涯表记为<b>随队冠军</b>。</span>`, "big", "联赛冠军");
       } else {
         S.career.titles.push(title);
+        S.career.defW = Object.assign({}, S.career.defW || {}, { [title]: foldW });
         S.career.leagueTitles = (S.career.leagueTitles || 0) + 1;
         S.career.lgYears = (S.career.lgYears || []).concat([S.si]);
         S.career.lgStreak = (S.career.lgStreak || 0) + 1;
@@ -19894,6 +19912,10 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260914d", at: "2026-09-14", items: [
+      "<b>比赛页写清「实际差距」和整场赢面</b>（玩家实锤：「队伍实力差了十几分，胜率八十多、选择也做对了，还是老输」）：查下来判定没问题——显示的赢面就是判胜负用的那个数，机器人两万多局实测对得上，截图那种两局都在 80% 以上还 0:2 的，大约 45 场碰上一次。但对面战力旁边那行小字「卫冕压力 +4.7」要从你的优势里扣掉，94.7 对 76.6 实际按 13.4 算。现在比赛页直接写「实际差距（已扣卫冕压力）· 这一局赢面 · 整场赢面」，下一场卡片也写单局和整场赢面；赛后拆解按真实赢面说「大约几局输一局」「这样的走势大约几场碰上一次」，不再不管多少都写「十次里还要输一次」",
+      "<b>卫冕压力按年折算</b>：真实赛制一年有三个赛段冠军，再加 First Stand，冠军数翻倍，强玩家 2026 年七成比赛带着卫冕压力、三成顶格。现在三段制年份的联赛冠军每座按 2/3 算（一年打满三冠＝以前两段制的两冠），First Stand 不算卫冕，MSI / 世界赛照旧；对面按同一把尺算"
+    ] },
     { v: "v20260914c", at: "2026-09-14", items: [
       "<b>新秀池里的韩国青训选手不再被当成拉美</b>（排查选手姓名时顺带查出）：比赛数据里的 LAS 是 LCK 青训联赛，导出时被当成了拉美赛区——2023–2026 年新秀池里标「拉美」的 114 人其实都是韩国二队选手，实力还按拉美多扣了 4 分，会被分去拉美赛区当新秀。现在归回韩国、按 LCK 青训口径折算；每个位置取前 40 的名单跟着重排（2023、2024 年各有十几位韩国青训选手挤进来）",
       "<b>选手年龄按本人生日算</b>：原来按游戏 ID 查生日，同 ID 多人会串到别人身上——Palette 显示 17 岁、Violet 33 岁，实际都是 23 岁；Viper 2023 年显示 26 岁（用的是同 ID 的何皓），实际 23 岁。2022–2026 年的数据一共改了 93 处年龄。新开的档从头生效，已有的真实时间线档从下一年换页开始用新数据"
@@ -23877,6 +23899,37 @@ header.top.compact>.theme-top{display:none}
     const op = oppMatchPw(m.opp.players) + defendPressure(m.oppName);
     return clampWinProb(1 / (1 + Math.exp(-(my - op) / SPREAD)), my - op);
   }
+  function seriesWinP(p, need, a = 0, b = 0) {
+    const memo = {};
+    const f = (x, y) => {
+      if (x >= need) return 1;
+      if (y >= need) return 0;
+      const k = x * 16 + y;
+      if (memo[k] !== void 0) return memo[k];
+      return memo[k] = p * f(x + 1, y) + (1 - p) * f(x, y + 1);
+    };
+    return f(a, b);
+  }
+  function matchEdge() {
+    const m = S.match, sea = SEASONS[S.si];
+    const my = power(myRoster(), S.fatigue, sea.fav) + versionFit() + cerFinalPw(), rv = rivalBoost(m.oppName), tl = tiltDrag();
+    const op = oppMatchPw(m.opp.players), dp = defendPressure(m.oppName);
+    return { diff: my + rv - tl - op - dp, dp, rv, tl };
+  }
+  function edgeLine() {
+    const m = S.match;
+    if (!m || m.done || !m.opp) return "";
+    const E = matchEdge(), p = gameWinP(m.swing), q = seriesWinP(p, m.need, m.sc[0], m.sc[1]);
+    const extra = [E.dp ? `已扣卫冕压力 ${pwShow(E.dp).toFixed(1)}` : "", Math.abs(E.rv) >= 0.05 ? `宿敌 ${E.rv > 0 ? "+" : "−"}${pwShow(Math.abs(E.rv)).toFixed(1)}` : "", E.tl >= 0.05 ? `心态 −${pwShow(E.tl).toFixed(1)}` : ""].filter(Boolean);
+    const bo = m.need === 2 ? "三局两胜" : "五局三胜";
+    return `<p class="note edge" style="margin:8px 0">实际差距 <b>${E.diff >= 0 ? "+" : "−"}${pwShow(Math.abs(E.diff)).toFixed(1)}</b>${extra.length ? `（${extra.join("、")}）` : ""}　·　第 ${m.game} 局赢面 <b>${Math.round(p * 100)}%</b>${m.need > 1 ? `　·　整场（${bo}）<b>${Math.round(q * 100)}%</b>` : ""}</p>`;
+  }
+  function previewOdds(diff, dp, on) {
+    const d = diff + rivalBoost(on) - tiltDrag();
+    const p = clampWinProb(1 / (1 + Math.exp(-d / SPREAD)), d);
+    const bo = fmtOn() && S.fmt.cur ? S.fmt.cur.bo : 3, need = (bo + 1) / 2;
+    return `<br><span class="mono">${dp ? `已扣卫冕压力 ${pwShow(dp).toFixed(1)} · ` : ""}单局赢面 ${Math.round(p * 100)}%${need > 1 ? ` · 整场（BO${bo}）${Math.round(seriesWinP(p, need) * 100)}%` : ""}</span>`;
+  }
   var NODE_SWING = 7;
   var NODE_MATE_W = 0.3;
   function nodeSkill(dim) {
@@ -24241,6 +24294,7 @@ header.top.compact>.theme-top{display:none}
     </div>
     ${starLaneBadge(m.oppName)}
     ${verLine(m.oppName)}
+    ${edgeLine()}
     ${m.node ? `<div class="node"><div class="q">${m.node.q}</div><div class="ctx">${m.node.ctx}</div>
       <div class="grid g2">${m.node.a.map((a, i) => `<button class="opt" data-node="${i}">
         <div class="t">${a.t}</div><div class="d">吃 <b>${a.dim}</b> · ${a.risk > 0.8 ? "高风险高回报" : "稳健"}</div>
@@ -25849,7 +25903,7 @@ header.top.compact>.theme-top{display:none}
     </div>
     <div class="gapbar ${V.k}">
       <div class="gv">${V.t}${uiNum() ? `<span class="gd mono">${diff >= 0 ? "+" : ""}${pwShow(diff).toFixed(1)}</span>` : ""}</div>
-      <div class="gt">${V.d}</div>
+      <div class="gt">${V.d}${uiNum() ? previewOdds(diff, dp, on) : ""}</div>
     </div>${fixtureStrip()}</div>`;
   }
   function eventsCard() {

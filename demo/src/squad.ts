@@ -228,10 +228,23 @@ export function teamPowerOf(name){
    120 局含再战 A/B（真实时间线版）：普通玩家生涯冠军 6.23 → 4.58、连续≥5 年有冠 19% → 10%；
    强玩家 10.55 → 7.59、连续≥7 年有冠 18% → 9%。 */
 export const DEFEND_PER_TITLE=1.5, DEFEND_CAP=4;
+/* 2026-09-14 按年折算（玩家实锤：「战力差十几分、赢面八十多还是老输」——真实赛制一年三个赛段冠军再加 First Stand，
+   冠军数翻倍，强玩家 2026 年七成比赛带着卫冕压力、三成顶格）：三段制年份的联赛冠军每座按 2/3 算
+   （一年打满三冠＝以前两段制的两冠，夺冠时记在 S.career.defW / S.fmtTitles 的 w 上），First Stand 不算卫冕，
+   MSI / 世界赛照旧 1 座。两边同一把尺；两段制档和没记系数的老冠军每座还是 1。 */
+export const round3=v=>Math.round(v*1000)/1000;
+export function titleWeight(x){
+  const s=String(x);
+  if(/First Stand/.test(s)) return 0;
+  const w=S.career&&S.career.defW&&S.career.defW[s];
+  return typeof w==="number"?w:1;
+}
 export function defendTitles(){
   if(!S.career) return 0;
-  return (S.career.titles||[]).filter(x=>{ const m=/^S(\d+)/.exec(String(x)); return !!m&&(+m[1]-12===S.si||+m[1]-12===S.si-1); }).length;
+  return round3((S.career.titles||[]).filter(x=>{ const m=/^S(\d+)/.exec(String(x)); return !!m&&(+m[1]-12===S.si||+m[1]-12===S.si-1); })
+    .reduce((a,x)=>a+titleWeight(x),0));
 }
+const fmtTitleN=v=>Number.isInteger(v)?String(v):v.toFixed(1);
 /* 对面在这一局里近两个赛季拿了几座冠军（2026-09-11 作者：「对面的战队也是这局里拿过冠军的，就对比次数进行抵消」）。
    和你同一把尺：本赛季 + 上赛季，联赛 / MSI / 世界赛都算。
    联赛冠军：你所在赛区读 S.lgChamps（赛段结算时记的），其余大赛区读季后赛缓存 S.poCache；国际赛读 S.honors。 */
@@ -240,10 +253,10 @@ export function oppDefendTitles(name){
   const H=S.honors||{};
   let n=0;
   [S.si,(S.si||0)-1].filter(si=>si>=0).forEach(si=>{
-    ["msi","worlds","fst"].forEach(k=>{ if(H[k]&&H[k][si]===name) n++; });
-    // 真实赛制：每个赛段的冠军记在 S.fmtTitles（所有赛区都有）；没有这一年的记录才读老账本
+    ["msi","worlds"].forEach(k=>{ if(H[k]&&H[k][si]===name) n++; });   // First Stand 不算卫冕（2026-09-14）
+    // 真实赛制：每个赛段的冠军记在 S.fmtTitles（所有赛区都有，w＝这一年的折算系数）；没有这一年的记录才读老账本
     const ft=(S.fmtTitles||[]).filter(x=>x.si===si);
-    if(ft.length){ n+=ft.filter(x=>x.team===name).length; return; }
+    if(ft.length){ n+=ft.filter(x=>x.team===name).reduce((a,x)=>a+(typeof x.w==="number"?x.w:1),0); return; }
     [0,1].forEach(sp=>{
       const seen=new Set();
       const home=S.lgChamps&&S.lgChamps[si+"|"+sp];
@@ -256,29 +269,30 @@ export function oppDefendTitles(name){
       });
     });
   });
-  return n;
+  return round3(n);
 }
 /* 卫冕压力 = 每座 +1.5 ×（你的冠军数 − 对面的冠军数，不低于 0），封顶 +4。不传对手时只看你（兜底） */
 export function defendPressure(opp?){
-  const net=defendTitles()-(opp?oppDefendTitles(opp):0);
+  const net=round3(defendTitles()-(opp?oppDefendTitles(opp):0));
   return Math.min(DEFEND_CAP, DEFEND_PER_TITLE*Math.max(0,net));
 }
 export function defendNote(opp?){
   const k=defendTitles(); if(!k) return "";
   const per=pwShow(DEFEND_PER_TITLE).toFixed(1), cap=pwShow(DEFEND_CAP).toFixed(1);
-  if(!opp) return `本赛季和上赛季你拿了 ${k} 座冠军，对手都在研究你：每座 +${per}，最多 +${cap}`;
-  const o=oppDefendTitles(opp), net=Math.max(0,k-o);
-  if(!o) return `近两个赛季你拿了 ${k} 座冠军，${opp} 一座没拿，对面在研究你：每座 +${per}，最多 +${cap}`;
+  const rule="（三段制年份的联赛冠军每座按 2/3 算，First Stand 不算）";
+  if(!opp) return `本赛季和上赛季你的冠军折算 ${fmtTitleN(k)} 座，对手都在研究你：每座 +${per}，最多 +${cap}${rule}`;
+  const o=oppDefendTitles(opp), net=round3(Math.max(0,k-o));
+  if(!o) return `近两个赛季你的冠军折算 ${fmtTitleN(k)} 座，${opp} 一座没拿，对面在研究你：每座 +${per}，最多 +${cap}${rule}`;
   return net
-    ? `近两个赛季你拿了 ${k} 座冠军，${opp} 拿了 ${o} 座，抵消后按 ${net} 座算：每座 +${per}，最多 +${cap}`
-    : `近两个赛季你拿了 ${k} 座冠军，${opp} 拿了 ${o} 座，两边相抵，没有卫冕压力`;
+    ? `近两个赛季你的冠军折算 ${fmtTitleN(k)} 座，${opp} 折算 ${fmtTitleN(o)} 座，抵消后按 ${fmtTitleN(net)} 座算：每座 +${per}，最多 +${cap}${rule}`
+    : `近两个赛季你的冠军折算 ${fmtTitleN(k)} 座，${opp} 折算 ${fmtTitleN(o)} 座，两边相抵，没有卫冕压力${rule}`;
 }
 /* 对面战力旁边那一截：「卫冕压力 +3.5（你 3 : 1 对面）」；两边相抵写「卫冕压力抵消（你 2 : 2 对面）」；你近两季一座没拿就什么都不写。
    比分页、备战页始终写数（num=true）；下一场卡片跟着叙事 / 数值开关走 */
 export function defendTag(opp, num?){
   const k=defendTitles(); if(!k) return "";
   const o=opp?oppDefendTitles(opp):0, dp=defendPressure(opp);
-  const score=`（你 ${k} : ${o} 对面）`;
+  const score=`（你 ${fmtTitleN(k)} : ${fmtTitleN(o)} 对面）`;
   const tip=escAttr(defendNote(opp));
   if(!dp) return `<small style="color:var(--ink-3)" title="${tip}"> 卫冕压力抵消${score}</small>`;
   return `<small style="color:var(--red)" title="${tip}"> 卫冕压力 ${(num||uiNum())?"+"+pwShow(dp).toFixed(1):"↑"}${score}</small>`;
@@ -293,7 +307,7 @@ export function myPower(){
 }
 export const GAP_WINDOW=12;   // 统一标尺：战力差放大后封顶窗口等比放宽（原 7.5）
 export function gapVerdict(diff){
-  if(diff>=GAP_WINDOW)  return {k:"crush", t:"实力碾压", d:"正常打就能赢，别浪。"};
+  if(diff>=GAP_WINDOW)  return {k:"crush", t:"实力碾压", d:"大优势，但不是必胜——单局照样会丢，别浪。"};
   if(diff>=3)           return {k:"edge",  t:"占优",     d:"稳住节奏就行。"};
   if(diff>-3)           return {k:"even",  t:"势均力敌", d:"胜负就在那几个关键决策上。"};
   if(diff>-GAP_WINDOW)  return {k:"under", t:"劣势",     d:"硬碰硬赢不了，得赌一把。"};

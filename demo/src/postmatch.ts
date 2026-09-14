@@ -252,15 +252,23 @@ export function pmLuckLines(m){
             if(!worst||f<worst.f) worst={id:p.id,f};
           });
         }catch(e){}
+        // 按真实赢面说「几局输一局」（2026-09-14：原来不管 70% 还是 90% 都写「十次里还要输一次」）
+        const every=Math.max(2,Math.round(100/Math.max(1,100-g.p)));
         tail=(worst&&worst.f<0.97)
-          ?`回放里 <b>${worst.id}</b> 慢了半拍（状态系数 ${worst.f.toFixed(2)}，全队最低）——不过 ${g.p}% 本来也保不了底。`
-          :`没什么可甩的——${g.p}% 就是十次里还要输一次，这次骰子背。`;
+          ?`回放里 <b>${worst.id}</b> 慢了半拍（状态系数 ${worst.f.toFixed(2)}，全队最低）——不过 ${g.p}% 本来也保不了底，大约 ${every} 局就会输 1 局。`
+          :`没什么可甩的——${g.p}% 的赢面大约 ${every} 局就会输 1 局，这次骰子背。`;
       }
       out.push(`第${g.g}局赢面 <b>${g.p}%</b> 还是丢了：${tail}`);
     }
     if(g.win&&g.p<=30)
       out.push(`第${g.g}局赢面只有 <b>${g.p}%</b> 却拿下了——运气也是实力的一部分，但别指望它常来。`);
   });
+  // 整场都占优还是输了：这条走势的真实概率（玩家截图：两局 85% / 86% 都输，大约 45 场碰上一次）
+  const gl=m.gameLog||[];
+  if(gl.length&&m.sc&&m.sc[0]<m.sc[1]&&gl.every(g=>g.p>=70)){
+    const q=gl.reduce((a,g)=>a*(g.win?g.p/100:1-g.p/100),1);
+    out.push(`每一局赢面都在 70% 以上，整场还是输了——这样的比分走势大约 <b>${Math.max(2,Math.round(1/Math.max(q,1e-6)))}</b> 场才碰上一次。数值只决定每局赢面，不保证结果。`);
+  }
   return out;
 }
 

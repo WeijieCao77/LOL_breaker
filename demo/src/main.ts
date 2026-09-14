@@ -132,6 +132,10 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260914d", at:"2026-09-14", items:[
+    "<b>比赛页写清「实际差距」和整场赢面</b>（玩家实锤：「队伍实力差了十几分，胜率八十多、选择也做对了，还是老输」）：查下来判定没问题——显示的赢面就是判胜负用的那个数，机器人两万多局实测对得上，截图那种两局都在 80% 以上还 0:2 的，大约 45 场碰上一次。但对面战力旁边那行小字「卫冕压力 +4.7」要从你的优势里扣掉，94.7 对 76.6 实际按 13.4 算。现在比赛页直接写「实际差距（已扣卫冕压力）· 这一局赢面 · 整场赢面」，下一场卡片也写单局和整场赢面；赛后拆解按真实赢面说「大约几局输一局」「这样的走势大约几场碰上一次」，不再不管多少都写「十次里还要输一次」",
+    "<b>卫冕压力按年折算</b>：真实赛制一年有三个赛段冠军，再加 First Stand，冠军数翻倍，强玩家 2026 年七成比赛带着卫冕压力、三成顶格。现在三段制年份的联赛冠军每座按 2/3 算（一年打满三冠＝以前两段制的两冠），First Stand 不算卫冕，MSI / 世界赛照旧；对面按同一把尺算"
+  ]},
   {v:"v20260914c", at:"2026-09-14", items:[
     "<b>新秀池里的韩国青训选手不再被当成拉美</b>（排查选手姓名时顺带查出）：比赛数据里的 LAS 是 LCK 青训联赛，导出时被当成了拉美赛区——2023–2026 年新秀池里标「拉美」的 114 人其实都是韩国二队选手，实力还按拉美多扣了 4 分，会被分去拉美赛区当新秀。现在归回韩国、按 LCK 青训口径折算；每个位置取前 40 的名单跟着重排（2023、2024 年各有十几位韩国青训选手挤进来）",
     "<b>选手年龄按本人生日算</b>：原来按游戏 ID 查生日，同 ID 多人会串到别人身上——Palette 显示 17 岁、Violet 33 岁，实际都是 23 岁；Viper 2023 年显示 26 岁（用的是同 ID 的何皓），实际 23 岁。2022–2026 年的数据一共改了 93 处年龄。新开的档从头生效，已有的真实时间线档从下一年换页开始用新数据"
@@ -4140,6 +4144,35 @@ export function gameWinP(swing){
   const op=oppMatchPw(m.opp.players)+defendPressure(m.oppName);   // 卫冕被研究：按你和对面近两季的冠军数相抵，见 squad.ts defendPressure
   return clampWinProb(1/(1+Math.exp(-(my-op)/SPREAD)), my-op);
 }
+/* 从 a:b 起、每局赢面 p、先拿 need 局的整场赢面 */
+export function seriesWinP(p,need,a=0,b=0){
+  const memo={};
+  const f=(x,y)=>{ if(x>=need) return 1; if(y>=need) return 0; const k=x*16+y; if(memo[k]!==undefined) return memo[k]; return (memo[k]=p*f(x+1,y)+(1-p)*f(x,y+1)); };
+  return f(a,b);
+}
+/* 比赛页的「实际差距」（玩家实锤 2026-09-14：「队伍实力差了十几分，胜率八十多、选择也做对了，还是老输」）：
+   判定没毛病，但对面战力旁边那行小字「卫冕压力 +4.7」要从你的优势里扣掉——94.7 对 76.6 实际按 13.4 算。
+   和 gameWinP 同一套数：卫冕压力、宿敌、心态合进一个差距写出来，再写这一局和整场的赢面 */
+export function matchEdge(){
+  const m=S.match, sea=SEASONS[S.si];
+  const my=power(myRoster(),S.fatigue,sea.fav)+versionFit()+cerFinalPw(), rv=rivalBoost(m.oppName), tl=tiltDrag();
+  const op=oppMatchPw(m.opp.players), dp=defendPressure(m.oppName);
+  return {diff:my+rv-tl-op-dp, dp, rv, tl};
+}
+export function edgeLine(){
+  const m=S.match; if(!m||m.done||!m.opp) return "";
+  const E=matchEdge(), p=gameWinP(m.swing), q=seriesWinP(p,m.need,m.sc[0],m.sc[1]);
+  const extra=[E.dp?`已扣卫冕压力 ${pwShow(E.dp).toFixed(1)}`:"", Math.abs(E.rv)>=0.05?`宿敌 ${E.rv>0?"+":"−"}${pwShow(Math.abs(E.rv)).toFixed(1)}`:"", E.tl>=0.05?`心态 −${pwShow(E.tl).toFixed(1)}`:""].filter(Boolean);
+  const bo=m.need===2?"三局两胜":"五局三胜";
+  return `<p class="note edge" style="margin:8px 0">实际差距 <b>${E.diff>=0?"+":"−"}${pwShow(Math.abs(E.diff)).toFixed(1)}</b>${extra.length?`（${extra.join("、")}）`:""}　·　第 ${m.game} 局赢面 <b>${Math.round(p*100)}%</b>${m.need>1?`　·　整场（${bo}）<b>${Math.round(q*100)}%</b>`:""}</p>`;
+}
+/* 下一场卡片：单局和整场赢面（和比赛页同一口径，节点摆动还没发生） */
+function previewOdds(diff,dp,on){
+  const d=diff+rivalBoost(on)-tiltDrag();
+  const p=clampWinProb(1/(1+Math.exp(-d/SPREAD)),d);
+  const bo=fmtOn()&&S.fmt.cur?S.fmt.cur.bo:3, need=(bo+1)/2;
+  return `<br><span class="mono">${dp?`已扣卫冕压力 ${pwShow(dp).toFixed(1)} · `:""}单局赢面 ${Math.round(p*100)}%${need>1?` · 整场（BO${bo}）${Math.round(seriesWinP(p,need)*100)}%`:""}</span>`;
+}
 /* 节点摆动倍率与成功率里的队友占比（2026-09-06 方案 A）：一个人拉不动四个人——
    成功率七成看你、三成看队友同一维的均值；摆动从 ±风险×6 收到 ±风险×4.5。操作 92 配 55 分队友：75% → 67%，期望每节点 +2.7 → +1.5 */
 export const NODE_SWING=7.0, NODE_MATE_W=0.3;   // 2026-09-07 难度调整：5.5→7.0，临场决策多算一截   // 2026-09-06 夜：4.5 把国际冠军率压回 3–4%，5.5 是「一个人拉不动垫底队」和「国际赛还打得赢」之间的折中（批测 H）
@@ -4521,6 +4554,7 @@ export function viewMatch(){
     </div>
     ${starLaneBadge(m.oppName)}
     ${verLine(m.oppName)}
+    ${edgeLine()}
     ${m.node?`<div class="node"><div class="q">${m.node.q}</div><div class="ctx">${m.node.ctx}</div>
       <div class="grid g2">${m.node.a.map((a,i)=>`<button class="opt" data-node="${i}">
         <div class="t">${a.t}</div><div class="d">吃 <b>${a.dim}</b> · ${a.risk>0.8?'高风险高回报':'稳健'}</div>
@@ -6134,7 +6168,7 @@ export function nextMatchCard(){
     </div>
     <div class="gapbar ${V.k}">
       <div class="gv">${V.t}${uiNum()?`<span class="gd mono">${diff>=0?"+":""}${pwShow(diff).toFixed(1)}</span>`:""}</div>
-      <div class="gt">${V.d}</div>
+      <div class="gt">${V.d}${uiNum()?previewOdds(diff,dp,on):""}</div>
     </div>${fixtureStrip()}</div>`;
 }
 export function eventsCard(){

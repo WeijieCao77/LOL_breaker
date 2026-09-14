@@ -111,7 +111,10 @@ export function fmtCareerChecks(playOne: (o: any) => any, A: any): string[] {
     const v = (name: string, fn: () => any) => { try { fn(); views++; } catch (e: any) { if (viewErr.length < 8) viewErr.push(`${name}（${S0.step}）：${e && e.message}`); } };
     try {
       if (S0.step === "season") { v("本周页", () => A0.viewSeason()); ["world", "me", "team", "news"].forEach(t => v(`标签页 ${t}`, () => A0.tabContent(t))); v("积分榜", () => A0.standingsCard()); v("对阵树", () => A0.bracketCard()); }
-      if (S0.step === "match" && S0.match) v("比赛页", () => A0.viewMatch());
+      if (S0.step === "match" && S0.match) v("比赛页", () => {
+        const h = A0.viewMatch();
+        if (!S0.match.done && S0.match.opp && !/实际差距/.test(h) && viewErr.length < 8) viewErr.push("比赛页（进行中）没写实际差距");
+      });
       if (S0.step === "prep" && S0.prep) v("备战页", () => A0.viewPrep());
       if (S0.step === "offseason") { v("间歇页", () => A0.viewOffseason()); v("对阵树", () => A0.bracketCard()); }
       v("时钟", () => A0.nowLabel());

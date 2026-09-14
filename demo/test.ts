@@ -1348,6 +1348,23 @@ function unitChecks() {
         if (!/卫冕压力 \+[0-9.]+（你 3 : 2 对面）/.test(A.defendTag(opp, true))) bad.push("卫冕压力标签没写出两边的冠军数：" + A.defendTag(opp, true));
         S.honors = hBak; S.lgChamps = lcBak; S.poCache = pcBak;
       }
+      // 按年折算（2026-09-14 玩家实锤「差十几分、赢面八十多还老输」）：三段制年份的联赛冠军每座 2/3，First Stand 不算；对面同一把尺
+      {
+        const fBak = S.fmtTitles, hBak2 = S.honors;
+        const t3 = [`${tag(3)} LPL第一赛段`, `${tag(3)} LPL第二赛段`, `${tag(3)} LPL第三赛段`];
+        S.career.titles = t3.concat([`${tag(3)} First Stand`]);
+        S.career.defW = Object.fromEntries(t3.map(t => [t, 2 / 3]));
+        if (A.defendTitles() !== 2) bad.push(`三段制一年三冠 + First Stand 应折算 2 座，实得 ${A.defendTitles()}`);
+        if (A.defendPressure() !== 3) bad.push(`折算 2 座应是 +3，实得 ${A.defendPressure()}`);
+        const opp = "三冠对手";
+        S.honors = { fst: { 3: opp } };
+        S.fmtTitles = [0, 1, 2].map(i => ({ si: 3, y: 2025, lg: "LPL", t: "赛段" + i, team: opp, w: 2 / 3 }));
+        if (A.oppDefendTitles(opp) !== 2) bad.push(`对面一年三冠 + First Stand 应折算 2 座，实得 ${A.oppDefendTitles(opp)}`);
+        if (A.defendPressure(opp) !== 0) bad.push(`两边都折算 2 座应该相抵，实得 ${A.defendPressure(opp)}`);
+        S.fmtTitles = [{ si: 3, y: 2025, lg: "LPL", t: "赛段0", team: opp, w: 2 / 3 }];
+        if (!/卫冕压力 \+[0-9.]+（你 2 : 0\.7 对面）/.test(A.defendTag(opp, true))) bad.push("折算后的冠军数没按一位小数写：" + A.defendTag(opp, true));
+        S.fmtTitles = fBak; S.honors = hBak2; S.career.defW = undefined;
+      }
       S.step = "season"; S.week = 1;
       if (!Array.isArray(S.schedule) || !S.schedule.length)
         S.schedule = S.world[S.homeLeague || "LPL"].filter((t: any) => t.name !== S.team).map((t: any) => t.name);
@@ -1508,6 +1525,23 @@ function cloutChecks() {
 /* ---------------- 成就殿堂自检（2026-09-11 作者拍板「A + B」，奖励每局照发）----------------
    殿堂跨存档、新档只继承殿堂；奖励每一局照发；「几局」按存档编号去重；老档读进来会补记；
    导出带殿堂、导入取并集留最早；「收藏家」只数这一局；localStorage 抛错时游戏照跑。 */
+/* 赢面说明（玩家实锤 2026-09-14：两局赢面 85% / 86% 都输）：整场赢面算对；赛后拆解按真实赢面写「几局输一局」
+   「这样的走势几场碰上一次」，不再不管多少都写「十次里还要输一次」 */
+function oddsTextChecks(): string[] {
+  const bad: string[] = [];
+  const near = (a: number, b: number) => Math.abs(a - b) < 1e-9;
+  if (!near(A.seriesWinP(0.5, 2), 0.5)) bad.push("三局两胜 50% 的整场赢面应是 50%");
+  if (!near(A.seriesWinP(0.85, 1), 0.85)) bad.push("单局定胜负的整场赢面应等于单局赢面");
+  if (!near(A.seriesWinP(0.85, 2), 0.85 * 0.85 * (3 - 2 * 0.85))) bad.push("三局两胜的整场赢面算错了");
+  if (!near(A.seriesWinP(0.8, 2, 1, 1), 0.8)) bad.push("1:1 之后的整场赢面应等于决胜局赢面");
+  const m = { sc: [0, 2], gameLog: [{ g: 1, p: 85, win: false }, { g: 2, p: 86, win: false }], nodeLog: [{ g: 1, ok: true, t: "x" }, { g: 2, ok: true, t: "y" }] };
+  const lines = A.pmLuckLines(m).join("\n");
+  if (/十次里还要输一次/.test(lines)) bad.push("赛后拆解还在写「十次里还要输一次」");
+  if (!/大约 7 局就会输 1 局/.test(lines)) bad.push("85% 的那局没按真实赢面写「大约 7 局就会输 1 局」：" + lines);
+  if (!/大约 <b>48<\/b> 场才碰上一次/.test(lines)) bad.push("两局 85% / 86% 都输没写「大约 48 场才碰上一次」：" + lines);
+  return bad;
+}
+
 /* 新秀池地区码与年龄（2026-09-14 排查姓名时查出）：OE 数据里的 LAS 是 LCK 青训联赛，导出时被当成拉美；
    年龄按 ID 查生日，同 ID 多人会串到别人身上（Palette 17 岁、Violet 33 岁）。
    钉住：2023–2026 新秀池没有「LAT」；几位串过生日的选手年龄落在真实范围里 */
@@ -2125,6 +2159,9 @@ if (isMain && process.argv.includes("--tl-probe")) {
   { const pc = preCareerAchChecks();
     if (pc.length) { console.error("职业前成就自检不通过：\n  " + pc.join("\n  ")); process.exit(1); }
     console.log("职业前成就自检通过：只在第一份合同时结算 · 转会不补发熬出来的 / 野路子 · 回到路人再打杯赛不补发 · 转会出国照样远走他乡"); }
+  { const oc = oddsTextChecks();
+    if (oc.length) { console.error("赢面说明自检不通过：\n  " + oc.join("\n  ")); process.exit(1); }
+    console.log("赢面说明自检通过：整场赢面算对 · 赛后拆解按真实赢面写几局输一局 · 整场占优还输写清几场碰上一次"); }
   { const pa = prospectAgeChecks();
     if (pa.length) { console.error("新秀池与年龄自检不通过：\n  " + pa.join("\n  ")); process.exit(1); }
     console.log("新秀池与年龄自检通过：LCK 青训不再当成拉美 · 同 ID 串过生日的选手年龄回到真实范围"); }
