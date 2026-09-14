@@ -1508,6 +1508,33 @@ function cloutChecks() {
 /* ---------------- 成就殿堂自检（2026-09-11 作者拍板「A + B」，奖励每局照发）----------------
    殿堂跨存档、新档只继承殿堂；奖励每一局照发；「几局」按存档编号去重；老档读进来会补记；
    导出带殿堂、导入取并集留最早；「收藏家」只数这一局；localStorage 抛错时游戏照跑。 */
+/* 新秀池地区码与年龄（2026-09-14 排查姓名时查出）：OE 数据里的 LAS 是 LCK 青训联赛，导出时被当成拉美；
+   年龄按 ID 查生日，同 ID 多人会串到别人身上（Palette 17 岁、Violet 33 岁）。
+   钉住：2023–2026 新秀池没有「LAT」；几位串过生日的选手年龄落在真实范围里 */
+function prospectAgeChecks(): string[] {
+  const bad: string[] = [];
+  const readJ = (f: string) => JSON.parse(fs.readFileSync(new URL(`../data/csv/${f}`, import.meta.url), "utf8"));
+  const pages: any = {};
+  for (const y of [2023, 2024, 2025, 2026]) {
+    pages[y] = readJ(`timeline_${y}.json`);
+    const lat = (pages[y].pros || []).filter((p: any) => p[6] === "LAT").length;
+    if (lat) bad.push(`${y} 新秀池还有 ${lat} 个标「拉美」的（LAS 是 LCK 青训联赛）`);
+  }
+  const g22 = readJ("game_data_2022.json");
+  const age = (y: number, lg: string, team: string, id: string) => {
+    if (y === 2022) { const t = (g22.leagues[lg] || []).find((x: any) => x.name === team); const p = t && t.players.find((q: any) => q.id === id); return p ? p.age : undefined; }
+    const t = (pages[y].leagues[lg] || []).find((x: any) => x.n === team); const p = t && t.p.find((q: any) => q[0] === id); return p ? p[3] : undefined;
+  };
+  ([[2022, "VCS", "SBTC Esports", "Palette", 21, 25], [2023, "LCO", "Pentanet.GG", "Violet", 21, 25],
+    [2023, "LCK", "Hanwha Life Esports", "Viper", 22, 24], [2023, "LPL", "JD Gaming", "Knight", 22, 24]] as [number, string, string, string, number, number][])
+    .forEach(([y, lg, team, id, lo, hi]) => {
+      const a = age(y, lg, team, id);
+      if (a === undefined) bad.push(`${y} ${lg} ${team} 里找不到 ${id}，拿来验的样本不对`);
+      else if (a < lo || a > hi) bad.push(`${y} ${team} 的 ${id} 年龄是 ${a}，真实应在 ${lo}–${hi}`);
+    });
+  return bad;
+}
+
 /* 选手姓名（玩家实锤 2026-09-14：Knight 显示成韩文、Viper 名字错）：同 ID 多人时导出按 ID 取了第一条，配错了人。
    钉住：一线 / 二队和中韩新秀池的名字里不许出现泰文 / 俄文 / 希腊文 / 阿拉伯文；BLG 的 Knight 是卓定；
    老档读档按更正表改名，只改「ID + 旧名」对上的，改一遍就记版本不再跑 */
@@ -2098,6 +2125,9 @@ if (isMain && process.argv.includes("--tl-probe")) {
   { const pc = preCareerAchChecks();
     if (pc.length) { console.error("职业前成就自检不通过：\n  " + pc.join("\n  ")); process.exit(1); }
     console.log("职业前成就自检通过：只在第一份合同时结算 · 转会不补发熬出来的 / 野路子 · 回到路人再打杯赛不补发 · 转会出国照样远走他乡"); }
+  { const pa = prospectAgeChecks();
+    if (pa.length) { console.error("新秀池与年龄自检不通过：\n  " + pa.join("\n  ")); process.exit(1); }
+    console.log("新秀池与年龄自检通过：LCK 青训不再当成拉美 · 同 ID 串过生日的选手年龄回到真实范围"); }
   { const nf = nameFixChecks();
     if (nf.length) { console.error("选手姓名自检不通过：\n  " + nf.join("\n  ")); process.exit(1); }
     console.log("选手姓名自检通过：一线 / 二队 / 中韩新秀池没有串到别国文字 · BLG 的 Knight 是卓定 · 老档按更正表改名只改对得上的、只跑一遍"); }

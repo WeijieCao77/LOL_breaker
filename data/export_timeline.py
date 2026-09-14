@@ -56,7 +56,8 @@ REGION_ADJ = {"LPL": 0, "LCK": 0, "LEC": -4, "LCS": -7,
               "LTA北": -7, "LTA南": -11, "LCP": -9, "LTA N": -7, "LTA S": -11}
 # 二级 / 青训联赛：强度修正 + 新秀归属的大区（游戏里再落到当年的赛区键）
 ACAD = {  # OE 代码
-    "LDL": ("CN", -10), "LCKC": ("KR", -8), "EM": ("EU", -12), "NACL": ("NA", -14), "CBLOLA": ("BR", -16), "LAS": ("LAT", -16),
+    # LAS 是 LCK 青训联赛（LCK Academy Series），不是拉美——2024–2026 的 LAS 队全是韩国二队（2026-09-14 查出），和下面的 LCK Academy 同口径
+    "LDL": ("CN", -10), "LCKC": ("KR", -8), "EM": ("EU", -12), "NACL": ("NA", -14), "CBLOLA": ("BR", -16), "LAS": ("KR", -12),
     # Leaguepedia 代码
     "LCK CL": ("KR", -8), "LCK Academy": ("KR", -12), "EMEA Masters": ("EU", -12), "Circuito Desafiante": ("BR", -16),
     "CBLOL Academy": ("BR", -16), "LCP Wildcard": ("PAC", -14), "PCL": ("PAC", -14), "CD": ("BR", -16),
@@ -131,8 +132,10 @@ src_oe = os.path.join(OE_DIR, f"{YEAR}_OE.csv")
 SOURCE = FORCE or ("oe" if os.path.exists(src_oe) and RATE.get(YEAR) else "roster")
 
 
-def age_of(pid, fallback=None):
-    by = birth.get(pid.lower())
+def age_of(pid, fallback=None, team=None, reg=None):
+    # 生日按人认（同 ID 多人时不再按 ID 取第一条：Palette 曾显示 17 岁、Violet 33 岁，见 names.birth_year）
+    from names import birth_year
+    by = birth_year(YEAR, team, pid, reg)
     return (YEAR - by) if by else fallback
 
 
@@ -140,7 +143,7 @@ def dev_per_year(age):
     return 2.5 if age <= 21 else 1.5 if age <= 23 else 0.5 if age <= 25 else 0.0 if age <= 27 else -1.0
 
 
-def carried(pid):
+def carried(pid, team=None, reg=None):
     """最近一年量出来的五维（统一标尺）按年龄推到今年；从没量过返回 None"""
     for y in range(YEAR, 2021, -1):
         row = RATE.get(y, {}).get(pid.lower())
@@ -151,7 +154,7 @@ def carried(pid):
         r = {d: float(row[d]) + adj for d in DIMS if row.get(d)}
         if len(r) < 5:
             continue
-        a = age_of(pid, None)
+        a = age_of(pid, None, team, reg)
         for k in range(YEAR - y):
             step = dev_per_year((a - (YEAR - y) + k) if a else 24)
             r = {d: v + step for d, v in r.items()}
@@ -294,10 +297,10 @@ if SOURCE == "oe":
                 if rr.get("总评"):
                     r = {d: float(rr[d]) + adj if rr.get(d) else 50 + adj for d in DIMS}
                 else:
-                    r, _ = carried(nm)          # 今年不满 20 场没量出评分：沿用往年量出来的数（按年龄推到今年）
+                    r, _ = carried(nm, tname[(key, tid)], key)   # 今年不满 20 场没量出评分：沿用往年量出来的数（按年龄推到今年）
                     if not r:
                         unrated += 1
-                a = age_of(nm, int(rr["年龄"]) if rr.get("年龄") else None)
+                a = age_of(nm, int(rr["年龄"]) if rr.get("年龄") else None, tname[(key, tid)], key)
                 pend.append((nm, pos, r, a))
             known = [sum(r.values()) / 5 for _, _, r, _ in pend if r]
             fill = (sum(known) / len(known) - 2) if known else (50 + adj - 2)
@@ -326,7 +329,7 @@ if SOURCE == "oe":
     for (code, nm, pos), gm in acad.items():
         if gm < 20 or nm.lower() in on_major or nm.lower() not in rate:
             continue
-        a = age_of(nm, None)
+        a = age_of(nm, None, None, ACAD[code][0])
         if a is not None and a > 22:
             continue
         rr = rate[nm.lower()]
@@ -361,13 +364,13 @@ else:
                 if not cands:
                     break
                 def rank(pid):
-                    r, _ = carried(pid)
+                    r, _ = carried(pid, team, key)
                     return (len(c1.get(pid, ())), len(cy.get(pid, ())), 1 if r else 0, sum(r.values()) if r else 0)
                 pid = max(cands, key=rank)
                 roster.append((pid, pos))
             if len(roster) < 5:
                 continue
-            known = [carried(pid)[0] for pid, _ in roster]
+            known = [carried(pid, team, key)[0] for pid, _ in roster]
             ref = [sum(r.values()) / 5 for r in known if r]
             fill = (sum(ref) / len(ref) - 2) if ref else (50 + adj - 2)
             players = []
@@ -380,7 +383,7 @@ else:
                     m = sum(r.values()) / 5
                     if m < fill - 6:
                         r = {d: v + (fill - 6 - m) for d, v in r.items()}
-                players.append(pl(pid, pos, r, age_of(pid, 22), team=team))
+                players.append(pl(pid, pos, r, age_of(pid, 22, team, key), team=team))
             clean = re.sub(r"\s*\(.*?\)\s*$", "", team)
             ids = [pid for pid, _ in roster]
             sc = SUCC.get(YEAR, {}).get(team) or SUCC.get(YEAR, {}).get(clean)
@@ -402,12 +405,12 @@ else:
         pid = r["player_id"]
         if lgc not in ACAD or not pos or not pid or pid.lower() in on_major or pid.lower() in seen:
             continue
-        a = age_of(pid, None)
+        a = age_of(pid, None, None, ACAD[lgc][0])
         if a is None or a > 21:
             continue
         seen.add(pid.lower())
         reg, adj = ACAD[lgc]
-        rr, _ = carried(pid)
+        rr, _ = carried(pid, None, reg)
         r = rr or {d: 50 + adj for d in DIMS}
         pool[pos].append(((sum(r.values()) / 5) + (5 if rr else 0), pl(pid, pos, r, a, reg=reg) + [reg]))
 

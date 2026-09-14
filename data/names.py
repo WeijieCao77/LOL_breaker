@@ -1,14 +1,15 @@
-"""选手姓名（2026-09-14 玩家实锤：Knight 显示成韩文、Viper 名字错）。
+"""选手姓名与生日（2026-09-14 玩家实锤：Knight 显示成韩文、Viper 名字错；顺带查出年龄也串人）。
 
-原来三个导出脚本都用「小写 ID → players_master.csv 的 name_cn」查名字，同一个 ID 有好几个人时
-取第一条（Knight 有卓定、韩国 이건、越南和拉美选手；Viper 有朴到贤、中国的何皓、泰国选手）——
-四十多个 ID 配到了别人头上。现在按「人」认，不按 ID：
+原来导出脚本都用「小写 ID → 总表」查名字和生日，同一个 ID 有好几个人时取第一条
+（Knight 有卓定、韩国 이건、越南和拉美选手；Viper 有朴到贤、中国的何皓、泰国选手）——
+四十多个 ID 的名字配到了别人头上，年龄也跟着串（Palette 显示 17 岁、Violet 33 岁，实际都是 22–23）。
+现在先认人，再取他的名字 / 生日：
   1. 逐赛季名册（rosters_by_season.csv）每行带选手页面链接（roster_link）＝一个人。
-     同年同队 → 同年 → 同年按赛区筛 → 相邻年份，哪一步只剩一个人就用他的原文名；
-     这个人名册里没有原文名（越南、欧美、拉美选手）就确定留空，不再顺延到别的同 ID 选手；
-  2. 名册里没有这个 ID、总表里这个 ID 也只有一个人，才用总表；
-  3. 还定不下来返回 None——调用方保持原值，不猜；
-  4. 人工核实过的个案写在 names_override.csv（year / team 可写 *，name 写 - 表示确定留空）；
+     同年同队 → 同年 → 同年按赛区筛 → 相邻年份（这个 ID 当年不在名册里才看），哪一步只剩一个人就是他；
+  2. 认出了人：名字 / 生日取名册里他那几行；名册没挂就按页面链接查总表本人；
+     总表里确实没有原文名（越南、欧美、拉美选手）名字就是空串；都查不到返回 None；
+  3. 认不出人：总表里这个 ID 只有一个人、名册里又从没出现过，才用总表；否则 None（调用方保持原值，不猜）；
+  4. 人工核实过的名字写在 names_override.csv（year / team 可写 *，name 写 - 表示确定留空）；
   5. 知名韩国选手（2022–2026 打过 MSI / 世界赛）换成中文媒体通用的中文名：names_zh_kr.csv，有出处才收。
 """
 import collections
@@ -38,9 +39,16 @@ def _k(s):
     return (s or "").strip().lower()
 
 
-# (年, ID) → [(队, 链接, 原文名, 赛区)]；链接 → 这个人的原文名（取出现最多的非空写法）
+def _by(s):
+    """出生年：和导出脚本同一个有效区间"""
+    s = (s or "").strip()
+    return int(s[:4]) if len(s) >= 4 and s[:4].isdigit() and 1985 <= int(s[:4]) <= 2012 else None
+
+
+# (年, ID) → [(队, 链接, 原文名, 赛区)]；链接 → 这个人的原文名 / 出生年（取出现最多的写法）
 _rows = collections.defaultdict(list)
 _link_names = collections.defaultdict(collections.Counter)
+_link_birth = collections.defaultdict(collections.Counter)
 for _r in _rd("rosters_by_season.csv"):
     _pid = _k(_r.get("player_id"))
     if not _pid:
@@ -50,16 +58,21 @@ for _r in _rd("rosters_by_season.csv"):
     _rows[(str(_r.get("year")), _pid)].append((_k(_r.get("team")), _link, _nm, _r.get("residency") or ""))
     if _nm:
         _link_names[_link][_nm] += 1
+    if _by(_r.get("birthdate")):
+        _link_birth[_link][_by(_r.get("birthdate"))] += 1
 
-_master = collections.defaultdict(list)
-_page_name = {}   # 选手页面（overview_page）→ 总表里这个人自己的原文名（可能是空串）
+_master = collections.defaultdict(list)          # ID → 总表里这个 ID 的每个人（原文名, 出生年）
+_page_name, _page_birth = {}, {}                  # 选手页面 → 总表里这个人自己的原文名 / 出生年
 for _r in _rd("players_master.csv"):
     _pid = _k(_r.get("player_id"))
+    _nm, _b = (_r.get("name_cn") or "").strip(), _by(_r.get("birthdate"))
     if _pid:
-        _master[_pid].append((_r.get("name_cn") or "").strip())
+        _master[_pid].append((_nm, _b))
     _pg = _k(_r.get("overview_page"))
     if _pg:
-        _page_name[_pg] = (_r.get("name_cn") or "").strip() or _page_name.get(_pg, "")
+        _page_name[_pg] = _nm or _page_name.get(_pg, "")
+        if _b:
+            _page_birth[_pg] = _b
 
 ZH = {(_k(r.get("id")), (r.get("hangul") or "").strip()): (r.get("zh") or "").strip()
       for r in _rd("names_zh_kr.csv") if (r.get("zh") or "").strip()}
@@ -70,16 +83,35 @@ for r in _rd("names_override.csv"):
         OVERRIDE[((r.get("year") or "*").strip(), _k(r.get("team")) or "*", _k(r.get("id")))] = "" if nm == "-" else nm
 
 
-def _person(links):
-    """一组链接只剩一个人：返回他的原文名。名册那几行没挂名字，就按页面链接去总表查这个人本人——
-    总表里也确实没有才是空串（越南 / 欧美 / 拉美选手）；总表里查不到这个人返回 None。不止一个人返回 None。"""
-    if len(links) != 1:
-        return None
-    link = next(iter(links))
-    c = _link_names.get(link)
-    if c:
-        return c.most_common(1)[0][0]
-    return _page_name.get(link)
+def _who(year, team, pid, region=None):
+    """认人：返回这个人的选手页面链接；认不出来返回 None"""
+    k, y, t = _k(pid), str(year), _k(team)
+    rows = _rows.get((y, k), [])
+    steps = []
+    if t:
+        steps.append({l for tm, l, _, _ in rows if tm == t})
+    steps.append({l for _, l, _, _ in rows})
+    if rows and region in REGION_WORDS:
+        steps.append({l for _, l, _, res in rows if any(w in res for w in REGION_WORDS[region])})
+    for s in steps:
+        if len(s) == 1:
+            return next(iter(s))
+    if not rows:
+        for dy in (-1, 1, -2, 2):
+            near = {l for _, l, _, _ in _rows.get((str(int(year) + dy), k), [])}
+            if len(near) == 1:
+                return next(iter(near))
+            if near:
+                break
+    return None
+
+
+def _only_master(k, idx):
+    """认不出人时的兜底：总表里这个 ID 只有一个人、名册里又从没出现过"""
+    m = _master.get(k, [])
+    if len(m) == 1 and not any(_rows.get((str(yy), k)) for yy in range(2019, 2031)):
+        return m[0][idx]
+    return None
 
 
 def native_name(year, team, pid, region=None):
@@ -88,30 +120,11 @@ def native_name(year, team, pid, region=None):
     for key in ((y, t, k), (y, "*", k), ("*", t, k), ("*", "*", k)):
         if key in OVERRIDE:
             return OVERRIDE[key]
-    rows = _rows.get((y, k), [])
-    if t:
-        n = _person({l for tm, l, _, _ in rows if tm == t})
-        if n is not None:
-            return n
-    n = _person({l for _, l, _, _ in rows})
-    if n is not None:
-        return n
-    if rows and region in REGION_WORDS:
-        n = _person({l for _, l, _, res in rows if any(w in res for w in REGION_WORDS[region])})
-        if n is not None:
-            return n
-    if not rows:
-        for dy in (-1, 1, -2, 2):
-            near = _rows.get((str(int(year) + dy), k), [])
-            n = _person({l for _, l, _, _ in near})
-            if n is not None:
-                return n
-            if near:
-                break
-    m = _master.get(k, [])
-    if len(m) == 1 and not any(_rows.get((str(yy), k)) for yy in range(2019, 2031)):
-        return m[0]
-    return None
+    link = _who(year, team, pid, region)
+    if link is not None:
+        c = _link_names.get(link)
+        return c.most_common(1)[0][0] if c else _page_name.get(link)
+    return _only_master(k, 0)
 
 
 def name_for(year, team, pid, region=None):
@@ -120,3 +133,12 @@ def name_for(year, team, pid, region=None):
     if n and HANGUL.search(n):
         n = ZH.get((_k(pid), n), n)
     return n
+
+
+def birth_year(year, team, pid, region=None):
+    """按人认的出生年；定不下来返回 None（调用方保持原来的年龄）。"""
+    link = _who(year, team, pid, region)
+    if link is not None:
+        c = _link_birth.get(link)
+        return c.most_common(1)[0][0] if c else _page_birth.get(link)
+    return _only_master(_k(pid), 1)
