@@ -1,6 +1,6 @@
 import { boxScoreHtml } from "./boxscore";
 import { relOf } from "./clout";
-import { formMul, formOf, myForm, myFormMul } from "./form";
+import { FORM_NEUTRAL, formMul, formOf, formTier, myForm, myFormMul } from "./form";
 import { BREAK_PATHS, DIMS, SEASONS, avg, capOf, clamp, myRoster, pwShow, versionFit } from "./main";
 import { squadBreakdown } from "./squad";
 import { S } from "./state";
@@ -39,15 +39,23 @@ export function attribute(myTeamPlayers,oppTeamObj,fatigue,verFav){
   const mates=myTeamPlayers.filter(p=>!p.me);
   const n=myTeamPlayers.length||1;
   const showF=(x)=>Math.round(x);
+  /* 读数带档位、写明中性线（玩家实锤 2026-09-14：「每次打比赛队友的状态都偏低，基本都在 70 以下」）。
+     电脑选手的状态围着中性 52 浮动，70 以上本来就只有一成左右，对面也一样（16 局实测：队友均 54、对面均 54）——
+     只写一个「54」、再配一句「状态不在」，读起来像队友偏低。现在每个数带档位名，差距不到 3 点就写「差不多」。 */
+  const fmTxt=(x)=>`${showF(x)}「${formTier(x).n}」`;
+  const NEU=`状态 ${FORM_NEUTRAL} 是中性，不加不减`;
   if(meP&&mates.length){
     const meFm=myFormMul(), mateFm=avg(mates.map(p=>formMul(p)));
-    const opShow=showF(avg(oppPlayers.map(p=>formOf(p))));
+    const oAvg=avg(oppPlayers.map(p=>formOf(p))), mAvg=avg(mates.map(p=>formOf(p)));
     rows.push({n:"你的状态",v:(meFm-opFm)*myAb/n,
-      fix:meFm<opFm?`你今年的手感在对面之下（你 ${showF(myForm())} · 对面均 ${opShow}）。休息、稳住更衣室，状态下个赛段会回来。`
-                   :`你的状态压着对面（你 ${showF(myForm())} · 对面均 ${opShow}）。`});
+      fix:meFm<opFm?`你今年的手感在对面之下（你 ${fmTxt(myForm())} · 对面均 ${fmTxt(oAvg)}）。休息、稳住更衣室，状态下个赛段会回来。`
+                   :`你的状态压着对面（你 ${fmTxt(myForm())} · 对面均 ${fmTxt(oAvg)}）。`});
+    const mateLine=`队友均 ${fmTxt(mAvg)} · 对面均 ${fmTxt(oAvg)}；${NEU}`;
     rows.push({n:"队友状态",v:(mateFm-opFm)*myAb*(n-1)/n,
-      fix:mateFm<opFm?`四个队友今年状态不在（队友均 ${showF(avg(mates.map(p=>formOf(p))))} · 对面均 ${opShow}）——这一项不是你能直接练的，赢比赛、团建、转会窗才推得动。`
-                     :`队友状态在线（队友均 ${showF(avg(mates.map(p=>formOf(p))))} · 对面均 ${opShow}）。`});
+      fix: mAvg<44 ? `队友今年状态不在（${mateLine}）——这一项不是你能直接练的，赢比赛、团建、转会窗才推得动。`
+         : mAvg<=oAvg-3 ? `队友手感比对面差一点（${mateLine}）——赢比赛、团建、转会窗才推得动。`
+         : mAvg>=oAvg+3 ? `队友状态压着对面（${mateLine}）。`
+         : `队友状态和对面差不多（${mateLine}）。`});
   }else{
     const myFm=avg(myTeamPlayers.map(p=>p.me?myFormMul():formMul(p)));
     rows.push({n:"状态",v:(myFm-opFm)*myAb,

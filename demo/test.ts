@@ -190,7 +190,7 @@ function playOne(opts?) {
       if (idx < 0) { S.step = "pre"; A.preNextYear(); continue; }   // 都试过了，再练一年
       const of = S.pre.offers[idx];
       const tier = { sub:"top", foreign:"top", start:"mid", core:"low" }[of.k] || "mid";
-      A.startTryout(tier, of.team, A.CLUB_TIERS[tier].expect);
+      A.startTryout(tier, of.team, A.teamExpect(of.team, of.league || of.lg || null, tier));   // 和界面同一口径（main.ts 年末报价按钮）
     } else if (S.step === "season") {
       if (S.proOffer && !opts.noOffers) { transfers++; A.takeProOffer(); continue; }   // 赛段注册期的问询也接（测赛程重排）
       for (const x of A.SPEND) if (S.money >= x.cost && !(S.buff && S.buff[x.k])) { S.money -= x.cost; x.run(); break; }
@@ -1508,6 +1508,45 @@ function cloutChecks() {
 /* ---------------- 成就殿堂自检（2026-09-11 作者拍板「A + B」，奖励每局照发）----------------
    殿堂跨存档、新档只继承殿堂；奖励每一局照发；「几局」按存档编号去重；老档读进来会补记；
    导出带殿堂、导入取并集留最早；「收藏家」只数这一局；localStorage 抛错时游戏照跑。 */
+/* 转会「期望」按这支队的真实首发算（玩家实锤 2026-09-14：弱队写期望 68，真进去队友不到 60）：
+   外赛区弱队的期望要跟着它的首发走，LPL 各档不能被这条改动推走，找不到的队 / 青训档退回常数，接受问询进试训用的也是同一个数 */
+function tierExpectChecks(): string[] {
+  const bad: string[] = [];
+  A.screenCreate(9301);
+  const s0 = A.S(); s0.name = "期望" ; s0.pos = "mid"; s0.origin = "academy"; s0.ageIdx = 1; s0.bgPick = s0.bgOffer[0].k;
+  s0.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+  A.startPre();
+  const S = A.S();
+  const avgOf = (lg: string, name: string) => A.teamStartAvg(name, lg);
+  const lpl = A.approachTargets("LPL");
+  const lplLow = lpl.filter((t: any) => t.tier === "low");
+  if (!lplLow.length) bad.push("LPL 名单里没有弱队档");
+  lpl.forEach((t: any) => {
+    const e = A.teamExpect(t.team, "LPL", t.tier), base = A.CLUB_TIERS[t.tier].expect;
+    if (e !== Math.round(avgOf("LPL", t.team) + A.TIER_EXPECT_ADD[t.tier])) bad.push(`${t.team} 的期望 ${e} 不是首发均值 + 档位加成`);
+    if (Math.abs(e - base) > 12) bad.push(`LPL ${t.team}（${t.tier}）期望 ${e} 离档位常数 ${base} 超过 12，LPL 被推走了`);
+  });
+  const lowMean = lplLow.reduce((a: number, t: any) => a + A.teamExpect(t.team, "LPL", "low"), 0) / Math.max(1, lplLow.length);
+  if (Math.abs(lowMean - A.CLUB_TIERS.low.expect) > 4) bad.push(`LPL 弱队档平均期望 ${lowMean.toFixed(1)}，和原门槛 68 差太多`);
+  const minorLg = ["PCS", "VCS", "LJL", "TCL", "LCO", "LLA", "CBLOL"].find(k => (S.world[k] || []).length);
+  if (!minorLg) bad.push("找不到小赛区");
+  else {
+    const t = A.approachTargets(minorLg).find((x: any) => x.tier === "low") || A.approachTargets(minorLg).slice(-1)[0];
+    const sa = avgOf(minorLg, t.team), e = A.teamExpect(t.team, minorLg, "low");
+    if (!(sa < 66)) bad.push(`小赛区 ${minorLg} 弱队 ${t.team} 首发均 ${sa} 不低于 66，拿来验的样本不对`);
+    if (e >= A.CLUB_TIERS.low.expect) bad.push(`小赛区 ${minorLg} 弱队 ${t.team} 首发均 ${sa?.toFixed(1)} 还写期望 ${e}（原来的 68）`);
+    // 接受问询 → 试训：评级对着同一个数
+    S.proOffer = { tier: "low", team: t.team, league: minorLg };
+    A.takeProOffer();
+    if (!A.S().tryout || A.S().tryout.expect !== e) bad.push(`接受 ${t.team} 的问询后试训期望是 ${A.S().tryout && A.S().tryout.expect}，名单上写的是 ${e}`);
+    A.S().tryout = null;
+  }
+  if (A.teamExpect("并不存在的队", "LPL", "low") !== A.CLUB_TIERS.low.expect) bad.push("找不到的队没有退回档位常数");
+  const ldl = (S.world.LDL || [])[0];
+  if (ldl && A.teamExpect(ldl.name, "LDL", "acad") !== A.CLUB_TIERS.acad.expect) bad.push("青训档的期望被改了（应该还是档位常数）");
+  return bad;
+}
+
 function hallChecks(): string[] {
   const bad: string[] = [];
   const LS: any = g.localStorage;
@@ -2017,6 +2056,9 @@ if (isMain && process.argv.includes("--tl-probe")) {
   { const pc = preCareerAchChecks();
     if (pc.length) { console.error("职业前成就自检不通过：\n  " + pc.join("\n  ")); process.exit(1); }
     console.log("职业前成就自检通过：只在第一份合同时结算 · 转会不补发熬出来的 / 野路子 · 回到路人再打杯赛不补发 · 转会出国照样远走他乡"); }
+  { const te = tierExpectChecks();
+    if (te.length) { console.error("转会期望自检不通过：\n  " + te.join("\n  ")); process.exit(1); }
+    console.log("转会期望自检通过：期望＝首发均值 + 档位加成 · LPL 各档不被推走 · 小赛区弱队不再写 68 · 接受问询的试训用同一个数 · 找不到的队和青训档退回常数"); }
   // 背景卡折算表（资金 60 万 / 人气 10 / 信任 3 ≈ 1 点，属性 1 点 = 1 点）：各卡并不等值，差异在形状——见 origins.js 顶部注释
   console.log("背景折算：", A.BACKGROUNDS.map(b => b.k + " " + (Object.values<number>(b.mod || {}).reduce((a, v) => a + v, 0)
     + (b.money || 0) / 60 + (b.fame || 0) / 10 + (b.trust || 0) / 3).toFixed(1)).join(" · "));

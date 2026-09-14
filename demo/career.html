@@ -3171,18 +3171,21 @@ header.top.compact>.theme-top{display:none}
     const mates = myTeamPlayers.filter((p) => !p.me);
     const n = myTeamPlayers.length || 1;
     const showF = (x) => Math.round(x);
+    const fmTxt = (x) => `${showF(x)}「${formTier(x).n}」`;
+    const NEU = `状态 ${FORM_NEUTRAL} 是中性，不加不减`;
     if (meP && mates.length) {
       const meFm = myFormMul(), mateFm = avg(mates.map((p) => formMul(p)));
-      const opShow = showF(avg(oppPlayers.map((p) => formOf(p))));
+      const oAvg = avg(oppPlayers.map((p) => formOf(p))), mAvg = avg(mates.map((p) => formOf(p)));
       rows.push({
         n: "你的状态",
         v: (meFm - opFm) * myAb / n,
-        fix: meFm < opFm ? `你今年的手感在对面之下（你 ${showF(myForm())} · 对面均 ${opShow}）。休息、稳住更衣室，状态下个赛段会回来。` : `你的状态压着对面（你 ${showF(myForm())} · 对面均 ${opShow}）。`
+        fix: meFm < opFm ? `你今年的手感在对面之下（你 ${fmTxt(myForm())} · 对面均 ${fmTxt(oAvg)}）。休息、稳住更衣室，状态下个赛段会回来。` : `你的状态压着对面（你 ${fmTxt(myForm())} · 对面均 ${fmTxt(oAvg)}）。`
       });
+      const mateLine = `队友均 ${fmTxt(mAvg)} · 对面均 ${fmTxt(oAvg)}；${NEU}`;
       rows.push({
         n: "队友状态",
         v: (mateFm - opFm) * myAb * (n - 1) / n,
-        fix: mateFm < opFm ? `四个队友今年状态不在（队友均 ${showF(avg(mates.map((p) => formOf(p))))} · 对面均 ${opShow}）——这一项不是你能直接练的，赢比赛、团建、转会窗才推得动。` : `队友状态在线（队友均 ${showF(avg(mates.map((p) => formOf(p))))} · 对面均 ${opShow}）。`
+        fix: mAvg < 44 ? `队友今年状态不在（${mateLine}）——这一项不是你能直接练的，赢比赛、团建、转会窗才推得动。` : mAvg <= oAvg - 3 ? `队友手感比对面差一点（${mateLine}）——赢比赛、团建、转会窗才推得动。` : mAvg >= oAvg + 3 ? `队友状态压着对面（${mateLine}）。` : `队友状态和对面差不多（${mateLine}）。`
       });
     } else {
       const myFm = avg(myTeamPlayers.map((p) => p.me ? myFormMul() : formMul(p)));
@@ -3792,6 +3795,27 @@ header.top.compact>.theme-top{display:none}
     low: { n: "弱队", expect: 68, pay: [20, 60], sign: [8, 25], years: 2, buyout: [150, 400] },
     acad: { n: "二队/青训", expect: 62, pay: [3, 15], sign: [0, 4], years: 2, buyout: [40, 120] }
   };
+  var TIER_EXPECT_ADD = { top: 4, mid: 2, low: 1 };
+  function teamStartAvg(team, lg) {
+    if (!team || !S.world) return null;
+    const pools = lg && S.world[lg] ? [S.world[lg]] : Object.values(S.world);
+    for (const ts of pools) {
+      const t = (ts || []).find((x) => x && x.name === team);
+      if (t) {
+        const ps = (t.players || []).filter((p) => p && !p.me && p.r && !p.retired);
+        return ps.length ? avg(ps.map((p) => strength(p))) : null;
+      }
+    }
+    return lg ? teamStartAvg(team) : null;
+  }
+  function teamExpect(team, lg, tier) {
+    const base = CLUB_TIERS[tier];
+    if (!base) return 70;
+    const add = TIER_EXPECT_ADD[tier];
+    if (add === void 0) return base.expect;
+    const a = teamStartAvg(team, lg);
+    return a === null ? base.expect : Math.round(a + add);
+  }
   var TRYOUT_DAYS = [
     {
       n: "第一天 · 单排考核",
@@ -3854,6 +3878,7 @@ header.top.compact>.theme-top{display:none}
     <div class="tw"><table><thead><tr><th>档次</th><th class="n">实力期望</th><th class="n">段位底线</th><th class="n">实力</th><th class="n">段位</th></tr></thead>
     <tbody>${rows}</tbody></table></div>
     <p class="note">综合是俱乐部口径：操作 .34 · 运营 .24 · 指挥 .20 · 心态 .14 · 体质 .08。
+      表里是各档的通用门槛；具体到哪支队，期望＝这支队首发五维均值 + 档位加成（豪门 +4 · 中游 +2 · 弱队 +1），外赛区、小赛区普遍更低。
       实力期望决定试训评级（够了是 A/B，差 10 以上基本 C/D）；段位底线是发邀请的准入，
       段位不够可以用比赛履历（城市争霸赛 / 主播杯四强）敲门。签约后段位只是名片，看的是比赛。</p></div>`;
   }
@@ -4011,7 +4036,7 @@ header.top.compact>.theme-top{display:none}
     let team = pickClub(tier, lg || void 0);
     for (let i = 0; i < 8 && team && noRe[team]; i++) team = pickClub(tier, lg || void 0);
     if (!team || noRe[team]) return;
-    P.invite = { tier, team, league: lg || null, reason, pending: true, week: P.week, expect: T2.expect };
+    P.invite = { tier, team, league: lg || null, reason, pending: true, week: P.week, expect: teamExpect(team, lg, tier) };
     P.inviteCd = P.week + INVITE_CD;
     P.inviteN = (P.inviteN || 0) + 1;
     preLog(`<b>${team}</b>${lg && lg !== "LPL" ? `（${lg} 赛区）` : ""} 看了你的比赛录像——${reason}。<b>他们邀请你去队里试训。</b>${lg && lg !== "LPL" ? `<br><span style="color:var(--ink-3)">跨国邀请：签了就是出海打职业。</span>` : ""}`, "big");
@@ -4081,7 +4106,10 @@ header.top.compact>.theme-top{display:none}
       去队里待四天，教练组会从操作、运营、指挥、心态四个方面评估你。
       <b>试训不是走过场——评级不够就没有合同</b>，评级高低也决定给你什么档次的合同。</p>
     <div class="ver">
-      他们的期望值 <b>${iv.expect}</b>　·　你现在 <b>${me.toFixed(0)}</b><br>
+      他们的期望值 <b>${iv.expect}</b>${(() => {
+      const sa = teamStartAvg(iv.team, iv.league);
+      return sa === null ? "" : `（首发均 ${sa.toFixed(0)}）`;
+    })()}　·　你现在 <b>${me.toFixed(0)}</b><br>
       <span style="color:${gap >= 4 ? "var(--cyan)" : gap >= -4 ? "var(--gold)" : "var(--red)"}">${gap >= 8 ? "以你现在的水平，这次试训应该很轻松。" : gap >= 2 ? "你够得上他们的要求，稳住就行。" : gap >= -4 ? "刚好在门槛上——四天里每个选择都算数。" : gap >= -10 ? "他们的期望比你现在高不少，得靠临场发挥。" : "说实话，这个档次的队伍现在还不适合你。去了大概率是陪跑。"}</span></div>
     <div class="row" style="justify-content:center">
       <button class="btn" id="ivgo">去试训 →</button>
@@ -4695,7 +4723,7 @@ header.top.compact>.theme-top{display:none}
     S.tryout = {
       tier: o.tier,
       team: o.team,
-      expect: CLUB_TIERS[o.tier].expect,
+      expect: teamExpect(o.team, o.league, o.tier),
       day: 0,
       score: 0,
       lines: [],
@@ -4878,7 +4906,7 @@ header.top.compact>.theme-top{display:none}
     const tier = fitTier("mid");
     const team = pickClub(tier);
     if (!team) return;
-    P.invite = { tier, team, league: null, reason: "队里有人受伤，需要人顶班", pending: true, week: w, expect: CLUB_TIERS[tier].expect, short: true };
+    P.invite = { tier, team, league: null, reason: "队里有人受伤，需要人顶班", pending: true, week: w, expect: teamExpect(team, null, tier), short: true };
     P.inviteCd = w + INVITE_CD;
     P.inviteN = (P.inviteN || 0) + 1;
     preLog(`<b>${team}</b> 的首发受伤了，他们想让你去<b>顶班</b>——<b>短约一个赛段</b>，打出来再谈长的。`, "big");
@@ -5483,9 +5511,13 @@ header.top.compact>.theme-top{display:none}
       return `<button class="act" data-approach="${t.team}" ${!ca.ok ? 'disabled style="opacity:.4"' : ""}
         title="把握 ${(po * 100).toFixed(0)}%">
         <div class="t">${teamLogo(t.team, 16)}${t.team}</div>
-        <div class="d">${CLUB_TIERS[t.tier] ? CLUB_TIERS[t.tier].n : ""} · 期望 ${CLUB_TIERS[t.tier] ? CLUB_TIERS[t.tier].expect : "—"} · ${(po * 100).toFixed(0)}%</div></button>`;
+        <div class="d">${CLUB_TIERS[t.tier] ? CLUB_TIERS[t.tier].n : ""} · ${(() => {
+        const sa = teamStartAvg(t.team, t.league);
+        return sa === null ? "" : `首发均 ${sa.toFixed(0)} · `;
+      })()}期望 ${teamExpect(t.team, t.league, t.tier)} · ${(po * 100).toFixed(0)}%</div></button>`;
     }).join("")}</div>
     <p class="note">你的综合 <b>${tryoutSkill().toFixed(0)}</b>、本赛段表现分 <b>${perf.toFixed(0)}</b>。全赛区都能接触——点上面的赛区标签切换名单，档位按该联赛内的真实排位分。
+      <b>期望＝这支队首发五维均值 + 档位加成</b>（豪门 +4 · 中游 +2 · 弱队 +1），试训评级就对着它比——外赛区、小赛区的队普遍更低。
       被拒绝会给理由（位置刚续约 / 违约金劝退 / 还想再看看）。成功 = 对方有兴趣：
       窗口开着就当场谈，赛段中先记意向；跨赛区谈成就是出海。</p></div>`;
     const log = S.txLog && S.txLog.length ? `<div class="card"><h2>生涯轨迹</h2>
@@ -5521,7 +5553,7 @@ header.top.compact>.theme-top{display:none}
     if (rnd() < p) {
       const team = pickClub(tier);
       if (team) {
-        P.invite = { tier, team, league: null, reason: "毛遂自荐", pending: true, week: P.week, expect: T2.expect };
+        P.invite = { tier, team, league: null, reason: "毛遂自荐", pending: true, week: P.week, expect: teamExpect(team, null, tier) };
         P.inviteN = (P.inviteN || 0) + 1;
         preLog(`你把集锦和战绩打包发给了几家${T2.n}俱乐部——<b>${team}</b> 回了消息：<b>来试训吧。</b>`, "big");
         S.rndResult = {
@@ -19694,6 +19726,10 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260914a", at: "2026-09-14", items: [
+      "<b>转会里的「期望」按这支队的真实首发算</b>（玩家实锤：「转会期望里弱队队友的能力都是 68 往上，真的转会进入弱队，队友都是 60 往下」）：「主动接触」名单上每支队写的原来是按 LPL 标定的档位常数（豪门 82 / 中游 74 / 弱队 68），切到外赛区、小赛区也照搬——实测外赛区和小赛区弱队的首发五维均值只有 54–63。现在期望＝<b>这支队首发五维均值 + 档位加成</b>（豪门 +4、中游 +2、弱队 +1），名单上直接写「首发均 X · 期望 Y」，试训邀请卡、试训评级都用同一个数；LPL 各档基本不变",
+      "<b>赛后拆解的状态读数带档位</b>（玩家反馈：「每次打比赛队友的状态都偏低，基本都在 70 以下」）：电脑选手的状态围着中性 52 浮动，70 以上本来就只有一成左右，对面也一样（16 局实测：队友均 54、对面均 54）。现在每个数后面带档位名（正常 / 手感不错…），写明「状态 52 是中性，不加不减」；队友和对面差不到 3 点就写「差不多」，不再一律写「状态不在」"
+    ] },
     { v: "v20260913a", at: "2026-09-13", items: [
       "<b>真实赛制</b>（玩家实锤：2026 年 LPL 是登峰 / 坚毅 / 涅槃 + 骑士之路，游戏里还是春夏两段）：开了真实时间线的新档，2022–2026 年四大赛区都按当年的真实赛制打——LPL 2022–2024 春夏两段、十队冒泡赛，2024 夏季赛起分登峰组 / 涅槃组（涅槃组垫底会提前结束全年），2025、2026 年三段制、骑士之路、八队双败；LCK 2025 起是 LCK Cup、第 1–2 轮、Road to MSI、Legend / Rise 分组；LEC 冬春夏三段和赛季总决赛、2026 年的 LEC Versus；LCS 的 Lock In、2025 年的 LTA 北区、2026 年的 Lock-In 瑞士轮。每个赛段单独决出冠军，积分榜按真实分组显示，淘汰赛有完整对阵树，本周卡上写着这个赛段的赛制",
       "<b>First Stand</b>（2025 起）：第一个赛段打完就是 First Stand，拿到名额就出征（单败淘汰、BO5），打完回联赛，中间不开注册窗；没去的话在训练室里看完。MSI、世界赛的名额也按当年的真实规则：赛段冠军 / 决赛两队 / 冠军积分 / 地区资格赛，MSI 分直进和入围赛，2024 起 MSI 冠军赛区和第二好的赛区各多一个世界赛名额",
@@ -22365,7 +22401,7 @@ header.top.compact>.theme-top{display:none}
       reason: why || o.label,
       pending: true,
       week: P.week,
-      expect: T2.expect
+      expect: T2 ? teamExpect(o.team, o.league, o.tier) : 70
     };
     P.inviteN = (P.inviteN || 0) + 1;
     preLog(`<b>${o.team}</b>${o.league ? `（${o.league} 赛区）` : ""}发来试训邀请——${o.label}。`, "big");
@@ -26707,7 +26743,7 @@ header.top.compact>.theme-top{display:none}
       const tier = { sub: "top", foreign: "top", start: "mid", core: "low" }[of2.k] || "mid";
       S.pre.offerPick = +b.dataset.offer;
       S.step = "pre";
-      startTryout(tier, of2.team, CLUB_TIERS[tier].expect);
+      startTryout(tier, of2.team, teamExpect(of2.team, of2.league || of2.lg || null, tier));
     });
     const _ivg = $("ivgo");
     if (_ivg) _ivg.onclick = () => {

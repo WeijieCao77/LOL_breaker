@@ -49,6 +49,27 @@ export const CLUB_TIERS = {
   low:   { n:"弱队",   expect:68, pay:[20,60],   sign:[8,25],   years:2, buyout:[150,400] },
   acad:  { n:"二队/青训", expect:62, pay:[3,15],    sign:[0,4],    years:2, buyout:[40,120] }
 };
+/* 具体到一支队，期望按它的真实首发算（玩家实锤 2026-09-14：「转会里弱队队友的能力都是 68 往上，真转进弱队，队友都是 60 往下」）。
+   上面的 expect 是按 LPL 标定的档位常数，可「主动接触」能切到任何赛区、档位按该赛区内排名分，外赛区照搬同一套数——
+   实测外赛区 / 小赛区弱队首发五维均值 54–63、LCS 2026 起弱队最低 54，写的却是「弱队 · 期望 68」，试训评级也对着 68 比。
+   现在＝这支队首发五维均值 + 档位加成；加成取 LPL 各档首发均值到原门槛的差（豪门 78→82、中游 72→74、弱队 67→68），
+   所以 LPL 基本不变，外赛区按实际水平走。二队 / 青训档不动；找不到这支队（改名、解散）退回档位常数。 */
+export const TIER_EXPECT_ADD: Record<string, number> = { top:4, mid:2, low:1 };
+export function teamStartAvg(team, lg?){
+  if(!team||!S.world) return null;
+  const pools: any[] = (lg&&S.world[lg]) ? [S.world[lg]] : Object.values(S.world);
+  for(const ts of pools){
+    const t=(ts||[]).find(x=>x&&x.name===team);
+    if(t){ const ps=(t.players||[]).filter(p=>p&&!p.me&&p.r&&!p.retired); return ps.length?avg(ps.map(p=>strength(p))):null; }
+  }
+  return lg ? teamStartAvg(team) : null;   // 联赛键对不上（赛区改制）再全世界找一遍
+}
+export function teamExpect(team, lg, tier){
+  const base=CLUB_TIERS[tier]; if(!base) return 70;
+  const add=TIER_EXPECT_ADD[tier]; if(add===undefined) return base.expect;
+  const a=teamStartAvg(team, lg);
+  return a===null ? base.expect : Math.round(a+add);
+}
 
 /* ---------- 试训的四个环节 ----------
    每个环节考一个维度，三个选项分别偏向不同的能力。
@@ -102,6 +123,7 @@ export function tierCard(){
     <div class="tw"><table><thead><tr><th>档次</th><th class="n">实力期望</th><th class="n">段位底线</th><th class="n">实力</th><th class="n">段位</th></tr></thead>
     <tbody>${rows}</tbody></table></div>
     <p class="note">综合是俱乐部口径：操作 .34 · 运营 .24 · 指挥 .20 · 心态 .14 · 体质 .08。
+      表里是各档的通用门槛；具体到哪支队，期望＝这支队首发五维均值 + 档位加成（豪门 +4 · 中游 +2 · 弱队 +1），外赛区、小赛区普遍更低。
       实力期望决定试训评级（够了是 A/B，差 10 以上基本 C/D）；段位底线是发邀请的准入，
       段位不够可以用比赛履历（城市争霸赛 / 主播杯四强）敲门。签约后段位只是名片，看的是比赛。</p></div>`;
 }
@@ -324,7 +346,7 @@ export function addInvite(tier, reason, lg?){
   let team = pickClub(tier, lg || undefined);
   for(let i = 0; i < 8 && team && noRe[team]; i++) team = pickClub(tier, lg || undefined);
   if(!team || noRe[team]) return;
-  P.invite = { tier, team, league: lg || null, reason, pending:true, week:P.week, expect:T.expect };
+  P.invite = { tier, team, league: lg || null, reason, pending:true, week:P.week, expect:teamExpect(team, lg, tier) };
   P.inviteCd = P.week + INVITE_CD;
   P.inviteN = (P.inviteN || 0) + 1;
   preLog(`<b>${team}</b>${lg&&lg!=="LPL"?`（${lg} 赛区）`:""} 看了你的比赛录像——${reason}。<b>他们邀请你去队里试训。</b>${
@@ -411,7 +433,7 @@ export function inviteCard(){
       去队里待四天，教练组会从操作、运营、指挥、心态四个方面评估你。
       <b>试训不是走过场——评级不够就没有合同</b>，评级高低也决定给你什么档次的合同。</p>
     <div class="ver">
-      他们的期望值 <b>${iv.expect}</b>　·　你现在 <b>${me.toFixed(0)}</b><br>
+      他们的期望值 <b>${iv.expect}</b>${(()=>{ const sa=teamStartAvg(iv.team,iv.league); return sa===null?"":`（首发均 ${sa.toFixed(0)}）`; })()}　·　你现在 <b>${me.toFixed(0)}</b><br>
       <span style="color:${gap>=4?'var(--cyan)':gap>=-4?'var(--gold)':'var(--red)'}">${
         gap>=8 ? "以你现在的水平，这次试训应该很轻松。"
         : gap>=2 ? "你够得上他们的要求，稳住就行。"
@@ -1064,7 +1086,7 @@ export function takeProOffer(){
   S._regDeal = !!o.reg;   // 赛段注册期的单：1.2 倍违约金、没签字费
   if(o.direct){ makeProDeal(o.tier, o.team, "A", o.league); return; }
   // 职业转会试训是简化流程：免单排考核，三个环节
-  S.tryout = { tier:o.tier, team:o.team, expect:CLUB_TIERS[o.tier].expect,
+  S.tryout = { tier:o.tier, team:o.team, expect:teamExpect(o.team, o.league, o.tier),
                day:0, score:0, lines:[], fat:0, done:false, pro:true, league:o.league,
                days:[1,2,3] };
   render();
@@ -1208,7 +1230,7 @@ export function checkTopUpInvite(){
   if(!canInvite("low")) return;
   const tier=fitTier("mid");
   const team=pickClub(tier); if(!team) return;
-  P.invite={tier,team,league:null,reason:"队里有人受伤，需要人顶班",pending:true,week:w,expect:CLUB_TIERS[tier].expect,short:true};
+  P.invite={tier,team,league:null,reason:"队里有人受伤，需要人顶班",pending:true,week:w,expect:teamExpect(team,null,tier),short:true};
   P.inviteCd=w+INVITE_CD; P.inviteN=(P.inviteN||0)+1;
   preLog(`<b>${team}</b> 的首发受伤了，他们想让你去<b>顶班</b>——<b>短约一个赛段</b>，打出来再谈长的。`,"big");
   render();
@@ -1815,9 +1837,10 @@ export function transferPage(){
       return `<button class="act" data-approach="${t.team}" ${!ca.ok?'disabled style="opacity:.4"':''}
         title="把握 ${(po*100).toFixed(0)}%">
         <div class="t">${teamLogo(t.team,16)}${t.team}</div>
-        <div class="d">${CLUB_TIERS[t.tier]?CLUB_TIERS[t.tier].n:""} · 期望 ${CLUB_TIERS[t.tier]?CLUB_TIERS[t.tier].expect:"—"} · ${(po*100).toFixed(0)}%</div></button>`;
+        <div class="d">${CLUB_TIERS[t.tier]?CLUB_TIERS[t.tier].n:""} · ${(()=>{ const sa=teamStartAvg(t.team,t.league); return sa===null?"":`首发均 ${sa.toFixed(0)} · `; })()}期望 ${teamExpect(t.team,t.league,t.tier)} · ${(po*100).toFixed(0)}%</div></button>`;
     }).join("")}</div>
     <p class="note">你的综合 <b>${tryoutSkill().toFixed(0)}</b>、本赛段表现分 <b>${perf.toFixed(0)}</b>。全赛区都能接触——点上面的赛区标签切换名单，档位按该联赛内的真实排位分。
+      <b>期望＝这支队首发五维均值 + 档位加成</b>（豪门 +4 · 中游 +2 · 弱队 +1），试训评级就对着它比——外赛区、小赛区的队普遍更低。
       被拒绝会给理由（位置刚续约 / 违约金劝退 / 还想再看看）。成功 = 对方有兴趣：
       窗口开着就当场谈，赛段中先记意向；跨赛区谈成就是出海。</p></div>`;
   /* 轨迹 */
@@ -1855,7 +1878,7 @@ export function selfRecommend(tier){
   if(rnd()<p){
     const team=pickClub(tier);
     if(team){
-      P.invite={tier,team,league:null,reason:"毛遂自荐",pending:true,week:P.week,expect:T.expect};
+      P.invite={tier,team,league:null,reason:"毛遂自荐",pending:true,week:P.week,expect:teamExpect(team,null,tier)};
       P.inviteN=(P.inviteN||0)+1;
       preLog(`你把集锦和战绩打包发给了几家${T.n}俱乐部——<b>${team}</b> 回了消息：<b>来试训吧。</b>`,"big");
       S.rndResult={choice:`毛遂自荐 · ${T.n}`,

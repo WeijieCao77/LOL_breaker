@@ -37,7 +37,7 @@ import { shareCardOpen } from "./share";
 import { statEvent } from "./stats";
 import { SPEND, addTrust, addTrustAll, avgTrust, checkMateExit, contractCheck, initTrust, payday, resolveLocker, salaryOf, syncTrust, trustDecay, trustMod, trustOf, tryLockerEvent } from "./team";
 import { traitBar, traitMul, traitUpCard } from "./trait";
-import { CLUB_TIERS, DEAL_TIERS, REG_WEEKS, TIER_ORDER, acceptPromote, acceptRenew, afterTryout, approachTeam, askDeal, askPromoteRaise, askTransfer, checkPromote, checkRankInvite, checkTopUpInvite, contractLeftText, dealCard, declineDeal, declinePromote, declineRenew, doBuyout, dropDeal, dropProOffer, exposureCap, faCard, inviteCard, inviteFloorOk, noteScoutInterest, offerSendDown, parentClub, preTransferPage, proOfferCard, promoteCard, promoteDealCard, rankCap, regRollOffer, renewCard, renewNegotiate, resolveTryoutDay, rollProOffers, selfRecommend, signDeal, signRenewDeal, signTransfer, startTryout, takeFaOffer, takeProOffer, transferPage, tryoutCard, tryoutSkill, txNoteReturn, txPhaseName, txStops, txWindowName, txWindowOpen } from "./tryout";
+import { CLUB_TIERS, DEAL_TIERS, REG_WEEKS, TIER_ORDER, acceptPromote, acceptRenew, afterTryout, approachTeam, askDeal, askPromoteRaise, askTransfer, checkPromote, checkRankInvite, checkTopUpInvite, contractLeftText, dealCard, declineDeal, declinePromote, declineRenew, doBuyout, dropDeal, dropProOffer, exposureCap, faCard, inviteCard, inviteFloorOk, noteScoutInterest, offerSendDown, parentClub, preTransferPage, proOfferCard, promoteCard, promoteDealCard, rankCap, regRollOffer, renewCard, renewNegotiate, resolveTryoutDay, rollProOffers, selfRecommend, signDeal, signRenewDeal, signTransfer, startTryout, takeFaOffer, takeProOffer, transferPage, tryoutCard, tryoutSkill, txNoteReturn, txPhaseName, txStops, txWindowName, txWindowOpen , teamExpect } from "./tryout";
 import { rnd, rngInit } from "./rng";
 
 /* 像素头像（可选）：data/photos/ 里的照片经 make_avatars.py 烤成 24x24。
@@ -132,6 +132,10 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260914a", at:"2026-09-14", items:[
+    "<b>转会里的「期望」按这支队的真实首发算</b>（玩家实锤：「转会期望里弱队队友的能力都是 68 往上，真的转会进入弱队，队友都是 60 往下」）：「主动接触」名单上每支队写的原来是按 LPL 标定的档位常数（豪门 82 / 中游 74 / 弱队 68），切到外赛区、小赛区也照搬——实测外赛区和小赛区弱队的首发五维均值只有 54–63。现在期望＝<b>这支队首发五维均值 + 档位加成</b>（豪门 +4、中游 +2、弱队 +1），名单上直接写「首发均 X · 期望 Y」，试训邀请卡、试训评级都用同一个数；LPL 各档基本不变",
+    "<b>赛后拆解的状态读数带档位</b>（玩家反馈：「每次打比赛队友的状态都偏低，基本都在 70 以下」）：电脑选手的状态围着中性 52 浮动，70 以上本来就只有一成左右，对面也一样（16 局实测：队友均 54、对面均 54）。现在每个数后面带档位名（正常 / 手感不错…），写明「状态 52 是中性，不加不减」；队友和对面差不到 3 点就写「差不多」，不再一律写「状态不在」"
+  ]},
   {v:"v20260913a", at:"2026-09-13", items:[
     "<b>真实赛制</b>（玩家实锤：2026 年 LPL 是登峰 / 坚毅 / 涅槃 + 骑士之路，游戏里还是春夏两段）：开了真实时间线的新档，2022–2026 年四大赛区都按当年的真实赛制打——LPL 2022–2024 春夏两段、十队冒泡赛，2024 夏季赛起分登峰组 / 涅槃组（涅槃组垫底会提前结束全年），2025、2026 年三段制、骑士之路、八队双败；LCK 2025 起是 LCK Cup、第 1–2 轮、Road to MSI、Legend / Rise 分组；LEC 冬春夏三段和赛季总决赛、2026 年的 LEC Versus；LCS 的 Lock In、2025 年的 LTA 北区、2026 年的 Lock-In 瑞士轮。每个赛段单独决出冠军，积分榜按真实分组显示，淘汰赛有完整对阵树，本周卡上写着这个赛段的赛制",
     "<b>First Stand</b>（2025 起）：第一个赛段打完就是 First Stand，拿到名额就出征（单败淘汰、BO5），打完回联赛，中间不开注册窗；没去的话在训练室里看完。MSI、世界赛的名额也按当年的真实规则：赛段冠军 / 决赛两队 / 冠军积分 / 地区资格赛，MSI 分直进和入围赛，2024 起 MSI 冠军赛区和第二好的赛区各多一个世界赛名额",
@@ -2732,7 +2736,7 @@ export function wndDeliver(o,why?){
   const P=S.pre; if(!P||!o) return false;
   const T=CLUB_TIERS[o.tier];
   P.invite={tier:o.tier, team:o.team, league:o.league||null,
-            reason:why||o.label, pending:true, week:P.week, expect:T.expect};
+            reason:why||o.label, pending:true, week:P.week, expect:T?teamExpect(o.team, o.league, o.tier):70};
   P.inviteN=(P.inviteN||0)+1;
   preLog(`<b>${o.team}</b>${o.league?`（${o.league} 赛区）`:""}发来试训邀请——${o.label}。`,"big");
   return true;
@@ -6959,7 +6963,7 @@ export function bind(){
     const tier={sub:"top",foreign:"top",start:"mid",core:"low"}[of.k]||"mid";
     S.pre.offerPick=+b.dataset.offer;
     S.step="pre";
-    startTryout(tier, of.team, CLUB_TIERS[tier].expect);
+    startTryout(tier, of.team, teamExpect(of.team, of.league||of.lg||null, tier));
   });
 
   /* ---- 试训 · 谈判 ---- */
