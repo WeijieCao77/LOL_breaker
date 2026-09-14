@@ -13,7 +13,8 @@ MAJOR = ["LPL", "LCK", "LEC", "LCS"]
 MINOR = ["PCS", "VCS", "CBLOL", "LJL", "LLA", "LCO", "TCL"]
 LEAGUES = {k: k for k in MAJOR + MINOR}
 
-# 中文名
+# 中文名（一线名单按「年份 + 队伍 + ID」从名册认人，见 names.py；这张按 ID 的表只剩退役传奇在用）
+from names import name_for
 cn = {}
 for r in csv.DictReader(open(os.path.join(OUT, "players_master.csv"), encoding="utf-8-sig")):
     k = (r.get("player_id") or "").lower()
@@ -110,7 +111,7 @@ for lg in LEAGUES:
             rr = rate.get(nm, {})
             players.append({
                 "id": nm,
-                "cn": cn.get(nm.lower(), ""),
+                "cn": name_for(2022, tn, nm, lg) or "",   # 同 ID 多人按名册认人（names.py）
                 "pos": pos,
                 "posCn": POS_CN[pos],
                 "age": int(rr["年龄"]) if rr.get("年龄") else None,

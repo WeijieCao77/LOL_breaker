@@ -159,8 +159,10 @@ def carried(pid):
     return None, None
 
 
-def pl(pid, pos, r, age, form=52):
-    return [pid, cn.get(pid.lower(), ""), pos, age, [max(20, min(99, round(r[d]))) for d in DIMS], form]
+def pl(pid, pos, r, age, form=52, team=None, reg=None):
+    # 姓名按「年份 + 队伍 + ID」从名册认人（同 ID 多人时不再按 ID 取第一条，见 names.py）
+    from names import name_for
+    return [pid, name_for(YEAR, team, pid, reg) or "", pos, age, [max(20, min(99, round(r[d]))) for d in DIMS], form]
 
 
 # ---- 上一页（席位继承用）----
@@ -300,7 +302,7 @@ if SOURCE == "oe":
             known = [sum(r.values()) / 5 for _, _, r, _ in pend if r]
             fill = (sum(known) / len(known) - 2) if known else (50 + adj - 2)
             for nm, pos, r, a in pend:
-                players.append(pl(nm, pos, r or {d: fill for d in DIMS}, a))
+                players.append(pl(nm, pos, r or {d: fill for d in DIMS}, a, team=tname[(key, tid)]))
             name = tname[(key, tid)]
             # 席位：同一个 teamid（且上一年确实在这个赛区）> 席位易主表 > 改名表 > 队名/首发重合度
             ptid = prev_tid.get(tid)
@@ -330,7 +332,7 @@ if SOURCE == "oe":
         rr = rate[nm.lower()]
         reg, adj = ACAD[code]
         r = {d: float(rr[d]) + adj if rr.get(d) else 50 + adj for d in DIMS}
-        pool[pos].append((sum(r.values()) / 5, pl(nm, pos, r, a) + [reg]))
+        pool[pos].append((sum(r.values()) / 5, pl(nm, pos, r, a, reg=reg) + [reg]))
 else:
     yr = [r for r in roster_rows if r["year"] == str(YEAR)]
     tier1 = [r for r in yr if r["tier"] == "一级联赛"]
@@ -378,7 +380,7 @@ else:
                     m = sum(r.values()) / 5
                     if m < fill - 6:
                         r = {d: v + (fill - 6 - m) for d, v in r.items()}
-                players.append(pl(pid, pos, r, age_of(pid, 22)))
+                players.append(pl(pid, pos, r, age_of(pid, 22), team=team))
             clean = re.sub(r"\s*\(.*?\)\s*$", "", team)
             ids = [pid for pid, _ in roster]
             sc = SUCC.get(YEAR, {}).get(team) or SUCC.get(YEAR, {}).get(clean)
@@ -407,7 +409,7 @@ else:
         reg, adj = ACAD[lgc]
         rr, _ = carried(pid)
         r = rr or {d: 50 + adj for d in DIMS}
-        pool[pos].append(((sum(r.values()) / 5) + (5 if rr else 0), pl(pid, pos, r, a) + [reg]))
+        pool[pos].append(((sum(r.values()) / 5) + (5 if rr else 0), pl(pid, pos, r, a, reg=reg) + [reg]))
 
 # ---- 同名去重（先于默契计算和小赛区截断）----
 # 同一支队出现在两个联赛（2024 年 LJL 的队伍也打 PCS）：留场次多的那边；

@@ -69,6 +69,7 @@ for y in (2023, 2024, 2025):
     RATE_LDL[y] = rating_table(f"ratings_v2_LDL_{y}.csv")
     RATE_LPL[y] = rating_table(f"ratings_v2_final_{y}.csv")
 
+from names import name_for
 cn, birth = {}, {}
 for r in read_csv("players_master.csv"):
     k = (r.get("player_id") or "").lower()
@@ -161,7 +162,7 @@ for year, (kind, split) in SOURCES.items():
                 rated += 1
             if age is None and pid.lower() in birth:
                 age = year - birth[pid.lower()]
-            players.append([pid, cn.get(pid.lower(), ""), pos, age, dims])
+            players.append([pid, name_for(year, name, pid, "LDL") or "", pos, age, dims])   # 同 ID 多人按名册认人（names.py）
         if len(players) < 5:
             problems.append(f"{year} {name}: 只找到 {len(players)} 个首发")
         page.append({"n": name, "s": SHORT.get(name, name[:4].upper()), "par": par, "p": players, "rated": rated})

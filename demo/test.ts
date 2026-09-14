@@ -49,7 +49,7 @@ if (!fs.existsSync(path.join(HERE, "src", "gen", "avatars.js"))) {
    `ACHIEVEMENTS.push(...ACH_MORE)`，抛 "Cannot access 'ACH_MORE' before initialization"。
    低概率、和这次的改动无关（改前改后各连跑 12 次都没复现，但两边都各撞见过一次），
    顺序载入让求值顺序固定下来，CI 不再看运气。循环引用本身还在，另开一条待办。 */
-const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "hall", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer", "share", "bond", "timeline", "ldl", "fmt", "fmtrun", "fmtspec", "fmtspec2", "fmtctl", "season_tl"];
+const MODULES = ["state", "data", "main", "intl", "team", "rivals", "rankart", "rankicon", "avatar", "shop", "origins", "achieve", "achieve_more", "hall", "squad", "random", "form", "postmatch", "boxscore", "injury", "rotation", "clout", "routine", "auto", "quest", "trait", "nodes", "cup", "save", "tryout", "press", "audio", "stats", "stars", "market", "cer", "share", "bond", "timeline", "ldl", "fmt", "fmtrun", "fmtspec", "fmtspec2", "fmtctl", "season_tl", "namefix"];
 const state = await import("./src/state.ts");
 const mods = [];
 for (const m of MODULES) mods.push(await import(`./src/${m}.ts`));
@@ -1508,6 +1508,48 @@ function cloutChecks() {
 /* ---------------- 成就殿堂自检（2026-09-11 作者拍板「A + B」，奖励每局照发）----------------
    殿堂跨存档、新档只继承殿堂；奖励每一局照发；「几局」按存档编号去重；老档读进来会补记；
    导出带殿堂、导入取并集留最早；「收藏家」只数这一局；localStorage 抛错时游戏照跑。 */
+/* 选手姓名（玩家实锤 2026-09-14：Knight 显示成韩文、Viper 名字错）：同 ID 多人时导出按 ID 取了第一条，配错了人。
+   钉住：一线 / 二队和中韩新秀池的名字里不许出现泰文 / 俄文 / 希腊文 / 阿拉伯文；BLG 的 Knight 是卓定；
+   老档读档按更正表改名，只改「ID + 旧名」对上的，改一遍就记版本不再跑 */
+function nameFixChecks(): string[] {
+  const bad: string[] = [];
+  const odd = /[฀-๿Ѐ-ӿͰ-Ͽ؀-ۿ]/;   // 泰 / 俄 / 希腊 / 阿拉伯
+  const HOME = new Set(["LPL", "LCK", "LDL"]);
+  const readJ = (f: string) => JSON.parse(fs.readFileSync(new URL(`../data/csv/${f}`, import.meta.url), "utf8"));
+  const g22 = readJ("game_data_2022.json");
+  Object.entries<any>(g22.leagues).forEach(([lg, ts]) => { if (HOME.has(lg)) ts.forEach((t: any) => t.players.forEach((p: any) => {
+    if (odd.test(p.cn || "")) bad.push(`2022 ${lg} ${t.name} ${p.id} 的名字是「${p.cn}」`);
+  })); });
+  let knight = 0;
+  for (const y of [2023, 2024, 2025, 2026]) {
+    const pg = readJ(`timeline_${y}.json`);
+    Object.entries<any>(pg.leagues).forEach(([lg, ts]) => { if (HOME.has(lg)) ts.forEach((t: any) => t.p.forEach((p: any) => {
+      if (odd.test(p[1] || "")) bad.push(`${y} ${lg} ${t.n} ${p[0]} 的名字是「${p[1]}」`);
+      if (p[0] === "Knight" && lg === "LPL") { knight++; if (p[1] !== "卓定") bad.push(`${y} ${t.n} 的 Knight 名字是「${p[1]}」，应为卓定`); }
+    })); });
+    (pg.pros || []).forEach((p: any) => { if ((p[6] === "KR" || p[6] === "CN") && odd.test(p[1] || "")) bad.push(`${y} 新秀池 ${p[0]} 的名字是「${p[1]}」`); });
+  }
+  if (!knight) bad.push("时间线里一个 LPL 的 Knight 都没找到，拿来验的样本不对");
+  const ldl = readJ("ldl_pages.json");
+  Object.entries<any>(ldl.years).forEach(([y, ts]) => ts.forEach((t: any) => t.p.forEach((p: any) => {
+    if (odd.test(p[1] || "")) bad.push(`${y} LDL ${t.n} ${p[0]} 的名字是「${p[1]}」`);
+  })));
+  // 老档读档改名
+  const fix = (A.NAME_FIX as [string, string, string][]).find(([id, a]) => id === "Knight" && a === "이건");
+  if (!fix) bad.push("更正表里没有 Knight 이건 → 卓定");
+  else {
+    const s: any = { world: { LPL: [{ name: "BLG", players: [{ id: "Knight", cn: "이건" }, { id: "Knight2", cn: "이건" }] }] }, tlFree: [{ id: "knight", cn: "이건" }], events: [{ text: "Knight（이건）" }] };
+    A.fixPlayerNames(s);
+    if (s.world.LPL[0].players[0].cn !== "卓定") bad.push(`老档里 BLG 的 Knight 读档后还是「${s.world.LPL[0].players[0].cn}」`);
+    if (s.world.LPL[0].players[1].cn !== "이건") bad.push("老档改名改到了 ID 对不上的人");
+    if (s.tlFree[0].cn !== "卓定") bad.push("老档新秀池 / 自由人名单里的名字没改（ID 大小写不同）");
+    if (s.nameFixV !== A.NAME_FIX_VER) bad.push("老档改完名没记版本");
+    s.world.LPL[0].players[0].cn = "이건"; A.fixPlayerNames(s);
+    if (s.world.LPL[0].players[0].cn !== "이건") bad.push("同一版本的改名表跑了第二遍");
+  }
+  return bad;
+}
+
 /* 转会「期望」按这支队的真实首发算（玩家实锤 2026-09-14：弱队写期望 68，真进去队友不到 60）：
    外赛区弱队的期望要跟着它的首发走，LPL 各档不能被这条改动推走，找不到的队 / 青训档退回常数，接受问询进试训用的也是同一个数 */
 function tierExpectChecks(): string[] {
@@ -2056,6 +2098,9 @@ if (isMain && process.argv.includes("--tl-probe")) {
   { const pc = preCareerAchChecks();
     if (pc.length) { console.error("职业前成就自检不通过：\n  " + pc.join("\n  ")); process.exit(1); }
     console.log("职业前成就自检通过：只在第一份合同时结算 · 转会不补发熬出来的 / 野路子 · 回到路人再打杯赛不补发 · 转会出国照样远走他乡"); }
+  { const nf = nameFixChecks();
+    if (nf.length) { console.error("选手姓名自检不通过：\n  " + nf.join("\n  ")); process.exit(1); }
+    console.log("选手姓名自检通过：一线 / 二队 / 中韩新秀池没有串到别国文字 · BLG 的 Knight 是卓定 · 老档按更正表改名只改对得上的、只跑一遍"); }
   { const te = tierExpectChecks();
     if (te.length) { console.error("转会期望自检不通过：\n  " + te.join("\n  ")); process.exit(1); }
     console.log("转会期望自检通过：期望＝首发均值 + 档位加成 · LPL 各档不被推走 · 小赛区弱队不再写 68 · 接受问询的试训用同一个数 · 找不到的队和青训档退回常数"); }

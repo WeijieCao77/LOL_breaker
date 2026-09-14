@@ -1,6 +1,7 @@
 import { hallCount, hallImport, hallRead, hallSeedFrom, hallSweep, hallTitleLine, hallTotal, saveIdOf } from "./hall";
 import { DIMS, GAME_VER, LDL_ROSTER, POSN, PRE_YEAR, REGION_SYN, SEASONS, SPLITS, anchorLeague, capOf, clamp, dimWord, leagueBaseline, q1, rankFull, render, teamCode, trialCanPay } from "./main";
 import { ldlFixOldNames } from "./ldl";
+import { NAME_FIX, NAME_FIX_VER } from "./namefix";
 import { initLedger } from "./shop";
 import { S, setS } from "./state";
 
@@ -150,6 +151,7 @@ export function loadGame() {
     fixScaleV2(S);
     fixSeasonAttr0(S);
     fixLdlNames(S);
+    fixPlayerNames(S);
     fixWl(S);
     fixScaleV3(S);
     fixScaleV4(S);
@@ -172,6 +174,27 @@ export function loadGame() {
   } catch (e) {
     return false;
   }
+}
+
+/* 选手姓名更正（2026-09-14 玩家实锤：Knight 显示成韩文、Viper 名字错）：同 ID 多人时导出配错了人，
+   知名韩国选手换成中文名。数据已经改过，老档里存下来的名字按 NAME_FIX 表改——只改「ID + 旧名」完全对上的，
+   每个版本的表只跑一遍。存档里哪儿都可能有选手对象（世界名单、退役池、新秀池、生涯记录），整棵树走一遍。 */
+export function fixPlayerNames(s) {
+  try {
+    if (!NAME_FIX.length || s.nameFixV === NAME_FIX_VER) return;
+    const m = new Map(NAME_FIX.map(([id, a, b]) => [id.toLowerCase() + "" + a, b]));
+    const walk = (o, depth) => {
+      if (!o || typeof o !== "object" || depth > 14) return;
+      if (Array.isArray(o)) { o.forEach(x => walk(x, depth + 1)); return; }
+      if (typeof o.id === "string" && typeof o.cn === "string") {
+        const b = m.get(o.id.toLowerCase() + "" + o.cn);
+        if (b !== undefined) o.cn = b;
+      }
+      for (const k in o) { const v = o[k]; if (v && typeof v === "object") walk(v, depth + 1); }
+    };
+    walk(s, 0);
+    s.nameFixV = NAME_FIX_VER;
+  } catch (e) {}
 }
 
 /* LDL 真名迁移（2022 LDL 春季赛真实首发，见模板里的 LDL_ROSTER）：
