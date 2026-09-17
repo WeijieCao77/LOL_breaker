@@ -816,7 +816,7 @@ export function apFor(phase){
 }
 export const AP=AP_SEASON;   // 兼容旧引用
 export const SPLITS=["春季赛","夏季赛"];
-export const SEASONS=[
+export const SEASONS_MAIN:any[]=[
   {y:2022,tag:"S12",ver:"射手与龙魂",fav:["bot","sup"],dim:"操作",
    story:"LCK 卷土重来。你刚进联赛，没人认识你。",
    msi:{mode:"groups"},                                  // 小组赛 → 淘汰赛
@@ -852,10 +852,52 @@ export const SEASONS=[
    msi:{mode:"double",playin:{teams:4,take:1,bo:3}},
    worlds:{playin:{teams:4,take:1,bo:3},main:"swiss"}}
 ];
-/* 生涯长度：默认五年（S12–S16，下标 4）；S16 收官时选了「再打」就到 S19（下标 7）。
+/* ---- S6 开档（2026-09-17 作者拍板，策划稿-S6开档（魔王与首冠）.md）：同一条时间线上的两个入口 ----
+   SEASONS 是「这一档」的赛季表：S12 入口＝上面这八条（和以前逐字节一样，S.si=0 仍是 2022，老档不迁移）；
+   S6 入口在前面补 2016–2021 六条，S.si=0 是 2016。开局 / 读档时 applyEntry() 原地换内容（不换数组本身，
+   别的模块 import 进去的引用一直有效）。按年份查的表一律走 siOfYear() / cIdx()，不要再写死下标。 */
+export const SEASONS_EARLY:any[]=[
+  {y:2016,tag:"S6",ver:"魔王的峡谷",fav:["mid"],dim:"操作",
+   story:"SKT 刚拿了第二座世界冠军。没人觉得今年会不一样。",
+   msi:{mode:"groups"},
+   worlds:{main:"groups"}},                               // 2016 没有入围赛：16 队直进小组赛
+  {y:2017,tag:"S7",ver:"元素龙与香炉",fav:["sup","bot"],dim:"运营",
+   story:"世界赛在中国。鸟巢的门票，是给韩国人准备的吗？",
+   msi:{mode:"groups"},
+   worlds:{playin:{teams:12,take:4,bo:2},main:"groups"}},
+  {y:2018,tag:"S8",ver:"符文重做",fav:["top","jng"],dim:"操作",
+   story:"这一年，下路不一定是射手。你们的首冠，可能也不一定。",
+   msi:{mode:"groups"},
+   worlds:{playin:{teams:12,take:4,bo:2},main:"groups"}},
+  {y:2019,tag:"S9",ver:"镀层与节奏",fav:["jng","mid"],dim:"指挥",
+   story:"卫冕？还是你来终结卫冕？",
+   msi:{mode:"groups"},
+   worlds:{playin:{teams:12,take:4,bo:2},main:"groups"}},
+  {y:2020,tag:"S10",ver:"龙魂",fav:["bot"],dim:"运营",noMsi:true,
+   story:"这一年没有 MSI。所有的力气，都留给秋天的上海。",
+   msi:{mode:"groups"},
+   worlds:{playin:{teams:10,take:4,bo:2},main:"groups"}},
+  {y:2021,tag:"S11",ver:"神话装备",fav:["mid","jng"],dim:"心态",
+   story:"第六年。第一章的最后一年——冰岛没有观众，只有你们。",
+   msi:{mode:"groups"},
+   worlds:{playin:{teams:10,take:4,bo:2},main:"groups"}}
+];
+export const ENTRY_YEARS=[2016,2022];
+export const SEASONS:any[]=SEASONS_MAIN.slice();
+export function entryYear(s?){ const o=s||S; return (o&&o.entryYear)||2022; }
+export function applyEntry(y?){
+  const want=(y===2016)?SEASONS_EARLY.concat(SEASONS_MAIN):SEASONS_MAIN;
+  if(SEASONS.length===want.length&&SEASONS[0]===want[0]) return;
+  SEASONS.splice(0,SEASONS.length,...want);
+}
+/* 某一年在这一档里的下标（不在表里返回 -1） */
+export function siOfYear(y){ return SEASONS.findIndex(x=>x.y===y); }
+/* 以 2022 为 0 的老史实表（WORLDS_CANON / LCK_DYNASTY 这类）的下标：S6 档的 2016–2021 是负数，查不到＝没有剧本 */
+export function cIdx(si){ const x=SEASONS[si]; return x?x.y-2022:si; }
+/* 生涯长度：默认打到 2026（S16）；S16 收官时选了「再打」就到 S19。
    凡是原来写 SEASONS.length-1 的地方都改成这个——没选之前媒体不该说「还有三年」。 */
-export const BASE_LAST=4;
-export function lastSeason(){ return (S&&S.extended)?SEASONS.length-1:BASE_LAST; }
+export function baseLast(){ return siOfYear(2026); }
+export function lastSeason(){ return (S&&S.extended)?SEASONS.length-1:baseLast(); }
 /* 年纪大了恢复慢（26+ 八成、28+ 六五折）：每周的自然恢复都乘它；伤病风险 injuryRisk 里本来就按年龄加 */
 export function ageRecoverMul(){ const a=(S&&S.age)||20; return a>=28?0.65:a>=26?0.8:1; }
 /* 世界赛连冠：从夺冠年份表里数最长的一串连续赛季 */
@@ -1391,7 +1433,7 @@ export function anchorLeague(lg,teams,anchorOverride?){
 export function dynastyBonus(players){
   const p=players&&players[0];
   if(!p||p.me||p.lg!=="LCK") return 0;
-  return LCK_DYNASTY[S.si]||0;
+  return LCK_DYNASTY[cIdx(S.si)]||0;
 }
 export function rookieSeason(){ return !!(S.career&&S.career.since!==undefined&&S.career.since===S.si); }
 
@@ -2309,6 +2351,7 @@ export function rankFull(v){
   return cur.n+DIV[d];
 }
 export function startPre(){
+  applyEntry(entryYear());   // 先定这一档的赛季表：下面的建世界、赛制都按它走
   S.preLen=PRE_YEAR;   // 这一档的职业前年长；老档（20 周）读取时 save.ts 按它换算周数
   S.patchSeen=GAME_VER;   // 新开局不弹更新说明
   statEvent("start");
@@ -5044,7 +5087,7 @@ export function viewOffseason(){
   else if(msiYear) label=`<b style="color:var(--gold-hi)">MSI 冠军</b> · 联赛${label}`;
   const last=S.si>=lastSeason();
   // 五年到了：退役还是再打（玩家拍板：三年、每年都问、两座改叫「两冠」、三连才是王朝）
-  const fork=(S.si===BASE_LAST&&!S.extended)?`<div class="ver" style="margin-top:14px"><b>五年到了。</b><span class="tag" title="再战三年刚上线，还在测试：S17–S19 全部活模拟，数值和事件还会调；玩到哪里不对劲请到群里说">测试中</span> 你 ${S.age} 岁${
+  const fork=(S.si===baseLast()&&!S.extended)?`<div class="ver" style="margin-top:14px"><b>五年到了。</b><span class="tag" title="再战三年刚上线，还在测试：S17–S19 全部活模拟，数值和事件还会调；玩到哪里不对劲请到群里说">测试中</span> 你 ${S.age} 岁${
       S.age>=26?"，手速已经在往下走":S.age>=24?"，操作从明年起每年往下掉":"，还在平台期"}。
       退役就看生涯名片；再打三年，年纪会一年比一年大、新人一年比一年快——但三连世界冠军只有这样才拿得到，没拿过冠军的也还有一整个周期。</div>
     <div class="row"><button class="btn primary" id="encore">再打三年（测试中）→</button><button class="btn ghost" id="retire">退役，看生涯名片 →</button></div>`

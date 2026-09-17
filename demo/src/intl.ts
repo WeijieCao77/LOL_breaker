@@ -2,7 +2,7 @@ import { checkAch } from "./achieve";
 import { cerStart } from "./cer";
 import { gicon } from "./avatar";
 import { DATA } from "./data";
-import { FAN_TIERS, MID_WEEKS, SEASONS, SPREAD, breakthrough, clamp, enterBreak, enterPrep, isBenched, power, pushEvent, q1, queueBreakNews, render, champCoreStart } from "./main";
+import { cIdx, FAN_TIERS, MID_WEEKS, SEASONS, SPREAD, breakthrough, clamp, enterBreak, enterPrep, isBenched, power, pushEvent, q1, queueBreakNews, render, champCoreStart } from "./main";
 import { rnd } from "./rng";
 import { addRingTitle, setBreakAgenda } from "./rotation";
 import { realNote, tlCanon, tlIntlMinors, tlMajors, tlOn } from "./timeline";
@@ -103,7 +103,7 @@ export function majorStandings(lg){
   // 按 1−wl 概率收束成史实（LEAGUE_CANON 由史实数据层提供；缺数据就自由模拟）
   try{
     const LC=LEAGUE_CANON;
-    const cn=LC&&LC[lg]&&LC[lg][S.si]?LC[lg][S.si][S.split||0]:null;
+    const cn=LC&&LC[lg]&&LC[lg][cIdx(S.si)]?LC[lg][cIdx(S.si)][S.split||0]:null;
     if(cn&&cn!==S.team&&rk.includes(cn)&&rnd()>=wlOf(lg))
       res=[cn].concat(res.filter(n=>n!==cn)).slice(0,4);
   }catch(e){}
@@ -544,7 +544,7 @@ export function wlRelax(){
 export function canonChamp(type){
   if(type==="fst") return null;   // First Stand 没有史实剧本
   const t=INTL_CANON[type==="msi"?"msi":"worlds"];
-  return (t&&t[S.si])||null;
+  return (t&&t[cIdx(S.si)])||null;
 }
 /* 模拟出的冠军过一道史实闸门：正主在场、没被你亲手打掉，按 1−wl 概率收束。
    注意用 koWins（你赢下的淘汰赛对手）而不是 beaten——beaten 是「交过手」，

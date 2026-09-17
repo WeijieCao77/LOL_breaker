@@ -1,6 +1,6 @@
 import { cloutOf } from "./clout";
 import { myForm } from "./form";
-import { CAP_MAX_BONUS, DIMS, SEASONS, WEEKS, capOf } from "./main";
+import { baseLast, CAP_MAX_BONUS, DIMS, SEASONS, WEEKS, capOf } from "./main";
 import { beatCount } from "./press";
 import { ASSETS, COURSES } from "./shop";
 import { S } from "./state";
@@ -47,7 +47,7 @@ export const ACH_MORE=[
   {id:"latebloom", n:"大器晚成", d:"生涯第一座国际冠军在二十六岁以后。", tag:"荣誉",
    on:"crown", cond:()=>{ const ys=(S.career.worldsYears||[]).concat(S.career.msiYears||[]); return S.age>=26&&ys.length>0&&ys.every(k=>(S.age-(S.si-k))>=26); }, r:{money:1200,fame:160}},
   {id:"lastdance", n:"最后一舞", d:"再战的年份里捧起国际冠军。", tag:"荣誉",
-   on:"crown", cond:()=>!!S.extended&&S.si>4&&(((S.career.worldsYears||[]).includes(S.si))||((S.career.msiYears||[]).includes(S.si))), r:{money:1500,fame:220}},
+   on:"crown", cond:()=>!!S.extended&&S.si>baseLast()&&(((S.career.worldsYears||[]).includes(S.si))||((S.career.msiYears||[]).includes(S.si))), r:{money:1500,fame:220}},
 
   /* ---------- 战绩 ---------- */
   {id:"perfect", n:"全胜赛段", d:"一个赛段的常规赛一场不丢。", tag:"战绩",
@@ -134,7 +134,7 @@ export const ACH_MORE=[
   {id:"see10ret", n:"一代人过去了", d:"见证十位选手退役。", tag:"世界",
    on:"retire", cond:()=>(S.retireSeen||0)>=10, r:{fame:40}},
   {id:"allver", n:"什么版本都打过", d:"经历 S12 到 S16 五个赛季的版本。", tag:"世界",
-   on:"splitend", cond:()=>S.si>=4, r:{money:300,fame:50}},
+   on:"splitend", cond:()=>S.si>=baseLast(), r:{money:300,fame:50}},
   // LDL 是国内二级联赛，不是外赛区——这个判定写在 LDL 存在之前，
   // 玩家签 UP 青训被误发了「远走他乡」（线上抓的）
   {id:"foreign", n:"远走他乡", d:"签下一支外赛区战队。", tag:"世界",

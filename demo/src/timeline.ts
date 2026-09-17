@@ -6,7 +6,7 @@ import tlLogos from "../../data/csv/timeline_logos.json";
 import { initRelations, syncRelations } from "./clout";
 import { DATA } from "./data";
 import { INTL_CANON, LEAGUE_CANON } from "./intl";
-import { CN_FIX, DECAY_W, DIMS, POSN, SEASONS, STAR_FLOOR, WORLD_DRIFT, ageCurve, anchorLeague, avg, buildLDLGen, clamp, makeRookie, markTeamJoin, power, pushEvent, q1, teamCode } from "./main";
+import { cIdx, CN_FIX, DECAY_W, DIMS, POSN, SEASONS, STAR_FLOOR, WORLD_DRIFT, ageCurve, anchorLeague, avg, buildLDLGen, clamp, makeRookie, markTeamJoin, power, pushEvent, q1, teamCode } from "./main";
 import { ldlBuild } from "./ldl";
 import { rnd } from "./rng";
 import { STARS } from "./stars";
@@ -95,9 +95,9 @@ export function lgName(lg, si?) {
 }
 /* 史实表叠加（只对真实时间线的档） */
 export function tlCanon(base, si, kind) {
-  const b = base[si];
+  const b = base[cIdx(si)];
   if (!tlOn()) return b;
-  const add = (kind === "msi" ? TL_MSI_ADD : TL_WORLDS_ADD)[si];
+  const add = (kind === "msi" ? TL_MSI_ADD : TL_WORLDS_ADD)[cIdx(si)];
   if (!add) return b;
   const o = Object.assign({}, b || {});
   Object.keys(add).forEach(lg => { o[lg] = (o[lg] || []).concat(add[lg].filter(n => !(o[lg] || []).includes(n))); });
@@ -561,9 +561,10 @@ export function tlApplyYear(w, y, live) {
    国际赛读 S.honors。只读、不改任何数值，老档一样显示。 */
 export function realChamp(kind, si, lg?, split?) {
   try {
-    if (kind === "msi" || kind === "worlds") { const t = INTL_CANON[kind]; return (t && t[si]) || null; }
+    const k = cIdx(si);
+    if (kind === "msi" || kind === "worlds") { const t = INTL_CANON[kind]; return (t && t[k]) || null; }
     const L = LEAGUE_CANON[lg];
-    return (L && L[si] && L[si][split || 0]) || null;
+    return (L && L[k] && L[k][split || 0]) || null;
   } catch (e) { return null; }
 }
 /* 冠军揭晓那一句后面接的比对（没有史实就不说） */

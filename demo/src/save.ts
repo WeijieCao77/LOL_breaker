@@ -1,5 +1,5 @@
 import { hallCount, hallImport, hallRead, hallSeedFrom, hallSweep, hallTitleLine, hallTotal, saveIdOf } from "./hall";
-import { DIMS, GAME_VER, LDL_ROSTER, POSN, PRE_YEAR, REGION_SYN, SEASONS, SPLITS, anchorLeague, capOf, clamp, dimWord, leagueBaseline, q1, rankFull, render, teamCode, trialCanPay } from "./main";
+import { applyEntry, entryYear, DIMS, GAME_VER, LDL_ROSTER, POSN, PRE_YEAR, REGION_SYN, SEASONS, SPLITS, anchorLeague, capOf, clamp, dimWord, leagueBaseline, q1, rankFull, render, teamCode, trialCanPay } from "./main";
 import { ldlFixOldNames } from "./ldl";
 import { NAME_FIX, NAME_FIX_VER } from "./namefix";
 import { initLedger } from "./shop";
@@ -139,6 +139,7 @@ export function loadGame() {
   if (!blob || blob.bad) return false;
   try {
     setS(blob.S);
+    applyEntry(entryYear());   // S6 开档的存档要先把 2016–2021 补回赛季表，老档（没有 entryYear）就是 S12 入口
     // 存档时被剔除的弹窗字段补回空值，避免到处 undefined
     SAVE_SKIP.forEach(k => { if (S[k] === undefined) S[k] = null; });
     scrubFloats(S);

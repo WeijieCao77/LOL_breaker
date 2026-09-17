@@ -71,6 +71,7 @@ function playOne(opts?) {
   S.name = "T"; S.pos = opts.pos || "mid"; S.origin = opts.origin || "academy";
   S.ageIdx = opts.ageIdx === undefined ? 1 : opts.ageIdx;
   S.bgPick = S.bgOffer[0].k;
+  if (opts.entry) S.entryYear = opts.entry;   // S6 开档：2016 入口
   S.talent = Object.assign({}, opts.talent || (opts.strong ? { 操作: 8, 运营: 6, 心态: 3, 指挥: 2, 体质: 1 } : { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 }));
   A.startPre();
   S = A.S();
@@ -253,7 +254,7 @@ function playOne(opts?) {
       else A.playGame();
     } else if (S.step === "offseason") {
       // 休赛期现在是可玩的几周：先把结算页点掉，再把每周的行动点用完
-      if (!S.off) { if (opts.encore && S.si === A.BASE_LAST && !S.extended) A.encore(); else A.doOffseason(); continue; }
+      if (!S.off) { if (opts.encore && S.si === A.baseLast() && !S.extended) A.encore(); else A.doOffseason(); continue; }
       // 合同到期续约：测试里默认接受（留在想留你的队）；opts.declineRenew 走「拒绝进市场」
       // 只在转会窗真的开着时才处理续约——界面上那张卡就是这么出现的。
       // 原来不看窗口，机器人在世界赛那一段就把字签了，于是「季中窗只有一周」
@@ -964,7 +965,7 @@ function unitChecks() {
   if (r4.signAt && !r4.extended) bad.push("机器人选了再战但 S.extended 没记上");
   if (r4.signAt && r4.extended && r4.si !== A.SEASONS.length - 1) bad.push("再战后没打到 S19 就结束了：si=" + r4.si);
   if (r4.signAt && r4.steps > 4000) bad.push("再战一局的步数异常：" + r4.steps);
-  if (r1.si !== A.BASE_LAST && r1.signAt) bad.push("没选再战的档没停在 S16：si=" + r1.si);
+  if (r1.si !== A.baseLast() && r1.signAt) bad.push("没选再战的档没停在 S16：si=" + r1.si);
   // 仪式与小游戏（2026-09-08）：跳过 = 银档、托管跳过、效果只覆盖一段、颁奖夜算得出来、特训营一年一次；五维和天花板全程不动
   try {
     A.screenCreate(777); const S0 = A.S(); S0.name = "T"; S0.pos = "mid"; S0.origin = "academy"; S0.ageIdx = 1; S0.bgPick = S0.bgOffer[0].k;
@@ -2131,11 +2132,11 @@ function tlProbe() {
 /* 回归指纹：npx tsx demo/test.ts --statehash 40 [--strong] [--encore] [--from 1001]
    固定种子各跑一局，打印整局结束时存档的 sha1（去掉 saveId：它带时钟）。
    改结构（比如 S6 开档）时拿它证明「老入口逐字节不变」：改前改后各跑一次，逐行 diff。 */
-function stateHash(n: number, strong: boolean, encore: boolean, from: number) {
+function stateHash(n: number, strong: boolean, encore: boolean, from: number, entry?: number) {
   const skip = new Set(["saveId"]);
   for (let i = 0; i < n; i++) {
     const seed = from + i;
-    playOne({ seed, strong, encore });
+    playOne({ seed, strong, encore, entry });
     const json = JSON.stringify(A.S(), (k, v) => skip.has(k) ? undefined : v);
     if (process.env.STATEDUMP) fs.writeFileSync(process.env.STATEDUMP + "." + seed + ".json", json);
     console.log(seed, crypto.createHash("sha1").update(json).digest("hex"), json.length);
@@ -2143,7 +2144,8 @@ function stateHash(n: number, strong: boolean, encore: boolean, from: number) {
 }
 if (isMain && process.argv.includes("--statehash")) {
   const i = process.argv.indexOf("--statehash"), f = process.argv.indexOf("--from");
-  stateHash(parseInt(process.argv[i + 1] || "20", 10) || 20, process.argv.includes("--strong"), process.argv.includes("--encore"), f > 0 ? parseInt(process.argv[f + 1], 10) : 1001);
+  stateHash(parseInt(process.argv[i + 1] || "20", 10) || 20, process.argv.includes("--strong"), process.argv.includes("--encore"), f > 0 ? parseInt(process.argv[f + 1], 10) : 1001,
+    process.argv.includes("--entry") ? parseInt(process.argv[process.argv.indexOf("--entry") + 1], 10) : undefined);
 } else if (isMain && process.argv.includes("--tl-probe")) {
   tlProbe();
 } else if (isMain && process.argv.includes("--batch")) {
@@ -2160,6 +2162,17 @@ if (isMain && process.argv.includes("--statehash")) {
   { const tb = timelineChecks();
     if (tb.length) { console.error("真实时间线自检不通过：\n - " + tb.join("\n - ")); process.exit(1); }
     console.log("真实时间线自检通过：2022–2027 队数与赛区结构 · 名单去重 · 数值范围 · 锚定均值 · T1/NIP 名单"); }
+  { const bad: string[] = [];   // S6 开档框架：两个入口的赛季表、按年份查表、读档还原
+    A.applyEntry(2022);
+    if (A.SEASONS.length !== 8 || A.SEASONS[0].y !== 2022 || A.baseLast() !== 4 || A.cIdx(0) !== 0) bad.push("S12 入口的赛季表变了");
+    A.applyEntry(2016);
+    if (A.SEASONS.length !== 14 || A.SEASONS[0].tag !== "S6" || A.SEASONS[13].tag !== "S19") bad.push("S6 入口的赛季表不是 S6–S19");
+    if (A.baseLast() !== 10 || A.siOfYear(2022) !== 6 || A.cIdx(6) !== 0 || A.cIdx(2) !== -4) bad.push("S6 入口的年份下标算错");
+    if (!A.SEASONS.find((x: any) => x.y === 2020).noMsi) bad.push("2020 没标取消 MSI");
+    A.applyEntry(2022);
+    if (A.SEASONS.length !== 8) bad.push("换回 S12 入口没还原");
+    if (bad.length) { console.error("S6 开档框架自检不通过：\n - " + bad.join("\n - ")); process.exit(1); }
+    console.log("S6 开档框架自检通过：两个入口的赛季表 · 按年份查史实表 · 换入口能还原"); }
   { const fs1 = FC.fmtSpecChecks();
     if (fs1.length) { console.error("真实赛制自检不通过：\n - " + fs1.join("\n - ")); process.exit(1); }
     console.log("真实赛制自检通过：四大赛区 2022–2028 逐年跑通 · LPL 登峰/坚毅/涅槃与中途淘汰 · LCK 第 3–5 轮 · LEC 赛季总决赛 · LCS 瑞士轮 · 国际赛名额总数"); }

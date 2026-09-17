@@ -8137,9 +8137,9 @@ header.top.compact>.theme-top{display:none}
     return m && m[lg] || lg;
   }
   function tlCanon(base, si, kind) {
-    const b = base[si];
+    const b = base[cIdx(si)];
     if (!tlOn()) return b;
-    const add = (kind === "msi" ? TL_MSI_ADD : TL_WORLDS_ADD)[si];
+    const add = (kind === "msi" ? TL_MSI_ADD : TL_WORLDS_ADD)[cIdx(si)];
     if (!add) return b;
     const o = Object.assign({}, b || {});
     Object.keys(add).forEach((lg) => {
@@ -8747,12 +8747,13 @@ header.top.compact>.theme-top{display:none}
   }
   function realChamp(kind, si, lg, split) {
     try {
+      const k = cIdx(si);
       if (kind === "msi" || kind === "worlds") {
         const t = INTL_CANON[kind];
-        return t && t[si] || null;
+        return t && t[k] || null;
       }
       const L = LEAGUE_CANON[lg];
-      return L && L[si] && L[si][split || 0] || null;
+      return L && L[k] && L[k][split || 0] || null;
     } catch (e) {
       return null;
     }
@@ -9246,6 +9247,7 @@ header.top.compact>.theme-top{display:none}
     if (!blob || blob.bad) return false;
     try {
       setS(blob.S);
+      applyEntry(entryYear());
       SAVE_SKIP.forEach((k) => {
         if (S[k] === void 0) S[k] = null;
       });
@@ -15650,7 +15652,7 @@ header.top.compact>.theme-top{display:none}
     let res = [champ, runner, rest[0], rest[1]];
     try {
       const LC = LEAGUE_CANON;
-      const cn = LC && LC[lg] && LC[lg][S.si] ? LC[lg][S.si][S.split || 0] : null;
+      const cn = LC && LC[lg] && LC[lg][cIdx(S.si)] ? LC[lg][cIdx(S.si)][S.split || 0] : null;
       if (cn && cn !== S.team && rk.includes(cn) && rnd() >= wlOf(lg))
         res = [cn].concat(res.filter((n) => n !== cn)).slice(0, 4);
     } catch (e) {
@@ -16126,7 +16128,7 @@ header.top.compact>.theme-top{display:none}
   function canonChamp(type) {
     if (type === "fst") return null;
     const t = INTL_CANON[type === "msi" ? "msi" : "worlds"];
-    return t && t[S.si] || null;
+    return t && t[cIdx(S.si)] || null;
   }
   function convergeChamp(type, field, simmed) {
     const canon = canonChamp(type);
@@ -17130,7 +17132,7 @@ header.top.compact>.theme-top{display:none}
       d: "再战的年份里捧起国际冠军。",
       tag: "荣誉",
       on: "crown",
-      cond: () => !!S.extended && S.si > 4 && ((S.career.worldsYears || []).includes(S.si) || (S.career.msiYears || []).includes(S.si)),
+      cond: () => !!S.extended && S.si > baseLast() && ((S.career.worldsYears || []).includes(S.si) || (S.career.msiYears || []).includes(S.si)),
       r: { money: 1500, fame: 220 }
     },
     /* ---------- 战绩 ---------- */
@@ -17467,7 +17469,7 @@ header.top.compact>.theme-top{display:none}
       d: "经历 S12 到 S16 五个赛季的版本。",
       tag: "世界",
       on: "splitend",
-      cond: () => S.si >= 4,
+      cond: () => S.si >= baseLast(),
       r: { money: 300, fame: 50 }
     },
     // LDL 是国内二级联赛，不是外赛区——这个判定写在 LDL 存在之前，
@@ -20576,7 +20578,7 @@ header.top.compact>.theme-top{display:none}
   }
   var AP = AP_SEASON;
   var SPLITS = ["春季赛", "夏季赛"];
-  var SEASONS = [
+  var SEASONS_MAIN = [
     {
       y: 2022,
       tag: "S12",
@@ -20671,9 +20673,92 @@ header.top.compact>.theme-top{display:none}
       worlds: { playin: { teams: 4, take: 1, bo: 3 }, main: "swiss" }
     }
   ];
-  var BASE_LAST = 4;
+  var SEASONS_EARLY = [
+    {
+      y: 2016,
+      tag: "S6",
+      ver: "魔王的峡谷",
+      fav: ["mid"],
+      dim: "操作",
+      story: "SKT 刚拿了第二座世界冠军。没人觉得今年会不一样。",
+      msi: { mode: "groups" },
+      worlds: { main: "groups" }
+    },
+    // 2016 没有入围赛：16 队直进小组赛
+    {
+      y: 2017,
+      tag: "S7",
+      ver: "元素龙与香炉",
+      fav: ["sup", "bot"],
+      dim: "运营",
+      story: "世界赛在中国。鸟巢的门票，是给韩国人准备的吗？",
+      msi: { mode: "groups" },
+      worlds: { playin: { teams: 12, take: 4, bo: 2 }, main: "groups" }
+    },
+    {
+      y: 2018,
+      tag: "S8",
+      ver: "符文重做",
+      fav: ["top", "jng"],
+      dim: "操作",
+      story: "这一年，下路不一定是射手。你们的首冠，可能也不一定。",
+      msi: { mode: "groups" },
+      worlds: { playin: { teams: 12, take: 4, bo: 2 }, main: "groups" }
+    },
+    {
+      y: 2019,
+      tag: "S9",
+      ver: "镀层与节奏",
+      fav: ["jng", "mid"],
+      dim: "指挥",
+      story: "卫冕？还是你来终结卫冕？",
+      msi: { mode: "groups" },
+      worlds: { playin: { teams: 12, take: 4, bo: 2 }, main: "groups" }
+    },
+    {
+      y: 2020,
+      tag: "S10",
+      ver: "龙魂",
+      fav: ["bot"],
+      dim: "运营",
+      noMsi: true,
+      story: "这一年没有 MSI。所有的力气，都留给秋天的上海。",
+      msi: { mode: "groups" },
+      worlds: { playin: { teams: 10, take: 4, bo: 2 }, main: "groups" }
+    },
+    {
+      y: 2021,
+      tag: "S11",
+      ver: "神话装备",
+      fav: ["mid", "jng"],
+      dim: "心态",
+      story: "第六年。第一章的最后一年——冰岛没有观众，只有你们。",
+      msi: { mode: "groups" },
+      worlds: { playin: { teams: 10, take: 4, bo: 2 }, main: "groups" }
+    }
+  ];
+  var SEASONS = SEASONS_MAIN.slice();
+  function entryYear(s) {
+    const o = s || S;
+    return o && o.entryYear || 2022;
+  }
+  function applyEntry(y) {
+    const want = y === 2016 ? SEASONS_EARLY.concat(SEASONS_MAIN) : SEASONS_MAIN;
+    if (SEASONS.length === want.length && SEASONS[0] === want[0]) return;
+    SEASONS.splice(0, SEASONS.length, ...want);
+  }
+  function siOfYear(y) {
+    return SEASONS.findIndex((x) => x.y === y);
+  }
+  function cIdx(si) {
+    const x = SEASONS[si];
+    return x ? x.y - 2022 : si;
+  }
+  function baseLast() {
+    return siOfYear(2026);
+  }
   function lastSeason() {
-    return S && S.extended ? SEASONS.length - 1 : BASE_LAST;
+    return S && S.extended ? SEASONS.length - 1 : baseLast();
   }
   function ageRecoverMul() {
     const a = S && S.age || 20;
@@ -21186,7 +21271,7 @@ header.top.compact>.theme-top{display:none}
   function dynastyBonus2(players) {
     const p = players && players[0];
     if (!p || p.me || p.lg !== "LCK") return 0;
-    return LCK_DYNASTY[S.si] || 0;
+    return LCK_DYNASTY[cIdx(S.si)] || 0;
   }
   function rookieSeason() {
     return !!(S.career && S.career.since !== void 0 && S.career.since === S.si);
@@ -22052,6 +22137,7 @@ header.top.compact>.theme-top{display:none}
     return cur.n + DIV[d];
   }
   function startPre() {
+    applyEntry(entryYear());
     S.preLen = PRE_YEAR;
     S.patchSeen = GAME_VER;
     statEvent("start");
@@ -24809,7 +24895,7 @@ header.top.compact>.theme-top{display:none}
     if (wcYear) label = `<b style="color:var(--gold-hi)">世界冠军</b> · 联赛${label}`;
     else if (msiYear) label = `<b style="color:var(--gold-hi)">MSI 冠军</b> · 联赛${label}`;
     const last = S.si >= lastSeason();
-    const fork = S.si === BASE_LAST && !S.extended ? `<div class="ver" style="margin-top:14px"><b>五年到了。</b><span class="tag" title="再战三年刚上线，还在测试：S17–S19 全部活模拟，数值和事件还会调；玩到哪里不对劲请到群里说">测试中</span> 你 ${S.age} 岁${S.age >= 26 ? "，手速已经在往下走" : S.age >= 24 ? "，操作从明年起每年往下掉" : "，还在平台期"}。
+    const fork = S.si === baseLast() && !S.extended ? `<div class="ver" style="margin-top:14px"><b>五年到了。</b><span class="tag" title="再战三年刚上线，还在测试：S17–S19 全部活模拟，数值和事件还会调；玩到哪里不对劲请到群里说">测试中</span> 你 ${S.age} 岁${S.age >= 26 ? "，手速已经在往下走" : S.age >= 24 ? "，操作从明年起每年往下掉" : "，还在平台期"}。
       退役就看生涯名片；再打三年，年纪会一年比一年大、新人一年比一年快——但三连世界冠军只有这样才拿得到，没拿过冠军的也还有一整个周期。</div>
     <div class="row"><button class="btn primary" id="encore">再打三年（测试中）→</button><button class="btn ghost" id="retire">退役，看生涯名片 →</button></div>` : S.extended && !last ? `<div class="row"><button class="btn primary" id="off">再打一年 · ${SEASONS[S.si + 1].tag} 备战 →</button><button class="btn ghost" id="retire">就到这里，退役 →</button></div>` : `<div class="row"><button class="btn primary" id="off">${last ? "生涯总结 →" : `进入休赛期 · ${SEASONS[S.si + 1].tag} 备战 →`}</button></div>`;
     return `${champ}<div class="card">
