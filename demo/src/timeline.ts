@@ -67,6 +67,12 @@ const REG_OF: any = { LPL: "CN", LDL: "CN", LCK: "KR", LEC: "EU", TCL: "EU", LCS
   PCS: "PAC", VCS: "PAC", LJL: "PAC", LCP: "PAC", LCO: "PAC" };
 /* 每年休赛期的赛区改制（真实历史） */
 export const TL_STRUCT_NEWS: any = {
+  /* S6 开档：2017–2021（只写结构性的事，不写比赛结果） */
+  2017: "LPL 宣布 2018 年起实行联盟化：今年春季赛后是最后一次升降级。",
+  2018: "LSPL 与城市赛体系整合为 <b>LDL</b>；LPL 扩军到 14 支队伍；北美联赛实行联盟化。",
+  2019: "EU LCS 更名为 <b>LEC</b> 并实行联盟化，NA LCS 更名为 <b>LCS</b>；LPL 扩军到 16 支队伍、不再分组。",
+  2020: "LMS 与东南亚赛区合并为 <b>PCS</b>；LPL 扩军到 17 支队伍。",
+  2021: "LCK 实行联盟化，取消升降级。",
   2023: "LCO 与 TCL 不再有国际赛直通名额（两地联赛照常进行）。",
   2024: "LCS 缩编到 8 支队伍。",
   2025: "赛区大改制：LCS 改为 <b>LTA 北区</b>，CBLOL 与 LLA 合并为 <b>LTA 南区</b>；PCS、VCS、LJL 的头部队伍组成新赛区 <b>LCP</b>；LPL 缩编到 16 支队伍。",
@@ -630,6 +636,16 @@ export function rewriteRows() {
   }
   rows.forEach(x => { x.same = x.game === x.real; x.mine = !!(S.team && x.game === S.team) || ((S.career && S.career.titles) || []).includes(x.ev.replace(/(春季赛|夏季赛)$/, m => m)); });
   return rows;
+}
+/* 第一章收官卡上的三条（世界赛 > MSI > 联赛，只取和史实不一样的） */
+export function rewriteTop3() {
+  try {
+    const rows = rewriteRows().filter(x => !x.same);
+    const w = (x: any) => (x.ev.includes("世界赛") ? 3 : x.ev.includes("MSI") ? 2 : 1);
+    const top = rows.sort((a, b) => w(b) - w(a) || a.si - b.si).slice(0, 3);
+    if (!top.length) return "你打过的每一届冠军，都和真实历史一样落到了原主手里。";
+    return "你改写了：" + top.map(x => `${x.ev} 真实历史是 <b>${x.real}</b>，你的世界线里是 <b>${x.game}</b>`).join("；") + "。";
+  } catch (e) { return ""; }
 }
 export function rewriteCard() {
   if (!S || !S.career) return "";

@@ -25,7 +25,7 @@ import { themeSeg, themeFull } from "./theme";
 import { rankBadge, rankIcon, teamLogo } from "./rankicon";
 import { noteGrudge, noteRevenge, rivalBoost, rivalCard } from "./rivals";
 import { addRingTitle, breakAgendaCard, fixNote, fixtureCard, fixtureStrip, mateInjuryHit, mateInjuryNote, mateInjuryRoll, mateInjuryTag, mateInjuryTick, ringTitles, rotationAfterMatch, scrimCard, scrimPanel, scrimPick, scrimTrialCheck, setBreakAgenda, startScrim, subProxyR, titleCount, titlesText } from "./rotation";
-import { lgName, noteLeagueChamp, realNote, rewriteCard, tlApplyYear, tlCatchUp, tlDisplace, tlMajors, tlOn, tlOverwrites, tlPopCard, tlReal, tlRookie, tlYearTurn } from "./timeline";
+import { lgName, noteLeagueChamp, realNote, rewriteCard, rewriteTop3, tlApplyYear, tlCatchUp, tlDisplace, tlMajors, tlOn, tlOverwrites, tlPopCard, tlReal, tlRookie, tlYearTurn } from "./timeline";
 import { actListText, archiveWeek, clearPlan, noteAct, quickBtn, quickPlan, quickPlanPre, repeatLast, routineBar, runActs, runPlan, savePlan } from "./routine";
 import { askConfirm, confirmCard, continueCard, dropSave, escapeHtml, exportSave, importSave, loadGame, meName, safeName, saveBar, saveGame } from "./save";
 import { addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, noteStream, noteStreamMoney, PRIZE_PO, PRIZE_PO_LDL, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
@@ -883,6 +883,13 @@ export const SEASONS_EARLY:any[]=[
    worlds:{playin:{teams:10,take:4,bo:2},main:"groups"}}
 ];
 export const ENTRY_YEARS=[2016,2022];
+/* 建档页「从哪一年出道」两张卡（照 val_player 的 ENTRY_CN：name / tag / blurb） */
+export const ENTRY_CARDS=[
+  {y:2016,tag:"S6",name:"改变历史",sub:"从过去开始 · 最长 14 个赛季",
+   blurb:"2016 年。SKT 刚拿下第二座世界冠军，LPL 一座都没有。次级联赛还叫 LSPL，LPL 还有降级。接下来六年，你会看着 LPL 从零到三——或者，由你来改写它。第六年打完可以选择退役；继续打，就走进 2022 年的破晓。"},
+  {y:2022,tag:"S12",name:"破晓",sub:"从现在开始 · 五年，可再战三年",
+   blurb:"真实的 2022 年：各赛区的队伍和选手都是这一年真实的样子。2022–2026 照真实名单换人、照真实赛制打，之后的世界由你打出来。"}
+];
 export const SEASONS:any[]=SEASONS_MAIN.slice();
 export function entryYear(s?){ const o=s||S; return (o&&o.entryYear)||2022; }
 export function applyEntry(y?){
@@ -897,7 +904,11 @@ export function cIdx(si){ const x=SEASONS[si]; return x?x.y-2022:si; }
 /* 生涯长度：默认打到 2026（S16）；S16 收官时选了「再打」就到 S19。
    凡是原来写 SEASONS.length-1 的地方都改成这个——没选之前媒体不该说「还有三年」。 */
 export function baseLast(){ return siOfYear(2026); }
-export function lastSeason(){ return (S&&S.extended)?SEASONS.length-1:baseLast(); }
+export function lastSeason(){
+  if(S&&S.extended) return SEASONS.length-1;
+  if(entryYear()===2016&&!(S&&S.ch1Go)) return siOfYear(2021);   // S6 开档：第一章打到 2021，收官卡上选「走进 2022」才往下走
+  return baseLast();
+}
 /* 年纪大了恢复慢（26+ 八成、28+ 六五折）：每周的自然恢复都乘它；伤病风险 injuryRisk 里本来就按年龄加 */
 export function ageRecoverMul(){ const a=(S&&S.age)||20; return a>=28?0.65:a>=26?0.8:1; }
 /* 世界赛连冠：从夺冠年份表里数最长的一串连续赛季 */
@@ -913,6 +924,12 @@ export function lateTitle(){
   return ys.some(k=>(S.age-(S.si-k))>=26);
 }
 /* S16 收官时选了「再打三年」 */
+/* S6 开档：第一章收官（2021 年末）选择继续 */
+export function ch1Go(){
+  S.ch1Go=true;
+  pushEvent(`<b>第一章 · 2016–2021 收官。</b>你没有退役——走进 2022 年。LCK 卷土重来，新的一代正在冒头；你已经 ${S.age} 岁，是别人口中的老将了。`,"big","生涯");
+  doOffseason();
+}
 export function encore(){
   S.extended=true; S.encoreAt=S.si;
   pushEvent(`<b>五年到了，你没有退役。</b>再打三年——年纪会一年比一年大，新人一年比一年快；但王朝也只有这样才建得起来。`,"big","生涯");
@@ -2204,6 +2221,7 @@ export function summaryCard(){
   return `<div class="rankup"><div class="ru-inner" style="max-width:560px;text-align:left">
     <div class="ru-eyebrow" style="text-align:center">你的起点</div>
     <div class="ru-tier" style="font-size:20px;text-align:center;margin-bottom:16px">${A.a} 岁 · ${B.n}</div>
+    <p class="note" style="text-align:center;margin:-8px 0 12px">出道年份：<b>${entryYear()} · ${entryYear()===2016?"S6":"S12"}</b></p>
     <div class="attrs">${DIMS.map(d=>`
       <div class="at"><div class="lb">${d}</div>
         <div class="track"><div class="fill" style="width:${clamp(attrs[d],0,100)}%"></div>
@@ -2259,7 +2277,16 @@ export function viewCreate(){
   const t=DIMS.map(d=>S.talent[d]); const m=avg(t);
   const sd=Math.sqrt(avg(t.map(x=>(x-m)**2)));
   const ad=clamp(52-(sd-1.8)*7.5,18,96);
+  const ey=entryYear();
   return `${cont}
+  <div class="card">
+    <h2>从哪一年出道<em>同一条时间线，两个入口</em></h2>
+    <div class="grid g2">${ENTRY_CARDS.map(x=>`<button class="opt ${ey===x.y?'on':''}" data-entry="${x.y}">
+      <div class="t">${x.y} · ${x.tag} <span class="tag">${x.name}</span></div>
+      <div class="d" style="color:var(--ink-2)">${x.sub}</div>
+      <div class="d" style="margin-top:5px">${x.blurb}</div></button>`).join("")}</div>
+    ${ey===2016?`<p class="note" style="margin-top:6px">2016 年 LPL 还有升降级：进了一队不等于保住席位。${S.ageIdx!=null&&AGES[S.ageIdx].a>=20?`<br>你 ${AGES[S.ageIdx].a} 岁出道，到 2022 年就 ${AGES[S.ageIdx].a+6} 岁了——老将篇会很难。`:""}</p>`:""}
+  </div>
   <div class="card">
     <h2>第一步 · 选手身份</h2>
     <h3>你的 ID<span class="tag">比赛服上的名字</span></h3>
@@ -5108,7 +5135,10 @@ export function viewOffseason(){
   else if(msiYear) label=`<b style="color:var(--gold-hi)">MSI 冠军</b> · 联赛${label}`;
   const last=S.si>=lastSeason();
   // 五年到了：退役还是再打（玩家拍板：三年、每年都问、两座改叫「两冠」、三连才是王朝）
-  const fork=(S.si===baseLast()&&!S.extended)?`<div class="ver" style="margin-top:14px"><b>五年到了。</b><span class="tag" title="再战三年刚上线，还在测试：S17–S19 全部活模拟，数值和事件还会调；玩到哪里不对劲请到群里说">测试中</span> 你 ${S.age} 岁${
+  const ch1=(entryYear()===2016&&S.si===siOfYear(2021)&&!S.ch1Go)?`<div class="ver" style="margin-top:14px"><b>第一章 · 2016–2021。</b>六年过去了，你 ${S.age} 岁。
+      ${rewriteTop3()}退役就看这六年的生涯名片；继续打，就走进 2022 年——现在这条主线，你会是那里的老将。</div>
+    <div class="row"><button class="btn primary" id="ch1go">走进 2022 →</button><button class="btn ghost" id="retire">退役，看生涯名片 →</button></div>`:"";
+  const fork=ch1?ch1:(S.si===baseLast()&&!S.extended)?`<div class="ver" style="margin-top:14px"><b>${entryYear()===2016?`第 ${S.si+1} 年。`:"五年到了。"}</b><span class="tag" title="再战三年刚上线，还在测试：S17–S19 全部活模拟，数值和事件还会调；玩到哪里不对劲请到群里说">测试中</span> 你 ${S.age} 岁${
       S.age>=26?"，手速已经在往下走":S.age>=24?"，操作从明年起每年往下掉":"，还在平台期"}。
       退役就看生涯名片；再打三年，年纪会一年比一年大、新人一年比一年快——但三连世界冠军只有这样才拿得到，没拿过冠军的也还有一整个周期。</div>
     <div class="row"><button class="btn primary" id="encore">再打三年（测试中）→</button><button class="btn ghost" id="retire">退役，看生涯名片 →</button></div>`
@@ -6974,6 +7004,7 @@ export function bind(){
     S.bgPick=b.dataset.bg;
     const bb=bgOf(S.bgPick); if(bb&&bb.origin) S.origin=bb.origin;   // 出身随背景走
     render()});
+  st.querySelectorAll("[data-entry]").forEach((b: any)=>b.onclick=()=>{S.entryYear=+b.dataset.entry;render()});
   const rr=$("reroll"); if(rr) rr.onclick=()=>{S.bgOffer=drawBackgrounds();S.bgPick=null;render()};
   const trd=$("talrand"); if(trd) trd.onclick=()=>{ randomTalent(); };
   const ru=$("rankupok"); if(ru) ru.onclick=()=>{S.rankUp=null;render()};
@@ -7289,6 +7320,7 @@ export function bind(){
   st.querySelectorAll("[data-achv]").forEach((b: any)=>b.onclick=()=>{ S.achView=b.dataset.achv==="hall"?"hall":"save"; render(); });
   const of=$("off"); if(of) of.onclick=doOffseason;
   const _enc=$("encore"); if(_enc) _enc.onclick=encore;
+  const _c1=$("ch1go"); if(_c1) _c1.onclick=ch1Go;
   const _ret=$("retire"); if(_ret) _ret.onclick=()=>askConfirm("退役",`<b>${meName()}</b> 就此退役？之后是生涯名片，不能再回来。`,"退役",retireNow);
   st.querySelectorAll("[data-ef]").forEach((b: any)=>b.onclick=()=>{S.evFilter=b.dataset.ef;render()});
   const ag=$("again"); if(ag) ag.onclick=()=>screenCreate();

@@ -254,7 +254,9 @@ function playOne(opts?) {
       else A.playGame();
     } else if (S.step === "offseason") {
       // 休赛期现在是可玩的几周：先把结算页点掉，再把每周的行动点用完
-      if (!S.off) { if (opts.encore && S.si === A.baseLast() && !S.extended) A.encore(); else A.doOffseason(); continue; }
+      if (!S.off) {
+        if (A.entryYear() === 2016 && S.si === A.siOfYear(2021) && !S.ch1Go && opts.ch1 !== false) { A.ch1Go(); continue; }   // S6 开档：第一章收官默认继续
+        if (opts.encore && S.si === A.baseLast() && !S.extended) A.encore(); else A.doOffseason(); continue; }
       // 合同到期续约：测试里默认接受（留在想留你的队）；opts.declineRenew 走「拒绝进市场」
       // 只在转会窗真的开着时才处理续约——界面上那张卡就是这么出现的。
       // 原来不看窗口，机器人在世界赛那一段就把字签了，于是「季中窗只有一周」
@@ -2307,6 +2309,16 @@ const BALL_WORDS = ["球队", "球员", "球迷", "球星", "球场", "赢球", 
    这个前提一旦变了（谁给别的赛区也做了二队），下面 LDL_ONLY_STILL_TRUE 那条会先红。 */
 const LDL_ONLY = /^(?:(?!\b(LPL|LCK|LEC|LCS|PCS|VCS|LJL)\b).)*$/s;
 const LEAGUE_OK: Record<string, string> = {
+  'blurb:"2016 年。SKT 刚拿下第二座世界冠军，LPL 一座都没有。次级联赛还叫 LSPL，LPL 还有降级。接下来六年，你会看着 LPL 从零到三——或者，由你来改写它。第六年打完可以选择退役；继续打，就走进 2022 年的破晓。"},':
+    "S6 开档建档页的入口卡（main.ts ENTRY_CARDS）：讲的是 2016 年的世界局势，玩家这时还没有赛区",
+  'pushEvent(`<b>第一章 · 2016–2021 收官。</b>你没有退役——走进 2022 年。LCK 卷土重来，新的一代正在冒头；你已经 ${S.age} 岁，是别人口中的老将了。`,"big","生涯");':
+    "S6 开档第一章收官（ch1Go）：讲的是 2022 年世界局势，和 S12 的 story 同一句话",
+  '2017: "LPL 宣布 2018 年起实行联盟化：今年春季赛后是最后一次升降级。",':
+    "S6 开档：真实时间线的年度赛区改制新闻（timeline.ts 的 TL_STRUCT_NEWS），写的是那一年真实发生的事，对所有赛区的玩家都成立",
+  '2018: "LSPL 与城市赛体系整合为 <b>LDL</b>；LPL 扩军到 14 支队伍；北美联赛实行联盟化。",': "同上",
+  '2019: "EU LCS 更名为 <b>LEC</b> 并实行联盟化，NA LCS 更名为 <b>LCS</b>；LPL 扩军到 16 支队伍、不再分组。",': "同上",
+  '2020: "LMS 与东南亚赛区合并为 <b>PCS</b>；LPL 扩军到 17 支队伍。",': "同上",
+  '2021: "LCK 实行联盟化，取消升降级。",': "同上",
   '2024: "LCS 缩编到 8 支队伍。",':
     "真实时间线的年度赛区改制新闻（timeline.ts 的 TL_STRUCT_NEWS）：写的是那一年真实发生的事，对所有赛区的玩家都成立",
   '2025: "赛区大改制：LCS 改为 <b>LTA 北区</b>，CBLOL 与 LLA 合并为 <b>LTA 南区</b>；PCS、VCS、LJL 的头部队伍组成新赛区 <b>LCP</b>；LPL 缩编到 16 支队伍。",':
