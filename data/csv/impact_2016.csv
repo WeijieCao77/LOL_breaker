@@ -1,0 +1,701 @@
+﻿player_id,position,league,tier,games,impact_raw,impact_z,impact_100
+Clearlove,jng,LPL,1,72,0.2697,2.742,80.6
+Deft,bot,LPL,1,72,0.2697,2.742,80.6
+Meiko,sup,LPL,1,72,0.2697,2.742,80.6
+GorillA,sup,LCK,1,115,0.2656,2.701,80.5
+Peanut,jng,LCK,1,115,0.2656,2.701,80.5
+PraY,bot,LCK,1,115,0.2656,2.701,80.5
+Smeb,top,LCK,1,115,0.2656,2.701,80.5
+Albis,sup,LMS,2,79,0.2652,2.697,80.5
+Ziv,top,LMS,2,79,0.2652,2.697,80.5
+Faker,mid,LCK,1,147,0.2626,2.67,80.5
+Kuro,mid,LCK,1,94,0.2498,2.54,80.2
+Bang,bot,LCK,1,148,0.2445,2.486,80.1
+Wolf,sup,LCK,1,148,0.2445,2.486,80.1
+NL,bot,LMS,2,84,0.2441,2.482,80.1
+Mouse,top,LPL,1,61,0.2402,2.441,80.0
+Duke,top,LCK,1,143,0.2291,2.329,79.8
+Ruler,bot,LCK,1,113,0.2279,2.317,79.7
+An,bot,LMS,2,73,0.2226,2.262,79.6
+Biofrost,sup,NA LCS,1,63,0.2125,2.159,79.3
+Doublelift,bot,NA LCS,1,92,0.2114,2.148,79.2
+Scout,mid,LPL,1,61,0.1983,2.015,78.8
+Mountain,jng,LMS,2,69,0.196,1.992,78.7
+Perkz,mid,EU LCS,1,86,0.1954,1.986,78.7
+Trick,jng,EU LCS,1,86,0.1954,1.986,78.7
+Karsa,jng,LMS,2,95,0.1926,1.957,78.5
+Maple,mid,LMS,2,95,0.1926,1.957,78.5
+SwordArt,sup,LMS,2,95,0.1926,1.957,78.5
+Adrian,sup,NA LCS,1,81,0.1886,1.916,78.4
+Huni,top,NA LCS,1,81,0.1886,1.916,78.4
+Bjergsen,mid,NA LCS,1,95,0.187,1.9,78.3
+Hauntzer,top,NA LCS,1,95,0.187,1.9,78.3
+Svenskeren,jng,NA LCS,1,95,0.187,1.9,78.3
+Looper,top,LPL,1,91,0.185,1.879,78.2
+Mata,sup,LPL,1,91,0.185,1.879,78.2
+Mlxg,jng,LPL,1,91,0.185,1.879,78.2
+Xiaohu,mid,LPL,1,91,0.185,1.879,78.2
+k1ng,bot,OPL,2,56,0.1839,1.868,78.2
+Reignover,jng,NA LCS,1,88,0.1838,1.867,78.1
+Blank,jng,LCK,1,104,0.183,1.858,78.1
+Score,jng,LCK,1,110,0.1787,1.815,77.9
+Ambition,jng,LCK,1,129,0.1759,1.786,77.8
+Crown,mid,LCK,1,129,0.1759,1.786,77.8
+Pobelter,mid,NA LCS,1,90,0.1701,1.727,77.4
+Carbon,jng,OPL,2,61,0.1688,1.715,77.4
+Chuz,mid,OPL,2,61,0.1688,1.715,77.4
+Westdoor,mid,LMS,2,62,0.1665,1.691,77.2
+CuVee,top,LCK,1,125,0.1656,1.681,77.2
+Mithy,sup,EU LCS,1,84,0.1648,1.674,77.1
+Zven,bot,EU LCS,1,84,0.1648,1.674,77.1
+WildTurtle,bot,NA LCS,1,84,0.1643,1.668,77.1
+Tally,top,OPL,2,52,0.1634,1.66,77.1
+Regret9,sup,OPL,2,52,0.1626,1.651,77.0
+Arrow,bot,LCK,1,111,0.1623,1.648,77.0
+Fly,mid,LCK,1,111,0.1623,1.648,77.0
+Ssumday,top,LCK,1,111,0.1623,1.648,77.0
+Fesh,jng,OCS,2,26,0.1607,1.632,76.9
+Ceros,mid,LJL,2,37,0.1598,1.623,76.8
+viviD,sup,LJL,2,37,0.1598,1.623,76.8
+Hachani,sup,LCK,1,108,0.1594,1.619,76.8
+Jensen,mid,NA LCS,1,95,0.1573,1.597,76.7
+Sneaky,bot,NA LCS,1,95,0.1573,1.597,76.7
+Punch,jng,CK,2,51,0.1568,1.592,76.6
+MMD,top,LMS,2,82,0.1558,1.582,76.6
+Nulu,mid,EU CS,2,40,0.148,1.503,76.0
+Kira,mid,LCL,2,68,0.1478,1.5,76.0
+Likkrit,sup,LCL,2,68,0.1478,1.5,76.0
+Onesh0tiq,bot,LCL,2,68,0.1478,1.5,76.0
+PvPStejos,jng,LCL,2,68,0.1478,1.5,76.0
+Smurf,top,LCL,2,68,0.1478,1.5,76.0
+Yutapon,top,LJL,2,34,0.1455,1.476,75.8
+Swiffer,mid,OPL,2,52,0.1441,1.462,75.7
+Elwind,top,TCL,2,55,0.1437,1.458,75.7
+Zeitnot,bot,TCL,2,55,0.1437,1.458,75.7
+Meteos,jng,NA LCS,1,73,0.1425,1.446,75.6
+Blinky,bot,OCS,2,26,0.1423,1.445,75.6
+Hans Sama,bot,EU CS,2,45,0.135,1.369,75.0
+Mikyx,sup,EU LCS,1,56,0.1295,1.314,74.5
+BeBe,bot,LMS,2,70,0.1278,1.296,74.4
+EGym,sup,OPL,2,73,0.127,1.288,74.3
+Spookz,jng,OPL,2,73,0.127,1.288,74.3
+Swip3rR,top,OPL,2,73,0.127,1.288,74.3
+Wisdom,jng,EU CS,2,46,0.1266,1.284,74.3
+FORG1VEN,bot,EU LCS,1,62,0.1236,1.253,74.0
+Clid,jng,LSPL,2,46,0.1234,1.252,74.0
+Roach,top,CK,2,54,0.1216,1.234,73.8
+Dumbledoge,sup,TCL,2,90,0.1204,1.221,73.7
+Naru,mid,TCL,2,90,0.1204,1.221,73.7
+Stomaged,jng,TCL,2,90,0.1204,1.221,73.7
+Hai,mid,NA LCS,1,44,0.1197,1.214,73.6
+Catch,jng,LJL,2,36,0.1192,1.208,73.6
+AmazingJ,top,LPL,1,102,0.118,1.196,73.4
+Jinjiao,bot,LPL,1,102,0.118,1.196,73.4
+Avoidless,jng,LPL,1,80,0.1173,1.189,73.4
+Xfq,sup,LSPL,2,43,0.1157,1.173,73.2
+Chieh,sup,LMS,2,73,0.1155,1.171,73.2
+FoFo,mid,LMS,2,73,0.1155,1.171,73.2
+Cpt Jack,bot,LCK,1,28,0.1106,1.121,72.7
+FireRain,mid,LSPL,2,45,0.11,1.115,72.6
+Gamsu,top,EU LCS,1,68,0.1095,1.109,72.6
+Jankos,jng,EU LCS,1,90,0.1083,1.098,72.4
+Odoamne,top,EU LCS,1,90,0.1083,1.098,72.4
+Vander,sup,EU LCS,1,90,0.1083,1.098,72.4
+CoreJJ,sup,LCK,1,66,0.108,1.094,72.4
+REFRA1N,jng,LMS,2,65,0.1058,1.072,72.1
+destiny,sup,OPL,2,27,0.1042,1.056,72.0
+Road,sup,LPL,1,101,0.1017,1.031,71.7
+Lehends,sup,CK,2,29,0.1012,1.026,71.6
+Morning,top,LMS,2,71,0.1012,1.025,71.6
+Alphari,top,EU CS,2,41,0.1011,1.025,71.6
+Raes,bot,OPL,2,60,0.0983,0.996,71.3
+Ali,sup,LSPL,2,28,0.0977,0.99,71.2
+ss17,top,LSPL,2,28,0.0977,0.99,71.2
+Darshan,top,NA LCS,1,113,0.0952,0.964,70.9
+Stixxay,bot,NA LCS,1,113,0.0952,0.964,70.9
+Xmithie,jng,NA LCS,1,113,0.0952,0.964,70.9
+aphromoo,sup,NA LCS,1,113,0.0952,0.964,70.9
+huhi,mid,NA LCS,1,113,0.0952,0.964,70.9
+Doinb,mid,LSPL,2,33,0.093,0.941,70.6
+Impact,top,NA LCS,1,92,0.0928,0.939,70.6
+Ignar,sup,EU CS,2,26,0.0922,0.933,70.5
+BalIs,top,NA LCS,1,46,0.0919,0.93,70.5
+Alone,bot,LSPL,2,22,0.0917,0.928,70.4
+Dardoch,jng,NA LCS,1,86,0.0875,0.886,69.9
+Contractz,jng,NA CS,2,29,0.086,0.87,69.7
+Frozen,mid,LCK,1,34,0.0843,0.853,69.5
+Chelby,jng,OPL,2,56,0.0807,0.816,69.0
+Emp,mid,CLS,2,70,0.079,0.799,68.7
+Lira,jng,LCK,1,94,0.079,0.799,68.7
+Newbie,sup,CLS,2,70,0.079,0.799,68.7
+Kanani,jng,TCL,2,30,0.0788,0.797,68.7
+Athena,mid,LPL,1,50,0.0784,0.793,68.6
+Winged,jng,LCK,1,104,0.0778,0.787,68.5
+LemonNation,sup,NA CS,2,24,0.0771,0.779,68.4
+pyl,sup,LPL,1,37,0.0771,0.78,68.5
+Ryu,mid,EU LCS,1,84,0.0755,0.763,68.2
+LeX,bot,LCL,2,20,0.0738,0.746,68.0
+Twila,mid,LSPL,2,41,0.0727,0.734,67.8
+TrAce,top,LCK,1,96,0.0724,0.732,67.8
+Chelly,bot,CK,2,30,0.071,0.717,67.5
+ADD,top,LCK,1,82,0.0689,0.696,67.2
+Beyond,jng,LCK,1,82,0.0689,0.696,67.2
+Ian,mid,LCK,1,82,0.0689,0.696,67.2
+MaHa,bot,LCK,1,82,0.0689,0.696,67.2
+Max,sup,LCK,1,82,0.0689,0.696,67.2
+Xinyi,jng,LSPL,2,28,0.0688,0.695,67.2
+Hioss,top,TCL,2,35,0.0687,0.694,67.2
+SofM,jng,LPL,1,64,0.0682,0.689,67.1
+Uzi,bot,LPL,1,77,0.0679,0.686,67.1
+fabFabulous,top,TCL,2,44,0.0669,0.676,66.9
+wynn,bot,LSPL,2,36,0.0657,0.664,66.7
+Clowz,top,LSPL,2,65,0.0639,0.645,66.5
+Jockster,sup,CBLOL,2,63,0.0632,0.638,66.4
+Revolta,jng,CBLOL,2,63,0.0632,0.638,66.4
+Yang,top,CBLOL,2,63,0.0632,0.638,66.4
+micaO,bot,CBLOL,2,63,0.0632,0.638,66.4
+tockers,mid,CBLOL,2,63,0.0632,0.638,66.4
+Crash,jng,LCK,1,33,0.0631,0.637,66.3
+Bengi,jng,LCK,1,44,0.0616,0.622,66.1
+Kuzan,mid,LCK,1,96,0.0612,0.618,66.0
+Kikis,top,EU LCS,1,60,0.0606,0.612,65.9
+Trance,sup,NA CS,2,32,0.0606,0.612,65.9
+Dinamox,mid,CLS,2,25,0.0598,0.603,65.8
+Hjarnan,bot,EU LCS,1,22,0.0587,0.592,65.6
+JieZou,sup,LPL,1,68,0.0586,0.592,65.6
+tgun,sup,OPL,2,37,0.0581,0.586,65.5
+Zergsting,sup,TCL,2,53,0.0578,0.583,65.5
+avenuee,mid,TCL,2,53,0.0578,0.583,65.5
+DarkSide,bot,TCL,2,47,0.0572,0.577,65.4
+Xerxe,jng,TCL,2,36,0.0567,0.572,65.3
+ikssu,top,LCK,1,90,0.0564,0.569,65.2
+Ming,sup,LSPL,2,67,0.056,0.565,65.2
+Ning,bot,LSPL,2,67,0.056,0.565,65.2
+Viper,mid,LSPL,2,67,0.056,0.565,65.2
+marilyn,jng,LSPL,2,67,0.056,0.565,65.2
+BaeMe,mid,LSPL,2,53,0.0558,0.563,65.2
+Cris,top,NA CS,2,35,0.0558,0.563,65.2
+Flandre,top,LPL,1,69,0.0552,0.556,65.0
+Tank,mid,LPL,1,69,0.0552,0.556,65.0
+Crystal,jng,TCL,2,57,0.0549,0.554,65.0
+Hylissang,sup,EU LCS,1,90,0.0546,0.551,65.0
+Vizicsacsi,top,EU LCS,1,90,0.0546,0.551,65.0
+CooN,mid,CK,2,50,0.0545,0.549,64.9
+Triple,mid,OPL,2,40,0.054,0.544,64.8
+element,top,CLS,2,29,0.0537,0.541,64.8
+Thaldrin,top,TCL,2,46,0.0535,0.539,64.8
+Zerost,bot,LJL,2,38,0.0534,0.538,64.7
+Pilot,bot,LCK,1,98,0.0517,0.521,64.5
+Expect,top,EU LCS,1,43,0.0511,0.514,64.4
+WhiteLotus,bot,CLS,2,26,0.0496,0.499,64.1
+Genthix,sup,CLS,2,58,0.0484,0.488,63.9
+Gonto,jng,CLS,2,58,0.0484,0.488,63.9
+Prodigy,bot,CLS,2,58,0.0484,0.488,63.9
+ThintoN,sup,LJL,2,28,0.0481,0.484,63.8
+Smoothie,sup,NA LCS,1,72,0.0462,0.465,63.5
+Exile,mid,EU LCS,1,69,0.046,0.463,63.5
+Move,jng,EU LCS,1,69,0.046,0.463,63.5
+Veritas,bot,EU LCS,1,69,0.046,0.463,63.5
+Raydere,bot,OPL,2,68,0.0457,0.459,63.4
+Zeicro,bot,CLS,2,63,0.0456,0.459,63.4
+Edward,sup,LCL,2,31,0.0452,0.455,63.3
+Jelly,sup,CK,2,40,0.0451,0.453,63.3
+Chei,sup,LCK,1,96,0.045,0.452,63.3
+Crazy,top,LCK,1,97,0.0434,0.436,63.0
+Keane,mid,NA LCS,1,71,0.0419,0.421,62.8
+SERAPH,top,NA LCS,1,75,0.0418,0.42,62.8
+Lost,bot,OPL,2,41,0.0411,0.413,62.6
+Omni,mid,OPL,2,41,0.0411,0.413,62.6
+Rosey,sup,OPL,2,41,0.0411,0.413,62.6
+Zahe,jng,OPL,2,41,0.0411,0.413,62.6
+HolyPhoenix,bot,TCL,2,85,0.0409,0.41,62.6
+MapleSnow,top,LMS,2,61,0.04,0.401,62.4
+Altec,bot,NA LCS,1,42,0.0397,0.399,62.4
+Lep,top,CBLOL,2,41,0.0387,0.388,62.2
+Minerva,jng,CBLOL,2,41,0.0387,0.388,62.2
+tinowns,mid,CBLOL,2,41,0.0387,0.388,62.2
+MaRin,top,LPL,1,43,0.0385,0.386,62.2
+Mickey,mid,LCK,1,104,0.0355,0.356,61.6
+Sangyoon,bot,LCK,1,104,0.0355,0.356,61.6
+SnowFlower,sup,LCK,1,104,0.0355,0.356,61.6
+Caos,sup,CBLOL,2,36,0.0354,0.355,61.6
+Police,bot,EU LCS,1,58,0.0351,0.352,61.6
+Vas1lii,bot,LSPL,2,23,0.035,0.35,61.5
+Evi,top,LJL,2,30,0.0347,0.348,61.5
+Moyashi,bot,LJL,2,30,0.0347,0.348,61.5
+Raid,bot,OPL,2,22,0.0346,0.346,61.4
+Teddy,bot,CK,2,31,0.0319,0.319,61.0
+Candyseven,bot,LSPL,2,24,0.0317,0.317,60.9
+GodKwai,bot,LMS,2,32,0.0311,0.311,60.8
+imp,bot,LPL,1,44,0.031,0.309,60.8
+Chippys,top,OPL,2,52,0.03,0.3,60.6
+Totoro,sup,CK,2,43,0.0291,0.291,60.4
+Robo,top,CBLOL,2,38,0.0289,0.289,60.4
+esA,bot,CBLOL,2,38,0.0289,0.289,60.4
+takeshi,mid,CBLOL,2,38,0.0289,0.289,60.4
+Matt Elento,sup,NA LCS,1,88,0.0285,0.285,60.3
+Abaria,mid,TCL,2,37,0.0283,0.282,60.3
+P1noy,bot,EU CS,2,42,0.0275,0.274,60.1
+957,top,LPL,1,75,0.0264,0.263,59.9
+Condi,jng,LPL,1,75,0.0264,0.263,59.9
+Mystic,bot,LPL,1,75,0.0264,0.263,59.9
+xiye,mid,LPL,1,75,0.0264,0.263,59.9
+zero,sup,LPL,1,75,0.0264,0.263,59.9
+Caedrel,mid,EU CS,2,34,0.0263,0.262,59.9
+Emperor,bot,EU LCS,1,44,0.0263,0.262,59.9
+xiaoweixiao,mid,LSPL,2,35,0.0263,0.262,59.9
+Apex,mid,LMS,2,63,0.0251,0.25,59.7
+Martin,bot,LPL,1,52,0.0242,0.241,59.5
+Praedyth,top,OPL,2,33,0.0238,0.237,59.5
+Pride,top,CLS,2,75,0.0234,0.232,59.4
+Wos,sup,CBLOL,2,41,0.0233,0.231,59.4
+pbO,bot,CBLOL,2,41,0.0233,0.231,59.4
+Awaker,jng,LJL,2,28,0.023,0.229,59.3
+Inori,jng,NA LCS,1,35,0.0229,0.227,59.3
+Wendel,sup,EU CS,2,29,0.0228,0.227,59.3
+Beast,mid,CK,2,26,0.0227,0.226,59.2
+Rush,jng,NA LCS,1,27,0.0219,0.217,59.1
+Wraith,sup,LCK,1,91,0.0218,0.216,59.1
+LaoZhou,top,LSPL,2,26,0.0216,0.214,59.0
+Achuu,bot,TCL,2,76,0.0206,0.204,58.9
+Dara,sup,LJL,2,22,0.0194,0.191,58.6
+Kaas,sup,EU CS,2,37,0.0194,0.191,58.6
+Tussle,jng,LJL,2,22,0.0194,0.191,58.6
+Lovida,mid,GPL,2,23,0.019,0.188,58.5
+Richard,mid,OPL,2,55,0.017,0.168,58.2
+Sybol,jng,OPL,2,55,0.017,0.168,58.2
+Olleh,sup,LMS,2,71,0.0168,0.165,58.1
+Zet,mid,LCK,1,21,0.0158,0.155,57.9
+LokeN,bot,LCK,1,102,0.0154,0.151,57.8
+Tempt,mid,LCK,1,102,0.0154,0.151,57.8
+isurugi,jng,LJL,2,24,0.0154,0.151,57.9
+Ares,jng,CK,2,34,0.0153,0.15,57.8
+Xpecial,sup,NA LCS,1,69,0.0146,0.143,57.7
+masterwork,sup,EU CS,2,49,0.0144,0.141,57.7
+Kobbe,bot,EU LCS,1,79,0.0143,0.14,57.7
+Kold,jng,EU LCS,1,79,0.0143,0.14,57.7
+Sencux,mid,EU LCS,1,79,0.0143,0.14,57.7
+Wunder,top,EU LCS,1,79,0.0143,0.14,57.7
+Muyi,sup,LSPL,2,25,0.0137,0.134,57.5
+HW4NG,mid,LJL,2,26,0.0133,0.129,57.4
+Clatos,jng,CLS,2,61,0.0132,0.129,57.4
+Bubbling,jng,LCK,1,47,0.0123,0.119,57.3
+Khan,top,LSPL,2,20,0.0123,0.119,57.3
+Plugo,mid,CLS,2,32,0.0123,0.119,57.3
+DinTer,jng,LMS,2,50,0.0122,0.119,57.3
+Caps,mid,TCL,2,23,0.0111,0.107,57.0
+Tay,bot,CBLOL,2,35,0.0109,0.105,57.0
+Mimic,top,EU CS,2,29,0.0107,0.103,57.0
+inSec,jng,LSPL,2,40,0.0106,0.102,56.9
+React,mid,TCL,2,40,0.0102,0.098,56.9
+Wzrd,mid,OPL,2,36,0.0093,0.089,56.7
+Shook,jng,EU LCS,1,43,0.009,0.086,56.6
+Baiano,sup,CBLOL,2,30,0.0089,0.085,56.6
+Looch,mid,OPL,2,44,0.0075,0.071,56.3
+KaKAO,jng,LSPL,2,42,0.0066,0.062,56.2
+Stunt,sup,NA CS,2,41,0.0066,0.061,56.2
+Ninja,mid,NA LCS,1,60,0.0059,0.054,56.0
+Sek,jng,GPL,2,24,0.0059,0.054,56.0
+Drobovik123,mid,LCL,2,49,0.0056,0.051,56.0
+Zanzarah,jng,LCL,2,49,0.0056,0.051,56.0
+Jisu,top,CK,2,62,0.0052,0.047,55.9
+Expession,top,LCK,1,74,0.0051,0.046,55.9
+Satan,mid,LSPL,2,39,0.0049,0.044,55.8
+Shrimp,jng,NA LCS,1,61,0.0046,0.041,55.8
+Mylon,top,CBLOL,2,37,0.0034,0.029,55.6
+Marshall,top,TCL,2,62,0.0033,0.028,55.5
+Trix,jng,TCL,2,62,0.0033,0.028,55.5
+Visdom,sup,TCL,2,62,0.0033,0.028,55.5
+XuanXuanPi,bot,LPL,1,41,0.0028,0.023,55.4
+Karin,jng,LSPL,2,20,0.0026,0.02,55.4
+NoNholy,top,LCL,2,44,0.0023,0.017,55.3
+Raison,bot,LMS,2,34,0.0014,0.009,55.2
+Celebrity,bot,GPL,2,34,0.0011,0.005,55.1
+Chenyboy,bot,OPL,2,29,0.0011,0.005,55.1
+Row,top,GPL,2,34,0.0011,0.005,55.1
+Tsu,sup,GPL,2,34,0.0011,0.005,55.1
+FEBIVEN,mid,EU LCS,1,87,0.0007,0.001,55.0
+Rekkles,bot,EU LCS,1,87,0.0007,0.001,55.0
+Spirit,jng,EU LCS,1,87,0.0007,0.001,55.0
+Bless,jng,LCK,1,68,0.0001,-0.005,54.9
+Kabe,top,LSPL,2,55,-0.0001,-0.007,54.9
+Ysera,sup,LSPL,2,55,-0.0001,-0.007,54.9
+Zuao,jng,CBLOL,2,24,-0.0001,-0.007,54.9
+BokGu,sup,CK,2,37,-0.0005,-0.012,54.8
+Neo,jng,CK,2,37,-0.0005,-0.012,54.8
+Odd,bot,CK,2,37,-0.0005,-0.012,54.8
+Pure,sup,LCK,1,87,-0.0011,-0.017,54.7
+Cabochard,top,EU LCS,1,59,-0.0017,-0.024,54.6
+Kasing,sup,EU LCS,1,59,-0.0017,-0.024,54.6
+Nukeduck,mid,EU LCS,1,59,-0.0017,-0.024,54.6
+Bvoy,bot,LSPL,2,48,-0.0028,-0.034,54.3
+Elinke,mid,LSPL,2,25,-0.0036,-0.042,54.2
+Kami,mid,CBLOL,2,41,-0.0039,-0.046,54.1
+Ori,jng,LSPL,2,20,-0.0039,-0.046,54.1
+Sirt,jng,CBLOL,2,41,-0.0039,-0.046,54.1
+Babi9,bot,LSPL,2,30,-0.004,-0.047,54.1
+Dian,mid,LSPL,2,30,-0.004,-0.047,54.1
+Langx,top,LSPL,2,30,-0.004,-0.047,54.1
+Shy,top,LCK,1,23,-0.004,-0.046,54.1
+Yoon,sup,LSPL,2,30,-0.004,-0.047,54.1
+Acce,top,CLS,2,52,-0.0041,-0.048,54.1
+G4,mid,GPL,2,26,-0.0044,-0.051,54.0
+Lloyd,bot,GPL,2,26,-0.0044,-0.051,54.0
+Fenix,mid,NA LCS,1,79,-0.0058,-0.066,53.8
+Nukes,sup,EU CS,2,29,-0.0058,-0.065,53.8
+Roki,mid,LJL,2,30,-0.0058,-0.065,53.8
+k0u,jng,NA CS,2,35,-0.006,-0.067,53.7
+Lukezy,mid,TCL,2,28,-0.0063,-0.071,53.7
+Piglet,bot,NA LCS,1,64,-0.0066,-0.074,53.6
+Jaeger,top,EU LCS,1,63,-0.008,-0.087,53.3
+Profit,top,LSPL,2,22,-0.0084,-0.092,53.3
+Nipphu,top,CLS,2,62,-0.0085,-0.093,53.2
+Rakyz,mid,CLS,2,62,-0.0085,-0.093,53.2
+TheFoxz,bot,CLS,2,33,-0.0092,-0.1,53.1
+fabbbyyy,bot,NA LCS,1,57,-0.0093,-0.1,53.1
+Hdel,bot,CK,2,22,-0.0098,-0.106,53.0
+Uri,mid,CLS,2,40,-0.0099,-0.107,53.0
+Nagne,mid,LSPL,2,28,-0.0101,-0.109,52.9
+Rawbin IV,jng,TCL,2,57,-0.0102,-0.11,52.9
+Hybrid,sup,EU LCS,1,77,-0.0106,-0.114,52.8
+Lourlo,top,NA LCS,1,86,-0.0106,-0.114,52.8
+BearJew,sup,CLS,2,52,-0.0107,-0.115,52.8
+Juliostito,jng,CLS,2,52,-0.0107,-0.115,52.8
+Ruvelius,bot,TCL,2,60,-0.0107,-0.115,52.8
+Maxlore,jng,EU LCS,1,59,-0.0108,-0.116,52.8
+Lyn,jng,CK,2,33,-0.0113,-0.121,52.7
+Flame,top,LCK,1,26,-0.0136,-0.145,52.3
+Mushroom,bot,LSPL,2,53,-0.0137,-0.145,52.3
+Xintai,sup,LSPL,2,53,-0.0137,-0.145,52.3
+Zoom,top,LSPL,2,53,-0.0137,-0.145,52.3
+Key,sup,LCK,1,59,-0.0138,-0.146,52.2
+Four,jng,TCL,2,31,-0.0141,-0.15,52.2
+Sonstar,bot,EU LCS,1,61,-0.0146,-0.155,52.1
+Lesmart,mid,CLS,2,29,-0.0147,-0.156,52.1
+Pacman,top,OPL,2,55,-0.0149,-0.158,52.0
+Curtis,top,OPL,2,28,-0.0151,-0.16,52.0
+Rokenia,mid,LMS,2,22,-0.0158,-0.167,51.8
+Mirror,jng,EU LCS,1,24,-0.0164,-0.173,51.7
+LoveZrr,top,OPL,2,25,-0.0169,-0.178,51.6
+Kwon,sup,NA LCS,1,34,-0.0173,-0.183,51.5
+Letme,top,LSPL,2,42,-0.0173,-0.182,51.6
+Ley,sup,LSPL,2,42,-0.0173,-0.182,51.6
+Zirigui,sup,CBLOL,2,38,-0.0178,-0.187,51.5
+Kez,jng,NA CS,2,32,-0.0179,-0.188,51.4
+Crumbz,jng,NA LCS,1,24,-0.0183,-0.193,51.4
+Natz,bot,LSPL,2,44,-0.0188,-0.197,51.3
+Vash,mid,CBLOL,2,25,-0.0188,-0.197,51.3
+Hustlin,sup,EU LCS,1,67,-0.0197,-0.207,51.1
+Hatrixx,mid,TCL,2,48,-0.0198,-0.208,51.1
+Clockday,jng,LJL,2,34,-0.0201,-0.211,51.0
+Enty,sup,LJL,2,34,-0.0201,-0.211,51.0
+Haretti,bot,LJL,2,34,-0.0201,-0.211,51.0
+apaMEN,top,LJL,2,34,-0.0201,-0.211,51.0
+Padden,bot,TCL,2,24,-0.0203,-0.213,51.0
+DanDy,jng,LPL,1,48,-0.0204,-0.214,51.0
+Easyhoon,mid,LPL,1,48,-0.0204,-0.214,51.0
+Un1tback,sup,TCL,2,42,-0.0207,-0.217,50.9
+Nardeus,bot,EU CS,2,31,-0.0209,-0.219,50.9
+Ekd,bot,LCL,2,31,-0.021,-0.22,50.9
+Piter Pokir,mid,LCL,2,31,-0.021,-0.22,50.9
+ZachQ,top,LCL,2,31,-0.021,-0.22,50.9
+Gear,mid,LMS,2,30,-0.0211,-0.221,50.8
+Buggax,top,CLS,2,26,-0.0213,-0.223,50.8
+Memento,jng,LCL,2,57,-0.0217,-0.227,50.7
+ptt,mid,EU LCS,1,32,-0.0221,-0.232,50.6
+Meron,bot,LJL,2,32,-0.0226,-0.236,50.6
+Paz,top,LJL,2,32,-0.0226,-0.236,50.6
+Mightybear,jng,EU LCS,1,21,-0.0232,-0.242,50.4
+Picoca,sup,CBLOL,2,22,-0.0234,-0.245,50.4
+brTT,bot,CBLOL,2,22,-0.0234,-0.245,50.4
+Hui,jng,LSPL,2,20,-0.0235,-0.245,50.4
+SoaR,top,LSPL,2,27,-0.0235,-0.246,50.4
+Corn,mid,LSPL,2,78,-0.0236,-0.246,50.4
+Turtle,jng,CBLOL,2,38,-0.024,-0.25,50.3
+Zvene,top,LCL,2,21,-0.0254,-0.265,50.0
+Duan,sup,LPL,1,54,-0.0255,-0.266,50.0
+Loong,top,LPL,1,54,-0.0255,-0.266,50.0
+Naruto,sup,LSPL,2,24,-0.0258,-0.269,49.9
+Djoko,jng,EU CS,2,44,-0.026,-0.271,49.9
+Doxy,top,LCL,2,24,-0.0262,-0.273,49.9
+Kaze,top,EU CS,2,42,-0.0263,-0.274,49.9
+Noxiak,sup,EU LCS,1,31,-0.0263,-0.274,49.9
+PrettyGRE,mid,EU CS,2,42,-0.0263,-0.274,49.9
+General,jng,OCS,2,27,-0.0266,-0.277,49.8
+NighT,mid,EU LCS,1,85,-0.027,-0.281,49.7
+Lasagna,jng,LCL,2,38,-0.0271,-0.282,49.7
+yellowman,top,LSPL,2,25,-0.0271,-0.283,49.7
+Zz1tai,top,LPL,1,42,-0.0274,-0.285,49.7
+Skye,top,LSPL,2,42,-0.0275,-0.287,49.6
+Hunter,jng,LSPL,2,25,-0.028,-0.291,49.6
+Rogu,sup,TCL,2,69,-0.0282,-0.293,49.5
+Pekin Woof,mid,NA CS,2,30,-0.0284,-0.296,49.5
+Focho,bot,CLS,2,47,-0.0287,-0.298,49.4
+Quaker,jng,CLS,2,27,-0.0289,-0.301,49.4
+1984,bot,CLS,2,21,-0.0291,-0.303,49.3
+Lies,top,LSPL,2,44,-0.0292,-0.303,49.3
+xPeke,bot,EU LCS,1,37,-0.0294,-0.306,49.3
+Cardrid,bot,OPL,2,31,-0.0295,-0.307,49.3
+Ray,top,NA LCS,1,46,-0.0298,-0.31,49.2
+Dee,bot,LMS,2,69,-0.0299,-0.311,49.2
+Juves,jng,OPL,2,54,-0.0302,-0.314,49.1
+Rkp,bot,LJL,2,22,-0.0304,-0.316,49.1
+BoBo,top,LMS,2,72,-0.0305,-0.316,49.1
+Jinkey,jng,GPL,2,21,-0.0316,-0.328,48.9
+Godbro,mid,EU CS,2,60,-0.032,-0.332,48.8
+Fox,mid,EU LCS,1,66,-0.0328,-0.34,48.7
+Kid,jng,LPL,1,47,-0.0334,-0.346,48.6
+Rookie,mid,LPL,1,47,-0.0334,-0.346,48.6
+Watch,jng,LSPL,2,41,-0.0339,-0.352,48.5
+Ggoong,mid,LSPL,2,43,-0.0359,-0.372,48.1
+LvMao,sup,LSPL,2,43,-0.0359,-0.372,48.1
+Xyraz,top,TCL,2,61,-0.0359,-0.372,48.1
+y4,bot,LSPL,2,43,-0.0359,-0.372,48.1
+AnDa,top,NA CS,2,32,-0.036,-0.373,48.1
+ICON,mid,LPL,1,45,-0.0367,-0.38,48.0
+Wickd,top,EU CS,2,50,-0.0371,-0.384,47.9
+Hiiva,sup,EU CS,2,25,-0.0377,-0.39,47.8
+Dreamer,sup,LMS,2,70,-0.0379,-0.393,47.7
+Taizan,jng,LMS,2,70,-0.0379,-0.393,47.7
+Edition,bot,OPL,2,29,-0.0381,-0.395,47.7
+AK,top,LSPL,2,22,-0.0382,-0.395,47.7
+Revanche,sup,TCL,2,29,-0.0382,-0.395,47.7
+SaNTaS,sup,LCL,2,36,-0.0385,-0.398,47.6
+DeuL,bot,LSPL,2,36,-0.0396,-0.409,47.4
+sOAZ,top,EU LCS,1,75,-0.0412,-0.425,47.2
+Endless,bot,LPL,1,30,-0.0419,-0.433,47.0
+Verfix,sup,CBLOL,2,22,-0.0431,-0.445,46.8
+Juejue,jng,LPL,1,46,-0.0433,-0.448,46.8
+Warangelus,bot,CLS,2,50,-0.0438,-0.453,46.7
+Mirin,sup,OPL,2,59,-0.044,-0.454,46.7
+Pabu,top,OCS,2,28,-0.0446,-0.46,46.6
+Goku,mid,CBLOL,2,39,-0.0449,-0.463,46.5
+Professor,sup,CBLOL,2,39,-0.0449,-0.463,46.5
+SkyBart,top,CBLOL,2,39,-0.0449,-0.463,46.5
+fredy122,top,EU LCS,1,22,-0.0454,-0.469,46.4
+Akira,top,LSPL,2,32,-0.0455,-0.47,46.4
+Only,jng,OCS,2,22,-0.0461,-0.475,46.3
+Pirean,mid,NA LCS,1,64,-0.0471,-0.486,46.1
+Regi,mid,CLS,2,25,-0.0474,-0.489,46.1
+Korpse,sup,TCL,2,31,-0.0478,-0.493,46.0
+Jayke,sup,OPL,2,59,-0.0486,-0.501,45.9
+Zantins,top,CBLOL,2,28,-0.0488,-0.503,45.8
+Rogue,sup,OPL,2,56,-0.0497,-0.512,45.7
+3z,top,LMS,2,20,-0.05,-0.515,45.6
+Tauren,bot,LCL,2,24,-0.0502,-0.518,45.6
+World6,jng,LSPL,2,21,-0.0505,-0.52,45.5
+Fury,bot,LCK,1,55,-0.0515,-0.53,45.4
+Raxxo,sup,LCL,2,34,-0.0516,-0.532,45.4
+Tomex,sup,CLS,2,45,-0.0516,-0.532,45.3
+WildHeart,sup,LCL,2,22,-0.0522,-0.538,45.3
+Klaj,sup,EU LCS,1,41,-0.0526,-0.542,45.2
+Freeze,bot,EU LCS,1,51,-0.0529,-0.545,45.1
+Chaser,jng,LCK,1,58,-0.0531,-0.547,45.1
+Reelople,sup,OCS,2,30,-0.0532,-0.548,45.1
+cyeol,mid,LSPL,2,41,-0.0535,-0.552,45.0
+Antariys,sup,LCL,2,28,-0.0537,-0.553,45.0
+Eryon,top,CBLOL,2,22,-0.0538,-0.554,45.0
+Satorius,top,EU CS,2,30,-0.0543,-0.559,44.9
+Saulius,mid,LCL,2,40,-0.055,-0.566,44.8
+Skash,sup,LCL,2,40,-0.055,-0.566,44.8
+VincentVega,bot,LCL,2,40,-0.055,-0.566,44.8
+Reach,jng,TCL,2,54,-0.057,-0.586,44.5
+Scardorz,bot,LSPL,2,30,-0.0572,-0.589,44.4
+MANTARRAYA,top,CLS,2,53,-0.0581,-0.598,44.3
+Megajp,mid,CLS,2,53,-0.0581,-0.598,44.3
+Slow,sup,CLS,2,53,-0.0581,-0.598,44.3
+Savoki,sup,LPL,1,42,-0.0586,-0.603,44.2
+Edge,mid,LCK,1,98,-0.0594,-0.611,44.1
+GuGer,sup,LCK,1,98,-0.0594,-0.611,44.1
+Ssol,bot,LCK,1,98,-0.0594,-0.611,44.1
+GimGoon,top,LPL,1,45,-0.0597,-0.614,44.0
+Grail,mid,LPL,1,45,-0.0597,-0.614,44.0
+PentaQ,bot,LPL,1,45,-0.0597,-0.614,44.0
+WuShuang,jng,LPL,1,45,-0.0597,-0.614,44.0
+YellOwStaR,sup,EU LCS,1,81,-0.0623,-0.641,43.6
+Galen,jng,NA LCS,1,45,-0.063,-0.648,43.5
+Raps,bot,OPL,2,38,-0.0636,-0.654,43.4
+CozQ,mid,EU CS,2,28,-0.0637,-0.655,43.4
+Woolite,bot,EU CS,2,28,-0.0637,-0.655,43.4
+Starlight,sup,LSPL,2,42,-0.0638,-0.657,43.4
+Solo,top,NA CS,2,42,-0.0642,-0.66,43.3
+Scarface,top,TCL,2,20,-0.0646,-0.664,43.3
+Tabe,sup,LPL,1,29,-0.0651,-0.669,43.2
+x1u,sup,LPL,1,27,-0.0651,-0.67,43.2
+CorGi,bot,LMS,2,48,-0.0656,-0.674,43.1
+Skwiggle,top,OPL,2,39,-0.0662,-0.68,43.0
+Cheese,mid,OPL,2,34,-0.067,-0.689,42.9
+PowerOfEvil,mid,EU LCS,1,69,-0.067,-0.689,42.9
+eimy,jng,LPL,1,26,-0.0678,-0.697,42.8
+Colorless,sup,CK,2,21,-0.0681,-0.7,42.7
+Marker,mid,LCL,2,32,-0.0686,-0.706,42.6
+Mash,bot,NA LCS,1,67,-0.0688,-0.707,42.6
+Goldenglue,mid,NA CS,2,49,-0.0689,-0.708,42.6
+aqiu,jng,LSPL,2,27,-0.0689,-0.708,42.6
+Werlyb,top,EU CS,2,44,-0.0692,-0.711,42.5
+Wadid,sup,CK,2,29,-0.0696,-0.715,42.5
+Cody Sun,bot,NA CS,2,37,-0.0699,-0.718,42.4
+Jiekou,jng,LSPL,2,49,-0.07,-0.719,42.4
+tale,bot,LSPL,2,49,-0.07,-0.719,42.4
+Kramer,bot,LCK,1,95,-0.0705,-0.724,42.4
+Ace,mid,CK,2,26,-0.0712,-0.731,42.2
+Squidgy,bot,OCS,2,29,-0.0713,-0.733,42.2
+Crisp,sup,LSPL,2,29,-0.0719,-0.739,42.1
+Fenfen,mid,LSPL,2,29,-0.0719,-0.739,42.1
+GuYueXin,jng,LSPL,2,29,-0.0719,-0.739,42.1
+Lwx,bot,LSPL,2,29,-0.0719,-0.739,42.1
+Lz,top,LSPL,2,29,-0.0719,-0.739,42.1
+COLD,sup,LPL,1,49,-0.0724,-0.744,42.1
+mumus100,top,LCL,2,35,-0.0724,-0.743,42.1
+Dioud,sup,CBLOL,2,20,-0.0731,-0.751,42.0
+RYmeister,mid,OPL,2,52,-0.0734,-0.754,41.9
+Dade,mid,LPL,1,42,-0.0736,-0.756,41.9
+Coco,mid,LCK,1,57,-0.0743,-0.763,41.8
+DiscotEkka,mid,LCL,2,26,-0.0755,-0.776,41.6
+BBanG,jng,CK,2,30,-0.0756,-0.777,41.6
+Helior,top,CLS,2,56,-0.0757,-0.778,41.6
+Kaiwing,sup,LMS,2,49,-0.0757,-0.778,41.6
+Cookie,jng,OPL,2,20,-0.0764,-0.784,41.5
+Sign,mid,CK,2,29,-0.0764,-0.784,41.5
+Cogcog,top,LJL,2,36,-0.0773,-0.794,41.3
+Funny,mid,LPL,1,34,-0.0774,-0.795,41.3
+Bdd,mid,LCK,1,52,-0.0778,-0.799,41.3
+Badmilk,sup,CLS,2,50,-0.0779,-0.8,41.3
+Immortoru,mid,TCL,2,61,-0.0787,-0.808,41.2
+Gate,sup,NA LCS,1,72,-0.0789,-0.81,41.1
+Gari,bot,CK,2,26,-0.0791,-0.812,41.1
+MayZ,top,CK,2,26,-0.0791,-0.812,41.1
+Mocha,sup,CK,2,26,-0.0791,-0.812,41.1
+Sw0rd,top,TCL,2,36,-0.0795,-0.816,41.0
+Smlz,bot,LPL,1,47,-0.08,-0.821,41.0
+Steeelback,bot,EU LCS,1,66,-0.08,-0.822,41.0
+Brom,jng,LCL,2,34,-0.0803,-0.824,40.9
+FIRees,top,LCL,2,34,-0.0803,-0.824,40.9
+Niksar,bot,LCL,2,34,-0.0803,-0.824,40.9
+Spoil,sup,OCS,2,22,-0.0809,-0.83,40.8
+Akaadian,jng,NA CS,2,32,-0.0812,-0.834,40.8
+Xiyang,top,LPL,1,46,-0.0813,-0.834,40.8
+Flawless,jng,LCK,1,73,-0.0814,-0.835,40.8
+Nuclear,bot,LCK,1,73,-0.0814,-0.835,40.8
+Nappon,jng,CBLOL,2,37,-0.0817,-0.838,40.7
+Untara,top,LCK,1,74,-0.0821,-0.843,40.7
+Beware,top,CK,2,31,-0.0823,-0.845,40.7
+Eika,mid,EU LCS,1,24,-0.0825,-0.846,40.6
+Shiphtur,mid,NA LCS,1,32,-0.0837,-0.859,40.5
+2188,top,LMS,2,50,-0.0838,-0.86,40.4
+Hakuho,sup,NA LCS,1,73,-0.0852,-0.874,40.3
+Sky,mid,LCK,1,78,-0.0878,-0.901,39.9
+dshao,top,NA LCS,1,59,-0.0879,-0.902,39.9
+Impaler,jng,EU CS,2,26,-0.0881,-0.903,39.9
+Taikki,jng,EU CS,2,26,-0.0882,-0.904,39.9
+QiuQiu,bot,LSPL,2,20,-0.0893,-0.916,39.7
+many,jng,LSPL,2,25,-0.0901,-0.924,39.6
+Skyer,bot,CBLOL,2,34,-0.0905,-0.928,39.6
+Ayel,top,CBLOL,2,32,-0.091,-0.934,39.5
+JS,top,LSPL,2,23,-0.0916,-0.939,39.4
+Ryoma,mid,OCS,2,26,-0.092,-0.943,39.4
+Denian,sup,OPL,2,22,-0.0927,-0.95,39.3
+Khynm,jng,CLS,2,55,-0.0931,-0.954,39.2
+Primoo,jng,CLS,2,25,-0.0932,-0.956,39.2
+Mission,mid,LMS,2,54,-0.0933,-0.957,39.2
+Wulala,jng,LMS,2,54,-0.0933,-0.957,39.2
+Awei,mid,LSPL,2,46,-0.0937,-0.961,39.2
+Nova,jng,LSPL,2,49,-0.0939,-0.963,39.1
+Santorin,jng,NA LCS,1,72,-0.0942,-0.966,39.1
+Steal,jng,CK,2,27,-0.0955,-0.979,38.9
+Ohq,bot,NA LCS,1,77,-0.0956,-0.98,38.9
+Happy,bot,LPL,1,48,-0.0962,-0.987,38.8
+Haru,jng,LCK,1,50,-0.0984,-1.009,38.6
+Kulo,top,OCS,2,24,-0.0995,-1.02,38.5
+Alex Ich,mid,NA LCS,1,31,-0.0996,-1.021,38.4
+Parang,top,EU LCS,1,78,-0.1,-1.025,38.4
+Raise,sup,EU LCS,1,78,-0.1,-1.025,38.4
+Matsukaze,bot,CBLOL,2,33,-0.1003,-1.028,38.4
+Gilius,jng,EU LCS,1,63,-0.1007,-1.032,38.3
+MrRallez,bot,EU LCS,1,63,-0.1007,-1.032,38.3
+Steve,top,EU LCS,1,63,-0.1007,-1.032,38.3
+promisq,sup,EU LCS,1,63,-0.1007,-1.032,38.3
+LongB,mid,TCL,2,52,-0.101,-1.035,38.3
+Mor,sup,LPL,1,53,-0.101,-1.035,38.3
+Swift,jng,LPL,1,53,-0.101,-1.035,38.3
+V,top,LPL,1,53,-0.101,-1.035,38.3
+Benny,jng,LMS,2,20,-0.1013,-1.039,38.2
+Tabzz,bot,EU CS,2,46,-0.1015,-1.04,38.2
+MadLife,sup,LCK,1,99,-0.104,-1.065,37.9
+Brucer,mid,CBLOL,2,40,-0.105,-1.076,37.8
+Sacy,bot,CBLOL,2,40,-0.105,-1.076,37.8
+Amazing,jng,EU LCS,1,79,-0.1052,-1.078,37.8
+Seb,jng,OPL,2,50,-0.1059,-1.086,37.7
+Astarte,jng,TCL,2,21,-0.1084,-1.11,37.4
+Zammi,bot,OCS,2,27,-0.1086,-1.113,37.4
+Procxin,jng,NA LCS,1,72,-0.1109,-1.136,37.2
+Airwaks,jng,EU LCS,1,46,-0.1131,-1.159,36.9
+Apollo,bot,NA LCS,1,67,-0.1133,-1.16,36.9
+Quas,top,NA LCS,1,49,-0.1136,-1.164,36.9
+Hard,jng,NA LCS,1,58,-0.1144,-1.172,36.8
+Nisbeth,sup,EU LCS,1,23,-0.1152,-1.18,36.7
+Babip,jng,OCS,2,31,-0.1158,-1.186,36.7
+KissNkite,bot,TCL,2,59,-0.1177,-1.205,36.5
+Zealot,bot,CLS,2,47,-0.1186,-1.215,36.4
+RF Legendary,top,NA CS,2,24,-0.1208,-1.237,36.2
+SIUSIU,mid,LMS,2,21,-0.121,-1.239,36.1
+Deemo,jng,LPL,1,23,-0.1219,-1.248,36.1
+BULBAZABP,bot,LCL,2,40,-0.1224,-1.253,36.0
+Paranoia,mid,LCL,2,40,-0.1224,-1.253,36.0
+LEYL-Ü NEHAR,mid,TCL,2,29,-0.1268,-1.298,35.6
+Midbeast,mid,OPL,2,24,-0.1292,-1.322,35.4
+Savage,jng,CK,2,47,-0.1297,-1.328,35.3
+Soul,top,LCK,1,79,-0.1303,-1.334,35.3
+B3nji,bot,NA LCS,1,71,-0.1319,-1.35,35.2
+Rins,top,LMS,2,41,-0.1322,-1.353,35.1
+kazze,sup,TCL,2,59,-0.1323,-1.354,35.1
+Froggen,mid,NA LCS,1,65,-0.1335,-1.366,35.0
+kfo,top,NA LCS,1,65,-0.1335,-1.366,35.0
+Betsy,mid,EU LCS,1,67,-0.1341,-1.373,35.0
+LaCo,sup,CK,2,22,-0.1355,-1.386,34.9
+hellpok,mid,CK,2,22,-0.1355,-1.386,34.9
+Big,sup,NA LCS,1,71,-0.1362,-1.394,34.8
+Arfoad,top,LJL,2,28,-0.1376,-1.408,34.7
+Styz,bot,LPL,1,29,-0.1377,-1.409,34.7
+Nexus,top,LMS,2,59,-0.1391,-1.424,34.6
+Snoopy,mid,LPL,1,25,-0.1402,-1.435,34.5
+Kirei,jng,NA LCS,1,34,-0.1447,-1.48,34.1
+Acorn,top,LPL,1,44,-0.1459,-1.493,34.0
+Feng,sup,NA LCS,1,37,-0.1478,-1.512,33.9
+BINS,jng,CK,2,23,-0.1517,-1.552,33.6
+GBM,mid,NA LCS,1,69,-0.1517,-1.552,33.6
+CarilRui,jng,LJL,2,27,-0.1629,-1.666,32.9
+Keith,bot,NA LCS,1,69,-0.1636,-1.673,32.9
+Cognac,sup,TCL,2,53,-0.164,-1.677,32.8
+Rhythm,bot,LJL,2,21,-0.1651,-1.689,32.8
+LBB,bot,LMS,2,64,-0.166,-1.698,32.7
+Wako,mid,LMS,2,64,-0.166,-1.698,32.7
+Zest,sup,LMS,2,64,-0.166,-1.698,32.7
+Stealthix,bot,OPL,2,30,-0.1688,-1.726,32.6
+YoDa,jng,CBLOL,2,28,-0.17,-1.739,32.5
+Yoshiaki,sup,LJL,2,29,-0.1732,-1.771,32.3
+K,jng,LMS,2,30,-0.1746,-1.785,32.3
+Luna,sup,OPL,2,30,-0.1755,-1.794,32.2
+Rabi2,bot,LMS,2,28,-0.1756,-1.795,32.2
+SpeaR,jng,LMS,2,28,-0.1756,-1.795,32.2
+SaSin,mid,LCK,1,57,-0.1779,-1.819,32.1
+Jakattack,top,OPL,2,37,-0.179,-1.831,32.0
+Impaired,jng,OPL,2,50,-0.1805,-1.846,32.0
+Hipo,top,LCK,1,44,-0.1811,-1.851,31.9
+Secret,sup,LCK,1,44,-0.1826,-1.867,31.9
+Panky,top,TCL,2,55,-0.1828,-1.869,31.8
+JustNo0b,top,LCL,2,25,-0.1861,-1.902,31.7
+Madness,bot,TCL,2,54,-0.1874,-1.916,31.6
+Dada,bot,CK,2,43,-0.1917,-1.959,31.5
+Owl,mid,CK,2,41,-0.1925,-1.968,31.4
+Cat,sup,LSPL,2,41,-0.1933,-1.976,31.4
+KiWiKiD,sup,NA LCS,1,70,-0.1971,-2.014,31.2
+yo,jng,LMS,2,56,-0.2049,-2.094,30.9
+KuKu,mid,LMS,2,31,-0.2063,-2.108,30.9
+Crush,jng,LCK,1,47,-0.2162,-2.209,30.6
+Breeze,bot,LMS,2,39,-0.2316,-2.366,30.2
+Bomb,bot,OPL,2,43,-0.2351,-2.401,30.1
+Punisher,jng,LCL,2,33,-0.2371,-2.422,30.0
+Rain,sup,LMS,2,62,-0.2431,-2.484,29.9
+Frae,mid,OPL,2,46,-0.278,-2.839,29.3
+Ryoo,top,OPL,2,46,-0.278,-2.839,29.3

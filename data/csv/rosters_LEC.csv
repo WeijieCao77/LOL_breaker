@@ -1934,3 +1934,795 @@
 2024,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2024 Summer,2024-06-08,Team Vitality,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
 2024,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2024 Summer,2024-06-08,Team Vitality,,Coach,Mac,,James MacCormack,United Kingdom,EMEA,1994-02-13,0,Mac
 2024,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2024 Summer,2024-06-08,Team Vitality,,Coach,Carter,,Alexander Cartwright,United Kingdom,EMEA,,0,Carter
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Fnatic,,Top,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Fnatic,,Jungle,Broxah,,Mads Brock-Pedersen,Denmark,EMEA,1997-08-12,0,Broxah
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Fnatic,,Mid,Nemesis,,Tim Lipovšek,Slovenia,EMEA,1999-07-26,0,Nemesis
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Fnatic,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Fnatic,,Coach,YoungBuck,,Joey Steltenpool,Netherlands,EMEA,1991-07-28,0,YoungBuck
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,G2 Esports,,Mid,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,G2 Esports,,Bot,Perkz,,Luka Perković,Croatia,EMEA,1998-09-30,0,Perkz
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,GrabbZ
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Origen,,Top,Alphari,,Barney Morris,United Kingdom,EMEA,1999-10-20,0,Alphari
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Origen,,Jungle,Kold,,Jonas Andersen,Denmark,Europe,1995-02-22,1,Kold
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Origen,,Mid,Nukeduck,,Erlend Våtevik Holm,Norway,EMEA,1996-05-21,0,Nukeduck
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Origen,,Bot,Patrik,,Patrik Jírů,Czech Republic,EMEA,2000-04-07,0,Patrik
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Origen,,Support,Mithy,,Alfonso Aguirre Rodríguez,Spain,EMEA,1994-10-05,0,Mithy
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Origen,,Coach,Guilhoto,,André Pereira Guilhoto,Portugal,EMEA,1994-08-26,0,Guilhoto
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,SK Gaming,,Top,Werlyb,,Jorge Casanovas Moreno-Torres,Spain,EMEA,1997-08-14,0,Werlyb
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,SK Gaming,,Jungle,Selfmade,,Oskar Boderek,Poland,EMEA,1999-12-15,0,Selfmade
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,SK Gaming,,Mid,Pirean,최준식,Choi Jun-sik,South Korea,Korea,1998-04-09,1,Pirean
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,SK Gaming,,Bot,Crownshot,,,,,,,Crownshot
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,SK Gaming,,Support,Dreams,한민국,Han Min-kook,South Korea,Korea,1996-03-07,1,Dreams (Han Min-kook)
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,SK Gaming,,Coach,Realistik,,Andrei Ruse,Romania,EMEA,1995-07-16,1,Realistik
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Splyce,,Top,Vizicsacsi,,Tamás Kiss,Hungary,EMEA,1993-06-14,0,Vizicsacsi
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Splyce,,Jungle,Xerxe,,Andrei Dragomir,Romania,EMEA,1999-11-05,0,Xerxe
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Splyce,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Splyce,,Bot,Kobbe,,Kasper Kobberup,Denmark,EMEA,1996-09-21,0,Kobbe
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Splyce,,Support,Norskeren,,,,,,,Norskeren
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Splyce,,Coach,Duke,,Hadrien Forestier,France,EMEA,1991-10-01,0,Duke (Hadrien Forestier)
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Team Vitality,,Top,Cabochard,,Lucas Simon-Meslet,France,EMEA,1997-04-15,0,Cabochard
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Team Vitality,,Jungle,Mowgli,이재하,Lee Jae-ha,South Korea,Korea,1998-04-14,0,Mowgli
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Team Vitality,,Mid,Jiizuke,,Daniele di Mauro,Italy,EMEA,1996-01-14,1,Jiizuke
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Team Vitality,,Bot,Attila,,Amadeu&amp;nbsp;Jesus Dias de Carvalho,Portugal,EMEA,1996-02-26,0,Attila
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Team Vitality,,Support,Jactroll,,Jakub Skurzyński,Poland,EMEA,1998-08-05,1,Jactroll
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring Playoffs,2019-03-29,Team Vitality,,Coach,YamatoCannon,,Jakob Mebdi,Sweden,EMEA,1995-12-30,0,YamatoCannon
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Excel Esports,,Top,Expect,기대한,Ki Dae-han,South Korea,Korea,1996-07-04,1,Expect
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Excel Esports,,Jungle,Caedrel,,Marc&amp;nbsp;Robert Lamont,United Kingdom,EMEA,1996-03-19,0,Caedrel
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Excel Esports,,Mid,Exile,,Fabian Schubert,Germany,EMEA,1997-04-21,0,Exile (Fabian Schubert)
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Excel Esports,,Mid,Special,,Joran Scheffer,Netherlands,EMEA,1998-01-27,1,Special
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Excel Esports,,Bot,Jeskla,,Jesper Klarin Strömberg,Sweden,EMEA,2000-07-08,0,Jeskla
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Excel Esports,,Support,Kasing,曾家誠,Raymond Tsang,United Kingdom,EMEA,1993-12-08,0,kaSing
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Excel Esports,,Support,Mystiques,,Patryk Piórkowski,Poland,EMEA,1997-03-01,0,Mystiques
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Excel Esports,,Coach,Furndog,,Josh Furneaux,United Kingdom,Europe,,1,Furndog
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Excel Esports,,Coach,Unlimited,Петър Георгиев,Petar Georgiev,Bulgaria,EMEA,1990-06-09,0,Unlimited (Petar Georgiev)
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,FC Schalke 04 Esports,,Top,Odoamne,,Andrei Pascu,Romania,EMEA,1995-01-18,0,Odoamne
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,FC Schalke 04 Esports,,Jungle,Memento,,Jonas Elmarghichi,Sweden,EMEA,,0,Memento
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,FC Schalke 04 Esports,,Mid,Abbedagge,,Felix&amp;nbsp;Alfred Braun,Germany,EMEA,1999-09-10,0,Abbedagge
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,FC Schalke 04 Esports,,Bot,Upset,,Elias Lipp,Germany,EMEA,1999-12-16,0,Upset
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,FC Schalke 04 Esports,,Support,Ignar,이동근,Lee Dong-geun,South Korea,Korea,1996-11-20,0,IgNar
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,FC Schalke 04 Esports,,Coach,Dylan Falco,,Dylan Falco,Canada,North America,,0,Dylan Falco
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Fnatic,,Top,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Fnatic,,Jungle,Broxah,,Mads Brock-Pedersen,Denmark,EMEA,1997-08-12,0,Broxah
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Fnatic,,Mid,Nemesis,,Tim Lipovšek,Slovenia,EMEA,1999-07-26,0,Nemesis
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Fnatic,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Fnatic,,Coach,YoungBuck,,Joey Steltenpool,Netherlands,EMEA,1991-07-28,0,YoungBuck
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,G2 Esports,,Mid,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,G2 Esports,,Bot,Perkz,,Luka Perković,Croatia,EMEA,1998-09-30,0,Perkz
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,G2 Esports,,Support,promisq,,Hampus&amp;nbsp;Mikael Abrahamsson,Sweden,EMEA,1994-03-04,1,promisq
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,GrabbZ
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,G2 Esports,,Coach,Duffman,,Christopher Duff,United Kingdom,EMEA,1990-07-29,0,Duffman
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Misfits Gaming,,Top,sOAZ,,Paul Boyer,France,EMEA,1994-01-09,0,sOAZ
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Misfits Gaming,,Jungle,Maxlore,,Nubar Sarafian,United Kingdom,EMEA,1996-07-01,0,Maxlore
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Misfits Gaming,,Mid,FEBIVEN,,Fabian Diepstraten,Netherlands,EMEA,1996-09-23,0,Febiven
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Misfits Gaming,,Bot,Hans Sama,,Steven Liv,France,EMEA,1999-09-02,0,Hans Sama
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Misfits Gaming,,Support,GorillA,강범현,Kang Beom-hyun,South Korea,Korea,1994-11-18,0,Gorilla
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Misfits Gaming,,Coach,Jesiz,,Jesse Le,Denmark,EMEA,1996-06-17,1,Jesiz
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Misfits Gaming,,Coach,Moose,,Syed&amp;nbsp;Hussain Moosvi,United Arab Emirates,North America,,0,Moose (Hussain Moosvi)
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Origen,,Top,Alphari,,Barney Morris,United Kingdom,EMEA,1999-10-20,0,Alphari
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Origen,,Jungle,Kold,,Jonas Andersen,Denmark,Europe,1995-02-22,1,Kold
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Origen,,Mid,Nukeduck,,Erlend Våtevik Holm,Norway,EMEA,1996-05-21,0,Nukeduck
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Origen,,Bot,Patrik,,Patrik Jírů,Czech Republic,EMEA,2000-04-07,0,Patrik
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Origen,,Support,Mithy,,Alfonso Aguirre Rodríguez,Spain,EMEA,1994-10-05,0,Mithy
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Origen,,Coach,Guilhoto,,André Pereira Guilhoto,Portugal,EMEA,1994-08-26,0,Guilhoto
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Rogue (European Team),,Top,Profit,김준형,Kim Jun-hyung,South Korea,Korea,1995-09-15,1,Profit
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Rogue (European Team),,Top,Finn,,Finn Wiestål,Sweden,EMEA,1999-06-03,0,Finn
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Rogue (European Team),,Jungle,Kikis,,Mateusz Szkudlarek,Poland,EMEA,1996-03-16,0,Kikis
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Rogue (European Team),,Mid,Sencux,,Chres Laursen,Denmark,EMEA,1998-09-17,0,Sencux
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Rogue (European Team),,Bot,HeaQ,,Martin Kordmaa,Estonia,Europe,,1,HeaQ
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Rogue (European Team),,Support,Wadid,김배인,Kim Bae-in,South Korea,Korea,1997-05-25,0,Wadid
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Rogue (European Team),,Support,Vander,,Oskar&amp;nbsp;Mateusz Bogdan,Poland,EMEA,1994-04-18,0,Vander
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Rogue (European Team),,Coach,fredy122,,Simon Payne,United Kingdom,EMEA,,0,fredy122
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,SK Gaming,,Top,Werlyb,,Jorge Casanovas Moreno-Torres,Spain,EMEA,1997-08-14,0,Werlyb
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,SK Gaming,,Jungle,Selfmade,,Oskar Boderek,Poland,EMEA,1999-12-15,0,Selfmade
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,SK Gaming,,Mid,Pirean,최준식,Choi Jun-sik,South Korea,Korea,1998-04-09,1,Pirean
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,SK Gaming,,Bot,Crownshot,,,,,,,Crownshot
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,SK Gaming,,Support,Dreams,한민국,Han Min-kook,South Korea,Korea,1996-03-07,1,Dreams (Han Min-kook)
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,SK Gaming,,Coach,Sheepy,,Fabian Mallant,Germany,EMEA,1993-10-17,0,Sheepy
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,SK Gaming,,Coach,Brokenshard,רם ג'מאל,Ram Djemal,Israel,Europe,1993-09-08,1,Brokenshard
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,SK Gaming,,Coach,Realistik,,Andrei Ruse,Romania,EMEA,1995-07-16,1,Realistik
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Splyce,,Top,Vizicsacsi,,Tamás Kiss,Hungary,EMEA,1993-06-14,0,Vizicsacsi
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Splyce,,Top,Orome,,Andrei Popa,Romania,EMEA,1998-01-16,1,Orome
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Splyce,,Jungle,Xerxe,,Andrei Dragomir,Romania,EMEA,1999-11-05,0,Xerxe
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Splyce,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Splyce,,Bot,Kobbe,,Kasper Kobberup,Denmark,EMEA,1996-09-21,0,Kobbe
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Splyce,,Support,Norskeren,,,,,,,Norskeren
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Splyce,,Coach,Duke,,Hadrien Forestier,France,EMEA,1991-10-01,0,Duke (Hadrien Forestier)
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Team Vitality,,Top,Cabochard,,Lucas Simon-Meslet,France,EMEA,1997-04-15,0,Cabochard
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Team Vitality,,Jungle,Mowgli,이재하,Lee Jae-ha,South Korea,Korea,1998-04-14,0,Mowgli
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Team Vitality,,Mid,Jiizuke,,Daniele di Mauro,Italy,EMEA,1996-01-14,1,Jiizuke
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Team Vitality,,Mid,SAKEN,,Lucas Fayard,France,EMEA,1998-11-05,0,Saken
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Team Vitality,,Bot,Attila,,Amadeu&amp;nbsp;Jesus Dias de Carvalho,Portugal,EMEA,1996-02-26,0,Attila
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Team Vitality,,Support,Jactroll,,Jakub Skurzyński,Poland,EMEA,1998-08-05,1,Jactroll
+2019,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Spring,2019-01-18,Team Vitality,,Coach,YamatoCannon,,Jakob Mebdi,Sweden,EMEA,1995-12-30,0,YamatoCannon
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,FC Schalke 04 Esports,,Top,Odoamne,,Andrei Pascu,Romania,EMEA,1995-01-18,0,Odoamne
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,FC Schalke 04 Esports,,Jungle,Trick,김강윤,Kim Gang-yun,South Korea,Korea,1995-07-11,0,Trick
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,FC Schalke 04 Esports,,Mid,Abbedagge,,Felix&amp;nbsp;Alfred Braun,Germany,EMEA,1999-09-10,0,Abbedagge
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,FC Schalke 04 Esports,,Bot,Upset,,Elias Lipp,Germany,EMEA,1999-12-16,0,Upset
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,FC Schalke 04 Esports,,Support,Ignar,이동근,Lee Dong-geun,South Korea,Korea,1996-11-20,0,IgNar
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,FC Schalke 04 Esports,,Coach,Dylan Falco,,Dylan Falco,Canada,North America,,0,Dylan Falco
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Fnatic,,Top,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Fnatic,,Jungle,Broxah,,Mads Brock-Pedersen,Denmark,EMEA,1997-08-12,0,Broxah
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Fnatic,,Mid,Nemesis,,Tim Lipovšek,Slovenia,EMEA,1999-07-26,0,Nemesis
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Fnatic,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Fnatic,,Coach,YoungBuck,,Joey Steltenpool,Netherlands,EMEA,1991-07-28,0,Youngbuck
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,G2 Esports,,Mid,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,G2 Esports,,Bot,Perkz,,Luka Perković,Croatia,EMEA,1998-09-30,0,Perkz
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,GrabbZ
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Rogue (European Team),,Top,Finn,,Finn Wiestål,Sweden,EMEA,1999-06-03,0,Finn
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Rogue (European Team),,Jungle,Inspired,,Kacper Słoma,Poland,North America,2002-01-24,0,Inspired
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Rogue (European Team),,Mid,Larssen,,Emil Larsson,Sweden,EMEA,2000-03-30,0,Larssen
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Rogue (European Team),,Bot,Woolite,,Paweł Pruski,Poland,EMEA,1996-05-07,0,Woolite
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Rogue (European Team),,Support,Vander,,Oskar&amp;nbsp;Mateusz Bogdan,Poland,EMEA,1994-04-18,0,Vander
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Rogue (European Team),,Coach,fredy122,,Simon Payne,United Kingdom,EMEA,,0,fredy122
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Splyce,,Top,Vizicsacsi,,Tamás Kiss,Hungary,EMEA,1993-06-14,0,Vizicsacsi
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Splyce,,Jungle,Xerxe,,Andrei Dragomir,Romania,EMEA,1999-11-05,0,Xerxe
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Splyce,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Splyce,,Bot,Kobbe,,Kasper Kobberup,Denmark,EMEA,1996-09-21,0,Kobbe
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Splyce,,Support,Norskeren,,,,,,,Norskeren
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Splyce,,Coach,Duke,,Hadrien Forestier,France,EMEA,1991-10-01,0,Duke (Hadrien Forestier)
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Team Vitality,,Top,Cabochard,,Lucas Simon-Meslet,France,EMEA,1997-04-15,0,Cabochard
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Team Vitality,,Jungle,Mowgli,이재하,Lee Jae-ha,South Korea,Korea,1998-04-14,0,Mowgli
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Team Vitality,,Mid,Jiizuke,,Daniele di Mauro,Italy,EMEA,1996-01-14,1,Jiizuke
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Team Vitality,,Bot,Attila,,Amadeu&amp;nbsp;Jesus Dias de Carvalho,Portugal,EMEA,1996-02-26,0,Attila
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Team Vitality,,Support,Jactroll,,Jakub Skurzyński,Poland,EMEA,1998-08-05,1,Jactroll
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer Playoffs,2019-08-23,Team Vitality,,Coach,YamatoCannon,,Jakob Mebdi,Sweden,EMEA,1995-12-30,0,YamatoCannon
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Excel Esports,,Top,Expect,기대한,Ki Dae-han,South Korea,Korea,1996-07-04,1,Expect
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Excel Esports,,Jungle,Caedrel,,Marc&amp;nbsp;Robert Lamont,United Kingdom,EMEA,1996-03-19,0,Caedrel
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Excel Esports,,Mid,Special,,Joran Scheffer,Netherlands,EMEA,1998-01-27,1,Special
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Excel Esports,,Mid,Mickey,손영민,Son Young-min,South Korea,Korea,1997-07-15,1,Mickey (Son Young-min)
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Excel Esports,,Bot,Hjarnan,,Petter Freyschuss,Sweden,EMEA,1993-11-18,0,Hjarnan
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Excel Esports,,Bot,Jeskla,,Jesper Klarin Strömberg,Sweden,EMEA,2000-07-08,0,Jeskla
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Excel Esports,,Support,Kasing,曾家誠,Raymond Tsang,United Kingdom,EMEA,1993-12-08,0,kaSing
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Excel Esports,,Support,Mystiques,,Patryk Piórkowski,Poland,EMEA,1997-03-01,0,Mystiques
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Excel Esports,,Coach,DLim,임주성,Lim&amp;nbsp;&quot;David&quot; Joo-sung,Canada,North America,,1,DLim
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,FC Schalke 04 Esports,,Top,Odoamne,,Andrei Pascu,Romania,EMEA,1995-01-18,0,Odoamne
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,FC Schalke 04 Esports,,Jungle,Trick,김강윤,Kim Gang-yun,South Korea,Korea,1995-07-11,0,Trick
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,FC Schalke 04 Esports,,Mid,Abbedagge,,Felix&amp;nbsp;Alfred Braun,Germany,EMEA,1999-09-10,0,Abbedagge
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,FC Schalke 04 Esports,,Bot,Upset,,Elias Lipp,Germany,EMEA,1999-12-16,0,Upset
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,FC Schalke 04 Esports,,Support,Ignar,이동근,Lee Dong-geun,South Korea,Korea,1996-11-20,0,IgNar
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,FC Schalke 04 Esports,,Coach,Dylan Falco,,Dylan Falco,Canada,North America,,0,Dylan Falco
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Fnatic,,Top,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Fnatic,,Jungle,Broxah,,Mads Brock-Pedersen,Denmark,EMEA,1997-08-12,0,Broxah
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Fnatic,,"Mid,Bot",Nemesis,,Tim Lipovšek,Slovenia,EMEA,1999-07-26,0,Nemesis
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Fnatic,,Mid,MagiFelix,,Carl&amp;nbsp;Felix Boström,Sweden,Europe,2000-02-27,1,MagiFelix
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Fnatic,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Fnatic,,Coach,YoungBuck,,Joey Steltenpool,Netherlands,EMEA,1991-07-28,0,Youngbuck
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,G2 Esports,,Mid,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,G2 Esports,,Bot,Perkz,,Luka Perković,Croatia,EMEA,1998-09-30,0,Perkz
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,GrabbZ
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Misfits Gaming,,Top,sOAZ,,Paul Boyer,France,EMEA,1994-01-09,0,sOAZ
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Misfits Gaming,,Top,Dan Dan,,Danny Le Comte,Spain,EMEA,1995-09-07,0,Dan Dan
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Misfits Gaming,,Jungle,Maxlore,,Nubar Sarafian,United Kingdom,EMEA,1996-07-01,0,Maxlore
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Misfits Gaming,,Jungle,Kirei,,Thomas Yuen,Netherlands,EMEA,1997-02-18,0,Kirei
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Misfits Gaming,,Mid,FEBIVEN,,Fabian Diepstraten,Netherlands,EMEA,1996-09-23,0,Febiven
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Misfits Gaming,,Mid,LIDER,,Adam Ilyasov,Russia,EMEA,1999-07-03,0,LIDER
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Misfits Gaming,,Bot,Hans Sama,,Steven Liv,France,EMEA,1999-09-02,0,Hans Sama
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Misfits Gaming,,Bot,Neon,,Matúš Jakubčík,Slovakia,EMEA,1999-04-24,1,Neon (Matúš Jakubčík)
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Misfits Gaming,,Support,GorillA,강범현,Kang Beom-hyun,South Korea,Korea,1994-11-18,0,Gorilla
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Misfits Gaming,,Support,H1IVA,,,,,,,H1IVA
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Misfits Gaming,,Support,Doss,,Mads Schwartz Berg Jensen,Denmark,EMEA,1999-03-19,0,Doss
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Misfits Gaming,,Coach,Moose,,Syed&amp;nbsp;Hussain Moosvi,United Arab Emirates,North America,,0,Moose (Hussain Moosvi)
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Misfits Gaming,,Coach,Jesiz,,Jesse Le,Denmark,EMEA,1996-06-17,1,Jesiz
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Origen,,Top,Alphari,,Barney Morris,United Kingdom,EMEA,1999-10-20,0,Alphari
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Origen,,Jungle,Kold,,Jonas Andersen,Denmark,Europe,1995-02-22,1,Kold
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Origen,,Mid,Nukeduck,,Erlend Våtevik Holm,Norway,EMEA,1996-05-21,0,Nukeduck
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Origen,,Bot,Patrik,,Patrik Jírů,Czech Republic,EMEA,2000-04-07,0,Patrik
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Origen,,Support,Mithy,,Alfonso Aguirre Rodríguez,Spain,EMEA,1994-10-05,0,Mithy
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Origen,,Coach,Guilhoto,,André Pereira Guilhoto,Portugal,EMEA,1994-08-26,0,Guilhoto
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Rogue (European Team),,Top,Profit,김준형,Kim Jun-hyung,South Korea,Korea,1995-09-15,1,Profit
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Rogue (European Team),,Top,Finn,,Finn Wiestål,Sweden,EMEA,1999-06-03,0,Finn
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Rogue (European Team),,Jungle,Inspired,,Kacper Słoma,Poland,North America,2002-01-24,0,Inspired
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Rogue (European Team),,Mid,Larssen,,Emil Larsson,Sweden,EMEA,2000-03-30,0,Larssen
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Rogue (European Team),,Bot,Woolite,,Paweł Pruski,Poland,EMEA,1996-05-07,0,Woolite
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Rogue (European Team),,Bot,HeaQ,,Martin Kordmaa,Estonia,Europe,,1,HeaQ
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Rogue (European Team),,Support,Vander,,Oskar&amp;nbsp;Mateusz Bogdan,Poland,EMEA,1994-04-18,0,Vander
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Rogue (European Team),,Coach,fredy122,,Simon Payne,United Kingdom,EMEA,,0,fredy122
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,SK Gaming,,Top,Sacre,,Toni Sabalić,Croatia,EMEA,1996-09-07,0,Sacre
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,SK Gaming,,Jungle,Selfmade,,Oskar Boderek,Poland,EMEA,1999-12-15,0,Selfmade
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,SK Gaming,,Mid,Pirean,최준식,Choi Jun-sik,South Korea,Korea,1998-04-09,1,Pirean
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,SK Gaming,,Mid,Jenax,,,,,,,Jenax
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,SK Gaming,,Bot,Crownshot,,,,,,,Crownshot
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,SK Gaming,,Support,Dreams,한민국,Han Min-kook,South Korea,Korea,1996-03-07,1,Dreams (Han Min-kook)
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,SK Gaming,,Coach,Realistik,,Andrei Ruse,Romania,EMEA,1995-07-16,1,Realistik
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Splyce,,Top,Vizicsacsi,,Tamás Kiss,Hungary,EMEA,1993-06-14,0,Vizicsacsi
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Splyce,,Jungle,Xerxe,,Andrei Dragomir,Romania,EMEA,1999-11-05,0,Xerxe
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Splyce,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Splyce,,Bot,Kobbe,,Kasper Kobberup,Denmark,EMEA,1996-09-21,0,Kobbe
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Splyce,,Support,Norskeren,,,,,,,Norskeren
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Splyce,,Coach,Duke,,Hadrien Forestier,France,EMEA,1991-10-01,0,Duke (Hadrien Forestier)
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Team Vitality,,Top,Cabochard,,Lucas Simon-Meslet,France,EMEA,1997-04-15,0,Cabochard
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Team Vitality,,Jungle,Mowgli,이재하,Lee Jae-ha,South Korea,Korea,1998-04-14,0,Mowgli
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Team Vitality,,Mid,Jiizuke,,Daniele di Mauro,Italy,EMEA,1996-01-14,1,Jiizuke
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Team Vitality,,Bot,Attila,,Amadeu&amp;nbsp;Jesus Dias de Carvalho,Portugal,EMEA,1996-02-26,0,Attila
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Team Vitality,,Support,Jactroll,,Jakub Skurzyński,Poland,EMEA,1998-08-05,1,Jactroll
+2019,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2019 Summer,2019-06-07,Team Vitality,,Coach,YamatoCannon,,Jakob Mebdi,Sweden,EMEA,1995-12-30,0,YamatoCannon
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Fnatic,,Top,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Fnatic,,Jungle,Selfmade,,Oskar Boderek,Poland,EMEA,1999-12-15,0,Selfmade
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Fnatic,,Mid,Nemesis,,Tim Lipovšek,Slovenia,EMEA,1999-07-26,0,Nemesis
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Fnatic,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Fnatic,,Coach,Mithy,,Alfonso Aguirre Rodríguez,Spain,EMEA,1994-10-05,0,Mithy
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Fnatic,,Top,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Fnatic,,Jungle,Selfmade,,Oskar Boderek,Poland,EMEA,1999-12-15,0,Selfmade
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Fnatic,,Mid,Nemesis,,Tim Lipovšek,Slovenia,EMEA,1999-07-26,0,Nemesis
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Fnatic,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Fnatic,,Coach,Mithy,,Alfonso Aguirre Rodríguez,Spain,EMEA,1994-10-05,0,Mithy
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,G2 Esports,,Mid,Perkz,,Luka Perković,Croatia,EMEA,1998-09-30,0,PERKZ
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,G2 Esports,,Bot,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,GrabbZ
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,G2 Esports,,Mid,Perkz,,Luka Perković,Croatia,EMEA,1998-09-30,0,PERKZ
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,G2 Esports,,Bot,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,GrabbZ
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,MAD Lions,,Top,Orome,,Andrei Popa,Romania,EMEA,1998-01-16,1,Orome
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,MAD Lions,,Jungle,Shad0w,赵志强,Zhao Zhi-Qiang,Italy,China,2001-02-25,0,Shad0w
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,MAD Lions,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,MAD Lions,,Bot,Carzzy,,Matyáš Orság,Czech Republic,EMEA,2002-01-31,0,Carzzy
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,MAD Lions,,Support,Kaiser,,Norman Kaiser,Germany,EMEA,1998-11-19,0,Kaiser
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,MAD Lions,,Coach,Mac,,James MacCormack,United Kingdom,EMEA,1994-02-13,0,Mac
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,MAD Lions,,Coach,Kaas,,Christophe van Oudheusden,Belgium,EMEA,,0,Kaas
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,MAD Lions,,Top,Orome,,Andrei Popa,Romania,EMEA,1998-01-16,1,Orome
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,MAD Lions,,Jungle,Shad0w,赵志强,Zhao Zhi-Qiang,Italy,China,2001-02-25,0,Shad0w
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,MAD Lions,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,MAD Lions,,Bot,Carzzy,,Matyáš Orság,Czech Republic,EMEA,2002-01-31,0,Carzzy
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,MAD Lions,,Support,Kaiser,,Norman Kaiser,Germany,EMEA,1998-11-19,0,Kaiser
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,MAD Lions,,Coach,Mac,,James MacCormack,United Kingdom,EMEA,1994-02-13,0,Mac
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,MAD Lions,,Coach,Kaas,,Christophe van Oudheusden,Belgium,EMEA,,0,Kaas
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Misfits Gaming,,Top,Dan Dan,,Danny Le Comte,Spain,EMEA,1995-09-07,0,Dan Dan
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Misfits Gaming,,Jungle,Razork,,Iván Martín Díaz,Spain,EMEA,2000-10-07,0,Razork
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Misfits Gaming,,Mid,FEBIVEN,,Fabian Diepstraten,Netherlands,EMEA,1996-09-23,0,Febiven
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Misfits Gaming,,Bot,Bvoy,주영훈,Ju Yeong-hoon,South Korea,Korea,1997-12-18,0,Bvoy
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Misfits Gaming,,Support,denyk,,Petr Haramach,Czech Republic,EMEA,1995-04-30,0,denyk
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Misfits Gaming,,Coach,Jandro,,Alejandro Fernández-Valdés Pedrosa,Spain,EMEA,,0,Jandro
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Misfits Gaming,,Coach,Amazing,,Maurice Stückenschneider,Germany,EMEA,1994-04-02,0,Amazing (Maurice Stückenschneider)
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Misfits Gaming,,Top,Dan Dan,,Danny Le Comte,Spain,EMEA,1995-09-07,0,Dan Dan
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Misfits Gaming,,Jungle,Razork,,Iván Martín Díaz,Spain,EMEA,2000-10-07,0,Razork
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Misfits Gaming,,Mid,FEBIVEN,,Fabian Diepstraten,Netherlands,EMEA,1996-09-23,0,Febiven
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Misfits Gaming,,Bot,Bvoy,주영훈,Ju Yeong-hoon,South Korea,Korea,1997-12-18,0,Bvoy
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Misfits Gaming,,Support,denyk,,Petr Haramach,Czech Republic,EMEA,1995-04-30,0,denyk
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Misfits Gaming,,Coach,Jandro,,Alejandro Fernández-Valdés Pedrosa,Spain,EMEA,,0,Jandro
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Misfits Gaming,,Coach,Amazing,,Maurice Stückenschneider,Germany,EMEA,1994-04-02,0,Amazing (Maurice Stückenschneider)
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Origen,,Top,Alphari,,Barney Morris,United Kingdom,EMEA,1999-10-20,0,Alphari
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Origen,,Jungle,Xerxe,,Andrei Dragomir,Romania,EMEA,1999-11-05,0,Xerxe
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Origen,,Mid,Nukeduck,,Erlend Våtevik Holm,Norway,EMEA,1996-05-21,0,Nukeduck
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Origen,,Bot,Upset,,Elias Lipp,Germany,EMEA,1999-12-16,0,Upset
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Origen,,Support,destiny,,Mitchell Shaw,Australia,Asia Pacific,1997-10-27,0,Destiny (Mitchell Shaw)
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Origen,,Coach,Guilhoto,,André Pereira Guilhoto,Portugal,EMEA,1994-08-26,0,Guilhoto
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Origen,,Coach,Kayys,,Jack Kayser,United States,North America,,1,Kayys
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Origen,,Top,Alphari,,Barney Morris,United Kingdom,EMEA,1999-10-20,0,Alphari
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Origen,,Jungle,Xerxe,,Andrei Dragomir,Romania,EMEA,1999-11-05,0,Xerxe
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Origen,,Mid,Nukeduck,,Erlend Våtevik Holm,Norway,EMEA,1996-05-21,0,Nukeduck
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Origen,,Bot,Upset,,Elias Lipp,Germany,EMEA,1999-12-16,0,Upset
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Origen,,Support,destiny,,Mitchell Shaw,Australia,Asia Pacific,1997-10-27,0,Destiny (Mitchell Shaw)
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Origen,,Coach,Guilhoto,,André Pereira Guilhoto,Portugal,EMEA,1994-08-26,0,Guilhoto
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Origen,,Coach,Kayys,,Jack Kayser,United States,North America,,1,Kayys
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Rogue (European Team),,Top,Finn,,Finn Wiestål,Sweden,EMEA,1999-06-03,0,Finn
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Rogue (European Team),,Jungle,Inspired,,Kacper Słoma,Poland,North America,2002-01-24,0,Inspired
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Rogue (European Team),,Mid,Larssen,,Emil Larsson,Sweden,EMEA,2000-03-30,0,Larssen
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Rogue (European Team),,Bot,Hans Sama,,Steven Liv,France,EMEA,1999-09-02,0,Hans sama
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Rogue (European Team),,Support,Vander,,Oskar&amp;nbsp;Mateusz Bogdan,Poland,EMEA,1994-04-18,0,Vander
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring Playoffs,2020-04-03,Rogue (European Team),,Coach,fredy122,,Simon Payne,United Kingdom,EMEA,,0,fredy122
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Excel Esports,,Top,Expect,기대한,Ki Dae-han,South Korea,Korea,1996-07-04,1,Expect
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Excel Esports,,Jungle,Caedrel,,Marc&amp;nbsp;Robert Lamont,United Kingdom,EMEA,1996-03-19,0,Caedrel
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Excel Esports,,Mid,Mickey,손영민,Son Young-min,South Korea,Korea,1997-07-15,1,Mickey (Son Young-min)
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Excel Esports,,Bot,Patrik,,Patrik Jírů,Czech Republic,EMEA,2000-04-07,0,Patrik
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Excel Esports,,Support,Tore,,Tore Hoel Eilertsen,Norway,EMEA,1999-12-27,1,Tore
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Excel Esports,,Coach,YoungBuck,,Joey Steltenpool,Netherlands,EMEA,1991-07-28,0,YoungBuck
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Excel Esports,,Coach,Mapache,,Alejandro Parejo Martinez,Spain,EMEA,,0,Mapache
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,FC Schalke 04 Esports,,Top,Odoamne,,Andrei Pascu,Romania,EMEA,1995-01-18,0,Odoamne
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,FC Schalke 04 Esports,,Jungle,Gilius,,Erberk Demir,Germany,EMEA,1997-01-05,0,Gilius
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,FC Schalke 04 Esports,,Jungle,Lurox,,Lukas Thoma,Germany,EMEA,1999-06-07,0,Lurox
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,FC Schalke 04 Esports,,Mid,Abbedagge,,Felix&amp;nbsp;Alfred Braun,Germany,EMEA,1999-09-10,0,Abbedagge
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,FC Schalke 04 Esports,,Bot,FORG1VEN,Κωνσταντίνος-Ναπολέων Τζωρτζίου,Konstantinos-Napoleon Tzortziou,Greece,EMEA,1992-07-23,1,FORG1VEN
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,FC Schalke 04 Esports,,Bot,Innaxe,Нихат Алиев,Nihat Aliev,Bulgaria,EMEA,1999-03-23,0,Innaxe
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,FC Schalke 04 Esports,,Support,Dreams,한민국,Han Min-kook,South Korea,Korea,1996-03-07,1,Dreams (Han Min-kook)
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,FC Schalke 04 Esports,,Coach,Dylan Falco,,Dylan Falco,Canada,North America,,0,Dylan Falco
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Fnatic,,Top,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Fnatic,,Jungle,Selfmade,,Oskar Boderek,Poland,EMEA,1999-12-15,0,Selfmade
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Fnatic,,Mid,Nemesis,,Tim Lipovšek,Slovenia,EMEA,1999-07-26,0,Nemesis
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Fnatic,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Fnatic,,Coach,Mithy,,Alfonso Aguirre Rodríguez,Spain,EMEA,1994-10-05,0,Mithy
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Fnatic,,Coach,Aagie,,Carlos Carpio Cuenca,Spain,EMEA,1996-12-29,0,Aagie
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,G2 Esports,,Mid,Perkz,,Luka Perković,Croatia,EMEA,1998-09-30,0,PERKZ
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,G2 Esports,,Bot,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,GrabbZ
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,MAD Lions,,Top,Orome,,Andrei Popa,Romania,EMEA,1998-01-16,1,Orome
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,MAD Lions,,Jungle,Shad0w,赵志强,Zhao Zhi-Qiang,Italy,China,2001-02-25,0,Shad0w
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,MAD Lions,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,MAD Lions,,Bot,Carzzy,,Matyáš Orság,Czech Republic,EMEA,2002-01-31,0,Carzzy
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,MAD Lions,,Support,Kaiser,,Norman Kaiser,Germany,EMEA,1998-11-19,0,Kaiser
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,MAD Lions,,Coach,Mac,,James MacCormack,United Kingdom,EMEA,1994-02-13,0,Mac
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,MAD Lions,,Coach,Kaas,,Christophe van Oudheusden,Belgium,EMEA,,0,Kaas
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Misfits Gaming,,Top,Dan Dan,,Danny Le Comte,Spain,EMEA,1995-09-07,0,Dan Dan
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Misfits Gaming,,Jungle,Razork,,Iván Martín Díaz,Spain,EMEA,2000-10-07,0,Razork
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Misfits Gaming,,Mid,FEBIVEN,,Fabian Diepstraten,Netherlands,EMEA,1996-09-23,0,Febiven
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Misfits Gaming,,Bot,Bvoy,주영훈,Ju Yeong-hoon,South Korea,Korea,1997-12-18,0,Bvoy
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Misfits Gaming,,Support,denyk,,Petr Haramach,Czech Republic,EMEA,1995-04-30,0,denyk
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Misfits Gaming,,Coach,Jandro,,Alejandro Fernández-Valdés Pedrosa,Spain,EMEA,,0,Jandro
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Misfits Gaming,,Coach,Amazing,,Maurice Stückenschneider,Germany,EMEA,1994-04-02,0,Amazing (Maurice Stückenschneider)
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Origen,,Top,Alphari,,Barney Morris,United Kingdom,EMEA,1999-10-20,0,Alphari
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Origen,,Jungle,Xerxe,,Andrei Dragomir,Romania,EMEA,1999-11-05,0,Xerxe
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Origen,,Mid,Nukeduck,,Erlend Våtevik Holm,Norway,EMEA,1996-05-21,0,Nukeduck
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Origen,,Bot,Upset,,Elias Lipp,Germany,EMEA,1999-12-16,0,Upset
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Origen,,Support,destiny,,Mitchell Shaw,Australia,Asia Pacific,1997-10-27,0,Destiny (Mitchell Shaw)
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Origen,,Coach,Guilhoto,,André Pereira Guilhoto,Portugal,EMEA,1994-08-26,0,Guilhoto
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Origen,,Coach,Kayys,,Jack Kayser,United States,North America,,1,Kayys
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Rogue (European Team),,Top,Finn,,Finn Wiestål,Sweden,EMEA,1999-06-03,0,Finn
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Rogue (European Team),,Jungle,Inspired,,Kacper Słoma,Poland,North America,2002-01-24,0,Inspired
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Rogue (European Team),,Mid,Larssen,,Emil Larsson,Sweden,EMEA,2000-03-30,0,Larssen
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Rogue (European Team),,Bot,Hans Sama,,Steven Liv,France,EMEA,1999-09-02,0,Hans sama
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Rogue (European Team),,Support,Vander,,Oskar&amp;nbsp;Mateusz Bogdan,Poland,EMEA,1994-04-18,0,Vander
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Rogue (European Team),,Coach,fredy122,,Simon Payne,United Kingdom,EMEA,,0,fredy122
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Rogue (European Team),,Coach,Blumigan,,Marcus Blom,Sweden,EMEA,1993-04-06,1,Blumigan
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,SK Gaming,,Top,Sacre,,Toni Sabalić,Croatia,EMEA,1996-09-07,0,Sacre
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,SK Gaming,,Top,Ventair,,Simon Tschammer,Germany,EMEA,1999-12-05,0,Ventair
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,SK Gaming,,Jungle,Trick,김강윤,Kim Gang-yun,South Korea,Korea,1995-07-11,0,Trick
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,SK Gaming,,Mid,Jenax,,,,,,,Jenax
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,SK Gaming,,Bot,Crownshot,,,,,,,Crownshot
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,SK Gaming,,Support,LIMIT,,Dino Tot,Croatia,EMEA,1997-12-27,0,LIMIT (Dino Tot)
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,SK Gaming,,Coach,Unlimited,Петър Георгиев,Petar Georgiev,Bulgaria,EMEA,1990-06-09,0,Unlimited (Petar Georgiev)
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,SK Gaming,,Coach,Kanani,,Lamine-Lounis &quot;Paul&quot; Khouani,Algeria,EMEA,1996-10-16,1,Kanani
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Team Vitality,,Top,Cabochard,,Lucas Simon-Meslet,France,EMEA,1997-04-15,0,Cabochard
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Team Vitality,,Jungle,Skeanz,,Duncan Marquet,France,EMEA,2000-09-25,0,Skeanz
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Team Vitality,,Mid,SAKEN,,Lucas Fayard,France,EMEA,1998-11-05,0,Saken
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Team Vitality,,Mid,Selfie,,,,,,,Selfie
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Team Vitality,,Bot,Comp,Μάρκος Σταμκόπουλος,Markos Stamkopoulos,Greece,EMEA,2001-12-20,0,Comp
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Team Vitality,,Support,Jactroll,,Jakub Skurzyński,Poland,EMEA,1998-08-05,1,Jactroll
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Team Vitality,,Support,Steeelback,,Pierre Medjaldi,France,EMEA,1996-08-16,0,Steeelback
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Team Vitality,,Coach,Duke,,Hadrien Forestier,France,EMEA,1991-10-01,0,Duke (Hadrien Forestier)
+2020,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Spring,2020-01-24,Team Vitality,,Coach,Mephisto,,Louis-Victor Legendre,France,EMEA,1992-02-26,0,Mephisto
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,FC Schalke 04 Esports,,Top,Odoamne,,Andrei Pascu,Romania,EMEA,1995-01-18,0,Odoamne
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,FC Schalke 04 Esports,,Jungle,Gilius,,Erberk Demir,Germany,EMEA,1997-01-05,0,Gilius
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,FC Schalke 04 Esports,,Mid,Abbedagge,,Felix&amp;nbsp;Alfred Braun,Germany,EMEA,1999-09-10,0,Abbedagge
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,FC Schalke 04 Esports,,Bot,Neon,,Matúš Jakubčík,Slovakia,EMEA,1999-04-24,1,Neon (Matúš Jakubčík)
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,FC Schalke 04 Esports,,Support,Dreams,한민국,Han Min-kook,South Korea,Korea,1996-03-07,1,Dreams (Han Min-kook)
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,FC Schalke 04 Esports,,Coach,Dylan Falco,,Dylan Falco,Canada,North America,,0,Dylan Falco
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,FC Schalke 04 Esports,,Top,Odoamne,,Andrei Pascu,Romania,EMEA,1995-01-18,0,Odoamne
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,FC Schalke 04 Esports,,Jungle,Gilius,,Erberk Demir,Germany,EMEA,1997-01-05,0,Gilius
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,FC Schalke 04 Esports,,Mid,Abbedagge,,Felix&amp;nbsp;Alfred Braun,Germany,EMEA,1999-09-10,0,Abbedagge
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,FC Schalke 04 Esports,,Bot,Neon,,Matúš Jakubčík,Slovakia,EMEA,1999-04-24,1,Neon (Matúš Jakubčík)
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,FC Schalke 04 Esports,,Support,Dreams,한민국,Han Min-kook,South Korea,Korea,1996-03-07,1,Dreams (Han Min-kook)
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,FC Schalke 04 Esports,,Coach,Dylan Falco,,Dylan Falco,Canada,North America,,0,Dylan Falco
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Fnatic,,Top,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Fnatic,,Jungle,Selfmade,,Oskar Boderek,Poland,EMEA,1999-12-15,0,Selfmade
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Fnatic,,Mid,Nemesis,,Tim Lipovšek,Slovenia,EMEA,1999-07-26,0,Nemesis
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Fnatic,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Fnatic,,Coach,Mithy,,Alfonso Aguirre Rodríguez,Spain,EMEA,1994-10-05,0,Mithy
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Fnatic,,Coach,Shaves,,Kevin&amp;nbsp;Edward Tolman,United Kingdom,EMEA,,0,Shaves
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Fnatic,,Top,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Fnatic,,Jungle,Selfmade,,Oskar Boderek,Poland,EMEA,1999-12-15,0,Selfmade
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Fnatic,,Mid,Nemesis,,Tim Lipovšek,Slovenia,EMEA,1999-07-26,0,Nemesis
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Fnatic,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Fnatic,,Coach,Mithy,,Alfonso Aguirre Rodríguez,Spain,EMEA,1994-10-05,0,Mithy
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Fnatic,,Coach,Shaves,,Kevin&amp;nbsp;Edward Tolman,United Kingdom,EMEA,,0,Shaves
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,G2 Esports,,Mid,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,G2 Esports,,Bot,Perkz,,Luka Perković,Croatia,EMEA,1998-09-30,0,Perkz
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,GrabbZ
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,G2 Esports,,Mid,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,G2 Esports,,Bot,Perkz,,Luka Perković,Croatia,EMEA,1998-09-30,0,Perkz
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,GrabbZ
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,MAD Lions,,Top,Orome,,Andrei Popa,Romania,EMEA,1998-01-16,1,Orome
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,MAD Lions,,Jungle,Shad0w,赵志强,Zhao Zhi-Qiang,Italy,China,2001-02-25,0,Shad0w
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,MAD Lions,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,MAD Lions,,Bot,Carzzy,,Matyáš Orság,Czech Republic,EMEA,2002-01-31,0,Carzzy
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,MAD Lions,,Support,Kaiser,,Norman Kaiser,Germany,EMEA,1998-11-19,0,Kaiser
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,MAD Lions,,Coach,Mac,,James MacCormack,United Kingdom,EMEA,1994-02-13,0,Mac
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,MAD Lions,,Coach,Kaas,,Christophe van Oudheusden,Belgium,EMEA,,0,Kaas
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,MAD Lions,,Top,Orome,,Andrei Popa,Romania,EMEA,1998-01-16,1,Orome
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,MAD Lions,,Jungle,Shad0w,赵志强,Zhao Zhi-Qiang,Italy,China,2001-02-25,0,Shad0w
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,MAD Lions,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,MAD Lions,,Bot,Carzzy,,Matyáš Orság,Czech Republic,EMEA,2002-01-31,0,Carzzy
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,MAD Lions,,Support,Kaiser,,Norman Kaiser,Germany,EMEA,1998-11-19,0,Kaiser
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,MAD Lions,,Coach,Mac,,James MacCormack,United Kingdom,EMEA,1994-02-13,0,Mac
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,MAD Lions,,Coach,Kaas,,Christophe van Oudheusden,Belgium,EMEA,,0,Kaas
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Rogue (European Team),,Top,Finn,,Finn Wiestål,Sweden,EMEA,1999-06-03,0,Finn
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Rogue (European Team),,Jungle,Inspired,,Kacper Słoma,Poland,North America,2002-01-24,0,Inspired
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Rogue (European Team),,Mid,Larssen,,Emil Larsson,Sweden,EMEA,2000-03-30,0,Larssen
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Rogue (European Team),,Bot,Hans Sama,,Steven Liv,France,EMEA,1999-09-02,0,Hans sama
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Rogue (European Team),,Support,Vander,,Oskar&amp;nbsp;Mateusz Bogdan,Poland,EMEA,1994-04-18,0,Vander
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Rogue (European Team),,Coach,fredy122,,Simon Payne,United Kingdom,EMEA,,0,fredy122
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Rogue (European Team),,Coach,Blumigan,,Marcus Blom,Sweden,EMEA,1993-04-06,1,Blumigan
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Rogue (European Team),,Top,Finn,,Finn Wiestål,Sweden,EMEA,1999-06-03,0,Finn
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Rogue (European Team),,Jungle,Inspired,,Kacper Słoma,Poland,North America,2002-01-24,0,Inspired
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Rogue (European Team),,Mid,Larssen,,Emil Larsson,Sweden,EMEA,2000-03-30,0,Larssen
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Rogue (European Team),,Bot,Hans Sama,,Steven Liv,France,EMEA,1999-09-02,0,Hans sama
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Rogue (European Team),,Support,Vander,,Oskar&amp;nbsp;Mateusz Bogdan,Poland,EMEA,1994-04-18,0,Vander
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Rogue (European Team),,Coach,fredy122,,Simon Payne,United Kingdom,EMEA,,0,fredy122
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,Rogue (European Team),,Coach,Blumigan,,Marcus Blom,Sweden,EMEA,1993-04-06,1,Blumigan
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,SK Gaming,,Top,Jenax,,,,,,,Jenax
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,SK Gaming,,Jungle,Trick,김강윤,Kim Gang-yun,South Korea,Korea,1995-07-11,0,Trick
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,SK Gaming,,Mid,ZaZee,,Dirk Mallner,Germany,EMEA,1999-02-21,0,ZaZee
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,SK Gaming,,Bot,Crownshot,,,,,,,Crownshot
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,SK Gaming,,Support,LIMIT,,Dino Tot,Croatia,EMEA,1997-12-27,0,LIMIT (Dino Tot)
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,SK Gaming,,Coach,Jesiz,,Jesse Le,Denmark,EMEA,1996-06-17,1,Jesiz
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,SK Gaming,,Coach,Kanani,,Lamine-Lounis &quot;Paul&quot; Khouani,Algeria,EMEA,1996-10-16,1,Kanani
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,SK Gaming,,Top,Jenax,,,,,,,Jenax
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,SK Gaming,,Jungle,Trick,김강윤,Kim Gang-yun,South Korea,Korea,1995-07-11,0,Trick
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,SK Gaming,,Mid,ZaZee,,Dirk Mallner,Germany,EMEA,1999-02-21,0,ZaZee
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,SK Gaming,,Bot,Crownshot,,,,,,,Crownshot
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,SK Gaming,,Support,LIMIT,,Dino Tot,Croatia,EMEA,1997-12-27,0,LIMIT (Dino Tot)
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,SK Gaming,,Coach,Jesiz,,Jesse Le,Denmark,EMEA,1996-06-17,1,Jesiz
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer Playoffs,2020-08-21,SK Gaming,,Coach,Kanani,,Lamine-Lounis &quot;Paul&quot; Khouani,Algeria,EMEA,1996-10-16,1,Kanani
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Excel Esports,,Top,Kryze,,Felix Hellström,Sweden,EMEA,1999-07-01,0,Kryze
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Excel Esports,,Jungle,Caedrel,,Marc&amp;nbsp;Robert Lamont,United Kingdom,EMEA,1996-03-19,0,Caedrel
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Excel Esports,,Mid,Special,,Joran Scheffer,Netherlands,EMEA,1998-01-27,1,Special
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Excel Esports,,Bot,Patrik,,Patrik Jírů,Czech Republic,EMEA,2000-04-07,0,Patrik
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Excel Esports,,Support,Tore,,Tore Hoel Eilertsen,Norway,EMEA,1999-12-27,1,Tore
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Excel Esports,,Coach,YoungBuck,,Joey Steltenpool,Netherlands,EMEA,1991-07-28,0,YoungBuck
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Excel Esports,,Coach,Mapache,,Alejandro Parejo Martinez,Spain,EMEA,,0,Mapache
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,FC Schalke 04 Esports,,Top,Odoamne,,Andrei Pascu,Romania,EMEA,1995-01-18,0,Odoamne
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,FC Schalke 04 Esports,,Jungle,Lurox,,Lukas Thoma,Germany,EMEA,1999-06-07,0,Lurox
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,FC Schalke 04 Esports,,Jungle,Gilius,,Erberk Demir,Germany,EMEA,1997-01-05,0,Gilius
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,FC Schalke 04 Esports,,Mid,Abbedagge,,Felix&amp;nbsp;Alfred Braun,Germany,EMEA,1999-09-10,0,Abbedagge
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,FC Schalke 04 Esports,,Bot,Innaxe,Нихат Алиев,Nihat Aliev,Bulgaria,EMEA,1999-03-23,0,Innaxe
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,FC Schalke 04 Esports,,Bot,Neon,,Matúš Jakubčík,Slovakia,EMEA,1999-04-24,1,Neon (Matúš Jakubčík)
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,FC Schalke 04 Esports,,Support,Nukes,,Risto Luuri,Estonia,EMEA,1997-11-24,1,Nukes
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,FC Schalke 04 Esports,,Support,Dreams,한민국,Han Min-kook,South Korea,Korea,1996-03-07,1,Dreams (Han Min-kook)
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,FC Schalke 04 Esports,,Coach,Dylan Falco,,Dylan Falco,Canada,North America,,0,Dylan Falco
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Fnatic,,Top,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Fnatic,,Jungle,Selfmade,,Oskar Boderek,Poland,EMEA,1999-12-15,0,Selfmade
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Fnatic,,Mid,Nemesis,,Tim Lipovšek,Slovenia,EMEA,1999-07-26,0,Nemesis
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Fnatic,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Fnatic,,Coach,Mithy,,Alfonso Aguirre Rodríguez,Spain,EMEA,1994-10-05,0,Mithy
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Fnatic,,Coach,Shaves,,Kevin&amp;nbsp;Edward Tolman,United Kingdom,EMEA,,0,Shaves
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,G2 Esports,,Mid,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,G2 Esports,,Bot,Perkz,,Luka Perković,Croatia,EMEA,1998-09-30,0,Perkz
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,G2 Esports,,Bot,P1noy,,Kristoffer Albao Lund Pedersen,Denmark,Europe,1996-05-16,1,P1noy
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,GrabbZ
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,MAD Lions,,Top,Orome,,Andrei Popa,Romania,EMEA,1998-01-16,1,Orome
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,MAD Lions,,Jungle,Shad0w,赵志强,Zhao Zhi-Qiang,Italy,China,2001-02-25,0,Shad0w
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,MAD Lions,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,MAD Lions,,Bot,Carzzy,,Matyáš Orság,Czech Republic,EMEA,2002-01-31,0,Carzzy
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,MAD Lions,,Support,Kaiser,,Norman Kaiser,Germany,EMEA,1998-11-19,0,Kaiser
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,MAD Lions,,Coach,Mac,,James MacCormack,United Kingdom,EMEA,1994-02-13,0,Mac
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,MAD Lions,,Coach,Kaas,,Christophe van Oudheusden,Belgium,EMEA,,0,Kaas
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Misfits Gaming,,Top,Dan Dan,,Danny Le Comte,Spain,EMEA,1995-09-07,0,Dan Dan
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Misfits Gaming,,Jungle,Razork,,Iván Martín Díaz,Spain,EMEA,2000-10-07,0,Razork
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Misfits Gaming,,Mid,FEBIVEN,,Fabian Diepstraten,Netherlands,EMEA,1996-09-23,0,FEBIVEN
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Misfits Gaming,,Bot,Kobbe,,Kasper Kobberup,Denmark,EMEA,1996-09-21,0,Kobbe
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Misfits Gaming,,Support,Doss,,Mads Schwartz Berg Jensen,Denmark,EMEA,1999-03-19,0,Doss
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Misfits Gaming,,Support,denyk,,Petr Haramach,Czech Republic,EMEA,1995-04-30,0,denyk
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Misfits Gaming,,Coach,Jandro,,Alejandro Fernández-Valdés Pedrosa,Spain,EMEA,,0,Jandro
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Misfits Gaming,,Coach,Amazing,,Maurice Stückenschneider,Germany,EMEA,1994-04-02,0,Amazing (Maurice Stückenschneider)
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Origen,,Top,Alphari,,Barney Morris,United Kingdom,EMEA,1999-10-20,0,Alphari
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Origen,,Jungle,Xerxe,,Andrei Dragomir,Romania,EMEA,1999-11-05,0,Xerxe
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Origen,,Mid,Nukeduck,,Erlend Våtevik Holm,Norway,EMEA,1996-05-21,0,Nukeduck
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Origen,,Bot,Upset,,Elias Lipp,Germany,EMEA,1999-12-16,0,Upset
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Origen,,Support,destiny,,Mitchell Shaw,Australia,Asia Pacific,1997-10-27,0,Destiny (Mitchell Shaw)
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Origen,,Support,Jactroll,,Jakub Skurzyński,Poland,EMEA,1998-08-05,1,Jactroll
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Origen,,Coach,Guilhoto,,André Pereira Guilhoto,Portugal,EMEA,1994-08-26,0,Guilhoto
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Rogue (European Team),,Top,Finn,,Finn Wiestål,Sweden,EMEA,1999-06-03,0,Finn
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Rogue (European Team),,Jungle,Inspired,,Kacper Słoma,Poland,North America,2002-01-24,0,Inspired
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Rogue (European Team),,Mid,Larssen,,Emil Larsson,Sweden,EMEA,2000-03-30,0,Larssen
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Rogue (European Team),,Bot,Hans Sama,,Steven Liv,France,EMEA,1999-09-02,0,Hans sama
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Rogue (European Team),,Support,Vander,,Oskar&amp;nbsp;Mateusz Bogdan,Poland,EMEA,1994-04-18,0,Vander
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Rogue (European Team),,Coach,fredy122,,Simon Payne,United Kingdom,EMEA,,0,fredy122
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Rogue (European Team),,Coach,Blumigan,,Marcus Blom,Sweden,EMEA,1993-04-06,1,Blumigan
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,SK Gaming,,Top,Jenax,,,,,,,Jenax
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,SK Gaming,,Jungle,Trick,김강윤,Kim Gang-yun,South Korea,Korea,1995-07-11,0,Trick
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,SK Gaming,,Mid,ZaZee,,Dirk Mallner,Germany,EMEA,1999-02-21,0,ZaZee
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,SK Gaming,,Bot,Crownshot,,,,,,,Crownshot
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,SK Gaming,,Support,LIMIT,,Dino Tot,Croatia,EMEA,1997-12-27,0,LIMIT (Dino Tot)
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,SK Gaming,,Coach,Jesiz,,Jesse Le,Denmark,EMEA,1996-06-17,1,Jesiz
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,SK Gaming,,Coach,Kanani,,Lamine-Lounis &quot;Paul&quot; Khouani,Algeria,EMEA,1996-10-16,1,Kanani
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Team Vitality,,Top,Cabochard,,Lucas Simon-Meslet,France,EMEA,1997-04-15,0,Cabochard
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Team Vitality,,Jungle,Nji,,,,,,,Nji
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Team Vitality,,Jungle,Skeanz,,Duncan Marquet,France,EMEA,2000-09-25,0,Skeanz
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Team Vitality,,Mid,Milica,Аљоша Кованџић,Aljoša Kovandžić,Serbia,EMEA,,0,Milica
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Team Vitality,,Bot,Comp,Μάρκος Σταμκόπουλος,Markos Stamkopoulos,Greece,EMEA,2001-12-20,0,Comp
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Team Vitality,,Support,Labrov,Λάμπρος Παπουτσάκης,Lampros Papoutsakis,Greece,EMEA,2002-02-12,0,Labrov
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Team Vitality,,Coach,Duke,,Hadrien Forestier,France,EMEA,1991-10-01,0,Duke (Hadrien Forestier)
+2020,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2020 Summer,2020-06-12,Team Vitality,,Coach,Mephisto,,Louis-Victor Legendre,France,EMEA,1992-02-26,0,Mephisto
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,FC Schalke 04 Esports,,Top,BrokenBlade,,Sergen Çelik,Germany,EMEA,2000-01-19,0,BrokenBlade
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,FC Schalke 04 Esports,,Jungle,Gilius,,Erberk Demir,Germany,EMEA,1997-01-05,0,Gilius
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,FC Schalke 04 Esports,,Mid,Abbedagge,,Felix&amp;nbsp;Alfred Braun,Germany,EMEA,1999-09-10,0,Abbedagge
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,FC Schalke 04 Esports,,Bot,Neon,,Matúš Jakubčík,Slovakia,EMEA,1999-04-24,1,Neon (Matúš Jakubčík)
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,FC Schalke 04 Esports,,Support,LIMIT,,Dino Tot,Croatia,EMEA,1997-12-27,0,LIMIT (Dino Tot)
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,FC Schalke 04 Esports,,Coach,Dylan Falco,,Dylan Falco,Canada,North America,,0,Dylan Falco
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,FC Schalke 04 Esports,,Top,BrokenBlade,,Sergen Çelik,Germany,EMEA,2000-01-19,0,BrokenBlade
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,FC Schalke 04 Esports,,Jungle,Gilius,,Erberk Demir,Germany,EMEA,1997-01-05,0,Gilius
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,FC Schalke 04 Esports,,Mid,Abbedagge,,Felix&amp;nbsp;Alfred Braun,Germany,EMEA,1999-09-10,0,Abbedagge
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,FC Schalke 04 Esports,,Bot,Neon,,Matúš Jakubčík,Slovakia,EMEA,1999-04-24,1,Neon (Matúš Jakubčík)
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,FC Schalke 04 Esports,,Support,LIMIT,,Dino Tot,Croatia,EMEA,1997-12-27,0,LIMIT (Dino Tot)
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,FC Schalke 04 Esports,,Coach,Dylan Falco,,Dylan Falco,Canada,North America,,0,Dylan Falco
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Fnatic,,Top,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Fnatic,,Jungle,Selfmade,,Oskar Boderek,Poland,EMEA,1999-12-15,0,Selfmade
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Fnatic,,Mid,Nisqy,,Yasin Dinçer,Belgium,EMEA,1998-07-28,0,Nisqy
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Fnatic,,Bot,Upset,,Elias Lipp,Germany,EMEA,1999-12-16,0,Upset
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Fnatic,,Coach,YamatoCannon,,Jakob Mebdi,Sweden,EMEA,1995-12-30,0,YamatoCannon
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Fnatic,,Coach,Tolki,,Gary Mialaret,France,Europe,1989-12-13,1,Tolki
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Fnatic,,Top,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Fnatic,,Jungle,Selfmade,,Oskar Boderek,Poland,EMEA,1999-12-15,0,Selfmade
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Fnatic,,Mid,Nisqy,,Yasin Dinçer,Belgium,EMEA,1998-07-28,0,Nisqy
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Fnatic,,Bot,Upset,,Elias Lipp,Germany,EMEA,1999-12-16,0,Upset
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Fnatic,,Coach,YamatoCannon,,Jakob Mebdi,Sweden,EMEA,1995-12-30,0,YamatoCannon
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Fnatic,,Coach,Tolki,,Gary Mialaret,France,Europe,1989-12-13,1,Tolki
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,G2 Esports,,Mid,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,G2 Esports,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,GrabbZ
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,G2 Esports,,Mid,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,G2 Esports,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,GrabbZ
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,MAD Lions,,Top,Armut,,İrfan&amp;nbsp;Berk Tükek,Turkey,EMEA,1998-12-13,0,Armut
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,MAD Lions,,Jungle,Elyoya,,Javier Prades Batalla,Spain,EMEA,2000-03-13,0,Elyoya
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,MAD Lions,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,MAD Lions,,Bot,Carzzy,,Matyáš Orság,Czech Republic,EMEA,2002-01-31,0,Carzzy
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,MAD Lions,,Support,Kaiser,,Norman Kaiser,Germany,EMEA,1998-11-19,0,Kaiser
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,MAD Lions,,Coach,Mac,,James MacCormack,United Kingdom,EMEA,1994-02-13,0,Mac
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,MAD Lions,,Coach,Kaas,,Christophe van Oudheusden,Belgium,EMEA,,0,Kaas
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Rogue (European Team),,Top,Odoamne,,Andrei Pascu,Romania,EMEA,1995-01-18,0,Odoamne
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Rogue (European Team),,Jungle,Inspired,,Kacper Słoma,Poland,North America,2002-01-24,0,Inspired
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Rogue (European Team),,Mid,Larssen,,Emil Larsson,Sweden,EMEA,2000-03-30,0,Larssen
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Rogue (European Team),,Bot,Hans Sama,,Steven Liv,France,EMEA,1999-09-02,0,Hans sama
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Rogue (European Team),,Support,Trymbi,,Adrian Trybus,Spain,EMEA,2000-10-20,0,Trymbi
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Rogue (European Team),,Coach,fredy122,,Simon Payne,United Kingdom,EMEA,,0,fredy122
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Rogue (European Team),,Coach,Blumigan,,Marcus Blom,Sweden,EMEA,1993-04-06,1,Blumigan
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Rogue (European Team),,Top,Odoamne,,Andrei Pascu,Romania,EMEA,1995-01-18,0,Odoamne
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Rogue (European Team),,Jungle,Inspired,,Kacper Słoma,Poland,North America,2002-01-24,0,Inspired
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Rogue (European Team),,Mid,Larssen,,Emil Larsson,Sweden,EMEA,2000-03-30,0,Larssen
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Rogue (European Team),,Bot,Hans Sama,,Steven Liv,France,EMEA,1999-09-02,0,Hans sama
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Rogue (European Team),,Support,Trymbi,,Adrian Trybus,Spain,EMEA,2000-10-20,0,Trymbi
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Rogue (European Team),,Coach,fredy122,,Simon Payne,United Kingdom,EMEA,,0,fredy122
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,Rogue (European Team),,Coach,Blumigan,,Marcus Blom,Sweden,EMEA,1993-04-06,1,Blumigan
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,SK Gaming,,Top,Jenax,,,,,,,Jenax
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,SK Gaming,,Jungle,TynX,,Kristian Østergaard Hansen,Denmark,EMEA,1999-10-22,0,TynX
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,SK Gaming,,Mid,Blue,,Ersin Gören,Belgium,EMEA,2001-03-07,0,Blue (Ersin Gören)
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,SK Gaming,,Bot,Jezu,,Jean Massol,France,EMEA,2000-07-27,0,Jezu
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,SK Gaming,,Support,Treatz,,Erik Wessén,Sweden,EMEA,1996-04-30,0,Treatz
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring Playoffs,2021-03-26,SK Gaming,,Coach,Jesiz,,Jesse Le,Denmark,EMEA,1996-06-17,1,Jesiz
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Astralis,,Top,WhiteKnight,,Matti&amp;nbsp;Antero Sormunen,Finland,EMEA,1996-02-16,0,WhiteKnight
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Astralis,,Jungle,Zanzarah,Николай Акатов,Nikolay Akatov,Russia,EMEA,1996-08-27,0,Zanzarah
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Astralis,,Mid,Nukeduck,,Erlend Våtevik Holm,Norway,EMEA,1996-05-21,0,nukeduck
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Astralis,,Mid,MagiFelix,,Carl&amp;nbsp;Felix Boström,Sweden,Europe,2000-02-27,1,MagiFelix
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Astralis,,Bot,Jeskla,,Jesper Klarin Strömberg,Sweden,EMEA,2000-07-08,0,Jeskla
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Astralis,,Support,promisq,,Hampus&amp;nbsp;Mikael Abrahamsson,Sweden,EMEA,1994-03-04,1,promisq
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Astralis,,Coach,AoD,,Alin-Ciprian Baltat,Romania,EMEA,1993-01-26,0,AoD
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Astralis,,Coach,Hansen,,Bjørn-Vegar Hansen,Norway,EMEA,1995-12-29,0,Hansen
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Excel Esports,,Top,Kryze,,Felix Hellström,Sweden,EMEA,1999-07-01,0,Kryze
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Excel Esports,,Jungle,Dan,,Daniel&amp;nbsp;Simon Hockley,United Kingdom,EMEA,1996-09-11,0,Dan (Daniel Hockley)
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Excel Esports,,Mid,Czekolad,,Paweł Szczepanik,Poland,EMEA,2000-02-15,0,Czekolad
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Excel Esports,,Bot,Patrik,,Patrik Jírů,Czech Republic,EMEA,2000-04-07,0,Patrik
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Excel Esports,,Support,Tore,,Tore Hoel Eilertsen,Norway,EMEA,1999-12-27,1,Tore
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Excel Esports,,Coach,YoungBuck,,Joey Steltenpool,Netherlands,EMEA,1991-07-28,0,YoungBuck
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Excel Esports,,Coach,Unlimited,Петър Георгиев,Petar Georgiev,Bulgaria,EMEA,1990-06-09,0,Unlimited (Petar Georgiev)
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,FC Schalke 04 Esports,,Top,BrokenBlade,,Sergen Çelik,Germany,EMEA,2000-01-19,0,BrokenBlade
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,FC Schalke 04 Esports,,Jungle,Gilius,,Erberk Demir,Germany,EMEA,1997-01-05,0,Gilius
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,FC Schalke 04 Esports,,Mid,Abbedagge,,Felix&amp;nbsp;Alfred Braun,Germany,EMEA,1999-09-10,0,Abbedagge
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,FC Schalke 04 Esports,,Bot,Neon,,Matúš Jakubčík,Slovakia,EMEA,1999-04-24,1,Neon (Matúš Jakubčík)
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,FC Schalke 04 Esports,,Support,LIMIT,,Dino Tot,Croatia,EMEA,1997-12-27,0,LIMIT (Dino Tot)
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,FC Schalke 04 Esports,,Coach,Dylan Falco,,Dylan Falco,Canada,North America,,0,Dylan Falco
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Fnatic,,Top,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Fnatic,,Jungle,Selfmade,,Oskar Boderek,Poland,EMEA,1999-12-15,0,Selfmade
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Fnatic,,Mid,Nisqy,,Yasin Dinçer,Belgium,EMEA,1998-07-28,0,Nisqy
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Fnatic,,Bot,Upset,,Elias Lipp,Germany,EMEA,1999-12-16,0,Upset
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Fnatic,,Coach,YamatoCannon,,Jakob Mebdi,Sweden,EMEA,1995-12-30,0,YamatoCannon
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Fnatic,,Coach,Tolki,,Gary Mialaret,France,Europe,1989-12-13,1,Tolki
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,G2 Esports,,Mid,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,G2 Esports,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,GrabbZ
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,MAD Lions,,Top,Armut,,İrfan&amp;nbsp;Berk Tükek,Turkey,EMEA,1998-12-13,0,Armut
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,MAD Lions,,Jungle,Elyoya,,Javier Prades Batalla,Spain,EMEA,2000-03-13,0,Elyoya
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,MAD Lions,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,MAD Lions,,Bot,Carzzy,,Matyáš Orság,Czech Republic,EMEA,2002-01-31,0,Carzzy
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,MAD Lions,,Support,Kaiser,,Norman Kaiser,Germany,EMEA,1998-11-19,0,Kaiser
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,MAD Lions,,Coach,Mac,,James MacCormack,United Kingdom,EMEA,1994-02-13,0,Mac
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,MAD Lions,,Coach,Kaas,,Christophe van Oudheusden,Belgium,EMEA,,0,Kaas
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Misfits Gaming,,Top,HiRit,신태민,Shin Tae-min,South Korea,Korea,1998-07-24,0,HiRit
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Misfits Gaming,,Jungle,Razork,,Iván Martín Díaz,Spain,EMEA,2000-10-07,0,Razork
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Misfits Gaming,,Mid,Vetheo,,Vincent Berrié,France,EMEA,2002-07-26,0,Vetheo
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Misfits Gaming,,Bot,Kobbe,,Kasper Kobberup,Denmark,EMEA,1996-09-21,0,Kobbe
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Misfits Gaming,,Support,Vander,,Oskar&amp;nbsp;Mateusz Bogdan,Poland,EMEA,1994-04-18,0,Vander
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Misfits Gaming,,Coach,Enatron,Ηλίας Θεοδώρου,Ilias Theodorou,Greece,EMEA,1994-01-24,0,Enatron
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Misfits Gaming,,Coach,Candyfloss,,,,,,,Candyfloss
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Rogue (European Team),,Top,Odoamne,,Andrei Pascu,Romania,EMEA,1995-01-18,0,Odoamne
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Rogue (European Team),,Jungle,Inspired,,Kacper Słoma,Poland,North America,2002-01-24,0,Inspired
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Rogue (European Team),,Mid,Larssen,,Emil Larsson,Sweden,EMEA,2000-03-30,0,Larssen
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Rogue (European Team),,Bot,Hans Sama,,Steven Liv,France,EMEA,1999-09-02,0,Hans sama
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Rogue (European Team),,Support,Trymbi,,Adrian Trybus,Spain,EMEA,2000-10-20,0,Trymbi
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Rogue (European Team),,Coach,fredy122,,Simon Payne,United Kingdom,EMEA,,0,fredy122
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Rogue (European Team),,Coach,Blumigan,,Marcus Blom,Sweden,EMEA,1993-04-06,1,Blumigan
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,SK Gaming,,Top,Jenax,,,,,,,Jenax
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,SK Gaming,,Jungle,TynX,,Kristian Østergaard Hansen,Denmark,EMEA,1999-10-22,0,TynX
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,SK Gaming,,Mid,Blue,,Ersin Gören,Belgium,EMEA,2001-03-07,0,Blue (Ersin Gören)
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,SK Gaming,,Bot,Jezu,,Jean Massol,France,EMEA,2000-07-27,0,Jezu
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,SK Gaming,,Support,Treatz,,Erik Wessén,Sweden,EMEA,1996-04-30,0,Treatz
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,SK Gaming,,Coach,Jesiz,,Jesse Le,Denmark,EMEA,1996-06-17,1,Jesiz
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,SK Gaming,,Coach,Tom,,Thomas Diakun,United Kingdom,Europe,,1,Tom (Thomas Diakun)
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Team Vitality,,Top,Szygenda,,Mathias Jensen,Denmark,EMEA,2001-04-14,0,Szygenda
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Team Vitality,,Jungle,Skeanz,,Duncan Marquet,France,EMEA,2000-09-25,0,Skeanz
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Team Vitality,,Mid,Milica,Аљоша Кованџић,Aljoša Kovandžić,Serbia,EMEA,,0,Milica
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Team Vitality,,Bot,Comp,Μάρκος Σταμκόπουλος,Markos Stamkopoulos,Greece,EMEA,2001-12-20,0,Comp
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Team Vitality,,Bot,Crownshot,,,,,,,Crownshot
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Team Vitality,,Support,Labrov,Λάμπρος Παπουτσάκης,Lampros Papoutsakis,Greece,EMEA,2002-02-12,0,Labrov
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Team Vitality,,Coach,Duke,,Hadrien Forestier,France,EMEA,1991-10-01,0,Duke (Hadrien Forestier)
+2021,Spring,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Spring,2021-01-22,Team Vitality,,Coach,Mephisto,,Louis-Victor Legendre,France,EMEA,1992-02-26,0,Mephisto
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Fnatic,,Top,Adam,,Adam Maanane,France,EMEA,2001-12-30,0,Adam (Adam Maanane)
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Fnatic,,Jungle,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Fnatic,,Mid,Nisqy,,Yasin Dinçer,Belgium,EMEA,1998-07-28,0,Nisqy
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Fnatic,,Bot,Upset,,Elias Lipp,Germany,EMEA,1999-12-16,0,Upset
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Fnatic,,Coach,YamatoCannon,,Jakob Mebdi,Sweden,EMEA,1995-12-30,0,YamatoCannon
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Fnatic,,Top,Adam,,Adam Maanane,France,EMEA,2001-12-30,0,Adam (Adam Maanane)
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Fnatic,,Jungle,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Fnatic,,Mid,Nisqy,,Yasin Dinçer,Belgium,EMEA,1998-07-28,0,Nisqy
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Fnatic,,Bot,Upset,,Elias Lipp,Germany,EMEA,1999-12-16,0,Upset
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Fnatic,,Coach,YamatoCannon,,Jakob Mebdi,Sweden,EMEA,1995-12-30,0,YamatoCannon
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,G2 Esports,,Mid,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,G2 Esports,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,Grabbz
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,G2 Esports,,Coach,Nelson,孙翊维,Sng Yi Wei,Singapore,Asia Pacific,1993-09-17,0,Nelson
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,G2 Esports,,Mid,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,G2 Esports,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,Grabbz
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,G2 Esports,,Coach,Nelson,孙翊维,Sng Yi Wei,Singapore,Asia Pacific,1993-09-17,0,Nelson
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,MAD Lions,,Top,Armut,,İrfan&amp;nbsp;Berk Tükek,Turkey,EMEA,1998-12-13,0,Armut
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,MAD Lions,,Jungle,Elyoya,,Javier Prades Batalla,Spain,EMEA,2000-03-13,0,Elyoya
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,MAD Lions,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,MAD Lions,,Bot,Carzzy,,Matyáš Orság,Czech Republic,EMEA,2002-01-31,0,Carzzy
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,MAD Lions,,Support,Kaiser,,Norman Kaiser,Germany,EMEA,1998-11-19,0,Kaiser
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,MAD Lions,,Coach,Mac,,James MacCormack,United Kingdom,EMEA,1994-02-13,0,Mac
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,MAD Lions,,Coach,Kaas,,Christophe van Oudheusden,Belgium,EMEA,,0,Kaas
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,MAD Lions,,Top,Armut,,İrfan&amp;nbsp;Berk Tükek,Turkey,EMEA,1998-12-13,0,Armut
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,MAD Lions,,Jungle,Elyoya,,Javier Prades Batalla,Spain,EMEA,2000-03-13,0,Elyoya
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,MAD Lions,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,MAD Lions,,Bot,Carzzy,,Matyáš Orság,Czech Republic,EMEA,2002-01-31,0,Carzzy
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,MAD Lions,,Support,Kaiser,,Norman Kaiser,Germany,EMEA,1998-11-19,0,Kaiser
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,MAD Lions,,Coach,Mac,,James MacCormack,United Kingdom,EMEA,1994-02-13,0,Mac
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,MAD Lions,,Coach,Kaas,,Christophe van Oudheusden,Belgium,EMEA,,0,Kaas
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Misfits Gaming,,Top,HiRit,신태민,Shin Tae-min,South Korea,Korea,1998-07-24,0,HiRit
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Misfits Gaming,,Jungle,Razork,,Iván Martín Díaz,Spain,EMEA,2000-10-07,0,Razork
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Misfits Gaming,,Mid,Vetheo,,Vincent Berrié,France,EMEA,2002-07-26,0,Vetheo
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Misfits Gaming,,Bot,Kobbe,,Kasper Kobberup,Denmark,EMEA,1996-09-21,0,Kobbe
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Misfits Gaming,,Support,Vander,,Oskar&amp;nbsp;Mateusz Bogdan,Poland,EMEA,1994-04-18,0,Vander
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Misfits Gaming,,Coach,Candyfloss,,,,,,,Candyfloss
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Misfits Gaming,,Coach,xani,,Nikola Zrinjski,Croatia,EMEA,1998-01-20,0,xani
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Rogue (European Team),,Top,Odoamne,,Andrei Pascu,Romania,EMEA,1995-01-18,0,Odoamne
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Rogue (European Team),,Jungle,Inspired,,Kacper Słoma,Poland,North America,2002-01-24,0,Inspired
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Rogue (European Team),,Mid,Larssen,,Emil Larsson,Sweden,EMEA,2000-03-30,0,Larssen
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Rogue (European Team),,Bot,Hans Sama,,Steven Liv,France,EMEA,1999-09-02,0,Hans sama
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Rogue (European Team),,Support,Trymbi,,Adrian Trybus,Spain,EMEA,2000-10-20,0,Trymbi
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Rogue (European Team),,Coach,fredy122,,Simon Payne,United Kingdom,EMEA,,0,fredy122
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Rogue (European Team),,Coach,Blumigan,,Marcus Blom,Sweden,EMEA,1993-04-06,1,Blumigan
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Rogue (European Team),,Top,Odoamne,,Andrei Pascu,Romania,EMEA,1995-01-18,0,Odoamne
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Rogue (European Team),,Jungle,Inspired,,Kacper Słoma,Poland,North America,2002-01-24,0,Inspired
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Rogue (European Team),,Mid,Larssen,,Emil Larsson,Sweden,EMEA,2000-03-30,0,Larssen
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Rogue (European Team),,Bot,Hans Sama,,Steven Liv,France,EMEA,1999-09-02,0,Hans sama
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Rogue (European Team),,Support,Trymbi,,Adrian Trybus,Spain,EMEA,2000-10-20,0,Trymbi
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Rogue (European Team),,Coach,fredy122,,Simon Payne,United Kingdom,EMEA,,0,fredy122
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Rogue (European Team),,Coach,Blumigan,,Marcus Blom,Sweden,EMEA,1993-04-06,1,Blumigan
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Team Vitality,,Top,Szygenda,,Mathias Jensen,Denmark,EMEA,2001-04-14,0,Szygenda
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Team Vitality,,Jungle,Selfmade,,Oskar Boderek,Poland,EMEA,1999-12-15,0,Selfmade
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Team Vitality,,Mid,LIDER,,Adam Ilyasov,Russia,EMEA,1999-07-03,0,LIDER
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Team Vitality,,Bot,Crownshot,,,,,,,Crownshot
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Team Vitality,,Support,Labrov,Λάμπρος Παπουτσάκης,Lampros Papoutsakis,Greece,EMEA,2002-02-12,0,Labrov
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Team Vitality,,Coach,Mephisto,,Louis-Victor Legendre,France,EMEA,1992-02-26,0,Mephisto
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer Playoffs,2021-08-13,Team Vitality,,Coach,Realistik,,Andrei Ruse,Romania,EMEA,1995-07-16,1,Realistik
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Astralis,,Top,WhiteKnight,,Matti&amp;nbsp;Antero Sormunen,Finland,EMEA,1996-02-16,0,WhiteKnight
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Astralis,,Jungle,Zanzarah,Николай Акатов,Nikolay Akatov,Russia,EMEA,1996-08-27,0,Zanzarah
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Astralis,,Mid,MagiFelix,,Carl&amp;nbsp;Felix Boström,Sweden,Europe,2000-02-27,1,MagiFelix
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Astralis,,Bot,Jeskla,,Jesper Klarin Strömberg,Sweden,EMEA,2000-07-08,0,Jeskla
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Astralis,,Support,promisq,,Hampus&amp;nbsp;Mikael Abrahamsson,Sweden,EMEA,1994-03-04,1,promisq
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Astralis,,Coach,AoD,,Alin-Ciprian Baltat,Romania,EMEA,1993-01-26,0,AoD
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Astralis,,Coach,Hansen,,Bjørn-Vegar Hansen,Norway,EMEA,1995-12-29,0,Hansen
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Excel Esports,,Top,Kryze,,Felix Hellström,Sweden,EMEA,1999-07-01,0,Kryze
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Excel Esports,,Jungle,Dan,,Daniel&amp;nbsp;Simon Hockley,United Kingdom,EMEA,1996-09-11,0,Dan (Daniel Hockley)
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Excel Esports,,Jungle,Markoon,,Mark van Woensel,Netherlands,EMEA,2002-06-28,0,Markoon
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Excel Esports,,Mid,Nukeduck,,Erlend Våtevik Holm,Norway,EMEA,1996-05-21,0,nukeduck
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Excel Esports,,Bot,Patrik,,Patrik Jírů,Czech Republic,EMEA,2000-04-07,0,Patrik
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Excel Esports,,Support,denyk,,Petr Haramach,Czech Republic,EMEA,1995-04-30,0,denyk
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Excel Esports,,Support,Advienne,,Henk Reijenga,Netherlands,EMEA,1997-05-11,0,Advienne
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Excel Esports,,Coach,YoungBuck,,Joey Steltenpool,Netherlands,EMEA,1991-07-28,0,YoungBuck
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Excel Esports,,Coach,Unlimited,Петър Георгиев,Petar Georgiev,Bulgaria,EMEA,1990-06-09,0,Unlimited (Petar Georgiev)
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,FC Schalke 04 Esports,,Top,BrokenBlade,,Sergen Çelik,Germany,EMEA,2000-01-19,0,BrokenBlade
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,FC Schalke 04 Esports,,Jungle,Kirei,,Thomas Yuen,Netherlands,EMEA,1997-02-18,0,Kirei
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,FC Schalke 04 Esports,,Mid,NUCLEARINT,,,,,,,NUCLEARINT
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,FC Schalke 04 Esports,,Bot,Neon,,Matúš Jakubčík,Slovakia,EMEA,1999-04-24,1,Neon (Matúš Jakubčík)
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,FC Schalke 04 Esports,,Support,LIMIT,,Dino Tot,Croatia,EMEA,1997-12-27,0,LIMIT (Dino Tot)
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,FC Schalke 04 Esports,,Coach,Dylan Falco,,Dylan Falco,Canada,North America,,0,Dylan Falco
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Fnatic,,Top,Adam,,Adam Maanane,France,EMEA,2001-12-30,0,Adam (Adam Maanane)
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Fnatic,,Jungle,Bwipo,,Gabriël Rau,Belgium,EMEA,1998-12-24,0,Bwipo
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Fnatic,,Mid,Nisqy,,Yasin Dinçer,Belgium,EMEA,1998-07-28,0,Nisqy
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Fnatic,,Bot,Upset,,Elias Lipp,Germany,EMEA,1999-12-16,0,Upset
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Fnatic,,Support,Hylissang,Здравец Илиев Гълъбов,Zdravets Iliev Galabov,Bulgaria,EMEA,1995-04-30,0,Hylissang
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Fnatic,,Coach,YamatoCannon,,Jakob Mebdi,Sweden,EMEA,1995-12-30,0,YamatoCannon
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,G2 Esports,,Top,Wunder,,Martin Nordahl Hansen,Denmark,EMEA,1998-11-09,0,Wunder
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,G2 Esports,,Jungle,Jankos,,Marcin Jankowski,Poland,EMEA,1995-07-23,0,Jankos
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,G2 Esports,,Mid,Caps,,Rasmus Borregaard Winther,Denmark,EMEA,1999-11-17,0,Caps
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,G2 Esports,,Bot,Rekkles,,Carl&amp;nbsp;Martin&amp;nbsp;Erik Larsson,Sweden,EMEA,1996-09-20,0,Rekkles
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,G2 Esports,,Support,Mikyx,,Mihael Mehle,Slovenia,EMEA,1998-11-02,0,Mikyx
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,G2 Esports,,Coach,GrabbZ,,Fabian Lohmann,Germany,EMEA,1995-01-14,0,Grabbz
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,G2 Esports,,Coach,Nelson,孙翊维,Sng Yi Wei,Singapore,Asia Pacific,1993-09-17,0,Nelson
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,MAD Lions,,Top,Armut,,İrfan&amp;nbsp;Berk Tükek,Turkey,EMEA,1998-12-13,0,Armut
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,MAD Lions,,Jungle,Elyoya,,Javier Prades Batalla,Spain,EMEA,2000-03-13,0,Elyoya
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,MAD Lions,,Mid,Humanoid,,Marek Brázda,Czech Republic,EMEA,2000-03-14,0,Humanoid
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,MAD Lions,,Bot,Carzzy,,Matyáš Orság,Czech Republic,EMEA,2002-01-31,0,Carzzy
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,MAD Lions,,Support,Kaiser,,Norman Kaiser,Germany,EMEA,1998-11-19,0,Kaiser
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,MAD Lions,,Coach,Mac,,James MacCormack,United Kingdom,EMEA,1994-02-13,0,Mac
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,MAD Lions,,Coach,Kaas,,Christophe van Oudheusden,Belgium,EMEA,,0,Kaas
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Misfits Gaming,,Top,HiRit,신태민,Shin Tae-min,South Korea,Korea,1998-07-24,0,HiRit
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Misfits Gaming,,Jungle,Razork,,Iván Martín Díaz,Spain,EMEA,2000-10-07,0,Razork
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Misfits Gaming,,Mid,Vetheo,,Vincent Berrié,France,EMEA,2002-07-26,0,Vetheo
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Misfits Gaming,,Bot,Kobbe,,Kasper Kobberup,Denmark,EMEA,1996-09-21,0,Kobbe
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Misfits Gaming,,Support,Vander,,Oskar&amp;nbsp;Mateusz Bogdan,Poland,EMEA,1994-04-18,0,Vander
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Misfits Gaming,,Coach,Candyfloss,,,,,,,Candyfloss
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Misfits Gaming,,Coach,xani,,Nikola Zrinjski,Croatia,EMEA,1998-01-20,0,xani
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Rogue (European Team),,Top,Odoamne,,Andrei Pascu,Romania,EMEA,1995-01-18,0,Odoamne
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Rogue (European Team),,Jungle,Inspired,,Kacper Słoma,Poland,North America,2002-01-24,0,Inspired
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Rogue (European Team),,Mid,Larssen,,Emil Larsson,Sweden,EMEA,2000-03-30,0,Larssen
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Rogue (European Team),,Bot,Hans Sama,,Steven Liv,France,EMEA,1999-09-02,0,Hans sama
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Rogue (European Team),,Support,Trymbi,,Adrian Trybus,Spain,EMEA,2000-10-20,0,Trymbi
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Rogue (European Team),,Coach,fredy122,,Simon Payne,United Kingdom,EMEA,,0,fredy122
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Rogue (European Team),,Coach,Blumigan,,Marcus Blom,Sweden,EMEA,1993-04-06,1,Blumigan
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,SK Gaming,,Top,Jenax,,,,,,,Jenax
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,SK Gaming,,Jungle,Treatz,,Erik Wessén,Sweden,EMEA,1996-04-30,0,Treatz
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,SK Gaming,,Mid,twohoyrz,Михаил Петков,Mihail Petkov,Bulgaria,EMEA,1998-08-27,0,twohoyrz
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,SK Gaming,,Mid,Blue,,Ersin Gören,Belgium,EMEA,2001-03-07,0,Blue (Ersin Gören)
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,SK Gaming,,Bot,Jezu,,Jean Massol,France,EMEA,2000-07-27,0,Jezu
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,SK Gaming,,"Support,Coach",Jesiz,,Jesse Le,Denmark,EMEA,1996-06-17,1,Jesiz
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,SK Gaming,,Support,Lilipp,,Philipp&amp;nbsp;Samuel Englert,Germany,EMEA,2001-01-20,0,Lilipp
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,SK Gaming,,Coach,Tom,,Thomas Diakun,United Kingdom,Europe,,1,Tom (Thomas Diakun)
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Team Vitality,,Top,SLT,,Enzo Gonzalez,France,EMEA,2000-11-17,0,SLT
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Team Vitality,,Top,Szygenda,,Mathias Jensen,Denmark,EMEA,2001-04-14,0,Szygenda
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Team Vitality,,Jungle,Selfmade,,Oskar Boderek,Poland,EMEA,1999-12-15,0,Selfmade
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Team Vitality,,Mid,LIDER,,Adam Ilyasov,Russia,EMEA,1999-07-03,0,LIDER
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Team Vitality,,Bot,Crownshot,,,,,,,Crownshot
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Team Vitality,,Support,Labrov,Λάμπρος Παπουτσάκης,Lampros Papoutsakis,Greece,EMEA,2002-02-12,0,Labrov
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Team Vitality,,Coach,Mephisto,,Louis-Victor Legendre,France,EMEA,1992-02-26,0,Mephisto
+2021,Summer,LEC,LoL EMEA Championship,欧洲,一级联赛,LEC 2021 Summer,2021-06-11,Team Vitality,,Coach,Realistik,,Andrei Ruse,Romania,EMEA,1995-07-16,1,Realistik

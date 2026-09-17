@@ -21,6 +21,8 @@ SUF = "" if YEAR == 2022 else f"_{YEAR}"
 TIER1 = {"LPL", "LCK", "LEC", "LCS", "WLDs", "MSI"}
 if YEAR >= 2025:
     TIER1 |= {"LTA N", "LTA"}     # 2025 年 LCS 改制为 LTA 北区
+if YEAR <= 2021:
+    TIER1 |= {"EU LCS", "NA LCS"}  # S6 开档：2019 年以前的欧美联赛代码
 POS = ("top", "jng", "mid", "bot", "sup")
 MIN_GAMES = 20
 LAMBDA = 12.0          # L2 强度：越大越保守（把低样本选手拉向均值）

@@ -43,6 +43,14 @@ ACAD  = {"LoL Development League":("LDL","中国二队"),"LoL Secondary Pro Leag
          "Circuito Desafiante":("Circuito Desafiante","巴西次级"),
          "Pacific Challengers League":("PCL","太平洋二队"),"LCP Wildcard League":("LCP Wildcard","亚太次级")}
 
+# S6 开档（2026-09-17）：2016–2021 的旧联赛名。短码和 Oracle's Elixir 同一套，游戏里再按年份映射到赛区键
+MAJOR.update({"Europe League Championship Series":("EU LCS","欧洲"),"North America League Championship Series":("NA LCS","北美"),
+              "LoL Master Series":("LMS","港澳台"),"Oceanic Pro League":("OPL","大洋洲"),"LoL Continental League":("LCL","独联体"),
+              "Copa Latinoamérica Sur":("CLS","拉美南"),"Liga Latinoamérica Norte":("LLN","拉美北"),
+              "League of Legends SEA Tour":("GPL","东南亚"),"Garena Premier League":("GPL","东南亚")})
+ACAD.update({"Challengers Korea":("CK","韩国次级"),"Europe Challenger Series":("EU CS","欧洲次级"),
+             "North America Challenger Series":("NA CS","北美次级")})
+
 def classify(league):
     if league in MAJOR: return MAJOR[league][0], MAJOR[league][1], "一级联赛"
     if league in INTL:  return INTL[league][0],  INTL[league][1],  "国际赛事"
@@ -50,8 +58,13 @@ def classify(league):
     return league, "", "其他"
 
 rows = []
-for src in ("rosters_2022plus","lspl_historic"):
-    for r in d[src]:
+# 2015–2021 的名单登记（Leaguepedia 限流，用浏览器 CargoExport 抓的，data/raw/leaguepedia_rosters_2015_2021.json，不进仓库）
+_early = os.path.join(BASE, "raw", "leaguepedia_rosters_2015_2021.json")
+if os.path.exists(_early):
+    d["rosters_early"] = [r for r in json.load(open(_early, encoding="utf-8"))["rosters_early"]
+                          if r.get("League") != "LoL Secondary Pro League"]   # LSPL 已在 lspl_historic 里，不重复
+for src in ("rosters_2022plus","lspl_historic","rosters_early"):
+    for r in d.get(src, []):
         short, region_cn, tier = classify(r.get("League") or "")
         if tier == "其他": continue                      # 只留正赛体系
         links = [x for x in clean(r.get("RosterLinks")).split(";;") if x]
@@ -71,7 +84,7 @@ for src in ("rosters_2022plus","lspl_historic"):
                 name_cn=info.get("name_cn",""), real_name=info.get("real_name",""),
                 country=info.get("country",""), residency=info.get("residency",""),
                 birthdate=info.get("birthdate",""), is_retired=info.get("is_retired",""),
-                roster_link=link))
+                roster_link=link, src="early" if src == "rosters_early" else ""))
 
 def dump(path, data, fields=None):
     if not data: return
@@ -80,10 +93,11 @@ def dump(path, data, fields=None):
         w=csv.DictWriter(f,fieldnames=fields); w.writeheader(); w.writerows(data)
 
 dump("rosters_by_season.csv", rows)
+_TRACKED = [k for k in rows[0] if k != "src"]   # 进仓库的分表不带 src 列（只有 rosters_by_season.csv 给 names.py 用）
 for t,fn in (("一级联赛","rosters_major.csv"),("二级/青训","rosters_academy.csv"),("国际赛事","rosters_international.csv")):
-    dump(fn, [r for r in rows if r["tier"]==t])
+    dump(fn, [{k: r[k] for k in _TRACKED} for r in rows if r["tier"]==t], _TRACKED)
 for lg in ("LPL","LDL","LCK","LEC","LCS","Worlds","MSI","LSPL"):
-    dump(f"rosters_{lg}.csv", [r for r in rows if r["league_short"]==lg])
+    dump(f"rosters_{lg}.csv", [{k: r[k] for k in _TRACKED} for r in rows if r["league_short"]==lg], _TRACKED)
 
 # 选手 & 战队主表
 dump("players_master.csv", [dict(player_id=clean(p.get("ID")), name_cn=clean(p.get("NativeName")),

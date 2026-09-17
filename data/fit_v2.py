@@ -30,6 +30,10 @@ if YEAR >= 2024:
 if YEAR >= 2025:
     TIER1 |= {"LTA N", "LTA"}     # 2025 年 LCS 改制为 LTA 北区（跨区季后赛代码 LTA）
     TIER1B |= {"LTA S", "LCP"}    # CBLOL + LLA → LTA 南区；PCS / VCS / LJL 头部 → LCP
+if YEAR <= 2021:   # S6 开档（2026-09-17）：2016–2021 的联赛代码，只对这几年生效，2022 起的结果不动
+    TIER1 |= {"EU LCS", "NA LCS"}                              # 2019 年才改名 LEC / LCS
+    TIER1B |= {"LMS", "GPL", "CLS", "LLN", "OPL", "LCL"}       # LMS → 2020 PCS；CLS / LLN → 2019 LLA；OPL → 2021 LCO
+    TIER2 |= {"LSPL", "CK", "EU CS", "NA CS", "LJLCS", "BRCC", "TCS", "OCS"}   # LSPL → 2018 LDL；CK = LCK 升降级联赛
 POS = ("top", "jng", "mid", "bot", "sup")
 MIN_GAMES = 20
 # 样本量收缩: 一名替补顶上打 20 场，数据可能很好看——但那不是他的水平。

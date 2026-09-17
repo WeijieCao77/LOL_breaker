@@ -49,9 +49,13 @@ def _by(s):
 _rows = collections.defaultdict(list)
 _link_names = collections.defaultdict(collections.Counter)
 _link_birth = collections.defaultdict(collections.Counter)
-for _r in _rd("rosters_by_season.csv"):
+_EARLY = collections.defaultdict(list)            # S6 开档补抓的 2015–2021 名册（src=early）：只给 2022 年以前的查询用，
+for _r in _rd("rosters_by_season.csv"):          # 免得 2022 起已导出的页面因为多出相邻年份的名册而认成别人
     _pid = _k(_r.get("player_id"))
     if not _pid:
+        continue
+    if _r.get("src") == "early":
+        _EARLY[(str(_r.get("year")), _pid)].append(_r)
         continue
     _link = _k(_r.get("roster_link")) or ("?" + _pid)
     _nm = (_r.get("name_cn") or "").strip()
@@ -83,10 +87,27 @@ for r in _rd("names_override.csv"):
         OVERRIDE[((r.get("year") or "*").strip(), _k(r.get("team")) or "*", _k(r.get("id")))] = "" if nm == "-" else nm
 
 
+_early_names = collections.defaultdict(collections.Counter)
+_early_birth = collections.defaultdict(collections.Counter)
+for _rs in _EARLY.values():
+    for _r in _rs:
+        _l = _k(_r.get("roster_link")) or ("?" + _k(_r.get("player_id")))
+        if (_r.get("name_cn") or "").strip():
+            _early_names[_l][(_r.get("name_cn") or "").strip()] += 1
+        if _by(_r.get("birthdate")):
+            _early_birth[_l][_by(_r.get("birthdate"))] += 1
+
+
+def _early_rows(y, k):
+    return [(_k(r.get("team")), _k(r.get("roster_link")) or ("?" + k), (r.get("name_cn") or "").strip(), r.get("residency") or "")
+            for r in _EARLY.get((y, k), [])]
+
+
 def _who(year, team, pid, region=None):
     """认人：返回这个人的选手页面链接；认不出来返回 None"""
     k, y, t = _k(pid), str(year), _k(team)
-    rows = _rows.get((y, k), [])
+    early = int(year) < 2022
+    rows = _rows.get((y, k), []) + (_early_rows(y, k) if early else [])
     steps = []
     if t:
         steps.append({l for tm, l, _, _ in rows if tm == t})
@@ -98,7 +119,8 @@ def _who(year, team, pid, region=None):
             return next(iter(s))
     if not rows:
         for dy in (-1, 1, -2, 2):
-            near = {l for _, l, _, _ in _rows.get((str(int(year) + dy), k), [])}
+            yy = str(int(year) + dy)
+            near = {l for _, l, _, _ in _rows.get((yy, k), []) + (_early_rows(yy, k) if early and int(yy) < 2022 else [])}
             if len(near) == 1:
                 return next(iter(near))
             if near:
@@ -122,7 +144,7 @@ def native_name(year, team, pid, region=None):
             return OVERRIDE[key]
     link = _who(year, team, pid, region)
     if link is not None:
-        c = _link_names.get(link)
+        c = _link_names.get(link) or (_early_names.get(link) if int(year) < 2022 else None)
         return c.most_common(1)[0][0] if c else _page_name.get(link)
     return _only_master(k, 0)
 
@@ -139,6 +161,6 @@ def birth_year(year, team, pid, region=None):
     """按人认的出生年；定不下来返回 None（调用方保持原来的年龄）。"""
     link = _who(year, team, pid, region)
     if link is not None:
-        c = _link_birth.get(link)
+        c = _link_birth.get(link) or (_early_birth.get(link) if int(year) < 2022 else None)
         return c.most_common(1)[0][0] if c else _page_birth.get(link)
     return _only_master(_k(pid), 1)

@@ -37,7 +37,10 @@ DIMS = ["操作", "运营", "心态", "指挥", "体质"]
 # 游戏里的赛区键。major = 有积分榜和季后赛；minor = 只取前 4 支；intl = 冠军有世界赛名额的小赛区
 # rename / merge：上一年的赛区键 → 今年的（你的队在被合并的赛区里时跟着走）
 _OLD7 = ["PCS", "VCS", "CBLOL", "LJL", "LLA", "LCO", "TCL"]
-STRUCT = {
+# S6 开档（2026-09-17）：2016–2021。游戏里的赛区键沿用 2022 那一套，当年的名字由游戏按年份显示
+# （LMS 记在 PCS、GPL 记在 VCS、CLS 记在 LLA、OPL 记在 LCO、EU/NA LCS 记在 LEC/LCS）；LCL（独联体）简化掉。
+STRUCT = {y: dict(major=["LPL", "LCK", "LEC", "LCS"], minor=_OLD7, intl=_OLD7) for y in range(2016, 2022)}
+STRUCT.update({
     2022: dict(major=["LPL", "LCK", "LEC", "LCS"], minor=_OLD7, intl=_OLD7),
     2023: dict(major=["LPL", "LCK", "LEC", "LCS"], minor=_OLD7, intl=["PCS", "VCS", "CBLOL", "LJL", "LLA"]),
     2024: dict(major=["LPL", "LCK", "LEC", "LCS"], minor=_OLD7, intl=["PCS", "VCS", "CBLOL", "LJL", "LLA"]),
@@ -45,18 +48,28 @@ STRUCT = {
                rename={"LCS": "LTA北"}, merge={"CBLOL": "LTA南", "LLA": "LTA南", "LCO": "LCP"}),
     2026: dict(major=["LPL", "LCK", "LEC", "LCS"], minor=["LCP", "CBLOL", "PCS", "VCS", "LJL", "TCL"], intl=["LCP", "CBLOL"],
                rename={"LTA北": "LCS"}, merge={"LTA南": "CBLOL"}),
-}
+})
 # 游戏赛区键 → 数据里的联赛代码（Oracle's Elixir 与 Leaguepedia 各一套；同名不写）
 SRC_CODES = {"LTA北": ["LTA N", "LTA North"], "LTA南": ["LTA S", "LTA South"]}
-codes = lambda key: SRC_CODES.get(key, [key])
+EARLY_CODES = {  # 年份上限（含）→ 当年的数据代码
+    "LEC": [(2018, ["EU LCS"])], "LCS": [(2018, ["NA LCS"])], "PCS": [(2019, ["LMS"])],
+    "VCS": [(2017, ["GPL"])], "LLA": [(2018, ["CLS"])], "LCO": [(2020, ["OPL"])],
+}
+def codes(key):
+    for top, cs in EARLY_CODES.get(key, []):
+        if YEAR <= top:
+            return cs
+    return SRC_CODES.get(key, [key])
 # 赛区强度修正（与 export_game.py 同表；新赛区按它接替的老赛区给）
 REGION_ADJ = {"LPL": 0, "LCK": 0, "LEC": -4, "LCS": -7,
               "PCS": -9, "VCS": -9, "TCL": -11, "CBLOL": -11,
               "LJL": -12, "LLA": -13, "LCO": -13,
-              "LTA北": -7, "LTA南": -11, "LCP": -9, "LTA N": -7, "LTA S": -11}
+              "LTA北": -7, "LTA南": -11, "LCP": -9, "LTA N": -7, "LTA S": -11,
+              "EU LCS": -4, "NA LCS": -7, "LMS": -9, "GPL": -11, "CLS": -13, "LLN": -13, "OPL": -13, "LCL": -12}
 # 二级 / 青训联赛：强度修正 + 新秀归属的大区（游戏里再落到当年的赛区键）
 ACAD = {  # OE 代码
     # LAS 是 LCK 青训联赛（LCK Academy Series），不是拉美——2024–2026 的 LAS 队全是韩国二队（2026-09-14 查出），和下面的 LCK Academy 同口径
+    "LSPL": ("CN", -10), "CK": ("KR", -8), "EU CS": ("EU", -12), "NA CS": ("NA", -14), "EUM": ("EU", -12), "LCSA": ("NA", -14),   # 2016–2021
     "LDL": ("CN", -10), "LCKC": ("KR", -8), "EM": ("EU", -12), "NACL": ("NA", -14), "CBLOLA": ("BR", -16), "LAS": ("KR", -12),
     # Leaguepedia 代码
     "LCK CL": ("KR", -8), "LCK Academy": ("KR", -12), "EMEA Masters": ("EU", -12), "Circuito Desafiante": ("BR", -16),
@@ -64,6 +77,12 @@ ACAD = {  # OE 代码
 }
 # 席位易主（Oracle's Elixir 的 teamid 变了、但接的是同一个联赛席位）：今年的队名 → 上一年的队名
 SUCC = {
+    # S6 开档（2026-09-17）：2018–2021 只收确定是同一家俱乐部改名 / 收购接席位的（拿不准的宁可算新席位）
+    2018: {"Kingzone DragonX": "Longzhu Gaming"},
+    2019: {"Gen.G": "KSV eSports", "Hanwha Life Esports": "ROX Tigers"},
+    2020: {"T1": "SK Telecom T1", "LNG Esports": "Snake Esports", "Top Esports": "Topsports Gaming", "MAD Lions": "Splyce",
+           "Dignitas": "Clutch Gaming", "Evil Geniuses": "Echo Fox", "Immortals": "OpTic Gaming"},
+    2021: {"DRX": "DragonX", "Liiv SANDBOX": "SANDBOX Gaming", "ThunderTalk Gaming": "Dominus Esports", "Astralis": "Origen"},
     2023: {"Ninjas in Pyjamas": "Victory Five", "Team Heretics": "Misfits Gaming",
            "KOI": "Rogue", "NRG": "Counter Logic Gaming", "Team Whales": "Team Secret"},
     2024: {"Karmine Corp": "Astralis", "Shopify Rebellion": "TSM", "Rogue": "KOI"},
@@ -127,9 +146,11 @@ def load_ratings(y):
     return {r["player_id"].lower(): r for r in csv.DictReader(open(p, encoding="utf-8-sig"))}
 
 
-RATE = {y: load_ratings(y) for y in range(2022, YEAR + 1)}
+FIRST_RATED = 2015 if YEAR <= 2022 else 2022   # 2023 起的页面口径不变（只往回看到 2022）
+RATE = {y: load_ratings(y) for y in range(FIRST_RATED, YEAR + 1)}
 src_oe = os.path.join(OE_DIR, f"{YEAR}_OE.csv")
-SOURCE = FORCE or ("oe" if os.path.exists(src_oe) and RATE.get(YEAR) else "roster")
+SOURCE = FORCE or ("lp+oe" if YEAR <= 2021 and os.path.exists(src_oe) and RATE.get(YEAR)
+                   else "oe" if os.path.exists(src_oe) and RATE.get(YEAR) else "roster")
 
 
 def age_of(pid, fallback=None, team=None, reg=None):
@@ -145,7 +166,7 @@ def dev_per_year(age):
 
 def carried(pid, team=None, reg=None):
     """最近一年量出来的五维（统一标尺）按年龄推到今年；从没量过返回 None"""
-    for y in range(YEAR, 2021, -1):
+    for y in range(YEAR, FIRST_RATED - 1, -1):
         row = RATE.get(y, {}).get(pid.lower())
         if not row or not row.get("总评"):
             continue
@@ -169,7 +190,9 @@ def pl(pid, pos, r, age, form=52, team=None, reg=None):
 
 
 # ---- 上一页（席位继承用）----
-if YEAR == 2023:
+if YEAR == 2016:
+    PREV = {}                                   # S6 开档的第一页：没有上一年
+elif YEAR == 2023:
     g = json.load(open(os.path.join(OUT, "game_data_2022.json"), encoding="utf-8"))
     PREV = {lg: [{"n": t["name"], "ids": [p["id"].lower() for p in t["players"]]} for t in ts] for lg, ts in g["leagues"].items()}
 else:
@@ -215,7 +238,117 @@ intl_hit = lambda n: 1 if n and norm_team(n) in INTL_NAMES else 0
 
 leagues, report = {}, {}
 
-if SOURCE == "oe":
+if SOURCE == "lp+oe":
+    # S6 开档（2026-09-17）：2016–2021。Oracle's Elixir 早年的队名有的是「现在的名字」（2016 年的 Afreeca 写成 DN SOOPers），
+    # LPL 2016 春季赛几乎没有数据（8 局）——所以队伍和报名名单取 Leaguepedia 当年第一个赛段的常规赛，
+    # 首发 = 报名里这个位置当年在这个联赛打得最多的人，五维取当年量出来的评分（没满 20 场沿用往年），胜率取 OE。
+    rate = RATE[YEAR]
+    oe_codes = {c: k for k in want_keys for c in codes(k)}
+    pgames, pwins = collections.Counter(), collections.Counter()      # (key, 选手) → 当年这个联赛的出场 / 胜场
+    tpos = collections.Counter()                                      # (key, 规范队名, 位置, 选手) → 出场
+    tgames_n, twins_n = collections.Counter(), collections.Counter()  # (key, 规范队名) → 同上（队伍）
+    acad = collections.Counter()
+    with open(src_oe, encoding="utf-8", errors="replace") as fh:
+        for row in csv.DictReader(fh):
+            code = row.get("league") or ""
+            if code in ACAD and row.get("position") in POS and row.get("playername"):
+                acad[(code, row["playername"], row["position"])] += 1
+            key = oe_codes.get(code)
+            if not key:
+                continue
+            win = 1 if row.get("result") == "1" else 0
+            if row.get("position") == "team":
+                n = norm_team(row.get("teamname"))
+                tgames_n[(key, n)] += 1
+                twins_n[(key, n)] += win
+            elif row.get("position") in POS and row.get("playername"):
+                pgames[(key, row["playername"].lower())] += 1
+                tpos[(key, norm_team(row.get("teamname")), row["position"], row["playername"])] += 1
+                pwins[(key, row["playername"].lower())] += win
+    yr_rows = [r for r in roster_rows if r["year"] == str(YEAR) and r["tier"] == "一级联赛"]
+    for key in want_keys:
+        rs = [r for r in yr_rows if r["league_short"] in codes(key)]
+        tours = collections.defaultdict(list)
+        for r in rs:
+            if not re.search(r"Playoffs|Promotion|Qualifier|Regional|Finals|Tiebreaker", r["tournament"]):
+                tours[(r["date_start"] or "9999", r["tournament"])].append(r)
+        if not tours:
+            leagues[key] = []
+            continue
+        # 第一个赛段的常规赛：开赛最早、而且队数够（同一天开赛的几个组取队多的）
+        cand = sorted(tours, key=lambda k: (k[0], -len({r["team"] for r in tours[k]})))
+        big = max(len({r["team"] for r in v}) for v in tours.values())
+        first = next(k for k in cand if len({r["team"] for r in tours[k]}) >= min(4, big))
+        trs = tours[first]
+        adj = REGION_ADJ.get(key, -10)
+        teams = []
+        for team in sorted({r["team"] for r in trs}):
+            roster, un, pend = {}, 0, []
+            for pos in POS:
+                regs = [r["player_id"] for r in trs if r["team"] == team and LP_ROLE.get((r["role"] or "").split(",")[0]) == pos and r["player_id"]]
+                if not regs:
+                    break
+                def score(pid):
+                    rr = rate.get(pid.lower(), {})
+                    return (pgames[(key, pid.lower())], 1 if rr.get("总评") else 0, float(rr.get("总评") or 0))
+                pick = max(dict.fromkeys(regs), key=score)
+                if pgames[(key, pick.lower())] == 0:
+                    # 报名写的是改过的 ID（2016 年 IG 登记的是 RoOk1E，页面重定向到 Rookie）：用 OE 里这支队这个位置打得最多的人
+                    nt0 = norm_team(team)
+                    best = max(((nm, g) for (k, t, p, nm), g in tpos.items() if k == key and t == nt0 and p == pos),
+                               key=lambda x: x[1], default=None)
+                    if best and best[1] >= 6:
+                        pick = best[0]
+                roster[pos] = pick
+            if len(roster) < 5:
+                continue
+            for pos in POS:
+                nm = roster[pos]
+                rr = rate.get(nm.lower(), {})
+                if rr.get("总评"):
+                    r = {d: float(rr[d]) + adj if rr.get(d) else 50 + adj for d in DIMS}
+                else:
+                    r, _ = carried(nm, team, key)
+                    if not r:
+                        un += 1
+                a = age_of(nm, int(rr["年龄"]) if rr.get("年龄") else None, team, key)
+                pend.append((nm, pos, r, a))
+            known = [sum(r.values()) / 5 for _, _, r, _ in pend if r]
+            fill = (sum(known) / len(known) - 2) if known else (50 + adj - 2)
+            players = [pl(nm, pos, r or {d: fill for d in DIMS}, a, team=team, reg=key) for nm, pos, r, a in pend]
+            nt = norm_team(team)
+            tg = tgames_n.get((key, nt), 0)
+            if tg >= 6:
+                wr = twins_n[(key, nt)] / tg
+            else:   # OE 里这支队的名字对不上：用五个人当年在这个联赛的胜率
+                g = sum(pgames[(key, p[0].lower())] for p in players)
+                wr = (sum(pwins[(key, p[0].lower())] for p in players) / g) if g >= 10 else 0.5
+            clean = re.sub(r"\s*\(.*?\)\s*$", "", team)
+            clean = re.sub(r"\.(NA|EU|KR|CN)$", "", clean)          # Evil Geniuses.NA
+            sc = SUCC.get(YEAR, {}).get(clean)
+            if sc and in_prev(key, sc):
+                frm, name = sc, clean                               # 席位易主 / 改名：新名字接老席位
+            else:
+                frm = match_prev(key, clean, [p[0] for p in players]) if PREV else None
+                name = frm if (frm and norm_team(frm) == norm_team(clean)) else clean
+            played = sum(pgames[(key, p[0].lower())] for p in players)
+            teams.append({"n": name, "from": frm, "wr": round(wr, 3), "p": players,
+                          "_stab": min(1.0, played / max(1, 5 * max(tg, 1))) if tg else 0.6, "_un": un,
+                          "_intl": intl_hit(team), "_g": tg})
+        leagues[key] = teams
+    on_major = {p[0].lower() for ts in leagues.values() for t in ts for p in t["p"]}
+    pool = collections.defaultdict(list)
+    for (code, nm, pos), gm in acad.items():
+        if gm < 20 or nm.lower() in on_major or nm.lower() not in rate:
+            continue
+        a = age_of(nm, None, None, ACAD[code][0])
+        if a is not None and a > 22:
+            continue
+        rr = rate[nm.lower()]
+        reg, adj = ACAD[code]
+        r = {d: float(rr[d]) + adj if rr.get(d) else 50 + adj for d in DIMS}
+        pool[pos].append((sum(r.values()) / 5, pl(nm, pos, r, a, reg=reg) + [reg]))
+elif SOURCE == "oe":
     rate = RATE[YEAR]
     prev_tid = {}
     prev_oe = os.path.join(OE_DIR, f"{YEAR - 1}_OE.csv")
@@ -439,7 +572,7 @@ for key in list(leagues):
 
 # ---- 默契 / 战术 / 状态：与 export_game.py 同一套从真实胜率反推（roster 来源没有胜率，一律中性）----
 for key, teams in leagues.items():
-    if teams and SOURCE == "oe":
+    if teams and SOURCE in ("oe", "lp+oe"):
         base = lambda t: sum(p[4][0] * .34 + p[4][1] * .28 + p[4][2] * .14 + p[4][4] * .10 for p in t["p"]) / 5.0
         bs = [base(t) for t in teams]
         ws = [t["wr"] for t in teams]
@@ -461,7 +594,7 @@ for key, teams in leagues.items():
     if key in S["minor"]:
         # 小赛区只留 4 支：当年打过国际赛的先留，其次是上一年就在的，再按胜率（没有胜率按评分）
         teams.sort(key=lambda t: (-t.get("_intl", 0), -(1 if t["from"] else 0),
-                                  -(t["wr"] if SOURCE == "oe" else t.get("_rated", 0))))
+                                  -(t["wr"] if SOURCE in ("oe", "lp+oe") else t.get("_rated", 0))))
         leagues[key] = teams[:4]
     report[key] = {"teams": len(leagues[key]), "unrated": sum(t["_un"] for t in leagues[key]),
                    "newSeat": [t["n"] for t in leagues[key] if not t["from"]],
