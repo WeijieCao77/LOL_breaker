@@ -1916,9 +1916,9 @@ export { playOne, unitChecks, A, SEED };
 /* 批测：npx tsx demo/test.ts --batch 30
    固定种子 1..N 各跑一局，只打统计不做断言。用来校准职业前压缩（20→14 周）前后的上岸节奏：
    一年内上岸率、上岸周数 p50/p90、上岸时段位读数、结局分布——改前改后各跑一次对比。 */
-function batch(n: number, encore = false, strong = false, loyal = false) {
+function batch(n: number, encore = false, strong = false, loyal = false, entry?: number, from = 1001) {
   const rs = [];
-  for (let i = 1; i <= n; i++) { rs.push(playOne({ seed: 1000 + i, encore, strong, loyal })); process.stderr.write("."); }
+  for (let i = 0; i < n; i++) { rs.push(playOne({ seed: from + i, encore, strong, loyal, entry })); process.stderr.write("."); }
   process.stderr.write("\n");
   const q = (arr: number[], p: number) => { const a = arr.slice().sort((x, y) => x - y); return a.length ? a[Math.min(a.length - 1, Math.floor(p * (a.length - 1)))] : 0; };
   const signed = rs.filter(r => r.signAt > 0);
@@ -2176,7 +2176,9 @@ if (isMain && process.argv.includes("--s6probe")) {
   tlProbe();
 } else if (isMain && process.argv.includes("--batch")) {
   const i = process.argv.indexOf("--batch");
-  batch(parseInt(process.argv[i + 1] || "20", 10) || 20, process.argv.includes("--encore"), process.argv.includes("--strong"), process.argv.includes("--loyal"));   // --encore：再战；--strong：强玩家；--loyal：夺冠后不走
+  const ai = process.argv.indexOf("--entry"), fi = process.argv.indexOf("--from");
+  batch(parseInt(process.argv[i + 1] || "20", 10) || 20, process.argv.includes("--encore"), process.argv.includes("--strong"), process.argv.includes("--loyal"),
+    ai > 0 ? parseInt(process.argv[ai + 1], 10) : undefined, fi > 0 ? parseInt(process.argv[fi + 1], 10) : 1001);   // --encore：再战；--strong：强玩家；--loyal：夺冠后不走
 } else if (isMain) {
   console.log("随机种子：", SEED, "（SEED=" + SEED + " npm test 可原样重放）");
   { const cb = cloutChecks();

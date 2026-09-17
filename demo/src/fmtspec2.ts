@@ -9,6 +9,7 @@
    ============================================================ */
 import { Ctx, SplitSpec, YearSpec } from "./fmtrun";
 import { G, snake, fin, minus, lplYear, lckYear, rfSplit } from "./fmtspec";
+import { earlyYearSpec } from "./fmtspec3";
 
 void rfSplit;
 const T = (c: Ctx, key: string, g?: string) => c.table(key, g);
@@ -226,6 +227,14 @@ export function ldlYear(y: number, teamCount: number): YearSpec {
 /* ---------- 国际赛名额（2027 起按 2026） ---------- */
 export interface IntlYear { fst?: Record<string, number>; msi: Record<string, number>; worlds: Record<string, number>; bonus?: boolean; wqs?: [string, string] }
 export const INTL_SLOTS: Record<number, IntlYear> = {
+  /* S6 开档 2016–2021（formats_2016_2021.md 第 4 节）。游戏里没有 LCL（独联体）：它的名额不给别人。
+     LMS 记在 PCS、GPL 记在 VCS、CLS / LLN 记在 LLA（两个名额）、OPL 记在 LCO；2016 年两个外卡是 INTZ（CBLOL）和独联体，独联体那席给 TCL ⚠ */
+  2016: { msi: { LPL: 1, LCK: 1, LEC: 1, LCS: 1, PCS: 1, TCL: 1 }, worlds: { LCK: 3, LPL: 3, LEC: 3, LCS: 3, PCS: 2, CBLOL: 1, TCL: 1 } },
+  2017: { msi: { LPL: 1, LCK: 1, LEC: 1, LCS: 1, PCS: 1, VCS: 1, CBLOL: 1, LJL: 1, LLA: 1, LCO: 1, TCL: 1 }, worlds: { LCK: 3, LPL: 3, LEC: 3, LCS: 3, PCS: 3, VCS: 2, CBLOL: 1, LJL: 1, LLA: 2, LCO: 1, TCL: 1 } },
+  2018: { msi: { LPL: 1, LCK: 1, LEC: 1, LCS: 1, PCS: 1, VCS: 1, CBLOL: 1, LJL: 1, LLA: 1, LCO: 1, TCL: 1 }, worlds: { LCK: 3, LPL: 3, LEC: 3, LCS: 3, PCS: 3, VCS: 2, CBLOL: 1, LJL: 1, LLA: 2, LCO: 1, TCL: 1 } },
+  2019: { msi: { LPL: 1, LCK: 1, LEC: 1, LCS: 1, PCS: 1, VCS: 1, CBLOL: 1, LJL: 1, LLA: 1, LCO: 1, TCL: 1 }, worlds: { LCK: 3, LPL: 3, LEC: 3, LCS: 3, PCS: 3, VCS: 2, CBLOL: 1, LJL: 1, LLA: 1, LCO: 1, TCL: 1 } },
+  2020: { msi: {}, worlds: { LCK: 3, LPL: 4, LEC: 4, LCS: 3, PCS: 2, CBLOL: 1, LJL: 1, LLA: 1, LCO: 1, TCL: 1 } },
+  2021: { msi: { LPL: 1, LCK: 1, LEC: 1, LCS: 1, PCS: 1, CBLOL: 1, LJL: 1, LLA: 1, LCO: 1, TCL: 1 }, worlds: { LCK: 4, LPL: 4, LEC: 3, LCS: 3, PCS: 2, CBLOL: 1, LJL: 1, LLA: 1, LCO: 1, TCL: 1 } },
   2022: { msi: { LPL: 1, LCK: 1, LEC: 1, LCS: 1, PCS: 1, VCS: 1, CBLOL: 1, LJL: 1, LLA: 1, LCO: 1, TCL: 1 }, worlds: { LPL: 4, LCK: 4, LEC: 4, LCS: 3, PCS: 2, VCS: 2, CBLOL: 1, LJL: 1, LLA: 1, LCO: 1, TCL: 1 } },
   2023: { msi: { LPL: 2, LCK: 2, LEC: 2, LCS: 2, PCS: 1, VCS: 1, LJL: 1, CBLOL: 1, LLA: 1 }, worlds: { LPL: 4, LCK: 4, LEC: 4, LCS: 4, PCS: 2, VCS: 2, CBLOL: 1, LLA: 1, LJL: 1 }, wqs: ["LEC", "LCS"] },
   2024: { msi: { LPL: 2, LCK: 2, LEC: 2, LCS: 2, PCS: 1, VCS: 1, CBLOL: 1, LLA: 1 }, worlds: { LPL: 3, LCK: 3, LEC: 3, LCS: 3, PCS: 2, VCS: 2, CBLOL: 1, LLA: 1 }, bonus: true },
@@ -242,6 +251,11 @@ export const INTL_HOST: Record<number, Record<string, string>> = {
 
 /* ---------- 史实冠军（按赛段）：过了影响力门槛，季后赛里给这支队一点「剧本」 ---------- */
 export const CANON: Record<string, string> = {
+  /* S6 开档 2016–2021（队名是当年页面里的名字；LCS 2021 的 spring / summer = 季中对抗赛 / 冠军赛） */
+  "LPL|2016|spring": "Royal Never Give Up", "LPL|2016|summer": "EDward Gaming", "LPL|2017|spring": "Team WE", "LPL|2017|summer": "EDward Gaming", "LPL|2018|spring": "Royal Never Give Up", "LPL|2018|summer": "Royal Never Give Up", "LPL|2019|spring": "Invictus Gaming", "LPL|2019|summer": "FunPlus Phoenix", "LPL|2020|spring": "JD Gaming", "LPL|2020|summer": "Top Esports", "LPL|2021|spring": "Royal Never Give Up", "LPL|2021|summer": "EDward Gaming",
+  "LCK|2016|spring": "SK Telecom T1", "LCK|2016|summer": "ROX Tigers", "LCK|2017|spring": "SK Telecom T1", "LCK|2017|summer": "Longzhu Gaming", "LCK|2018|spring": "Kingzone DragonX", "LCK|2018|summer": "KT Rolster", "LCK|2019|spring": "SK Telecom T1", "LCK|2019|summer": "SK Telecom T1", "LCK|2020|spring": "T1", "LCK|2020|summer": "DAMWON Gaming", "LCK|2021|spring": "DWG KIA", "LCK|2021|summer": "DWG KIA",
+  "LEC|2016|spring": "G2 Esports", "LEC|2016|summer": "G2 Esports", "LEC|2017|spring": "G2 Esports", "LEC|2017|summer": "G2 Esports", "LEC|2018|spring": "Fnatic", "LEC|2018|summer": "Fnatic", "LEC|2019|spring": "G2 Esports", "LEC|2019|summer": "G2 Esports", "LEC|2020|spring": "G2 Esports", "LEC|2020|summer": "G2 Esports", "LEC|2021|spring": "MAD Lions", "LEC|2021|summer": "MAD Lions",
+  "LCS|2016|spring": "Counter Logic Gaming", "LCS|2016|summer": "TSM", "LCS|2017|spring": "TSM", "LCS|2017|summer": "TSM", "LCS|2018|spring": "Team Liquid", "LCS|2018|summer": "Team Liquid", "LCS|2019|spring": "Team Liquid", "LCS|2019|summer": "Team Liquid", "LCS|2020|spring": "Cloud9", "LCS|2020|summer": "TSM", "LCS|2021|spring": "Cloud9", "LCS|2021|summer": "100 Thieves",
   "LPL|2022|spring": "Royal Never Give Up", "LPL|2022|summer": "JD Gaming", "LPL|2023|spring": "JD Gaming", "LPL|2023|summer": "JD Gaming",
   "LPL|2024|spring": "Bilibili Gaming", "LPL|2024|summer": "Bilibili Gaming", "LPL|2025|s1": "Top Esports", "LPL|2025|s2": "Anyone's Legend", "LPL|2025|s3": "Bilibili Gaming",
   "LCK|2022|spring": "T1", "LCK|2022|summer": "Gen.G", "LCK|2023|spring": "Gen.G", "LCK|2023|summer": "Gen.G",
@@ -261,7 +275,8 @@ export function yearSpec(lg: string, y: number, teamCount = 0): YearSpec | null 
   const k = lg + "|" + y + "|" + (lg === "LDL" ? teamCount : "");
   if (CACHE[k]) return CACHE[k];
   let s: YearSpec | null = null;
-  if (lg === "LPL") s = lplYear(y);
+  if (y < 2022 && earlyYearSpec(lg, y)) s = earlyYearSpec(lg, y);   // S6 开档：2016–2021 四大赛区（fmtspec3.ts）
+  else if (lg === "LPL") s = lplYear(y);
   else if (lg === "LCK") s = lckYear(y);
   else if (lg === "LEC") s = lecYear(y);
   else if (lg === "LCS") s = lcsYear(y);

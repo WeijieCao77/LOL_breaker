@@ -12,6 +12,7 @@ import { rnd } from "./rng";
 import { playSeries, Series, bracketMatches, slotTeam } from "./fmt";
 import { LeagueRun, YearSpec, SplitSpec, SplitOut, StageRun, Pending, newYear, beginSplit, roundPending, record, closeRound, weekDone, simWeek } from "./fmtrun";
 import { yearSpec, intlYear, CANON } from "./fmtspec2";
+import { WORLDS_DIRECT } from "./fmtspec3";
 import { winProb, wlOf, leagueOf, pw } from "./intl";
 import { SEASONS } from "./main";
 
@@ -234,6 +235,19 @@ export function fmtMsiSplit(): { direct: string[]; playin: string[]; take: numbe
 /* 世界赛：正赛 16 席，入围赛取 take 个，其余直进 */
 export function fmtWorldsSplit(take: number): { direct: string[]; playin: string[]; take: number } {
   const all = fmtWorldsTeams(), directN = Math.max(0, 16 - take);
+  const DM = WORLDS_DIRECT[S.fmt.y];
+  if (DM) {   // S6 开档 2017–2021：各赛区直进小组赛几席写死；2017–2019 上一届世界冠军的赛区多一席（按这个世界的冠军）
+    const dm: Record<string, number> = Object.assign({}, DM);
+    if (S.fmt.y <= 2019) {
+      const prev = S.honors && S.honors.worlds && S.honors.worlds[S.si - 1];
+      const lg = prev ? leagueOf(prev) : ({ 2017: "LCK", 2018: "LCK", 2019: "LPL" } as any)[S.fmt.y];
+      if (lg && dm[lg] !== undefined) dm[lg]++; else dm.LCK = (dm.LCK || 0) + 1;
+    }
+    const direct: string[] = [];
+    fmtIntlSeeds("worlds").forEach(x => x.seeds.slice(0, dm[x.lg] || 0).forEach(t => { if (all.includes(t) && direct.length < 16) direct.push(t); }));
+    const playin = all.filter(t => !direct.includes(t));
+    return { direct, playin, take: Math.max(0, 16 - direct.length) };
+  }
   if (all.length <= 16) return { direct: all, playin: [], take: 0 };
   return { direct: all.slice(0, directN), playin: all.slice(directN), take };
 }
