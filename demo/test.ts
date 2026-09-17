@@ -3,6 +3,7 @@
      SEED=123 npm test        # 原样重放
    原来是把 career.html 里的 <script> 抽出来 new Function 跑；现在源码就是 ES 模块，直接 import。 */
 import fs from "fs";
+import crypto from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -2127,7 +2128,23 @@ function tlProbe() {
   }
   console.log(JSON.stringify(out, null, 1));
 }
-if (isMain && process.argv.includes("--tl-probe")) {
+/* 回归指纹：npx tsx demo/test.ts --statehash 40 [--strong] [--encore] [--from 1001]
+   固定种子各跑一局，打印整局结束时存档的 sha1（去掉 saveId：它带时钟）。
+   改结构（比如 S6 开档）时拿它证明「老入口逐字节不变」：改前改后各跑一次，逐行 diff。 */
+function stateHash(n: number, strong: boolean, encore: boolean, from: number) {
+  const skip = new Set(["saveId"]);
+  for (let i = 0; i < n; i++) {
+    const seed = from + i;
+    playOne({ seed, strong, encore });
+    const json = JSON.stringify(A.S(), (k, v) => skip.has(k) ? undefined : v);
+    if (process.env.STATEDUMP) fs.writeFileSync(process.env.STATEDUMP + "." + seed + ".json", json);
+    console.log(seed, crypto.createHash("sha1").update(json).digest("hex"), json.length);
+  }
+}
+if (isMain && process.argv.includes("--statehash")) {
+  const i = process.argv.indexOf("--statehash"), f = process.argv.indexOf("--from");
+  stateHash(parseInt(process.argv[i + 1] || "20", 10) || 20, process.argv.includes("--strong"), process.argv.includes("--encore"), f > 0 ? parseInt(process.argv[f + 1], 10) : 1001);
+} else if (isMain && process.argv.includes("--tl-probe")) {
   tlProbe();
 } else if (isMain && process.argv.includes("--batch")) {
   const i = process.argv.indexOf("--batch");
