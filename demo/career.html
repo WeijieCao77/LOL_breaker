@@ -8202,7 +8202,12 @@ header.top.compact>.theme-top{display:none}
   }
   var comp = (p) => avg(DIMS.map((d) => p && p.r && p.r[d] || 50));
   var ageIdx = () => clamp(S && S.worldAge || 0, 0, 7);
-  var tgt = (T3, K) => (T3[K] || T3[K === "LCP" ? "PCS" : "LPL"] || T3.LPL)[ageIdx()];
+  var TL_MEAN_EXTRA = 1;
+  var tgt = (T3, K) => {
+    const arr = T3[K] || T3[K === "LCP" ? "PCS" : "LPL"] || T3.LPL, age = S && S.worldAge || 0;
+    if (T3 === TL_MEAN && age > 7) return arr[7] + (age - 7) * TL_MEAN_EXTRA * (arr[7] - arr[3]) / 4;
+    return arr[ageIdx()];
+  };
   var TL_LOGOS = timeline_logos_default;
   function dataLogo(name) {
     try {
@@ -8417,6 +8422,8 @@ header.top.compact>.theme-top{display:none}
     if (S.benchRival && S.benchRival.id === real.id) return;
     S.benchRival = Object.assign({}, real, { r: Object.assign({}, real.r), lg: S.homeLeague || "LPL" });
     S.rivalGrace = { id: real.id, si: S.si };
+    S.s6n = Object.assign({ rivalIn: 0, rivalOut: 0 }, S.s6n || {});
+    S.s6n.rivalIn++;
     const gap = avg(DIMS.map((d) => real.r[d])) - avg(DIMS.map((d) => S.attrs[d]));
     const txt = `<b>${real.id}</b>${real.cn ? `（${real.cn}）` : ""} 加盟 ${teamName}（真实历史），<b>他打你的位置</b>。这个赛季上半年你还是首发——之后看表现。`;
     if (news) news.push(txt);
@@ -8443,6 +8450,8 @@ header.top.compact>.theme-top{display:none}
     S.loseStreak = 0;
     S.rosterSig = null;
     S.benchRival = null;
+    S.s6n = Object.assign({ rivalIn: 0, rivalOut: 0 }, S.s6n || {});
+    S.s6n.rivalOut++;
     if (S.scrim) {
       S.scrim.edge = 0;
       S.scrim.trial = null;
@@ -8952,7 +8961,7 @@ header.top.compact>.theme-top{display:none}
     ${changed.length ? `<div class="tw"><table><thead><tr><th>赛事</th><th>本作</th><th>真实历史</th></tr></thead><tbody>${changed.slice().sort(order).map((x) => `<tr class="${x.game === S.team ? "me" : ""}"><td>${x.ev}</td><td><b>${x.game}</b></td><td>${x.real}</td></tr>`).join("")}</tbody></table></div>` : `<p class="note">你打过的每一届冠军，都和真实历史一样落到了原主手里——世界线没有被撬动。</p>`}
     ${disp.length ? `<h3 style="margin-top:16px;font-size:14px">你顶掉了谁</h3>
       <p class="note">${disp.map((x) => `${SEASONS[x.si] ? SEASONS[x.si].tag : ""} <b>${x.team}</b> 的${POSN[x.pos] || x.pos} <b>${x.id}</b>${x.cn ? `（${x.cn}）` : ""}`).join("　·　")}</p>` : ""}
-    <p class="note">史实只到 S15（Leaguepedia 逐条取证）；S16 起没有真实历史可比。</p></div>`;
+    <p class="note">史实${entryYear() === 2016 ? "从 S6 " : ""}到 S15（Leaguepedia 逐条取证）；S16 起没有真实历史可比。</p></div>`;
   }
   function tlYearTurn() {
     if (!tlReal() || !S.world) return;
@@ -12844,11 +12853,11 @@ header.top.compact>.theme-top{display:none}
   }
 
   // demo/src/fmt.ts
-  function playSeries(a, b, bo, pGame, r) {
+  function playSeries(a, b, bo, pGame2, r) {
     const need = (bo + 1) / 2;
     let wa = 0, wb = 0;
     while (wa < need && wb < need) {
-      if (r() < pGame) wa++;
+      if (r() < pGame2) wa++;
       else wb++;
     }
     return wa > wb ? { a, b, bo, w: a, l: b, sw: wa, sl: wb } : { a, b, bo, w: b, l: a, sw: wb, sl: wa };
@@ -13320,11 +13329,11 @@ header.top.compact>.theme-top{display:none}
     const r = run.runs[run.stage];
     return !r || run.done || !!run.wait || r.doneR % r.perWeek === 0;
   }
-  function simWeek(run, ys, pGame, rng) {
+  function simWeek(run, ys, pGame2, rng) {
     if (run.done || run.wait) return;
     let guard = 0;
     do {
-      roundPending(run).forEach((p) => record(run, p, playSeries(p.a, p.b, p.bo, pGame(p.a, p.b), rng)));
+      roundPending(run).forEach((p) => record(run, p, playSeries(p.a, p.b, p.bo, pGame2(p.a, p.b), rng)));
       const st = closeRound(run, ys);
       if (st === "stage" || st === "split") break;
     } while (!weekDone(run) && ++guard < 20);
@@ -19226,6 +19235,73 @@ header.top.compact>.theme-top{display:none}
     return moves;
   }
 
+  // demo/src/riftrivals.ts
+  var REGION_NAME = { LCK: "LCK", LPL: "LPL", PCS: "LMS", VCS: "VCS" };
+  var DATES = { 2017: "7 月 6–9 日 · 高雄", 2018: "7 月 5–8 日 · 大连", 2019: "7 月 4–7 日 · 首尔" };
+  function pGame(a, b) {
+    if (S.team && FMT_HOOKS.myP && (a === S.team || b === S.team)) {
+      const q = Math.max(0.03, Math.min(0.97, FMT_HOOKS.myP(a === S.team ? b : a)));
+      return a === S.team ? q : 1 - q;
+    }
+    return winProb(a, b);
+  }
+  var game = (a, b) => rnd() < pGame(a, b) ? a : b;
+  function relay(A, B) {
+    let wa = 0, wb = 0, i = 0;
+    while (wa < 3 && wb < 3) {
+      const a = A[i % A.length], b = B[i % B.length];
+      if (game(a, b) === a) wa++;
+      else wb++;
+      i++;
+    }
+    return { wa, wb };
+  }
+  function riftRivals() {
+    const y = S.fmt && S.fmt.y;
+    if (!y || y < 2017 || y > 2019 || S.rrDone === y) return;
+    S.rrDone = y;
+    const top4 = (lg, n = 4) => {
+      const run = runOf2(lg);
+      const o = run && run.outs && run.outs[0];
+      return o ? o.order.slice(0, n) : [];
+    };
+    const regions = [
+      { key: "LCK", name: "LCK", teams: top4("LCK") },
+      { key: "LPL", name: "LPL", teams: top4("LPL") },
+      y === 2019 ? { key: "PCS", name: "LMS / VCS", teams: top4("PCS", 2).concat(top4("VCS", 2)) } : { key: "PCS", name: "LMS", teams: top4("PCS") }
+    ].filter((r) => r.teams.length === 4);
+    if (regions.length < 3) return;
+    const wins = {};
+    regions.forEach((r) => {
+      wins[r.key] = 0;
+    });
+    for (let i = 0; i < regions.length; i++) for (let j = i + 1; j < regions.length; j++)
+      for (let k = 0; k < 4; k++) {
+        const a = regions[i].teams[k], b = regions[j].teams[k];
+        wins[game(a, b) === a ? regions[i].key : regions[j].key]++;
+      }
+    const rank2 = regions.slice().sort((x, z) => wins[z.key] - wins[x.key]);
+    const sf = relay(rank2[1].teams, rank2[2].teams), sfW = sf.wa > sf.wb ? rank2[1] : rank2[2], sfL = sfW === rank2[1] ? rank2[2] : rank2[1];
+    const fi = relay(rank2[0].teams, sfW.teams), champ = fi.wa > fi.wb ? rank2[0] : sfW, runner = champ === rank2[0] ? sfW : rank2[0];
+    const fs = champ === rank2[0] ? `${fi.wa}:${fi.wb}` : `${fi.wb}:${fi.wa}`;
+    const tag = SEASONS[S.si] ? SEASONS[S.si].tag : String(y);
+    const mine = regions.find((r) => S.team && r.teams.includes(S.team));
+    const lineup = regions.map((r) => `${r.name}：${r.teams.join("、")}`).join("<br>");
+    pushEvent(`<b>${tag} 洲际赛</b>（${DATES[y]}，真实赛制：各赛区春季赛前 4，同名次 BO1 → 接力 BO5）：小组赛 ${rank2.map((r) => `${r.name} ${wins[r.key]} 胜`).join(" · ")}；半决赛 ${sfW.name} 胜 ${sfL.name}；决赛 <b>${champ.name}</b> ${fs} ${runner.name}。`, "info", "洲际赛");
+    if (mine) {
+      const won = mine === champ;
+      S.career.rrTitles = (S.career.rrTitles || []).concat(won ? [`${tag} 洲际赛`] : []);
+      addFans(won ? 25 : 8);
+      pushEvent(won ? `<b>${S.team} 随 ${mine.name} 拿下 ${tag} 洲际赛冠军。</b>赛区荣誉，不算进 MSI / 世界赛——但所有人都记住了这个夏天。` : `${S.team} 代表 ${mine.name} 出战洲际赛，止步于${mine === runner ? "决赛" : mine === sfL ? "半决赛" : "小组赛"}。`, won ? "big" : "info", "洲际赛");
+      S.tlPop = {
+        eyebrow: `${tag} · 洲际赛（${DATES[y]}）`,
+        title: won ? `${mine.name} 夺冠` : `${champ.name} 夺冠`,
+        body: `你们是本赛区春季赛前四，代表 <b>${mine.name}</b> 出战。<br>${lineup}<br><br>小组赛：${rank2.map((r) => `${r.name} ${wins[r.key]} 胜`).join(" · ")}<br>决赛：<b>${champ.name}</b> ${fs} ${runner.name}`
+      };
+    }
+    void REGION_NAME;
+  }
+
   // demo/src/season_tl.ts
   FMT_HOOKS.myP = (opp) => {
     const t = findTeam(opp);
@@ -19294,6 +19370,10 @@ header.top.compact>.theme-top{display:none}
     S.buff = {};
     try {
       tlRivalCheck();
+    } catch (e) {
+    }
+    if (S.split === 1) try {
+      riftRivals();
     } catch (e) {
     }
     const sea = SEASONS[S.si], n = fmtStageNow();
@@ -19945,6 +20025,8 @@ header.top.compact>.theme-top{display:none}
     if (y === 2017 && split === 1) {
       if (HL === "LDL" && lspOut.order.slice(0, 2).includes(S.team) && !isBenched()) {
         S.seatOv = { team: S.team, league: "LPL", y: 2018 };
+        S.s6n = Object.assign({}, S.s6n || {});
+        S.s6n.rel = (S.s6n.rel || []).concat(["联盟席位"]);
         pushEvent(`<b>${S.team} 拿到 2018 年 LPL 联盟席位。</b>LSPL 夏季赛前二——明年起 LPL 实行联盟化，不再有降级，这个席位是你们打出来的。<span style="color:var(--ink-3)">真实历史里，这一年的席位名单里没有你们。</span>`, "big", "赛区");
         S.tlPop = { eyebrow: "2017 · LPL 联盟化", title: "拿到联盟席位", body: `<b>${S.team}</b> 在 LSPL 夏季赛打进前二。2018 年起 LPL 实行联盟化——你们会以正式席位加入 LPL。` };
         return true;
@@ -19979,6 +20061,8 @@ header.top.compact>.theme-top{display:none}
       return true;
     }
     const [up, down] = mine;
+    S.s6n = Object.assign({}, S.s6n || {});
+    S.s6n.rel = (S.s6n.rel || []).concat([down === S.team ? `降级${y}${split}` : `升级${y}${split}`]);
     swap(up, down);
     if (down === S.team) {
       S.seatOv = { team: S.team, league: "LDL", y };

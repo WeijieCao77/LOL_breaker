@@ -64,6 +64,7 @@ export function relegationCheck(split: number): boolean {
   if (y === 2017 && split === 1) {
     if (HL === "LDL" && lspOut.order.slice(0, 2).includes(S.team) && !isBenched()) {
       S.seatOv = { team: S.team, league: "LPL", y: 2018 };
+      S.s6n = Object.assign({}, S.s6n || {}); S.s6n.rel = (S.s6n.rel || []).concat(["联盟席位"]);
       pushEvent(`<b>${S.team} 拿到 2018 年 LPL 联盟席位。</b>LSPL 夏季赛前二——明年起 LPL 实行联盟化，不再有降级，这个席位是你们打出来的。<span style="color:var(--ink-3)">真实历史里，这一年的席位名单里没有你们。</span>`, "big", "赛区");
       S.tlPop = { eyebrow: "2017 · LPL 联盟化", title: "拿到联盟席位", body: `<b>${S.team}</b> 在 LSPL 夏季赛打进前二。2018 年起 LPL 实行联盟化——你们会以正式席位加入 LPL。` };
       return true;
@@ -99,6 +100,7 @@ export function relegationCheck(split: number): boolean {
     return true;
   }
   const [up, down] = mine;
+  S.s6n = Object.assign({}, S.s6n || {}); S.s6n.rel = (S.s6n.rel || []).concat([down === S.team ? `降级${y}${split}` : `升级${y}${split}`]);
   swap(up, down);
   if (down === S.team) {
     S.seatOv = { team: S.team, league: "LDL", y };

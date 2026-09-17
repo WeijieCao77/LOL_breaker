@@ -1918,7 +1918,13 @@ export { playOne, unitChecks, A, SEED };
    一年内上岸率、上岸周数 p50/p90、上岸时段位读数、结局分布——改前改后各跑一次对比。 */
 function batch(n: number, encore = false, strong = false, loyal = false, entry?: number, from = 1001) {
   const rs = [];
-  for (let i = 0; i < n; i++) { rs.push(playOne({ seed: from + i, encore, strong, loyal, entry })); process.stderr.write("."); }
+  for (let i = 0; i < n; i++) {
+    const r = playOne({ seed: from + i, encore, strong, loyal, entry }); rs.push(r); process.stderr.write(".");
+    if (process.env.BATCH_JSONL) fs.appendFileSync(process.env.BATCH_JSONL, JSON.stringify({ seed: from + i, entry: entry || 2022, strong, encore,
+      titles: r.titles, worldsYears: r.worldsYears, msiYears: r.msiYears, firstSi: r.firstSi, ending: r.ending, signAt: r.signAt,
+      lastSi: A.S().si, age: A.S().age, relegated: !!(A.S().seatOv), s6n: A.S().s6n || null, rivalBenched: !!(A.S().s6n && A.S().s6n.rivalOut),
+      tags: A.SEASONS.map((x: any) => x.tag) }) + "\n");
+  }
   process.stderr.write("\n");
   const q = (arr: number[], p: number) => { const a = arr.slice().sort((x, y) => x - y); return a.length ? a[Math.min(a.length - 1, Math.floor(p * (a.length - 1)))] : 0; };
   const signed = rs.filter(r => r.signAt > 0);
@@ -2159,7 +2165,11 @@ function s6Probe(seed: number, strong: boolean) {
       const top = ts.slice().sort((a: any, b: any) => A.power(b) - A.power(a)).slice(0, 3).map((t: any) => t.name).join("/");
       row.push(`${lg} ${ts.length}队 均${m.toFixed(1)} 前三 ${top}`);
     });
-    console.log(`${A.SEASONS[S.si].tag} ${y} 世界年龄${S.worldAge} 你:${S.career ? S.team + "(" + S.homeLeague + ")" : "职业前"} 年龄${S.age} fmt:${!!(S.fmt && S.fmt.runs)}\n   ` + row.join("\n   "));
+    const my = A.DIMS.reduce((a: number, d: string) => a + S.attrs[d], 0) / A.DIMS.length;
+    const mt = S.career && S.world[S.homeLeague] ? S.world[S.homeLeague].find((t: any) => t.name === S.team) : null;
+    const allT = Object.keys(S.world).filter(k => k !== "LDL").flatMap(k => S.world[k]);
+    const rk = mt ? allT.slice().sort((a: any, b: any) => A.power(b) - A.power(a)).indexOf(mt) + 1 : 0;
+    console.log(`${A.SEASONS[S.si].tag} ${y} 世界年龄${S.worldAge} 你:${S.career ? S.team + "(" + S.homeLeague + ")" : "职业前"} 年龄${S.age} 五维${my.toFixed(1)} 队战力${mt ? A.power(mt).toFixed(1) : "-"} 世界第${rk} 默契${S.squad ? S.squad.syn : "-"}\n   ` + row.join("\n   "));
   } });
   const H = A.S().honors || {};
   A.SEASONS.forEach((x: any, i: number) => console.log(x.tag, x.y, "MSI", (H.msi || {})[i] || "-", "世界赛", (H.worlds || {})[i] || "-"));

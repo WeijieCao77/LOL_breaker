@@ -129,7 +129,15 @@ export function tlCanon(base, si, kind) {
 
 const comp = p => avg(DIMS.map(d => (p && p.r && p.r[d]) || 50));
 const ageIdx = () => clamp((S && S.worldAge) || 0, 0, 7);
-const tgt = (T, K) => (T[K] || T[K === "LCP" ? "PCS" : "LPL"] || T.LPL)[ageIdx()];
+/* S6 开档（2026-09-17 批测抓的）：S6 入口的世界要走 13 年，标定表只到世界年龄 7——到 2023 年之后世界就不再变强，
+   而 S6 的主角正在巅峰，2022 年起世界赛年夺冠率一直停在 26% 左右、不随年龄往下走。
+   世界年龄超过 7 的时候，均值按标定表最后四年的斜率接着往上走（默契 / 战术 / 离散照旧封顶）。S12 入口到 2029 年世界年龄才 7，碰不到这一段。 */
+export const TL_MEAN_EXTRA = 1.0;   // 斜率倍数（批测调）
+const tgt = (T, K) => {
+  const arr = (T[K] || T[K === "LCP" ? "PCS" : "LPL"] || T.LPL), age = (S && S.worldAge) || 0;
+  if (T === TL_MEAN && age > 7) return arr[7] + (age - 7) * TL_MEAN_EXTRA * (arr[7] - arr[3]) / 4;
+  return arr[ageIdx()];
+};
 /* 换页进来的新队（和开局数据里本来缺队标的 RNG / Excel / BDS）的队标：data/export_timeline_logos.py 从 data/logos 生成 */
 export const TL_LOGOS: any = tlLogos;
 function dataLogo(name) {
@@ -290,6 +298,7 @@ export function tlRivalArrive(real, teamName, news?) {
   if (S.benchRival && S.benchRival.id === real.id) return;
   S.benchRival = Object.assign({}, real, { r: Object.assign({}, real.r), lg: S.homeLeague || "LPL" });
   S.rivalGrace = { id: real.id, si: S.si };
+  S.s6n = Object.assign({ rivalIn: 0, rivalOut: 0 }, S.s6n || {}); S.s6n.rivalIn++;   // 批测计数
   const gap = avg(DIMS.map(d => real.r[d])) - avg(DIMS.map(d => S.attrs[d]));
   const txt = `<b>${real.id}</b>${real.cn ? `（${real.cn}）` : ""} 加盟 ${teamName}（真实历史），<b>他打你的位置</b>。这个赛季上半年你还是首发——之后看表现。`;
   if (news) news.push(txt);
@@ -306,6 +315,7 @@ export function tlRivalCheck() {
   let done = false; team.players = team.players.map(q => (!done && q && q.me) ? (done = true, R) : q);
   if (!done) return;
   S.promoted = false; S.understudy = R; S.benchLock = true; S.loseStreak = 0; S.rosterSig = null; S.benchRival = null;
+  S.s6n = Object.assign({ rivalIn: 0, rivalOut: 0 }, S.s6n || {}); S.s6n.rivalOut++;
   if (S.scrim) { S.scrim.edge = 0; S.scrim.trial = null; S.scrim.pendingTrial = false; }
   pushEvent(`<b>首发之争：教练选了 ${R.id}。</b>他比你强出 ${gap.toFixed(1)}，这个赛段起${POSN[S.pos] || S.pos}位置是他的，你进替补席。<br><span style="color:var(--ink-3)">回首发的路和被换下时一样：训练赛里攒够对位优势，拿到试用，赢下来。</span>`, "bad", "轮换");
 }
@@ -710,7 +720,7 @@ export function rewriteCard() {
       : `<p class="note">你打过的每一届冠军，都和真实历史一样落到了原主手里——世界线没有被撬动。</p>`}
     ${disp.length ? `<h3 style="margin-top:16px;font-size:14px">你顶掉了谁</h3>
       <p class="note">${disp.map(x => `${SEASONS[x.si] ? SEASONS[x.si].tag : ""} <b>${x.team}</b> 的${POSN[x.pos] || x.pos} <b>${x.id}</b>${x.cn ? `（${x.cn}）` : ""}`).join("　·　")}</p>` : ""}
-    <p class="note">史实只到 S15（Leaguepedia 逐条取证）；S16 起没有真实历史可比。</p></div>`;
+    <p class="note">史实${entryYear() === 2016 ? "从 S6 " : ""}到 S15（Leaguepedia 逐条取证）；S16 起没有真实历史可比。</p></div>`;
 }
 
 /* 休赛期换页（finishOffseason / preNextYear 在 ageWorld 之后调） */
