@@ -39,6 +39,7 @@ export interface SplitOut {
   aux?: boolean;                     // 附属赛段（地区资格赛）：不当作下一年的参照名次
   poN?: number;                      // 这个赛段季后赛几支队（判「进没进季后赛」）
   poSeeds?: string[];                // 季后赛种子顺序
+  rel?: string[];                    // S6 开档：LPL 2016–2017 春升降级区 [A5, B5, A6, B6]（relegation.ts）
 }
 
 export interface SplitSpec {

@@ -282,6 +282,34 @@ export function tlDisplace(real, teamName) {
   pushEvent(`真实历史里，${tlYear()} 年 <b>${teamName}</b> 的${POSN[real.pos] || real.pos}首发是 <b>${real.id}</b>${real.cn ? `（${real.cn}）` : ""}——<b>这个位置现在是你</b>。<span style="color:var(--ink-3)">他进了自由人市场，别的队缺人会先找他。</span>`, "big", "时间线");
 }
 
+/* S6 开档 · 首发之争（作者 2026-09-17 D4）：真实签入的同位置选手进队当你的竞争者。
+   他进来的这个赛季上半年你仍是首发（S.rivalGrace）；之后每个赛段开打前比一次实力，他高出 RIVAL_GAP 就换他首发、你进替补席，
+   回首发走现有的训练赛对位 → 试用（和被教练换下同一条路）。 */
+export const RIVAL_GAP = 4;
+export function tlRivalArrive(real, teamName, news?) {
+  if (S.benchRival && S.benchRival.id === real.id) return;
+  S.benchRival = Object.assign({}, real, { r: Object.assign({}, real.r), lg: S.homeLeague || "LPL" });
+  S.rivalGrace = { id: real.id, si: S.si };
+  const gap = avg(DIMS.map(d => real.r[d])) - avg(DIMS.map(d => S.attrs[d]));
+  const txt = `<b>${real.id}</b>${real.cn ? `（${real.cn}）` : ""} 加盟 ${teamName}（真实历史），<b>他打你的位置</b>。这个赛季上半年你还是首发——之后看表现。`;
+  if (news) news.push(txt);
+  pushEvent(`首发之争：${txt}${gap >= RIVAL_GAP ? `<span style="color:var(--red)">他现在比你强一截。</span>` : ""}`, "bad", "轮换");
+}
+export function tlRivalCheck() {
+  const R = S.benchRival; if (!R || !S.career || !S.promoted) return;
+  const G = S.rivalGrace;
+  if (G && G.id === R.id && G.si === S.si && (S.split || 0) === 0) return;   // 保护期：他进队的这个赛季上半年
+  const team = (S.world && S.world[S.homeLeague || "LPL"] || []).find(t => t.name === S.team);
+  if (!team) { S.benchRival = null; return; }
+  const gap = avg(DIMS.map(d => R.r[d])) - avg(DIMS.map(d => S.attrs[d]));
+  if (gap < RIVAL_GAP) return;
+  let done = false; team.players = team.players.map(q => (!done && q && q.me) ? (done = true, R) : q);
+  if (!done) return;
+  S.promoted = false; S.understudy = R; S.benchLock = true; S.loseStreak = 0; S.rosterSig = null; S.benchRival = null;
+  if (S.scrim) { S.scrim.edge = 0; S.scrim.trial = null; S.scrim.pendingTrial = false; }
+  pushEvent(`<b>首发之争：教练选了 ${R.id}。</b>他比你强出 ${gap.toFixed(1)}，这个赛段起${POSN[S.pos] || S.pos}位置是他的，你进替补席。<br><span style="color:var(--ink-3)">回首发的路和被换下时一样：训练赛里攒够对位优势，拿到试用，赢下来。</span>`, "bad", "轮换");
+}
+
 /* 你的队改名（联赛席位易主 / 二队随母队改名）：所有记着队名的活状态一起改 */
 export function tlRenameTeam(oldN, newN) {
   if (!oldN || !newN || oldN === newN) return;
@@ -355,6 +383,21 @@ export function tlApplyYear(w, y, live) {
   if (!pg || !w) return null;
   const st = tlStructOf(y);
   const built = buildPage(y);
+  /* S6 开档：你的队因为升降级 / 联盟化席位和真实历史不在同一个联赛（relegation.ts 的 S.seatOv）——只要你还在这支队，每年换页都照它 */
+  const ov = (live && S.career && S.seatOv && S.seatOv.team === S.team) ? S.seatOv : null;
+  if (ov && built.LPL) {
+    if (ov.league === "LDL") built.LPL = built.LPL.filter(bt => bt.name !== S.team && bt.from !== S.team);
+    else {
+      if (w.LDL && !(w.LPL || []).some(t => t.name === S.team)) {   // 还挂在二级联赛里：先搬进 LPL
+        const i = w.LDL.findIndex(t => t.name === S.team);
+        if (i >= 0) { const t = w.LDL.splice(i, 1)[0]; delete t.parent; (t.players || []).forEach(p => { if (p) p.lg = "LPL"; }); (w.LPL = w.LPL || []).push(t); S.homeLeague = "LPL"; }
+      }
+      if (!built.LPL.some(bt => bt.name === S.team || bt.from === S.team) && built.LPL.length) {
+        const weakest = built.LPL.slice().sort((a, b) => avg(a.players.map(comp)) - avg(b.players.map(comp)))[0];
+        built.LPL = built.LPL.filter(bt => bt !== weakest);
+      }
+    }
+  }
   const pageNames = new Set<string>();
   Object.keys(built).forEach(K => built[K].forEach(t => pageNames.add(t.name)));
   const old = new Map<string, any>(), oldIdTeam = new Map<string, any>();
@@ -409,7 +452,12 @@ export function tlApplyYear(w, y, live) {
         const real = ownSlot.bt.players.find(q => q.pos === pos);
         const realOk = real && !outIds[real.id] && !used.has(real.id) && !pinned.has(real.id);
         if (cur && cur.me) {                                              // 你的位置：真实首发让出来
-          if (realOk && real.id !== cur.id) { used.add(real.id); tlDisplace(real, ownSlot.bt.name); }
+          if (realOk && real.id !== cur.id) {
+            used.add(real.id);
+            // S6 开档（作者 D4）：真实历史里新签进来的同位置选手照样进队，成为你的首发竞争者；原来就是这支队首发、被你顶掉的那位照旧进自由人池
+            if (entryYear() === 2016 && !(S.tlDisplaced || []).some(x => x.id === real.id)) tlRivalArrive(real, ownSlot.bt.name, ownNews);
+            else tlDisplace(real, ownSlot.bt.name);
+          }
           next.push(cur); return;
         }
         if (cur && pinned.has(cur.id)) { next.push(cur); return; }       // 你点名签来的人留下
@@ -501,9 +549,11 @@ export function tlApplyYear(w, y, live) {
          同一年一线名单里的人不在二队重复出现；你在的二队还在就留下（改了名跟着改），解散了就进母队一队替补席。 */
       const taken = new Set<string>();
       Object.keys(nw).forEach(K => { if (K !== "LDL") (nw[K] || []).forEach(t => (t.players || []).forEach(p => { if (p && !p.me) taken.add(p.id); })); });
-      const built = ldlBuild(y, nw.LPL || [], w.LDL, taken);
+      let built = ldlBuild(y, nw.LPL || [], w.LDL, taken);
       if (built) {
-        if (live && S.career && S.homeLeague === "LDL") ldlMoved = ldlCarryMine(w, nw, built, renames, y);
+        const mineOv = ov && ov.league === "LDL" ? (w.LDL || []).find(t => t.name === S.team) : null;
+        if (mineOv) built = built.filter(t => t.name !== mineOv.name).concat([mineOv]);   // 降级留在二级联赛的你的队：原样留下
+        else if (live && S.career && S.homeLeague === "LDL") ldlMoved = ldlCarryMine(w, nw, built, renames, y);
         nw.LDL = built;
       } else {
         const lpl = nw.LPL || [], names = new Set(lpl.map(t => t.name));

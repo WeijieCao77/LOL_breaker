@@ -27,7 +27,7 @@ import { archiveWeek } from "./routine";
 import { saveGame, escapeHtml } from "./save";
 import { addMoney, ledgerRotate, PRIZE_PO, PRIZE_PO_LDL } from "./shop";
 import { clampWinProb, defendPressure, oppMatchPw } from "./squad";
-import { lgName } from "./timeline";
+import { lgName, tlRivalCheck } from "./timeline";
 import { REG_WEEKS, regRollOffer } from "./tryout";
 import { Series } from "./fmt";
 import { Pending, SplitOut, SplitSpec, ctxOf } from "./fmtrun";
@@ -87,6 +87,7 @@ export function tlSeasonStart(first: boolean, split?: number) {
   if (S.benchedThisSplit) { S.benchedSplits = (S.benchedSplits || 0) + 1; S.benchedThisSplit = false; }
   if (S.split === 0) S.seasonAttr0 = Object.assign({}, S.attrs);
   S.buff = {};
+  try { tlRivalCheck(); } catch (e) {}   // S6 开档：真实签入的同位置竞争者（保护期过了才比）
   const sea = SEASONS[S.si], n = fmtStageNow();
   if (S.split === 1 && n) pushEvent(`<b>${sea.tag} ${lgName(fmtHome())}${n.sp.name}开赛</b>。世界赛名额就看下半年。`, "big", "赛段");
   if (!first && S.split === 0) {

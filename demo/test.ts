@@ -2201,6 +2201,30 @@ if (isMain && process.argv.includes("--s6probe")) {
     if (A.SEASONS.length !== 8) bad.push("换回 S12 入口没还原");
     if (bad.length) { console.error("S6 开档框架自检不通过：\n - " + bad.join("\n - ")); process.exit(1); }
     console.log("S6 开档框架自检通过：两个入口的赛季表 · 按年份查史实表 · 换入口能还原"); }
+  { /* S6 开档 · 升降级：2017 春季赛你的队落进升降级区、系列赛全输 → 降到 LSPL；2018 年换页之后仍在二级联赛、LPL 里没有同名队 */
+    const bad: string[] = []; let forced = false, dropped = false, checked = false;
+    const saveP = A.FMT_HOOKS.myP;
+    playOne({ seed: 1001, strong: true, entry: 2016, hook: (S: any) => {
+      if (checked) return;
+      const F = S.fmt, run = F && F.runs && F.runs.LPL;
+      if (!forced && S.career && S.homeLeague === "LPL" && F && F.y === 2017 && run && run.outs[0] && run.outs[0].rel && S.split === 0 && !S.off) {
+        const rel = run.outs[0].rel; if (!rel.includes(S.team)) rel[2] = S.team;
+        A.FMT_HOOKS.myP = () => 0.01; forced = true;
+      }
+      if (forced && !dropped && S.homeLeague === "LDL") { dropped = true; A.FMT_HOOKS.myP = saveP;
+        if (!(S.world.LDL || []).some((t: any) => t.name === S.team)) bad.push("降级后你的队不在二级联赛名单里");
+        if ((S.world.LPL || []).some((t: any) => t.name === S.team)) bad.push("降级后 LPL 里还有你的队");
+        if (!S.seatOv || S.seatOv.league !== "LDL") bad.push("降级没记进 S.seatOv"); }
+      if (dropped && S.fmt && S.fmt.y === 2018 && S.team === S.seatOv.team) { checked = true;
+        if ((S.world.LPL || []).some((t: any) => t.name === S.team)) bad.push("2018 换页后 LPL 里又出现了你的队");
+        if (!(S.world.LDL || []).some((t: any) => t.name === S.team)) bad.push("2018 换页后你的队不在 LDL");
+        S.step = "end"; }
+    } });
+    A.FMT_HOOKS.myP = saveP;
+    if (!forced) bad.push("种子局没走到 2017 春季赛的 LPL（换一个种子）");
+    else if (!dropped) bad.push("升降级区全输也没有降级");
+    if (bad.length) { console.error("S6 升降级自检不通过：\n - " + bad.join("\n - ")); process.exit(1); }
+    console.log("S6 升降级自检通过：落进升降级区全输 → 降到 LSPL · 第二年换页仍在二级联赛"); }
   { const fs1 = FC.fmtSpecChecks();
     if (fs1.length) { console.error("真实赛制自检不通过：\n - " + fs1.join("\n - ")); process.exit(1); }
     console.log("真实赛制自检通过：四大赛区 2022–2028 逐年跑通 · LPL 登峰/坚毅/涅槃与中途淘汰 · LCK 第 3–5 轮 · LEC 赛季总决赛 · LCS 瑞士轮 · 国际赛名额总数"); }
@@ -2311,6 +2335,18 @@ const BALL_WORDS = ["球队", "球员", "球迷", "球星", "球场", "赢球", 
    这个前提一旦变了（谁给别的赛区也做了二队），下面 LDL_ONLY_STILL_TRUE 那条会先红。 */
 const LDL_ONLY = /^(?:(?!\b(LPL|LCK|LEC|LCS|PCS|VCS|LJL)\b).)*$/s;
 const LEAGUE_OK: Record<string, string> = {
+  'pushEvent(`<b>${S.team} 拿到 2018 年 LPL 联盟席位。</b>LSPL 夏季赛前二——明年起 LPL 实行联盟化，不再有降级，这个席位是你们打出来的。<span style="color:var(--ink-3)">真实历史里，这一年的席位名单里没有你们。</span>`, "big", "赛区");':
+    "S6 开档升降级 / 联盟化席位（relegation.ts）：relegationCheck 只在你的队在 LPL 或 LSPL 时才走到这里（HL===LPL / LDL 已判）",
+  'S.tlPop = { eyebrow: "2017 · LPL 联盟化", title: "拿到联盟席位", body: `<b>${S.team}</b> 在 LSPL 夏季赛打进前二。2018 年起 LPL 实行联盟化——你们会以正式席位加入 LPL。` };':
+    "同上",
+  'pushEvent(mineLPL ? `<b>${S.team} 保住了 LPL 席位。</b>` : `<b>${S.team} 没能升上 LPL。</b>明年再来。`, mineLPL ? "good" : "bad", "升降级");':
+    "同上",
+  'S.tlPop = { eyebrow: `${head}`, title: "降级", body: `<b>${S.team}</b> 输掉了升降级赛，席位让给 <b>${up}</b>。<br>接下来在 LSPL 打。合同照旧；想留在 LPL，就得靠转会，或者带着这支队打回来。` };':
+    "同上",
+  'pushEvent(`<b>${S.team} 升入 LPL！</b>顶掉了 <b>${down}</b>。下半年起你在 LPL 打。`, "big", "升降级");':
+    "同上",
+  'S.tlPop = { eyebrow: `${head}`, title: "升入 LPL", body: `<b>${S.team}</b> 赢下升降级赛，拿走了 <b>${down}</b> 的 LPL 席位。` };':
+    "同上",
   'blurb:"2016 年。SKT 刚拿下第二座世界冠军，LPL 一座都没有。次级联赛还叫 LSPL，LPL 还有降级。接下来六年，你会看着 LPL 从零到三——或者，由你来改写它。第六年打完可以选择退役；继续打，就走进 2022 年的破晓。"},':
     "S6 开档建档页的入口卡（main.ts ENTRY_CARDS）：讲的是 2016 年的世界局势，玩家这时还没有赛区",
   'pushEvent(`<b>第一章 · 2016–2021 收官。</b>你没有退役——走进 2022 年。LCK 卷土重来，新的一代正在冒头；你已经 ${S.age} 岁，是别人口中的老将了。`,"big","生涯");':

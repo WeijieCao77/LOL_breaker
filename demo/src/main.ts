@@ -31,6 +31,7 @@ import { askConfirm, confirmCard, continueCard, dropSave, escapeHtml, exportSave
 import { addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, noteStream, noteStreamMoney, PRIZE_PO, PRIZE_PO_LDL, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
 import { addSquad, clampWinProb, defendNote, defendPressure, defendTag, disruptSynergy, doBenchAct, doSquad, gapVerdict, initSquad, myPower, oppMatchPw, squadActs, squadCard, squadDecay, squadOf, teamPowerOf, watchRoster } from "./squad";
 import { ldlBuild, ldlShort } from "./ldl";
+import { relegationCheck } from "./relegation";
 import { starAfterMatch, starLaneBadge, starSpotHtml } from "./stars";
 import { S, setS } from "./state";
 import { shareCardOpen } from "./share";
@@ -5066,6 +5067,7 @@ export function endSeason(result,seed){
   // 现在出征前先过一段集结周：休整、抽签，然后才开打。
   // 真实赛制：名额按当年真实规则（赛段冠军 / 决赛两队 / 积分 / 地区资格赛），名单在赛历控制器里
   if(fmtOn()){
+    try{ relegationCheck(S.split||0); }catch(e){}   // S6 开档：LPL 2016–2017 春升降级、2018 联盟化席位（只结算和你有关的）
     const E=S.split===0?"msi":"worlds";
     if(E==="msi"&&SEASONS[S.si].noMsi){   // S6 开档：2020 年 MSI 因疫情取消（真实历史，作者定照史实）
       pushEvent(`<b>${SEASONS[S.si].tag} MSI 取消</b>（真实历史）：受疫情影响，这一年没有季中邀请赛。`,"big","MSI");

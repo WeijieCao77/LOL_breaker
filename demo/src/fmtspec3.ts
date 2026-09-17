@@ -68,7 +68,9 @@ function lplEarly(y: number): YearSpec {
            : { key: "po", name: "季后赛", kind: "po", type: "br", tpl: "SE8B", perWeek: 2, seeds: c => T(c, "rs").slice(0, 8) }],
     finish: c => {
       const f = fin(c, "po", grouped ? zip(c, "gx", y === 2018 ? ["东部", "西部"] : AB) : T(c, "rs"));
-      return { ...f, intl: after === "msi" ? sl(c, "msi", f.order) : undefined };
+      const [a, b] = AB.map(n => T(c, "gx", n));
+      const rel = y <= 2017 && !(y === 2017 && key === "summer") && a.length >= 6 && b.length >= 6 ? [a[4], b[4], a[5], b[5]] : undefined;
+      return { ...f, rel, intl: after === "msi" ? sl(c, "msi", f.order) : undefined };
     }
   });
   const rf = y <= 2016 ? rfKoth("summer", 4) : y <= 2019 ? rfKoth("summer", 3) : rfSplit("summer");
