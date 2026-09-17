@@ -68,7 +68,7 @@ function fmtEventField(type,F,benched){
     const sp=fmtMsiSplit(), pin=benched?sp.playin.filter(n=>n!==S.team):sp.playin;
     return {field:sp.direct.concat(sp.take>0?simPlayIn(pin).slice(0,sp.take):[]),stage:"knockout"};
   }
-  const sp=fmtWorldsSplit(F.worlds.playin.take), pin=benched?sp.playin.filter(n=>n!==S.team):sp.playin;
+  const sp=fmtWorldsSplit((F.worlds.playin&&F.worlds.playin.take)||0), pin=benched?sp.playin.filter(n=>n!==S.team):sp.playin;   // 2016 没有入围赛
   return {field:sp.direct.concat(sp.take>0?canonQual(sp.playin,simPlayIn(pin).slice(0,sp.take)):[]),stage:F.worlds.main};
 }
 
@@ -229,7 +229,7 @@ export function startIntl(type,playerResult){
       if(q.length) pushEvent(`MSI 入围赛结束（${sp.playin.length} 队争 ${sp.take} 个名额），<b>${q.join("、")}</b> 晋级正赛。`,"info","MSI");
       return openIntl("msi",sp.direct.concat(q),"knockout");
     }
-    const c0=F.worlds, sp=fmtWorldsSplit(c0.playin.take), cfg={playin:{teams:sp.playin.length,take:sp.take,bo:c0.playin.bo},main:c0.main};
+    const c0=F.worlds, sp=fmtWorldsSplit((c0.playin&&c0.playin.take)||0), cfg={playin:{teams:sp.playin.length,take:sp.take,bo:(c0.playin&&c0.playin.bo)||2},main:c0.main};
     if(sp.take>0&&sp.playin.includes(S.team)){
       S.intl={type:"worlds",stage:"playin",field:sp.playin,direct:sp.direct,record:[0,0],round:1,cfg,
               queue:sp.playin.filter(n=>n!==S.team).sort((a,b)=>pw(a)-pw(b))};
@@ -521,6 +521,18 @@ export const INTL_CANON={
   worlds:{0:"Kiwoom DRX",1:"T1",2:"T1",3:"T1"},
   msi:{0:"Royal Never Give Up",1:"JD Gaming",2:"Gen.G",3:"Gen.G"}
 };
+/* S6 开档（2026-09-17）：2016–2021 的史实（下标 = 年份 − 2022，负数；队名是当年页面里的名字）。
+   来源：Liquipedia 各届页面 + 英文维基（策划稿-S6开档 第一、三节）；2020 年 MSI 取消没有冠军。 */
+Object.assign(INTL_CANON.worlds,{"-6":"SK Telecom T1","-5":"Samsung Galaxy","-4":"Invictus Gaming","-3":"FunPlus Phoenix","-2":"DAMWON Gaming","-1":"EDward Gaming"});
+Object.assign(INTL_CANON.msi,{"-6":"SK Telecom T1","-5":"SK Telecom T1","-4":"Royal Never Give Up","-3":"G2 Esports","-1":"Royal Never Give Up"});
+Object.assign(LEAGUE_CANON.LPL,{"-6":["Royal Never Give Up","EDward Gaming"],"-5":["Team WE","EDward Gaming"],"-4":["Royal Never Give Up","Royal Never Give Up"],
+  "-3":["Invictus Gaming","FunPlus Phoenix"],"-2":["JD Gaming","Top Esports"],"-1":["Royal Never Give Up","EDward Gaming"]});
+Object.assign(LEAGUE_CANON.LCK,{"-6":["SK Telecom T1","ROX Tigers"],"-5":["SK Telecom T1","Longzhu Gaming"],"-4":["Kingzone DragonX","KT Rolster"],
+  "-3":["SK Telecom T1","SK Telecom T1"],"-2":["T1","DAMWON Gaming"],"-1":["DWG KIA","DWG KIA"]});
+Object.assign(LEAGUE_CANON.LEC,{"-6":["G2 Esports","G2 Esports"],"-5":["G2 Esports","G2 Esports"],"-4":["Fnatic","Fnatic"],
+  "-3":["G2 Esports","G2 Esports"],"-2":["G2 Esports","G2 Esports"],"-1":["MAD Lions","MAD Lions"]});
+Object.assign(LEAGUE_CANON.LCS,{"-6":["Counter Logic Gaming","TSM"],"-5":["TSM","TSM"],"-4":["Team Liquid","Team Liquid"],
+  "-3":["Team Liquid","Team Liquid"],"-2":["Cloud9","TSM"],"-1":["Cloud9","100 Thieves"]});
 /* ---------- 世界线张力（2026-09-03 玩家拍板：均衡档）----------
    一个变量管全部：wl[联赛] ∈ [0,1]，0=完全按史实，1=完全活模拟。
    注入：你在联赛打一周正赛 +0.03×影响力；国际赛淘汰某赛区的队 +0.10×影响力；

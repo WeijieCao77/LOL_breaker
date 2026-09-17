@@ -25,7 +25,7 @@ import { themeSeg, themeFull } from "./theme";
 import { rankBadge, rankIcon, teamLogo } from "./rankicon";
 import { noteGrudge, noteRevenge, rivalBoost, rivalCard } from "./rivals";
 import { addRingTitle, breakAgendaCard, fixNote, fixtureCard, fixtureStrip, mateInjuryHit, mateInjuryNote, mateInjuryRoll, mateInjuryTag, mateInjuryTick, ringTitles, rotationAfterMatch, scrimCard, scrimPanel, scrimPick, scrimTrialCheck, setBreakAgenda, startScrim, subProxyR, titleCount, titlesText } from "./rotation";
-import { lgName, noteLeagueChamp, realNote, rewriteCard, tlCatchUp, tlDisplace, tlMajors, tlOn, tlOverwrites, tlPopCard, tlReal, tlRookie, tlYearTurn } from "./timeline";
+import { lgName, noteLeagueChamp, realNote, rewriteCard, tlApplyYear, tlCatchUp, tlDisplace, tlMajors, tlOn, tlOverwrites, tlPopCard, tlReal, tlRookie, tlYearTurn } from "./timeline";
 import { actListText, archiveWeek, clearPlan, noteAct, quickBtn, quickPlan, quickPlanPre, repeatLast, routineBar, runActs, runPlan, savePlan } from "./routine";
 import { askConfirm, confirmCard, continueCard, dropSave, escapeHtml, exportSave, importSave, loadGame, meName, safeName, saveBar, saveGame } from "./save";
 import { addMoney, buyAsset, buyCourse, buyGear, buyRelax, checkStreamBiz, contentCard, courseTrainMul, declineStreamDeal, doContent, economyCards, financeCard, gearBonus, gearCard, hasCourse, initLedger, initShop, langBonus, ledgerRotate, noteStream, noteStreamMoney, PRIZE_PO, PRIZE_PO_LDL, prizeNote, shopCard, signStreamDeal, streamClauseCheck, streamDealCard, streamFansMul, streamIncome, streamOfferCard, streamPushMul, wanHtml, wanText, yearPayText } from "./shop";
@@ -1575,6 +1575,7 @@ export function leagueBaseline(w){
    RNG 的 Bin 被写成了韩国选手的「이승빈」）。键：赛区/ID */
 export const CN_FIX={"LPL/Bin":"陈泽彬"};
 export function cloneWorld(){
+  if(entryYear()===2016) return cloneWorld2016();
   const w: any={};
   Object.keys(DATA.leagues).forEach(lg=>{
     w[lg]=DATA.leagues[lg].map(t=>({
@@ -1603,6 +1604,21 @@ export function cloneWorld(){
   // 世界年龄：这份世界被 ageWorld 推过几年（新建的从 0 算）。真实时间线按它锚定难度，老档只是多记一个数
   try{ if(S) S.worldAge=0; }catch(e){}
   // 真实时间线：签约时世界已经走到哪一年，就依次换上 2023…那一年的真实名单（老档不动）
+  tlCatchUp(w);
+  return w;
+}
+
+/* S6 开档：2016 入口的世界＝2016 年真实名单那一页（和 2017 起每年换页同一个 buildPage，锚定到世界年龄 0 的标定值），
+   二队先按母队生成（LSPL / LDL 真实名单是第二期后半）；签约时世界已经走到哪一年就依次换页。 */
+function cloneWorld2016(){
+  const w: any={};
+  try{ if(S) S.worldAge=0; }catch(e){}
+  tlApplyYear(w,2016,false);
+  try{
+    const taken=new Set();
+    Object.keys(w).forEach(k=>(w[k]||[]).forEach(t=>(t.players||[]).forEach(p=>taken.add(p.id))));
+    w.LDL=ldlBuild(2016,w.LPL||[],null,taken)||buildLDLGen(w);   // 2016 年的次级联赛是 LSPL（真实名单）
+  }catch(e){ w.LDL=buildLDLGen(w); }
   tlCatchUp(w);
   return w;
 }
@@ -5024,6 +5040,11 @@ export function endSeason(result,seed){
   // 真实赛制：名额按当年真实规则（赛段冠军 / 决赛两队 / 积分 / 地区资格赛），名单在赛历控制器里
   if(fmtOn()){
     const E=S.split===0?"msi":"worlds";
+    if(E==="msi"&&SEASONS[S.si].noMsi){   // S6 开档：2020 年 MSI 因疫情取消（真实历史，作者定照史实）
+      pushEvent(`<b>${SEASONS[S.si].tag} MSI 取消</b>（真实历史）：受疫情影响，这一年没有季中邀请赛。`,"big","MSI");
+      enterBreak("summer",MID_WEEKS,"季中间歇 · MSI 取消",`上半年的联赛收官。<b>这一年没有 MSI</b>——所有的力气都留给下半年和世界赛。这几周把该补的补上。`);
+      return;
+    }
     if(majorLg&&fmtQualified(E)){
       S.pendingIntl={type:E,result};
       if(E==="msi") enterBreak("intl",1,"出征 MSI 前 · 集结",`<b>MSI 的名额到手了</b>。出发前还有一周——把状态调到最好。`);

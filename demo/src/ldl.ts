@@ -92,7 +92,7 @@ export function ldlBuild(y, lpl, old?, taken?) {
 
 /* 某家俱乐部在 y 年的二队（真实名单）；那一年没有就看 2022 */
 export function ldlRealFor(parent, y) {
-  const yy = Math.max(2022, Math.min(2025, y || 2022));
+  const yy = Math.max((y || 2022) < 2022 ? 2016 : 2022, Math.min(2025, y || 2022));   // S6 开档：2016–2021 的 LSPL / LDL 页
   for (const k of [yy, 2022]) {
     const pg = ldlPage(k);
     const t = pg && pg.find(x => x.par === parent);

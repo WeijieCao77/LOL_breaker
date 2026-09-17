@@ -2142,7 +2142,31 @@ function stateHash(n: number, strong: boolean, encore: boolean, from: number, en
     console.log(seed, crypto.createHash("sha1").update(json).digest("hex"), json.length);
   }
 }
-if (isMain && process.argv.includes("--statehash")) {
+/* S6 开档探针：npx tsx demo/test.ts --s6probe [seed] [--strong] —— 每个赛季开头打一行世界概况，结尾列国际赛冠军 */
+function s6Probe(seed: number, strong: boolean) {
+  let lastSi = -1;
+  const comp = (p: any) => A.DIMS.reduce((a: number, d: string) => a + (p.r[d] || 0), 0) / A.DIMS.length;
+  const r = playOne({ seed, strong, entry: 2016, encore: true, hook: (S: any) => {
+    if (S.si === lastSi || !S.world) return;
+    lastSi = S.si;
+    const y = A.SEASONS[S.si].y, row: string[] = [];
+    ["LPL", "LCK", "LEC", "LCS", "PCS", "LDL"].forEach(lg => {
+      const ts = S.world[lg] || [];
+      if (!ts.length) return;
+      const m = ts.flatMap((t: any) => t.players).reduce((a: number, p: any) => a + comp(p), 0) / Math.max(1, ts.length * 5);
+      const top = ts.slice().sort((a: any, b: any) => A.power(b) - A.power(a)).slice(0, 3).map((t: any) => t.name).join("/");
+      row.push(`${lg} ${ts.length}队 均${m.toFixed(1)} 前三 ${top}`);
+    });
+    console.log(`${A.SEASONS[S.si].tag} ${y} 世界年龄${S.worldAge} 你:${S.career ? S.team + "(" + S.homeLeague + ")" : "职业前"} 年龄${S.age} fmt:${!!(S.fmt && S.fmt.runs)}\n   ` + row.join("\n   "));
+  } });
+  const H = A.S().honors || {};
+  A.SEASONS.forEach((x: any, i: number) => console.log(x.tag, x.y, "MSI", (H.msi || {})[i] || "-", "世界赛", (H.worlds || {})[i] || "-"));
+  console.log("结局", r.ending, "冠军", r.titles);
+}
+if (isMain && process.argv.includes("--s6probe")) {
+  const i = process.argv.indexOf("--s6probe");
+  s6Probe(parseInt(process.argv[i + 1], 10) || 1001, process.argv.includes("--strong"));
+} else if (isMain && process.argv.includes("--statehash")) {
   const i = process.argv.indexOf("--statehash"), f = process.argv.indexOf("--from");
   stateHash(parseInt(process.argv[i + 1] || "20", 10) || 20, process.argv.includes("--strong"), process.argv.includes("--encore"), f > 0 ? parseInt(process.argv[f + 1], 10) : 1001,
     process.argv.includes("--entry") ? parseInt(process.argv[process.argv.indexOf("--entry") + 1], 10) : undefined);

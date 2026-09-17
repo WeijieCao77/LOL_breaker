@@ -1,3 +1,10 @@
+import tl2016 from "../../data/csv/timeline_2016.json";
+import tl2017 from "../../data/csv/timeline_2017.json";
+import tl2018 from "../../data/csv/timeline_2018.json";
+import tl2019 from "../../data/csv/timeline_2019.json";
+import tl2020 from "../../data/csv/timeline_2020.json";
+import tl2021 from "../../data/csv/timeline_2021.json";
+import tl2022 from "../../data/csv/timeline_2022.json";
 import tl2023 from "../../data/csv/timeline_2023.json";
 import tl2024 from "../../data/csv/timeline_2024.json";
 import tl2025 from "../../data/csv/timeline_2025.json";
@@ -6,7 +13,7 @@ import tlLogos from "../../data/csv/timeline_logos.json";
 import { initRelations, syncRelations } from "./clout";
 import { DATA } from "./data";
 import { INTL_CANON, LEAGUE_CANON } from "./intl";
-import { cIdx, CN_FIX, DECAY_W, DIMS, POSN, SEASONS, STAR_FLOOR, WORLD_DRIFT, ageCurve, anchorLeague, avg, buildLDLGen, clamp, makeRookie, markTeamJoin, power, pushEvent, q1, teamCode } from "./main";
+import { cIdx, entryYear, CN_FIX, DECAY_W, DIMS, POSN, SEASONS, STAR_FLOOR, WORLD_DRIFT, ageCurve, anchorLeague, avg, buildLDLGen, clamp, makeRookie, markTeamJoin, power, pushEvent, q1, teamCode } from "./main";
 import { ldlBuild } from "./ldl";
 import { rnd } from "./rng";
 import { STARS } from "./stars";
@@ -29,8 +36,13 @@ import { initTrust, syncTrust } from "./team";
      （世界年龄 = 这份世界被 ageWorld 推过几年；签约时新建的世界从 0 算，和现行游戏一致）。
    · 只对新档生效（S.tl）；老存档一切照旧。 */
 
-export const TL_PAGES: any = { 2023: tl2023, 2024: tl2024, 2025: tl2025, 2026: tl2026 };
+export const TL_PAGES: any = { 2016: tl2016, 2017: tl2017, 2018: tl2018, 2019: tl2019, 2020: tl2020, 2021: tl2021, 2022: tl2022,
+  2023: tl2023, 2024: tl2024, 2025: tl2025, 2026: tl2026 };
 export const TL_FIRST = 2023, TL_LAST = 2026;
+/* S6 开档（2026-09-17）：2016 入口的世界从 2016 年页建起，2017 起每个休赛期换页（2022 那页 = game_data_2022 原样，
+   export_tl2022.py）；S12 入口照旧从开局快照建、2023 起换页。 */
+export function tlPageFirst() { return entryYear() === 2016 ? 2016 : TL_FIRST; }
+export function tlFirst() { return entryYear() === 2016 ? 2017 : TL_FIRST; }
 /* 你的队跟真实名单换人时的两条平衡闸（2026-09-10 批测抓的：不加的话每年真实换 2.6–3.1 个人、每人砸 7.5 默契，
    S15 开季默契 30→10、战力 71.4→65.2，普通玩家冠军 2.46→1.12——世界没变强，是你的队被真实转会拆散了）。
    · TL_SWAP_SYN：休赛期真实换人有整个季前赛来磨，默契按这个系数折算（赛季中途换人仍走 watchRoster 的整额）
@@ -42,7 +54,12 @@ export const TL_LDL_END = 2026;
 const POS5 = ["top", "jng", "mid", "bot", "sup"];
 /* 页面里的赛区键 → 游戏内部键：LCS / CBLOL 在 2025 年叫 LTA 北区 / 南区，内部键不动，只换显示名 */
 const KEY_OF: any = { "LTA北": "LCS", "LTA南": "CBLOL" };
-export const LG_NAME: any = { 2025: { LCS: "LTA 北区", CBLOL: "LTA 南区" } };
+export const LG_NAME: any = { 2025: { LCS: "LTA 北区", CBLOL: "LTA 南区" },
+  /* S6 开档：2016–2021 当年的叫法（内部键照旧） */
+  2016: { LDL: "LSPL", PCS: "LMS", LEC: "EU LCS", LCS: "NA LCS", VCS: "GPL", LLA: "CLS", LCO: "OPL" },
+  2017: { LDL: "LSPL", PCS: "LMS", LEC: "EU LCS", LCS: "NA LCS", VCS: "GPL", LLA: "CLS", LCO: "OPL" },
+  2018: { PCS: "LMS", LEC: "EU LCS", LCS: "NA LCS", LLA: "CLS", LCO: "OPL" },
+  2019: { PCS: "LMS", LCO: "OPL" }, 2020: { LCO: "OPL" } };
 /* 赛区从世界里消失时，你的队并去哪（2025：LLA 并入 LTA 南区；LCO 并入 LCP 体系） */
 const TL_MERGE: any = { 2025: { LLA: "CBLOL", LCO: "LCP" } };
 /* 真实新秀池按大区归属 */
@@ -73,13 +90,13 @@ const TL_MSI_ADD: any = { "3": { LCP: ["CTBC Flying Oyster", "GAM Esports"] } };
 export function tlOn() { return !!(S && S.tl); }
 export function tlYear(si?) { const i = (si === undefined) ? ((S && S.si) || 0) : si; return (SEASONS[i] && SEASONS[i].y) || 2022; }
 /* 这一年的名单由真实数据决定 */
-export function tlReal(si?) { const y = tlYear(si); return tlOn() && y >= TL_FIRST && y <= TL_LAST; }
+export function tlReal(si?) { const y = tlYear(si); return tlOn() && y >= tlFirst() && y <= TL_LAST; }
 /* 真实年份里 AI 不动名单（2022 也算：开局快照本身就是真实的） */
 export function tlFrozen() { return tlOn() && tlYear() <= TL_LAST; }
 export function tlStructOf(y) {
   const base = { major: DATA.major || ["LPL", "LCK", "LEC", "LCS"], minor: DATA.minor || [], intl: DATA.minor || [] };
   const pg = TL_PAGES[Math.min(y, TL_LAST)];
-  if (y < TL_FIRST || !pg) return base;
+  if (y < tlPageFirst() || !pg) return base;
   const k = a => (a || []).map(x => KEY_OF[x] || x);
   return { major: k(pg.major), minor: k(pg.minor), intl: k(pg.intl) };
 }
@@ -127,7 +144,7 @@ function ageStep(age) {
   return (b > 0 ? b * (1.4 - aw * 0.5) : b * aw) + dev;
 }
 export function floorAt(p, y) {
-  const f = STAR_FLOOR[p.id]; if (!f) return 0;
+  const f = STAR_FLOOR[p.id]; if (!f || y < 2022) return 0;   // 名望地板是按 2022 年写的；2016–2021 不套（S6 开档第五期按年份另标）
   const n = Math.max(0, y - 2022);
   let d = WORLD_DRIFT * n;
   for (let k = 0; k < n; k++) d += ageStep((p.age || 24) - k);
@@ -187,7 +204,7 @@ function tlProspect(pos, K, lvl, y, used?) {
   S.tlUsed = S.tlUsed || [];
   const reg = REG_OF[K] || "CN";
   // 当年没有这个大区的新秀（2026 年起没有 LDL）就往前一年找，年龄照推
-  for (let yy = clamp(y, TL_FIRST, TL_LAST); yy >= TL_FIRST; yy--) {
+  for (let yy = clamp(y, tlPageFirst(), TL_LAST); yy >= tlPageFirst(); yy--) {
     const pg = TL_PAGES[yy]; if (!pg || !pg.pros) continue;
     const dy = Math.max(0, y - yy);
     const a = pg.pros.find(x => x[2] === pos && x[6] === reg && (x[3] || 19) + dy <= 23 && !S.tlUsed.includes(x[0])
@@ -639,7 +656,7 @@ export function tlYearTurn() {
 export function tlCatchUp(w) {
   if (!tlOn()) return;
   const yNow = tlYear();
-  for (let y = TL_FIRST; y <= Math.min(yNow, TL_LAST); y++) tlApplyYear(w, y, false);
+  for (let y = tlFirst(); y <= Math.min(yNow, TL_LAST); y++) tlApplyYear(w, y, false);
 }
 /* 今年换页会覆盖这支队吗（覆盖的话 ageWorld 不替它退役换人） */
 export function tlOverwrites(team, lg) {

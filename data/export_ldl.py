@@ -68,6 +68,9 @@ RATE_LPL = {2022: rating_table("ratings_v2_final.csv")}
 for y in (2023, 2024, 2025):
     RATE_LDL[y] = rating_table(f"ratings_v2_LDL_{y}.csv")
     RATE_LPL[y] = rating_table(f"ratings_v2_final_{y}.csv")
+for y in range(2015, 2022):   # S6 开档：2016–2021 的 LSPL / LDL（ratings_v2_final 含二级联赛）
+    RATE_LDL[y] = rating_table(f"ratings_v2_LDL_{y}.csv")
+    RATE_LPL[y] = rating_table(f"ratings_v2_final_{y}.csv")
 
 from names import birth_year, name_for
 cn, birth = {}, {}
@@ -89,7 +92,7 @@ def lpl_names(year):
 
 def rate_player(pid, year):
     k = pid.lower()
-    for yy in range(year, 2021, -1):
+    for yy in range(year, 2021 if year >= 2022 else 2014, -1):
         for tab in (RATE_LDL.get(yy, {}), RATE_LPL.get(yy, {})):
             r = tab.get(k)
             if r:
@@ -140,20 +143,76 @@ def lp_split(year, tournament):
     return {tn: [(p, s[p]) for p in ("top", "jng", "mid", "bot", "sup") if p in s] for tn, s in teams.items()}
 
 
-SOURCES = {2022: ("oe", "Spring"), 2023: ("oe", "Split 1"), 2024: ("oe", "Split 1"), 2025: ("lp", "LDL 2025 Split 1")}
+# ---- S6 开档（2026-09-17）：2016–2017 LSPL、2018–2021 LDL ----
+# 队伍取 Leaguepedia 当年第一个常规赛段（2018 年是东南西北四个赛区），首发 = OE 里这支队这个位置打得最多的人（对不上就用报名顺序）
+EARLY_TOURS = {2016: ["LSPL 2016 Spring"], 2017: ["LSPL 2017 Spring"],
+               2018: ["LDL 2018 Spring - East", "LDL 2018 Spring - North", "LDL 2018 Spring - South", "LDL 2018 Spring - West"],
+               2019: ["LDL 2019 Spring"], 2020: ["LDL 2020 Spring"], 2021: ["LDL 2021 Spring"]}
+# 二队 → 母队候选（按顺序取当年 LPL 里有的那个；都没有就是独立队）
+EARLY_PARENT = {
+    "Star Horn Royal Club": ["Royal Never Give Up"], "Royal Club": ["Royal Never Give Up"], "Oh My Dream": ["Oh My God"],
+    "Team WE Future": ["Team WE"], "EDward Esports": ["EDward Gaming"], "Joy Dream": ["JD Gaming"], "Suning-S": ["Suning"],
+    "Rogue Warriors Shark": ["Rogue Warriors", "Anyone's Legend"], "SinoDragon Prince": ["SinoDragon Gaming"], "Snake WuDu": ["Snake Esports"],
+    "Bilibili Gaming Junior": ["Bilibili Gaming"], "EDward Gaming Youth Team": ["EDward Gaming"], "FunPlus Phoenix Blaze": ["FunPlus Phoenix"],
+    "Invictus Gaming Young": ["Invictus Gaming"], "Team WE Academy": ["Team WE"], "V5 87": ["Victory Five"], "Vici Gaming Potential": ["Vici Gaming", "Rare Atom"],
+    "LNG Academy": ["LNG Esports"], "Top Esports Challenger": ["Top Esports", "Topsports Gaming"], "Dominus Esports Young": ["Dominus Esports", "ThunderTalk Gaming"],
+    "LGD Gaming Young Team": ["LGD Gaming"], "eStar Young": ["eStar"], "Rare Atom Period": ["Rare Atom"], "ThunderTalk Gaming Young": ["ThunderTalk Gaming"],
+}
+
+
+def norm_team(n):
+    n = re.sub(r"\s*\(.*?\)\s*", "", (n or "").lower())
+    return re.sub(r"[^a-z0-9]", "", n)
+
+
+def early_split(year):
+    tours = set(EARLY_TOURS[year])
+    rows = [r for r in read_csv("rosters_by_season.csv") if r.get("year") == str(year) and r.get("tournament") in tours]
+    oe = collections.defaultdict(collections.Counter)      # (规范队名, 位置) → 选手出场
+    path = os.path.join(OE_DIR, f"{year}_OE.csv")
+    if os.path.exists(path):
+        with open(path, encoding="utf-8", errors="replace", newline="") as fh:
+            for row in csv.DictReader(fh):
+                if row.get("league") in ("LSPL", "LDL") and row.get("position") in POS and row.get("playername"):
+                    oe[(norm_team(row.get("teamname")), row["position"])][row["playername"]] += 1
+    teams = collections.OrderedDict()
+    for r in rows:
+        pos = LP_ROLE.get((r.get("role") or "").split(",")[0].strip())
+        pid = re.sub(r"\s*\(.*?\)\s*$", "", r.get("player_id") or "").strip()
+        if pos and pid:
+            teams.setdefault(r["team"], {}).setdefault(pos, []).append(pid)
+    out = {}
+    for tn, slots in teams.items():
+        five = []
+        for pos in ("top", "jng", "mid", "bot", "sup"):
+            cnt = oe.get((norm_team(tn), pos))
+            regs = slots.get(pos, [])
+            pick = max(regs, key=lambda x: cnt[x] if cnt else 0) if regs else None
+            if cnt and (not pick or cnt[pick] == 0):
+                best = cnt.most_common(1)[0]
+                if best[1] >= 4:
+                    pick = best[0]
+            if pick:
+                five.append((pos, pick))
+        out[tn] = five
+    return out
+
+
+SOURCES = {2016: ("early", None), 2017: ("early", None), 2018: ("early", None), 2019: ("early", None), 2020: ("early", None), 2021: ("early", None),
+           2022: ("oe", "Spring"), 2023: ("oe", "Split 1"), 2024: ("oe", "Split 1"), 2025: ("lp", "LDL 2025 Split 1")}
 out = {"src": "Oracle's Elixir 2022–2024 首个常规赛段出场 + Leaguepedia 2025 Split 1 名单登记；评分 ratings_v2_LDL / ratings_v2_final", "years": {}}
 problems = []
 for year, (kind, split) in SOURCES.items():
-    raw = oe_first_split(year, split) if kind == "oe" else lp_split(year, split)
+    raw = early_split(year) if kind == "early" else oe_first_split(year, split) if kind == "oe" else lp_split(year, split)
     lpl = lpl_names(year)
     page = []
     for tn in sorted(raw, key=lambda n: display_name(n, year).lower()):
-        name = display_name(tn, year)
-        par = PARENT.get(name)
+        name = display_name(tn, year) if year >= 2022 else re.sub(r"\s*\(.*?\)\s*$", "", tn)
+        par = PARENT.get(name) if year >= 2022 else next((c for c in EARLY_PARENT.get(name, []) if c in lpl), None)
         if par and par not in lpl:
             problems.append(f"{year} {name}: 母队 {par} 不在当年 LPL，按独立队处理")
             par = None
-        if name not in SHORT:
+        if name not in SHORT and year >= 2022:
             problems.append(f"{year} {name}: 没有简称")
         players, rated = [], 0
         for pos, pid in raw[tn]:

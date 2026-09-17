@@ -207,11 +207,14 @@ export function ldlYear(y: number, teamCount: number): YearSpec {
     lg: "LDL", year: y, splits: evs.map((e, i): SplitSpec => ({
       key: "d" + (i + 1), name: e.name, short: e.name.slice(0, y <= 2024 ? 1 : 2), half: e.ev === "worlds" ? 1 : 0, after: e.ev,
       stages: [
-        { key: "rs", name: "常规赛", kind: "rr", type: "rr", times: 1, bo: 3, perWeek: e.pw, groups: c => teamCount > 12 ? snake(c.teams, 2) : [G("", c.teams)] },
+        { key: "rs", name: "常规赛", kind: "rr", type: "rr", times: 1, bo: 3, perWeek: teamCount > 24 ? Math.max(2, e.pw) : e.pw,
+          groups: c => teamCount > 24 ? snake(c.teams, 4) : teamCount > 12 ? snake(c.teams, 2) : [G("", c.teams)] },   // 2018 LDL 32 队：东南西北四组
         {
           key: "po", name: "季后赛", kind: "po", type: "br", tpl: "SE6", perWeek: 2, seeds: c => {
             const gs = c.groups("rs"); if (gs.length < 2) return T(c, "rs").slice(0, 6);
-            const [a, b] = gs.map(g => T(c, "rs", g.name)); return [a[0], b[0], a[1], b[1], a[2], b[2]];
+            const ts = gs.map(g => T(c, "rs", g.name)), out: string[] = [];
+            for (let k = 0; out.length < 6 && k < 16; k++) ts.forEach(t => { if (t[k] && out.length < 6) out.push(t[k]); });
+            return out;
           }
         }
       ],
@@ -229,7 +232,7 @@ export const INTL_SLOTS: Record<number, IntlYear> = {
   2025: { fst: { LPL: 1, LCK: 1, LEC: 1, LCS: 1, LCP: 1 }, msi: { LPL: 2, LCK: 2, LEC: 2, LCS: 1, CBLOL: 1, LCP: 2 }, worlds: { LPL: 3, LCK: 3, LEC: 3, LCS: 2, CBLOL: 1, LCP: 3 }, bonus: true },
   2026: { fst: { LPL: 2, LCK: 2, LEC: 1, LCS: 1, CBLOL: 1, LCP: 1 }, msi: { LPL: 2, LCK: 2, LEC: 2, LCS: 2, LCP: 2, CBLOL: 1 }, worlds: { LPL: 3, LCK: 3, LEC: 3, LCS: 3, LCP: 3, CBLOL: 2 }, bonus: true }
 };
-export const intlYear = (y: number): IntlYear => INTL_SLOTS[Math.max(2022, Math.min(2026, y))];
+export const intlYear = (y: number): IntlYear => INTL_SLOTS[Math.max(y < 2022 ? 2016 : 2022, Math.min(2026, y))];
 /* 国际赛地点（Riot 已公布到 2027；之后不写） */
 export const INTL_HOST: Record<number, Record<string, string>> = {
   2022: { msi: "釜山", worlds: "美国" }, 2023: { msi: "伦敦", worlds: "韩国" }, 2024: { msi: "成都", worlds: "欧洲" },
