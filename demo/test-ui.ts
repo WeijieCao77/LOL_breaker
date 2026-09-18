@@ -194,6 +194,10 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
       let b0: any = null;
       for (let i = 0; i < 6; i++) { S.fatigue = 45; P.render(); await tick(1600); P.render(); b0 = P.readSave(); if (b0 && b0.S && b0.S.fatigue === 45) break; await tick(400); }
       if (!b0 || b0.S.fatigue !== 45) bad.push("拖尾存档：测试基线不对，存档体力=" + (b0 && b0.S.fatigue));
+      // 把节流时钟钉在「刚存过」这一刻：离开页面会立刻补存一次并重置节流时钟（boot.ts → autosaveFlush）。
+      // 原来靠上面那次重画来起表，可上一段小游戏的收尾计时器还在走时重画会被整个跳过，起点就漂了——
+      // 前面几步快慢差几十毫秒，这一条就在过与不过之间来回跳（2026-09-18）。测的还是节流窗本身
+      w.dispatchEvent(new w.Event("pagehide"));
       S.fatigue = 0; P.render();                                          // 1.5 秒内回满：这一次被节流
       b0 = P.readSave(); if (!b0 || b0.S.fatigue !== 45) bad.push("拖尾存档：节流窗内的重画不该立刻存，存档体力=" + (b0 && b0.S.fatigue));
       await tick(1700);

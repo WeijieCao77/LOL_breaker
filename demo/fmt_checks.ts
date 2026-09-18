@@ -105,7 +105,14 @@ export function fmtCareerChecks(playOne: (o: any) => any, A: any): string[] {
   /* 新档打到 2027。一路上每隔几步把界面各页真的算一遍（批测机器人不画「世界」标签页，新的积分榜 / 对阵树只有这里跑得到） */
   const viewErr: string[] = [];
   let views = 0;
+  /* 签约那一周时钟接着数（玩家实锤 2026-09-18：「开赛前 第 13 周」签约后跳回「第 1 周」）；开赛前的职业联赛卡不是积分榜 */
+  let lastPreWk = 0, signClock: number | null = null, preCardBad = "";
   const probe = (S0: any, A0: any, g: number) => {
+    if ((S0.step === "pre" || S0.step === "offer") && S0.pre) {
+      lastPreWk = S0.pre.week;
+      if (!preCardBad && g % 7 === 0) { try { const c = A0.proCard(); if (/每周都在打/.test(c) || !/各队实力榜/.test(c)) preCardBad = "开赛前的职业联赛卡还是积分榜口径"; } catch (e: any) { preCardBad = "职业联赛卡渲染出错：" + (e && e.message); } }
+    }
+    if (signClock === null && S0.career && S0.fmt && S0.step === "season" && lastPreWk) signClock = A0.yearWeek();
     if (g % 13 !== 0 || !S0.career || !S0.fmt) return;
     const tab = S0.tab;
     const v = (name: string, fn: () => any) => { try { fn(); views++; } catch (e: any) { if (viewErr.length < 8) viewErr.push(`${name}（${S0.step}）：${e && e.message}`); } };
@@ -123,6 +130,9 @@ export function fmtCareerChecks(playOne: (o: any) => any, A: any): string[] {
   const r = playOne({ seed: 8801, strong: true, encore: true, noBondTalk: true, hook: probe });
   const S = A.S();
   if (!views) bad.push("真实赛制：界面渲染探针一次都没跑到");
+  if (preCardBad) bad.push(preCardBad);
+  if (signClock === null) bad.push("真实赛制：没抓到签约那一刻的时钟");
+  else if (signClock !== lastPreWk + 1) bad.push(`签约后时钟应接着开赛前的第 ${lastPreWk} 周数到第 ${lastPreWk + 1} 周，实得第 ${signClock} 周`);
   if (viewErr.length) bad.push("真实赛制界面渲染出错：" + viewErr.join("；"));
   if (!r.ok) bad.push("真实赛制：整局没打完");
   if (!S.tl) bad.push("真实赛制：新档没开真实时间线");

@@ -1617,6 +1617,32 @@ function nameFixChecks(): string[] {
 
 /* 转会「期望」按这支队的真实首发算（玩家实锤 2026-09-14：弱队写期望 68，真进去队友不到 60）：
    外赛区弱队的期望要跟着它的首发走，LPL 各档不能被这条改动推走，找不到的队 / 青训档退回常数，接受问询进试训用的也是同一个数 */
+/* 开赛前（玩家实锤 2026-09-18：「22 年第 13 周进了战队，突然变成春季赛」）：职业前这段写成「开赛前」，
+   职业联赛卡是实力榜不是积分榜，没签上时翻年按真实的一年报冠军（S12：LPL 春 RNG / 夏 JDG，MSI RNG，世界赛 DRX） */
+function preSeasonChecks(): string[] {
+  const bad: string[] = [];
+  A.screenCreate(9311);
+  const s0 = A.S(); s0.name = "开赛前"; s0.pos = "mid"; s0.origin = "academy"; s0.ageIdx = 1; s0.bgPick = s0.bgOffer[0].k;
+  s0.talent = { 操作: 7, 运营: 5, 心态: 4, 指挥: 2, 体质: 2 };
+  A.startPre();
+  const S = A.S();
+  if (!/开赛前/.test(A.nowLabel())) bad.push("职业前的时钟没写「开赛前」：" + A.nowLabel());
+  const card = A.proCard();
+  if (/每周都在打/.test(card) || !/各队实力榜/.test(card)) bad.push("开赛前的职业联赛卡还是积分榜口径");
+  if (/\d+−\d+/.test(card)) bad.push("开赛前的职业联赛卡里还有胜负战绩");
+  if (A.SEASONS[S.si].y === 2022) {
+    const t = A.skippedYearLines(S.si);
+    ["Royal Never Give Up", "JD Gaming", "Kiwoom DRX", "T1", "Gen.G"].forEach(n => { if (!t.includes(n)) bad.push(`没签上的 2022 年新闻里缺史实冠军 ${n}：` + t); });
+    if (/年度第一/.test(t)) bad.push("翻年新闻还在报「年度第一」");
+  } else bad.push(`开赛前自检默认入口不是 2022（${A.SEASONS[S.si].y}），拿来验的样本不对`);
+  // 开赛前不播比分：连推 12 周，大事记里不该出现「击败」
+  const n0 = S.events.length;
+  for (let i = 0; i < 12 && A.S().step === "pre"; i++) { const P = A.S().pre; if (P.invite) P.invite.pending = false; A.preNextWeek(); }
+  const hits = A.S().events.slice(n0).filter((e: any) => /击败|领跑|年度第一/.test(String(e.text)));
+  if (hits.length) bad.push("开赛前还在播比分 / 积分榜：" + hits.map((e: any) => e.text).slice(0, 2).join("；"));
+  return bad;
+}
+
 function tierExpectChecks(): string[] {
   const bad: string[] = [];
   A.screenCreate(9301);
@@ -2260,6 +2286,9 @@ if (isMain && process.argv.includes("--s6probe")) {
   { const nf = nameFixChecks();
     if (nf.length) { console.error("选手姓名自检不通过：\n  " + nf.join("\n  ")); process.exit(1); }
     console.log("选手姓名自检通过：一线 / 二队 / 中韩新秀池没有串到别国文字 · BLG 的 Knight 是卓定 · 老档按更正表改名只改对得上的、只跑一遍"); }
+  { const ps = preSeasonChecks();
+    if (ps.length) { console.error("开赛前自检不通过：\n  " + ps.join("\n  ")); process.exit(1); }
+    console.log("开赛前自检通过：时钟写开赛前 · 职业联赛卡是实力榜 · 不播比分 · 没签上的一年按史实报冠军"); }
   { const te = tierExpectChecks();
     if (te.length) { console.error("转会期望自检不通过：\n  " + te.join("\n  ")); process.exit(1); }
     console.log("转会期望自检通过：期望＝首发均值 + 档位加成 · LPL 各档不被推走 · 小赛区弱队不再写 68 · 接受问询的试训用同一个数 · 找不到的队和青训档退回常数"); }

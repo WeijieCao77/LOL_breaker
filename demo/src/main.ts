@@ -11,8 +11,9 @@ import { formCard, formMul, formNews, formTier, myForm, myFormMul, rollForm, rol
 import { hallBadge, hallCareerEnd, newSaveId } from "./hall";
 import { awardsText, btkTrialCheck, campCard, cerApply, cerBind, cerCard, cerFinalNode, cerFinalPw, cerRecMul, cerStart, isFinalMatch, mediaTiltMul, mediaToneNow, meetCard, mgLive, verCerAdj } from "./cer";
 import { injuryCard, injuryHit, injuryTick, injuryTrainMul, riskHint, rollInjury } from "./injury";
-import { brOthersText, brStep, findTeam, intlAdvance, intlChampCard, intlName, intlStageName, leagueOf, majorStandings, spectateIntl, startIntl, wlAdd, wlInfluence, wlRelax, worldsSlot } from "./intl";
-import { fmtOn, fmtQualified } from "./fmtctl";
+import { INTL_CANON, LEAGUE_CANON, brOthersText, brStep, findTeam, intlAdvance, intlChampCard, intlName, intlStageName, leagueOf, majorStandings, spectateIntl, startIntl, wlAdd, wlInfluence, wlRelax, worldsSlot } from "./intl";
+import { fmtFormatLine, fmtOn, fmtQualified } from "./fmtctl";
+import { CANON, yearSpec } from "./fmtspec2";
 import { tlBenchWeek, tlBracketCard, tlNextSplitName, tlNextWeek, tlNoMatchCard, tlPlayLabel, tlResumeSeg, tlSeasonStart, tlStageHead, tlStandingsCard, tlWeekNote } from "./season_tl";
 import { aiMarketWindow } from "./market";
 import { NODES_MORE } from "./nodes";
@@ -133,6 +134,11 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260918a", at:"2026-09-18", items:[
+    "<b>开赛前就是开赛前</b>（玩家实锤：「22 年第 13–14 周进了战队，突然变成了春季赛——都玩了 13 周，春季赛应该早就开始了」）：职业前这 16 周是新赛季开打前的休赛期，窗口里签下就从第一个赛段打起，这是机制；但「职业联赛」卡原来写着「S12 2022 · 第 13 周」、里面是一张每周在涨的积分榜，还写着「这些队每周都在打」，大事记里也冒比分——看起来就像 2022 年的联赛已经打了 13 周，签约那一刻表清零、春季赛从 0−0 开打。现在这段时间写「开赛前」，职业联赛卡换成按全队战力排的<b>各队实力榜</b>，写清新赛季第一个赛段的赛制和转会窗口在哪几周；开赛前不再播比分，职业圈新闻换成热门 / 冷门、直播、青训这类季前消息",
+    "<b>签约后时钟接着数</b>：真实赛制档签约后，全年周数原来从「开赛前 第 13 周」跳回「第 1 周」（老档一直是接着数的，真实赛制上线时漏了这一条）；现在从第 14 周接着走",
+    "<b>没签上的那一年按真实历史报</b>：原来翻年播「年度第一：某队（x−y）」，读的是开赛前那张积分榜；现在写「S12 2022 赛季结束——你没能打上职业」，接着列出这一年各大赛区每个赛段的冠军、MSI 和世界赛冠军（有史实照史实，还没打完的按全队战力）"
+  ]},
   {v:"v20260917a", at:"2026-09-17", items:[
     "<b>新模式：从 2016 · S6 出道</b>（建档页最上面选「从哪一年出道」；默认仍是 2022 · S12，老存档不受影响）。同一条时间线的另一个入口：2016–2021 每一年都是真实名单、真实赛制——LPL 分组和升降级、LSPL / LDL、EU LCS / NA LCS、LMS、2016 年没有入围赛的世界赛、2020 年取消的 MSI、2017–2019 的洲际赛。生涯前六年是第一章：打完可以退役，也可以走进 2022 年，接上现在的主线当老将，一直打到 S19。",
     "<b>2016–2021 的世界</b>：队伍和选手按 Leaguepedia 当年的报名名单，五维用 Oracle's Elixir 当年的比赛数据、和现在同一把尺算出来；你影响不到的地方照真实历史走，你改写的地方记在「你改写了什么」里（比如 2018 年世界赛，真实历史是 IG）。",
@@ -1805,9 +1811,9 @@ export function simWorldPre(){
       const sl=S.standings[lg]=S.standings[lg]||{};   // 真实时间线换页后新赛区 / 新队伍还没有积分行
       (sl[a.name]=sl[a.name]||{w:0,l:0})[aw?"w":"l"]++;
       (sl[b.name]=sl[b.name]||{w:0,l:0})[aw?"l":"w"]++;
-      if(lg==="LPL"&&rnd()<0.06){
-        pushEvent(`<b>${aw?a.name:b.name}</b> 击败 ${aw?b.name:a.name}。`,"info","联赛");
-      }
+      // 开赛前没有联赛（玩家实锤 2026-09-18：「已经过了 13 周、春季赛应该早开始了」）：这些是后台的季前热身，不播比分。
+      // 随机数照取一次，整条随机序列和原来一样
+      if(lg==="LPL"&&rnd()<0.06){ /* 不播 */ }
     }
   });
   // 偶尔来一条职业圈新闻，让世界有存在感
@@ -1819,28 +1825,51 @@ export function proNews(){
   const rk=Object.entries<any>(S.standings[lg]||{})
     .map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0})).sort((a,b)=>b.p-a.p);
   if(!rk.length||!(S.world[lg]||[]).length) return;
-  const top=rk[0], bot=rk[rk.length-1];
+  // 开赛前只有补强、试训、直播——按全队战力说热门 / 冷门，不报比分（玩家实锤 2026-09-18）
+  const byPw=(S.world[lg]||[]).map(t=>({n:t.name,p:power(t)})).sort((a,b)=>b.p-a.p);
+  const top=byPw[0], bot=byPw[byPw.length-1];
   const pool=[
-    ()=>`<b>${top.n}</b> 以 ${top.w}−${top.l} 领跑 ${ln}。`,
-    ()=>`<b>${bot.n}</b> 跌到 ${ln} 垫底，传出换人消息。`,
+    ()=>`<b>${top.n}</b> 被看好是 ${ln} 今年的夺冠热门。`,
+    ()=>`<b>${bot.n}</b> 阵容不被看好，传出换人消息。`,
     ()=>{const t=S.world[lg][Math.floor(rnd()*S.world[lg].length)];
          const q=t.players[Math.floor(rnd()*t.players.length)];
-         return `${ln} 周最佳：<b>${q.id}</b>${q.cn?`（${q.cn}）`:""}（${t.name}）。`},
-    ()=>`${ln} 官方公布下赛季赛制调整，讨论度不低。`,
+         return `<b>${q.id}</b>${q.cn?`（${q.cn}）`:""}（${t.name}）最近的直播手感火热，粉丝在等他开赛。`},
+    ()=>`${ln} 官方公布新赛季赛制，讨论度不低。`,
     ()=>{const t=S.world[lg][Math.floor(rnd()*S.world[lg].length)];
          return `<b>${t.name}</b> 宣布启用青训选手，位置暂时保密。`}
   ];
   pushEvent(pool[Math.floor(rnd()*pool.length)](),"info","职业圈");
 }
-/* 职业前跨年：结算各赛区冠军，然后清空积分榜 */
-export function proSeasonWrap(){
-  if(!S.standings) return;
-  (tlOn()?tlMajors():["LPL","LCK","LEC","LCS"]).forEach(lg=>{
-    const rk=Object.entries<any>(S.standings[lg]||{})
-      .map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0})).sort((a,b)=>b.p-a.p);
-    if(rk.length) pushEvent(`${SEASONS[Math.max(0,S.si-1)].tag} <b>${lgName(lg,Math.max(0,S.si-1))}</b> 年度第一：<b>${rk[0].n}</b>（${rk[0].w}−${rk[0].l}）。`,
-      lg==="LCK"?"bad":"info","赛季");
+/* 没签上的这一年（玩家实锤 2026-09-18：原来翻年播「年度第一：某队（x−y）」，读的是开赛前那张假积分榜——
+   同样这 16 周，签上了算开赛前，没签上又被当成整整一年）。现在按真实的一年报：各大赛区每个出冠军的赛段、MSI、世界赛；
+   有史实照史实，没有史实（还没打完 / 2027 起）按全队战力最强的那支——不摇骰子、不写进任何荣誉表，只是一条新闻。
+   在翻年、换页之前算：队名、赛区都是那一年的。 */
+const SKIP_EXTRA: Record<number,{msi?:string;worlds?:string}>={2026:{msi:"Hanwha Life Esports"}};   // 已经打完、史实表还没收的
+export function skippedYearLines(si){
+  const sea=SEASONS[si]; if(!sea||!S.world) return "";
+  const y=sea.y, k=String(y-2022);
+  const lgs=(tlOn()?tlMajors():["LPL","LCK","LEC","LCS"]).filter(lg=>(S.world[lg]||[]).length);
+  const best=ts=>{ let b=null,bp=-1e9; ts.forEach(t=>{ const p=power(t); if(p>bp){ bp=p; b=t; } }); return b?b.name:"—"; };
+  const parts=lgs.map(lg=>{
+    const ts=S.world[lg]||[];
+    let rows=[];
+    try{
+      const ys=tlOn()?yearSpec(lg,y,ts.length):null;
+      if(ys) rows=ys.splits.filter(sp=>sp.title!==false).map(sp=>[String(sp.title||sp.name).trim(),CANON[`${lg}|${y}|${sp.key}`]]);
+    }catch(e){}
+    if(!rows.length){ const L=LEAGUE_CANON[lg]&&LEAGUE_CANON[lg][k]; rows=[["春季赛",L&&L[0]],["夏季赛",L&&L[1]]]; }
+    return `${lgName(lg,si)} ${rows.map(([n,c])=>`${n} <b>${c||best(ts)}</b>`).join("、")}`;
   });
+  const all=lgs.flatMap(lg=>S.world[lg]||[]), X=SKIP_EXTRA[y]||{};
+  const intl=[];
+  if(!sea.noMsi) intl.push(`MSI <b>${INTL_CANON.msi[k]||X.msi||best(all)}</b>`);
+  intl.push(`世界赛 <b>${INTL_CANON.worlds[k]||X.worlds||best(all)}</b>`);
+  return `${parts.join("；")}；${intl.join("、")}。`;
+}
+/* 职业前跨年：播报过去那一年（传进来的是翻年前算好的），然后清空积分榜 */
+export function proSeasonWrap(yearNews?){
+  if(!S.standings) return;
+  if(yearNews) pushEvent(yearNews,"info","赛季");
   Object.keys(S.world).forEach(lg=>{
     const sl=S.standings[lg]={};   // 换页后赛区 / 队伍都可能变了：整张表重建
     S.world[lg].forEach(t=>sl[t.name]={w:0,l:0});
@@ -1874,7 +1903,8 @@ export function yearTotal(){
 }
 export function yearWeek(){
   if(S.step==="pre"||S.step==="offer") return S.pre?S.pre.week:1;
-  if(fmtOn()&&S.step!=="end") return Math.max(1,S.fmt.yw||1);   // 真实赛制：各赛区一年长短不一，直接数周
+  // 真实赛制：各赛区一年长短不一，直接数周——加上今年在职业前用掉的周数（玩家实锤 2026-09-18：签约后从第 13 周跳回第 1 周）
+  if(fmtOn()&&S.step!=="end") return Math.max(1,(S.yearBase||0)+(S.fmt.yw||0));
   const base=S.yearBase||0;
   if(S.step==="end")       return yearTotal();
   if(S.step==="offseason"){
@@ -1895,7 +1925,7 @@ export function nowPhase(){
   // 「现在」是个时钟，只报时间。职业前是你的处境，不是赛季的阶段
   const YW=`第 ${yearWeek()} 周`;
   if(S.step==="pre"||S.step==="offer")
-    return {tag:sea.tag,phase:S.careerBak?"自由身":"赛季前",detail:`${YW} · 窗口剩 ${Math.max(0,PRE_YEAR-(S.pre?S.pre.week:1))} 周`,
+    return {tag:sea.tag,phase:S.careerBak?"自由身":"开赛前",detail:`${YW} · 窗口剩 ${Math.max(0,PRE_YEAR-(S.pre?S.pre.week:1))} 周`,
             urgent:S.pre&&S.pre.week>PRE_YEAR-4};
   if(S.intl){
     const n=intlName(S.intl.type);
@@ -2786,8 +2816,14 @@ export function preNextYear(){
     if(S.careerBak){ S.career=S.careerBak; S.careerBak=null; } else S.neverSigned=true;
     S.step="end"; hallCareerEnd(); render(); return;
   }
+  const lastSea=SEASONS[S.si];
+  let yearNews="";
+  try{
+    const body=skippedYearLines(S.si);
+    if(body) yearNews=`<b>${lastSea.tag} ${lastSea.y} 赛季结束</b>——${S.careerBak?"这一年你没能回到赛场":"你没能打上职业，这一年在场外过去了"}。${body}`;
+  }catch(e){}
   S.si++; S.age++; P.preYear=(P.preYear||1)+1;
-  P.week=1; P.ap=apFor('pre'); P.cityCup=null; P.streamCup=null;
+  P.week=1; P.ap=apFor('pre'); P.cityCup=null; P.streamCup=null; P.midSi=null;
   P.noRe={};   // 「拒绝试训后这家今年不再来」——过了年就既往不咎
   S.fatigue=0; S.buff={};
   if(S.careerBak){
@@ -2808,7 +2844,7 @@ export function preNextYear(){
   ledgerRotate();
   P.rank=Math.max(0,P.rank-4);          // 一年下来手会生一点
   if(P.mates&&P.mates.length&&true) disbandCrew();
-  proSeasonWrap();
+  proSeasonWrap(yearNews);
   pushEvent(`<b>${SEASONS[S.si].tag} ${SEASONS[S.si].y}</b>：你还没打上职业。${SEASONS[S.si].story}`,"bad","赛季");
   preLog(`<b>${SEASONS[S.si].tag} ${SEASONS[S.si].y} 赛季开始</b>，你 ${S.age} 岁了。
     上一年没能签约，这一年从头再来——但世界已经往前走了一年。`,"hi");
@@ -3861,7 +3897,7 @@ export function autoRestPre(weeks){
     big:ev.filter(e=>e.tone==="big"||e.tone==="bad").map(e=>e.text).slice(-10),
     achs:(S.achLog||[]).slice(snap.ach).map(a=>a.n||a.id),
     injury:S.injury?(S.injury.n||"伤病"):"", seasonOver:false };
-  pushEvent(`自动推进了 <b>${w} 周</b>（赛季前第 ${w0}–${S.autoSum.w1} 周），${why}<span style="color:var(--ink-3)">这段时间的详情见推进总结。</span>`,"info","推进");
+  pushEvent(`自动推进了 <b>${w} 周</b>（开赛前第 ${w0}–${S.autoSum.w1} 周），${why}<span style="color:var(--ink-3)">这段时间的详情见推进总结。</span>`,"info","推进");
   render();
 }
 export function autoSumCard(){
@@ -3871,7 +3907,7 @@ export function autoSumCard(){
   const rows=(A.matches||[]).slice(-12).map(m=>`<span class="tag" style="margin:2px">第${m.w}周 ${escapeHtml(String(m.opp||""))} ${m.sc?m.sc.join(":"):""} ${m.win?'<b style="color:var(--cyan)">胜</b>':'<b style="color:var(--red)">负</b>'}</span>`).join("");
   return `<div class="rankup"><div class="ru-inner" style="max-width:600px;max-height:88vh;overflow-y:auto;text-align:left">
     <div class="ru-eyebrow">${A.signed?"签约了":A.yearEnd?"年度结算":A.seasonOver?"常规赛打完了":"自动推进"}</div>
-    <h2 style="margin:0 0 4px">推进总结 · ${A.pre?"赛季前 ":""}第 ${A.w0}–${A.w1} 周<em style="float:right">${A.pre?"":A.teamRec
+    <h2 style="margin:0 0 4px">推进总结 · ${A.pre?"开赛前 ":""}第 ${A.w0}–${A.w1} 周<em style="float:right">${A.pre?"":A.teamRec
       ?`${escapeHtml(String(A.team||S.team||""))} 本赛段 ${A.teamRec.w}–${A.teamRec.l}${A.benched?"　·　你在替补席":`　·　你上场 ${A.rec.w} 胜 ${A.rec.l} 负`}`
       :`${A.rec.w} 胜 ${A.rec.l} 负`}</em></h2>
     <p class="note" style="margin:0 0 10px">${A.why}${A.injury?`　<span style="color:var(--red)">目前带伤（${escapeHtml(A.injury)}）</span>`:""}</p>
@@ -5417,6 +5453,7 @@ export function dropToStreets(mid){
   P.cityCup=null; P.streamCup=null; P.noRe={}; P.wndGiven={}; P.rankInvited={}; P.fanInvited={};
   P.invite=null; P.inviteCd=P.week+4; P.mates=null; P.offers=null; P.finalScore=undefined;   // 先冷一个月，电话才会来
   P.exPro={team:old,lg,si:S.si};
+  P.midSi=mid?S.si:null;   // 季中回落：这一年的联赛还在打（职业联赛卡不写「开赛前」）
   if(!mid){   // 年底回落：新赛季的积分榜从零开始（季中回落时夏季赛还在打，榜不动）
     Object.keys(S.world).forEach(k=>{ S.standings[k]={}; S.world[k].forEach(x=>S.standings[k][x.name]={w:0,l:0}); });
   }
@@ -5690,21 +5727,36 @@ export function lockedCard(title,how,body){
     <div class="lockbody">${body}</div>
     <p class="note lockhow">🔒 ${how}</p></div>`;
 }
+/* 开赛前的职业联赛卡（玩家实锤 2026-09-18：「22 年第 13 周进了战队，突然变成春季赛」）：原来这里是一张每周在涨的积分榜，
+   标题「S12 2022 · 第 13 周」、卡底「这些队每周都在打」——玩家当然以为 2022 年的联赛已经打了 13 周，签约那一刻表清零、春季赛从 0−0 开打。
+   开赛前没有联赛：按全队战力排实力榜，写清新赛季第一个赛段的赛制、转会窗口在哪几周。季中被裁的自由身写「赛季进行中」。 */
 export function proCard(){
   const lgs=tlOn()?tlMajors():["LPL","LCK","LEC","LCS"];
   const cur=lgs.includes(S.proLg)?S.proLg:"LPL";
-  const rk=Object.entries<any>((S.standings||{})[cur]||{})
-    .map(([n,r])=>({n,...r,p:(r.w+r.l)?r.w/(r.w+r.l):0}))
-    .sort((a,b)=>b.p-a.p||b.w-a.w);
-  return `<div class="card"><h2>职业联赛<em>${SEASONS[S.si].tag} ${SEASONS[S.si].y} · 第 ${S.pre.week} 周</em></h2>
+  const sea=SEASONS[S.si], P=S.pre||{};
+  const mid=P.midSi!==null&&P.midSi!==undefined&&P.midSi===S.si;
+  const rk=(S.world[cur]||[]).map(t=>({n:t.name,p:power(t)})).sort((a,b)=>b.p-a.p);
+  let first="", firstName="新赛季";
+  try{
+    const ys=tlOn()?yearSpec(cur,sea.y,(S.world[cur]||[]).length):null;
+    const sp=ys&&ys.splits.find(x=>x.title!==false);
+    if(sp){ firstName=sp.name; first=fmtFormatLine(sp); }
+    else { firstName="春季赛"; first=`常规赛 ${WEEKS} 周（每周一场 BO3）→ 前六进季后赛`; }
+  }catch(e){}
+  const wnd=`第 ${WND_OPEN}–${PRE_YEAR} 周`;
+  return `<div class="card"><h2>职业联赛<em>${sea.tag} ${sea.y} · ${mid?"赛季进行中":"开赛前"} · 各队实力榜</em></h2>
     <div class="filt">${lgs.map(l=>
       `<button data-prolg="${l}" class="${l===cur?'on':''}">${lgName(l)}</button>`).join("")}</div>
-    <div class="tw"><table><thead><tr><th>#</th><th>战队</th><th class="n">战绩</th><th class="n">胜率</th></tr></thead>
+    <div class="tw"><table><thead><tr><th>#</th><th>战队</th><th class="n">全队战力</th></tr></thead>
     <tbody>${rk.map((r,i)=>`<tr class="${i===0?'me':''}">
       <td class="n">${i+1}</td><td>${teamLogo(r.n,18)}${r.n}</td>
-      <td class="n">${r.w}−${r.l}</td><td class="n">${(r.p*100).toFixed(0)}%</td></tr>`).join("")}
+      <td class="n">${N(pwShow(r.p).toFixed(1),dimWord(pwShow(r.p)))}</td></tr>`).join("")}
     </tbody></table></div>
-    <p class="note">你还在打排位，但这些队每周都在打。<b>总有一天你要坐到那张桌子上。</b></p></div>`;
+    <p class="note">${mid
+      ?`这一年的联赛还在打，你暂时不在场上。${wnd}是转会窗口，签下来就能回到赛场。`
+      :`休赛期，联赛还没开打，排名按全队战力。${wnd}是转会窗口：窗口里签下，就从 <b>${lgName(cur)} ${firstName}</b> 第 1 周打起；一直没人签，这个赛季就在场外过去。`}
+      ${first&&!mid?`<br>${lgName(cur)} ${firstName}赛制：${first}。`:""}
+      <br><b>总有一天你要坐到那张桌子上。</b></p></div>`;
 }
 export function scheduleCard(){
   const P=S.pre;
@@ -5883,7 +5935,7 @@ export function railNext(){
     rows.push(`<p class="note" style="margin-top:0">今年的比赛都打完了，接下来就是转会窗口。</p>`);
   }
   rows.push(`<p class="note">距离<b>转会窗口</b>还有 <b>${Math.max(0,PRE_YEAR-P.week)}</b> 周<span style="color:var(--ink-3)">——那是年末各队定人的日子；试训邀请不等它，什么时候够格什么时候来。</span></p>`);
-  return `<div class="card"><h2>下一个节点<em>赛季前 第 ${P.week}/${PRE_WEEKS} 周</em></h2>${rows.join("")}</div>`;
+  return `<div class="card"><h2>下一个节点<em>开赛前 第 ${P.week}/${PRE_WEEKS} 周</em></h2>${rows.join("")}</div>`;
 }
 export function railScout(){
   const P=S.pre; if(!P) return "";
@@ -5994,7 +6046,7 @@ export function actPanelPre(){
     <div class="row"><button class="btn primary" id="prenext" ${P.ap>0?'disabled':''}>
       ${P.ap>0?`还剩 ${P.ap} 个行动点`
         :((()=>{const last=P.week>=PRE_WEEKS;   // 最后一周的下一步不是「第 21/20 周」，是关窗结算（玩家点名）
-          const to=last?"转会窗口关闭 · 年度结算":`赛季前 第 ${P.week+1}/${PRE_WEEKS} 周`;
+          const to=last?"转会窗口关闭 · 年度结算":`开赛前 第 ${P.week+1}/${PRE_WEEKS} 周`;
           return (dueCups().length)?`进入下一周（有比赛没打）→ ${to}`:`进入下一周 → ${to}`;})())}</button>
       ${quickBtn()}
       <button class="btn ghost sm" id="autopre">自动推进到年底</button></div>
