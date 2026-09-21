@@ -268,59 +268,139 @@ export function cerRecMul(){
 /* ---------- 年度颁奖夜：一阵 / 二阵 / 最佳新秀 / MVP ----------
    全部从已有数据算：五维、状态、常规赛排名、这一年的冠军。你的那一份还看本赛段场均评分。
    不是随机数——同一份存档、同一个赛季算出来永远一样（不碰种子）。 */
-/* 团队成绩的加分（2026-09-07 玩家点名「为什么都是一个战队的」「ming 只有 70 综评了咋上的一阵」）：
-   原来是世界赛 8 + MSI 4 + 联赛 5 + 常规赛前四 2 = 上限 19 分，而同联赛「最强 − 中位」的
-   五维差中位只有 15.1 分——冠军队五个人被整体抬过所有人。批测（64 个颁奖夜）里 36% 的一阵
-   席位被这项加分抢走；本队包揽三冠那一年一阵 5/5 全是本队，入选者平均比该位置最强低 16 分，
-   实测出现过「68 分进一阵、84 分落选」。
-   收到上限 7.5（约等于实力差中位的一半）：势均力敌时冠军队赢，差一个档次时赢不了。 */
-/* 二次校准（玩家实锤 2026-09-09：「我的队伍 LNG 都拿了好多次冠军，黄金之路了，
-   但是年度一阵二阵只有一个辅助入选，这不科学」）。上一版为了治「为什么都是一个战队的」，
-   把上限从 19 一刀砍到 7.5——但同一次改动**还加了 AWARD_TEAM_CAP=3**，
-   「一支队包揽五席」这件事已经由那道闸挡住了，加分不必再兼职当闸。
-   砍过头的代价这次量出来了：合成黄金之路（联赛+MSI+世界赛全拿）的 20 个赛季里，
-   一阵平均只占 2.25 席，**6 次只拿到 1 席**——玩家看到的就是这一档。
+/* 年度评选按「这一年打出来的数据」排（2026-09-21 玩家实锤：「换队后单人三冠没当上年度 MVP」）。
 
-   扫了 ×1 / ×1.3 / ×1.5 / ×1.75 / ×2 五档，两头的投诉放在同一张表上看：
+   原来是「五维均值 + 状态 + 团队加分（世界赛 4.5 / MSI 2.5 / 联赛 3 / 常规赛前四 1.5）」。
+   冠军加分全队一起加，队内比的还是五维——实测各 40 局：这一年拿 ≥3 冠的赛季里，
+   普通档 23%、强档 24% 拿到年度 MVP，样本里 MVP 多半是同队五维更高的队友。
+   同一次排查还查出两处判错：联赛冠军只认最后一个赛段（拿了春季冠军、加分记给了别人），
+   冠军按队名发、换队之后不跟着人走。
 
-     倍数   一阵均  只拿1席  MVP    入选者比该位置最强低（均/最差）
-     ×1     2.25    30%     75%    2.0 / 6.0      ← 现在，横扫也进不去
-     ×1.5   2.65    10%     90%    2.5 / 7.5      ← 取这一档
-     ×2     3.00     0%    100%    3.3 / 8.3      ← 太绝对，横扫必满席必 MVP
-
-   ×1.5 之后横扫的队仍然不是稳拿三席（20 次里 5 次没顶满、2 次只有 1 席），
-   而「入选者比该位置最强低」只从 2.0 挪到 2.5、最差 6.0 → 7.5，
-   离当年那句「68 分进一阵、84 分落选」（差 16 分）还远得很。 */
-export const AWARD_BONUS={worlds:4.5, msi:2.5, league:3, top4:1.5};
-export const AWARD_TEAM_CAP=3;   // 一支队在一阵/二阵里最多几个人（照 2025 年真实一阵 AL 占 3 个）
+   照 val_player 的年度评选改（src/engine/me/nights.ts computeAwards）：那边完全按赛季 rating 排名、
+   场次不够不参评、没有任何冠军加分。我们这边 NPC 没有真实数据（val_player 的注释里点了这件事），
+   所以给全联盟首发按同一把尺合成一份赛季评分：
+     · 你自己用真实的整年场均评分（boxscore.yearRating：两个赛段的常规赛 + 季后赛）；
+     · NPC 用 AWARD_BASE + 五维相对联赛均值 × AWARD_OVR_K + 队伍名次 + 状态。
+   系数是量出来的（143 个赛季）：你的评分中位 1.20、区间 0.92–1.67，五维每高出联赛均值 10 分评分 +0.23。
+   冠军退成配角（上限 4 分 ≈ 0.13 评分），而且按「谁真的拿了这座冠军」算：
+   你的从生涯记录读（换队跟着你走），NPC 的从 S.fmtTitles / 荣誉表读，三段制年份每个赛段各算一次。
+   一阵仍按位置挑、一支队最多 AWARD_TEAM_CAP 人（2026-09-07 那道闸还在），MVP 仍从一阵里出。 */
+export const AWARD_RATE_W=30;                       // 赛季评分每高 0.1 → 3 分
+export const AWARD_BASE=1.08, AWARD_OVR_K=0.0226;   // NPC 赛季评分：基准与五维斜率（按你的真实评分量出来的）
+export const AWARD_RANK1=0.06, AWARD_RANK4=0.03;    // 队伍常规赛第 1 / 第 2–4 的加成
+export const AWARD_TITLE={worlds:2.0, msi:1.2, fst:0.6, split:0.8, top1:0.4};
+export const AWARD_TITLE_CAP=4;    // 冠军分上限：压不过数据，但势均力敌时冠军赢
+/* 全场最佳的砝码（2026-09-21）：队内谁在 carry，只有全员数据答得上来——每场评出的全场最佳，
+   常规赛 +0.3、季后赛 +0.8，封顶 3。你和队友、交过手的对手用同一套账（S.seasonRt / archive）。 */
+export const AWARD_MVP_REG=0.3, AWARD_MVP_PO=0.8, AWARD_MVP_CAP=3;
+export const AWARD_MIN_GAMES=6;    // 一年打满这么多场（常规赛 + 季后赛）才按真实数据评，照 val_player 的场次门槛
+export const AWARD_REAL_SWING=0.25;  // 真实表现能在「五维该有的评分」上加减多少（±0.25 ≈ ±7.5 分）
+export const AWARD_RT_FULL=8;        // 真实数据攒够这么多场就完全算数（不够按比例）
+/* 这一年这个人真打出来的场均评分（S.seasonRt，只有你打过的比赛里才有他的数据）：
+   队友是整季，对手是交手那几场，外赛区没有。样本不够就按比例往「按五维估的基准」回收。 */
+export function realBlend(base,id){
+  const e=((S.seasonRt||{})[S.si]||{})[id];
+  if(!e||!e[0]) return base;
+  const w=Math.min(1,e[0]/AWARD_RT_FULL);
+  return base+clamp(e[1]/e[0]-base,-AWARD_REAL_SWING,AWARD_REAL_SWING)*w;
+}
+/* 这一年他拿了几次全场最佳（同样只有你打过的比赛里才数得到） */
+export function matchMvpPts(id){
+  const e=((S.seasonRt||{})[S.si]||{})[id];
+  if(!e) return 0;
+  return Math.min(AWARD_MVP_CAP,(e[2]||0)*AWARD_MVP_REG+(e[3]||0)*AWARD_MVP_PO);
+}
+const AWARD_YEAR_TAGS=["联赛","LDL","季后赛"];   // 和 boxscore.yearRating 同一套口径
+export const AWARD_TEAM_CAP=3;     // 一支队在一阵/二阵里最多几个人（照 2025 年真实一阵 AL 占 3 个）
+/* NPC 的赛季评分：和你的真实评分同一把尺 */
+export function npcSeasonRating(ovr,lgAvg,rank,form){
+  const t=rank===1?AWARD_RANK1:(rank>=2&&rank<=4)?AWARD_RANK4:0;
+  const f=((form===undefined||form===null)?52:form)-52;
+  return clamp(AWARD_BASE+AWARD_OVR_K*(ovr-lgAvg)+t+f*0.002,0.4,2.0);
+}
+/* 这一年这支队拿了什么（NPC 用）：真实赛制读 S.fmtTitles（每个赛段一条），老档读 S.lgChamps / 季后赛缓存；国际赛读荣誉表 */
+export function teamTitlePts(name,si){
+  if(!name) return 0;
+  const H=S.honors||{};
+  let p=0;
+  if(H.worlds&&H.worlds[si]===name) p+=AWARD_TITLE.worlds;
+  if(H.msi&&H.msi[si]===name) p+=AWARD_TITLE.msi;
+  if(H.fst&&H.fst[si]===name) p+=AWARD_TITLE.fst;
+  const ft=(S.fmtTitles||[]).filter(x=>x.si===si);
+  if(ft.length){ p+=ft.filter(x=>x.team===name).length*AWARD_TITLE.split; return p; }
+  [0,1].forEach(sp=>{
+    const seen=new Set();
+    const home=S.lgChamps&&S.lgChamps[si+"|"+sp];
+    if(home){ seen.add(home.lg); if(home.team===name) p+=AWARD_TITLE.split; }
+    Object.keys(S.poCache||{}).forEach(key=>{
+      const [a,b,lg]=key.split("|");
+      if(+a!==si||+b!==sp||seen.has(lg)) return;
+      const res=S.poCache[key];
+      if(res&&res[0]===name){ seen.add(lg); p+=AWARD_TITLE.split; }
+    });
+  });
+  return p;
+}
+/* 你自己这一年拿了什么：从生涯记录读——换队之后冠军还是你的（玩家实锤 2026-09-21）。
+   替补席上的随队冠军不进 career.titles，也就不算在这里，是对的。 */
+export function myTitlePts(si){
+  const tag=SEASONS[si]&&SEASONS[si].tag; if(!tag) return 0;
+  let p=0;
+  ((S.career&&S.career.titles)||[]).forEach(x=>{
+    const t=String(x); if(t.indexOf(tag+" ")!==0) return;
+    if(/世界赛$/.test(t)) p+=AWARD_TITLE.worlds;
+    else if(/MSI$/.test(t)) p+=AWARD_TITLE.msi;
+    else if(/First Stand$/.test(t)) p+=AWARD_TITLE.fst;
+    else p+=AWARD_TITLE.split;
+  });
+  return p;
+}
 export function computeAwards(){
   const HL=S.homeLeague||"LPL";
   if(HL==="LDL") return null;          // 二级联赛不办颁奖夜
   const teams=(S.world&&S.world[HL])||[]; if(!teams.length) return null;
   let rk=[]; try{ rk=lplRank().map(r=>r.n); }catch(e){ rk=[]; }
   let top=[]; try{ top=majorStandings(HL); }catch(e){ top=[]; }
+  const order=(top&&top.length?top:rk)||[];
+  const rankOf=n=>{ const i=order.indexOf(n); return i<0?0:i+1; };
   const H=S.honors||{};
   const wc=(H.worlds&&H.worlds[S.si])||(((S.career&&S.career.worldsYears)||[]).includes(S.si)?S.team:null);
   const mc=(H.msi&&H.msi[S.si])||(((S.career&&S.career.msiYears)||[]).includes(S.si)?S.team:null);
   const lc=top[0]||rk[0]||null;
-  const bonus=n=>(n===wc?AWARD_BONUS.worlds:0)+(n===mc?AWARD_BONUS.msi:0)+(n===lc?AWARD_BONUS.league:0)
-                +(rk.indexOf(n)>=0&&rk.indexOf(n)<4?AWARD_BONUS.top4:0);
   const bench=isBenched();
+  // 联赛五维均值：NPC 的赛季评分按「相对联赛」算
+  const ovrs=[];
+  teams.forEach(t=>t.players.forEach(p=>{ if(p&&!p.retired&&!p.me) ovrs.push(avg(DIMS.map(d=>(p.r||{})[d]||0))); }));
+  const lgAvg=ovrs.length?avg(ovrs):65;
   const rows=[];
   teams.forEach(t=>t.players.forEach(p=>{
     if(!p||p.retired) return;
     if(p.me&&bench) return;
-    const r=p.me?S.attrs:(p.r||{});
-    let sc=avg(DIMS.map(d=>r[d]||0))+(((p.form===undefined||p.form===null)?52:p.form)-52)/8+bonus(t.name);
+    const rank=rankOf(t.name);
+    let rating,titles,mvpPts=0,real=false;
     if(p.me){
-      // 年度评选看整年（常规赛 + 季后赛），不只看当前赛段的常规赛（玩家实锤 2026-09-10）
-      const sr=yearRating(S.si); if(sr!==null) sc+=(sr-1.0)*6;
-      sc+=mvpBonus(S.si);   // 本场 MVP 进评选：常规赛 +0.5 / 季后赛 +1.0 每次，封顶 6
+      /* 你和 NPC 同一把尺：先按五维算「这一年该有的赛季评分」，再用真实打出来的评分在上面加减。
+         直接拿真实评分和 NPC 的折算值比不行——你的真实评分有上限（143 个赛季实测 0.92–1.67），
+         而折算值没有，联赛里五维高出均值 25 分的明星会折出 1.64，比谁都高。
+         场次不够不算真实表现（照 val_player 的 seasonBar）。 */
+      const base=npcSeasonRating(avg(DIMS.map(d=>S.attrs[d]||0)),lgAvg,rank,S.form);
+      const sr=yearRating(S.si);
+      const played=(S.archive||[]).filter(x=>x.si===S.si&&AWARD_YEAR_TAGS.includes(x.tag)&&typeof x.rating==="number").length;
+      real=sr!==null&&played>=AWARD_MIN_GAMES;
+      rating=real?base+clamp(sr-base,-AWARD_REAL_SWING,AWARD_REAL_SWING):base;
+      titles=myTitlePts(S.si);
+      mvpPts=Math.min(AWARD_MVP_CAP,mvpBonus(S.si));     // 全场最佳：和队友用同一套砝码
+    }else{
+      rating=realBlend(npcSeasonRating(avg(DIMS.map(d=>(p.r||{})[d]||0)),lgAvg,rank,p.form),p.id);
+      real=!!(((S.seasonRt||{})[S.si]||{})[p.id]);
+      mvpPts=matchMvpPts(p.id);
+      titles=teamTitlePts(t.name,S.si);
     }
-    // 新秀 = 这个赛季头一回进一队名单（debutSi 在 makeRookie / 提拔时写下）。
-    // 老存档没有这个字段，回落到原来的「20 岁以下」。
+    if(rank===1) titles+=AWARD_TITLE.top1;
+    titles=Math.min(AWARD_TITLE_CAP,titles);
     rows.push({id:p.me?meName():p.id,cn:p.me?"":(p.cn||""),pos:p.pos,team:t.name,age:p.age||22,me:!!p.me,
-               debut:(p.debutSi!==undefined&&p.debutSi===S.si),sc});
+               debut:(p.debutSi!==undefined&&p.debutSi===S.si),rating:+rating.toFixed(2),titles:+titles.toFixed(1),real,
+               sc:(rating-1)*AWARD_RATE_W+titles+mvpPts});
   }));
   if(!rows.length) return null;
   rows.sort((a,b)=>b.sc-a.sc);
@@ -330,11 +410,11 @@ export function computeAwards(){
      排位置，强的位置先挑人；某队占满 3 席之后，它的人顺延，位置由次名递补。
      兜底那一支 find 是防退化用的——名单不够时宁可破例，也不留空位。 */
   const byPos={}; POS.forEach(ps=>{ byPos[ps]=rows.filter(x=>x.pos===ps); });
-  const order=POS.slice().sort((a,b)=>((byPos[b][0]||{sc:-1e9}).sc)-((byPos[a][0]||{sc:-1e9}).sc));
+  const fillOrder=POS.slice().sort((a,b)=>((byPos[b][0]||{sc:-1e9}).sc)-((byPos[a][0]||{sc:-1e9}).sc));
   const used=new Set();
   const fill=()=>{
     const out={},cnt={};
-    order.forEach(ps=>{
+    fillOrder.forEach(ps=>{
       const c=byPos[ps].find(x=>!used.has(x)&&(cnt[x.team]||0)<AWARD_TEAM_CAP)||byPos[ps].find(x=>!used.has(x));
       if(c){ out[ps]=c; used.add(c); cnt[c.team]=(cnt[c.team]||0)+1; }
     });
@@ -348,7 +428,11 @@ export function computeAwards(){
   if(mvp&&mvp.me) mine.push("mvp");
   if(first.some(x=>x.me)) mine.push("first"); else if(second.some(x=>x.me)) mine.push("second");
   if(rookie&&rookie.me) mine.push("rookie");
-  return {si:S.si,tag:SEASONS[S.si].tag,lg:HL,first,second,mvp,rookie,mine,wc,mc,lc};
+  // 照 val_player：公布前三名，没拿到也写「入围」；你的那一行把分数构成摊开
+  const top3=rows.slice(0,3);
+  const meRow=rows.find(x=>x.me)||null;
+  return {si:S.si,tag:SEASONS[S.si].tag,lg:HL,first,second,mvp,rookie,mine,top3,meRow,
+          meRank:meRow?rows.indexOf(meRow)+1:0,field:rows.length,wc,mc,lc};
 }
 export const AWARD_N={mvp:"年度 MVP",first:"年度一阵",second:"年度二阵",rookie:"最佳新秀"};
 const AWARD_FANS={mvp:80,first:40,second:15,rookie:25};
@@ -361,8 +445,9 @@ export function applyAwards(aw){
     addFans(AWARD_FANS[kind]||0);
     checkAch("award",{kind});
   });
-  const line=aw.mine.length?`年度颁奖夜：你拿到 <b>${aw.mine.map(k=>AWARD_N[k]).join("、")}</b>。`
-    :`年度颁奖夜：一阵 ${aw.first.map(x=>x.id).join(" / ")}，MVP <b>${aw.mvp?aw.mvp.id:"—"}</b>。名单上没有你。`;
+  const meTail=aw.meRow?`你这一年赛季评分 <b>${aw.meRow.rating.toFixed(2)}</b>，排联赛第 ${aw.meRank}/${aw.field}${aw.meRow.titles?`（含冠军分 +${aw.meRow.titles.toFixed(1)}）`:""}。`:"";
+  const line=aw.mine.length?`年度颁奖夜：你拿到 <b>${aw.mine.map(k=>AWARD_N[k]).join("、")}</b>。${meTail}`
+    :`年度颁奖夜：MVP 是 <b>${aw.mvp?aw.mvp.id:"—"}</b>（${aw.mvp?aw.mvp.team:""}）。前三：${(aw.top3||[]).map(x=>x.id).join("、")}。${meTail||"名单上没有你。"}`;
   pushEvent(line,aw.mine.length?"good":"info","颁奖夜");
 }
 export function awardsText(){
@@ -626,10 +711,18 @@ function awardsBody(a){
   const block=(title,list,label?,big?)=>(list&&list.length)
     ? `<div class="aw-sec" style="--i:${i++}">${title}</div><div class="aw-list">${list.map(x=>row(x,label,big)).join("")}</div>`
     : "";
+  // MVP 候选前三（照 val_player 的颁奖夜：公布前三名，让「凭什么是他」看得见）——带上赛季评分和冠军分
+  const cand=(a.top3&&a.top3.length>1)
+    ? `<div class="aw-sec" style="--i:${i++}">MVP 候选</div><div class="aw-list">${a.top3.map((x,k)=>
+        `<div class="aw-row${x.me?" me":""}" style="--i:${i++}"><span class="aw-pos">${k+1}</span><b>${x.id}</b><span class="aw-team">${
+          x.team} · 赛季评分 ${x.rating.toFixed(2)}${x.titles?` + 冠军 ${x.titles.toFixed(1)}`:""}</span></div>`).join("")}</div>`
+    : "";
   const blocks=block("年度一阵",a.first)+block("年度二阵",a.second)
     +block("最佳新秀",a.rookie?[a.rookie]:[],"新秀")
-    +block("年度 MVP",a.mvp?[a.mvp]:[],"MVP",true);
-  const mine=a.mine.length?`你拿到 <b>${a.mine.map(k=>AWARD_N[k]).join("、")}</b>，人气跟着涨。`:`名单上没有你的名字。<span style="color:var(--ink-3)">明年让他们念。</span>`;
+    +cand+block("年度 MVP",a.mvp?[a.mvp]:[],"MVP",true);
+  const meTail=a.meRow?`<br><span style="color:var(--ink-3)">你的赛季评分 <b>${a.meRow.rating.toFixed(2)}</b>（联赛第 ${a.meRank}/${a.field}）${
+    a.meRow.titles?` · 冠军分 +${a.meRow.titles.toFixed(1)}`:""}${a.meRow.real?"":" · 今年没打够比赛，按实力估的"}</span>`:"";
+  const mine=(a.mine.length?`你拿到 <b>${a.mine.map(k=>AWARD_N[k]).join("、")}</b>，人气跟着涨。`:`名单上没有你的名字。<span style="color:var(--ink-3)">明年让他们念。</span>`)+meTail;
   return `${scene("trophy")}<div class="cer-eyebrow">${a.tag} ${a.lg} · 年度颁奖夜</div>
     ${blocks}
     <p class="cer-p" style="--i:${i++}">${mine}</p>

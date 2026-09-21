@@ -15102,8 +15102,82 @@ header.top.compact>.theme-top{display:none}
     if (!r || r.si !== S.si) return 1;
     return S.intl || S.off && S.off.next === "intl" ? r.mul : 1;
   }
-  var AWARD_BONUS = { worlds: 4.5, msi: 2.5, league: 3, top4: 1.5 };
+  var AWARD_RATE_W = 30;
+  var AWARD_BASE = 1.08;
+  var AWARD_OVR_K = 0.0226;
+  var AWARD_RANK1 = 0.06;
+  var AWARD_RANK4 = 0.03;
+  var AWARD_TITLE = { worlds: 2, msi: 1.2, fst: 0.6, split: 0.8, top1: 0.4 };
+  var AWARD_TITLE_CAP = 4;
+  var AWARD_MVP_REG = 0.3;
+  var AWARD_MVP_PO = 0.8;
+  var AWARD_MVP_CAP = 3;
+  var AWARD_MIN_GAMES = 6;
+  var AWARD_REAL_SWING = 0.25;
+  var AWARD_RT_FULL = 8;
+  function realBlend(base, id) {
+    const e = ((S.seasonRt || {})[S.si] || {})[id];
+    if (!e || !e[0]) return base;
+    const w = Math.min(1, e[0] / AWARD_RT_FULL);
+    return base + clamp(e[1] / e[0] - base, -AWARD_REAL_SWING, AWARD_REAL_SWING) * w;
+  }
+  function matchMvpPts(id) {
+    const e = ((S.seasonRt || {})[S.si] || {})[id];
+    if (!e) return 0;
+    return Math.min(AWARD_MVP_CAP, (e[2] || 0) * AWARD_MVP_REG + (e[3] || 0) * AWARD_MVP_PO);
+  }
+  var AWARD_YEAR_TAGS = ["联赛", "LDL", "季后赛"];
   var AWARD_TEAM_CAP = 3;
+  function npcSeasonRating(ovr, lgAvg, rank2, form) {
+    const t = rank2 === 1 ? AWARD_RANK1 : rank2 >= 2 && rank2 <= 4 ? AWARD_RANK4 : 0;
+    const f = (form === void 0 || form === null ? 52 : form) - 52;
+    return clamp(AWARD_BASE + AWARD_OVR_K * (ovr - lgAvg) + t + f * 2e-3, 0.4, 2);
+  }
+  function teamTitlePts(name, si) {
+    if (!name) return 0;
+    const H2 = S.honors || {};
+    let p = 0;
+    if (H2.worlds && H2.worlds[si] === name) p += AWARD_TITLE.worlds;
+    if (H2.msi && H2.msi[si] === name) p += AWARD_TITLE.msi;
+    if (H2.fst && H2.fst[si] === name) p += AWARD_TITLE.fst;
+    const ft = (S.fmtTitles || []).filter((x) => x.si === si);
+    if (ft.length) {
+      p += ft.filter((x) => x.team === name).length * AWARD_TITLE.split;
+      return p;
+    }
+    [0, 1].forEach((sp) => {
+      const seen = /* @__PURE__ */ new Set();
+      const home = S.lgChamps && S.lgChamps[si + "|" + sp];
+      if (home) {
+        seen.add(home.lg);
+        if (home.team === name) p += AWARD_TITLE.split;
+      }
+      Object.keys(S.poCache || {}).forEach((key) => {
+        const [a, b, lg] = key.split("|");
+        if (+a !== si || +b !== sp || seen.has(lg)) return;
+        const res = S.poCache[key];
+        if (res && res[0] === name) {
+          seen.add(lg);
+          p += AWARD_TITLE.split;
+        }
+      });
+    });
+    return p;
+  }
+  function myTitlePts(si) {
+    const tag = SEASONS[si] && SEASONS[si].tag;
+    if (!tag) return 0;
+    let p = 0;
+    (S.career && S.career.titles || []).forEach((x) => {
+      const t = String(x);
+      if (t.indexOf(tag + " ") !== 0) return;
+      if (/世界赛$/.test(t)) p += AWARD_TITLE.worlds;
+      else if (/MSI$/.test(t)) p += AWARD_TITLE.msi;
+      else if (/First Stand$/.test(t)) p += AWARD_TITLE.fst;
+      else p += AWARD_TITLE.split;
+    });
+    return p;
+  }
   function computeAwards() {
     const HL = S.homeLeague || "LPL";
     if (HL === "LDL") return null;
@@ -15121,23 +15195,43 @@ header.top.compact>.theme-top{display:none}
     } catch (e) {
       top = [];
     }
+    const order = (top && top.length ? top : rk) || [];
+    const rankOf2 = (n) => {
+      const i = order.indexOf(n);
+      return i < 0 ? 0 : i + 1;
+    };
     const H2 = S.honors || {};
     const wc = H2.worlds && H2.worlds[S.si] || ((S.career && S.career.worldsYears || []).includes(S.si) ? S.team : null);
     const mc = H2.msi && H2.msi[S.si] || ((S.career && S.career.msiYears || []).includes(S.si) ? S.team : null);
     const lc = top[0] || rk[0] || null;
-    const bonus = (n) => (n === wc ? AWARD_BONUS.worlds : 0) + (n === mc ? AWARD_BONUS.msi : 0) + (n === lc ? AWARD_BONUS.league : 0) + (rk.indexOf(n) >= 0 && rk.indexOf(n) < 4 ? AWARD_BONUS.top4 : 0);
     const bench = isBenched();
+    const ovrs = [];
+    teams.forEach((t) => t.players.forEach((p) => {
+      if (p && !p.retired && !p.me) ovrs.push(avg(DIMS.map((d) => (p.r || {})[d] || 0)));
+    }));
+    const lgAvg = ovrs.length ? avg(ovrs) : 65;
     const rows = [];
     teams.forEach((t) => t.players.forEach((p) => {
       if (!p || p.retired) return;
       if (p.me && bench) return;
-      const r = p.me ? S.attrs : p.r || {};
-      let sc = avg(DIMS.map((d) => r[d] || 0)) + ((p.form === void 0 || p.form === null ? 52 : p.form) - 52) / 8 + bonus(t.name);
+      const rank2 = rankOf2(t.name);
+      let rating, titles, mvpPts = 0, real = false;
       if (p.me) {
+        const base = npcSeasonRating(avg(DIMS.map((d) => S.attrs[d] || 0)), lgAvg, rank2, S.form);
         const sr = yearRating(S.si);
-        if (sr !== null) sc += (sr - 1) * 6;
-        sc += mvpBonus(S.si);
+        const played = (S.archive || []).filter((x) => x.si === S.si && AWARD_YEAR_TAGS.includes(x.tag) && typeof x.rating === "number").length;
+        real = sr !== null && played >= AWARD_MIN_GAMES;
+        rating = real ? base + clamp(sr - base, -AWARD_REAL_SWING, AWARD_REAL_SWING) : base;
+        titles = myTitlePts(S.si);
+        mvpPts = Math.min(AWARD_MVP_CAP, mvpBonus(S.si));
+      } else {
+        rating = realBlend(npcSeasonRating(avg(DIMS.map((d) => (p.r || {})[d] || 0)), lgAvg, rank2, p.form), p.id);
+        real = !!((S.seasonRt || {})[S.si] || {})[p.id];
+        mvpPts = matchMvpPts(p.id);
+        titles = teamTitlePts(t.name, S.si);
       }
+      if (rank2 === 1) titles += AWARD_TITLE.top1;
+      titles = Math.min(AWARD_TITLE_CAP, titles);
       rows.push({
         id: p.me ? meName() : p.id,
         cn: p.me ? "" : p.cn || "",
@@ -15146,7 +15240,10 @@ header.top.compact>.theme-top{display:none}
         age: p.age || 22,
         me: !!p.me,
         debut: p.debutSi !== void 0 && p.debutSi === S.si,
-        sc
+        rating: +rating.toFixed(2),
+        titles: +titles.toFixed(1),
+        real,
+        sc: (rating - 1) * AWARD_RATE_W + titles + mvpPts
       });
     }));
     if (!rows.length) return null;
@@ -15156,11 +15253,11 @@ header.top.compact>.theme-top{display:none}
     POS2.forEach((ps) => {
       byPos[ps] = rows.filter((x) => x.pos === ps);
     });
-    const order = POS2.slice().sort((a, b) => (byPos[b][0] || { sc: -1e9 }).sc - (byPos[a][0] || { sc: -1e9 }).sc);
+    const fillOrder = POS2.slice().sort((a, b) => (byPos[b][0] || { sc: -1e9 }).sc - (byPos[a][0] || { sc: -1e9 }).sc);
     const used = /* @__PURE__ */ new Set();
     const fill = () => {
       const out = {}, cnt = {};
-      order.forEach((ps) => {
+      fillOrder.forEach((ps) => {
         const c = byPos[ps].find((x) => !used.has(x) && (cnt[x.team] || 0) < AWARD_TEAM_CAP) || byPos[ps].find((x) => !used.has(x));
         if (c) {
           out[ps] = c;
@@ -15178,7 +15275,25 @@ header.top.compact>.theme-top{display:none}
     if (first.some((x) => x.me)) mine.push("first");
     else if (second.some((x) => x.me)) mine.push("second");
     if (rookie && rookie.me) mine.push("rookie");
-    return { si: S.si, tag: SEASONS[S.si].tag, lg: HL, first, second, mvp, rookie, mine, wc, mc, lc };
+    const top3 = rows.slice(0, 3);
+    const meRow = rows.find((x) => x.me) || null;
+    return {
+      si: S.si,
+      tag: SEASONS[S.si].tag,
+      lg: HL,
+      first,
+      second,
+      mvp,
+      rookie,
+      mine,
+      top3,
+      meRow,
+      meRank: meRow ? rows.indexOf(meRow) + 1 : 0,
+      field: rows.length,
+      wc,
+      mc,
+      lc
+    };
   }
   var AWARD_N = { mvp: "年度 MVP", first: "年度一阵", second: "年度二阵", rookie: "最佳新秀" };
   var AWARD_FANS = { mvp: 80, first: 40, second: 15, rookie: 25 };
@@ -15190,7 +15305,8 @@ header.top.compact>.theme-top{display:none}
       addFans(AWARD_FANS[kind] || 0);
       checkAch("award", { kind });
     });
-    const line2 = aw.mine.length ? `年度颁奖夜：你拿到 <b>${aw.mine.map((k) => AWARD_N[k]).join("、")}</b>。` : `年度颁奖夜：一阵 ${aw.first.map((x) => x.id).join(" / ")}，MVP <b>${aw.mvp ? aw.mvp.id : "—"}</b>。名单上没有你。`;
+    const meTail = aw.meRow ? `你这一年赛季评分 <b>${aw.meRow.rating.toFixed(2)}</b>，排联赛第 ${aw.meRank}/${aw.field}${aw.meRow.titles ? `（含冠军分 +${aw.meRow.titles.toFixed(1)}）` : ""}。` : "";
+    const line2 = aw.mine.length ? `年度颁奖夜：你拿到 <b>${aw.mine.map((k) => AWARD_N[k]).join("、")}</b>。${meTail}` : `年度颁奖夜：MVP 是 <b>${aw.mvp ? aw.mvp.id : "—"}</b>（${aw.mvp ? aw.mvp.team : ""}）。前三：${(aw.top3 || []).map((x) => x.id).join("、")}。${meTail || "名单上没有你。"}`;
     pushEvent(line2, aw.mine.length ? "good" : "info", "颁奖夜");
   }
   function awardsText() {
@@ -15460,8 +15576,10 @@ header.top.compact>.theme-top{display:none}
     let i = 0;
     const row = (x, label, big) => x ? `<div class="aw-row${big ? " big" : ""}${x.me ? " me" : ""}" style="--i:${i++}"><span class="aw-pos">${label || POSN[x.pos] || x.pos}</span><b>${x.id}</b><span class="aw-team">${x.team}</span></div>` : "";
     const block = (title, list, label, big) => list && list.length ? `<div class="aw-sec" style="--i:${i++}">${title}</div><div class="aw-list">${list.map((x) => row(x, label, big)).join("")}</div>` : "";
-    const blocks = block("年度一阵", a.first) + block("年度二阵", a.second) + block("最佳新秀", a.rookie ? [a.rookie] : [], "新秀") + block("年度 MVP", a.mvp ? [a.mvp] : [], "MVP", true);
-    const mine = a.mine.length ? `你拿到 <b>${a.mine.map((k) => AWARD_N[k]).join("、")}</b>，人气跟着涨。` : `名单上没有你的名字。<span style="color:var(--ink-3)">明年让他们念。</span>`;
+    const cand = a.top3 && a.top3.length > 1 ? `<div class="aw-sec" style="--i:${i++}">MVP 候选</div><div class="aw-list">${a.top3.map((x, k) => `<div class="aw-row${x.me ? " me" : ""}" style="--i:${i++}"><span class="aw-pos">${k + 1}</span><b>${x.id}</b><span class="aw-team">${x.team} · 赛季评分 ${x.rating.toFixed(2)}${x.titles ? ` + 冠军 ${x.titles.toFixed(1)}` : ""}</span></div>`).join("")}</div>` : "";
+    const blocks = block("年度一阵", a.first) + block("年度二阵", a.second) + block("最佳新秀", a.rookie ? [a.rookie] : [], "新秀") + cand + block("年度 MVP", a.mvp ? [a.mvp] : [], "MVP", true);
+    const meTail = a.meRow ? `<br><span style="color:var(--ink-3)">你的赛季评分 <b>${a.meRow.rating.toFixed(2)}</b>（联赛第 ${a.meRank}/${a.field}）${a.meRow.titles ? ` · 冠军分 +${a.meRow.titles.toFixed(1)}` : ""}${a.meRow.real ? "" : " · 今年没打够比赛，按实力估的"}</span>` : "";
+    const mine = (a.mine.length ? `你拿到 <b>${a.mine.map((k) => AWARD_N[k]).join("、")}</b>，人气跟着涨。` : `名单上没有你的名字。<span style="color:var(--ink-3)">明年让他们念。</span>`) + meTail;
     return `${scene("trophy")}<div class="cer-eyebrow">${a.tag} ${a.lg} · 年度颁奖夜</div>
     ${blocks}
     <p class="cer-p" style="--i:${i++}">${mine}</p>
@@ -20538,6 +20656,12 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20260921a", at: "2026-09-21", items: [
+      "<b>年度评选改成看这一年打出来的数据</b>（玩家实锤：「换队后单人三冠，没当上年度 MVP」）：原来的分数是「五维 + 状态 + 冠军加分」，而冠军加分是<b>全队一起加</b>的——队内比的还是五维，所以三冠年里只有约四分之一能拿到年度 MVP，MVP 多半是同队五维更高的队友。现在按<b>赛季评分</b>排名：你用真实的整年场均评分（两个赛段的常规赛 + 季后赛），全联盟其他人按同一把尺折算（五维相对联赛均值、队伍名次、状态）；冠军退成配角，上限 4 分",
+      "<b>冠军按「谁真的拿了」算</b>：你的冠军从生涯记录读，<b>换队之后跟着你走</b>（原来按队名发，换队后反而给旧队的人加分）；三段制年份<b>每个赛段各算一次</b>（原来只认最后一个赛段的冠军，拿了春季冠军会被记到别人头上）",
+      "<b>颁奖夜公布 MVP 前三名</b>：每个候选后面写着赛季评分和冠军分，你自己的那一行写「赛季评分 X（联赛第 N）· 冠军分 +Y」，没进名单也看得到自己差在哪",
+      "<b>生涯名片上的「S0」修了</b>（玩家截图）：名片解析赛季标签时只认两位数，2016 入口才有的 S6–S9 解析不出来，奖杯下面就写成「S0」，奖杯名里的「S7」也没去掉，成了「S7 世界赛 / S0」；名片抬头还写死着「S12–S16 · 2022–2026」，逐年那一排也按「标签数字 − 12」换算、2016 入口全对不上。现在标签按赛季表查、抬头按这一局真实的起止年份写"
+    ] },
     { v: "v20260918a", at: "2026-09-18", items: [
       "<b>开赛前就是开赛前</b>（玩家实锤：「22 年第 13–14 周进了战队，突然变成了春季赛——都玩了 13 周，春季赛应该早就开始了」）：职业前这 16 周是新赛季开打前的休赛期，窗口里签下就从第一个赛段打起，这是机制；但「职业联赛」卡原来写着「S12 2022 · 第 13 周」、里面是一张每周在涨的积分榜，还写着「这些队每周都在打」，大事记里也冒比分——看起来就像 2022 年的联赛已经打了 13 周，签约那一刻表清零、春季赛从 0−0 开打。现在这段时间写「开赛前」，职业联赛卡换成按全队战力排的<b>各队实力榜</b>，写清新赛季第一个赛段的赛制和转会窗口在哪几周；开赛前不再播比分，职业圈新闻换成热门 / 冷门、直播、青训这类季前消息",
       "<b>签约后时钟接着数</b>：真实赛制档签约后，全年周数原来从「开赛前 第 13 周」跳回「第 1 周」（老档一直是接着数的，真实赛制上线时漏了这一条）；现在从第 14 周接着走",
@@ -24839,6 +24963,20 @@ header.top.compact>.theme-top{display:none}
     if (S.archive.length > 60) S.archive.shift();
     let keepBox = 0;
     for (let i = S.archive.length - 1; i >= 0; i--) if (S.archive[i].box && ++keepBox > 20) delete S.archive[i].box;
+    if (box && (tag === "联赛" || tag === "LDL" || tag === "季后赛")) {
+      const R = S.seasonRt = S.seasonRt || {};
+      const Y = R[S.si] = R[S.si] || {};
+      box.mine.concat(box.opp || []).forEach((x) => {
+        if (x.me) return;
+        const e = Y[x.id] = Y[x.id] || [0, 0, 0, 0];
+        e[0]++;
+        e[1] += x.rating;
+        if (box.mvp === x.id) e[tag === "季后赛" ? 3 : 2]++;
+      });
+      Object.keys(R).forEach((k2) => {
+        if (+k2 < S.si - 1) delete R[k2];
+      });
+    }
     S.stats = S.stats || { n: 0, k: 0, d: 0, a: 0, r: 0 };
     S.stats.n++;
     S.stats.k += k;
@@ -26049,19 +26187,20 @@ header.top.compact>.theme-top{display:none}
     const own = C.titles || [], ring = C.ringTitles || [];
     const kind = (t) => /世界赛/.test(t) ? "worlds" : /MSI/.test(t) ? "msi" : "lg";
     const yearOf = (t) => {
-      const m = t.match(/S(\d\d)/);
+      const m = String(t).match(/^S(\d+)/);
       return m ? +m[1] : 0;
     };
+    const cutTag = (t) => String(t).replace(/^S\d+\s*/, "");
     const rank2 = { worlds: 0, msi: 1, lg: 2 };
     const troph = own.map((t) => ({ t, k: kind(t), y: yearOf(t), ring: false })).concat(ring.map((t) => ({ t, k: kind(t), y: yearOf(t), ring: true }))).sort((a, b) => rank2[a.k] - rank2[b.k] || a.y - b.y);
     const wall = troph.length ? troph.map((x, i) => `<div class="tp ${x.k}${x.ring ? " ring" : ""}" style="--i:${i}">
       <div class="tp-ic">${x.k === "worlds" ? "🏆" : x.k === "msi" ? "🥇" : "🏅"}</div>
-      <div class="tp-n">${x.t.replace(/^S\d\d\s*/, "")}</div>
+      <div class="tp-n">${cutTag(x.t)}</div>
       <div class="tp-y">S${x.y}${x.ring ? " · 随队" : ""}</div></div>`).join("") : `<div class="tp none" style="--i:0"><div class="tp-ic">—</div><div class="tp-n">无冠</div><div class="tp-y">${C.bestIntl ? `国际赛最远走到${INTL_DEPTH_N[C.bestIntl] || ""}` : C.best && C.best < 99 ? `常规赛最好第 ${C.best} 名` : "那扇门没有为你开"}</div></div>`;
     const log = C.log || [], il = C.intlLog || [];
     const tagSi = (s) => {
-      const m = String(s || "").match(/S(\d\d)/);
-      return m ? +m[1] - 12 : -1;
+      const m = String(s || "").match(/^S(\d+)/);
+      return m ? SEASONS.findIndex((x) => x.tag === "S" + m[1]) : -1;
     };
     const allT = own.map((t) => ({ t, ring: false })).concat(ring.map((t) => ({ t, ring: true })));
     const tx = S.txLog || [];
@@ -26091,7 +26230,7 @@ header.top.compact>.theme-top{display:none}
       if (team) prevTeam = team;
       let res = rows.map((r) => `${r.sname ? r.sname + " " : SPLITS[r.split] ? SPLITS[r.split][0] : ""}${r.result === "champion" ? "冠" : r.result === 3 ? "亚" : r.result === 2 ? "四强" : r.seed > 6 ? `第${r.seed}` : "季后赛"}`).join(" · ");
       if (!rows.length) {
-        const tt = allT.filter((x) => tagSi(x.t) === si).map((x) => x.t.replace(/^S\d\d\s*/, "") + "冠军" + (x.ring ? "（随队）" : ""));
+        const tt = allT.filter((x) => tagSi(x.t) === si).map((x) => cutTag(x.t) + "冠军" + (x.ring ? "（随队）" : ""));
         res = tt.join(" · ");
       }
       const best = {};
@@ -26116,7 +26255,7 @@ header.top.compact>.theme-top{display:none}
     ];
     const now = /* @__PURE__ */ new Date();
     return `<div class="poster">
-    <div class="po-top" style="--i:0"><span class="po-mark">破晓</span><span>生涯名片 · S12–S16 · 2022–2026</span></div>
+    <div class="po-top" style="--i:0"><span class="po-mark">破晓</span><span>生涯名片 · ${played[0].tag}–${played[played.length - 1].tag} · ${played[0].y}–${played[played.length - 1].y}</span></div>
     <div class="po-hero" style="--i:1"><div class="po-title">${e.n}</div><div class="po-story">${e.d}</div></div>
     <div class="po-id" style="--i:2"><b>${meName()}</b> · ${POSN[S.pos] || ""} · ${(ORIGIN[S.origin] || {}).n || ""}${S.career ? ` · ${S.team || "—"}` : ""} · ${S.age} 岁${hallBadge()}</div>
     <div class="po-wall">${wall}</div>

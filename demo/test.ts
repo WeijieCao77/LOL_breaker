@@ -992,22 +992,48 @@ function unitChecks() {
     S.cerRec = null; S.fatigue = 50; A.addFat(-10); const base = 50 - S.fatigue;
     if (!(Math.abs(drop - base * 0.8) < 0.01)) bad.push(`出征倍率没进 addFat：${drop} vs ${base}`);
     S.off = null;
-    /* 团队加分的上限必须落在这条带里——两头各有一次玩家投诉钉着：
-       下限：太低，横扫的队也进不了一阵（2026-09-09：「LNG 黄金之路了，一阵二阵只有一个辅助入选」）
-       上限：太高，冠军队整体被抬过所有人（2026-09-07：「为什么都是一个战队的」「68 分进一阵、84 分落选」）
-       10–13 这条带是扫了五档实测出来的（见 cer.ts 里那张表）。要挪出这条带，先重新量。 */
+    /* 年度评选按这一年的赛季数据排（2026-09-21 玩家实锤「换队后单人三冠没当上年度 MVP」）：
+       冠军分只是配角（上限 4 分 ≈ 0.13 评分），而且按「谁真的拿了这座冠军」算——
+       换队跟着人走、三段制每个赛段各算一次。NPC 的赛季评分要和你的真实评分同一把尺。 */
     {
-      const B = A.AWARD_BONUS, cap = B.worlds + B.msi + B.league + B.top4;
-      if (!(cap >= 10 && cap <= 13))
-        bad.push(`颁奖夜团队加分上限 ${cap} 掉出 10–13：低了横扫进不去一阵，高了冠军队整体抬过所有人。改之前先重新量。`);
-      if (B.worlds <= B.msi) bad.push("颁奖夜：世界赛冠军的分不该低于 MSI");
+      if (A.AWARD_TITLE_CAP > A.AWARD_RATE_W * 0.2)
+        bad.push(`冠军分上限 ${A.AWARD_TITLE_CAP} 压过了数据（评分权重 ${A.AWARD_RATE_W}）——冠军该是配角，改之前先重新量`);
+      if (A.AWARD_TITLE.worlds <= A.AWARD_TITLE.msi || A.AWARD_TITLE.msi <= A.AWARD_TITLE.split)
+        bad.push("冠军分的档次不对：世界赛 > MSI > 单个赛段");
       if (A.AWARD_TEAM_CAP !== 3) bad.push(`一阵单队席位上限成了 ${A.AWARD_TEAM_CAP}——它才是挡「都是一个战队的」那道闸，动它要先量`);
+      const r0 = A.npcSeasonRating(70, 70, 8, 52), r1 = A.npcSeasonRating(80, 70, 8, 52);
+      if (Math.abs(r1 - r0 - 0.226) > 0.02) bad.push(`NPC 赛季评分的五维斜率变了：高 10 分 → +${(r1 - r0).toFixed(3)}，量出来的是 +0.226`);
+      if (A.npcSeasonRating(70, 70, 1, 52) <= r0) bad.push("队伍常规赛第 1 该给一点赛季评分加成");
+      if (A.npcSeasonRating(70, 70, 8, 80) <= r0) bad.push("状态好该给一点赛季评分加成");
+      const bakT = S.career.titles, bakF = S.fmtTitles, bakH = S.honors, tag = A.SEASONS[S.si].tag;
+      S.career.titles = [`${tag} LPL第一赛段`, `${tag} LPL第二赛段`, `${tag} MSI`, `${tag} 世界赛`];
+      const want = 2 * A.AWARD_TITLE.split + A.AWARD_TITLE.msi + A.AWARD_TITLE.worlds;
+      if (Math.abs(A.myTitlePts(S.si) - want) > 1e-9) bad.push(`你自己的冠军分算错：${A.myTitlePts(S.si)}，应为 ${want}`);
+      S.career.titles = [`${tag} LPL春季赛`];
+      if (A.myTitlePts(S.si) !== A.AWARD_TITLE.split) bad.push("老档两段制的联赛冠军没算进冠军分");
+      S.career.titles = ["S99 世界赛"];   // 别的赛季的冠军不该算进今年
+      if (A.myTitlePts(S.si) !== 0) bad.push("别的赛季的冠军不该算进今年的冠军分");
+      S.fmtTitles = [0, 1, 2].map(k => ({ si: S.si, y: 2025, lg: "LPL", t: "赛段" + k, team: "某冠军队" }));
+      S.honors = { worlds: { [S.si]: "某冠军队" } };
+      const wantT = 3 * A.AWARD_TITLE.split + A.AWARD_TITLE.worlds;
+      if (Math.abs(A.teamTitlePts("某冠军队", S.si) - wantT) > 1e-9) bad.push(`NPC 的赛段冠军没有逐段算：${A.teamTitlePts("某冠军队", S.si)}，应为 ${wantT}`);
+      if (A.teamTitlePts("别的队", S.si) !== 0) bad.push("没拿冠军的队不该有冠军分");
+      S.career.titles = bakT; S.fmtTitles = bakF; S.honors = bakH;
     }
     const aw = A.computeAwards(); if (!aw || aw.first.length !== 5 || !aw.mvp) bad.push("颁奖夜算不出一阵 / MVP");
+    // 照 val_player：公布前三名、写清你自己的赛季评分和名次
+    if (aw && (!aw.top3 || aw.top3.length !== 3)) bad.push("颁奖夜没给出 MVP 候选前三");
+    // 这段测试的世界是拼出来的，名单里未必真有「我」——真有才要求写出我的那一行
+    const onRoster = ((S.world[S.homeLeague || "LPL"] || []) as any[]).some((t: any) => t.name === S.team && (t.players || []).some((q: any) => q.me));
+    if (aw && onRoster && (!aw.meRow || !aw.meRank)) bad.push("颁奖夜没写你自己的赛季评分与名次");
+    if (aw && aw.mvp && !aw.first.some((x: any) => x.id === aw.mvp.id)) bad.push("MVP 不在一阵里");
     if (aw && new Set(aw.first.map((x: any) => x.pos)).size !== 5) bad.push("一阵五个位置不齐");
     A.cerStart("awards"); if (!S.cer || S.cer.k !== "awards") bad.push("颁奖夜没开场");
     S.achPop = []; S.rankUp = null;   // 成就弹窗先散场，仪式才开（真实界面里也是这个顺序）
-    if (!/年度颁奖夜/.test(A.cerCard())) bad.push("颁奖夜的卡没渲染");
+    { const card = A.cerCard();
+      if (!/年度颁奖夜/.test(card)) bad.push("颁奖夜的卡没渲染");
+      if (!/MVP 候选/.test(card)) bad.push("颁奖夜的卡没写 MVP 候选前三");
+      if (!/赛季评分/.test(card)) bad.push("颁奖夜的卡没写赛季评分"); }
     A.cerClose(); if (S.cer) bad.push("颁奖夜散不了场");
     S.auto = { career: true }; A.cerStart("awards"); if (S.cer) bad.push("托管里颁奖夜还弹了"); S.auto = null;
     // ---- 第二批仪式（2026-09-08）：反应 / 决策的档位线、决赛之夜、试训上机、版本发布会、媒体日、排队 ----
@@ -1484,6 +1510,18 @@ function streetsReturnChecks() {
     bad.push("回到路人后签回另一家，转会轨迹没记这一站：" + JSON.stringify(last));
   if (A.txStops() !== 2) bad.push(`待过两支队，名片转会写 ${A.txStops()} 站（应是 2 站）`);
   S.career.log = S.career.log.concat([{ si: S.si, split: 1, team: other, lg, seed: 3, result: 0, w: 6, l: 3 }]);   // 夏季赛在新东家打完
+  /* 生涯名片的赛季标签（玩家实锤 2026-09-21：奖杯下面写着「S0」）：
+     S6 开档之后有 S6–S9 这种一位数的赛季，解析必须认得出；抬头也不能写死 S12–S16。 */
+  {
+    const bakT = S.career.titles, bakSi = S.si;
+    S.career.titles = [`${A.SEASONS[0].tag} 世界赛`];
+    const pc = A.careerPoster();
+    if (/>S0</.test(pc)) bad.push("生涯名片上的赛季标签成了 S0（一位数的赛季没解析出来）");
+    if (!new RegExp(`>${A.SEASONS[0].tag}<`).test(pc)) bad.push(`生涯名片上没写出奖杯的赛季 ${A.SEASONS[0].tag}`);
+    if (!pc.includes(`生涯名片 · ${A.SEASONS[0].tag}`)) bad.push("生涯名片抬头的起始赛季不对（原来写死 S12–S16）");
+    if (!pc.includes(`· ${A.SEASONS[0].y}–`)) bad.push("生涯名片抬头的年份不对");
+    S.career.titles = bakT; S.si = bakSi;
+  }
   const poster = A.careerPoster();
   if (poster.indexOf(`<span>${first}</span>`) < 0 || poster.indexOf(`<span>${other}</span>`) < 0)
     bad.push(`同一年待过 ${first}、${other} 两支队，名片只写了一支`);

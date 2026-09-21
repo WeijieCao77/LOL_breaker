@@ -134,6 +134,12 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20260921a", at:"2026-09-21", items:[
+    "<b>年度评选改成看这一年打出来的数据</b>（玩家实锤：「换队后单人三冠，没当上年度 MVP」）：原来的分数是「五维 + 状态 + 冠军加分」，而冠军加分是<b>全队一起加</b>的——队内比的还是五维，所以三冠年里只有约四分之一能拿到年度 MVP，MVP 多半是同队五维更高的队友。现在按<b>赛季评分</b>排名：你用真实的整年场均评分（两个赛段的常规赛 + 季后赛），全联盟其他人按同一把尺折算（五维相对联赛均值、队伍名次、状态）；冠军退成配角，上限 4 分",
+    "<b>冠军按「谁真的拿了」算</b>：你的冠军从生涯记录读，<b>换队之后跟着你走</b>（原来按队名发，换队后反而给旧队的人加分）；三段制年份<b>每个赛段各算一次</b>（原来只认最后一个赛段的冠军，拿了春季冠军会被记到别人头上）",
+    "<b>颁奖夜公布 MVP 前三名</b>：每个候选后面写着赛季评分和冠军分，你自己的那一行写「赛季评分 X（联赛第 N）· 冠军分 +Y」，没进名单也看得到自己差在哪",
+    "<b>生涯名片上的「S0」修了</b>（玩家截图）：名片解析赛季标签时只认两位数，2016 入口才有的 S6–S9 解析不出来，奖杯下面就写成「S0」，奖杯名里的「S7」也没去掉，成了「S7 世界赛 / S0」；名片抬头还写死着「S12–S16 · 2022–2026」，逐年那一排也按「标签数字 − 12」换算、2016 入口全对不上。现在标签按赛季表查、抬头按这一局真实的起止年份写"
+  ]},
   {v:"v20260918a", at:"2026-09-18", items:[
     "<b>开赛前就是开赛前</b>（玩家实锤：「22 年第 13–14 周进了战队，突然变成了春季赛——都玩了 13 周，春季赛应该早就开始了」）：职业前这 16 周是新赛季开打前的休赛期，窗口里签下就从第一个赛段打起，这是机制；但「职业联赛」卡原来写着「S12 2022 · 第 13 周」、里面是一张每周在涨的积分榜，还写着「这些队每周都在打」，大事记里也冒比分——看起来就像 2022 年的联赛已经打了 13 周，签约那一刻表清零、春季赛从 0−0 开打。现在这段时间写「开赛前」，职业联赛卡换成按全队战力排的<b>各队实力榜</b>，写清新赛季第一个赛段的赛制和转会窗口在哪几周；开赛前不再播比分，职业圈新闻换成热门 / 冷门、直播、青训这类季前消息",
     "<b>签约后时钟接着数</b>：真实赛制档签约后，全年周数原来从「开赛前 第 13 周」跳回「第 1 周」（老档一直是接着数的，真实赛制上线时漏了这一条）；现在从第 14 周接着走",
@@ -4390,6 +4396,19 @@ export function synthSeriesStats(m,won,myPw,opPw){
   // 全员表只留最近 20 场，存档别撑大
   let keepBox=0;
   for(let i=S.archive.length-1;i>=0;i--) if(S.archive[i].box&&++keepBox>20) delete S.archive[i].box;
+  /* 赛季场均评分的账本（2026-09-21 年度评选改口径）：你打的每一场都会给双方十个人合成全员数据，
+     把它按赛季累起来——队友有整季的真实数据，对手有交手的那几场，外赛区没有就在评选时按实力估。
+     只记联赛与季后赛（和颁奖夜同口径），只留最近两个赛季，存档不撑大。 */
+  if(box&&(tag==="联赛"||tag==="LDL"||tag==="季后赛")){
+    const R=S.seasonRt=S.seasonRt||{};
+    const Y=R[S.si]=R[S.si]||{};
+    box.mine.concat(box.opp||[]).forEach(x=>{
+      if(x.me) return;                                   // 你自己那一行走 archive（yearRating / mvpBonus）
+      const e=Y[x.id]=Y[x.id]||[0,0,0,0]; e[0]++; e[1]+=x.rating;
+      if(box.mvp===x.id) e[tag==="季后赛"?3:2]++;          // 全场最佳：常规赛 / 季后赛分开记
+    });
+    Object.keys(R).forEach(k=>{ if(+k<S.si-1) delete R[k]; });
+  }
   S.stats=S.stats||{n:0,k:0,d:0,a:0,r:0};
   S.stats.n++; S.stats.k+=k; S.stats.d+=d; S.stats.a+=a; S.stats.r+=rating;
   m.myline={k,d,a,cs,dmg,rating}; m.box=box;
@@ -5588,14 +5607,18 @@ export function careerPoster(){
   const e=ending(), C=S.career||{};
   const own=C.titles||[], ring=C.ringTitles||[];
   const kind=t=>/世界赛/.test(t)?"worlds":/MSI/.test(t)?"msi":"lg";
-  const yearOf=t=>{ const m=t.match(/S(\d\d)/); return m?+m[1]:0; };
+  /* 赛季标签是「S + 任意位数」：S6 开档（2016 入口）之后有 S6–S9，
+     原来写成两位数，解析不到就落到 0——玩家实锤 2026-09-21：奖杯下面写着「S0」，
+     奖杯名里的「S7」也没被去掉，成了「S7 世界赛 / S0」。 */
+  const yearOf=t=>{ const m=String(t).match(/^S(\d+)/); return m?+m[1]:0; };
+  const cutTag=t=>String(t).replace(/^S\d+\s*/,"");
   const rank={worlds:0,msi:1,lg:2};
   const troph=own.map(t=>({t,k:kind(t),y:yearOf(t),ring:false}))
     .concat(ring.map(t=>({t,k:kind(t),y:yearOf(t),ring:true})))
     .sort((a,b)=>(rank[a.k]-rank[b.k])||(a.y-b.y));
   const wall=troph.length?troph.map((x,i)=>`<div class="tp ${x.k}${x.ring?' ring':''}" style="--i:${i}">
       <div class="tp-ic">${x.k==="worlds"?"🏆":x.k==="msi"?"🥇":"🏅"}</div>
-      <div class="tp-n">${x.t.replace(/^S\d\d\s*/,"")}</div>
+      <div class="tp-n">${cutTag(x.t)}</div>
       <div class="tp-y">S${x.y}${x.ring?' · 随队':''}</div></div>`).join("")
     :`<div class="tp none" style="--i:0"><div class="tp-ic">—</div><div class="tp-n">无冠</div><div class="tp-y">${
         C.bestIntl?`国际赛最远走到${INTL_DEPTH_N[C.bestIntl]||""}`:(C.best&&C.best<99)?`常规赛最好第 ${C.best} 名`:"那扇门没有为你开"}</div></div>`;
@@ -5603,7 +5626,8 @@ export function careerPoster(){
   /* 逐赛段轨迹（C.log）是 2026-09-05 才开始记的。老存档没有它，不能把那几年写成「未签约」
      （玩家实锤：拿了六个冠军的档，S12–S15 全是未签约）。没记录的年份用手头的账倒推：
      冠军表给成绩、荣誉表/转会记录给东家；只有第一份职业合同之前的年份才是真「未签约」。 */
-  const tagSi=s=>{ const m=String(s||"").match(/S(\d\d)/); return m?(+m[1]-12):-1; };
+  // 标签 → 第几个赛季：按当前赛季表查（原来写死「数字 − 12」，S6 开档的年份全对不上）
+  const tagSi=s=>{ const m=String(s||"").match(/^S(\d+)/); return m?SEASONS.findIndex(x=>x.tag==="S"+m[1]):-1; };
   const allT=own.map(t=>({t,ring:false})).concat(ring.map(t=>({t,ring:true})));
   const tx=(S.txLog||[]);
   const known=[].concat(log.map(x=>x.si), allT.map(x=>tagSi(x.t)), tx.map(x=>tagSi(x.s))).filter(v=>v>=0);
@@ -5635,7 +5659,7 @@ export function careerPoster(){
     let res=rows.map(r=>`${r.sname?r.sname+" ":SPLITS[r.split]?SPLITS[r.split][0]:""}${
       r.result==="champion"?"冠":r.result===3?"亚":r.result===2?"四强":r.seed>6?`第${r.seed}`:"季后赛"}`).join(" · ");
     if(!rows.length){   // 没有逐段记录：用当年的冠军顶上
-      const tt=allT.filter(x=>tagSi(x.t)===si).map(x=>x.t.replace(/^S\d\d\s*/,"")+"冠军"+(x.ring?"（随队）":""));
+      const tt=allT.filter(x=>tagSi(x.t)===si).map(x=>cutTag(x.t)+"冠军"+(x.ring?"（随队）":""));
       res=tt.join(" · ");
     }
     const best={}; il.filter(x=>x.si===si).forEach(x=>{ best[x.type]=Math.max(best[x.type]||0,x.d); });
@@ -5660,7 +5684,7 @@ export function careerPoster(){
   const now=new Date();
   // 身份行末尾的小徽章：殿堂专属的称号（作者批 B：只给称号不给数值；一项都没拿过就什么都不加）
   return `<div class="poster">
-    <div class="po-top" style="--i:0"><span class="po-mark">破晓</span><span>生涯名片 · S12–S16 · 2022–2026</span></div>
+    <div class="po-top" style="--i:0"><span class="po-mark">破晓</span><span>生涯名片 · ${played[0].tag}–${played[played.length-1].tag} · ${played[0].y}–${played[played.length-1].y}</span></div>
     <div class="po-hero" style="--i:1"><div class="po-title">${e.n}</div><div class="po-story">${e.d}</div></div>
     <div class="po-id" style="--i:2"><b>${meName()}</b> · ${POSN[S.pos]||""} · ${(ORIGIN[S.origin]||{}).n||""}${S.career?` · ${S.team||"—"}`:""} · ${S.age} 岁${hallBadge()}</div>
     <div class="po-wall">${wall}</div>
