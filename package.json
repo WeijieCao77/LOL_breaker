@@ -9,7 +9,9 @@
     "bundle": "node demo/bundle.mjs",
     "dev": "node demo/bundle.mjs --watch",
     "typecheck": "tsc --noEmit",
-    "test": "tsx demo/test.ts && tsx demo/test-ui.ts",
+    "test": "tsx demo/test.ts && tsx demo/test-ui.ts && node test-box.mjs && node test-dash.mjs",
+    "test:box": "node test-box.mjs",
+    "test:dash": "node test-dash.mjs",
     "test:engine": "tsx demo/test.ts",
     "test:ui": "tsx demo/test-ui.ts"
   },

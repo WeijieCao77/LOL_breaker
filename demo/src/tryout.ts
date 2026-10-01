@@ -687,7 +687,7 @@ export function declineDeal(){
 export function signDeal(){
   const d = S.deal; if(!d || d.dead || d.signed) return;
   d.signed = true;
-  statEvent("career");   // 第一份职业合同（按局去重）
+  statEvent("career", { rg: String(S.homeLeague || "LPL").toUpperCase().slice(0, 6) });   // 第一份职业合同（按局去重）+ 赛区
   const P = S.pre;
   if(!P.world)    P.world = cloneWorld();
   if(!P.baseline) P.baseline = leagueBaseline(P.world);

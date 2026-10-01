@@ -1125,6 +1125,43 @@ ul.dealfx li::marker{color:var(--ink-3)}
 .support-foot span{color:#7b7368;font-size:12.5px;line-height:1.5}
 .support-never{white-space:nowrap}
 .support-card :focus-visible{outline:2px solid #b33f3f;outline-offset:2px}
+/* 玩家信箱：也沿用支持作者的纸面浮窗。榜是一张表，不是一堆气泡——照 val_player 的做法，
+   让「第几名、多少赞、处理到哪一步」一眼能比较。玩家写的字一律是数据，样式里不做任何富文本。 */
+.mbx-card{width:min(760px,calc(100vw - 32px))}
+.mbx-send{display:flex;flex-direction:column;gap:8px}
+.mbx-send textarea{width:100%;box-sizing:border-box;resize:vertical;min-height:72px;padding:10px 12px;
+  font:15px/1.7 var(--font-sans);color:#37332c;background:#fffdf8;border:1px solid #d7cdb8;border-radius:5px}
+.mbx-sendfoot{display:flex;align-items:center;gap:10px}
+.mbx-count{color:#8b8276;font-size:12.5px;margin-right:auto;font-variant-numeric:tabular-nums}
+.mbx-count.over{color:#b33f3f}
+.mbx-msg{margin:10px 0 0;padding:8px 12px;border-radius:5px;background:#efe7d6;color:#5c5245;font-size:13.5px}
+.mbx-tabs{display:flex;gap:8px;margin:16px 0 10px;border-bottom:1px solid #ddd3c0;padding-bottom:8px}
+.mbx-tabs button{border:1px solid transparent;border-radius:999px;background:transparent;color:#7b7368;padding:4px 14px;font-size:13.5px}
+.mbx-tabs button.on{background:#efe7d6;color:#29251f;border-color:#d7cdb8}
+.mbx-body{max-height:min(46vh,420px);overflow-y:auto}
+.mbx-list{list-style:none;margin:0;padding:0}
+.mbx-row{display:flex;gap:12px;align-items:flex-start;padding:10px 2px;border-bottom:1px solid #e7dfcd}
+.mbx-row.pin{background:#f3eddd}
+.mbx-no{flex:none;width:22px;text-align:right;color:#a39883;font-size:13px;font-variant-numeric:tabular-nums;padding-top:2px}
+.mbx-main{flex:1;min-width:0}
+.mbx-text{color:#37332c;font-size:14.5px;line-height:1.7;word-break:break-word}
+.mbx-meta{color:#8b8276;font-size:12px;margin-top:3px}
+.mbx-merge{margin-top:6px;padding:8px 10px;background:#efe7d6;border-radius:5px;color:#5c5245;font-size:13px;line-height:1.6}
+.mbx-right{flex:none}
+.mbx-vote{border:1px solid #d7cdb8;border-radius:999px;background:#fbf9f3;color:#4c463d;padding:4px 12px;font-size:13px;white-space:nowrap}
+.mbx-vote:hover{border-color:#9c8354}
+.mbx-vote.on{background:#e8dfc8;color:#211f1b;border-color:#b9a87c}
+.mbx-votes{color:#8b8276;font-size:13px;white-space:nowrap}
+.mbx-tag{display:inline-block;border-radius:999px;padding:0 8px;font-size:11.5px;margin-left:4px;background:#e7dfcd;color:#6b6358}
+.mbx-tag.s-taken{background:#dceccb;color:#44632c}
+.mbx-tag.s-fixed{background:#cfe9d9;color:#2c6049}
+.mbx-tag.s-pending{background:#f0e3c4;color:#8a6a1e}
+.mbx-tag.s-merged{background:#e3e0ec;color:#574f73}
+.mbx-tag.s-hidden{background:#efd9d9;color:#8a3b3b}
+.mbx-empty{color:#8b8276;font-size:13.5px;margin:14px 2px}
+.mbx-foot{margin:14px 0 0;color:#8b8276;font-size:12px}
+@media (max-width:560px){.mbx-body{max-height:none}.mbx-row{gap:8px}}
+
 /* 玩家交流群：沿用支持作者的纸面浮窗。两张分享卡都完整保留——卡面上印的群名、群号、扫法都是玩家要的。 */
 .community-card{width:min(760px,calc(100vw - 32px))}
 /* 两个群并排；每张码下面跟自己的说明，因为两边扫法完全不一样。 */

@@ -30,6 +30,8 @@ const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
 const crypto = require("crypto");
+/* 玩家信箱（box.js）：另一套文件、另一套接口，和统计不共用任何存储 */
+const BOX = require("./box");
 
 const PORT = process.env.PORT || 3000;
 const BOOT_AT = new Date().toISOString();   // 进程启动时刻：/healthz 用它区分「新部署」和「同一容器」
@@ -226,7 +228,32 @@ const VOLATILE = !process.env.RAILWAY_VOLUME_MOUNT_PATH && !process.env.STATS_DI
 const STATS_KEY = process.env.STATS_KEY || "";
 try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
 
-const EVENTS = ["view", "beat", "start", "career", "end", "support"];   // support：点开「支持作者」（客户端一直在发，原来服务端没收）
+/* 收哪些事件。原来只有六个，客户端一直在发的「交流群」「生涯名片图」被默默丢掉；
+   2026-10-01 补齐，并加上看板新几节要的那些（都是枚举，不收任何玩家打进去的文字）。 */
+const EVENTS = ["view", "beat", "start", "career", "end", "support",
+  "community", "community_auto", "sharecard", "box_open", "box_new",
+  "week1", "season1", "match", "savefail", "jserr"];
+/* 事件可以带几个<b>枚举</b>字段。每一个都在这里核过格式才记——
+   服务端不认客户端传来的任何自由文本，报错也只收「文件:行:列」。 */
+const FIELD_OK = {
+  k: /^[A-Za-z0-9_\-]{1,24}$/,                    // 结局 key
+  o: /^(academy|streamer)$/,                      // 出身
+  y: /^(2016|2022)$/,                             // 入场年份
+  p: /^(top|jng|mid|bot|sup)$/,                   // 位置
+  rg: /^[A-Z]{2,6}$/,                             // 赛区
+  dv: /^(m|t|d)$/,                                // 设备：手机 / 平板 / 电脑
+  wd: /^\d{3,4}(\+|-\d{3,4})$/,                  // 屏宽档
+  m: /^(w|s)$/,                                   // 比赛：打完 / 快进
+  er: /^[A-Za-z0-9_.\-]{1,40}:\d{1,6}:\d{1,6}$/,  // 前端报错的位置
+};
+function fields(o) {
+  const out = {};
+  Object.keys(FIELD_OK).forEach(k => {
+    const v = o[k];
+    if (typeof v === "string" && v.length <= 24 && FIELD_OK[k].test(v)) out[k] = v;
+  });
+  return out;
+}
 /* gen：每记一笔加一；异步落盘拿着开始时的代数，写完只有代数没变才敢把 dirty 放下 */
 const ST = { days: {}, devices: new Set(), todayIds: new Set(), day: "", dirty: false, flushedAt: 0, gen: 0, flushedGen: 0, flushing: false };
 
@@ -236,7 +263,34 @@ function evFile(day) { return path.join(DATA_DIR, "ev-" + day + ".jsonl"); }
 const STATS_FILE = path.join(DATA_DIR, "stats.json");
 const DEV_FILE = path.join(DATA_DIR, "devices.log");
 
-function blankDay() { return { pv: 0, uv: 0, nu: 0, min: 0, start: 0, career: 0, end: 0, support: 0, ver: {} }; }
+/* 一天的聚合。上面那排是老字段，<b>一个都不改</b>——老的 stats.json 直接读得动（作者 2026-10-01：
+   「别把我以前的数据弄没了」）。下面那排是 2026-10-01 新加的，老的日子里没有，看板按空处理：
+   act 当天活跃设备的下标、sec 各自的分钟、f 漏斗每一步的设备、endK 结局、st/yr/rl/rg 开局构成、
+   dv/wd 设备与屏宽（与 act 同序）、m 打完还是快进、sf 存档失败、er 前端报错位置。 */
+function blankDay() {
+  return { pv: 0, uv: 0, nu: 0, min: 0, start: 0, career: 0, end: 0, support: 0, ver: {},
+    act: [], sec: [], dv: [], wd: [],
+    f: { profile: [], week1: [], season1: [], ending: [] },
+    endK: {}, st: {}, yr: {}, rl: {}, rg: {}, m: {}, sf: 0, er: {}, box: {} };
+}
+/* 老格式的日子读进来缺哪补哪：只补默认值，不动已有的数 */
+function fillDay(a) {
+  const b = blankDay();
+  Object.keys(b).forEach(k => {
+    if (a[k] === undefined || a[k] === null) a[k] = b[k];
+    else if (k === "f") ["profile", "week1", "season1", "ending"].forEach(x => { if (!Array.isArray(a.f[x])) a.f[x] = []; });
+  });
+  return a;
+}
+
+/* 设备登记表：devices.txt 本来就是「首见日 + 设备号」一行一台，这里顺手读成下标表。
+   下标只在聚合里当数字用（act / 漏斗），设备号本身不进 stats.json。 */
+const REG = { vids: [], idx: new Map(), firstDay: {} };
+function vidIdx(id, day) {
+  let i = REG.idx.get(id);
+  if (i === undefined) { i = REG.vids.length; REG.vids.push(id); REG.idx.set(id, i); REG.firstDay[id] = day || dayStr(); }
+  return i;
+}
 
 function loadStats() {
   for (const f of [STATS_FILE, STATS_FILE + ".bak"]) {
@@ -248,7 +302,7 @@ function loadStats() {
   try {
     fs.readFileSync(DEV_FILE, "utf8").split("\n").forEach(ln => {
       const id = ln.slice(11).trim();
-      if (/^[0-9a-f]{16}$/.test(id)) ST.devices.add(id);
+      if (/^[0-9a-f]{16}$/.test(id)) { ST.devices.add(id); vidIdx(id, ln.slice(0, 10)); }
     });
   } catch (e) {}
   rebuildToday();
@@ -260,6 +314,7 @@ function rebuildToday() {
   ST.day = day;
   ST.todayIds = new Set();
   const agg = blankDay();
+  const pos = ST.pos = new Map();      // 全局下标 → 当天 act 里的位置
   const newToday = new Set();
   try {
     fs.readFileSync(DEV_FILE, "utf8").split("\n").forEach(ln => {
@@ -270,7 +325,7 @@ function rebuildToday() {
     fs.readFileSync(evFile(day), "utf8").split("\n").forEach(ln => {
       if (!ln) return;
       let o; try { o = JSON.parse(ln); } catch (e) { return; }
-      applyEvent(agg, ST.todayIds, o);
+      applyEvent(agg, ST.todayIds, o, pos, day);
     });
   } catch (e) {}
   agg.uv = ST.todayIds.size;
@@ -279,28 +334,59 @@ function rebuildToday() {
   ST.dirty = true; ST.gen++;
 }
 
-function applyEvent(agg, ids, o) {
+/* 这台设备在当天 act 里的位置（没有就加一格）。pos 是「全局下标 → 当天下标」的临时表，
+   重启时 rebuildToday 会重新建一张，不进存档。 */
+function slot(agg, pos, id, day) {
+  if (!id) return -1;
+  const gi = vidIdx(id, day);
+  let i = pos.get(gi);
+  if (i === undefined) {
+    i = agg.act.length; pos.set(gi, i);
+    agg.act.push(gi); agg.sec.push(0); agg.dv.push(""); agg.wd.push("");
+  }
+  return i;
+}
+const bump = (o, k) => { if (k) o[k] = (o[k] || 0) + 1; };
+/** 漏斗某一步记上这台设备（去重） */
+function step(agg, name, i) { if (i >= 0 && agg.f[name].indexOf(i) < 0) agg.f[name].push(i); }
+
+function applyEvent(agg, ids, o, pos, day) {
+  fillDay(agg);
+  const i = slot(agg, pos || new Map(), o.id, day);
   if (o.e === "view") {
     agg.pv++;
     if (o.id) ids.add(o.id);
     if (o.v) agg.ver[o.v] = (agg.ver[o.v] || 0) + 1;
+    if (i >= 0) { if (o.dv) agg.dv[i] = o.dv; if (o.wd) agg.wd[i] = o.wd; }
   }
-  else if (o.e === "beat") agg.min++;
-  else if (o.e === "start" || o.e === "career" || o.e === "end" || o.e === "support") agg[o.e] = (agg[o.e] || 0) + 1;   // 老聚合表没有 support 字段
+  else if (o.e === "beat") { agg.min++; if (i >= 0) agg.sec[i] = (agg.sec[i] || 0) + 1; }
+  else if (o.e === "start" || o.e === "career" || o.e === "end" || o.e === "support") {
+    agg[o.e] = (agg[o.e] || 0) + 1;   // 老聚合表没有 support 字段
+    if (o.e === "start") { step(agg, "profile", i); bump(agg.st, o.o); bump(agg.yr, o.y); bump(agg.rl, o.p); }
+    if (o.e === "career") bump(agg.rg, o.rg);
+    if (o.e === "end") { step(agg, "ending", i); bump(agg.endK, o.k); }
+  }
+  else if (o.e === "week1") step(agg, "week1", i);
+  else if (o.e === "season1") step(agg, "season1", i);
+  else if (o.e === "match") bump(agg.m, o.m);
+  else if (o.e === "savefail") agg.sf = (agg.sf || 0) + 1;
+  else if (o.e === "jserr") bump(agg.er, o.er);
+  else if (o.e === "box_open" || o.e === "box_new") bump(agg.box, o.e === "box_new" ? "new" : "open");
+  else if (o.e === "community" || o.e === "community_auto" || o.e === "sharecard") bump(agg.box, o.e);
 }
 
-function record(e, id, v) {
+function record(e, id, v, x) {
   const day = dayStr();
   if (day !== ST.day) {           // 跨天：昨天的聚合已在内存里，落盘后重开今天
     flush(true);
-    ST.day = day; ST.todayIds = new Set(); ST.days[day] = blankDay();
+    ST.day = day; ST.todayIds = new Set(); ST.pos = new Map(); ST.days[day] = blankDay();
     pruneEvents();
   }
-  const o = { t: Date.now(), e, id, v };
+  const o = Object.assign({ t: Date.now(), e, id, v }, x || {});
   try { fs.appendFile(evFile(day), JSON.stringify(o) + "\n", () => {}); } catch (err) {}
   const agg = ST.days[day] = ST.days[day] || blankDay();
   const before = ST.todayIds.size;
-  applyEvent(agg, ST.todayIds, o);
+  applyEvent(agg, ST.todayIds, o, ST.pos || (ST.pos = new Map()), day);
   if (ST.todayIds.size > before) {
     agg.uv = ST.todayIds.size;
     if (!ST.devices.has(id)) {
@@ -394,7 +480,7 @@ function handleBeacon(req, res) {
   const ip = clientIp(req);
   if (!rateOk(ip)) return send(res, 429, "");
   let buf = [], len = 0;
-  req.on("data", c => { len += c.length; if (len <= 512) buf.push(c); else req.destroy(); });
+  req.on("data", c => { len += c.length; if (len <= 1024) buf.push(c); else req.destroy(); });   // 多了几个枚举字段
   req.on("end", () => {
     try {
       const o = JSON.parse(Buffer.concat(buf).toString("utf8"));
@@ -402,7 +488,7 @@ function handleBeacon(req, res) {
       const e = String(o.e || "");
       const v = String(o.v || "").slice(0, 24).replace(/[^0-9a-zA-Z.\-]/g, "");
       if (!/^[0-9a-f]{16}$/.test(id) || !EVENTS.includes(e)) return send(res, 204, "");
-      record(e, id, v);
+      record(e, id, v, fields(o));
     } catch (err) {}
     send(res, 204, "");
   });
@@ -475,52 +561,200 @@ function svgBars(rows, pick, color) {
   return s + "</svg>";
 }
 
+/* 结局 key → 中文（demo/src/main.ts 的 ENDING_KEY）。看板上没见过的 key 照原样单独列一行——
+   宁可多出一行陌生的，也不要新加的结局在看板上凭空消失。 */
+const ENDING_CN = { nosign: "没能上岸", bench: "板凳冠军", nobody: "泯然众人", dynasty: "王朝", breaker: "破局者",
+  legend: "传奇", worlds: "世界冠军", twocup: "两冠", halfcrown: "半程加冕", uncrowned: "无冕之王",
+  finalloss: "决赛遗恨", semiloss: "四强遗恨", quarters: "八强常客", region: "赛区功勋", domestic: "内战之王",
+  evergreen: "常青树", darkage: "至暗未破", other: "（没对上的）" };
+const START_CN = { academy: "青训", streamer: "主播" };
+const DEV_CN = { m: "手机", t: "平板", d: "电脑" };
+const MATCH_CN = { w: "打完", s: "快进" };
+const BOX_CN = { open: "打开信箱", new: "写了建议", community: "点开交流群", community_auto: "交流群自动弹", sharecard: "生成名片图" };
+
+const pct = (a, b) => (b ? (a / b * 100).toFixed(1) + "%" : "—");
+function median(a) {
+  if (!a || !a.length) return 0;
+  const x = a.slice().sort((p, q) => p - q), i = x.length >> 1;
+  return x.length % 2 ? x[i] : (x[i - 1] + x[i]) / 2;
+}
+const shiftDay = (d, k) => dayStr(new Date(d + "T00:00:00+08:00").getTime() + k * 86400e3);
+/** 一节「谁多少次」的小表；没有数据就说没有 */
+function countTable(o, head, cn) {
+  const rows = Object.entries(o || {}).sort((a, b) => b[1] - a[1]);
+  const sum = rows.reduce((t, [, n]) => t + n, 0);
+  if (!rows.length) return `<table><tr><th>${head}</th><th class="num">次数</th></tr><tr><td colspan="2" class="dim">还没有数据</td></tr></table>`;
+  return `<table><tr><th>${head}</th><th class="num">次数</th><th class="num">占比</th></tr>${rows.map(([k, n]) =>
+    `<tr><td>${esc((cn && cn[k]) || k)}</td><td class="num">${n}</td><td class="num">${pct(n, sum)}</td></tr>`).join("")}</table>`;
+}
+
 function dashHtml() {
-  const today = ST.days[dayStr()] || blankDay();
-  const d30 = lastDays(30);
-  const d7 = lastDays(7);
+  const today = fillDay(ST.days[dayStr()] || blankDay());
+  const D = 30;
+  const d30 = lastDays(D);
+  const win = d30.map(r => fillDay(r.a));
   const tot = { pv: 0, min: 0, start: 0, career: 0, end: 0, support: 0 };
   Object.values(ST.days).forEach(a => { tot.pv += a.pv; tot.min += a.min; tot.start += a.start; tot.career += a.career; tot.end += a.end; tot.support += a.support || 0; });
+
+  // ---- 在线时长：按设备把窗口内的分钟加起来（act / sec 是 2026-10-01 之后的日子才有）
+  const minByDev = new Map();
+  const dayMins = [];
+  win.forEach(a => {
+    (a.act || []).forEach((vi, i) => {
+      const m = (a.sec || [])[i] || 0;
+      minByDev.set(vi, (minByDev.get(vi) || 0) + m);
+      if (m) dayMins.push(m);
+    });
+  });
+  const devMins = [...minByDev.values()];
+  const totMin = devMins.reduce((t, x) => t + x, 0);
+
+  // ---- 漏斗：按设备去重，窗口里曾经走到这一步的设备数
+  const uni = pick => { const s2 = new Set(); win.forEach(a => (pick(a) || []).forEach(vi => s2.add(vi))); return s2.size; };
+  const fn = [
+    ["打开", uni(a => a.act)],
+    ["建档", uni(a => a.f.profile)],
+    ["推完第一周", uni(a => a.f.week1)],
+    ["打完第一个赛季", uni(a => a.f.season1)],
+    ["走到结局", uni(a => a.f.ending)],
+  ];
+  const fnTop = fn[0][1];
+  const fnRows = fn.map(([k, n], i) => {
+    const prev = i ? fn[i - 1][1] : 0;
+    return `<tr><td>${k}</td><td class="num">${n}</td><td class="num">${i ? pct(n, prev) : "—"}</td><td class="num">${i ? pct(n, fnTop) : "100.0%"}</td></tr>`;
+  }).join("");
+
+  // ---- 留存：按首见日分群，次日 / 第 3 日 / 第 7 日回访率（回访 = 那天这台设备有事件）
+  const todayStr = dayStr();
+  const cohorts = [];
+  for (let i = 14; i >= 1; i--) {
+    const c = dayStr(Date.now() - i * 86400e3);
+    const a0 = ST.days[c];
+    if (!a0 || !a0.act || !a0.act.length) continue;
+    const members = a0.act.filter(vi => REG.firstDay[REG.vids[vi]] === c);
+    if (!members.length) continue;
+    const set = new Set(members);
+    const cell = k => {
+      const d = shiftDay(c, k);
+      if (d >= todayStr) return null;                 // 这一天还没过完
+      const a = ST.days[d];
+      if (!a || !a.act) return 0;
+      let n = 0;
+      a.act.forEach(vi => { if (set.has(vi)) n++; });
+      return n;
+    };
+    cohorts.push({ c, size: members.length, r1: cell(1), r3: cell(3), r7: cell(7) });
+  }
+  const rcell = (n, size) => (n === null ? '<td class="num dim">—</td>' : `<td class="num">${pct(n, size)}</td>`);
+  const retRows = cohorts.map(x => `<tr><td>${x.c}</td><td class="num">${x.size}</td>${rcell(x.r1, x.size)}${rcell(x.r3, x.size)}${rcell(x.r7, x.size)}</tr>`).join("");
+
+  // ---- 分布几节
+  const merge = pick => { const o = {}; win.forEach(a => Object.entries(pick(a) || {}).forEach(([k, n]) => o[k] = (o[k] || 0) + n)); return o; };
+  /* 按设备去重的那几节：同一台设备活跃好几天只能算一台，所以先把窗口里每台设备的档位
+     收进一张表（最后一次为准），再数。按天直接相加是错的——一台每天都来的手机会被算成三十台。 */
+  const perDev = pick => {
+    const last = new Map();
+    win.forEach(a => (a.act || []).forEach((vi, i) => { const v = (pick(a) || [])[i]; if (v) last.set(vi, v); }));
+    const o = {};
+    for (const v of last.values()) o[v] = (o[v] || 0) + 1;
+    return o;
+  };
+  const endAll = merge(a => a.endK);
+  for (const k of Object.keys(ENDING_CN)) if (!(k in endAll) && k !== "other") endAll[k] = 0;   // 没人打到的结局也列出来，0 是个答案
+  const endRows = Object.entries(endAll).sort((a, b) => b[1] - a[1]);
+  const endSum = endRows.reduce((t, [, n]) => t + n, 0);
+  const endTable = `<table><tr><th>结局</th><th>key</th><th class="num">人次</th><th class="num">占比</th></tr>${endRows.map(([k, n]) =>
+    `<tr><td>${esc(ENDING_CN[k] || k)}</td><td class="dim">${esc(k)}</td><td class="num">${n}</td><td class="num">${pct(n, endSum)}</td></tr>`).join("")}</table>`;
+  const mt = merge(a => a.m), mSum = (mt.w || 0) + (mt.s || 0);
+  const sf = win.reduce((t, a) => t + (a.sf || 0), 0);
+
   const ver = {};
-  d7.forEach(r => Object.entries(r.a.ver || {}).forEach(([k, n]) => ver[k] = (ver[k] || 0) + n));
+  lastDays(7).forEach(r => Object.entries(r.a.ver || {}).forEach(([k, n]) => ver[k] = (ver[k] || 0) + n));
   const verRows = Object.entries(ver).sort((a, b) => b[1] - a[1]).slice(0, 8)
     .map(([k, n]) => `<tr><td>${esc(k || "（未知）")}</td><td class="num">${n}</td></tr>`).join("");
-  const tblRows = lastDays(14).reverse().map(r =>
-    `<tr><td>${r.d}</td><td class="num">${r.a.pv}</td><td class="num">${r.a.uv}</td><td class="num">${r.a.nu}</td><td class="num">${r.a.min}</td><td class="num">${r.a.start}</td><td class="num">${r.a.career}</td><td class="num">${r.a.end}</td></tr>`).join("");
-  const pc = (a, b) => b ? Math.round(a / b * 100) + "%" : "—";
+  const tblRows = lastDays(14).reverse().map(r => {
+    const a = fillDay(r.a);
+    const mins = (a.sec || []).filter(x => x);
+    return `<tr><td>${r.d}</td><td class="num">${a.pv}</td><td class="num">${a.uv}</td><td class="num">${a.nu}</td><td class="num">${a.min}</td><td class="num">${mins.length ? fmtMin(Math.round(a.min / a.uv)) : "—"}</td><td class="num">${mins.length ? fmtMin(Math.round(median(mins))) : "—"}</td><td class="num">${a.start}</td><td class="num">${a.career}</td><td class="num">${a.end}</td></tr>`;
+  }).join("");
+
   const stat = (n, l) => `<div class="st"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+  /* 玩家信箱（box.js）：一打开看板就看得见有多少条在等着审核，点一下就过去 */
+  let box = { pending: 0, shown: 0, total: 0 };
+  try { box = BOX.boxCounts(); } catch (e) {}
+  const boxUse = merge(a => a.box);
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="refresh" content="300"><title>破晓 · 后台看板</title>
 <style>
 body{margin:0;background:#0b0f14;color:#dfe7f1;font:14px/1.6 system-ui,"Microsoft YaHei",sans-serif;padding:24px}
 h1{font-size:20px;margin:0 0 4px}h2{font-size:14px;color:#8fa2b8;margin:26px 0 10px;font-weight:600}
-.sub{color:#7d8ea6;font-size:12px}
+.sub{color:#7d8ea6;font-size:12px}.dim{color:#5d6c80}
+a{color:#5bc6cf}
 .warn{background:#3a1518;border:1px solid #7a2b31;color:#ffb3ba;padding:10px 14px;border-radius:8px;margin:14px 0;font-size:13px}
 .grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
 .st{background:#121923;border:1px solid #1f2b3a;border-radius:10px;padding:12px 18px;min-width:96px}
 .st .n{font-size:22px;font-weight:700;color:#5bc6cf;font-variant-numeric:tabular-nums}
 .st .l{font-size:12px;color:#8fa2b8}
-table{border-collapse:collapse;width:100%;max-width:720px;font-variant-numeric:tabular-nums}
+a.st{display:block;text-decoration:none}a.st:hover{border-color:#5bc6cf}a.st .l{color:#5bc6cf}
+table{border-collapse:collapse;width:100%;max-width:820px;font-variant-numeric:tabular-nums;margin-bottom:6px}
 td,th{padding:5px 10px;border-bottom:1px solid #1f2b3a;text-align:left;font-size:13px}
 th{color:#8fa2b8;font-weight:600}.num{text-align:right}
 .chart{background:#121923;border:1px solid #1f2b3a;border-radius:10px;padding:14px;max-width:960px}
+.two{display:flex;flex-wrap:wrap;gap:24px}.two>div{min-width:280px;flex:1}
 .foot{margin-top:28px;color:#5d6c80;font-size:12px}
 </style></head><body>
 <h1>破晓 · 后台看板</h1>
-<div class="sub">只有拿着钥匙的你能看到这页 · 每 5 分钟自动刷新 · 北京时间归日</div>
+<div class="sub">只有拿着钥匙的你能看到这页 · 每 5 分钟自动刷新 · 北京时间归日 · 统计窗口 ${D} 天</div>
 ${VOLATILE ? '<div class="warn">⚠ 未检测到持久化卷（Railway Volume）——数据现在只存在容器磁盘上，<b>重新部署或重启就会清零</b>。到 Railway 服务设置里挂一个 Volume 即可。</div>' : ""}
+<h2>玩家信箱</h2>
+<div class="grid"><a class="st" href="/dash/box"><div class="n">${box.pending}</div><div class="l">待审核 →</div></a>${stat(box.shown, "榜上")}${stat(box.total, "一共")}${stat(boxUse.open || 0, "打开信箱")}${stat(boxUse.new || 0, "写了建议")}</div>
+<div class="sub">玩家在游戏里写的建议。你按「展示」之前，只有写的人自己看得见；点上面那块去审核页。</div>
 <h2>今日</h2>
 <div class="grid">${stat(today.pv, "浏览量 PV")}${stat(today.uv, "访客 UV")}${stat(today.nu, "新设备")}${stat(fmtMin(today.min), "游玩时长")}${stat(today.start, "开新档")}${stat(today.career, "签约上岸")}${stat(today.end, "打出结局")}${stat(today.support || 0, "点开支持")}</div>
 <h2>累计</h2>
-<div class="grid">${stat(tot.pv, "总浏览量")}${stat(ST.devices.size, "设备总数")}${stat(fmtMin(tot.min), "总游玩时长")}${stat(tot.start, "开档")}${stat(tot.career + " · " + pc(tot.career, tot.start), "上岸 · 转化")}${stat(tot.end + " · " + pc(tot.end, tot.start), "通关 · 转化")}${stat(tot.support, "点开支持")}</div>
-<h2>近 30 天 · 访客 UV</h2><div class="chart">${svgBars(d30, a => a.uv, "#5bc6cf")}</div>
-<h2>近 30 天 · 游玩分钟</h2><div class="chart">${svgBars(d30, a => a.min, "#c9a86a")}</div>
+<div class="grid">${stat(tot.pv, "总浏览量")}${stat(ST.devices.size, "设备总数")}${stat(fmtMin(tot.min), "总游玩时长")}${stat(tot.start, "开档")}${stat(tot.career + " · " + pct(tot.career, tot.start), "上岸 · 转化")}${stat(tot.end + " · " + pct(tot.end, tot.start), "通关 · 转化")}${stat(tot.support, "点开支持")}</div>
+<h2>在线时长（近 ${D} 天 · 按设备）</h2>
+<div class="grid">${stat(fmtMin(devMins.length ? Math.round(totMin / devMins.length) : 0), "人均（每台设备累计）")}${stat(fmtMin(Math.round(median(devMins))), "中位（每台设备累计）")}${stat(fmtMin(dayMins.length ? Math.round(dayMins.reduce((t, x) => t + x, 0) / dayMins.length) : 0), "人均（每台设备每天）")}${stat(fmtMin(Math.round(median(dayMins))), "中位（每台设备每天）")}</div>
+<div class="sub">心跳只在标签页可见、已开局、最近 3 分钟有操作时才记，同一浏览器开几个标签页只算一个。2026-10-01 之前的日子没有按设备的分钟，所以只算得出这之后的。</div>
+<h2>近 ${D} 天 · 访客 UV</h2><div class="chart">${svgBars(d30, a => a.uv, "#5bc6cf")}</div>
+<h2>近 ${D} 天 · 游玩分钟</h2><div class="chart">${svgBars(d30, a => a.min, "#c9a86a")}</div>
 <h2>近 14 天明细</h2>
-<table><tr><th>日期</th><th class="num">PV</th><th class="num">UV</th><th class="num">新设备</th><th class="num">分钟</th><th class="num">开档</th><th class="num">上岸</th><th class="num">通关</th></tr>${tblRows}</table>
+<table><tr><th>日期</th><th class="num">PV</th><th class="num">UV</th><th class="num">新设备</th><th class="num">分钟</th><th class="num">人均在线</th><th class="num">中位在线</th><th class="num">开档</th><th class="num">上岸</th><th class="num">通关</th></tr>${tblRows}</table>
+<h2>漏斗（近 ${D} 天 · 按设备去重）</h2>
+<table><tr><th>阶段</th><th class="num">设备数</th><th class="num">转化</th><th class="num">占打开</th></tr>${fnRows}</table>
+<div class="sub">建档 = 开新档，推完第一周 = 签约后推过一周，打完第一个赛季 = 走完一个赛段结算，走到结局 = 生涯结束。</div>
+<h2>留存（按首见日分群 · 回访 = 那天有事件）</h2>
+<table><tr><th>首见日</th><th class="num">人数</th><th class="num">次日</th><th class="num">第 3 日</th><th class="num">第 7 日</th></tr>${retRows || '<tr><td colspan="5" class="dim">还没有满一天的群（2026-10-01 起开始按设备记）</td></tr>'}</table>
+<h2>结局分布（近 ${D} 天）</h2>
+${endTable}
+<h2>开局构成（近 ${D} 天）</h2>
+<div class="two">
+<div><h2>出身</h2>${countTable(merge(a => a.st), "出身", START_CN)}</div>
+<div><h2>入场年份</h2>${countTable(merge(a => a.yr), "入场年份", null)}</div>
+</div>
+<div class="two">
+<div><h2>位置</h2>${countTable(merge(a => a.rl), "位置", null)}</div>
+<div><h2>签约赛区</h2>${countTable(merge(a => a.rg), "赛区", null)}</div>
+</div>
+<h2>比赛：亲自打还是托管（近 ${D} 天）</h2>
+<div class="grid">${stat(mt.w || 0, "亲自打完")}${stat(mt.s || 0, "托管打完")}${stat(pct(mt.w || 0, mSum), "亲自打占比")}</div>
+<h2>存档失败（近 ${D} 天）</h2>
+<div class="grid">${stat(sf, "存档失败次数")}</div>
+<div class="sub">iPhone 的存储配额问题会先在这里露头，然后才会有人来报。</div>
+<h2>前端报错（近 ${D} 天）</h2>
+${countTable(merge(a => a.er), "出错位置", null)}
+<div class="sub">只有出错的文件和行号，没有报错信息本身——引擎的报错会把拿到的东西原样插进去，那可以是任何东西。</div>
+<h2>设备与屏幕（近 ${D} 天 · 按设备去重）</h2>
+<div class="two">
+<div>${countTable(perDev(a => a.dv), "设备类型", DEV_CN)}</div>
+<div>${countTable(perDev(a => a.wd), "屏幕宽度", null)}</div>
+</div>
+<h2>其它入口（近 ${D} 天）</h2>
+${countTable(Object.fromEntries(Object.entries(boxUse).filter(([k]) => k !== "open" && k !== "new")), "入口", BOX_CN)}
 <h2>版本分布（近 7 天 PV）</h2>
-<table><tr><th>版本</th><th class="num">次数</th></tr>${verRows || '<tr><td colspan="2">还没有数据</td></tr>'}</table>
-<div class="foot">数据目录 ${esc(DATA_DIR)} · 上次落盘 ${ST.flushedAt ? new Date(ST.flushedAt + 8 * 3600e3).toISOString().slice(11, 19) : "尚未"} (UTC+8) · 备份：<a style="color:#5bc6cf" href="/api/export">下载聚合数据 JSON</a>（脚本：<code>curl -u :钥匙 …/api/export</code>）</div>
+<table><tr><th>版本</th><th class="num">次数</th></tr>${verRows || '<tr><td colspan="2" class="dim">还没有数据</td></tr>'}</table>
+<div class="foot">数据目录 ${esc(DATA_DIR)} · 设备总数 ${REG.vids.length} · 上次落盘 ${ST.flushedAt ? new Date(ST.flushedAt + 8 * 3600e3).toISOString().slice(11, 19) : "尚未"} (UTC+8) · 备份：<a href="/api/export">下载聚合数据 JSON</a>（脚本：<code>curl -u :钥匙 …/api/export</code>）<br>不记 IP、不记 User-Agent、不记玩家打进去的任何文字（信箱是另一套：玩家自己写给作者的建议，见 /dash/box）。</div>
 </body></html>`;
 }
 
@@ -547,6 +781,24 @@ const server = http.createServer((req, res) => {
     url = decodeURIComponent((req.url || "/").split("?")[0]);
   } catch (e) {
     return send(res, 400, "bad request");   // 畸形的 %xx
+  }
+  /* 玩家信箱（box.js）：接住了由它回话，没接住照旧往下走。统计那条路一个字没动 */
+  if (url.startsWith("/api/box/")) {
+    try { if (BOX.handleBoxApi(req, res, url, clientIp(req))) return; } catch (e) {
+      return send(res, 200, '{"ok":false,"why":"信箱这会儿不太舒服，游戏没事。"}', "application/json; charset=utf-8");
+    }
+  }
+  /* 信箱审核页：和 /dash 同一把钥匙、同一道门（没配 STATS_KEY 就当这页不存在） */
+  if (url === "/dash/box") {
+    const auth = dashAuth(req);
+    if (!auth) return send(res, 404, "not found");
+    if (auth === "blocked") return send(res, 429, "猜太多次了，十分钟后再试。");
+    if (auth === "ask") return dashAsk(res);
+    try {
+      return void BOX.handleBoxAdmin(req, res).catch(e => {
+        try { send(res, 500, "信箱这页算不出来了，游戏没事。"); } catch (e2) {}
+      });
+    } catch (e) { return send(res, 500, "信箱这页算不出来了，游戏没事。"); }
   }
   if (req.method === "POST") {
     if (url === "/api/t") return handleBeacon(req, res);
@@ -602,8 +854,9 @@ const server = http.createServer((req, res) => {
 });
 
 loadStats();
+const boxInit = BOX.initBox({ dir: DATA_DIR, volatile: VOLATILE });
 server.listen(PORT, () => {
-  console.log(`看板：${STATS_KEY ? "已配钥匙，打开 /dash 在浏览器密码框里填钥匙；脚本 curl -u :钥匙 /api/export" : "未配 STATS_KEY，看板关闭（信标照记）"} · 数据目录 ${DATA_DIR}${VOLATILE ? "（⚠ 无持久化卷）" : ""} · 已记 ${ST.devices.size} 台设备${BEHIND_PROXY ? " · 受信代理后（X-Forwarded-For 取末段）" : ""} · 歌单 ${bgmList().length} 首`);
+  console.log(`看板：${STATS_KEY ? "已配钥匙，打开 /dash 在浏览器密码框里填钥匙；脚本 curl -u :钥匙 /api/export" : "未配 STATS_KEY，看板关闭（信标照记）"} · 数据目录 ${DATA_DIR}${VOLATILE ? "（⚠ 无持久化卷）" : ""} · 已记 ${ST.devices.size} 台设备${BEHIND_PROXY ? " · 受信代理后（X-Forwarded-For 取末段）" : ""} · 歌单 ${bgmList().length} 首 · 信箱 ${boxInit.items} 条（${(boxInit.bytes / 1024).toFixed(0)} KB）`);
   const e = loadAsset("demo/career.html");
   console.log(`破晓 listening on ${PORT}` + (e
     ? ` · career.html ${(e.raw.length / 1024).toFixed(0)} KB → gzip ${(e.gz.length / 1024).toFixed(0)} KB / br ${(e.br.length / 1024).toFixed(0)} KB · ${e.scriptSrc.length} 段内联脚本进 CSP`

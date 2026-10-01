@@ -396,6 +396,73 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
   dom.window.close();
 }
 
+/* ---------------- 玩家信箱：浮窗入口 → 读榜 → 发送 → 点赞 ----------------
+   服务端（box.js）有自己那套端到端自检；这里只管游戏里这一页：按钮在不在、画得出来、
+   发得出去、点得了赞、玩家写的字有没有被当成 HTML 塞进去。 */
+{
+  const { w, d } = boot({});
+  await tick(50);
+  const P = w.poxiao;
+  // 信箱的三个接口都答应（list 里塞一条别人提的、一条我提的）
+  const calls: any[] = [];
+  const reply: any = {
+    "/api/box/list": () => ({ ok: true, max: 200, min: 4, full: false,
+      items: [{ id: "aaaaaaaa", t: Date.now(), text: "希望加一个<b>信箱</b>", votes: 3, state: "shown", pin: 0, mine: false, voted: false }],
+      mine: [{ id: "bbbbbbbb", t: Date.now(), text: "我提的那条", votes: 1, state: "pending", pin: 0, mine: true, voted: true }] }),
+    "/api/box/new": () => ({ ok: true, item: { id: "cccccccc", t: Date.now(), text: "新提的一条建议", votes: 1, state: "pending", pin: 0, mine: true, voted: true } }),
+    "/api/box/vote": () => ({ ok: true, id: "aaaaaaaa", votes: 4, on: true }),
+  };
+  w.fetch = async (url: string, opt: any) => {
+    const u = String(url);
+    calls.push({ u, body: opt && opt.body ? JSON.parse(String(opt.body)) : null });
+    const f = reply[u];
+    return { ok: true, json: async () => (f ? f() : {}), text: async () => "{}" };
+  };
+  const btn = d.getElementById("aud-box");
+  if (!btn) bad.push("信箱：右下角浮窗上没有信箱按钮");
+  else {
+    btn.click();
+    await tick(30);
+    const pop = d.getElementById("box-pop");
+    if (!pop) bad.push("信箱：点了按钮没打开");
+    else {
+      if (pop.getAttribute("role") !== "dialog" || pop.getAttribute("aria-modal") !== "true") bad.push("信箱：浮窗没有 dialog / aria-modal");
+      if (!calls.some(c => c.u === "/api/box/list")) bad.push("信箱：打开之后没去读榜");
+      if (!/希望加一个/.test(pop.textContent || "")) bad.push("信箱：榜上的建议没画出来");
+      // 玩家写的字必须是数据：<b> 原样显示，不许变成标签
+      if (/希望加一个<b>信箱<\/b>/.test(pop.innerHTML || "")) bad.push("信箱：玩家写的字被当成 HTML 塞进去了");
+      if (!/先审后展示|看过之后才会出现/.test(pop.textContent || "")) bad.push("信箱：没写清先审后展示");
+      // 发一条：太短的先挡住
+      const ta = d.getElementById("box-text") as HTMLTextAreaElement;
+      ta.value = "短";
+      (d.getElementById("box-send") as HTMLElement).click();
+      await tick(20);
+      if (calls.some(c => c.u === "/api/box/new")) bad.push("信箱：太短的也发出去了");
+      ta.value = "新提的一条建议";
+      (d.getElementById("box-send") as HTMLElement).click();
+      await tick(30);
+      const sent = calls.find(c => c.u === "/api/box/new");
+      if (!sent) bad.push("信箱：发不出去");
+      else if (!sent.body || sent.body.v !== 1 || !/^[0-9a-f]{16}$/.test(String(sent.body.vid || ""))) bad.push("信箱：发出去的包不对（要带版本号和设备号）");
+      if (!/我的/.test(pop.textContent || "")) bad.push("信箱：发完没有「我的」这一档");
+      // 点赞
+      d.querySelector<HTMLElement>("[data-mbxtab=hot]")!.click();
+      await tick(20);
+      const vb = pop.querySelector("[data-vote]") as HTMLElement | null;
+      if (!vb) bad.push("信箱：榜上没有点赞按钮");
+      else {
+        vb.click();
+        await tick(30);
+        const v = calls.find(c => c.u === "/api/box/vote");
+        if (!v) bad.push("信箱：点赞没发出去");
+        if (!/4/.test(pop.textContent || "")) bad.push("信箱：点赞之后票数没更新");
+      }
+      (d.getElementById("box-x") as HTMLElement).click();
+      if (d.getElementById("box-pop")) bad.push("信箱：关不掉");
+    }
+  }
+}
+
 /* ---------------- 玩家交流群：两张码 + 玩满 10 分钟弹一次 ---------------- */
 {
   const { dom, w, d, errors } = boot({});
@@ -449,5 +516,5 @@ function playWeeks(w: any, d: Document, P: any, n: number) {
 }
 
 if (bad.length) { console.error("界面测试失败：\n - " + bad.join("\n - ")); process.exit(1); }
-console.log("界面测试通过：建档按钮 · 导览模态与焦点圈 · 浮窗与歌单探测 · 更新日志 · 推周 · 仪式小游戏（靶场 / 限时三选一） · 存档 · 配色切换 · 支持作者只在结局弹 · 小游戏不被重画冲掉 · 生涯名片图 · 手机折叠与抽屉 · 交流群两张码与 10 分钟自动弹");
+console.log("界面测试通过：建档按钮 · 导览模态与焦点圈 · 浮窗与歌单探测 · 更新日志 · 推周 · 仪式小游戏（靶场 / 限时三选一） · 存档 · 配色切换 · 支持作者只在结局弹 · 小游戏不被重画冲掉 · 生涯名片图 · 手机折叠与抽屉 · 交流群两张码与 10 分钟自动弹 · 玩家信箱（读榜 / 发送 / 点赞 / 玩家写的字只当数据）");
 process.exit(0);

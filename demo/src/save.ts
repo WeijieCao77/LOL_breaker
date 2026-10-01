@@ -1,4 +1,5 @@
 import { hallCount, hallImport, hallRead, hallSeedFrom, hallSweep, hallTitleLine, hallTotal, saveIdOf } from "./hall";
+import { statSend } from "./stats";
 import { applyEntry, entryYear, DIMS, GAME_VER, LDL_ROSTER, POSN, PRE_YEAR, REGION_SYN, SEASONS, SPLITS, anchorLeague, capOf, clamp, dimWord, leagueBaseline, q1, rankFull, render, teamCode, trialCanPay } from "./main";
 import { ldlFixOldNames } from "./ldl";
 import { NAME_FIX, NAME_FIX_VER } from "./namefix";
@@ -33,7 +34,9 @@ export function saveGame(reason) {
     localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
     return true;
   } catch (e) {
-    // 隐私模式 / 容量满 / 循环引用——都不该影响正在进行的这局
+    // 隐私模式 / 容量满 / 循环引用——都不该影响正在进行的这局。
+    // 只把「存失败了」这件事报给看板（iPhone 的存储配额问题会先在这里露头，然后才会有人来报）
+    try { statSend("savefail"); } catch (e2) {}
     return false;
   }
 }

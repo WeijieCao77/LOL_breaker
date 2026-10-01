@@ -36,7 +36,8 @@ import { relegationCheck } from "./relegation";
 import { starAfterMatch, starLaneBadge, starSpotHtml } from "./stars";
 import { S, setS } from "./state";
 import { shareCardOpen } from "./share";
-import { statEvent } from "./stats";
+import { statEvent, statSend } from "./stats";
+import { boxEndCard, showBox } from "./box";
 import { SPEND, addTrust, addTrustAll, avgTrust, checkMateExit, contractCheck, initTrust, payday, resolveLocker, salaryOf, syncTrust, trustDecay, trustMod, trustOf, tryLockerEvent } from "./team";
 import { traitBar, traitMul, traitUpCard } from "./trait";
 import { CLUB_TIERS, DEAL_TIERS, REG_WEEKS, TIER_ORDER, acceptPromote, acceptRenew, afterTryout, approachTeam, askDeal, askPromoteRaise, askTransfer, checkPromote, checkRankInvite, checkTopUpInvite, contractLeftText, dealCard, declineDeal, declinePromote, declineRenew, doBuyout, dropDeal, dropProOffer, exposureCap, faCard, inviteCard, inviteFloorOk, noteScoutInterest, offerSendDown, parentClub, preTransferPage, proOfferCard, promoteCard, promoteDealCard, rankCap, regRollOffer, renewCard, renewNegotiate, resolveTryoutDay, rollProOffers, selfRecommend, signDeal, signRenewDeal, signTransfer, startTryout, takeFaOffer, takeProOffer, transferPage, tryoutCard, tryoutSkill, txNoteReturn, txPhaseName, txStops, txWindowName, txWindowOpen , teamExpect } from "./tryout";
@@ -134,6 +135,11 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20261001a", at:"2026-10-01", items:[
+    "<b>新增玩家信箱</b>（右下角「⋯」里的 ✉，结局页也有入口）：在游戏里直接把建议写给作者，<b>作者看过之后会把它放上榜</b>，所有人都能看到并点赞——<b>作者按赞多的先改</b>。榜分「最热 / 最新 / 我的」三档；你自己提的那条，不管有没有上榜，都能在「我的」里看到它现在是<b>待审核 / 已展示 / 已采纳 / 已修复</b>。两条意思一样的建议会被合并，票数合并去重，原文给你留着",
+    "信箱的边界写在明处：<b>不记 IP、不记设备型号、不读存档</b>，作者那边只看得到你写的那段字；一条 4–200 字，不收链接和联系方式；连不上信箱只会显示一句话，<b>游戏照常玩</b>",
+    "<b>后台看板重做</b>（作者用的那页）：照 val_player 的分节重排——漏斗（打开 → 建档 → 推完第一周 → 打完第一个赛季 → 走到结局）、按首见日分群的留存、按设备算的在线时长人均与中位、结局分布、开局构成（出身 / 入场年份 / 位置 / 赛区）、亲自打还是托管、存档失败、前端报错位置、设备与屏幕。<b>以前的数据一个数都没动</b>：老字段原样读，新字段从这一版开始记"
+  ]},
   {v:"v20260921a", at:"2026-09-21", items:[
     "<b>年度评选改成看这一年打出来的数据</b>（玩家实锤：「换队后单人三冠，没当上年度 MVP」）：原来的分数是「五维 + 状态 + 冠军加分」，而冠军加分是<b>全队一起加</b>的——队内比的还是五维，所以三冠年里只有约四分之一能拿到年度 MVP，MVP 多半是同队五维更高的队友。现在按<b>赛季评分</b>排名：你用真实的整年场均评分（两个赛段的常规赛 + 季后赛），全联盟其他人按同一把尺折算（五维相对联赛均值、队伍名次、状态）；冠军退成配角，上限 4 分",
     "<b>冠军按「谁真的拿了」算</b>：你的冠军从生涯记录读，<b>换队之后跟着你走</b>（原来按队名发，换队后反而给旧队的人加分）；三段制年份<b>每个赛段各算一次</b>（原来只认最后一个赛段的冠军，拿了春季冠军会被记到别人头上）",
@@ -2439,7 +2445,8 @@ export function startPre(){
   applyEntry(entryYear());   // 先定这一档的赛季表：下面的建世界、赛制都按它走
   S.preLen=PRE_YEAR;   // 这一档的职业前年长；老档（20 周）读取时 save.ts 按它换算周数
   S.patchSeen=GAME_VER;   // 新开局不弹更新说明
-  statEvent("start");
+  // 开局构成：出身 / 入场年份 / 位置（看板「开局构成」那一节）
+  statEvent("start", { o: S.origin, y: String(entryYear()), p: S.pos });
   const o=ORIGIN[S.origin], A=AGES[S.ageIdx], B=bgOf(S.bgPick);
   const attrs={};
   DIMS.forEach(d=>attrs[d]=Math.min(
@@ -4359,6 +4366,7 @@ export function playGame(){
   m.game++; m.swing*=0.4; nextGame();
 }
 export function autoMatch(){
+  try{ statSend("match",{m:"s"}); }catch(e){}   // 托管打完的：看板记成「快进」
   let g=0;
   while(S.step==="match"&&!S.match.done&&g++<40){
     if(S.match.node) resolveNode(rnd()<0.5?0:1); else playGame();
@@ -4767,6 +4775,7 @@ export function benchWeek(){
 
 /* ================= 周 / 赛季推进 ================= */
 export function nextWeek(){
+  try{ if(S.career) statEvent("week1"); }catch(e){}   // 漏斗：推完第一周（按局去重）
   if(S.intl){ intlAdvance(); return; }
   if(S.playoff){ playoffAdvance(); return; }
   if(fmtOn()){ tlNextWeek(); return; }    // 真实赛制：本周剩下的几场、别的联赛、赛段与国际赛的交接都在 season_tl.ts
@@ -5029,6 +5038,7 @@ export function prepPanel(){
 }
 
 export function endSeason(result,seed){
+  try{ if(S.career) statEvent("season1"); }catch(e){}   // 漏斗：打完第一个赛季（按局去重）
   // 「你改写了什么」：先记下这个赛段你所在赛区的冠军（S.playoff 下面会清掉）
   // 真实赛制：每个赛段的冠军、生涯记录、赛段奖金在赛段打完时就结算过了（season_tl.ts）；这里只剩半年一次的工资 / 合同 / 国际赛
   if(!fmtOn()) try{ noteLeagueChamp(result, poCanon().filter(n=>lplRank().slice(0,6).some(r=>r.n===n))); }catch(e){}
@@ -5561,8 +5571,17 @@ export function careerLeague(){
   if(!ks.length) return S.homeLeague||"LPL";
   return ks.sort((a,b)=>n[b]-n[a]||a.localeCompare(b))[0];
 }
+/* 结局的 key：看板上「结局分布」那一节按它分组（中文名在 server.js 的 ENDING_CN 里对照）。
+   发出去的是这十六个固定 key 之一，不是玩家打的字。 */
+export const ENDING_KEY={没能上岸:"nosign",板凳冠军:"bench",泯然众人:"nobody",王朝:"dynasty",破局者:"breaker",
+  传奇:"legend",世界冠军:"worlds",两冠:"twocup",半程加冕:"halfcrown",无冕之王:"uncrowned",决赛遗恨:"finalloss",
+  四强遗恨:"semiloss",八强常客:"quarters",赛区功勋:"region",内战之王:"domestic",常青树:"evergreen",至暗未破:"darkage"};
 export function ending(){
-  statEvent("end");
+  const r=ending0();
+  try{ statEvent("end",{k:ENDING_KEY[r.n]||"other"}); }catch(e){}
+  return r;
+}
+function ending0(){
   if(S.neverSigned) return {n:"没能上岸",
     d:`到 2026 年，你始终没能签下第一份职业合同。排位打到过 ${rankFull(S.pre?S.pre.rank:0)}，直播间也有过人，但那扇门没有为你开。`};
   if(!S.career) return {n:"没能上岸",
@@ -5702,7 +5721,7 @@ export function viewEnd(){
     <button class="btn" id="again">再开一局</button>
     <span class="note" style="margin:0">图里带二维码，存下来或者发出去都行。</span></div>`;
   if(!S.career){                       // 从未签约：没有战队也没有战绩可展示
-    return `${careerPoster()}${again}${achCard()}`;
+    return `${careerPoster()}${again}${boxEndCard()}${achCard()}`;
   }
   const champs=Object.keys(S.world).map(lg=>{
     const r=Object.entries<any>((S.standings&&S.standings[lg])||{}).map(([n,x])=>({n,...x,p:(x.w+x.l)?x.w/(x.w+x.l):0}))
@@ -5711,7 +5730,7 @@ export function viewEnd(){
   }).join("");
   const vets=S.world.LPL.flatMap(t=>t.players.filter(p=>p.age>=26).map(p=>({...p,t:t.name})))
     .sort((a,b)=>b.age-a.age).slice(0,5);
-  return `${careerPoster()}${again}
+  return `${careerPoster()}${again}${boxEndCard()}
   <div class="card">
     <h2>生涯成长<em>${meName()} · ${POSN[S.pos]} · ${S.si+1} 年</em></h2>
     <p class="note">生涯小分 ${S.career.w}−${S.career.l}${
@@ -7407,6 +7426,7 @@ export function bind(){
   const _ret=$("retire"); if(_ret) _ret.onclick=()=>askConfirm("退役",`<b>${meName()}</b> 就此退役？之后是生涯名片，不能再回来。`,"退役",retireNow);
   st.querySelectorAll("[data-ef]").forEach((b: any)=>b.onclick=()=>{S.evFilter=b.dataset.ef;render()});
   const ag=$("again"); if(ag) ag.onclick=()=>screenCreate();
+  const _bx=$("boxgo"); if(_bx) _bx.onclick=()=>showBox("end");   // 结局页的信箱入口（box.ts）
   const ag2=$("again2"); if(ag2) ag2.onclick=()=>screenCreate();   // 结局页最底下那颗（原来和名片下那颗撞了 id，点不动）
 }
 

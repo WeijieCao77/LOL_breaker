@@ -22,4 +22,15 @@ import { SITE_QR } from "./share";
 import { render, startPre, GAME_VER } from "./main";
 import { saveGame, loadGame, readSave } from "./save";
 import { cerStart } from "./cer";
-(window as any).poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave, cerStart, SITE_QR, showCommunity, communityTick };
+import { showBox } from "./box";
+import { statErr, statSend, devKind, widthBucket } from "./stats";
+(window as any).poxiao = { ver: GAME_VER, S: () => S, setS, render, screenCreate, startPre, saveGame, loadGame, readSave, cerStart, SITE_QR, showCommunity, communityTick, showBox };
+
+/* 看板用的两样（2026-10-01）：这台设备是什么档、屏多宽；以及前端报错的位置。
+   都只报枚举，不报 User-Agent、不报错误信息本身。信标本来就是「发不出去也不影响游戏」。 */
+try {
+  statSend("view", { dv: devKind(), wd: widthBucket() });
+  window.addEventListener("error", (e: any) => { try { statErr(e && e.filename, e && e.lineno, e && e.colno); } catch (x) {} });
+  window.addEventListener("unhandledrejection", () => { try { statErr("promise", 0, 0); } catch (x) {} });
+} catch (e) {}
+

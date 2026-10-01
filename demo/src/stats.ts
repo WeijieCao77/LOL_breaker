@@ -34,11 +34,36 @@ export function statSid() {
 }
 export const STAT_SID = STATS_ON ? statSid() : "";
 
-export function statSend(e) {
+/* 这台设备是什么、屏多宽——看板上「设备与屏幕」那一节要的两个档位。
+   只报档位，不报 User-Agent 原文、不报精确分辨率。 */
+export function devKind(): string {
+  try {
+    const w = window.innerWidth || 0;
+    const touch = (navigator as any).maxTouchPoints > 1;
+    if (!touch) return "d";
+    return w >= 768 ? "t" : "m";
+  } catch (e) { return "d"; }
+}
+export function widthBucket(): string {
+  try {
+    const w = window.innerWidth || 0;
+    if (w < 360) return "320-360";
+    if (w < 414) return "360-414";
+    if (w < 560) return "414-560";
+    if (w < 768) return "560-768";
+    if (w < 1024) return "768-1024";
+    if (w < 1440) return "1024-1440";
+    return "1440+";
+  } catch (e) { return "1440+"; }
+}
+
+/* 事件可以带几个<b>枚举</b>字段（结局 key、出身、入场年份、位置、赛区、设备、屏宽档、
+   比赛打完还是快进、报错的「文件:行:列」）。一个字的玩家文本都不发——这条线和原来一样。 */
+export function statSend(e, extra?: any) {
   if (!STATS_ON) return;
   try {
-    const body = JSON.stringify({ id: STAT_SID, e: e,
-      v: String(GAME_VER).split(" ")[0] });
+    const body = JSON.stringify(Object.assign({ id: STAT_SID, e: e,
+      v: String(GAME_VER).split(" ")[0] }, extra || {}));
     if (navigator.sendBeacon &&
         navigator.sendBeacon("/api/t", new Blob([body], { type: "application/json" }))) return;
     fetch("/api/t", { method: "POST", body: body, keepalive: true,
@@ -48,15 +73,30 @@ export function statSend(e) {
 
 /* 漏斗事件（start 开新档 / career 签下第一份职业合同 / end 打出结局）：
    按这一局去重——标记写进 S，跟着存档走，读档回来也不会重复上报 */
-export function statEvent(e) {
+export function statEvent(e, extra?: any) {
   try {
     if (S) {
       S.statFlags = S.statFlags || {};
       if (S.statFlags[e]) return;
       S.statFlags[e] = 1;
     }
-    statSend(e);
+    statSend(e, extra);
   } catch (err) {}
+}
+
+/* 前端报错：只报「文件:行:列」，<b>不报错误信息本身</b>——引擎的报错会把拿到的东西原样插进去，
+   那可以是任何东西（照 val_player 的做法）。一局最多报 5 条，同一处只报一次。 */
+const ERR_SEEN: Record<string, 1> = {};
+let ERR_N = 0;
+export function statErr(src?: string, line?: number, col?: number) {
+  try {
+    if (ERR_N >= 5) return;
+    const f = String(src || "").split("/").pop()!.split("?")[0].slice(0, 40).replace(/[^A-Za-z0-9_.\-]/g, "") || "inline";
+    const er = `${f}:${Math.max(0, Math.trunc(line || 0))}:${Math.max(0, Math.trunc(col || 0))}`;
+    if (ERR_SEEN[er]) return;
+    ERR_SEEN[er] = 1; ERR_N++;
+    statSend("jserr", { er });
+  } catch (e) {}
 }
 
 /* 心跳：每分钟最多记 1 分钟游玩时长，而且要同时满足（外部审计：原来只要标签页可见就发，

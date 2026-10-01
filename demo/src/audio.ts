@@ -2,6 +2,7 @@ import { CHANGELOG, COMMUNITY_AFTER_MS, COMMUNITY_DOUYIN_ID, COMMUNITY_QR, COMMU
          COMMUNITY_XHS_UNTIL, COMMUNITY_XHS_URL, GAME_VER, SUPPORT_QR, SUPPORT_URL } from "./main";
 import { saveGame } from "./save";
 import { S } from "./state";
+import { showBox } from "./box";
 import { statEvent } from "./stats";
 
 /* ================= 声音 =================
@@ -645,7 +646,8 @@ export function audioFab(hasSfx, hasBgm) {
     <button id="aud-sfx" aria-label="音效开关" title="按键音效"></button>` : "") + (hasBgm ? `
     <button id="aud-bgm" aria-label="背景音乐" title="背景音乐"></button>` : "") + `
     <button id="aud-log" aria-label="更新日志" title="更新日志">📜</button>
-    <button id="aud-community" aria-label="玩家交流群" title="玩家交流群（抖音）">群</button>` + (supportUrl() ? `
+    <button id="aud-community" aria-label="玩家交流群" title="玩家交流群（抖音）">群</button>
+    <button id="aud-box" aria-label="玩家信箱" title="玩家信箱：给作者提建议、给别人的建议点赞">✉</button>` + (supportUrl() ? `
     <button id="aud-love" aria-label="支持作者" title="支持作者（爱发电）">♥</button>` : "");
   document.body.appendChild(fab);
   const more: any = fab.querySelector<HTMLElement>("#aud-more");
@@ -671,6 +673,9 @@ export function audioFab(hasSfx, hasBgm) {
   const lv: any = fab.querySelector<HTMLElement>("#aud-love"); if (lv) lv.onclick = (e) => { e.stopPropagation(); showSupport(); };
   const cm: any = fab.querySelector<HTMLElement>("#aud-community");
   if (cm) cm.onclick = (e) => { e.stopPropagation(); showCommunity(); };
+  // 玩家信箱（box.ts）：提建议、看别人提了什么、点赞
+  const bx: any = fab.querySelector<HTMLElement>("#aud-box");
+  if (bx) bx.onclick = (e) => { e.stopPropagation(); showBox("fab"); };
   // 页脚那个入口（模板里写死的 #credit-community）
   try {
     const cc = document.getElementById("credit-community");
