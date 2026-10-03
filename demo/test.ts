@@ -2161,6 +2161,22 @@ function timelineChecks(): string[] {
     }
     s = sign(1, "Invictus Gaming", "LPL"); turn(s);
     if ((s.tlDisplaced || []).length < 2) bad.push(`没有记下被你顶掉的真实首发（${(s.tlDisplaced || []).length} 条）`);
+    // 冠军班底挡住真实历史的休赛期变动（玩家实锤 2026-10-03：S15 在 BLG 夺冠、顶栏写着「冠军班底」，换页时 Elk 还是被换成了 Viper；
+    // 2026 年真实 BLG 换了打野和 AD 两个人，班底只剩 2 个老人，标签和冠军底气跟着一起没了）
+    {
+      const roster = () => A.myRoster().map((p: any) => p.me ? "★" : p.id).join("/");
+      s = sign(3, "Bilibili Gaming", "LPL");
+      const before = roster();
+      A.champCoreStart(); turn(s);
+      if (roster() !== before || !A.champCoreOn()) bad.push(`冠军班底被换页拆了：${before} → ${roster()}，班底还在=${A.champCoreOn()}`);
+      if (!["Xun", "Viper"].every(id => (s.tlFree || []).some((p: any) => p.id === id))) bad.push(`冠军班底挡下的真实加盟者没进自由人市场：${(s.tlFree || []).map((p: any) => p.id).join(",")}`);
+      const seen = new Map<string, number>();
+      Object.keys(s.world).forEach(K => (s.world[K] || []).forEach((t: any) => (t.players || []).forEach((p: any) => { if (p && !p.me) seen.set(p.id, (seen.get(p.id) || 0) + 1); })));
+      const dup = [...seen].filter(([, n]) => n > 1).map(([id]) => id);
+      if (dup.length) bad.push(`冠军班底留下的人在别的队又出现了一次：${dup.join(",")}`);
+      s = sign(3, "Bilibili Gaming", "LPL"); turn(s);   // 没夺冠：照真实历史换人
+      if (!/Viper/.test(roster()) || !/Xun/.test(roster())) bad.push(`没有冠军班底时 2026 BLG 应照真实历史换上 Xun / Viper：${roster()}`);
+    }
   } catch (e: any) { bad.push("换页场景崩了：" + ((e && e.stack) || e)); }
   return bad;
 }
@@ -2263,7 +2279,7 @@ if (isMain && process.argv.includes("--s6probe")) {
   console.log("单元检查通过：导览几何 · 存档消毒");
   { const tb = timelineChecks();
     if (tb.length) { console.error("真实时间线自检不通过：\n - " + tb.join("\n - ")); process.exit(1); }
-    console.log("真实时间线自检通过：2022–2027 队数与赛区结构 · 名单去重 · 数值范围 · 锚定均值 · T1/NIP 名单"); }
+    console.log("真实时间线自检通过：2022–2027 队数与赛区结构 · 名单去重 · 数值范围 · 锚定均值 · T1/NIP 名单 · 冠军班底挡住换页"); }
   { const bad: string[] = [];   // S6 开档框架：两个入口的赛季表、按年份查表、读档还原
     A.applyEntry(2022);
     if (A.SEASONS.length !== 8 || A.SEASONS[0].y !== 2022 || A.baseLast() !== 4 || A.cIdx(0) !== 0) bad.push("S12 入口的赛季表变了");

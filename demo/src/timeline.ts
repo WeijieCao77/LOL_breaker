@@ -13,7 +13,7 @@ import tlLogos from "../../data/csv/timeline_logos.json";
 import { initRelations, syncRelations } from "./clout";
 import { DATA } from "./data";
 import { INTL_CANON, LEAGUE_CANON } from "./intl";
-import { cIdx, entryYear, CN_FIX, DECAY_W, DIMS, POSN, SEASONS, STAR_FLOOR, WORLD_DRIFT, ageCurve, anchorLeague, avg, buildLDLGen, clamp, makeRookie, markTeamJoin, power, pushEvent, q1, teamCode } from "./main";
+import { cIdx, entryYear, CN_FIX, DECAY_W, DIMS, POSN, SEASONS, STAR_FLOOR, WORLD_DRIFT, ageCurve, anchorLeague, avg, buildLDLGen, champCoreOn, clamp, makeRookie, markTeamJoin, power, pushEvent, q1, teamCode } from "./main";
 import { ldlBuild } from "./ldl";
 import { rnd } from "./rng";
 import { STARS } from "./stars";
@@ -457,6 +457,11 @@ export function tlApplyYear(w, y, live) {
       const benched = !ownT.players.some(q => q && q.me);
       const lvl = avg(ownSlot.bt.players.map(comp));
       const next: any[] = [];
+      /* 冠军班底（玩家实锤 2026-10-03：S15 在 BLG 夺冠，顶栏写着「冠军班底」，换页时 Elk 还是被换成了 Viper）：
+         转会 AI、离队、默契都认这把锁，换页没认——真实历史的休赛期变动照样砸进你的队；换掉两个人班底就不满 3 人，
+         标签和冠军底气跟着一起没了。夺冠那套人留下；真实历史里这个位置的新人进自由人市场（和被你顶掉的真实首发同一条路）。 */
+      const core = (live && champCoreOn() && S.champCore) ? new Set<string>(S.champCore.ids || []) : null;
+      const held: any[] = [];
       POS5.forEach(pos => {
         const cur = ownT.players.find(q => q && q.pos === pos);
         const real = ownSlot.bt.players.find(q => q.pos === pos);
@@ -471,6 +476,14 @@ export function tlApplyYear(w, y, live) {
           next.push(cur); return;
         }
         if (cur && pinned.has(cur.id)) { next.push(cur); return; }       // 你点名签来的人留下
+        if (cur && core && core.has(cur.id) && !(real && real.id === cur.id)) {   // 冠军班底：夺冠那套人留下
+          if (realOk) {
+            used.add(real.id);
+            S.tlFree = (S.tlFree || []).filter(x => x && x.id !== real.id).concat([real]).slice(-24);
+            held.push({ real, cur, pos });
+          }
+          used.add(cur.id); next.push(cur); return;
+        }
         if (realOk) {
           if (cur && cur.id === real.id) { cur.age = Math.max(cur.age || 0, real.age || 0); used.add(cur.id); next.push(cur); return; }   // 还是他：本局里的成长留着
           if (TL_ARRIVAL_FLOOR && cur) { const d = comp(cur) - comp(real); if (d > 0) DIMS.forEach(k => { real.r[k] = q1(clamp(real.r[k] + d, 35, 99)); }); }
@@ -482,6 +495,8 @@ export function tlApplyYear(w, y, live) {
         next.push(fill(pos, ownSlot.K, lvl - 3));
       });
       ownT.players = next;
+      if (held.length) pushEvent(`真实历史里，${y} 年这个休赛期 ${held.map(h => `<b>${h.real.id}</b>${h.real.cn ? `（${h.real.cn}）` : ""} 加盟、${h.cur.id} 离队（${POSN[h.pos]}）`).join("；")}——
+        <b>冠军班底</b>没散，俱乐部留住了夺冠的这套人。<span style="color:var(--ink-3)">${held.map(h => h.real.id).join("、")} 进了自由人市场，别的队缺人会先找${held.length > 1 ? "他们" : "他"}。</span>`, "good", "王朝");
       if (S.squad) {                                                       // 默契按季前赛折算（见 TL_SWAP_SYN），名单签名同步掉，免得 watchRoster 再砸一次整额
         const before = String(S.rosterSig || "").split("|");
         const ch = next.filter(q => q && !before.includes(q.id)).length;

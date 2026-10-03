@@ -8707,6 +8707,8 @@ header.top.compact>.theme-top{display:none}
         const benched = !ownT.players.some((q) => q && q.me);
         const lvl = avg(ownSlot.bt.players.map(comp));
         const next = [];
+        const core = live && champCoreOn() && S.champCore ? new Set(S.champCore.ids || []) : null;
+        const held = [];
         POS5.forEach((pos) => {
           const cur = ownT.players.find((q) => q && q.pos === pos);
           const real = ownSlot.bt.players.find((q) => q.pos === pos);
@@ -8721,6 +8723,16 @@ header.top.compact>.theme-top{display:none}
             return;
           }
           if (cur && pinned.has(cur.id)) {
+            next.push(cur);
+            return;
+          }
+          if (cur && core && core.has(cur.id) && !(real && real.id === cur.id)) {
+            if (realOk) {
+              used.add(real.id);
+              S.tlFree = (S.tlFree || []).filter((x) => x && x.id !== real.id).concat([real]).slice(-24);
+              held.push({ real, cur, pos });
+            }
+            used.add(cur.id);
             next.push(cur);
             return;
           }
@@ -8750,6 +8762,8 @@ header.top.compact>.theme-top{display:none}
           next.push(fill(pos, ownSlot.K, lvl - 3));
         });
         ownT.players = next;
+        if (held.length) pushEvent(`真实历史里，${y} 年这个休赛期 ${held.map((h) => `<b>${h.real.id}</b>${h.real.cn ? `（${h.real.cn}）` : ""} 加盟、${h.cur.id} 离队（${POSN[h.pos]}）`).join("；")}——
+        <b>冠军班底</b>没散，俱乐部留住了夺冠的这套人。<span style="color:var(--ink-3)">${held.map((h) => h.real.id).join("、")} 进了自由人市场，别的队缺人会先找${held.length > 1 ? "他们" : "他"}。</span>`, "good", "王朝");
         if (S.squad) {
           const before = String(S.rosterSig || "").split("|");
           const ch = next.filter((q) => q && !before.includes(q.id)).length;
@@ -20990,6 +21004,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20261003a", at: "2026-10-03", items: [
+      "<b>冠军班底说到做到</b>（玩家实锤：「S15 在 BLG 拿了冠军，右上角写着冠军班底阵容不会变，年底 Elk 还是换成了 Viper」）：夺冠后转会 AI、队友离队、默契回落都认这把锁，<b>真实历史的休赛期换页没认</b>——真实名单里你的队换了谁，就照样把谁换掉。BLG 2026 年真实换了打野和 AD 两个人，班底只剩 2 个老人、不满 3 个，<b>「冠军班底」标签和冠军底气也跟着一起没了</b>。现在夺冠那套人留下；真实历史里本该来的人进自由人市场，大事记里写一句「真实历史里谁加盟、谁离队——冠军班底没散」。班底那一年过去（没再夺冠）之后，照常按真实历史换人"
+    ] },
     { v: "v20261001a", at: "2026-10-01", items: [
       "<b>新增玩家信箱</b>（右下角「⋯」里的 ✉，结局页也有入口）：在游戏里直接把建议写给作者，<b>作者看过之后会把它放上榜</b>，所有人都能看到并点赞——<b>作者按赞多的先改</b>。榜分「最热 / 最新 / 我的」三档；你自己提的那条，不管有没有上榜，都能在「我的」里看到它现在是<b>待审核 / 已展示 / 已采纳 / 已修复</b>。两条意思一样的建议会被合并，票数合并去重，原文给你留着",
       "信箱的边界写在明处：<b>不记 IP、不记设备型号、不读存档</b>，作者那边只看得到你写的那段字；一条 4–200 字，不收链接和联系方式；连不上信箱只会显示一句话，<b>游戏照常玩</b>",
