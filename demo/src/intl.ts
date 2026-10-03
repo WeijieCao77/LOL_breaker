@@ -868,7 +868,7 @@ export function crownChampion(){
   }
   S.career.titles.push(`${SEASONS[S.si].tag} ${name}`);
   S.career[I.type]= (S.career[I.type]||0)+1;
-  champCoreStart();   // 冠军班底：接下来一年这套人不散
+  champCoreStart();   // 冠军班底：接下来一年俱乐部不主动拆这套人（真实历史的换页照常）
   // 记年份，供「双冠王 / 卫冕 / 三冠」判定
   const yk=I.type==="msi"?"msiYears":I.type==="fst"?"fstYears":"worldsYears";
   S.career[yk]=(S.career[yk]||[]).concat([S.si]);

@@ -74,7 +74,7 @@ export function syncTrust(){
    人走得突然是运气，人走得有征兆才是后果。                            */
 export function checkMateExit(){
   if(!S.career||!S.team||!S.trust) return;
-  if(champCoreOn()) return;   // 冠军班底：这一年谁也不走
+  if(champCoreOn()) return;   // 冠军班底：这一年没人因为信任低离队（真实历史的换页照常）
   const t=myTeam();
   if(!t||!t.players) return;
   const mates=t.players.filter(p=>!p.me);
