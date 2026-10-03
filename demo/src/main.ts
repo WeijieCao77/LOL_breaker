@@ -135,6 +135,9 @@ export const SPREAD=16;   // 统一标尺把队伍战力差放大了（明星 ×
    三个读者：右下角 📜 浮窗（全部历史）、老档读档弹窗（最新一条）、
    存档栏版本戳（第一条的 v）。玩家拍板：从这一版开始记，之前的不补。 */
 export const CHANGELOG=[
+  {v:"v20261003a", at:"2026-10-03", items:[
+    "<b>「冠军班底」的说明改准了</b>（玩家反馈：「S15 在 BLG 拿了冠军，右上角写着冠军班底，年底 Elk 还是换成了 Viper」）：阵容<b>优先跟真实历史走</b>——真实历史里你的队在休赛期换了谁，照样换（你自己不会被换掉）。冠军班底管的是另外几件事：转会窗口里俱乐部不主动买人换首发、不从二队提人，队友不会因为更衣室的事离队，休赛期默契不回落，整队带着冠军底气。原来夺冠时的那段话和顶栏标签写的是「转会窗口不会动你的队」「你不走，他们就都在」，读起来像阵容一整年都不会变——<b>是说明写错了，规则没有变</b>。真实历史换完人之后，首发里夺冠的人少于 3 个，班底就散了，标签和冠军底气一起没了"
+  ]},
   {v:"v20261001a", at:"2026-10-01", items:[
     "<b>新增玩家信箱</b>（右下角「⋯」里的 ✉，结局页也有入口）：在游戏里直接把建议写给作者，<b>作者看过之后会把它放上榜</b>，所有人都能看到并点赞——<b>作者按赞多的先改</b>。榜分「最热 / 最新 / 我的」三档；你自己提的那条，不管有没有上榜，都能在「我的」里看到它现在是<b>待审核 / 已展示 / 已采纳 / 已修复</b>。两条意思一样的建议会被合并，票数合并去重，原文给你留着",
     "信箱的边界写在明处：<b>不记 IP、不记设备型号、不读存档</b>，作者那边只看得到你写的那段字；一条 4–200 字，不收链接和联系方式；连不上信箱只会显示一句话，<b>游戏照常玩</b>",
@@ -1576,7 +1579,9 @@ export const POWER_KNEE=78, POWER_SLOPE=0.45;
    · 转会 AI 不动你的队（不买人换首发、不从二队提人顶掉队友）；队友不因信任低而离队
    · 休赛期默契 / 战术不回落
    · 只要首发里至少 3 个还是夺冠时的人、你还在这支队，整队战力 +DYN_CORE（「冠军底气」）
-   你自己的转会不拦——豪门照样来叫，走不走是你的选择；走了班底自然散。 */
+   你自己的转会不拦——豪门照样来叫，走不走是你的选择；走了班底自然散。
+   真实时间线的休赛期换页不归它管（作者 2026-10-03：阵容优先真实历史）：真实历史里你的队换了谁照样换，
+   换完首发里夺冠的人不到 3 个，班底就散了。所以玩家看得到的字里不能写「阵容不变」「你不走，他们就都在」。 */
 export const DYN_CORE=4, DYN_CORE_2=5;   // 第一年 +4，连冠之后 +5（批测：+2.5 时王朝仍是 0，+5/6.5 到 22% 过头，+4/5 落在 10–15%）
 /* 当前连冠数：到上个赛季为止连着拿了几年世界冠军（这个赛季还没打） */
 export function worldsStreakNow(){
@@ -1589,8 +1594,9 @@ export function champCoreStart(){
   try{
     const ids=myRoster().filter(p=>!p.me).map(p=>p.id);
     S.champCore={si:S.si,team:S.team,ids};
-    pushEvent(`<b>冠军班底。</b>俱乐部宣布留住这套首发：接下来一年转会窗口不会动你的队，默契不会回落，
-      整队带着冠军底气上场。<span style="color:var(--ink-3)">王朝都是同一套人打出来的——你不走，他们就都在。</span>`,"big","王朝");
+    pushEvent(`<b>冠军班底。</b>接下来一年，俱乐部不会主动拆这套首发：转会窗口不买人换首发、不从二队提人，
+      队友不会因为更衣室的事离队，默契不会回落，整队带着冠军底气上场。
+      <span style="color:var(--ink-3)">真实历史里的休赛期人员变动照常发生；首发里夺冠的人少于 3 个，班底就散了。</span>`,"big","王朝");
     if(typeof addTrustAll==="function") addTrustAll(6);
   }catch(e){}
 }
@@ -6853,7 +6859,7 @@ export function hud(){
   const isPre=(S.step==="pre"||S.step==="offer"||(!S.career&&S.pre));
   const np=nowPhase();
   const idLine=`<div class="h-id"><div class="who">${meName()}<small>${POSN[S.pos]||""} · ${S.age} 岁</small></div>
-    <div class="team">${isPre?(S.careerBak?`自由身 · 上一站 <b>${(S.pre&&S.pre.exPro&&S.pre.exPro.team)||"—"}</b> · 上分、开播、等电话`:`还没有战队 · 先打上分、攒人气、被人看见`):`效力 <b>${S.team}</b> · 本季 <span class="mono">${S.record?S.record.w:0}–${S.record?S.record.l:0}</span>${champCoreOn()?' · <span class="tag g" title="夺冠班底还在：转会窗口不动你的队、默契不回落、整队带着冠军底气">冠军班底</span>':''}${rookieSeason()?' · <span class="tag" title="签约后的第一个赛季：你还不是完全体，临场会打个折扣；明年起就是正常水平">新秀赛季</span>':''}`}</div></div>`;
+    <div class="team">${isPre?(S.careerBak?`自由身 · 上一站 <b>${(S.pre&&S.pre.exPro&&S.pre.exPro.team)||"—"}</b> · 上分、开播、等电话`:`还没有战队 · 先打上分、攒人气、被人看见`):`效力 <b>${S.team}</b> · 本季 <span class="mono">${S.record?S.record.w:0}–${S.record?S.record.l:0}</span>${champCoreOn()?' · <span class="tag g" title="夺冠班底还在：俱乐部不主动换首发、默契不回落、整队带着冠军底气。真实历史里的人员变动照常，首发里夺冠的人少于 3 个班底就散">冠军班底</span>':''}${rookieSeason()?' · <span class="tag" title="签约后的第一个赛季：你还不是完全体，临场会打个折扣；明年起就是正常水平">新秀赛季</span>':''}`}</div></div>`;
   const nowLine=`<div class="h-now ${np.urgent?'urgent':''}"><div class="ph">${np.tag}</div>
     <div class="big">${np.phase}${np.detail?`<small>${np.detail}</small>`:""}</div>
     <button class="h-cta" id="hudcta" hidden></button></div>`;
