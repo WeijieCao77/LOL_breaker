@@ -1681,6 +1681,36 @@ function preSeasonChecks(): string[] {
   return bad;
 }
 
+/* 国际赛冠军必须是对阵图上还活着的队（玩家实锤 2026-10-04：「四强里都没有 RNG，但是最后显示 RNG 捧杯」）。
+   原因是你一出局，收尾就拿「淘汰赛开始时的全体名单」重新模拟一遍，已经被别人淘汰的队照样能夺冠，
+   史实收束也在同一份过期名单里挑人。修之前 40 局里 97 次「你出局后宣布冠军」有 7 次是已出局的队，修完 0 次。
+   这里跑三局，盯住：宣布的冠军不能出现在你出局那一刻的出局名单里。 */
+function intlChampChecks(): string[] {
+  const bad: string[] = [];
+  let seen = 0;
+  for (const seed of [9701, 9718, 9733]) {
+    let snap: any = null;
+    playOne({ seed, noBondTalk: true, hook: (_S: any, A2: any) => {
+      const St = A2.S(), I = St.intl;
+      if (I && I.br) {
+        const B = I.br;
+        snap = { si: St.si, type: I.type, out: (B.out || []).slice(),
+          live: ([] as string[]).concat(B.ub || [], B.lb || [], B.uL ? [B.uL] : []).filter(Boolean) };
+      }
+      if (snap) {
+        const champ = ((St.honors || {})[snap.type] || {})[snap.si];
+        if (champ && champ !== St.team) {
+          seen++;
+          if (snap.out.indexOf(champ) >= 0) bad.push(`${snap.type}：冠军 ${champ} 在你出局那一刻已经被淘汰了（还活着的是 ${snap.live.join(" / ")}）`);
+          snap = null;
+        }
+      }
+    } });
+  }
+  if (!seen) bad.push("三局里一次都没抓到「你出局之后系统宣布冠军」，拿来验的样本不对");
+  return bad;
+}
+
 function tierExpectChecks(): string[] {
   const bad: string[] = [];
   A.screenCreate(9301);
@@ -2302,6 +2332,9 @@ if (isMain && process.argv.includes("--s6probe")) {
   { const fs1 = FC.fmtSpecChecks();
     if (fs1.length) { console.error("真实赛制自检不通过：\n - " + fs1.join("\n - ")); process.exit(1); }
     console.log("真实赛制自检通过：四大赛区 2022–2028 逐年跑通 · LPL 登峰/坚毅/涅槃与中途淘汰 · LCK 第 3–5 轮 · LEC 赛季总决赛 · LCS 瑞士轮 · 国际赛名额总数"); }
+  { const ic = intlChampChecks();
+    if (ic.length) { console.error("国际赛冠军自检不通过：\n  " + ic.join("\n  ")); process.exit(1); }
+    console.log("国际赛冠军自检通过：你出局之后那棵对阵树接着打完，冠军只会是树上还活着的队"); }
   { const fc = FC.fmtCareerChecks(playOne, A);
     if (fc.length) { console.error("真实赛制整局自检不通过：\n - " + fc.join("\n - ")); process.exit(1); }
     console.log("真实赛制整局自检通过：新档打到 2027（First Stand · 2027 公告 · 三段制冠军）· 老档不走新赛制"); }

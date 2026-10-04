@@ -438,6 +438,22 @@ export function brNext(){
   }
   return null;
 }
+/* 这棵树上还活着的队（不含你）：胜者组 + 败者组 + 等在败者组决赛的那支 */
+export function brLive(){
+  const B=S.intl&&S.intl.br; if(!B) return null;
+  const all=[].concat(B.ub||[], B.lb||[], B.uL?[B.uL]:[]).filter(Boolean);
+  return all.filter((n,i)=>n!==S.team&&all.indexOf(n)===i);
+}
+/* 你出局了，这棵树接着打完，返回冠军（玩家实锤 2026-10-04：「四强里都没有 RNG，最后显示 RNG 捧杯」——
+   原来你一走就把树丢掉、拿淘汰赛开始时的全体名单重新模拟一遍，已经被别人淘汰的队照样能夺冠）。 */
+export function brFinish(){
+  const B=S.intl&&S.intl.br; if(!B) return null;
+  for(let g=0;g<12&&!B.champ;g++){
+    const st=brStep(); if(!st||!st.pairs.length) break;
+    brApply(st, st.pairs.map(brSim));
+  }
+  return B.champ||null;
+}
 /* 你打完了：结果写回树，同一轮其他对局模拟 */
 export function brResolveMine(won){
   const B=S.intl&&S.intl.br; if(!B||!B.pending) return;
@@ -945,11 +961,21 @@ export function finishIntl(stageText,kind){
     const ev=intlChampEvent(name,S.match.oppName);
     pushEvent(ev.text,ev.tone,ev.tag);
   }else{
-    const base=((I.stage==="knockout"?(I.knockField||I.field):I.field)||[])
-      .filter(n=>n!==S.team&&!(I.koWins||[]).includes(n));   // 被你亲手打掉的不参加收尾模拟
-    if(base.length){
-      const champ=convergeChamp(I.type,base,simWholeEvent(base,I.stage==="knockout"?"knockout":I.stage));
+    /* 你回家了，赛事接着打。<b>接着打的是你看过的那棵树</b>——
+       原来这里拿「淘汰赛开始时的全体名单」重新模拟一遍，已经被别人淘汰的队也在里面，
+       于是出现了玩家实锤的「四强里都没有他，最后他捧杯」（2026-10-04；实测 97 次里 8 次）。
+       史实收束同理：只在还活着的队里挑，出局的正主不再诈尸。 */
+    const live=(I.stage==="knockout"&&I.br)?brLive():null;
+    if(live&&live.length){
+      const champ=convergeChamp(I.type,live,brFinish());
       if(champ) S._intlWrap={name,champ};
+    }else{
+      const base=((I.stage==="knockout"?(I.knockField||I.field):I.field)||[])
+        .filter(n=>n!==S.team&&!(I.koWins||[]).includes(n));   // 被你亲手打掉的不参加收尾模拟
+      if(base.length){
+        const champ=convergeChamp(I.type,base,simWholeEvent(base,I.stage==="knockout"?"knockout":I.stage));
+        if(champ) S._intlWrap={name,champ};
+      }
     }
   }
   S.intl=null; afterIntl();

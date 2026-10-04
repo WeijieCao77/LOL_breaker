@@ -16633,6 +16633,22 @@ header.top.compact>.theme-top{display:none}
     }
     return null;
   }
+  function brLive() {
+    const B2 = S.intl && S.intl.br;
+    if (!B2) return null;
+    const all = [].concat(B2.ub || [], B2.lb || [], B2.uL ? [B2.uL] : []).filter(Boolean);
+    return all.filter((n, i) => n !== S.team && all.indexOf(n) === i);
+  }
+  function brFinish() {
+    const B2 = S.intl && S.intl.br;
+    if (!B2) return null;
+    for (let g = 0; g < 12 && !B2.champ; g++) {
+      const st = brStep();
+      if (!st || !st.pairs.length) break;
+      brApply(st, st.pairs.map(brSim));
+    }
+    return B2.champ || null;
+  }
   function brResolveMine(won) {
     const B2 = S.intl && S.intl.br;
     if (!B2 || !B2.pending) return;
@@ -17204,10 +17220,16 @@ header.top.compact>.theme-top{display:none}
       const ev = intlChampEvent(name, S.match.oppName);
       pushEvent(ev.text, ev.tone, ev.tag);
     } else {
-      const base = ((I.stage === "knockout" ? I.knockField || I.field : I.field) || []).filter((n) => n !== S.team && !(I.koWins || []).includes(n));
-      if (base.length) {
-        const champ = convergeChamp(I.type, base, simWholeEvent(base, I.stage === "knockout" ? "knockout" : I.stage));
+      const live = I.stage === "knockout" && I.br ? brLive() : null;
+      if (live && live.length) {
+        const champ = convergeChamp(I.type, live, brFinish());
         if (champ) S._intlWrap = { name, champ };
+      } else {
+        const base = ((I.stage === "knockout" ? I.knockField || I.field : I.field) || []).filter((n) => n !== S.team && !(I.koWins || []).includes(n));
+        if (base.length) {
+          const champ = convergeChamp(I.type, base, simWholeEvent(base, I.stage === "knockout" ? "knockout" : I.stage));
+          if (champ) S._intlWrap = { name, champ };
+        }
       }
     }
     S.intl = null;
@@ -20990,6 +21012,9 @@ header.top.compact>.theme-top{display:none}
   var WR_WEIGHT = 18;
   var SPREAD = 16;
   var CHANGELOG = [
+    { v: "v20261004a", at: "2026-10-04", items: [
+      "<b>你出局之后，那座奖杯不会再被已经淘汰的队捧走</b>（玩家实锤：「四强里都没有 RNG，但是最后显示 RNG 捧杯了，这完全不合理」）：原来你一被淘汰，程序就<b>丢掉你看了一路的那张对阵图</b>，拿淘汰赛开始时的全体名单重新模拟一遍——八强就出局的队照样能夺冠；把冠军往真实历史拉的那道收束，也在同一份过期名单里挑人，于是 T1、Gen.G 这些史实冠军出局之后又被扶回冠军位。现在你走之后<b>那棵树接着打完</b>，史实收束只在还活着的队里挑。实测：修之前 40 局里 97 次「你出局后宣布冠军」有 7 次冠军是已出局的队，修完 0 次"
+    ] },
     { v: "v20261001a", at: "2026-10-01", items: [
       "<b>新增玩家信箱</b>（右下角「⋯」里的 ✉，结局页也有入口）：在游戏里直接把建议写给作者，<b>作者看过之后会把它放上榜</b>，所有人都能看到并点赞——<b>作者按赞多的先改</b>。榜分「最热 / 最新 / 我的」三档；你自己提的那条，不管有没有上榜，都能在「我的」里看到它现在是<b>待审核 / 已展示 / 已采纳 / 已修复</b>。两条意思一样的建议会被合并，票数合并去重，原文给你留着",
       "信箱的边界写在明处：<b>不记 IP、不记设备型号、不读存档</b>，作者那边只看得到你写的那段字；一条 4–200 字，不收链接和联系方式；连不上信箱只会显示一句话，<b>游戏照常玩</b>",
