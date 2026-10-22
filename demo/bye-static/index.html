@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>游戏已暂停运营</title>
+<meta property="og:title" content="破晓 · 游戏已暂停运营">
+<meta property="og:description" content="《破晓》LOL 电竞生涯模拟，到这里就先停下了。谢谢大家这两个月的陪伴。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.poxiao.lol/bye">
+<meta property="og:image" content="https://www.poxiao.lol/img/og.jpg">
+<!-- 停运公告（照 vctgames.com/bye 的样子）。server.js 停运模式下所有页面都 302 到这里；
+     还开着游戏的老标签页会收到 /api/version 的「closed」，弹「游戏更新了 → 刷新」，刷新就落到这页。
+     不引任何外部资源，不发任何请求：下面的存档下载只在浏览器本地进行。 -->
+<style>
+  :root {
+    --bg: #F4F6F9; --card: #FFFFFF; --ink: #16202D; --muted: #74839A;
+    --line: #D3DAE4; --accent: #9A7118;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0E141C; --card: #161E29; --ink: #E6EBF2; --muted: #A3B0C1;
+      --line: #2C3846; --accent: #D9AC4E;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.75 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  }
+  main {
+    width: 100%; max-width: 440px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 20px;
+    padding: 40px 28px 32px; text-align: center;
+  }
+  .mark { font-size: 44px; line-height: 1; }
+  .date { margin-top: 18px; color: var(--muted); font-size: 13px; letter-spacing: .08em; }
+  h1 { margin-top: 6px; font-size: 26px; line-height: 1.35; font-weight: 700; }
+  .body { margin-top: 20px; text-align: left; }
+  .body p + p { margin-top: 10px; }
+  .next {
+    margin-top: 24px; padding: 16px 18px; border-radius: 14px;
+    border: 1px dashed var(--accent); text-align: left;
+  }
+  .next b { color: var(--accent); }
+  .sign { margin-top: 28px; color: var(--muted); font-size: 14px; }
+  .sv { margin-top: 16px; padding: 16px 18px; border-radius: 14px; background: var(--bg); text-align: left; }
+  .sv[hidden] { display: none; }
+  .sv-label { color: var(--muted); font-size: 13px; }
+  .sv-info { margin-top: 4px; font-weight: 600; font-size: 16px; line-height: 1.5; word-break: break-all; }
+  .sv-note { margin-top: 6px; font-size: 13px; color: var(--muted); }
+  .sv button {
+    margin-top: 10px; font: inherit; font-size: 14px; padding: 6px 16px; border-radius: 999px;
+    border: 1px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="mark" aria-hidden="true">🌅</div>
+  <div class="date">2026.10.22</div>
+  <h1>游戏已暂停运营</h1>
+  <div class="body">
+    <p>《破晓》—— LOL 电竞生涯模拟，到这里就先停下了。</p>
+    <p>很感谢大家这两个月以来的陪伴。没想到一个纯文字的生涯模拟，能受到大家这么多的喜爱。</p>
+    <p>打过的青训、抢下的首发、凌晨还在打的世界赛决赛，我们都记得。</p>
+  </div>
+  <div class="next">
+    后续请期待<b>猪之家自己 IP 的游戏</b>。老玩家会有回馈，消息在群里通知。
+  </div>
+  <div class="sv" id="sv" hidden>
+    <div class="sv-label">你的生涯存档还在这台浏览器里</div>
+    <div class="sv-info" id="sv-info"></div>
+    <div class="sv-note">点一下存成文件留个纪念。这页不会把它发到任何地方。</div>
+    <button type="button" id="sv-dl">下载存档</button>
+  </div>
+  <div class="sign">江湖有缘再见 · 猪之家</div>
+</main>
+<script>
+  // 游戏的存档一直只在这台浏览器的 localStorage 里；游戏页没了，至少让它能被存成文件。
+  // 文件名和游戏里「导出」的一样，以后要是回来了还能导进去。什么都不往外发。
+  (function () {
+    var raw = null
+    try { raw = localStorage.getItem('pojuzhe_save_v1') } catch (e) {}
+    if (!raw || raw.length < 20) return
+    var info = '一段生涯'
+    try {
+      var b = JSON.parse(raw), s = b && b.S
+      var nm = s && typeof s.name === 'string' ? s.name.trim().slice(0, 12) : ''
+      var at = typeof b.at === 'number' ? new Date(b.at) : null
+      var pad = function (n) { return (n < 10 ? '0' : '') + n }
+      info = (nm ? nm + ' 的生涯' : '一段生涯') + (at
+        ? ' · 最后保存 ' + at.getFullYear() + '.' + pad(at.getMonth() + 1) + '.' + pad(at.getDate()) + ' ' + pad(at.getHours()) + ':' + pad(at.getMinutes())
+        : '')
+    } catch (e) {}
+    document.getElementById('sv-info').textContent = info
+    document.getElementById('sv').hidden = false
+    var btn = document.getElementById('sv-dl')
+    btn.onclick = function () {
+      try {
+        var a = document.createElement('a')
+        a.href = URL.createObjectURL(new Blob([raw], { type: 'application/json' }))
+        a.download = '破晓存档.json'
+        document.body.appendChild(a); a.click(); a.remove()
+        btn.textContent = '已下载'
+      } catch (e) {}
+    }
+  })()
+</script>
+</body>
+</html>
