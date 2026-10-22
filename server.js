@@ -44,11 +44,22 @@ const XFER_PARENT = "https://" + CANONICAL;
 /* www 页面会从这些老入口拉存档（要和 save.js 的 XFER_FROM 一致） */
 const XFER_FROM = ["https://poxiao.lol", "https://lol-breaker-production.up.railway.app"];
 
+/* ---------- 2026-10-22 停运 ----------
+   游戏暂停运营，线上只剩停运公告（demo/bye.html，照 vctgames.com/bye 的样子）：
+   · GET /bye 是公告本身；/favicon.ico 和 /img/（分享图）照常；其余页面与资源一律 302 → /bye
+     （302 带 no-store，浏览器不会记成永久跳转，哪天要恢复不用等缓存过期）
+   · 老域名照旧先 301 到 www，再落到 /bye
+   · /api/version 固定答「closed」：还开着游戏的老标签页会弹「游戏更新了 → 刷新」，刷新就落到公告上
+   · /api/t 信标 410，不再记；/api/box/ 信箱接口不接；/healthz（Railway 健康检查）、/dash、/dash/box（作者后台）照旧
+   · 本地想再跑游戏：POXIAO_OPEN=1 npm start */
+const CLOSED = process.env.POXIAO_OPEN !== "1";
+
 /* 能对外提供的东西，就这些 */
 const ROUTES = {
   "/": ["demo/career.html", "text/html; charset=utf-8"],
   "/index.html": ["demo/career.html", "text/html; charset=utf-8"],
   "/play": ["demo/career.html", "text/html; charset=utf-8"],
+  "/bye": ["demo/bye.html", "text/html; charset=utf-8"],
   "/favicon.ico": ["demo/favicon.ico", "image/x-icon"],
 };
 
@@ -783,7 +794,7 @@ const server = http.createServer((req, res) => {
     return send(res, 400, "bad request");   // 畸形的 %xx
   }
   /* 玩家信箱（box.js）：接住了由它回话，没接住照旧往下走。统计那条路一个字没动 */
-  if (url.startsWith("/api/box/")) {
+  if (!CLOSED && url.startsWith("/api/box/")) {
     try { if (BOX.handleBoxApi(req, res, url, clientIp(req))) return; } catch (e) {
       return send(res, 200, '{"ok":false,"why":"信箱这会儿不太舒服，游戏没事。"}', "application/json; charset=utf-8");
     }
@@ -801,7 +812,7 @@ const server = http.createServer((req, res) => {
     } catch (e) { return send(res, 500, "信箱这页算不出来了，游戏没事。"); }
   }
   if (req.method === "POST") {
-    if (url === "/api/t") return handleBeacon(req, res);
+    if (url === "/api/t") return CLOSED ? send(res, 410, "gone") : handleBeacon(req, res);
     return send(res, 405, "method not allowed");
   }
   if (req.method !== "GET" && req.method !== "HEAD") {
@@ -812,6 +823,8 @@ const server = http.createServer((req, res) => {
   if (url === "/healthz") return send(res, 200, "ok r2 " + BOOT_AT);
   // 版本戳：页面开着时定时来问，ETag 变了就弹「游戏更新了 → 刷新」（audio.js 的 updInit）
   if (url === "/api/version") {
+    if (CLOSED) return send(res, 200, JSON.stringify({ v: "closed", boot: BOOT_AT }),
+      "application/json; charset=utf-8", { "cache-control": "no-store" });
     const r = ROUTES["/"], file = typeof r === "string" ? r : (r && (r.file || r.path)) || "demo/career.html";
     const entry = loadAsset(file);
     return send(res, 200, JSON.stringify({ v: entry ? entry.etag : null, boot: BOOT_AT }),
@@ -848,6 +861,13 @@ const server = http.createServer((req, res) => {
       { "location": "https://" + CANONICAL + (req.url || "/") });
   }
 
+  if (CLOSED) {
+    // 停运：只有公告、图标、分享图能出去，别的全部 302 到公告
+    if (url === "/bye" || url === "/favicon.ico") return serveAsset(req, res, url);
+    if (url.startsWith("/img/")) return serveMedia(req, res, url);
+    return send(res, 302, "", "text/plain; charset=utf-8", { "location": "/bye" });
+  }
+
   if (url.startsWith("/bgm/") || url.startsWith("/fonts/") || url.startsWith("/img/")) return serveMedia(req, res, url);   // 背景音乐 / 自托管字体 / 主视觉
   if (!ROUTES[url]) return send(res, 404, "not found");
   serveAsset(req, res, url);
@@ -857,6 +877,7 @@ loadStats();
 const boxInit = BOX.initBox({ dir: DATA_DIR, volatile: VOLATILE });
 server.listen(PORT, () => {
   console.log(`看板：${STATS_KEY ? "已配钥匙，打开 /dash 在浏览器密码框里填钥匙；脚本 curl -u :钥匙 /api/export" : "未配 STATS_KEY，看板关闭（信标照记）"} · 数据目录 ${DATA_DIR}${VOLATILE ? "（⚠ 无持久化卷）" : ""} · 已记 ${ST.devices.size} 台设备${BEHIND_PROXY ? " · 受信代理后（X-Forwarded-For 取末段）" : ""} · 歌单 ${bgmList().length} 首 · 信箱 ${boxInit.items} 条（${(boxInit.bytes / 1024).toFixed(0)} KB）`);
+  if (CLOSED) console.log("⚠ 停运模式：所有页面 302 → /bye（本地想跑游戏：POXIAO_OPEN=1 npm start）");
   const e = loadAsset("demo/career.html");
   console.log(`破晓 listening on ${PORT}` + (e
     ? ` · career.html ${(e.raw.length / 1024).toFixed(0)} KB → gzip ${(e.gz.length / 1024).toFixed(0)} KB / br ${(e.br.length / 1024).toFixed(0)} KB · ${e.scriptSrc.length} 段内联脚本进 CSP`
